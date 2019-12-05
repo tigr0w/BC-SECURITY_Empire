@@ -19,7 +19,7 @@
 # -----BUILD ENTRY-----
 
 # image base
-FROM ubuntu:16.04
+FROM python:3.7.5-buster
 
 # pull from BUILD
 ARG empirversion
@@ -36,25 +36,17 @@ ENV DEBIAN_FRONTEND=noninteractive
 # set the def shell for ENV
 SHELL ["/bin/bash", "-c"]
 
-# install basic build items
-RUN apt-get update && apt-get install -qy \
-    wget \
-    curl \
-    git \
-    sudo \
-    apt-utils \
-    lsb-core \
-    python2.7 \
-    python-dev \ 
-  && ln -sf /usr/bin/python2.7 /usr/bin/python \
-  && rm -rf /var/lib/apt/lists/*
+COPY . /empire
 
-# build empire from source
-# TODO: When we merge to master set branch to master
-RUN git clone --depth=1 -b dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
-    cd /opt/Empire/setup/ && \
+RUN apt-get update && \
+      apt-get -y install sudo && \
+      apt-get -y install lsb-release
+
+RUN cd /empire/setup/ && \
     ./install.sh && \
-    rm -rf /opt/Empire/data/empire*
-RUN python2.7 /opt/Empire/setup/setup_database.py
-WORKDIR "/opt/Empire"
-CMD ["python2.7", "empire"]
+    rm -rf /empire/data/empire*
+
+RUN python /empire/setup/setup_database.py
+
+WORKDIR "/empire"
+CMD ["python", "empire"]
