@@ -81,12 +81,15 @@ fi
 if [ $OS_NAME == "DEBIAN" ]; then
   sudo apt-get update
   sudo apt-get -y install -y python3-dev python3-pip
+  sudo apt-get install xclip
 elif [ $OS_NAME == "UBUNTU" ] && [ $VERSION_ID == "20.04" ]; then
   sudo apt-get update
   sudo apt-get -y install -y python3-dev python3-pip
+  sudo apt-get install xclip
 elif [ $OS_NAME == "KALI" ]; then
   apt-get update
   sudo apt-get -y install -y python3-dev python3-pip
+  sudo apt-get install xclip
 fi
 
 install_powershell

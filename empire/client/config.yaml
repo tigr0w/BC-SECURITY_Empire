@@ -1,4 +1,5 @@
 suppress-self-cert-warning: true
+auto-copy-stagers: true
 servers:
   localhost:
     host: https://localhost
