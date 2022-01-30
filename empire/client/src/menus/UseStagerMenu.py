@@ -87,10 +87,10 @@ class UseStagerMenu(UseMenu):
                 f.write(output_bytes)
             print(print_util.color(f'[+] {file_name} written to {os.path.abspath(os.getcwd())}/{directory}'))
         else:
+            print(print_util.color(response[self.selected]['Output']))
             if empire_config.yaml.get('auto-copy-stagers', {}):
                 print(print_util.color(f'[+] Stager copied to clipboard.'))
                 pyperclip.copy(response[self.selected]['Output'])
-            print(print_util.color(response[self.selected]['Output']))
 
     @command
     def generate(self):
