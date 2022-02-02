@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'Application',
 
-            'Author': ['@xorrior'],
+            'Authors': ['@xorrior'],
 
             'Description': 'Generates an Empire Application.',
 

@@ -30,7 +30,7 @@ class Stager(object):
         self.info = {
             'Name': 'pyInstaller Launcher',
 
-            'Author': ['@TweekFawkes'],
+            'Authors': ['@TweekFawkes'],
 
             'Description': 'Generates an ELF binary payload launcher for Empire using pyInstaller.',
 

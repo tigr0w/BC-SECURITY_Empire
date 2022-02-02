@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'Launcher',
 
-            'Author': ['@424f424f'],
+            'Authors': ['@424f424f'],
 
             'Description': 'Generates an HTML payload launcher for Empire.',
 

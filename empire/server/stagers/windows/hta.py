@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'HTA',
 
-            'Author': ['@subTee'],
+            'Authors': ['@subTee'],
 
             'Description': 'Generates an HTA (HyperText Application) For Internet Explorer',
 

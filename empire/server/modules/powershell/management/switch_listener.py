@@ -17,13 +17,14 @@ class Module(object):
         # extract all of our options
         listener_name = params['Listener']
 
-        if listener_name not in main_menu.listeners.activeListeners:
+        active_listener = main_menu.listenersv2.get_active_listener_by_name(listener_name)
+        if not active_listener:
             return handle_error_message("[!] Listener '%s' doesn't exist!" % (listener_name))
 
-        active_listener = main_menu.listeners.activeListeners[listener_name]
-        listener_options = active_listener['options']
+        listener_options = active_listener.options
 
-        script = main_menu.listeners.loadedListeners[active_listener['moduleName']].generate_comms(listenerOptions=listener_options, language='powershell')
+        script = main_menu.listenertemplatesv2.new_instance(active_listener.info['Name'])\
+            .generate_comms(listenerOptions=listener_options, language='powershell')
 
         # signal the existing listener that we're switching listeners, and the new comms code
         script = "Send-Message -Packets $(Encode-Packet -Type 130 -Data '%s');\n%s" % (listener_name, script)

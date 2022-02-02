@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'BunnyLauncher',
 
-            'Author': ['@kisasondi', '@harmj0y'],
+            'Authors': ['@kisasondi', '@harmj0y'],
 
             'Description': 'Generates a bunny script that runs a one-liner stage0 launcher for Empire.',
 

@@ -7,6 +7,7 @@ empire/server/data/sessions.csv
 empire/server/data/obfuscated_module_source/*.ps1
 empire/server/data/misc/ToObfuscate.ps1
 empire/server/data/misc/Obfuscated.ps1
+empire/server/data/generated-stagers/*
 *.debug
 *.pyc
 downloads/*
@@ -30,3 +31,6 @@ empire/client/generated-stagers
 **/Covenant/obj/
 **/Sharpire/bin/
 **/Sharpire/obj/
+
+empire/server/v2/api/static/*
+starkiller-dist.tar.gz

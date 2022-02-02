@@ -10,17 +10,11 @@ menu loops.
 from __future__ import absolute_import
 from __future__ import print_function
 
-import fnmatch
 from builtins import input
 from builtins import str
 from typing import Optional
-from flask_socketio import SocketIO
 from pydispatch import dispatcher
 
-import sys
-import cmd
-import os
-import pkgutil
 import threading
 import json
 import time
@@ -28,26 +22,41 @@ import time
 # Empire imports
 from empire.server.common import hooks_internal
 from empire.server.utils import data_util
+
+from empire.server.v2.core.agent_service import AgentService
+from empire.server.v2.core.agent_task_service import AgentTaskService
+from empire.server.v2.core.agent_file_service import AgentFileService
+from empire.server.v2.core.bypass_service import BypassService
+from empire.server.v2.core.credential_service import CredentialService
+from empire.server.v2.core.host_service import HostService
+from empire.server.v2.core.host_process_service import HostProcessService
+from empire.server.v2.core.keyword_service import KeywordService
+from empire.server.v2.core.listener_service import ListenerService
+from empire.server.v2.core.listener_template_service import ListenerTemplateService
+from empire.server.v2.core.profile_service import ProfileService
+from empire.server.v2.core.stager_service import StagerService
+from empire.server.v2.core.stager_template_service import StagerTemplateService
+from empire.server.v2.core.user_service import UserService
+from empire.server.v2.core.module_service import ModuleService
+from empire.server.v2.core.download_service import DownloadService
+from empire.server.v2.core.plugin_service import PluginService
+
 from . import helpers
-from . import messages
 from . import agents
 from . import listeners
-from . import modules
 from . import stagers
 from . import credentials
-from . import users
-from . import plugins
 from .events import log_event
 from prompt_toolkit import PromptSession, HTML
 from prompt_toolkit.patch_stdout import patch_stdout
-from empire.server.database.base import Session
+from empire.server.database.base import SessionLocal
 from empire.server.database import models
 from sqlalchemy import or_, func, and_
 
-VERSION = "4.3.3 BC Security Fork"
+VERSION = "5.0.0-alpha1 BC Security Fork"
 
 
-class MainMenu(cmd.Cmd):
+class MainMenu(object):
     """
     The main class used by Empire to drive the 'main' menu
     displayed when Empire starts.
@@ -55,17 +64,8 @@ class MainMenu(cmd.Cmd):
 
     def __init__(self, args=None):
 
-        cmd.Cmd.__init__(self)
-
         # set up the event handling system
-        dispatcher.connect(self.handle_event, sender=dispatcher.Any)
-
-        # globalOptions[optionName] = (value, required, description)
-        self.globalOptions = {}
-
-        # currently active plugins:
-        # {'pluginName': classObject}
-        self.loadedPlugins = {}
+        # dispatcher.connect(self.handle_event, sender=dispatcher.Any)
 
         time.sleep(1)
 
@@ -78,39 +78,51 @@ class MainMenu(cmd.Cmd):
 
         # change the default prompt for the user
         self.prompt = '(Empire) > '
-        self.do_help.__func__.__doc__ = '''Displays the help menu.'''
-        self.doc_header = 'Commands'
-
-        # Main, Agents, or
-        self.menu_state = 'Main'
 
         # parse/handle any passed command line arguments
         self.args = args
 
-        # instantiate the agents, listeners, and stagers objects
+        self.socketio: Optional[SocketIO] = None
+
         self.agents = agents.Agents(self, args=args)
+
+        self.listenertemplatesv2 = ListenerTemplateService(self)
+        self.listenersv2 = ListenerService(self)
+        self.stagertemplatesv2 = StagerTemplateService(self)
+        self.stagersv2 = StagerService(self)
+        self.usersv2 = UserService(self)
+        self.bypassesv2 = BypassService(self)
+        self.keywordsv2 = KeywordService(self)
+        self.profilesv2 = ProfileService(self)
+        self.credentialsv2 = CredentialService(self)
+        self.hostsv2 = HostService(self)
+        self.processesv2 = HostProcessService(self)
+        self.modulesv2 = ModuleService(self)
+        self.downloadsv2 = DownloadService(self)
+
+        # instantiate the agents, listeners, and stagers objects
         self.credentials = credentials.Credentials(self, args=args)
         self.stagers = stagers.Stagers(self, args=args)
-        self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
-        self.users = users.Users(self)
 
-        self.load_malleable_profiles()
+        # todo lol i hate this. moving below the other instantiations.
+        self.agenttasksv2 = AgentTaskService(self)
+        self.agentfilesv2 = AgentFileService(self)
+        self.agentsv2 = AgentService(self)
+        self.pluginsv2 = PluginService(self)
 
         hooks_internal.initialize()
 
-        self.socketio: Optional[SocketIO] = None
         self.resourceQueue = []
         # A hashtable of autruns based on agent language
         self.autoRuns = {}
-        self.startup_plugins()
 
         message = "[*] Empire starting up..."
         signal = json.dumps({
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="empire")
+        # dispatcher.send(signal, sender="empire")
 
     def handle_event(self, signal, sender):
         """
@@ -153,117 +165,14 @@ class MainMenu(cmd.Cmd):
                 # if --debug 2, also print the output to the screen
                 print(" %s : %s" % (sender, signal))
 
-    def startup_plugins(self):
-        """
-        Load plugins at the start of Empire
-        """
-        plugin_path = self.installPath + "/plugins/"
-        print(helpers.color("[*] Searching for plugins at {}".format(plugin_path)))
-
-        # Import old v1 plugins (remove in 5.0)
-        plugin_names = [name for _, name, _ in pkgutil.walk_packages([plugin_path])]
-        for plugin_name in plugin_names:
-            if plugin_name.lower() != 'example':
-                file_path = os.path.join(plugin_path, plugin_name + '.py')
-                plugins.load_plugin(self, plugin_name, file_path)
-
-        for root, dirs, files in os.walk(plugin_path):
-            for filename in files:
-                if not filename.lower().endswith('.plugin'):
-                    continue
-
-                file_path = os.path.join(root, filename)
-                plugin_name = filename.split('.')[0]
-
-                # don't load up any of the templates or examples
-                if fnmatch.fnmatch(filename, '*template.plugin'):
-                    continue
-                elif fnmatch.fnmatch(filename, '*example.plugin'):
-                    continue
-
-                plugins.load_plugin(self, plugin_name, file_path)
-
-    def load_malleable_profiles(self):
-        """
-        Load Malleable C2 Profiles to the database
-        """
-        malleable_path = self.installPath + "/data/profiles"
-        print(helpers.color("[*] Loading malleable profiles from: {}".format(malleable_path)))
-
-        malleable_directories = os.listdir(malleable_path)
-
-        for malleable_directory in malleable_directories:
-            for root, dirs, files in os.walk(malleable_path + '/' + malleable_directory):
-                for filename in files:
-                    if not filename.lower().endswith('.profile'):
-                        continue
-
-                    file_path = os.path.join(root, filename)
-
-                    # don't load up any of the templates
-                    if fnmatch.fnmatch(filename, '*template.profile'):
-                        continue
-
-                    malleable_split = file_path.split(malleable_path)[-1].split('/')
-                    profile_category = malleable_split[1]
-                    profile_name = malleable_split[2]
-
-                    # Check if module is in database and load new profiles
-                    profile = Session().query(models.Profile).filter(models.Profile.name == profile_name).first()
-                    if not profile:
-                        message = "[*] Loading malleable profile {}".format(profile_name)
-                        signal = json.dumps({
-                            'print': False,
-                            'message': message
-                        })
-                        dispatcher.send(signal, sender="empire")
-
-                        with open(file_path, 'r') as stream:
-                            profile_data = stream.read()
-                            Session().add(models.Profile(file_path=file_path,
-                                                         name=profile_name,
-                                                         category=profile_category,
-                                                         data=profile_data,
-                                                         ))
-        Session().commit()
-
     def plugin_socketio_message(self, plugin_name, msg):
         """
         Send socketio message to the socket address
         """
         if self.args.debug is not None:
             print(helpers.color(msg))
-        self.socketio.emit(f'plugins/{plugin_name}/notifications', {'message': msg, 'plugin_name': plugin_name})
-
-    def check_root(self):
-        """
-        Check if Empire has been run as root, and alert user.
-        """
-        try:
-
-            if os.geteuid() != 0:
-                if self.isroot:
-                    messages.title(VERSION)
-                    print(
-                        "[!] Warning: Running Empire as non-root, after running as root will likely fail to access prior agents!")
-                    while True:
-                        a = input(helpers.color("[>] Are you sure you want to continue (y) or (n): "))
-                        if a.startswith("y"):
-                            return
-                        if a.startswith("n"):
-                            self.shutdown()
-                            sys.exit()
-                else:
-                    pass
-            if os.geteuid() == 0:
-                if self.isroot:
-                    pass
-                if not self.isroot:
-                    config = Session().query(models.Config).all()
-                    config.rootuser = True
-                    Session().commit()
-        except Exception as e:
-            print(e)
+        if self.socketio:
+            self.socketio.emit(f'plugins/{plugin_name}/notifications', {'message': msg, 'plugin_name': plugin_name})
 
     def shutdown(self):
         """
@@ -276,19 +185,18 @@ class MainMenu(cmd.Cmd):
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="empire")
+        # dispatcher.send(signal, sender="empire")
 
         # enumerate all active servers/listeners and shut them down
-        self.listeners.shutdown_listener('all')
+        self.listenersv2.shutdown_listeners()
 
         message = "[*] Shutting down plugins..."
         signal = json.dumps({
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="empire")
-        for plugin in self.loadedPlugins:
-            self.loadedPlugins[plugin].shutdown()
+        # dispatcher.send(signal, sender="empire")
+        self.pluginsv2.shutdown()
 
     def teamserver(self):
         """
@@ -322,40 +230,8 @@ class MainMenu(cmd.Cmd):
     def bottom_toolbar(self):
         return HTML(f'EMPIRE TEAM SERVER | ' +
                     str(len(self.agents.agents)) + ' Agent(s) | ' +
-                    str(len(self.listeners.activeListeners)) + ' Listener(s) | ' +
-                    str(len(self.loadedPlugins)) + ' Plugin(s)')
-
-    ###################################################
-    # CMD methods
-    ###################################################
-    def default(self, line):
-        "Default handler."
-        pass
-
-    def buildQueue(self, resourceFile, autoRun=False):
-        cmds = []
-        if os.path.isfile(resourceFile):
-            with open(resourceFile, 'r') as f:
-                lines = []
-                lines.extend(f.read().splitlines())
-        else:
-            raise Exception("[!] Error: The resource file specified \"%s\" does not exist" % resourceFile)
-        for lineFull in lines:
-            line = lineFull.strip()
-            # ignore lines that start with the comment symbol (#)
-            if line.startswith("#"):
-                continue
-            # read in another resource file
-            elif line.startswith("resource "):
-                rf = line.split(' ')[1]
-                cmds.extend(self.buildQueue(rf, autoRun))
-            # add noprompt option to execute without user confirmation
-            elif autoRun and line == "execute":
-                cmds.append(line + " noprompt")
-            else:
-                cmds.append(line)
-
-        return cmds
+                    str(len(self.listenersv2.get_active_listeners())) + ' Listener(s) | ' +
+                    str(len(self.pluginsv2.get_all())) + ' Plugin(s)')
 
     def substring(self, session, column, delimeter):
         """
@@ -366,35 +242,42 @@ class MainMenu(cmd.Cmd):
         elif session.bind.dialect.name == 'mysql':
             return func.substring_index(column, delimeter, -1)
 
+    # TODO VR: I don't think this is really necessary anymore.
+    # Ive already turned off the reporting table.
+    # Since it is only pulling tasks and checkins, it can just use the
+    # /tasks endpoint. We can still write to a master.log but should utilize python logging for that.
+    # I suppose we could have some /reporting endpoints to export certain data to csvs or something,
+    # but that seems like overkill since the session and credential logs are just csv dumps of the db basically.
     def run_report_query(self):
-        reporting_sub_query = Session() \
-            .query(models.Reporting, self.substring(Session(), models.Reporting.name, '/').label('agent_name')) \
-            .filter(and_(models.Reporting.name.ilike('agent%'),
-                         or_(models.Reporting.event_type == 'task',
-                             models.Reporting.event_type == 'checkin'))) \
-            .subquery()
+        with SessionLocal.begin() as db:
+            reporting_sub_query = db \
+                .query(models.Reporting, self.substring(db, models.Reporting.name, '/').label('agent_name')) \
+                .filter(and_(models.Reporting.name.ilike('agent%'),
+                             or_(models.Reporting.event_type == 'task',
+                                 models.Reporting.event_type == 'checkin'))) \
+                .subquery()
 
-        return Session() \
-            .query(reporting_sub_query.c.timestamp,
-                   reporting_sub_query.c.event_type,
-                   reporting_sub_query.c.agent_name,
-                   reporting_sub_query.c.taskID,
-                   models.Agent.hostname,
-                   models.User.username,
-                   models.Tasking.input.label('task'),
-                   models.Tasking.output.label('results')) \
-            .join(models.Tasking, and_(models.Tasking.id == reporting_sub_query.c.taskID,
-                                       models.Tasking.agent_id == reporting_sub_query.c.agent_name), isouter=True) \
-            .join(models.User, models.User.id == models.Tasking.user_id, isouter=True) \
-            .join(models.Agent, models.Agent.session_id == reporting_sub_query.c.agent_name, isouter=True) \
-            .all()
+            return db \
+                .query(reporting_sub_query.c.timestamp,
+                       reporting_sub_query.c.event_type,
+                       reporting_sub_query.c.agent_name,
+                       reporting_sub_query.c.taskID,
+                       models.Agent.hostname,
+                       models.User.username,
+                       models.Tasking.input.label('task'),
+                       models.Tasking.output.label('results')) \
+                .join(models.Tasking, and_(models.Tasking.id == reporting_sub_query.c.taskID,
+                                           models.Tasking.agent_id == reporting_sub_query.c.agent_name), isouter=True) \
+                .join(models.User, models.User.id == models.Tasking.user_id, isouter=True) \
+                .join(models.Agent, models.Agent.session_id == reporting_sub_query.c.agent_name, isouter=True) \
+                .all()
 
     def generate_report(self):
         """
         Produce report CSV and log files: sessions.csv, credentials.csv, master.log
         """
-        rows = Session().query(models.Agent.session_id, models.Agent.hostname, models.Agent.username,
-                               models.Agent.checkin_time).all()
+        rows = SessionLocal().query(models.Agent.session_id, models.Agent.hostname, models.Agent.username,
+                                    models.Agent.checkin_time).all()
 
         print(helpers.color(f"[*] Writing {self.installPath}/data/sessions.csv"))
         try:
@@ -407,11 +290,11 @@ class MainMenu(cmd.Cmd):
             self.lock.release()
 
         # Credentials CSV
-        rows = Session().query(models.Credential.domain,
-                               models.Credential.username,
-                               models.Credential.host,
-                               models.Credential.credtype,
-                               models.Credential.password) \
+        rows = SessionLocal().query(models.Credential.domain,
+                                    models.Credential.username,
+                                    models.Credential.host,
+                                    models.Credential.credtype,
+                                    models.Credential.password) \
             .order_by(models.Credential.domain, models.Credential.credtype, models.Credential.host) \
             .all()
 
@@ -479,36 +362,6 @@ class MainMenu(cmd.Cmd):
             else:
                 print(helpers.color("[*] " + os.path.basename(file) + " was already obfuscated. Not reobfuscating."))
             data_util.obfuscate_module(file, obfuscation_command, reobfuscate)
-
-    def upload_file(self, filename: str, data: bytes):
-        """
-        Upload a file to the remote server.
-        """
-        # decode the file data and save it off as appropriate
-        file_data = helpers.decode_base64(data.encode('UTF-8'))
-
-        with open(f"{self.installPath}/downloads/{filename}", 'wb+') as f:
-            f.write(file_data)
-
-    def list_files(self):
-        """
-        List all files in the download directory.
-        """
-        files = next(os.walk(f"{self.installPath}/downloads"), (None, None, []))[2]
-        if '.keep' in files:
-            files.remove('.keep')
-        return files
-
-    def download_file(self, filename: str):
-        """
-        Download a file from the remote server.
-        """
-        with open(f"{self.installPath}/downloads/{filename}", 'rb') as f:
-            data = f.read()
-
-        # decode the file data and save it off as appropriate
-        file_data = helpers.encode_base64(data).decode('UTF-8')
-        return file_data
 
 
 def xstr(s):

@@ -37,7 +37,7 @@ class Module(object):
         service_name = params['ServiceName']
 
         # generate the .bat launcher code to write out to the specified location
-        launcher = main_menu.stagers.stagers['windows/launcher_bat']
+        launcher = main_menu.stagertemplatesv2.new_instance('windows/launcher_bat')
         launcher.options['Listener'] = params['Listener']
         launcher.options['UserAgent'] = params['UserAgent']
         launcher.options['Proxy'] = params['Proxy']

@@ -1,7 +1,7 @@
 import enum
 
 from sqlalchemy import Column, Integer, Sequence, String, Boolean, ForeignKey, PickleType, Float, Text, Enum, \
-    UniqueConstraint
+    UniqueConstraint, JSON, Table, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
@@ -12,16 +12,38 @@ from empire.server.utils.datetime_util import is_stale
 Base = declarative_base()
 
 
+tasking_download_assc = Table('tasking_download_assc', Base.metadata,
+                              Column('tasking_id', Integer),
+                              Column('agent_id', String(255)),
+                              Column('download_id', Integer, ForeignKey('downloads.id')),
+                              ForeignKeyConstraint(
+                                  ('tasking_id', 'agent_id'),
+                                  ('taskings.id', 'taskings.agent_id')
+                              ))
+
+agent_file_download_assc = Table('agent_file_download_assc', Base.metadata,
+                                 Column('agent_file_id', Integer, ForeignKey('agent_files.id')),
+                                 Column('download_id', Integer, ForeignKey('downloads.id'))
+                                 )
+
+
+stager_download_assc = Table('stager_download_assc', Base.metadata,
+                             Column('stager_id', Integer, ForeignKey('stagers.id')),
+                             Column('download_id', Integer, ForeignKey('downloads.id'))
+                             )
+
+
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
     username = Column(String(255), nullable=False)
-    password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     api_token = Column(String(50))
-    last_logon_time = Column(UtcDateTime, default=utcnow(), onupdate=utcnow())
     enabled = Column(Boolean, nullable=False)
     admin = Column(Boolean, nullable=False)
     notes = Column(Text)
+    created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
+    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
 
     def __repr__(self):
         return "<User(username='%s')>" % (
@@ -36,18 +58,12 @@ class Listener(Base):
     listener_type = Column(String(255), nullable=True)
     listener_category = Column(String(255), nullable=False)
     enabled = Column(Boolean, nullable=False)
-    options = Column(PickleType)  # Todo Json?
+    options = Column(JSON)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
 
     def __repr__(self):
         return "<Listener(name='%s')>" % (
             self.name)
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-    def __setitem__(self, key, value):
-        self.__dict__[key] = value
 
 
 class Host(Base):
@@ -61,12 +77,11 @@ class Host(Base):
 
 class Agent(Base):
     __tablename__ = 'agents'
-    id = Column(Integer, Sequence("agent_id_seq"), primary_key=True)
+    session_id = Column(String(255), primary_key=True, nullable=False)
     name = Column(String(255), nullable=False)
     host_id = Column(Integer, ForeignKey('hosts.id'))
     host = relationship(Host, lazy="joined")
     listener = Column(String(255), nullable=False)
-    session_id = Column(String(255), nullable=False, unique=True)
     language = Column(String(255))
     language_version = Column(String(255))
     delay = Column(Integer)
@@ -93,8 +108,8 @@ class Agent(Base):
     lost_limit = Column(Integer)
     notes = Column(Text)
     architecture = Column(String(255))
-    killed = Column(Boolean, nullable=False)
-    proxy = Column(PickleType)
+    archived = Column(Boolean, nullable=False)
+    proxy = Column(JSON)
 
     @hybrid_property # todo @stale.expression
     def stale(self):
@@ -119,18 +134,19 @@ class AgentFile(Base):
     path = Column(Text, nullable=False)
     is_file = Column(Boolean, nullable=False)
     parent_id = Column(Integer, ForeignKey('agent_files.id', ondelete='CASCADE'), nullable=True)
+    downloads = relationship("Download", secondary=agent_file_download_assc)
 
 
 class HostProcess(Base):
     __tablename__ = 'host_processes'
-    host_id = Column(String(255), ForeignKey('hosts.id'), primary_key=True)
+    host_id = Column(Integer, ForeignKey('hosts.id'), primary_key=True)
     process_id = Column(Integer, primary_key=True)
     process_name = Column(Text)
     architecture = Column(String(255))
     user = Column(String(255))
     agent = relationship(Agent,
                          lazy="joined",
-                         primaryjoin="and_(Agent.process_id==foreign(HostProcess.process_id), Agent.host_id==foreign(HostProcess.host_id), Agent.killed == False)")
+                         primaryjoin="and_(Agent.process_id==foreign(HostProcess.process_id), Agent.host_id==foreign(HostProcess.host_id), Agent.archived == False)")
 
 
 class Config(Base):
@@ -144,6 +160,7 @@ class Config(Base):
     rootuser = Column(Boolean, nullable=False)
     obfuscate = Column(Boolean, nullable=False)
     obfuscate_command = Column(Text, nullable=False)
+    jwt_secret_key = Column(Text, nullable=False)
 
     def __repr__(self):
         return "<Config(staging_key='%s')>" % (
@@ -167,6 +184,11 @@ class Credential(Base):
     os = Column(String(255))
     sid = Column(String(255))
     notes = Column(Text)
+    created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
+    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+
+    # todo doesn't work with mysql
+    UniqueConstraint(credtype, domain, username, password)
 
     def __repr__(self):
         return "<Credential(id='%s')>" % (
@@ -179,9 +201,19 @@ class Credential(Base):
         self.__dict__[key] = value
 
 
+class Download(Base):
+    __tablename__ = "downloads"
+    id = Column(Integer, Sequence("download_seq"), primary_key=True)
+    location = Column(Text, nullable=False)
+    filename = Column(Text, nullable=True)
+    size = Column(Integer, nullable=True)
+    created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
+    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+
+
 class TaskingStatus(enum.Enum):
-    queued = 1
-    pulled = 2
+    queued = "queued"
+    pulled = "pulled"
 
 
 class Tasking(Base):
@@ -191,7 +223,7 @@ class Tasking(Base):
     agent = relationship(Agent, lazy="joined", innerjoin=True)
     input = Column(Text)
     input_full = deferred(Column(Text))
-    output = Column(Text, nullable=True)
+    output = deferred(Column(Text, nullable=True))
     # In most cases, this isn't needed and will match output. However, with the filter feature, we want to store
     # a copy of the original output if it gets modified by a filter.
     original_output = deferred(Column(Text, nullable=True))
@@ -201,11 +233,18 @@ class Tasking(Base):
     updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
     module_name = Column(Text)
     task_name = Column(Text)
-    status = Column(Enum(TaskingStatus))
+    status = Column(Enum(TaskingStatus), index=True)
+    downloads = relationship("Download", secondary=tasking_download_assc)
 
     def __repr__(self):
         return "<Tasking(id='%s')>" % (
             self.id)
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __setitem__(self, key, value):
+        self.__dict__[key] = value
 
 
 class Reporting(Base):
@@ -222,25 +261,30 @@ class Reporting(Base):
             self.id)
 
 
-class Function(Base):
-    __tablename__ = "functions"
-    keyword = Column(String(255), primary_key=True)
+class Keyword(Base):
+    __tablename__ = "keywords"
+    id = Column(Integer, Sequence("keyword_seq"), primary_key=True)
+    keyword = Column(String(255), unique=True)
     replacement = Column(String(255))
+    created_at = Column(UtcDateTime, nullable=False, default=utcnow())
+    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
 
     def __repr__(self):
-        return "<Function(id='%s')>" % (
+        return "<KeywordReplacement(id='%s')>" % (
             self.id)
 
 
 class Module(Base):
     __tablename__ = "modules"
-    name = Column(String(255), primary_key=True)
+    id = Column(String(255), primary_key=True)
+    name = Column(String(255), nullable=False)
     enabled = Column(Boolean, nullable=False)
 
 
 class Profile(Base):
     __tablename__ = "profiles"
-    name = Column(String(255), primary_key=True)
+    id = Column(Integer, Sequence("profile_seq"), primary_key=True)
+    name = Column(String(255), unique=True)
     file_path = Column(String(255))
     category = Column(String(255))
     data = Column(Text, nullable=False)
@@ -253,5 +297,18 @@ class Bypass(Base):
     id = Column(Integer, Sequence("bypass_seq"), primary_key=True)
     name = Column(String(255), unique=True)
     code = Column(Text)
+    created_at = Column(UtcDateTime, nullable=False, default=utcnow())
+    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+
+
+class Stager(Base):
+    __tablename__ = "stagers"
+    id = Column(Integer, Sequence("stager_seq"), primary_key=True)
+    name = Column(String(255), unique=True)
+    module = Column(String(255))
+    options = Column(JSON)
+    downloads = relationship("Download", secondary=stager_download_assc)
+    one_liner = Column(Boolean)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
     updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)

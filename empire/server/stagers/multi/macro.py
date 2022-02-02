@@ -13,7 +13,7 @@ class Stager(object):
         self.info = {
             'Name': 'Macro',
 
-            'Author': ['@enigma0x3', '@harmj0y', '@DisK0nn3cT', '@malcomvetter'],
+            'Authors': ['@enigma0x3', '@harmj0y', '@DisK0nn3cT', '@malcomvetter'],
 
             'Description': 'Generates a Win/Mac cross platform MS Office macro for Empire, compatible with Office 97-2016 including Mac 2011 and 2016 (sandboxed).',
 

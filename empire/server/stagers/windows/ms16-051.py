@@ -9,7 +9,7 @@ class Stager(object):
         self.info = {
             'Name': 'MS16-051 IE RCE',
 
-            'Author': ['CrossGroupSecurity'],
+            'Authors': ['CrossGroupSecurity'],
 
             'Description':
                 'Leverages MS16-051 to execute powershell in unpatched browsers. This is a file-less vector which '

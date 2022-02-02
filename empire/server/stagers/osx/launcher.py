@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'Launcher',
 
-            'Author': ['@harmj0y'],
+            'Authors': ['@harmj0y'],
 
             'Description': 'Generates a one-liner stage0 launcher for Empire.',
 
@@ -84,6 +84,12 @@ class Stager(object):
         if base64.lower() == "true":
             encode = True
 
+
+        # todo Continuing notes from: empire/server/common/stagers.py:125
+        #  if we pass the listener into the generate function we can just call listener.generate_launcher?
+        #  but then it would be missing additional logic and we'd have to refactor every listener.
+        #  perhaps there could be a new static util method called generate_launcher that is similar to stagers.generate_launcher
+        #  that does the preprocessing, but also accepts a listener as an argument.
         # generate the launcher code
         launcher = self.mainMenu.stagers.generate_launcher(listener_name, language=language, encode=encode,
                                                            userAgent=user_agent, safeChecks=safe_checks)

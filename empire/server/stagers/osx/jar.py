@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'Jar',
 
-            'Author': ['@xorrior'],
+            'Authors': ['@xorrior'],
 
             'Description': 'Generates a JAR file.',
 

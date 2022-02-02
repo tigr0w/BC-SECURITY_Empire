@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'DuckyLauncher',
 
-            'Author': ['@harmj0y', '@kisasondi'],
+            'Authors': ['@harmj0y', '@kisasondi'],
 
             'Description': 'Generates a ducky script that runes a one-liner stage0 launcher for Empire.',
 
@@ -107,7 +107,7 @@ class Stager(object):
             obfuscate_script = True
 
         # generate the launcher code
-        module_name = self.mainMenu.listeners.activeListeners[listener_name]['moduleName']
+        module_name = self.mainMenu.listenersv2.get_by_name(listener_name).module
         launcher = self.mainMenu.stagers.generate_launcher(listenerName=listener_name, language=language, encode=True,
                                                            obfuscate=obfuscate_script,
                                                            obfuscationCommand=obfuscate_command, userAgent=user_agent,

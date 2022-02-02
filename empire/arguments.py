@@ -30,12 +30,8 @@ rest_group = server_parser.add_argument_group('RESTful API Options')
 rest_group.add_argument('--restip', nargs=1, help='IP to bind the Empire RESTful API on. Defaults to 0.0.0.0')
 rest_group.add_argument('--restport', type=int, nargs=1, help='Port to run the Empire RESTful API on. Defaults to 1337')
 rest_group.add_argument('--socketport', type=int, nargs=1, help='Port to run socketio on. Defaults to 5000')
-rest_group.add_argument('--username', nargs=1,
-                        help='Start the RESTful API with the specified username instead of pulling from empire.db')
-rest_group.add_argument('--password', nargs=1,
-                        help='Start the RESTful API with the specified password instead of pulling from empire.db')
 
 args = parent_parser.parse_args()
 
-if parent_parser.parse_args().subparser_name == None:
+if parent_parser.parse_args().subparser_name is None:
     parent_parser.print_help()

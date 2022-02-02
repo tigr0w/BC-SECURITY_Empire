@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'Shellcode launcher',
 
-            'Author': ['@johneiser'],
+            'Authors': ['@johneiser'],
 
             'Description': 'Generate an osx shellcode launcher',
 

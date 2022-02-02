@@ -118,7 +118,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="empire")
+        # dispatcher.send(signal, sender="empire")
 
         # get the appropriate response from the agent handler
         (code, responsedata) = self.server.agents.process_get(self.server.server_port, clientIP, sessionID, resource)
@@ -156,7 +156,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="empire")
+        # dispatcher.send(signal, sender="empire")
 
         # read in the length of the POST data
         if self.headers.getheader('content-length'):
@@ -219,7 +219,7 @@ class EmpireServer(threading.Thread):
                 'print': True,
                 'message': message
             })
-            dispatcher.send(signal, sender="empire")
+            # dispatcher.send(signal, sender="empire")
 
         except Exception as e:
             self.success = False
@@ -229,7 +229,7 @@ class EmpireServer(threading.Thread):
                 'print': True,
                 'message': message
             })
-            dispatcher.send(signal, sender="empire")
+            # dispatcher.send(signal, sender="empire")
 
     def base_server(self):
         return self.server

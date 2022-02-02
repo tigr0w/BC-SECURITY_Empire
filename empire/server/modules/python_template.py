@@ -16,7 +16,7 @@ class Module(object):
             'Name': 'Active Directory Enumerator',
 
             # list of one or more authors for the module
-            'Author': ['@424f424f'],
+            'Authors': ['@424f424f'],
 
             # more verbose multi-line description of the module
             'Description': ('description line 1'

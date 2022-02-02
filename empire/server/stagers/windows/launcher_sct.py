@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'regsvr32',
 
-            'Author': ['@subTee', '@enigma0x3'],
+            'Authors': ['@subTee', '@enigma0x3'],
 
             'Description': 'Generates an sct file (COM Scriptlet) Host this anywhere',
 

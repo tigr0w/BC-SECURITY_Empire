@@ -9,7 +9,7 @@ class Module(object):
         self.info = {
             'Name': 'Invoke-Redirector',
 
-            'Author': ['@harmj0y'],
+            'Authors': ['@harmj0y'],
 
             'Description': ('Sets the current agent to open up a port that '
                             'redirects all traffic to a target. If a listener '
@@ -168,7 +168,7 @@ Invoke-Redirector"""
                 else:
                     listenerName = values['Value']
                     # get the listener options and set them for the script
-                    [Name,Host,Port,CertPath,StagingKey,DefaultDelay,DefaultJitter,DefaultProfile,KillDate,WorkingHours,DefaultLostLimit,BindIP,ServerVersion] = self.mainMenu.listeners.activeListeners[listenerName]['options']
+                    [Name,Host,Port,CertPath,StagingKey,DefaultDelay,DefaultJitter,DefaultProfile,KillDate,WorkingHours,DefaultLostLimit,BindIP,ServerVersion] = self.options
                     script += " -ConnectHost " + str(Host)
 
             elif option.lower() != "agent":

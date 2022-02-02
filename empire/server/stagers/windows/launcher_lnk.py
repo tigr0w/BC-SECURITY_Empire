@@ -11,7 +11,7 @@ class Stager(object):
         self.info = {
             'Name': 'LNKLauncher',
 
-            'Author': ['@theguly'],
+            'Authors': ['@theguly'],
 
             'Description': "Create a .LNK file that launches the Empire stager.",
 

@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'wmic_xsl',
 
-            'Author': ['@subTee', '@mattifestation'],
+            'Authors': ['@subTee', '@mattifestation'],
 
             'Description': 'Generates an XSL stylesheets file to be run with wmic.exe',
 

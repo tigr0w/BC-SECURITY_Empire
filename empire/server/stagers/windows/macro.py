@@ -13,7 +13,7 @@ class Stager(object):
         self.info = {
             'Name': 'Macro',
 
-            'Author': ['@enigma0x3', '@harmj0y'],
+            'Authors': ['@enigma0x3', '@harmj0y'],
 
             'Description': 'Generates an office macro for Empire, compatible with office 97-2003, and 2007 file types.',
 

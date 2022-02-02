@@ -13,7 +13,7 @@ import time
 import urllib.parse
 from builtins import object
 from builtins import str
-from typing import List
+from typing import List, Tuple, Optional
 
 from flask import Flask, request, make_response, Response
 from pydispatch import dispatcher
@@ -24,10 +24,10 @@ from empire.server.common import malleable
 from empire.server.common import packets
 from empire.server.common import templating
 from empire.server.database import models
-from empire.server.database.base import Session
 from empire.server.utils import data_util
-from empire.server.database.base import Session
+from empire.server.database.base import SessionLocal
 from empire.server.database import models
+from empire.server.utils.module_util import handle_validate_message
 
 
 class Listener(object):
@@ -37,7 +37,7 @@ class Listener(object):
         self.info = {
             'Name': 'HTTP[S] MALLEABLE',
 
-            'Author': ['@harmj0y', '@johneiser'],
+            'Authors': ['@harmj0y', '@johneiser'],
 
             'Description': ("Starts a http[s] listener (PowerShell or Python) that adheres to a Malleable C2 profile."),
 
@@ -252,19 +252,17 @@ class Listener(object):
             '</html>',
         ])
 
-
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
 
         for key in self.options:
             if self.options[key]['Required'] and (str(self.options[key]['Value']).strip() == ''):
-                print(helpers.color("[!] Option \"%s\" is required." % (key)))
-                return False
+                return handle_validate_message(f"[!] Option \"{key}\" is required.")
 
         profile_name = self.options["Profile"]["Value"]
-        profile_data = Session().query(models.Profile).filter(models.Profile.name == profile_name).first()
+        profile_data = SessionLocal().query(models.Profile).filter(models.Profile.name == profile_name).first()
         try:
             profile = malleable.Profile()
             profile.ingest(content=profile_data.data)
@@ -314,19 +312,15 @@ class Listener(object):
                     profile.post.client.headers.pop(header, None)
 
             else:
-                print(helpers.color("[!] Unable to parse malleable profile: %s" % (profile_name)))
-                return False
+                return handle_validate_message(f"[!] Unable to parse malleable profile: {profile_name}")
 
             if self.options["CertPath"]["Value"] == "" and self.options["Host"]["Value"].startswith("https"):
-                print(helpers.color("[!] HTTPS selected but no CertPath specified."))
-                return False
+                return handle_validate_message("[!] HTTPS selected but no CertPath specified.")
 
         except malleable.MalleableError as e:
-            print(helpers.color("[!] Error parsing malleable profile: %s, %s" % (profile_name, e)))
-            return False
+            return handle_validate_message(f"[!] Error parsing malleable profile: {profile_name}, {e}")
 
-        return True
-
+        return True, None
 
     def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None,
                           stager=None, bypasses: List[str]=None):
@@ -338,10 +332,14 @@ class Listener(object):
             print(helpers.color('[!] listeners/template generate_launcher(): no language specified!'))
             return None
 
-        if listenerName and (listenerName in self.mainMenu.listeners.activeListeners):
-
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
+        if True:  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]['options']
+            listenerOptions = active_listener.options
+
             bindIP = listenerOptions['BindIP']['Value']
             port = listenerOptions['Port']['Value']
             host = listenerOptions['Host']['Value']
@@ -1238,7 +1236,7 @@ class Listener(object):
                                                 except TypeError:
                                                     tempListenerOptions = listenerOptions
 
-                                        session_info = Session().query(models.Agent).filter(
+                                        session_info = SessionLocal().query(models.Agent).filter(
                                             models.Agent.session_id == sessionID).first()
                                         if session_info.language == 'ironpython':
                                             version = 'ironpython'

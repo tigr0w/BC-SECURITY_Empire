@@ -1,5 +1,8 @@
 suppress-self-cert-warning: true
 database:
+#  type: mysql
+#  username: root
+#  url: "localhost:3306"
   type: sqlite
   location: empire/server/data/empire.db
   defaults:

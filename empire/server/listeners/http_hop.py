@@ -6,11 +6,12 @@ import os
 import random
 from builtins import object
 from builtins import str
-from typing import List
+from typing import List, Tuple, Optional
 
 from empire.server.common import helpers
 from empire.server.common import packets
 from empire.server.utils import data_util
+from empire.server.utils.module_util import handle_validate_message
 
 
 class Listener(object):
@@ -20,7 +21,7 @@ class Listener(object):
         self.info = {
             'Name': 'HTTP[S] Hop',
 
-            'Author': ['@harmj0y'],
+            'Authors': ['@harmj0y'],
 
             'Description': ('Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.'),
 
@@ -95,19 +96,16 @@ class Listener(object):
         """
         return ''
 
-
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
 
         for key in self.options:
             if self.options[key]['Required'] and (str(self.options[key]['Value']).strip() == ''):
-                print(helpers.color("[!] Option \"%s\" is required." % (key)))
-                return False
+                return handle_validate_message(f"[!] Option \"{key}\" is required.")
 
-        return True
-
+        return True, None
 
     def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default',
                           proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='',
@@ -119,11 +117,16 @@ class Listener(object):
 
         if not language:
             print(helpers.color('[!] listeners/http_hop generate_launcher(): no language specified!'))
+            return None
 
-        if listenerName and (listenerName in self.mainMenu.listeners.activeListeners):
-
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
+        if True:  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]['options']
+            listenerOptions = active_listener.options
+
             host = listenerOptions['Host']['Value']
             launcher = listenerOptions['Launcher']['Value']
             stagingKey = listenerOptions['RedirectStagingKey']['Value']

@@ -2,17 +2,18 @@ import os
 import subprocess
 
 from empire.server.database import models
-from empire.server.database.base import Session
 from empire.server.common import helpers
+from empire.server.database.base import SessionLocal
 
 
 def keyword_obfuscation(data):
-    functions = Session().query(models.Function).all()
+    with SessionLocal.begin() as db:
+        functions = db.query(models.Keyword).all()
 
-    for function in functions:
-        data = data.replace(function.keyword, function.replacement)
+        for function in functions:
+            data = data.replace(function.keyword, function.replacement)
 
-    return data
+        return data
 
 
 def get_config(fields):
@@ -23,13 +24,14 @@ def get_config(fields):
     Fields should be comma separated.
         i.e. 'version,install_path'
     """
-    results = []
-    config = Session().query(models.Config).first()
+    with SessionLocal.begin() as db:
+        results = []
+        config = db.query(models.Config).first()
 
-    for field in fields.split(','):
-        results.append(config[field.strip()])
+        for field in fields.split(','):
+            results.append(config[field.strip()])
 
-    return results
+        return results
 
 
 def get_listener_options(listener_name):
@@ -38,7 +40,8 @@ def get_listener_options(listener_name):
     of the normal menu execution.
     """
     try:
-        listener_options = Session().query(models.Listener.options).filter(models.Listener.name == listener_name).first()
+        with SessionLocal() as db:
+            listener_options = db.query(models.Listener.options).filter(models.Listener.name == listener_name).first()
         return listener_options
 
     except Exception:

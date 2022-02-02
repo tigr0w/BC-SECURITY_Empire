@@ -9,7 +9,7 @@ class Module(object):
             'Name': 'Background Example',
 
             # list of one or more authors for the module
-            'Author': ['@Killswitch-GUI'],
+            'Authors': ['@Killswitch-GUI'],
 
             'Software': 'SXXXX',
 

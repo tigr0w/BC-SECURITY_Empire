@@ -8,7 +8,7 @@ which help manage those events - logging them, fetching them, etc.
 import json
 
 from pydispatch import dispatcher
-from empire.server.database.base import Session
+from empire.server.database.base import SessionLocal
 from empire.server.database import models
 
 
@@ -38,8 +38,8 @@ def agent_rename(old_name, new_name):
     # signal twice, once for each name (that way, if you search by sender,
     # the last thing in the old agent and the first thing in the new is that
     # it has been renamed)
-    dispatcher.send(signal, sender="agents/{}".format(old_name))
-    dispatcher.send(signal, sender="agents/{}".format(new_name))
+    # dispatcher.send(signal, sender="agents/{}".format(old_name))
+    # dispatcher.send(signal, sender="agents/{}".format(new_name))
 
     # TODO rename all events left over using agent's old name?
 
@@ -57,8 +57,8 @@ def log_event(name, event_type, message, task_id=None):
     task_id    - the ID of the task this event is in relation to. Enables quick
                  queries of an agent's task and its result together.
     """
-    Session().add(models.Reporting(name=name,
-                                   event_type=event_type,
-                                   message=message,
-                                   taskID=task_id))
-    Session().commit()
+    with SessionLocal.begin() as db:
+        db.add(models.Reporting(name=name,
+                                event_type=event_type,
+                                message=message,
+                                taskID=task_id))

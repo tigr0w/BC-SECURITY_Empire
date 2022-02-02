@@ -1,6 +1,7 @@
 from __future__ import print_function
 from builtins import object
 from empire.server.common import helpers
+from empire.server.database.base import SessionLocal
 
 
 class Stager(object):
@@ -10,7 +11,7 @@ class Stager(object):
         self.info = {
             'Name': 'DLL Launcher',
 
-            'Author': ['@sixdub'],
+            'Authors': ['@sixdub'],
 
             'Description': 'Generate a PowerPick Reflective DLL to inject with stager code.',
 
@@ -39,11 +40,6 @@ class Stager(object):
                 'Value': 'x64',
                 'SuggestedValues': ['x64', 'x86'],
                 'Strict': True
-            },
-            'Listener': {
-                'Description': 'Listener to use.',
-                'Required': True,
-                'Value': ''
             },
             'StagerRetries': {
                 'Description': 'Times for the stager to retry connecting.',
@@ -114,9 +110,10 @@ class Stager(object):
         obfuscate_command = self.options['ObfuscateCommand']['Value']
         bypasses = self.options['Bypasses']['Value']
 
-        if not self.mainMenu.listeners.is_listener_valid(listener_name):
+        if not self.mainMenu.listeners.is_listener_valid(listener_name)\
+                and not self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name):
             # not a valid listener, return nothing for the script
-            print(helpers.color("[!] Invalid listener: " + listener_name))
+            print(helpers.color(f"[!] Invalid listener: {listener_name}"))
             return ""
         else:
             obfuscate_script = False

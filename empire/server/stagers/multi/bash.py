@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'BashScript',
 
-            'Author': ['@harmj0y'],
+            'Authors': ['@harmj0y'],
 
             'Description': 'Generates self-deleting Bash script to execute the Empire stage0 launcher.',
 

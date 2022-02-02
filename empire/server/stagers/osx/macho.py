@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'macho',
 
-            'Author': ['@xorrior'],
+            'Authors': ['@xorrior'],
 
             'Description': 'Generates a macho executable.',
 

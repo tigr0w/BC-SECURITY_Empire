@@ -12,7 +12,7 @@ class Stager(object):
         self.info = {
             'Name': 'C# PowerShell Launcher',
 
-            'Author': ['@Cx01N', '@hubbl3'],
+            'Authors': ['@Cx01N', '@hubbl3'],
 
             'Description': 'Generate a PowerShell C#  solution with embedded stager code that compiles to an exe',
 

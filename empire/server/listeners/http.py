@@ -10,9 +10,8 @@ import ssl
 import string
 import sys
 import time
-from builtins import object
 from builtins import str
-from typing import List
+from typing import List, Tuple, Optional
 
 from flask import Flask, request, make_response, send_from_directory
 from pydispatch import dispatcher
@@ -23,18 +22,20 @@ from empire.server.common import helpers
 from empire.server.common import packets
 from empire.server.common import templating
 from empire.server.utils import data_util
-from empire.server.database.base import Session
+from empire.server.database.base import SessionLocal
 from empire.server.database import models
+from empire.server.utils.module_util import handle_validate_message
+from empire.server.v2.core.listener_service import ListenerService
 
 
 class Listener(object):
-
+    
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
             'Name': 'HTTP[S]',
 
-            'Author': ['@harmj0y'],
+            'Authors': ['@harmj0y'],
 
             'Description': ('Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.'),
 
@@ -69,7 +70,7 @@ class Listener(object):
                 'Description': 'Port for the listener.',
                 'Required': True,
                 'Value': '',
-                'SuggestedValues': ['1335', '1336']
+                'SuggestedValues': ["1335", "1336"]
             },
             'Launcher': {
                 'Description': 'Launcher string.',
@@ -287,25 +288,25 @@ class Listener(object):
             '</body>',
             '</html>',
         ])
-
-    def validate_options(self):
+    
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
 
         self.uris = [a.strip('/') for a in self.options['DefaultProfile']['Value'].split('|')[0].split(',')]
 
+        # todo when we remove v1, we can remove this check, since its handled in the listener service.
         for key in self.options:
             if self.options[key]['Required'] and (str(self.options[key]['Value']).strip() == ''):
-                print(helpers.color("[!] Option \"%s\" is required." % (key)))
-                return False
+                return handle_validate_message(f"[!] Option \"{key}\" is required.")
 
         # If we've selected an HTTPS listener without specifying CertPath, let us know.
         if self.options['Host']['Value'].startswith('https') and self.options['CertPath']['Value'] == '':
-            print(helpers.color("[!] HTTPS selected but no CertPath specified."))
-            return False
-        return True
+            return handle_validate_message("[!] HTTPS selected but no CertPath specified.")
 
+        return True, None
+    
     def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default',
                           proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='',
                           listenerName=None, bypasses:List[str]=None):
@@ -315,12 +316,15 @@ class Listener(object):
         bypasses = [] if bypasses is None else bypasses
         if not language:
             print(helpers.color('[!] listeners/http generate_launcher(): no language specified!'))
+            return None
 
-        if listenerName and (listenerName in self.threads) and (
-                listenerName in self.mainMenu.listeners.activeListeners):
-
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
+        if True:  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]['options']
+            listenerOptions = active_listener.options
             host = listenerOptions['Host']['Value']
             launcher = listenerOptions['Launcher']['Value']
             stagingKey = listenerOptions['StagingKey']['Value']
@@ -576,7 +580,7 @@ class Listener(object):
                     .replace("{{ REPLACE_JITTER }}", str(jitter)) \
                     .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
 
-                compiler = self.mainMenu.loadedPlugins.get("csharpserver")
+                compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
                 if not compiler.status == 'ON':
                     print(helpers.color('[!] csharpserver plugin not running'))
                 else:
@@ -927,7 +931,7 @@ def update_proxychain(proxy_list):
     setdefaultproxy()  # Clear the default chain
 
     for proxy in proxy_list:
-        addproxy(proxytype=proxy['proxytype'], addr=proxy['addr'], port=proxy['port'])
+        addproxy(proxytype=proxy['proxy_type'], addr=proxy['host'], port=proxy['port'])
 
 def send_message(packets=None):
     # Requests a tasking or posts data to a randomized tasking URI.
@@ -1246,7 +1250,7 @@ def send_message(packets=None):
                             else:
                                 tempListenerOptions = listenerOptions
 
-                            session_info = Session().query(models.Agent).filter(models.Agent.session_id == sessionID).first()
+                            session_info = SessionLocal().query(models.Agent).filter(models.Agent.session_id == sessionID).first()
                             if session_info.language == 'ironpython':
                                 version = 'ironpython'
                             else:

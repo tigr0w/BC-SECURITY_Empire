@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'VBS Launcher',
 
-            'Author': ['@harmj0y', '@enigma0x3'],
+            'Authors': ['@harmj0y', '@enigma0x3'],
 
             'Description': 'Generates a .vbs launcher for Empire.',
 

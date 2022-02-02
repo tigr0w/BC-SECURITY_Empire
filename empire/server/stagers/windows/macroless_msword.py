@@ -13,7 +13,7 @@ class Stager(object):
         self.info = {
             'Name': 'Macroless code execution in MSWord',
 
-            'Author': ['james fitts'],
+            'Authors': ['james fitts'],
 
             'Description': 'Creates a macroless document utilizing a formula field for code execution',
 

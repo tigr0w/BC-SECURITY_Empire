@@ -7,7 +7,7 @@ import yaml
 
 info_keys = {
     'Name': 'name',
-    'Author': 'authors',
+    'Authors': 'authors',
     'Description': 'description',
     'Software': 'software',
     'Techniques': 'techniques',

@@ -13,7 +13,7 @@ class Stager(object):
         self.info = {
             'Name': 'AppleScript',
 
-            'Author': ['@harmj0y', '@dchrastil', '@import-au'],
+            'Authors': ['@harmj0y', '@dchrastil', '@import-au'],
 
             'Description': 'An OSX office macro that supports newer versions of Office.',
 

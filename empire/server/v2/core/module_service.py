@@ -1,67 +1,74 @@
-"""
-Module handling functionality for Empire.
-"""
-from __future__ import absolute_import
-from __future__ import print_function
-
-import pathlib
 import fnmatch
-import importlib.util
+import pathlib
 import os
-from builtins import object
-from os import path
-from typing import Dict, Optional, Tuple
+import importlib.util
+from typing import Optional, Tuple, Dict, List
 
-import base64
 import yaml
-from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
-from empire.server.common.hooks import hooks
-from empire.server.utils import data_util
-from empire.server.common.config import empire_config
+from empire.server.common import helpers
 from empire.server.common.converter.load_covenant import _convert_covenant_to_empire
 from empire.server.common.module_models import PydanticModule, LanguageEnum
 from empire.server.database import models
-from empire.server.database.base import Session
-from . import helpers
+from empire.server.database.base import SessionLocal
+from empire.server.utils import data_util
+from empire.server.utils.type_util import safe_cast
+from empire.server.v2.api.module.module_dto import ModuleUpdateRequest, ModuleBulkUpdateRequest
 
 
-class Modules(object):
+class ModuleService(object):
 
-    def __init__(self, main_menu, args):
-
+    def __init__(self, main_menu):
         self.main_menu = main_menu
-        self.args = args
+        self.modules = {}
 
-        self.modules: Dict[str, PydanticModule] = {}
+        with SessionLocal.begin() as db:
+            self._load_modules(db)
 
-        self._load_modules()
+    def get_all(self):
+        return self.modules
 
-    def get_module(self, module_name: str) -> Optional[PydanticModule]:
-        """
-        Get a loaded module from in memory
-        :param module_name: name
-        :return: Optional[PydanticModule]
-        """
-        return self.modules.get(module_name)
+    def get_by_id(self, uid: str):
+        return self.modules.get(uid)
 
-    def execute_module(self, module: PydanticModule, params: Dict, user_id: int) \
+    def update_module(self, db: Session, module: PydanticModule, module_req: ModuleUpdateRequest):
+        db_module: models.Module = db.query(models.Module).filter(models.Module.id == module.id).first()
+        db_module.enabled = module_req.enabled
+
+        self.modules.get(module.id).enabled = module_req.enabled
+
+    def update_modules(self, db: Session, module_req: ModuleBulkUpdateRequest):
+        db_modules: List[models.Module] = db.query(models.Module).filter(models.Module.id.in_(module_req.modules)).all()
+
+        for db_module in db_modules:
+            db_module.enabled = module_req.enabled
+
+        for db_module in db_modules:
+            self.modules.get(db_module.id).enabled = module_req.enabled
+
+    def execute_module(self, module_id: str, params: Dict, ignore_language_version_check: bool = False, ignore_admin_check: bool = False) \
             -> Tuple[Optional[Dict], Optional[str]]:
         """
         Execute the module.
-        :param module: PydanticModule
+        :param module_id: s tr
         :param params: the execution parameters
         :param user_id: the user executing the module
         :return: tuple with the response and an error message (if applicable)
         """
+        module = self.get_by_id(module_id)
+
+        if not module:
+            return None, f'Module not found for id {module_id}'
         if not module.enabled:
             return None, 'Cannot execute disabled module'
 
-        cleaned_options, err = self._validate_module_params(module, params)
+        cleaned_options, err = self._validate_module_params(module, params, ignore_language_version_check, ignore_admin_check)
 
         if err:
             return None, err
 
+        # todo remove global obfuscate?
         module_data = self._generate_script(module, cleaned_options, self.main_menu.obfuscate, self.main_menu.obfuscateCommand)
         if isinstance(module_data, tuple):
             (module_data, err) = module_data
@@ -72,18 +79,13 @@ class Modules(object):
         if not module_data or module_data == "":
             return None, err or 'module produced an empty script'
         if not module_data.isascii():
+            # This previously returned 'None, 'module source contains non-ascii characters'
+            # Was changed in 4.3 to print a warning.
             print(helpers.color('[!] Warning: module source contains non-ascii characters'))
 
         if module.language == LanguageEnum.powershell:
             module_data = helpers.strip_powershell_comments(module_data)
 
-        # check if module is external
-        if 'Agent' not in params.keys():
-            msg = f"tasked external module: {module.name}"
-            # return success but no task_id for external modules
-            return {'success': True, 'taskID': None, 'msg': msg}, None
-
-        session_id = params['Agent']
         task_command = ""
         if module.language == LanguageEnum.csharp:
             task_command = "TASK_CSHARP"
@@ -112,37 +114,9 @@ class Modules(object):
             else:
                 task_command = "TASK_CMD_WAIT"
 
-        # set the agent's tasking in the cache
-        task_id = self.main_menu.agents.add_agent_task_db(session_id, task_command, module_data,
-                                                          module_name=module.name,
-                                                          uid=user_id)
+        return {'command': task_command, 'data': module_data}, None
 
-        task = Session().query(models.Tasking).filter(and_(models.Tasking.id == task_id,
-                                                           models.Tasking.agent_id == session_id)).first()
-        hooks.run_hooks(hooks.AFTER_TASKING_HOOK, task)
-
-        # update the agent log
-        msg = f"tasked agent {session_id} to run module {module.name}"
-        self.main_menu.agents.save_agent_log(session_id, msg)
-
-        if empire_config.yaml.get('modules',{}).get('retain-last-value', True):
-            self._set_default_values(module, cleaned_options)
-
-        return {'success': True, 'taskID': task_id, 'msg': msg}, None
-
-    @staticmethod
-    def change_module_state(main, module_list: list, module_state: bool):
-        for module_name in module_list:
-            try:
-                module = Session().query(models.Module).filter(models.Module.name == module_name).first()
-                module.enabled = module_state
-                main.modules.modules[module_name].enabled = module_state
-            except:
-                # skip if module name is not found
-                pass
-        Session().commit()
-
-    def _validate_module_params(self, module: PydanticModule, params: Dict[str, str]) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    def _validate_module_params(self, module: PydanticModule, params: Dict[str, str], ignore_language_version_check: bool = False, ignore_admin_check: bool = False) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
         """
         Given a module and execution params, validate the input and return back a clean Dict for execution.
         :param module: PydanticModule
@@ -153,8 +127,18 @@ class Modules(object):
 
         for option in module.options:
             if option.name in params:
+                option_type = type(params[option.name])
+                expected_option_type = type(option.value)
+                if option_type != expected_option_type:
+                    casted = safe_cast(params[option.name], expected_option_type)
+                    if casted is None:
+                        return None, f'incorrect type for option {option.name}. Expected {expected_option_type} but got {option_type}'
+                    else:
+                        params[option.name] = casted
                 if option.strict and params[option.name] not in option.suggested_values:
                     return None, f'{option.name} must be set to one of the suggested values.'
+                elif option.required and (params[option.name] is None or params[option.name] == ''):
+                    return None, f'required listener option missing: {option.name}'
                 if option.name_in_code:
                     options[option.name_in_code] = params[option.name]
                 else:
@@ -162,9 +146,11 @@ class Modules(object):
             elif option.required:
                 return None, f'required module option missing: {option.name}'
 
+        # todo move generate_agent to a stager.
         if module.name == 'generate_agent':
             return options, None
 
+        # todo remove the rest of the v1 references
         session_id = params['Agent']
         agent = self.main_menu.agents.get_agent_db(session_id)
 
@@ -177,28 +163,15 @@ class Modules(object):
         module_version = float(module.min_language_version or 0)
         agent_version = float(agent.language_version or 0)
         # check if the agent/module PowerShell versions are compatible
-        if module_version > agent_version:
-            return None, f"module requires PS version {module_version} but agent running PS version {agent_version}"
+        if module_version > agent_version and not ignore_language_version_check:
+            return None, f"module requires language version {module_version} but agent running language version {agent_version}"
 
-        if module.needs_admin:
+        if module.needs_admin and not ignore_admin_check:
             # if we're running this module for all agents, skip this validation
             if not agent.high_integrity:
                 return None, 'module needs to run in an elevated context'
 
         return options, None
-
-    @staticmethod
-    def _set_default_values(module: PydanticModule, params: Dict):
-        """
-        Change the default values for the module loaded into memory.
-        This is to retain the old empire behavior (and the behavior of stagers and listeners).
-        :param module:
-        :param params: cleaned param dictionary
-        :return:
-        """
-        for option in module.options:
-            if params.get(option.name):
-                option.value = params[option.name]
 
     def _generate_script(self, module: PydanticModule, params: Dict, obfuscate=False, obfuscate_command='') -> \
             Tuple[Optional[str], Optional[str]]:
@@ -226,7 +199,6 @@ class Modules(object):
                 script = stream.read()
         else:
             script = module.script
-
 
         for key, value in params.items():
             if key.lower() != "agent" and key.lower() != "computername":
@@ -304,15 +276,15 @@ class Modules(object):
 
     def _generate_script_csharp(self, module: PydanticModule, params: Dict) -> Tuple[Optional[str], Optional[str]]:
         try:
-            compiler = self.main_menu.loadedPlugins.get("csharpserver")
+            compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
             if not compiler.status == 'ON':
                 return None, 'csharpserver plugin not running'
             file_name = compiler.do_send_message(module.compiler_yaml, module.name)
             if file_name == "failed":
                 return None, 'module compile failed'
 
-            script_file = self.main_menu.installPath + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/" +\
-                (params["DotNetVersion"]).lower() + "/" + file_name + ".compiled"
+            script_file = self.main_menu.installPath + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/" + \
+                          (params["DotNetVersion"]).lower() + "/" + file_name + ".compiled"
             param_string = ''
             for key, value in params.items():
                 if key.lower() not in ['agent', 'computername', 'dotnetversion']:
@@ -327,16 +299,14 @@ class Modules(object):
             print(helpers.color(msg))
             return None, msg
 
-    def _load_modules(self, root_path=''):
+    def _load_modules(self, db: Session):
         """
-        Load Empire modules from a specified path, default to
-        installPath + "/modules/*"
+        Load Empire modules.
         """
-        if root_path == '':
-            root_path = f"{self.main_menu.installPath}/modules/"
+        root_path = f"{db.query(models.Config).first().install_path}/modules/"
 
-        print(helpers.color(f"[*] Loading modules from: {root_path}"))
-         
+        print(helpers.color(f"[*] v2: Loading modules from: {root_path}"))
+
         for root, dirs, files in os.walk(root_path):
             for filename in files:
                 if not filename.lower().endswith('.yaml') and not filename.lower().endswith('.yml'):
@@ -356,49 +326,51 @@ class Modules(object):
                             for covenant_module in yaml2:
                                 # remove None values so pydantic can apply defaults
                                 yaml_module = {k: v for k, v in covenant_module.items() if v is not None}
-                                self._load_module(yaml_module, root_path, file_path)
+                                self._load_module(db, yaml_module, root_path, file_path)
                         else:
                             yaml2 = yaml.safe_load(stream)
                             yaml_module = {k: v for k, v in yaml2.items() if v is not None}
-                            self._load_module(yaml_module, root_path, file_path)
+                            self._load_module(db, yaml_module, root_path, file_path)
                 except Exception as e:
                     print(e)
 
-        Session().commit()
-
-    def _load_module(self, yaml_module, root_path, file_path: str):
+    def _load_module(self, db: Session, yaml_module, root_path, file_path: str):
         # extract just the module name from the full path
         module_name = file_path.split(root_path)[-1][0:-5]
 
-        #if root_path != f"{self.main_menu.installPath}/modules/":
-        #    module_name = f"external/{module_name}"
-
         if file_path.lower().endswith('.covenant.yaml'):
-            my_model = PydanticModule(**_convert_covenant_to_empire(yaml_module, file_path))
-            module_name = f"{module_name[:-9]}/{my_model.name}"
+            cov_yaml_module = _convert_covenant_to_empire(yaml_module, file_path)
+            module_name = f"{module_name[:-9]}/{cov_yaml_module['name']}"
+            cov_yaml_module['id'] = self.slugify(module_name)
+            my_model = PydanticModule(**cov_yaml_module)
         else:
+            yaml_module['id'] = self.slugify(module_name)
             my_model = PydanticModule(**yaml_module)
 
         if my_model.advanced.custom_generate:
-            if not path.exists(file_path[:-4] + "py"):
+            if not os.path.exists(file_path[:-4] + "py"):
                 raise Exception("No File to use for custom generate.")
             spec = importlib.util.spec_from_file_location(module_name + ".py", file_path[:-5] + ".py")
             imp_mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(imp_mod)
             my_model.advanced.generate_class = imp_mod.Module()
         elif my_model.script_path:
-            if not path.exists(my_model.script_path):
+            if not os.path.exists(my_model.script_path):
                 raise Exception("File provided in script_path does not exist.")
         elif my_model.script:
             pass
         else:
             raise Exception("Must provide a valid script, script_path, or custom generate function")
 
-        mod = Session().query(models.Module).filter(models.Module.name == module_name).first()
+        mod = db.query(models.Module).filter(models.Module.id == my_model.id).first()
 
         if not mod:
-            mod = models.Module(name=module_name, enabled=True)
-            Session().add(mod)
+            mod = models.Module(id=my_model.id, name=module_name, enabled=True)
+            db.add(mod)
 
-        self.modules[module_name] = my_model
-        self.modules[module_name].enabled = mod.enabled
+        self.modules[self.slugify(module_name)] = my_model
+        self.modules[self.slugify(module_name)].enabled = mod.enabled
+
+    @staticmethod
+    def slugify(module_name: str):
+        return module_name.lower().replace("/", "_")

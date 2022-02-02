@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'TeensyLauncher',
 
-            'Author': ['@matterpreter'],
+            'Authors': ['@matterpreter'],
 
             'Description': 'Generates a Teensy script that runes a one-liner stage0 launcher for Empire.',
 

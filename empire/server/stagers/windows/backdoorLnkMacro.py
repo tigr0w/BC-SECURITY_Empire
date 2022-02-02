@@ -23,7 +23,7 @@ class Stager(object):
         self.info = {
             'Name': 'BackdoorLnkMacro',
 
-            'Author': ['@G0ldenGunSec'],
+            'Authors': ['@G0ldenGunSec'],
 
             'Description': 'Generates a macro that backdoors .lnk files on the users desktop, backdoored lnk files in '
                            'turn attempt to download & execute an empire launcher when the user clicks on them. '

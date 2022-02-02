@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'BAT Launcher',
 
-            'Author': ['@harmj0y'],
+            'Authors': ['@harmj0y'],
 
             'Description': 'Generates a self-deleting .bat launcher for Empire.',
 

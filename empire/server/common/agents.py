@@ -68,6 +68,7 @@ from builtins import str
 from datetime import datetime, timezone
 
 from pydispatch import dispatcher
+from sqlalchemy.orm import Session, undefer
 from zlib_wrapper import decompress
 
 # Empire imports
@@ -77,7 +78,7 @@ from . import events
 from . import helpers
 from . import messages
 from . import packets
-from empire.server.database.base import Session
+from empire.server.database.base import SessionLocal
 from empire.server.database import models
 from empire.server.common.hooks import hooks
 from sqlalchemy import or_, func, and_, update
@@ -124,8 +125,9 @@ class Agents(object):
 
     @staticmethod
     def get_agent_from_name_or_session_id(agent_name):
-        agent = Session().query(models.Agent).filter(or_(models.Agent.name == agent_name,
-                                                         models.Agent.session_id == agent_name)).first()
+        with SessionLocal() as db:
+            agent = db.query(models.Agent).filter(or_(models.Agent.name == agent_name,
+                                                                  models.Agent.session_id == agent_name)).first()
         return agent
 
     def is_agent_present(self, sessionID):
@@ -166,13 +168,13 @@ class Agents(object):
                              lost_limit=lostLimit,
                              listener=listener,
                              language=language,
-                             killed=False
+                             archived=False
                              )
-        Session().add(agent)
-        Session().flush()
-        Session().commit()
 
-        hooks.run_hooks(hooks.AFTER_AGENT_CHECKIN_HOOK, agent)
+        with SessionLocal.begin() as db:
+            db.add(agent)
+            # Todo do we need to send the db session with the hook?
+            hooks.run_hooks(hooks.AFTER_AGENT_CHECKIN_HOOK, agent)
 
         # dispatch this event
         message = "[*] New agent {} checked in".format(sessionID)
@@ -182,15 +184,16 @@ class Agents(object):
             'timestamp': datetime.now(timezone.utc).isoformat(),
             'event_type': 'checkin'
         })
-        dispatcher.send(signal, sender="agents/{}".format(sessionID))
+        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
         # initialize the tasking/result buffers along with the client session key
         self.agents[sessionID] = {'sessionKey': sessionKey, 'functions': []}
 
     def get_agent_for_socket(self, session_id):
-        agent = Session().query(models.Agent).filter(models.Agent.session_id == session_id).first()
+        with SessionLocal() as db:
+            agent = db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
 
-        return {"ID": agent.id, "session_id": agent.session_id, "listener": agent.listener, "name": agent.name,
+        return {"session_id": agent.session_id, "listener": agent.listener, "name": agent.name,
                 "language": agent.language, "language_version": agent.language_version, "delay": agent.delay,
                 "jitter": agent.jitter, "external_ip": agent.external_ip, "internal_ip": agent.internal_ip,
                 "username": agent.username, "high_integrity": int(agent.high_integrity or 0),
@@ -220,10 +223,10 @@ class Agents(object):
             self.agents.pop(session_id, None)
 
         # remove the agent from the database
-        agent = Session().query(models.Agent).filter(models.Agent.session_id == session_id).first()
-        if agent:
-            Session().delete(agent)
-            Session().commit()
+        with SessionLocal.begin() as db:
+            agent = db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
+            if agent:
+                db.delete(agent)
 
         # dispatch this event
         message = "[*] Agent {} deleted".format(session_id)
@@ -231,7 +234,7 @@ class Agents(object):
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="agents/{}".format(session_id))
+        # dispatcher.send(signal, sender="agents/{}".format(session_id))
 
     def is_ip_allowed(self, ip_address):
         """
@@ -250,7 +253,7 @@ class Agents(object):
         else:
             return True
 
-    def save_file(self, sessionID, path, data, filesize, append=False):
+    def save_file(self, sessionID, path, data, filesize, tasking: models.Tasking, db: Session, append=False):
         """
         Save a file download for an agent to the appropriately constructed path.
         """
@@ -276,7 +279,7 @@ class Agents(object):
                     'print': True,
                     'message': message
                 })
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 return
 
             # make the recursive directory structure if it doesn't already exist
@@ -306,11 +309,30 @@ class Agents(object):
                         'print': True,
                         'message': message
                     })
-                    dispatcher.send(signal, sender="agents/{}".format(nameid))
+                    # dispatcher.send(signal, sender="agents/{}".format(nameid))
                 data = dec_data['data']
 
             f.write(data)
             f.close()
+
+            if not append:
+                location = save_path.rstrip('/') + '/' + filename
+                download = models.Download(location=location, filename=filename, size=os.path.getsize(location))
+                db.add(download)
+                db.flush()
+                tasking.downloads.append(download)
+
+                # We join a Download to a Tasking
+                # But we also join a Download to a AgentFile
+                # This could be useful later on for showing files as downloaded directly in the file browser.
+                agent_file = db.query(models.AgentFile)\
+                    .filter(and_(models.AgentFile.path == path,
+                                 models.AgentFile.session_id == sessionID))\
+                    .first()
+
+                if agent_file:
+                    agent_file.downloads.append(download)
+                    db.flush()
         finally:
             self.lock.release()
 
@@ -322,7 +344,7 @@ class Agents(object):
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="agents/{}".format(sessionID))
+        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
     def save_module_file(self, sessionID, path, data):
         """
@@ -352,7 +374,7 @@ class Agents(object):
                     'print': True,
                     'message': message
                 })
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
             data = dec_data['data']
 
         try:
@@ -366,7 +388,7 @@ class Agents(object):
                     'print': True,
                     'message': message
                 })
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 return
 
             # make the recursive directory structure if it doesn't already exist
@@ -385,9 +407,9 @@ class Agents(object):
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="agents/{}".format(sessionID))
+        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
-        return "/downloads/%s/%s/%s" % (sessionID, "/".join(parts[0:-1]), filename)
+        return save_path + '/' + filename
 
     def save_agent_log(self, sessionID, data):
         """
@@ -431,7 +453,8 @@ class Agents(object):
         if nameid:
             session_id = nameid
 
-        elevated = Session().query(models.Agent.high_integrity).filter(models.Agent.session_id == session_id).scalar()
+        with SessionLocal() as db:
+            elevated = db.query(models.Agent.high_integrity).filter(models.Agent.session_id == session_id).scalar()
 
         return elevated is True
 
@@ -439,36 +462,18 @@ class Agents(object):
         """
         Return all active agents from the database.
         """
-        results = Session().query(models.Agent).all()
+        with SessionLocal() as db:
+            results = db.query(models.Agent).all()
 
-        return results
-
-    def get_agent_names_db(self):
-        """
-        Return all names of active agents from the database.
-        """
-        results = Session().query(models.Agent.name).all()
-
-        # make sure names all ascii encoded
-        results = [r[0].encode('ascii', 'ignore') for r in results]
-        return results
-
-    def get_agent_ids_db(self):
-        """
-        Return all IDs of active agents from the database.
-        """
-        results = Session().query(models.Agent.session_id).all()
-
-        # make sure names all ascii encoded
-        results = [str(r[0]).encode('ascii', 'ignore') for r in results if r]
         return results
 
     def get_agent_db(self, session_id):
         """
         Return complete information for the specified agent from the database.
         """
-        agent = Session().query(models.Agent).filter(or_(models.Agent.session_id == session_id,
-                                                         models.Agent.name == session_id)).first()
+        with SessionLocal() as db:
+            agent = db.query(models.Agent).filter(or_(models.Agent.session_id == session_id,
+                                                                  models.Agent.name == session_id)).first()
 
         return agent
 
@@ -476,8 +481,8 @@ class Agents(object):
         """
         Return the nonce for this sessionID.
         """
-
-        nonce = Session().query(models.Agent.nonce).filter(models.Agent.session_id == session_id).first()
+        with SessionLocal() as db:
+            nonce = db.query(models.Agent.nonce).filter(models.Agent.session_id == session_id).first()
 
         if nonce and nonce is not None:
             if type(nonce) is str:
@@ -494,31 +499,18 @@ class Agents(object):
         if name_id:
             session_id = name_id
 
-        language = Session().query(models.Agent.language).filter(models.Agent.session_id == session_id).scalar()
+        with SessionLocal() as db:
+            language = db.query(models.Agent.language).filter(models.Agent.session_id == session_id).scalar()
 
         return language
-
-    def get_language_version_db(self, session_id):
-        """
-        Return the language version used by this agent.
-        """
-        # see if we were passed a name instead of an ID
-        name_id = self.get_agent_id_db(session_id)
-        if name_id:
-            session_id = name_id
-
-        language_version = Session().query(models.Agent.language_version).filter(
-            models.Agent.session_id == session_id).scalar()
-
-        return language_version
 
     def get_agent_session_key_db(self, session_id):
         """
         Return AES session key from the database for this sessionID.
         """
-
-        agent = Session().query(models.Agent).filter(
-            or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
+        with SessionLocal() as db:
+            agent = db.query(models.Agent).filter(
+                or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
 
         if agent is not None:
             return agent.session_key
@@ -527,84 +519,58 @@ class Agents(object):
         """
         Get an agent sessionID based on the name.
         """
-
-        agent = Session().query(models.Agent).filter((models.Agent.name == name)).first()
+        with SessionLocal() as db:
+            agent = db.query(models.Agent).filter((models.Agent.name == name)).first()
 
         if agent:
             return agent.session_id
-        else:
-            return None
+
+        return None
 
     def get_agent_name_db(self, session_id):
         """
         Return an agent name based on sessionID.
         """
-        agent = Session().query(models.Agent).filter(
-            or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
+        with SessionLocal() as db:
+            agent = db.query(models.Agent).filter(
+                or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
 
         if agent:
             return agent.name
-        else:
-            return None
+
+        return None
 
     def get_agent_hostname_db(self, session_id):
         """
         Return an agent's hostname based on sessionID.
         """
-        agent = Session().query(models.Agent).filter(
-            or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
+        with SessionLocal() as db:
+            agent = db.query(models.Agent).filter(
+                or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
 
         if agent:
             return agent.hostname
-        else:
-            return None
+
+        return None
 
     def get_agent_os_db(self, session_id):
         """
         Return an agent's operating system details based on sessionID.
         """
-        agent = Session().query(models.Agent).filter(
-            or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
+        with SessionLocal() as db:
+            agent = db.query(models.Agent).filter(
+                or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
 
         if agent:
             return agent.os_details
-        else:
-            return None
-
-    def get_agent_functions(self, session_id):
-        """
-        Get the tab-completable functions for an agent.
-        """
-
-        # see if we were passed a name instead of an ID
-        name_id = self.get_agent_id_db(session_id)
-        if name_id:
-            session_id = name_id
-
-        results = []
-
-        if session_id in self.agents:
-            results = self.agents[session_id]['functions']
-
-        return results
-
-    def get_agent_functions_db(self, session_id):
-        """
-        Return the tab-completable functions for an agent from the database.
-        """
-        agent = Session().query(models.Agent).filter(
-            or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
-
-        if agent.functions is not None:
-            return agent.functions.split(',')
-        else:
-            return []
+        return None
 
     def get_agents_for_listener(self, listener_name):
         """
         Return agent objects linked to a given listener name.
         """
-        agents = Session().query(models.Agent.session_id).filter(models.Agent.listener == listener_name).all()
+        with SessionLocal() as db:
+            agents = db.query(models.Agent.session_id).filter(models.Agent.listener == listener_name).all()
 
         if agents:
             # make sure names all ascii encoded
@@ -614,41 +580,28 @@ class Agents(object):
 
         return results
 
-    def get_agent_names_listener_db(self, listener_name):
-        """
-        Return agent names linked to the given listener name.
-        """
-
-        agents = Session().query(models.Agent).filter(models.Agent.listener == listener_name).all()
-
-        return agents
-
     def get_autoruns_db(self):
         """
         Return any global script autoruns.
         """
-        results = Session().query(models.Config.autorun_command).all()
-        if results[0].autorun_command:
-            autorun_command = results[0].autorun_command
-        else:
-            autorun_command = ''
+        with SessionLocal() as db:
+            results = db.query(models.Config.autorun_command).all()
+            if results[0].autorun_command:
+                autorun_command = results[0].autorun_command
+            else:
+                autorun_command = ''
 
-        results = Session().query(models.Config.autorun_data).all()
-        if results[0].autorun_data:
-            autorun_data = results[0].autorun_data
-        else:
-            autorun_data = ''
+            results = db.query(models.Config.autorun_data).all()
+            if results[0].autorun_data:
+                autorun_data = results[0].autorun_data
+            else:
+                autorun_data = ''
 
-        autoruns = [autorun_command, autorun_data]
+            autoruns = [autorun_command, autorun_data]
 
         return autoruns
 
-    ###############################################################
-    #
-    # Methods to update agent information fields.
-    #
-    ###############################################################
-    def update_dir_list(self, session_id, response):
+    def update_dir_list(self, session_id, response, db: Session):
         """"
         Update the directory list
         """
@@ -659,11 +612,11 @@ class Agents(object):
         if session_id in self.agents:
             # get existing files/dir that are in this directory.
             # delete them and their children to keep everything up to date. There's a cascading delete on the table.
-            this_directory = Session().query(models.AgentFile).filter(and_(
+            this_directory = db.query(models.AgentFile).filter(and_(
                 models.AgentFile.session_id == session_id),
                 models.AgentFile.path == response['directory_path']).first()
             if this_directory:
-                Session().query(models.AgentFile).filter(and_(
+                db.query(models.AgentFile).filter(and_(
                     models.AgentFile.session_id == session_id,
                     models.AgentFile.parent_id == this_directory.id)).delete()
             else:  # if the directory doesn't exist we have to create one
@@ -676,21 +629,19 @@ class Agents(object):
                     is_file=False,
                     session_id=session_id
                 )
-                Session().add(this_directory)
-                Session().flush()
+                db.add(this_directory)
+                db.flush()
 
             for item in response['items']:
-                Session().query(models.AgentFile).filter(and_(
+                db.query(models.AgentFile).filter(and_(
                     models.AgentFile.session_id == session_id,
                     models.AgentFile.path == item['path'])).delete()
-                Session().add(models.AgentFile(
+                db.add(models.AgentFile(
                     name=item['name'],
                     path=item['path'],
                     parent_id=None if not this_directory else this_directory.id,
                     is_file=item['is_file'],
                     session_id=session_id))
-
-            Session().commit()
 
     def update_agent_sysinfo_db(self, session_id, listener='', external_ip='', internal_ip='', username='', hostname='',
                                 os_details='', high_integrity=0, process_name='', process_id='', language_version='',
@@ -698,139 +649,69 @@ class Agents(object):
         """
         Update an agent's system information.
         """
+        with SessionLocal.begin() as db:
+            # see if we were passed a name instead of an ID
+            nameid = self.get_agent_id_db(session_id)
+            if nameid:
+                session_id = nameid
 
-        # see if we were passed a name instead of an ID
-        nameid = self.get_agent_id_db(session_id)
-        if nameid:
-            session_id = nameid
+            agent = db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
 
-        agent = Session().query(models.Agent).filter(models.Agent.session_id == session_id).first()
+            host = db.query(models.Host).filter(and_(models.Host.name == hostname,
+                                                                 models.Host.internal_ip == internal_ip)).first()
+            if not host:
+                host = models.Host(name=hostname, internal_ip=internal_ip)
+                db.add(host)
+                db.flush()
 
-        host = Session().query(models.Host).filter(and_(models.Host.name == hostname,
-                                                        models.Host.internal_ip == internal_ip)).first()
-        if not host:
-            host = models.Host(name=hostname, internal_ip=internal_ip)
-            Session().add(host)
-            Session().flush()
+            process = db.query(models.HostProcess).filter(and_(models.HostProcess.host_id == host.id,
+                                                                           models.HostProcess.process_id == process_id)).first()
+            if not process:
+                process = models.HostProcess(host_id=host.id,
+                                             process_id=process_id,
+                                             process_name=process_name,
+                                             user=agent.username)
+                db.add(process)
+                db.flush()
 
-        process = Session().query(models.HostProcess).filter(and_(models.HostProcess.host_id == host.id,
-                                                                  models.HostProcess.process_id == process_id)).first()
-        if not process:
-            process = models.HostProcess(host_id=host.id,
-                                         process_id=process_id,
-                                         process_name=process_name,
-                                         user=agent.username)
-            Session().add(process)
-            Session().flush()
-
-        agent.internal_ip = internal_ip.split(" ")[0]
-        agent.username = username
-        agent.hostname = hostname
-        agent.host_id = host.id
-        agent.os_details = os_details
-        agent.high_integrity = high_integrity
-        agent.process_name = process_name
-        agent.process_id = process_id
-        agent.language_version = language_version
-        agent.language = language
-        agent.architecture = architecture
-
-        Session().commit()
+            agent.internal_ip = internal_ip.split(" ")[0]
+            agent.username = username
+            agent.hostname = hostname
+            agent.host_id = host.id
+            agent.os_details = os_details
+            agent.high_integrity = high_integrity
+            agent.process_name = process_name
+            agent.process_id = process_id
+            agent.language_version = language_version
+            agent.language = language
+            agent.architecture = architecture
 
     def update_agent_lastseen_db(self, session_id, current_time=None):
         """
         Update the agent's last seen timestamp in the database.
         """
-        Session().execute(update(models.Agent) \
-                          .where(or_(models.Agent.session_id == session_id, models.Agent.name == session_id)))
-        Session.commit()
+        with SessionLocal.begin() as db:
+            db.execute(update(models.Agent)
+                            .where(or_(models.Agent.session_id == session_id, models.Agent.name == session_id)))
 
     def update_agent_listener_db(self, session_id, listener_name):
         """
         Update the specified agent's linked listener name in the database.
         """
-
-        agent = Session().query(models.Agent).filter(
-            or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
-        agent.listener = listener_name
-        Session.commit()
-
-    def rename_agent(self, old_name, new_name):
-        """
-        Rename a given agent from 'oldname' to 'newname'.
-        """
-
-        if not new_name.isalnum():
-            print(helpers.color("[!] Only alphanumeric characters allowed for names."))
-            return False
-
-        # rename the logging/downloads folder
-        old_path = "%s/downloads/%s/" % (self.installPath, old_name)
-        new_path = "%s/downloads/%s/" % (self.installPath, new_name)
-        ret_val = True
-
-        # check if the folder is already used
-        if os.path.exists(new_path):
-            print(helpers.color("[!] Name already used by current or past agent."))
-            ret_val = False
-        else:
-            # move the old folder path to the new one
-            if os.path.exists(old_path):
-                os.rename(old_path, new_path)
-
-            # rename the agent in the database
-            agent = Session().query(models.Agent).filter(models.Agent.name == old_name).first()
-            agent.name = new_name
-
-            # change tasking and results to new agent
-            # maybe not needed
-            # taskings = Session().query(models.Tasking).filter(models.Tasking.agent == old_name).all()
-            # results = Session().query(models.Result).filter(models.Result.agent == old_name).all()
-            #
-            # if taskings:
-            #     for x in range(len(taskings)):
-            #         taskings[x].agent = new_name
-            #
-            # if results:
-            #     for x in range(len(results)):
-            #         results[x].agent = new_name
-
-            Session.commit()
-            ret_val = True
-
-        # signal in the log that we've renamed the agent
-        self.save_agent_log(old_name, "[*] Agent renamed from %s to %s" % (old_name, new_name))
-
-        return ret_val
-
-    def set_agent_functions_db(self, session_id, functions):
-        """
-        Set the tab-completable functions for the agent in the database.
-        """
-
-        # see if we were passed a name instead of an ID
-        name_id = self.get_agent_id_db(session_id)
-        if name_id:
-            session_id = name_id
-
-        if session_id in self.agents:
-            self.agents[session_id]['functions'] = functions
-
-        functions = ','.join(functions)
-
-        agent = Session().query(models.Agent).filter(models.Agent.session_id == session_id).first()
-        agent.functions = functions
-        Session.commit()
+        with SessionLocal.begin() as db:
+            agent = db.query(models.Agent).filter(
+                or_(models.Agent.session_id == session_id, models.Agent.name == session_id)).first()
+            agent.listener = listener_name
 
     def set_autoruns_db(self, task_command, module_data):
         """
         Set the global script autorun in the config in the database.
         """
         try:
-            config = Session().query(models.Config).first()
-            config.autorun_command = task_command
-            config.autorun_data = module_data
-            Session().commit()
+            with SessionLocal.begin() as db:
+                config = db.query(models.Config).first()
+                config.autorun_command = task_command
+                config.autorun_data = module_data
         except Exception:
             print(helpers.color(
                 "[!] Error: script autoruns not a database field, run --reset to reset DB schema."))
@@ -840,10 +721,10 @@ class Agents(object):
         """
         Clear the currently set global script autoruns in the config in the database.
         """
-        config = Session().query(models.Config).first()
-        config.autorun_command = ''
-        config.autorun_data = ''
-        Session().commit()
+        with SessionLocal.begin() as db:
+            config = db.query(models.Config).first()
+            config.autorun_command = ''
+            config.autorun_data = ''
 
     ###############################################################
     #
@@ -855,68 +736,66 @@ class Agents(object):
         """
         Add a task to the specified agent's buffer in the database.
         """
-        agent_name = session_id
-        # see if we were passed a name instead of an ID
-        name_id = self.get_agent_id_db(session_id)
+        with SessionLocal.begin() as db:
+            agent_name = session_id
+            # see if we were passed a name instead of an ID
+            name_id = self.get_agent_id_db(session_id)
 
-        if name_id:
-            session_id = name_id
+            if name_id:
+                session_id = name_id
 
-        if session_id not in self.agents:
-            print(helpers.color("[!] Agent %s not active." % agent_name))
-        else:
-            if session_id:
-                message = "[*] Tasked {} to run {}".format(session_id, task_name)
-                signal = json.dumps({
-                    'print': True,
-                    'message': message
-                })
-                dispatcher.send(signal, sender="agents/{}".format(session_id))
-
-                pk = Session().query(func.max(models.Tasking.id)).filter(models.Tasking.agent_id == session_id).first()[0]
-
-                if pk is None:
-                    pk = 0
-                pk = (pk + 1) % 65536
-
-                Session().add(models.Tasking(id=pk,
-                                             agent_id=session_id,
-                                             input=task[:100],
-                                             input_full=task,
-                                             user_id=uid,
-                                             module_name=module_name,
-                                             task_name=task_name,
-                                             status=TaskingStatus.queued))
-
-                # update last seen time for user
-                Session().execute(update(models.User).where(models.User.id == uid))
-                Session.commit()
-
-                try:
-                    self.lock.acquire()
-
-                    # dispatch this event
-                    message = "[*] Agent {} tasked with task ID {}".format(session_id, pk)
+            if session_id not in self.agents:
+                print(helpers.color("[!] Agent %s not active." % agent_name))
+            else:
+                if session_id:
+                    message = "[*] Tasked {} to run {}".format(session_id, task_name)
                     signal = json.dumps({
                         'print': True,
-                        'message': message,
-                        'task_name': task_name,
-                        'task_id': pk,
-                        'task': task,
-                        'event_type': 'task'
+                        'message': message
                     })
-                    dispatcher.send(signal, sender="agents/{}".format(session_id))
+                    # dispatcher.send(signal, sender="agents/{}".format(session_id))
 
-                    # write out the last tasked script to "LastTask" if in debug mode
-                    if self.args and self.args.debug:
-                        with open('%s/LastTask' % (self.installPath), 'w') as f:
-                            f.write(task)
-                finally:
-                    self.lock.release()
+                    pk = db.query(func.max(models.Tasking.id)).filter(models.Tasking.agent_id == session_id).first()[0]
 
-                return pk
+                    if pk is None:
+                        pk = 0
+                    pk = (pk + 1) % 65536
 
-    def get_agent_tasks_db(self, session_id):
+                    db.add(models.Tasking(id=pk,
+                                                      agent_id=session_id,
+                                                      input=task[:100],
+                                                      input_full=task,
+                                                      user_id=uid,
+                                                      module_name=module_name,
+                                                      task_name=task_name,
+                                                      status=TaskingStatus.queued))
+
+                    try:
+                        self.lock.acquire()
+
+                        # dispatch this event
+                        message = "[*] Agent {} tasked with task ID {}".format(session_id, pk)
+                        signal = json.dumps({
+                            'print': True,
+                            'message': message,
+                            'task_name': task_name,
+                            'task_id': pk,
+                            'task': task,
+                            'event_type': 'task'
+                        })
+                        # dispatcher.send(signal, sender="agents/{}".format(session_id))
+
+                        # todo still needed?
+                        # write out the last tasked script to "LastTask" if in debug mode
+                        if self.args and self.args.debug:
+                            with open('%s/LastTask' % (self.installPath), 'w') as f:
+                                f.write(task)
+                    finally:
+                        self.lock.release()
+
+                    return pk
+
+    def get_agent_tasks_db(self, session_id, db: Session):
         """
         Retrieve tasks that have been queued for our agent from the database.
         """
@@ -932,26 +811,15 @@ class Agents(object):
             print(helpers.color("[!] Agent %s not active." % agent_name))
             return []
         else:
-            tasks = Session().query(models.Tasking).filter(and_(models.Tasking.agent_id == session_id,
-                                                                models.Tasking.status == TaskingStatus.queued)).all()
+            tasks = db.query(models.Tasking)\
+                .filter(and_(models.Tasking.agent_id == session_id,
+                             models.Tasking.status == TaskingStatus.queued))\
+                .options(undefer('input_full'))\
+                .all()
             for task in tasks:
                 task.status = TaskingStatus.pulled
 
-            Session().commit()
             return tasks
-
-    def clear_agent_tasks_db(self, session_id):
-        """
-        Clear out queued agent tasks in the database.
-        """
-        self.get_agent_tasks_db(session_id)
-
-        message = "[*] Tasked {} to clear tasks".format(session_id)
-        signal = json.dumps({
-            'print': True,
-            'message': message
-        })
-        dispatcher.send(signal, sender="agents/{}".format(session_id))
 
     ###############################################################
     #
@@ -979,7 +847,7 @@ class Agents(object):
                 'print': False,
                 'message': message
             })
-            dispatcher.send(signal, sender="agents/{}".format(sessionID))
+            # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
             # decrypt the agent's public key
             try:
@@ -992,7 +860,7 @@ class Agents(object):
                     'print': True,
                     'message': message
                 })
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 return 'ERROR: HMAC verification failed'
 
             if language.lower() == 'powershell' or language.lower() == "csharp":
@@ -1006,7 +874,7 @@ class Agents(object):
                         'print': True,
                         'message': message
                     })
-                    dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                     return 'ERROR: Invalid PowerShell key post format'
                 else:
                     # convert the RSA key from the stupid PowerShell export format
@@ -1018,7 +886,7 @@ class Agents(object):
                             'print': False,
                             'message': message
                         })
-                        dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                         nonce = helpers.random_string(16, charset=string.digits)
                         delay = listenerOptions['DefaultDelay']['Value']
                         jitter = listenerOptions['DefaultJitter']['Value']
@@ -1353,35 +1221,35 @@ class Agents(object):
         if update_lastseen:
             self.update_agent_lastseen_db(sessionID)
 
-        # retrieve all agent taskings from the cache
-        taskings = self.get_agent_tasks_db(sessionID)
+        # todo db session should probably start as early as possible?
+        with SessionLocal.begin() as db:
+            # retrieve all agent taskings from the cache
+            taskings = self.get_agent_tasks_db(sessionID, db)
 
-        if taskings and taskings != []:
+            if taskings and taskings != []:
 
-            all_task_packets = b''
+                all_task_packets = b''
 
-            # build tasking packets for everything we have
-            for tasking in taskings:
-                input_full = tasking.input_full
-                if tasking.task_name == "TASK_CSHARP":
-                    with open(tasking.input_full.split("|")[0], "rb") as f:
-                        input_full = f.read()
-                    input_full = base64.b64encode(input_full).decode("UTF-8")
-                    input_full += tasking.input_full.split("|", maxsplit=1)[1]
-                all_task_packets += packets.build_task_packet(tasking.task_name, input_full, tasking.id)
+                # build tasking packets for everything we have
+                for tasking in taskings:
+                    input_full = tasking.input_full
+                    if tasking.task_name == "TASK_CSHARP":
+                        with open(tasking.input_full.split("|")[0], "rb") as f:
+                            input_full = f.read()
+                        input_full = base64.b64encode(input_full).decode("UTF-8")
+                        input_full += tasking.input_full.split("|", maxsplit=1)[1]
+                    all_task_packets += packets.build_task_packet(tasking.task_name, input_full, tasking.id)
 
-            # get the session key for the agent
-            session_key = self.agents[sessionID]['sessionKey']
+                # get the session key for the agent
+                session_key = self.agents[sessionID]['sessionKey']
 
-            # encrypt the tasking packets with the agent's session key
-            encrypted_data = encryption.aes_encrypt_then_hmac(session_key, all_task_packets)
+                # encrypt the tasking packets with the agent's session key
+                encrypted_data = encryption.aes_encrypt_then_hmac(session_key, all_task_packets)
 
-            return packets.build_routing_packet(stagingKey, sessionID, language, meta='SERVER_RESPONSE',
-                                                encData=encrypted_data)
+                return packets.build_routing_packet(stagingKey, sessionID, language, meta='SERVER_RESPONSE',
+                                                    encData=encrypted_data)
 
-        # if no tasking for the agent
-        else:
-            return None
+        return None
 
     def handle_agent_response(self, sessionID, encData, update_lastseen=False):
         """
@@ -1417,7 +1285,8 @@ class Agents(object):
             # process each result packet
             for (responseName, totalPacket, packetNum, taskID, length, data) in responsePackets:
                 # process the agent's response
-                self.process_agent_packet(sessionID, responseName, taskID, data)
+                with SessionLocal.begin() as db:
+                    self.process_agent_packet(sessionID, responseName, taskID, data, db)
                 results = True
             if results:
                 # signal that this agent returned results
@@ -1442,7 +1311,7 @@ class Agents(object):
 
             return None
 
-    def process_agent_packet(self, session_id, response_name, task_id, data):
+    def process_agent_packet(self, session_id, response_name, task_id, data, db: Session):
         """
         Handle the result packet based on sessionID and responseName.
         """
@@ -1468,8 +1337,8 @@ class Agents(object):
         if task_id != 0 and response_name not in ["TASK_DOWNLOAD", "TASK_CMD_JOB_SAVE",
                                                   "TASK_CMD_WAIT_SAVE"] and data is not None:
             # Update result with data
-            tasking = Session().query(models.Tasking).filter(and_(models.Tasking.id == task_id,
-                                                                  models.Tasking.agent_id == session_id)).first()
+            tasking = db.query(models.Tasking).filter(and_(models.Tasking.id == task_id,
+                                                                       models.Tasking.agent_id == session_id)).first()
             # add keystrokes to database
             if 'function Get-Keystrokes' in tasking.input:
                 key_log_task_id = tasking.id
@@ -1487,7 +1356,7 @@ class Agents(object):
             hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, tasking)
             tasking = hooks.run_filters(hooks.BEFORE_TASKING_RESULT_FILTER, tasking)
 
-            Session().commit()
+            db.flush()
 
             hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, tasking)
 
@@ -1590,10 +1459,9 @@ class Agents(object):
             # update the agent results and log
             self.save_agent_log(session_id, data)
 
-            # set agent to killed in the database
-            agent = Session().query(models.Agent).filter(models.Agent.session_id == session_id).first()
-            agent.killed = True
-            Session().commit()
+            # set agent to archived in the database
+            agent = db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
+            agent.archived = True
 
         elif response_name == "TASK_SHELL":
             # shell command response
@@ -1624,10 +1492,14 @@ class Agents(object):
                 file_data = helpers.decode_base64(data.encode('UTF-8'))
                 name = self.get_agent_name_db(session_id)
 
+                # this whole big block could probably be cleaned up so we don't have to redo this tasking lookup.
+                tasking = db.query(models.Tasking).filter(and_(models.Tasking.id == task_id,
+                                                               models.Tasking.agent_id == session_id)).first()
+                # TODO VR: Need to handle all the other tasking types that are creating their own db sessions.
                 if index == "0":
-                    self.save_file(name, path, file_data, filesize)
+                    self.save_file(name, path, file_data, filesize, tasking, db)
                 else:
-                    self.save_file(name, path, file_data, filesize, append=True)
+                    self.save_file(name, path, file_data, filesize, tasking, db, append=True)
                 # update the agent log
                 msg = "file download: %s, part: %s" % (path, index)
                 self.save_agent_log(session_id, msg)
@@ -1635,7 +1507,7 @@ class Agents(object):
         elif response_name == "TASK_DIR_LIST":
             try:
                 result = json.loads(data.decode('utf-8'))
-                self.update_dir_list(session_id, result)
+                self.update_dir_list(session_id, result, db=db)
             except ValueError as e:
                 pass
 
@@ -1718,15 +1590,23 @@ class Agents(object):
             self.save_agent_log(session_id, msg)
 
             # Retrieve tasking data
-            tasking = Session().query(models.Tasking).filter(and_(models.Tasking.id == task_id,
-                                                                  models.Tasking.agent == session_id)).first()
+            tasking: models.Tasking = db.query(models.Tasking)\
+                .filter(and_(models.Tasking.id == task_id,
+                             models.Tasking.agent_id == session_id))\
+                .first()
 
+            # attach file to tasking
+            download = models.Download(location=final_save_path, size=os.path.getsize(final_save_path))
+            db.add(download)
+            db.flush()
+            tasking.downloads.append(download)
+            # todo vr: what is this used for.
             # Send server notification for saving file
-            self.mainMenu.socketio.emit(f'agents/{session_id}/task', {
-                'taskID': tasking.id, 'command': tasking.input,
-                'results': msg, 'user_id': tasking.user_id,
-                'created_at': tasking.created_at, 'updated_at': tasking.updated_at,
-                'username': tasking.user.username, 'agent': tasking.agent}, broadcast=True)
+            # self.mainMenu.socketio.emit(f'agents/{session_id}/task', {
+            #     'taskID': tasking.id, 'command': tasking.input,
+            #     'results': msg, 'user_id': tasking.user_id,
+            #     'created_at': tasking.created_at, 'updated_at': tasking.updated_at,
+            #     'username': tasking.user.username, 'agent': tasking.agent}, broadcast=True)
 
         elif response_name == "TASK_CMD_JOB":
             # check if this is the powershell keylogging task, if so, write output to file instead of screen
@@ -1861,7 +1741,7 @@ class Agents(object):
                 'print': False,
                 'message': message
             })
-            dispatcher.send(signal, sender="agents/{}".format(session_id))
+            # dispatcher.send(signal, sender="agents/{}".format(session_id))
 
         else:
             print(helpers.color("[!] Unknown response %s from %s" % (response_name, session_id)))

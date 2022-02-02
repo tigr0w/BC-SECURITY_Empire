@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'AppleScript',
 
-            'Author': ['@harmj0y'],
+            'Authors': ['@harmj0y'],
 
             'Description': 'Generates AppleScript to execute the Empire stage0 launcher.',
 

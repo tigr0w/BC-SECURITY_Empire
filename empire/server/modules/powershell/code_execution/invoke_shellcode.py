@@ -46,8 +46,10 @@ class Module(object):
                 # Old method no longer working
                 # temporary fix until a more elegant solution is in place, unless this is the most elegant???? :)
                 # [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = main_menu.listeners.get_listener(listener_name)
-                host = main_menu.listeners.loadedListeners['meterpreter'].options['Host']
-                port = main_menu.listeners.loadedListeners['meterpreter'].options['Port']
+                # replacing loadedListeners call with listener_template_service's new_instance method.
+                # still doesn't seem right though since that's just laoding in the default. -vr
+                host = main_menu.listenertemplatesv2.new_instance('meterpreter').options['Host']
+                port = main_menu.listenertemplatesv2.new_instance('meterpreter').options['Port']
 
                 MSFpayload = "reverse_http"
                 if "https" in host:

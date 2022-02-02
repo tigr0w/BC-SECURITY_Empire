@@ -3,7 +3,8 @@ import os
 import random
 import string
 
-import bcrypt
+from passlib import pwd
+from passlib.context import CryptContext
 
 from empire.server.common import bypasses
 from empire.server.common.config import empire_config
@@ -11,16 +12,17 @@ from empire.server.database import models
 
 database_config = empire_config.yaml.get('database', {}).get('defaults', {})
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def get_default_hashed_password():
     password = database_config.get('password', 'password123')
-    password = bytes(password, 'UTF-8')
-    return bcrypt.hashpw(password, bcrypt.gensalt())
+    return pwd_context.hash(password)
 
 
 def get_default_user():
     return models.User(username=database_config.get('username', 'empireadmin'),
-                       password=get_default_hashed_password(),
+                       hashed_password=get_default_hashed_password(),
                        enabled=True,
                        admin=True)
 
@@ -37,15 +39,16 @@ def get_default_config():
                          autorun_data="",
                          rootuser=True,
                          obfuscate=database_config.get('obfuscate', False),
-                         obfuscate_command=database_config.get('obfuscate-command', r'Token\All\1'))
+                         obfuscate_command=database_config.get('obfuscate-command', r'Token\All\1'),
+                         jwt_secret_key=pwd.genword(length=32, charset='hex'))
 
 
 def get_default_functions():
     return [
-        models.Function(keyword='Invoke_Empire',
-                        replacement=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))),
-        models.Function(keyword='Invoke_Mimikatz',
-                        replacement=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5)))
+        models.Keyword(keyword='Invoke_Empire',
+                       replacement=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))),
+        models.Keyword(keyword='Invoke_Mimikatz',
+                       replacement=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5)))
     ]
 
 

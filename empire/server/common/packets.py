@@ -222,7 +222,7 @@ def parse_result_packet(packet, offset=0):
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="empire")
+        # dispatcher.send(signal, sender="empire")
         
         return (None, None, None, None, None, None, None)
 
@@ -306,7 +306,7 @@ def parse_routing_packet(stagingKey, data):
                         'print': True,
                         'message': message
                     })
-                    dispatcher.send(signal, sender="empire")
+                    # dispatcher.send(signal, sender="empire")
                     encData = None
                 else:
                     encData = data[(20 + offset):(20 + offset + length)]
@@ -330,7 +330,7 @@ def parse_routing_packet(stagingKey, data):
                 'print': True,
                 'message': message
             })
-            dispatcher.send(signal, sender="empire")
+            # dispatcher.send(signal, sender="empire")
             return None
 
     else:
@@ -339,7 +339,7 @@ def parse_routing_packet(stagingKey, data):
             'print': True,
             'message': message
         })
-        dispatcher.send(signal, sender="empire")
+        # dispatcher.send(signal, sender="empire")
         return None
 
 

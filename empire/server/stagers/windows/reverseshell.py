@@ -15,7 +15,7 @@ class Stager(object):
         self.info = {
             'Name': 'Stage 0 - Reverse Shell',
 
-            'Author': ['@Cx01N'],
+            'Authors': ['@Cx01N'],
 
             'Description': 'Generates a reverse shell using msfvenom to act as a stage 0.',
 

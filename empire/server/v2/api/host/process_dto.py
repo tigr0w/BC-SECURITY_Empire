@@ -1,0 +1,34 @@
+from typing import List, Optional
+
+from pydantic import BaseModel
+
+from empire.server.database import models
+
+
+def domain_to_dto_process(process: models.HostProcess):
+    if process.agent:
+        agent_id = process.agent.session_id
+    else:
+        agent_id = None
+
+    return Process(
+        process_id=process.process_id,
+        process_name=process.process_name,
+        host_id=process.host_id,
+        architecture=process.architecture,
+        user=process.user,
+        agent=agent_id,
+    )
+
+
+class Process(BaseModel):
+    process_id: int  # todo rename to id?
+    process_name: str
+    host_id: int
+    architecture: str
+    user: str
+    agent: Optional[str]  # todo agent_id ?
+
+
+class Processes(BaseModel):
+    records: List[Process]

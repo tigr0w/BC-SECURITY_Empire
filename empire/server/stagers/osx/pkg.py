@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'pkg',
 
-            'Author': ['@xorrior'],
+            'Authors': ['@xorrior'],
 
             'Description':
                 'Generates a pkg installer. The installer will copy a custom (empty) application to the /Applications '

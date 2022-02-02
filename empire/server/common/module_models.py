@@ -27,7 +27,9 @@ class PydanticModuleOption(BaseModel):
     strict: bool = False
 
 
+# TODO Rename
 class PydanticModule(BaseModel):
+    id: str
     name: str
     authors: List[str] = []
     description: str = ''

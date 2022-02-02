@@ -18,7 +18,7 @@ class Module(object):
             'Name': 'Invoke-ExfilDataToGitHub',
 
             # list of one or more authors for the module
-            'Author': ['Nga Hoang'],
+            'Authors': ['Nga Hoang'],
 
             # more verbose multi-line description of the module
             'Description': ('Use this module to exfil files and data to GitHub. '

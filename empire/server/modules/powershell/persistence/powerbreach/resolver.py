@@ -68,7 +68,7 @@ Invoke-ResolverBackdoor"""
 
         else:
             # set the listener value for the launcher
-            stager = main_menu.stagers.stagers["multi/launcher"]
+            stager = main_menu.stagertemplatesv2.new_instance("multi/launcher")
             stager.options['Listener'] = listener_name
             stager.options['Base64'] = "False"
 

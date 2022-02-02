@@ -16,7 +16,7 @@ class Stager(object):
         self.info = {
             'Name': 'WAR',
 
-            'Author': ['Andrew @ch33kyf3ll0w Bonstrom'],
+            'Authors': ['Andrew @ch33kyf3ll0w Bonstrom'],
 
             'Description': 'Generates a Deployable War file.',
 

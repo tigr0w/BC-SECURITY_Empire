@@ -10,7 +10,7 @@ class Stager(object):
         self.info = {
             'Name': 'dylib',
 
-            'Author': ['@xorrior'],
+            'Authors': ['@xorrior'],
 
             'Description': 'Generates a dylib.',
 

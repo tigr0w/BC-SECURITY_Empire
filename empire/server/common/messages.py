@@ -17,6 +17,7 @@ import textwrap
 # Empire imports
 from . import helpers
 
+
 def wrap_string(data, width=40, indent=32, indentAll=False, followingHeader=None):
     """
     Print a option description message in a nicely
@@ -45,41 +46,6 @@ def wrap_string(data, width=40, indent=32, indentAll=False, followingHeader=None
         return returnString
     else:
         return data.strip()
-
-
-def wrap_columns(col1, col2, width1=24, width2=40, indent=31):
-    """
-    Takes two strings of text and turns them into nicely formatted column output.
-
-    Used by display_module()
-    """
-
-    lines1 = textwrap.wrap(textwrap.dedent(col1).strip(), width=width1)
-    lines2 = textwrap.wrap(textwrap.dedent(col2).strip(), width=width2)
-
-    result = ''
-
-    limit = max(len(lines1), len(lines2))
-
-    for x in range(limit):
-
-        if x < len(lines1):
-            if x != 0:
-                result += ' ' * indent
-            result += '{line: <0{width}s}'.format(width=width1, line=lines1[x])
-        else:
-            if x == 0:
-                result += ' ' * width1
-            else:
-                result += ' ' * (indent + width1)
-
-        if x < len(lines2):
-            result += '  ' + '{line: <0{width}s}'.format(width=width2, line=lines2[x])
-
-        if x != limit-1:
-            result += "\n"
-
-    return result
 
 
 def display_agent(agent, returnAsString=False):
