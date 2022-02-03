@@ -1,6 +1,7 @@
 import base64
 import os
 import textwrap
+import pyperclip
 
 from prompt_toolkit.completion import Completion
 
@@ -9,6 +10,7 @@ from empire.client.src.menus.UseMenu import UseMenu
 from empire.client.src.utils import print_util
 from empire.client.src.utils.autocomplete_util import filtered_search_list, position_util
 from empire.client.src.utils.cli_util import register_cli_commands, command
+from empire.client.src.EmpireCliConfig import empire_config
 
 
 @register_cli_commands
@@ -86,6 +88,9 @@ class UseStagerMenu(UseMenu):
             print(print_util.color(f'[+] {file_name} written to {os.path.abspath(os.getcwd())}/{directory}'))
         else:
             print(print_util.color(response[self.selected]['Output']))
+            if empire_config.yaml.get('auto-copy-stagers', {}):
+                print(print_util.color(f'[+] Stager copied to clipboard.'))
+                pyperclip.copy(response[self.selected]['Output'])
 
     @command
     def generate(self):
