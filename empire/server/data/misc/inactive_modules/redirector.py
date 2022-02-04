@@ -1,7 +1,10 @@
 from __future__ import print_function
-from builtins import str
-from builtins import object
+
+from builtins import object, str
+
 from empire.server.common import helpers
+
+
 class Module(object):
 
     def __init__(self, mainMenu, params=[]):

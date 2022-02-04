@@ -1,9 +1,15 @@
 from __future__ import absolute_import
-import random, six.moves.urllib.parse, six.moves.urllib.request, six.moves.urllib.error
+
+import random
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 from pyparsing import *
-from .utility import MalleableError, MalleableUtil, MalleableObject
-from .transformation import Transform, Terminator, Container
 from six.moves import range
+
+from .transformation import Container, Terminator, Transform
+from .utility import MalleableError, MalleableObject, MalleableUtil
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TRANSACTION
@@ -11,6 +17,7 @@ from six.moves import range
 # Defining the core components of an interaction between a web
 # client request and a web server response.
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 class MalleableRequest(MalleableObject):
     """A generic request class used to transfer the contents of an html request.
@@ -33,7 +40,7 @@ class MalleableRequest(MalleableObject):
     def _defaults(self):
         """Default initialization for the MalleableRequest object."""
         super(MalleableRequest, self)._defaults()
-        self._url = six.moves.urllib.parse.SplitResult("http","","/","","")
+        self._url = six.moves.urllib.parse.SplitResult("http", "", "/", "", "")
         self.verb = "GET"
         self.extra = ""
         self.headers = {}
@@ -49,7 +56,7 @@ class MalleableRequest(MalleableObject):
         new._url = self._url
         new.verb = self.verb
         new.extra = self.extra
-        new.headers = {k:v for k,v in self.headers.items()}
+        new.headers = {k: v for k, v in self.headers.items()}
         new.body = self.body
         return new
 
@@ -59,13 +66,18 @@ class MalleableRequest(MalleableObject):
         Returns:
             dict (str, obj)
         """
-        return dict(list(super(MalleableRequest, self)._serialize().items()) + list({
-            "url" : self.url,
-            "verb" : self.verb,
-            "extra" : self.extra,
-            "headers" : self.headers,
-            "body" : self.body
-        }.items()))
+        return dict(
+            list(super(MalleableRequest, self)._serialize().items())
+            + list(
+                {
+                    "url": self.url,
+                    "verb": self.verb,
+                    "extra": self.extra,
+                    "headers": self.headers,
+                    "body": self.body,
+                }.items()
+            )
+        )
 
     @classmethod
     def _deserialize(cls, data):
@@ -93,12 +105,16 @@ class MalleableRequest(MalleableObject):
         Returns:
             pyparsing object
         """
-        return Group(Suppress("{") + ZeroOrMore(
-            cls.COMMENT |
-            (Literal("header") + Group(cls.VALUE + cls.VALUE) + cls.SEMICOLON) |
-            (Literal("parameter") + Group(cls.VALUE + cls.VALUE) + cls.SEMICOLON) |
-            Container._pattern()
-        ) + Suppress("}"))
+        return Group(
+            Suppress("{")
+            + ZeroOrMore(
+                cls.COMMENT
+                | (Literal("header") + Group(cls.VALUE + cls.VALUE) + cls.SEMICOLON)
+                | (Literal("parameter") + Group(cls.VALUE + cls.VALUE) + cls.SEMICOLON)
+                | Container._pattern()
+            )
+            + Suppress("}")
+        )
 
     def _parse(self, data):
         """Store the information from a parsed pyparsing result.
@@ -109,7 +125,7 @@ class MalleableRequest(MalleableObject):
         if data:
             for i in range(0, len(data), 2):
                 item = data[i]
-                arg = data[i+1] if len(data) > i+1 else None
+                arg = data[i + 1] if len(data) > i + 1 else None
                 if item and arg:
                     if item.lower() == "header" and len(arg) > 1:
                         key, value = arg[0], arg[1]
@@ -120,7 +136,18 @@ class MalleableRequest(MalleableObject):
                         if key and value:
                             self.parameter(key, value)
 
-    def _replace(self, scheme=None, host=None, port=None, path=None, parameters=None, verb=None, extra=None, headers=None, body=None):
+    def _replace(
+        self,
+        scheme=None,
+        host=None,
+        port=None,
+        path=None,
+        parameters=None,
+        verb=None,
+        extra=None,
+        headers=None,
+        body=None,
+    ):
         """Clone the MalleableRequest object while replacing the provided attributes.
 
         Args:
@@ -138,15 +165,24 @@ class MalleableRequest(MalleableObject):
             MalleableRequest object
         """
         new = self._clone()
-        if scheme is not None: new.scheme = scheme
-        if host is not None: new.host = host
-        if port is not None: new.port = port
-        if path is not None: new.path = path
-        if parameters is not None: new.parameters = parameters
-        if verb is not None: new.verb = verb
-        if extra is not None: new.extra = extra
-        if headers is not None: new.headers = headers
-        if body is not None: new.body = body
+        if scheme is not None:
+            new.scheme = scheme
+        if host is not None:
+            new.host = host
+        if port is not None:
+            new.port = port
+        if path is not None:
+            new.path = path
+        if parameters is not None:
+            new.parameters = parameters
+        if verb is not None:
+            new.verb = verb
+        if extra is not None:
+            new.extra = extra
+        if headers is not None:
+            new.headers = headers
+        if body is not None:
+            new.body = body
         return new
 
     @property
@@ -161,7 +197,7 @@ class MalleableRequest(MalleableObject):
         extra = self.extra
         if isinstance(extra, bytes):
             extra = extra.decode("Latin-1")
-        url = (six.moves.urllib.parse.urlunsplit(self._url) + extra)
+        url = six.moves.urllib.parse.urlunsplit(self._url) + extra
         return url
 
     @url.setter
@@ -175,13 +211,15 @@ class MalleableRequest(MalleableObject):
         """
         if "://" in url:
             if "http://" not in url.lower() and "https://" not in url.lower():
-                MalleableError.throw(self.__class__, "url", "Scheme not supported: %s" % url)
+                MalleableError.throw(
+                    self.__class__, "url", "Scheme not supported: %s" % url
+                )
         else:
             url = "http://" + url
         temp = six.moves.urllib.parse.urlsplit(url, allow_fragments=False)
         self._url = temp
-        if temp.query != '':
-            self.path = temp[2] + '?' + temp[3]
+        if temp.query != "":
+            self.path = temp[2] + "?" + temp[3]
         else:
             self.path = temp[2] + temp[3]
         return self._url
@@ -249,7 +287,9 @@ class MalleableRequest(MalleableObject):
                 host = host.lstrip("https://")
                 self.scheme = "https"
             else:
-                MalleableError.throw(self.__class__, "host", "Scheme not supported: %s" % host)
+                MalleableError.throw(
+                    self.__class__, "host", "Scheme not supported: %s" % host
+                )
         if ":" not in host and self._url.port:
             host += ":" + str(self._url.port)
         self._url = self._url._replace(netloc=host)
@@ -271,7 +311,9 @@ class MalleableRequest(MalleableObject):
             port (int)
         """
         hostname = self._url.hostname
-        netloc = (str(hostname) if hostname else "") + ((":"+str(port)) if port else "")
+        netloc = (str(hostname) if hostname else "") + (
+            (":" + str(port)) if port else ""
+        )
         self._url = self._url._replace(netloc=netloc)
 
     @property
@@ -356,7 +398,7 @@ class MalleableRequest(MalleableObject):
         if parameter:
             parameter = parameter.lower()
             if self.parameters:
-                parameters = {k.lower():v for k,v in self.parameters.items()}
+                parameters = {k.lower(): v for k, v in self.parameters.items()}
                 if parameter in parameters:
                     return parameters[parameter]
         return None
@@ -382,7 +424,7 @@ class MalleableRequest(MalleableObject):
         if header:
             header = header.lower()
             if self.headers:
-                headers = {k.lower():v for k,v in self.headers.items()}
+                headers = {k.lower(): v for k, v in self.headers.items()}
                 if header in headers:
                     return headers[header]
         return None
@@ -398,10 +440,14 @@ class MalleableRequest(MalleableObject):
             data = data.decode()
         except AttributeError:
             pass
-        if terminator.type == Terminator.HEADER: self.header(terminator.arg, data)
-        elif terminator.type == Terminator.PARAMETER: self.parameter(terminator.arg, data)
-        elif terminator.type == Terminator.URIAPPEND: self.extra = data
-        elif terminator.type == Terminator.PRINT: self.body = data
+        if terminator.type == Terminator.HEADER:
+            self.header(terminator.arg, data)
+        elif terminator.type == Terminator.PARAMETER:
+            self.parameter(terminator.arg, data)
+        elif terminator.type == Terminator.URIAPPEND:
+            self.extra = data
+        elif terminator.type == Terminator.PRINT:
+            self.body = data
 
     def extract(self, original, terminator):
         """Extract the data according to the specified terminator.
@@ -413,33 +459,49 @@ class MalleableRequest(MalleableObject):
         data = None
         if terminator.type == Terminator.HEADER:
             data = self.get_header(terminator.arg)
-            if data: data = six.moves.urllib.parse.unquote_to_bytes(data).decode('Latin-1')
+            if data:
+                data = six.moves.urllib.parse.unquote_to_bytes(data).decode("Latin-1")
         elif terminator.type == Terminator.PARAMETER:
             data = self.get_parameter(terminator.arg)
-            if data: data = six.moves.urllib.parse.unquote_to_bytes(data).decode('Latin-1')
+            if data:
+                data = six.moves.urllib.parse.unquote_to_bytes(data).decode("Latin-1")
         elif terminator.type == Terminator.URIAPPEND:
             if self.extra:
-                data = six.moves.urllib.parse.unquote_to_bytes(self.extra).decode('Latin-1')
+                data = six.moves.urllib.parse.unquote_to_bytes(self.extra).decode(
+                    "Latin-1"
+                )
             elif original.parameters:
                 for p in sorted(original.parameters, key=len, reverse=True):
                     known = original.parameters[p]
                     shown = self.get_parameter(p)
-                    if shown and known.lower() in shown.lower() and len(shown) > len(known):
+                    if (
+                        shown
+                        and known.lower() in shown.lower()
+                        and len(shown) > len(known)
+                    ):
                         data = known.split(known)[-1]
-                        if data: data = six.moves.urllib.parse.unquote_to_bytes(data).decode('Latin-1')
+                        if data:
+                            data = six.moves.urllib.parse.unquote_to_bytes(data).decode(
+                                "Latin-1"
+                            )
                         break
             else:
                 for known in sorted(original.uris, key=len, reverse=True):
                     shown = self.path
                     if known.lower() in shown.lower() and len(shown) > len(known):
                         data = shown.split(known)[-1]
-                        if data: data = six.moves.urllib.parse.unquote_to_bytes(data).decode('Latin-1')
+                        if data:
+                            data = six.moves.urllib.parse.unquote_to_bytes(data).decode(
+                                "Latin-1"
+                            )
                         break
-        elif terminator.type == Terminator.PRINT: data = self.body
+        elif terminator.type == Terminator.PRINT:
+            data = self.body
 
         if isinstance(data, str):
-            data = data.encode('Latin-1')
+            data = data.encode("Latin-1")
         return data
+
 
 class MalleableResponse(MalleableObject):
     """A generate response class used to transfer the contents of an html response.
@@ -465,7 +527,7 @@ class MalleableResponse(MalleableObject):
         """
         new = super(MalleableResponse, self)._clone()
         new.code = self.code
-        new.headers = {k: v for k,v in self.headers.items()}
+        new.headers = {k: v for k, v in self.headers.items()}
         new.body = self.body
         return new
 
@@ -475,11 +537,12 @@ class MalleableResponse(MalleableObject):
         Returns:
             dict (str, obj)
         """
-        return dict(list(super(MalleableResponse, self)._serialize().items()) + list({
-            "code" : self.code,
-            "headers" : self.headers,
-            "body" : self.body
-        }.items()))
+        return dict(
+            list(super(MalleableResponse, self)._serialize().items())
+            + list(
+                {"code": self.code, "headers": self.headers, "body": self.body}.items()
+            )
+        )
 
     @classmethod
     def _deserialize(cls, data):
@@ -505,11 +568,15 @@ class MalleableResponse(MalleableObject):
         Returns:
             pyparsing object
         """
-        return Group(Suppress("{") + ZeroOrMore(
-            cls.COMMENT |
-            (Literal("header") + Group(cls.VALUE + cls.VALUE) + cls.SEMICOLON) |
-            Container._pattern()
-        ) + Suppress("}"))
+        return Group(
+            Suppress("{")
+            + ZeroOrMore(
+                cls.COMMENT
+                | (Literal("header") + Group(cls.VALUE + cls.VALUE) + cls.SEMICOLON)
+                | Container._pattern()
+            )
+            + Suppress("}")
+        )
 
     def _parse(self, data):
         """Store the information from a parsed pyparsing result.
@@ -520,7 +587,7 @@ class MalleableResponse(MalleableObject):
         if data:
             for i in range(0, len(data), 2):
                 item = data[i]
-                arg = data[i+1] if len(data) > i+1 else None
+                arg = data[i + 1] if len(data) > i + 1 else None
                 if item and arg:
                     if item.lower() == "header" and len(arg) > 1:
                         key, value = arg[0], arg[1]
@@ -539,7 +606,7 @@ class MalleableResponse(MalleableObject):
         if header:
             header = header.lower()
             if self.headers:
-                headers = {k.lower():v for k,v in self.headers.items()}
+                headers = {k.lower(): v for k, v in self.headers.items()}
                 if header in headers:
                     return headers[header]
         return None
@@ -560,8 +627,10 @@ class MalleableResponse(MalleableObject):
             data (str): The data to be stored.
             terminator (Terminator): The terminator specifying where to store the data.
         """
-        if terminator.type == Terminator.HEADER: self.header(terminator.arg, data)
-        elif terminator.type == Terminator.PRINT: self.body = data
+        if terminator.type == Terminator.HEADER:
+            self.header(terminator.arg, data)
+        elif terminator.type == Terminator.PRINT:
+            self.body = data
 
     def extract(self, original, terminator):
         """Extract the data according to the specified terminator.
@@ -573,10 +642,12 @@ class MalleableResponse(MalleableObject):
         data = None
         if terminator.type == Terminator.HEADER:
             data = self.get_header(terminator.arg)
-            if data: data = six.moves.urllib.parse.unquote_to_bytes(data).decode('latin-1')
+            if data:
+                data = six.moves.urllib.parse.unquote_to_bytes(data).decode("latin-1")
         elif terminator.type == Terminator.PRINT:
             data = self.body
         return data
+
 
 class Transaction(MalleableObject):
     """A class housing the core components of an interaction between a web client request and
@@ -610,10 +681,15 @@ class Transaction(MalleableObject):
         Returns:
             dict (str, obj)
         """
-        return dict(list(super(Transaction, self)._serialize().items()) + list({
-            "client" : self.client._serialize(),
-            "server" : self.server._serialize()
-        }.items()))
+        return dict(
+            list(super(Transaction, self)._serialize().items())
+            + list(
+                {
+                    "client": self.client._serialize(),
+                    "server": self.server._serialize(),
+                }.items()
+            )
+        )
 
     @classmethod
     def _deserialize(cls, data):
@@ -627,8 +703,16 @@ class Transaction(MalleableObject):
         """
         transaction = super(Transaction, cls)._deserialize(data)
         if data:
-            transaction.client = Transaction.Client._deserialize(data["client"]) if "client" in data else Transaction.Client()
-            transaction.server = Transaction.Server._deserialize(data["server"]) if "server" in data else Transaction.Server()
+            transaction.client = (
+                Transaction.Client._deserialize(data["client"])
+                if "client" in data
+                else Transaction.Client()
+            )
+            transaction.server = (
+                Transaction.Server._deserialize(data["server"])
+                if "server" in data
+                else Transaction.Server()
+            )
         return transaction
 
     @classmethod
@@ -638,12 +722,16 @@ class Transaction(MalleableObject):
         Returns:
             pyparsing object
         """
-        return Group(Suppress("{") + ZeroOrMore(
-                cls.COMMENT |
-                (Literal("set") + Group(cls.FIELD + cls.VALUE) + cls.SEMICOLON) |
-                cls.Client._pattern() |
-                cls.Server._pattern()
-            ) + Suppress("}"))
+        return Group(
+            Suppress("{")
+            + ZeroOrMore(
+                cls.COMMENT
+                | (Literal("set") + Group(cls.FIELD + cls.VALUE) + cls.SEMICOLON)
+                | cls.Client._pattern()
+                | cls.Server._pattern()
+            )
+            + Suppress("}")
+        )
 
     def _parse(self, data):
         """Store the information from a parsed pyparsing result.
@@ -654,7 +742,7 @@ class Transaction(MalleableObject):
         if data:
             for i in range(0, len(data), 2):
                 item = data[i]
-                arg = data[i+1] if len(data) > i+1 else None
+                arg = data[i + 1] if len(data) > i + 1 else None
                 if item and arg:
                     if item.lower() == "set" and len(arg) > 1:
                         key, value = arg[0], arg[1]
@@ -729,11 +817,16 @@ class Transaction(MalleableObject):
             Returns:
                 dict (str, obj)
             """
-            return dict(list(super(Transaction.Client, self)._serialize().items()) + list({
-                "uris" : self.uris,
-                "uris_x86" : self.uris_x86,
-                "uris_x64" : self.uris_x64
-            }.items()))
+            return dict(
+                list(super(Transaction.Client, self)._serialize().items())
+                + list(
+                    {
+                        "uris": self.uris,
+                        "uris_x86": self.uris_x86,
+                        "uris_x64": self.uris_x64,
+                    }.items()
+                )
+            )
 
         @classmethod
         def _deserialize(self, data):
@@ -763,10 +856,17 @@ class Transaction(MalleableObject):
 
         def stringify(self):
             """Serialize into a string compatible with Powershell Empire."""
-            return "|".join([
-                ",".join(self.uris if self.uris else ["/"]),
-                str(self.get_header("User-Agent"))
-                ] + [":".join([h,v]) for h,v in self.headers.items() if h.lower() != "user-agent"])
+            return "|".join(
+                [
+                    ",".join(self.uris if self.uris else ["/"]),
+                    str(self.get_header("User-Agent")),
+                ]
+                + [
+                    ":".join([h, v])
+                    for h, v in self.headers.items()
+                    if h.lower() != "user-agent"
+                ]
+            )
 
         def uri(self, uri, x86=False, x64=False):
             """Add a uri to the list of uris
@@ -796,7 +896,7 @@ class Transaction(MalleableObject):
                 uris = self.uris_x64
             else:
                 uris = self.uris
-            return (random.choice(uris) if uris else default)
+            return random.choice(uris) if uris else default
 
     class Server(MalleableResponse):
         """A class housing the core components of a web server response."""

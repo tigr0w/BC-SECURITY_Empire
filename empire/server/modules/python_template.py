@@ -1,74 +1,58 @@
 from __future__ import print_function
 
-from builtins import object
-from builtins import str
+from builtins import object, str
 
 from empire.server.utils.module_util import handle_error_message
 
 
 class Module(object):
-
     def __init__(self, mainMenu, params=[]):
 
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Active Directory Enumerator',
-
+            "Name": "Active Directory Enumerator",
             # list of one or more authors for the module
-            'Author': ['@424f424f'],
-
+            "Author": ["@424f424f"],
             # more verbose multi-line description of the module
-            'Description': ('description line 1'
-                            'description line 2'),
-
-            'Software': 'SXXXX',
-
-            'Techniques': ['TXXXX', 'TXXXX'],
-
+            "Description": ("description line 1" "description line 2"),
+            "Software": "SXXXX",
+            "Techniques": ["TXXXX", "TXXXX"],
             # True if the module needs to run in the background
-            'Background': False,
-
+            "Background": False,
             # File extension to save the file as
             # no need to base64 return data
-            'OutputExtension': None,
-
+            "OutputExtension": None,
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe': True,
-
+            "OpsecSafe": True,
             # the module language
-            'Language' : 'python',
-
+            "Language": "python",
             # the minimum language version needed
-            'MinLanguageVersion' : '2.6',
-
+            "MinLanguageVersion": "2.6",
             # list of any references/other comments
-            'Comments': [
-                'comment',
-                'http://link/'
-            ]
+            "Comments": ["comment", "http://link/"],
         }
 
         # any options needed by the module, settable during runtime
         self.options = {
             # format:
             #   value_name : {description, required, default_value}
-            'Agent': {
+            "Agent": {
                 # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'Agent to grab a screenshot from.',
-                'Required'      :   True,
-                'Value'         :   ''
+                "Description": "Agent to grab a screenshot from.",
+                "Required": True,
+                "Value": "",
             },
-            'ldap Address': {
-                'Description'   :   'Address for LDAP Server',
-                'Required'      :   True,
-                'Value'         :   ''
+            "ldap Address": {
+                "Description": "Address for LDAP Server",
+                "Required": True,
+                "Value": "",
             },
-            'Bind DN': {
-                'Description'   :   'BIND DN username@penlab.local',
-                'Required'      :   True,
-                'Value'         :   ''
-            }
+            "Bind DN": {
+                "Description": "BIND DN username@penlab.local",
+                "Required": True,
+                "Value": "",
+            },
         }
 
         # save off a copy of the mainMenu object to access external functionality
@@ -84,7 +68,7 @@ class Module(object):
                 # parameter format is [Name, Value]
                 option, value = param
                 if option in self.options:
-                    self.options[option]['Value'] = value
+                    self.options[option]["Value"] = value
 
     def generate(self):
 
@@ -101,9 +85,11 @@ class Module(object):
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/..."
         try:
-            f = open(moduleSource, 'r')
+            f = open(moduleSource, "r")
         except:
-            return handle_error_message("[!] Could not read module source path at: " + str(moduleSource))
+            return handle_error_message(
+                "[!] Could not read module source path at: " + str(moduleSource)
+            )
 
         moduleCode = f.read()
         f.close()
@@ -113,11 +99,11 @@ class Module(object):
         # add any arguments to the end execution of the script
         for option, values in self.options.items():
             if option.lower() != "agent":
-                if values['Value'] and values['Value'] != '':
-                    if values['Value'].lower() == "true":
+                if values["Value"] and values["Value"] != "":
+                    if values["Value"].lower() == "true":
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
+                        script += " -" + str(option) + " " + str(values["Value"])
 
         return script

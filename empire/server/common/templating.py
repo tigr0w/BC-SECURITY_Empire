@@ -2,7 +2,9 @@
 This is useful for generating stagers """
 
 from builtins import object
+
 import jinja2
+
 
 class TemplateEngine(object):
     def __init__(self, path):
@@ -26,10 +28,10 @@ class TemplateEngine(object):
 
         # Register custom jinja2 filters
         # see "Custom jinja2 filters" section below
-        env.filters['notrailingslash'] = filter_notrailingslash
-        env.filters['noleadingslash'] = filter_noleadingslash
-        env.filters['ensuretrailingslash'] = filter_ensuretrailingslash
-        env.filters['ensureleadingslash'] = filter_ensureleadingslash
+        env.filters["notrailingslash"] = filter_notrailingslash
+        env.filters["noleadingslash"] = filter_noleadingslash
+        env.filters["ensuretrailingslash"] = filter_ensuretrailingslash
+        env.filters["ensureleadingslash"] = filter_ensureleadingslash
 
         return env
 
@@ -51,6 +53,7 @@ class TemplateEngine(object):
 # Need to be registered (see "Register custom jinja2 filters" above)
 # see: http://jinja.pocoo.org/docs/2.10/api/#custom-filters
 
+
 def filter_notrailingslash(host):
     """
     Removes a trailing slash from URLs (or anything, really)
@@ -60,6 +63,7 @@ def filter_notrailingslash(host):
     if host.endswith("/"):
         host = host[0:-1]
     return host
+
 
 def filter_noleadingslash(host):
     """
@@ -71,6 +75,7 @@ def filter_noleadingslash(host):
         host = host[1:]
     return host
 
+
 def filter_ensuretrailingslash(host):
     """
     Adds a trailing slash to URLs (or anything, really) if one isn't present
@@ -80,6 +85,7 @@ def filter_ensuretrailingslash(host):
     if not host.endswith("/"):
         host = host + "/"
     return host
+
 
 def filter_ensureleadingslash(host):
     """

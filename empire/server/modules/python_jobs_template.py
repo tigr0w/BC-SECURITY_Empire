@@ -1,54 +1,46 @@
 from builtins import object
-class Module(object):
 
+
+class Module(object):
     def __init__(self, mainMenu, params=[]):
 
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Background Example',
-
+            "Name": "Background Example",
             # list of one or more authors for the module
-            'Author': ['@Killswitch-GUI'],
-
-            'Software': 'SXXXX',
-
-            'Techniques': ['TXXXX', 'TXXXX'],
-
+            "Author": ["@Killswitch-GUI"],
+            "Software": "SXXXX",
+            "Techniques": ["TXXXX", "TXXXX"],
             # more verbose multi-line description of the module
-            'Description': ('A quick example how to feed your data to a background job.'),
-
+            "Description": (
+                "A quick example how to feed your data to a background job."
+            ),
             # True if the module needs to run in the background
-            'Background' : True,
-
+            "Background": True,
             # File extension to save the file as
-            'OutputExtension' : '',
-
+            "OutputExtension": "",
             # if the module needs administrative privileges
-            'NeedsAdmin' : False,
-
+            "NeedsAdmin": False,
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe' : False,
-
+            "OpsecSafe": False,
             # the module language
-            'Language' : 'python',
-
+            "Language": "python",
             # the minimum language version needed
-            'MinLanguageVersion' : '2.6',
-
+            "MinLanguageVersion": "2.6",
             # list of any references/other comments
-            'Comments': [ ]
+            "Comments": [],
         }
 
         # any options needed by the module, settable during runtime
         self.options = {
             # format:
             #   value_name : {description, required, default_value}
-            'Agent' : {
+            "Agent": {
                 # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'Agent to execute module on.',
-                'Required'      :   True,
-                'Value'         :   ''
+                "Description": "Agent to execute module on.",
+                "Required": True,
+                "Value": "",
             }
         }
 
@@ -65,7 +57,7 @@ class Module(object):
                 # parameter format is [Name, Value]
                 option, value = param
                 if option in self.options:
-                    self.options[option]['Value'] = value
+                    self.options[option]["Value"] = value
 
     def generate(self):
 

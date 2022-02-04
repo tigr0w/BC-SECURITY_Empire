@@ -10,19 +10,20 @@ These are the first places URI requests are processed.
 
 """
 from __future__ import absolute_import
+
 from future import standard_library
 
 from empire.server.utils import data_util
 
 standard_library.install_aliases()
 import http.server
-import threading
-import ssl
+import json
 import os
 import re
-import json
-
+import ssl
+import threading
 from http.server import BaseHTTPRequestHandler
+
 from pydispatch import dispatcher
 
 # Empire imports
@@ -40,7 +41,7 @@ def default_page(path_to_html_file="empty"):
         page += "</body></html>"
         return page
     else:
-        with open(path_to_html_file, 'r') as f:
+        with open(path_to_html_file, "r") as f:
             html = f.read()
         return html
 
@@ -51,13 +52,14 @@ def default_page(path_to_html_file="empty"):
 #
 ###############################################################
 
+
 def host2lhost(s):
     """
     Return lhost for Empire's native listener from Host value
     """
-    reg = r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
+    reg = r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
     res = re.findall(reg, s)
-    return res[0] if len(res) == 1 else '0.0.0.0'
+    return res[0] if len(res) == 1 else "0.0.0.0"
 
 
 ###############################################################
@@ -65,6 +67,7 @@ def host2lhost(s):
 # Checksum helpers.
 #
 ###############################################################
+
 
 def checksum8(s):
     """
@@ -79,13 +82,14 @@ def checksum8(s):
 #
 ###############################################################
 
+
 class RequestHandler(BaseHTTPRequestHandler):
     """
     Main HTTP handler we're overwriting in order to modify the HTTPServer behavior.
     """
 
     # retrieve the server headers from the common config
-    serverVersion = data_util.get_config('server_version')[0]
+    serverVersion = data_util.get_config("server_version")[0]
 
     # fake out our server headers base
     BaseHTTPRequestHandler.server_version = serverVersion
@@ -109,19 +113,16 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         # fire off an event for this GET (for logging)
         message = "[*] {resource} requested from {session_id} at {client_ip}".format(
-            resource=resource,
-            session_id=sessionID,
-            client_ip=clientIP
+            resource=resource, session_id=sessionID, client_ip=clientIP
         )
 
-        signal = json.dumps({
-            'print': True,
-            'message': message
-        })
+        signal = json.dumps({"print": True, "message": message})
         dispatcher.send(signal, sender="empire")
 
         # get the appropriate response from the agent handler
-        (code, responsedata) = self.server.agents.process_get(self.server.server_port, clientIP, sessionID, resource)
+        (code, responsedata) = self.server.agents.process_get(
+            self.server.server_port, clientIP, sessionID, resource
+        )
 
         # write the response out
         self.send_response(code)
@@ -147,25 +148,21 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         # fire off an event for this POST (for logging)
         message = "[*] Post to {resource} from {session_id} at {client_ip}".format(
-            resource=resource,
-            session_id=sessionID,
-            client_ip=clientIP
+            resource=resource, session_id=sessionID, client_ip=clientIP
         )
 
-        signal = json.dumps({
-            'print': True,
-            'message': message
-        })
+        signal = json.dumps({"print": True, "message": message})
         dispatcher.send(signal, sender="empire")
 
         # read in the length of the POST data
-        if self.headers.getheader('content-length'):
-            length = int(self.headers.getheader('content-length'))
+        if self.headers.getheader("content-length"):
+            length = int(self.headers.getheader("content-length"))
             postData = self.rfile.read(length)
 
             # get the appropriate response for this agent
-            (code, responsedata) = self.server.agents.process_post(self.server.server_port, clientIP, sessionID,
-                                                                   resource, postData)
+            (code, responsedata) = self.server.agents.process_post(
+                self.server.server_port, clientIP, sessionID, resource, postData
+            )
 
             # write the response out
             self.send_response(code)
@@ -187,7 +184,7 @@ class EmpireServer(threading.Thread):
     Uses agents.RequestHandler handle inbound requests.
     """
 
-    def __init__(self, handler, lhost='0.0.0.0', port=80, cert=''):
+    def __init__(self, handler, lhost="0.0.0.0", port=80, cert=""):
 
         # set to False if the listener doesn't successfully start
         self.success = True
@@ -209,26 +206,22 @@ class EmpireServer(threading.Thread):
                 self.serverType = "HTTPS"
                 cert = os.path.abspath(cert)
 
-                self.server.socket = ssl.wrap_socket(self.server.socket, certfile=cert, server_side=True)
+                self.server.socket = ssl.wrap_socket(
+                    self.server.socket, certfile=cert, server_side=True
+                )
 
                 message = "[*] Initializing HTTPS server on {port}".format(port=port)
             else:
                 message = "[*] Initializing HTTP server on {port}".format(port=port)
 
-            signal = json.dumps({
-                'print': True,
-                'message': message
-            })
+            signal = json.dumps({"print": True, "message": message})
             dispatcher.send(signal, sender="empire")
 
         except Exception as e:
             self.success = False
             # shoot off an error if the listener doesn't stand up
             message = "[!] Error starting listener on port {}: {}".format(port, e)
-            signal = json.dumps({
-                'print': True,
-                'message': message
-            })
+            signal = json.dumps({"print": True, "message": message})
             dispatcher.send(signal, sender="empire")
 
     def base_server(self):

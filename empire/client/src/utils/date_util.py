@@ -1,5 +1,6 @@
-import humanize
 from datetime import datetime, timezone
+
+import humanize
 
 
 def humanize_datetime(iso_string: str = None):
@@ -10,12 +11,13 @@ def humanize_datetime(iso_string: str = None):
     :return: humanized string
     """
     if iso_string is None:
-        return ''
+        return ""
 
     parsed = datetime.fromisoformat(iso_string)
-    local_str = parsed.astimezone().strftime('%Y-%m-%d %H:%M:%S %Z')
+    local_str = parsed.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
 
     return f"{local_str} ({humanize.naturaltime(datetime.now(timezone.utc) - parsed)})"
+
 
 def get_utc_now():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
