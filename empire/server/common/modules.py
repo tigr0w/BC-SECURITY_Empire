@@ -141,7 +141,7 @@ class Modules(object):
                 obfuscated_module_source = empire_config.yaml.get('directories', {})['obfuscated_module_source']
                 module_path = os.path.join(obfuscated_module_source, module_name)
                 # If pre-obfuscated module exists then return code
-                if module_path:
+                if os.path.exists(module_path):
                     with open(module_path, 'r') as f:
                         obfuscated_module_code = f.read()
                     return obfuscated_module_code, None
