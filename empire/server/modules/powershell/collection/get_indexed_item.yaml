@@ -33,5 +33,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/collection/Get-IndexedItem.ps1'
+script_path: 'collection/Get-IndexedItem.ps1'
 script_end: Get-IndexedItem {{ PARAMS }} | ?{!($_.ITEMURL -like '*AppData*')} | Select-Object ITEMURL, COMPUTERNAME, FILEOWNER, SIZE, DATECREATED, DATEACCESSED, DATEMODIFIED, AUTOSUMMARY | fl | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-IndexedItem completed'

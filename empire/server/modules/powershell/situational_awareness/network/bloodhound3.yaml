@@ -184,5 +184,5 @@ options:
     description: Interval to sleep between loops (Default 00:05:00).
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/situational_awareness/network/BloodHound3.ps1'
+script_path: 'situational_awareness/network/BloodHound3.ps1'
 script_end: Invoke-BloodHound {{ PARAMS }} | Out-String | %{$_ + "`n"};"`n Invoke-BloodHound completed!"

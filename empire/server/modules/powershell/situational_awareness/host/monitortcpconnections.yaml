@@ -28,5 +28,5 @@ options:
     description: Interval in seconds to check for the connection
     required: true
     value: '15'
-script_path: 'empire/server/data/module_source/situational_awareness/host/Start-MonitorTCPConnections.ps1'
+script_path: 'situational_awareness/host/Start-MonitorTCPConnections.ps1'
 script_end: Start-TCPMonitor {{ PARAMS }}

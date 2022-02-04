@@ -37,5 +37,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/privesc/PrivescCheck.ps1'
+script_path: 'privesc/PrivescCheck.ps1'
 script_end: Invoke-PrivescCheck {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'PrivescCheck completed'

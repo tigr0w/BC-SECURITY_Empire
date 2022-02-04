@@ -42,5 +42,6 @@ options:
       - 'True'
       - 'False'
     strict: true
+script_path: 'code_execution/Invoke-Bof.ps1'
 advanced:
   custom_generate: true

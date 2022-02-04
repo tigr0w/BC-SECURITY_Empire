@@ -17,20 +17,13 @@ class Module(object):
         module_name = 'Disable-SecuritySettings'
         reset = params['Reset']
 
-        # read in the common powerview.ps1 module source code
-        module_source = main_menu.installPath + "/data/module_source/management/MailRaider.ps1"
-        if obfuscate:
-            data_util.obfuscate_module(moduleSource=module_source, obfuscationCommand=obfuscation_command)
-            module_source = module_source.replace("module_source", "obfuscated_module_source")
-        try:
-            f = open(module_source, 'r')
-        except:
-            return handle_error_message("[!] Could not read module source path at: " + str(module_source))
+        # read in the common module source code
+        script, err = main_menu.modules.get_module_source(module_name=module.script_path, obfuscate=obfuscate, obfuscate_command=obfuscation_command)
+        
+        if err:
+            return handle_error_message(err)
 
-        module_code = f.read()
-        f.close()
-
-        script = module_code + "\n"
+        script = script + "\n"
         script_end = ""
         if reset.lower() == "true":
             # if the flag is set to restore the security settings
@@ -50,9 +43,5 @@ class Module(object):
         outputf = params.get("OutputFunction", "Out-String")
         script_end += f" | {outputf} | " + '%{$_ + \"`n\"};"`n' + str(module.name.split("/")[-1]) + ' completed!"'
 
-        if obfuscate:
-            script_end = helpers.obfuscate(main_menu.installPath, psScript=script_end, obfuscationCommand=obfuscation_command)
-        script += script_end
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end=script_end, obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

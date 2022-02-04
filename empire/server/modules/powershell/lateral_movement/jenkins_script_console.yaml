@@ -59,5 +59,6 @@ options:
       none, or other).
     required: false
     value: default
+script_path: 'exploitation/Exploit-Jenkins.ps1'
 advanced:
   custom_generate: true

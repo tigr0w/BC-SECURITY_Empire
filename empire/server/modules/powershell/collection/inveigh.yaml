@@ -153,5 +153,5 @@ options:
       for wpad.dat requests.
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/collection/Invoke-Inveigh.ps1'
+script_path: 'collection/Invoke-Inveigh.ps1'
 script_end: Invoke-Inveigh -Tool "2" -MachineAccounts Y {{ PARAMS }}

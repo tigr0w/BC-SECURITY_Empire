@@ -62,9 +62,8 @@ def complete_path(file_type: str):
     return filenames
 
 
-def current_files():
+def current_files(directory: str):
     """
     List files in current directory
     """
-    directory = 'empire/client/downloads'
     return [os.path.join(directory, file) for file in os.listdir(directory)]

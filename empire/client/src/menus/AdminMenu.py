@@ -34,7 +34,7 @@ class AdminMenu(Menu):
             if len(cmd_line) > 1 and cmd_line[1] == '-p':
                 yield Completion(state.search_files(), start_position=-len(word_before_cursor))
             else:
-                for files in filtered_search_list(word_before_cursor, current_files()):
+                for files in filtered_search_list(word_before_cursor, current_files(state.directory['downloads'])):
                     yield Completion(files, display=files.split('/')[-1], start_position=-len(word_before_cursor))
         elif position_util(cmd_line, 1, word_before_cursor):
             yield from super().get_completions(document, complete_event, cmd_line, word_before_cursor)
@@ -326,7 +326,7 @@ class AdminMenu(Menu):
             print(print_util.color(f'[*] Downloading { filename } from server'))
             file_data = base64.b64decode(response['data'].encode('UTF-8'))
 
-            with open(f"empire/client/downloads/{ filename }", 'wb+') as f:
+            with open(f"{state.directory['downloads']}{ filename }", 'wb+') as f:
                 f.write(file_data)
             print(print_util.color(f'[+] Downloaded { filename } from server'))
 

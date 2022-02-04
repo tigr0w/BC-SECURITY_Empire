@@ -26,5 +26,5 @@ options:
       usage on the target.
     required: false
     value: '1'
-script_path: 'empire/server/data/module_source/collection/Get-Keystrokes.ps1'
+script_path: 'collection/Get-Keystrokes.ps1'
 script_end: Get-Keystrokes {{ PARAMS }}

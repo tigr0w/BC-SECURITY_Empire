@@ -14,6 +14,7 @@ from empire.server.utils.module_util import handle_error_message
 class Module(object):
     @staticmethod
     def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = "") -> Tuple[Optional[str], Optional[str]]:
+
         # extract all of our options
         listener_name = params['Listener']
 
@@ -28,8 +29,5 @@ class Module(object):
         # signal the existing listener that we're switching listeners, and the new comms code
         script = "Send-Message -Packets $(Encode-Packet -Type 130 -Data '%s');\n%s" % (listener_name, script)
 
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

@@ -23,6 +23,8 @@ from empire.server.common.converter.load_covenant import _convert_covenant_to_em
 from empire.server.common.module_models import PydanticModule, LanguageEnum
 from empire.server.database import models
 from empire.server.database.base import Session
+from empire.server.utils.module_util import handle_error_message
+
 from . import helpers
 
 
@@ -130,6 +132,49 @@ class Modules(object):
 
         return {'success': True, 'taskID': task_id, 'msg': msg}, None
 
+    def get_module_source(self, module_name: str, obfuscate: bool = False, obfuscate_command: str = '') -> Tuple[Optional[str], Optional[str]]:
+        """
+        Get the obfuscated/unobfuscated module source code.
+        """
+        try:
+            if obfuscate:
+                obfuscated_module_source = empire_config.yaml.get('directories', {})['obfuscated_module_source']
+                module_path = os.path.join(obfuscated_module_source, module_name)
+                # If pre-obfuscated module exists then return code
+                if module_path:
+                    with open(module_path, 'r') as f:
+                        obfuscated_module_code = f.read()
+                    return obfuscated_module_code, None
+
+                # If pre-obfuscated module does not exist then generate obfuscated code and return it
+                else:
+                    module_source = empire_config.yaml.get('directories', {})['module_source']
+                    module_path = os.path.join(module_source, module_name)
+                    with open(module_path, 'r') as f:
+                        module_code = f.read()
+                    obfuscated_module_code = data_util.obfuscate(installPath=self.main_menu.installPath, psScript=module_code, obfuscationCommand=obfuscate_command)
+                    return obfuscated_module_code, None
+
+            # Use regular/unobfuscated code
+            else:
+                module_source = empire_config.yaml.get('directories', {})['module_source']
+                module_path = os.path.join(module_source, module_name)
+                with open(module_path, 'r') as f:
+                    module_code = f.read()
+                return module_code, None
+        except:
+            return None, f"[!] Could not read module source path at: {module_source}"
+
+    def finalize_module(self, script: str, script_end: str, obfuscate: bool = False, obfuscation_command: str = '') -> str:
+        """
+        Combine script and script end with obfuscation if needed.
+        """
+        if obfuscate:
+            script_end = data_util.obfuscate(self.main_menu.installPath, psScript=script_end, obfuscationCommand=obfuscation_command)
+        script += script_end
+        script = data_util.keyword_obfuscation(script)
+        return script
+
     @staticmethod
     def change_module_state(main, module_list: list, module_state: bool):
         for module_name in module_list:
@@ -222,11 +267,11 @@ class Modules(object):
     @staticmethod
     def _generate_script_python(module: PydanticModule, params: Dict) -> Tuple[Optional[str], Optional[str]]:
         if module.script_path:
-            with open(module.script_path, 'r') as stream:
+            script_path = os.path.join(empire_config.yaml.get('directories', {})['module_source'], module.script_path)
+            with open(script_path, 'r') as stream:
                 script = stream.read()
         else:
             script = module.script
-
 
         for key, value in params.items():
             if key.lower() != "agent" and key.lower() != "computername":
@@ -236,30 +281,11 @@ class Modules(object):
 
     def _generate_script_powershell(self, module: PydanticModule, params: Dict, obfuscate=False, obfuscate_command='') \
             -> Tuple[Optional[str], Optional[str]]:
-        module_source = module.script_path
-        preobfuscated = False
-        if module_source:
-            # Get preobfuscated module code
-            if obfuscate:
-                obfuscated_module_source = module_source.replace("module_source", "obfuscated_module_source")
-                if pathlib.Path(obfuscated_module_source).is_file():
-                    preobfuscated = True
-                    module_source = obfuscated_module_source
+        if module.script_path:
+            script, err = self.get_module_source(module_name=module.script_path, obfuscate=obfuscate, obfuscate_command=obfuscate_command)
 
-            # read obfuscated or unobfuscated scripts
-            try:
-                with open(module_source, 'r') as f:
-                    module_code = f.read()
-            except:
-                return None, f"Could not read module source path at: {module_source}"
-
-            # obfuscate script if global obfuscation is on and preobfuscated script doesnt exist
-            if obfuscate and not preobfuscated:
-                script = data_util.obfuscate(installPath=self.main_menu.installPath, psScript=module_code, obfuscationCommand=obfuscate_command)
-            else:
-                script = module_code
-
-        # Check if global obfuscation is on and obfuscate powershell code from yamls
+            if err:
+                return None, err
         else:
             if obfuscate:
                 script = data_util.obfuscate(installPath=self.main_menu.installPath, psScript=module.script, obfuscationCommand=obfuscate_command)
@@ -268,6 +294,7 @@ class Modules(object):
 
         script_end = f" {module.script_end} "
         option_strings = []
+
         # This is where the code goes for all the modules that do not have a custom generate function.
         for key, value in params.items():
             if key.lower() not in ["agent", "computername", "outputfunction"]:
@@ -295,10 +322,7 @@ class Modules(object):
             .replace('{{OUTPUT_FUNCTION}}', params.get('OutputFunction', 'Out-String'))
 
         # obfuscate the invoke command and append to script
-        if obfuscate:
-            script_end = data_util.obfuscate(self.main_menu.installPath, psScript=script_end, obfuscationCommand=obfuscate_command)
-        script += script_end
-        script = data_util.keyword_obfuscation(script)
+        script = self.finalize_module(script=script, script_end=script_end, obfuscate=obfuscate, obfuscation_command=obfuscate_command)
 
         return script, None
 
@@ -387,8 +411,8 @@ class Modules(object):
             spec.loader.exec_module(imp_mod)
             my_model.advanced.generate_class = imp_mod.Module()
         elif my_model.script_path:
-            if not path.exists(my_model.script_path):
-                raise Exception("File provided in script_path does not exist.")
+            if not path.exists(os.path.join(empire_config.yaml.get('directories', {})['module_source'], my_model.script_path)):
+                raise Exception(f"File provided in script_path does not exist: { module_name }")
         elif my_model.script:
             pass
         else:

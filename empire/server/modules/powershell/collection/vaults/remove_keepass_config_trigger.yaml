@@ -30,5 +30,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/collection/vaults/KeePassConfig.ps1'
+script_path: 'collection/vaults/KeePassConfig.ps1'
 script_end: Get-Process *keepass* | Stop-Process -Force; Find-KeePassconfig | Remove-KeePassConfigTrigger | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Remove-KeePassConfigTrigger completed'

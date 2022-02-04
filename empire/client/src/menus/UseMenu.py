@@ -55,7 +55,7 @@ class UseMenu(Menu):
                 if len(cmd_line) > 2 and cmd_line[2] == '-p':
                     yield Completion(state.search_files(), start_position=-len(word_before_cursor))
                 else:
-                    for files in filtered_search_list(word_before_cursor, current_files()):
+                    for files in filtered_search_list(word_before_cursor, current_files(state.directory['downloads'])):
                         yield Completion(files, display=files.split('/')[-1],
                         start_position=-len(word_before_cursor))
             if len(cmd_line) > 1 and cmd_line[1] == 'credid':

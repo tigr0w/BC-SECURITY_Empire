@@ -32,5 +32,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/situational_awareness/host/Find-TrustedDocuments.ps1'
+script_path: 'situational_awareness/host/Find-TrustedDocuments.ps1'
 script_end: Find-TrustedDocuments | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-TrustedDocuments completed'

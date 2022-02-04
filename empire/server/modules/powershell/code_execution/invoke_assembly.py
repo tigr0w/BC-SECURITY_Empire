@@ -44,26 +44,14 @@ class Module(object):
             argument_string = argument_string.replace("\\", "\\\\")
             return f'\"{argument_string}\"'
 
-
-        module_source = main_menu.installPath + "/data/module_source/code_execution/Invoke-Assembly.ps1"
-        if main_menu.obfuscate:
-            obfuscated_module_source = module_source.replace("module_source", "obfuscated_module_source")
-            if pathlib.Path(obfuscated_module_source).is_file():
-                module_source = obfuscated_module_source
-
-        try:
-            with open(module_source, 'r') as f:
-                module_code = f.read()
-        except:
-            return handle_error_message("[!] Could not read module source path at: " + str(module_source))
-
-        if main_menu.obfuscate and not pathlib.Path(obfuscated_module_source).is_file():
-            script = data_util.obfuscate(installPath=main_menu.installPath, psScript=module_code, obfuscationCommand=main_menu.obfuscateCommand)
-        else:
-            script = module_code
+        # read in the common module source code
+        script, err = main_menu.modules.get_module_source(module_name=module.script_path, obfuscate=obfuscate, obfuscate_command=obfuscation_command)
+        
+        if err:
+            return handle_error_message(err)
 
         try:
-            with open(f"{main_menu.installPath}/downloads/{params['File']}", 'rb') as f:
+            with open(f"{main_menu.directory['downloads']}{params['File']}", 'rb') as f:
                 assembly_data = f.read()
         except:
             return handle_error_message("[!] Could not read .NET assembly path at: " + str(params['Arguments']))
@@ -79,9 +67,5 @@ class Module(object):
         if params['Arguments'] != '':
             script_end += " -" + "Arguments" + " " + assembly_args
 
-        if main_menu.obfuscate:
-            script_end = data_util.obfuscate(main_menu.installPath, psScript=script_end, obfuscationCommand=main_menu.obfuscateCommand)
-        script += script_end
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end=script_end, obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

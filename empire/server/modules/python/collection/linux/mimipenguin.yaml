@@ -18,4 +18,4 @@ options:
     description: Agent to execute module on.
     required: true
     value: ''
-script_path: 'empire/server/data/module_source/python/collection/mimipenguin.py'
+script_path: 'python/collection/mimipenguin.py'

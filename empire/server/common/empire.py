@@ -26,6 +26,7 @@ import json
 import time
 
 # Empire imports
+from empire.server.common.config import empire_config
 from empire.server.common import hooks_internal
 from empire.server.utils import data_util
 from . import helpers
@@ -104,6 +105,8 @@ class MainMenu(cmd.Cmd):
         # A hashtable of autruns based on agent language
         self.autoRuns = {}
         self.startup_plugins()
+        self.directory = {}
+        self.get_directories()
 
         message = "[*] Empire starting up..."
         signal = json.dumps({
@@ -487,14 +490,14 @@ class MainMenu(cmd.Cmd):
         # decode the file data and save it off as appropriate
         file_data = helpers.decode_base64(data.encode('UTF-8'))
 
-        with open(f"{self.installPath}/downloads/{filename}", 'wb+') as f:
+        with open(f"{self.directory['downloads']}{filename}", 'wb+') as f:
             f.write(file_data)
 
     def list_files(self):
         """
         List all files in the download directory.
         """
-        files = next(os.walk(f"{self.installPath}/downloads"), (None, None, []))[2]
+        files = next(os.walk(self.directory['downloads']), (None, None, []))[2]
         if '.keep' in files:
             files.remove('.keep')
         return files
@@ -503,13 +506,22 @@ class MainMenu(cmd.Cmd):
         """
         Download a file from the remote server.
         """
-        with open(f"{self.installPath}/downloads/{filename}", 'rb') as f:
+        with open(f"{self.directory['downloads']}{filename}", 'rb') as f:
             data = f.read()
 
         # decode the file data and save it off as appropriate
         file_data = helpers.encode_base64(data).decode('UTF-8')
         return file_data
 
+    def get_directories(self):
+        """
+        Get download folder path from config file
+        """
+        directories = empire_config.yaml.get('directories', {})
+        for key, value in directories.items():
+            self.directory[key] = value
+            if self.directory[key][-1] != '/':
+                self.directory[key] += '/'
 
 def xstr(s):
     """

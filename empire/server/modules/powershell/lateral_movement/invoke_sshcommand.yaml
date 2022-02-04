@@ -38,5 +38,6 @@ options:
     description: The command to run on the remote host.
     required: true
     value: ''
+script_path: 'lateral_movement/Invoke-SSHCommand.ps1'
 advanced:
   custom_generate: true

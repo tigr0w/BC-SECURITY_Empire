@@ -81,5 +81,5 @@ options:
     description: The number of cypher queries to queue up for neo4j RESTful API ingestion.
     required: true
     value: '1000'
-script_path: 'empire/server/data/module_source/situational_awareness/network/BloodHound.ps1'
+script_path: 'situational_awareness/network/BloodHound.ps1'
 script_end: Invoke-BloodHound {{ PARAMS }} | Out-String | %{$_ + "`n"};"`n Invoke-BloodHound completed!"

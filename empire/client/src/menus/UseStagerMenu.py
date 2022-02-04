@@ -82,10 +82,10 @@ class UseStagerMenu(UseMenu):
                 return
             file_name = response[self.selected].get('OutFile').get('Value').split('/')[-1]
             output_bytes = base64.b64decode(response[self.selected]['Output'])
-            directory = f"empire/client/generated-stagers/{file_name}"
+            directory = f"{state.directory['generated-stagers']}{file_name}"
             with open(directory, 'wb') as f:
                 f.write(output_bytes)
-            print(print_util.color(f'[+] {file_name} written to {os.path.abspath(os.getcwd())}/{directory}'))
+            print(print_util.color(f'[+] {file_name} written to {os.path.abspath(directory)}'))
         else:
             print(print_util.color(response[self.selected]['Output']))
             if empire_config.yaml.get('auto-copy-stagers', {}):

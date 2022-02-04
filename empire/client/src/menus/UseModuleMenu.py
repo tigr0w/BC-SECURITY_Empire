@@ -83,9 +83,9 @@ class UseModuleMenu(UseMenu):
                         msg = f"[!] Error: {response['error']}"
                     print(print_util.color(msg))
 
-                # Save copy off to downloads folder so last value points to the coorect file
+                # Save copy off to downloads folder so last value points to the correct file
                 data = base64.b64decode(data.encode('UTF-8'))
-                with open(f"empire/client/downloads/{filename}", 'wb+') as f:
+                with open(f"{state.directory['downloads']}{filename}", 'wb+') as f:
                     f.write(data)
 
         post_body = {}

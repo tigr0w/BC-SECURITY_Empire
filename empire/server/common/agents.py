@@ -262,13 +262,15 @@ class Agents(object):
         parts = path.split("\\")
 
         # construct the appropriate save path
-        save_path = "%s/downloads/%s/%s" % (self.installPath, sessionID, "/".join(parts[0:-1]))
+        save_path = f"{self.mainMenu.directory['downloads']}{sessionID}/{'/'.join(parts[0:-1])}"
+
         filename = os.path.basename(parts[-1])
 
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
-            safePath = os.path.abspath("%s/downloads/" % self.installPath)
+            safePath = os.path.abspath(self.mainMenu.directory['downloads'])
+
             if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
                 message = "[!] WARNING: agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
                     sessionID, path, data)
@@ -328,13 +330,13 @@ class Agents(object):
         """
         Save a module output file to the appropriate path.
         """
-
         sessionID = self.get_agent_name_db(sessionID)
         lang = self.get_language_db(sessionID)
         parts = path.split("/")
 
         # construct the appropriate save path
-        save_path = "%s/downloads/%s/%s" % (self.installPath, sessionID, "/".join(parts[0:-1]))
+        save_path = f"{self.mainMenu.directory['downloads']}{sessionID}/{'/'.join(parts[0:-1])}"
+
         filename = parts[-1]
 
         # decompress data if coming from a python agent:
@@ -358,7 +360,8 @@ class Agents(object):
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
-            safePath = os.path.abspath("%s/downloads/" % self.installPath)
+            safePath = os.path.abspath(self.mainMenu.directory['downloads'])
+
             if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
                 message = "[!] WARNING: agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
                     sessionID, path, data)
@@ -387,7 +390,7 @@ class Agents(object):
         })
         dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
-        return "/downloads/%s/%s/%s" % (sessionID, "/".join(parts[0:-1]), filename)
+        return f"{self.mainMenu.directory['downloads']}/{sessionID}/{'/'.join(parts[0:-1])}/{filename}"
 
     def save_agent_log(self, sessionID, data):
         """
@@ -396,7 +399,7 @@ class Agents(object):
         if isinstance(data, bytes):
             data = data.decode('UTF-8')
         name = self.get_agent_name_db(sessionID)
-        save_path = self.installPath + "/downloads/" + str(name) + "/"
+        save_path = f"{self.mainMenu.directory['downloads']}{name}/"
 
         # make the recursive directory structure if it doesn't already exist
         if not os.path.exists(save_path):
@@ -765,8 +768,8 @@ class Agents(object):
             return False
 
         # rename the logging/downloads folder
-        old_path = "%s/downloads/%s/" % (self.installPath, old_name)
-        new_path = "%s/downloads/%s/" % (self.installPath, new_name)
+        old_path = f"{self.mainMenu.directory['downloads']}/{old_name}"
+        new_path = f"{self.mainMenu.directory['downloads']}/{new_name}"
         ret_val = True
 
         # check if the folder is already used
@@ -1731,8 +1734,8 @@ class Agents(object):
         elif response_name == "TASK_CMD_JOB":
             # check if this is the powershell keylogging task, if so, write output to file instead of screen
             if key_log_task_id and key_log_task_id == task_id:
-                safePath = os.path.abspath("%s/downloads/" % self.mainMenu.installPath)
-                savePath = "%s/downloads/%s/keystrokes.txt" % (self.mainMenu.installPath, session_id)
+                safePath = os.path.abspath(f"{self.mainMenu.directory['downloads']}")
+                savePath = f"{self.mainMenu.directory['downloads']}/{session_id}/keystrokes.txt"
                 if not os.path.abspath(savePath).startswith(safePath):
                     message = "[!] WARNING: agent {} attempted skywalker exploit!".format(self.sessionID)
                     signal = json.dumps({

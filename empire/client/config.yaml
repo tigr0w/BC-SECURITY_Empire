@@ -113,3 +113,6 @@ shortcuts:
       shell: whoami
     ps:
       shell: ps
+directories:
+  downloads: empire/client/downloads/
+  generated-stagers: empire/client/generated-stagers/

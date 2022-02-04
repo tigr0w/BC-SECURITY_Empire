@@ -37,5 +37,5 @@ options:
     description: An array of computernames to run the script on.
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/collection/Invoke-NinjaCopy.ps1'
+script_path: 'collection/Invoke-NinjaCopy.ps1'
 script_end: $null = Invoke-NinjaCopy {{ PARAMS }}; Write-Output 'Invoke-NinjaCopy Completed'

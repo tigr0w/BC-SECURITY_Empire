@@ -33,5 +33,6 @@ options:
     description: Host to execute the module on
     required: true
     value: ''
+script_path: 'credentials/Invoke-Mimikatz.ps1'
 advanced:
   custom_generate: true
