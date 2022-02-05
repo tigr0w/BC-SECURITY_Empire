@@ -151,7 +151,7 @@ def start_sockets(
         log.setLevel(logging.ERROR)
 
     def get_user_from_token():
-        # user = empire_menu.users.get_user_from_token(request.args.get('token', ''))
+        # user = empire_menu.users.get_user_from_token(request.args.get("token", ""))
         if user:
             user["password"] = ""
             user["api_token"] = ""

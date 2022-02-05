@@ -38,7 +38,6 @@ class Module(object):
             return handle_error_message(
                 "[!] Listener '%s' doesn't exist!" % (listener_name)
             )
-
         chars = string.ascii_uppercase + string.digits
         session_id = helpers.random_string(length=8, charset=chars)
         staging_key = active_listener.options["StagingKey"]["Value"]

@@ -230,7 +230,6 @@ def parse_result_packet(packet, offset=0):
         message = "[!] parse_result_packet(): exception: {}".format(e)
         signal = json.dumps({"print": True, "message": message})
         # dispatcher.send(signal, sender="empire")
-
         return (None, None, None, None, None, None, None)
 
 

@@ -47,7 +47,7 @@ class Module(object):
                 % (host, port, stager)
             )
             # Remove weird chars that could have been added by ISE
-            n = re.compile(u"(\xef|\xbb|\xbf)")
+            n = re.compile("(\xef|\xbb|\xbf)")
             # loop through each character and insert null byte
             for char in n.sub("", cradle):
                 # insert the nullbyte
