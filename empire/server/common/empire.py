@@ -10,6 +10,7 @@ menu loops.
 from __future__ import absolute_import
 from __future__ import print_function
 
+import os
 from builtins import input
 from builtins import str
 from typing import Optional
@@ -20,6 +21,7 @@ import json
 import time
 
 # Empire imports
+from empire.server.common.config import empire_config
 from empire.server.common import hooks_internal
 from empire.server.utils import data_util
 
@@ -116,6 +118,7 @@ class MainMenu(object):
         self.resourceQueue = []
         # A hashtable of autruns based on agent language
         self.autoRuns = {}
+        self.directory = {}
 
         message = "[*] Empire starting up..."
         signal = json.dumps({
@@ -362,6 +365,16 @@ class MainMenu(object):
             else:
                 print(helpers.color("[*] " + os.path.basename(file) + " was already obfuscated. Not reobfuscating."))
             data_util.obfuscate_module(file, obfuscation_command, reobfuscate)
+
+    def get_directories(self):
+        """
+        Get download folder path from config file
+        """
+        directories = empire_config.yaml.get("directories", {})
+        for key, value in directories.items():
+            self.directory[key] = value
+            if self.directory[key][-1] != "/":
+                self.directory[key] += "/"
 
 
 def xstr(s):

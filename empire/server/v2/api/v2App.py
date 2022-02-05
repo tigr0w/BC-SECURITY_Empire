@@ -70,7 +70,10 @@ def initialize():
     #  /index.html.
     # https://stackoverflow.com/questions/64522736/how-to-connect-vue-js-as-frontend-and-fastapi-as-backend
     # https://stackoverflow.com/questions/62928450/how-to-put-backend-and-frontend-together-returning-react-frontend-from-fastapi
-    v2App.mount("/", StaticFiles(directory="empire/server/v2/api/static"), name="static")
+    try:
+        v2App.mount("/", StaticFiles(directory="empire/server/v2/api/static"), name="static")
+    except Exception as e:
+        pass
 
     @v2App.get("/ws-tester")
     async def ws_tester():

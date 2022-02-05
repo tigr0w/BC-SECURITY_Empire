@@ -57,5 +57,6 @@ options:
     description: Time to record mic, sys, or audio. Time suffix can be s/m/h.
     required: false
     value: 10s
+script_path: collection/Invoke-WireTap.ps1
 advanced:
   custom_generate: true

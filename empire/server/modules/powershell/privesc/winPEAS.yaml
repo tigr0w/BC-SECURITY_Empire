@@ -76,7 +76,7 @@ options:
     description: Disable colored output.
     required: true
     value: 'False'
-script_path: 'empire/server/data/module_source/privesc/Invoke-winPEAS.ps1'
+script_path: 'privesc/Invoke-winPEAS.ps1'
 script_end: "Invoke-winPEAS -Command \"{{ PARAMS }}\""
 advanced:
   option_format_string: "{{ VALUE }}"

@@ -20,8 +20,5 @@ class Module(object):
         else:
             script = "'Logging off current user.'; Start-Sleep -s 3; shutdown /l /f"
 
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

@@ -45,5 +45,6 @@ options:
       none, or other).
     required: false
     value: default
+script_path: 'privesc/Invoke-MS16135.ps1'
 advanced:
   custom_generate: true

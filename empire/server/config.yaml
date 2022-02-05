@@ -21,8 +21,13 @@ database:
     #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
     ip-blacklist: ""
 modules:
+  # TODO VR: I think I deleted this for 5.0
   retain-last-value: false
 plugins:
   # Auto-load plugin with defined settings
   csharpserver:
     status: start
+directories:
+  downloads: empire/server/downloads/
+  module_source: empire/server/data/module_source/
+  obfuscated_module_source: empire/server/data/obfuscated_module_source/

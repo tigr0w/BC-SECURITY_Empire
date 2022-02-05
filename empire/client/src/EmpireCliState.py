@@ -6,6 +6,7 @@ import base64
 import requests
 import socketio
 
+from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.MenuState import menu_state
 from empire.client.src.menus import Menu
 from empire.client.src.utils import print_util
@@ -41,6 +42,9 @@ class EmpireCliState(object):
 
         # { session_id: { task_id: 'output' }}
         self.cached_agent_results = {}
+
+        # directories for download/upload files
+        self.directory = {}
 
 
     def register_menu(self, menu: Menu):
@@ -97,6 +101,7 @@ class EmpireCliState(object):
         self.get_bypasses()
         self.get_credentials()
         self.get_files()
+        self.get_directories()
 
     def init_handlers(self):
         if self.sio:
@@ -207,6 +212,16 @@ class EmpireCliState(object):
         tk.withdraw()
         file_directory = filedialog.askopenfilename(title="Select file")
         return file_directory
+
+    def get_directories(self):
+        """
+        Get download folder path from config file
+        """
+        directories = empire_config.yaml.get('directories', {})
+        for key, value in directories.items():
+            self.directory[key] = value
+            if self.directory[key][-1] != '/':
+                self.directory[key] += '/'
 
     # I think we we will break out the socketio handler and http requests to new classes that the state imports.
     # This will do for this iteration.

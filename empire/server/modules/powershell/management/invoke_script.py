@@ -21,18 +21,14 @@ class Module(object):
 
         if script_path != '':
             try:
-                f = open(script_path, 'r')
+                with open(f"{script_path}", 'r') as data:
+                    script = data.read()
             except:
                 return handle_error_message("[!] Could not read script source path at: " + str(script_path))
 
-            script = f.read()
-            f.close()
             script += '\n'
 
         script += "%s" % script_cmd
 
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

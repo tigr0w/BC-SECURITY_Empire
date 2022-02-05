@@ -46,5 +46,6 @@ options:
       value.
     required: false
     value: ''
+script_path: 'recon/Fetch-And-Brute-Local-Accounts.ps1'
 advanced:
   custom_generate: true

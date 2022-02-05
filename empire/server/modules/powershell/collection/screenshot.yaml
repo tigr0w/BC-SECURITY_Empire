@@ -24,5 +24,6 @@ options:
     description: 'JPEG Compression ratio: 1 to 100.'
     required: false
     value: ''
+script_path: 'collection/Get-Screenshot.ps1'
 advanced:
   custom_generate: true

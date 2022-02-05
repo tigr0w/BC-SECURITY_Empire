@@ -27,5 +27,5 @@ options:
     description: Name of the dll to inject. This can be an absolute or relative path.
     required: true
     value: ''
-script_path: 'empire/server/data/module_source/code_execution/Invoke-DllInjection.ps1'
+script_path: 'code_execution/Invoke-DllInjection.ps1'
 script_end: Invoke-DllInjection {{ PARAMS }}

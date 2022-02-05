@@ -8,49 +8,18 @@ from typing import Dict
 from empire.server.common import helpers
 from empire.server.common.module_models import PydanticModule
 from empire.server.utils import data_util
+from empire.server.utils.module_util import handle_error_message
 
 
 class Module(object):
     @staticmethod
     def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
-        script = """
-function Get-Screenshot 
-{
-    param
-    (
-        [Parameter(Mandatory = $False)]
-        [string]
-        $Ratio
-    )
-    Add-Type -Assembly System.Windows.Forms;
-    $ScreenBounds = [Windows.Forms.SystemInformation]::VirtualScreen;
-    $ScreenshotObject = New-Object Drawing.Bitmap $ScreenBounds.Width, $ScreenBounds.Height;
-    $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject);
-    $DrawingGraphics.CopyFromScreen( $ScreenBounds.Location, [Drawing.Point]::Empty, $ScreenBounds.Size);
-    $DrawingGraphics.Dispose();
-    $ms = New-Object System.IO.MemoryStream;
-    if ($Ratio) {
-    	try {
-    		$iQual = [convert]::ToInt32($Ratio);
-    	} catch {
-    		$iQual=80;
-    	}
-    	if ($iQual -gt 100){
-    		$iQual=100;
-    	} elseif ($iQual -lt 1){
-    		$iQual=1;
-    	}
-    	$encoderParams = New-Object System.Drawing.Imaging.EncoderParameters;
-    	$encoderParams.Param[0] = New-Object Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality, $iQual);
-    	$jpegCodec = [Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.FormatDescription -eq \"JPEG\" }
-    	$ScreenshotObject.save($ms, $jpegCodec, $encoderParams);
-    } else {
-    	$ScreenshotObject.save($ms, [Drawing.Imaging.ImageFormat]::Png);
-    }
-    $ScreenshotObject.Dispose();
-    [convert]::ToBase64String($ms.ToArray());
-}
-Get-Screenshot"""
+
+        # read in the common module source code
+        script, err = main_menu.modules.get_module_source(module_name=module.script_path, obfuscate=obfuscate, obfuscate_command=obfuscation_command)
+        
+        if err:
+            return handle_error_message(err)
 
         if params['Ratio']:
             if params['Ratio']!='0':
@@ -61,17 +30,15 @@ Get-Screenshot"""
         else:
             module.output_extension = 'png'
 
+        script_end = "\nGet-Screenshot"
         for option,values in params.items():
             if option.lower() != "agent":
                 if values and values != '':
                     if values.lower() == "true":
                         # if we're just adding a switch
-                        script += " -" + str(option)
+                        script_end += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values)
-        # Get the random function name generated at install and patch the stager with the proper function name
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
+                        script_end += " -" + str(option) + " " + str(values)
 
+        script = main_menu.modules.finalize_module(script=script, script_end=script_end, obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

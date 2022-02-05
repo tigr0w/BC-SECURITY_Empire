@@ -26,5 +26,6 @@ options:
     description: Shellcode to inject, 0x00,0x0a,... format.
     required: true
     value: ''
+script_path: 'code_execution/Invoke-ShellcodeMSIL.ps1'
 advanced:
   custom_generate: true

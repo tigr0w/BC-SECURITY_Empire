@@ -1,4 +1,5 @@
 suppress-self-cert-warning: true
+auto-copy-stagers: true
 servers:
   localhost:
     host: https://localhost
@@ -112,3 +113,6 @@ shortcuts:
       shell: whoami
     ps:
       shell: ps
+directories:
+  downloads: empire/client/downloads/
+  generated-stagers: empire/client/generated-stagers/

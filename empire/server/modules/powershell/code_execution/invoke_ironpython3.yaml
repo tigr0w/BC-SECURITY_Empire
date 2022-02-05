@@ -24,5 +24,5 @@ options:
     description: Base64 encoded IronPython3 code
     required: true
     value: ''
-script_path: 'empire/server/data/module_source/code_execution/Invoke-IronPython3.ps1'
+script_path: 'code_execution/Invoke-IronPython3.ps1'
 script_end: Invoke-IronPython3 {{ PARAMS }}

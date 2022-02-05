@@ -24,5 +24,5 @@ options:
     description: Base64 encoded boolang code
     required: true
     value: ''
-script_path: 'empire/server/data/module_source/code_execution/Invoke-Boolang.ps1'
+script_path: 'code_execution/Invoke-Boolang.ps1'
 script_end: Invoke-Boolang {{ PARAMS }}

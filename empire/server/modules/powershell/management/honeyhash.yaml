@@ -30,5 +30,5 @@ options:
     description: Specifies the fake password.
     required: true
     value: ''
-script_path: 'empire/server/data/module_source/management/New-HoneyHash.ps1'
+script_path: 'management/New-HoneyHash.ps1'
 script_end: New-HoneyHash {{ PARAMS }}

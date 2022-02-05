@@ -31,5 +31,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/collection/vaults/KeeThief.ps1'
+script_path: 'collection/vaults/KeeThief.ps1'
 script_end: Get-KeePassDatabaseKey | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-KeePassDatabaseKey completed'

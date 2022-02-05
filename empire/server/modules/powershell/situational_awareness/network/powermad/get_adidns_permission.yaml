@@ -58,5 +58,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/situational_awareness/network/powermad.ps1'
+script_path: 'situational_awareness/network/powermad.ps1'
 script_end: Get-ADIDNSPermission {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-ADIDNSPermission completed'

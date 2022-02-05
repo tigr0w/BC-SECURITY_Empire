@@ -66,5 +66,6 @@ options:
       none, or other).
     required: false
     value: default
+script_path: 'management/Invoke-ReflectivePEInjection.ps1'
 advanced:
   custom_generate: true

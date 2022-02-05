@@ -1,5 +1,6 @@
 import base64
 
+
 def get_data_from_file(file_path: str):
     """
     Get data from file and base64 encode it

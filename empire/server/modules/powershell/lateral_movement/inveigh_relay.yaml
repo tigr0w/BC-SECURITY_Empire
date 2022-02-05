@@ -115,5 +115,6 @@ options:
     description: (Anonymous/NTLM) HTTP listener authentication type for wpad.dat requests.
     required: false
     value: ''
+script_path: 'lateral_movement/Invoke-InveighRelay.ps1'
 advanced:
   custom_generate: true
