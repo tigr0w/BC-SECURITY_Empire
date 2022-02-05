@@ -5,13 +5,13 @@ from pydantic import BaseModel, validator
 
 
 class LanguageEnum(str, Enum):
-    python = 'python'
-    powershell = 'powershell'
-    csharp = 'csharp'
+    python = "python"
+    powershell = "powershell"
+    csharp = "csharp"
 
 
 class PydanticModuleAdvanced(BaseModel):
-    option_format_string: str = "-{{ KEY }} \"{{ VALUE }}\""
+    option_format_string: str = '-{{ KEY }} "{{ VALUE }}"'
     option_format_string_boolean: str = "-{{ KEY }}"
     custom_generate: bool = False
     generate_class: Any = None
@@ -20,9 +20,9 @@ class PydanticModuleAdvanced(BaseModel):
 class PydanticModuleOption(BaseModel):
     name: str
     name_in_code: Optional[str]
-    description: str = ''
+    description: str = ""
     required: bool = False
-    value: str = ''
+    value: str = ""
     suggested_values: List[str] = []
     strict: bool = False
 
@@ -32,8 +32,8 @@ class PydanticModule(BaseModel):
     id: str
     name: str
     authors: List[str] = []
-    description: str = ''
-    software: str = ''
+    description: str = ""
+    software: str = ""
     techniques: List[str] = []
     background: bool = False
     output_extension: Optional[str] = None
@@ -45,7 +45,7 @@ class PydanticModule(BaseModel):
     options: List[PydanticModuleOption] = []
     script: Optional[str] = None
     script_path: Optional[str] = None
-    script_end: str = ' {{ PARAMS }}'
+    script_end: str = " {{ PARAMS }}"
     enabled: bool = True
     advanced: PydanticModuleAdvanced = PydanticModuleAdvanced()
     compiler_yaml: Optional[str]

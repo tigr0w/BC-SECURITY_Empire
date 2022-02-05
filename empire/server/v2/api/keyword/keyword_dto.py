@@ -27,4 +27,3 @@ class KeywordUpdateRequest(BaseModel):
 class KeywordPostRequest(BaseModel):
     keyword: str
     replacement: str
-

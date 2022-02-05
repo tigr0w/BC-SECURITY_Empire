@@ -7,9 +7,15 @@ from empire.server.common.module_models import PydanticModule
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = "") -> Tuple[Optional[str], Optional[str]]:
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ) -> Tuple[Optional[str], Optional[str]]:
         path = main_menu.installPath + "/data/misc/python_modules/mss.zip"
-        open_file = open(path, 'rb')
+        open_file = open(path, "rb")
         module_data = open_file.read()
         open_file.close()
         module_data = base64.b64encode(module_data)
@@ -32,7 +38,10 @@ def run(data):
     print(raw)
 
 run(data)
-""" % (module_data, params['Monitor'], params['SavePath'])
+""" % (
+            module_data,
+            params["Monitor"],
+            params["SavePath"],
+        )
 
         return script
-

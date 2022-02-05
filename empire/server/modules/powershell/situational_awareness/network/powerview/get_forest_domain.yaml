@@ -33,5 +33,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/situational_awareness/network/powerview.ps1'
+script_path: 'situational_awareness/network/powerview.ps1'
 script_end: Get-ForestDomain {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-ForestDomain completed'

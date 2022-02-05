@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -16,13 +16,13 @@ def domain_to_dto_credential(credential):
         sid=credential.sid,
         notes=credential.notes,
         created_at=credential.created_at,
-        updated_at=credential.updated_at
+        updated_at=credential.updated_at,
     )
 
 
 class Credential(BaseModel):
     id: int
-    credtype: str   # todo enum?
+    credtype: str  # todo enum?
     domain: str
     username: str
     password: str
@@ -39,7 +39,7 @@ class Credentials(BaseModel):
 
 
 class CredentialUpdateRequest(BaseModel):
-    credtype: str   # todo enum?
+    credtype: str  # todo enum?
     domain: str
     username: str
     password: str
@@ -53,7 +53,7 @@ class CredentialUpdateRequest(BaseModel):
 
 
 class CredentialPostRequest(BaseModel):
-    credtype: str   # todo enum?
+    credtype: str  # todo enum?
     domain: str
     username: str
     password: str

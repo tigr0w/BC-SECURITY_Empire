@@ -23,10 +23,10 @@ class StagerTemplateService(object):
     def new_instance(self, template: str):
         instance = type(self.loaded_stagers[template])(self.main_menu)
         for key, value in instance.options.items():
-            if value.get('SuggestedValues') is None:
-                value['SuggestedValues'] = []
-            if value.get('Strict') is None:
-                value['Strict'] = False
+            if value.get("SuggestedValues") is None:
+                value["SuggestedValues"] = []
+            if value.get("Strict") is None:
+                value["Strict"] = False
 
         return instance
 
@@ -35,7 +35,7 @@ class StagerTemplateService(object):
         Load stagers from the install + "/stagers/*" path
         """
         root_path = "%s/stagers/" % db.query(models.Config).first().install_path
-        pattern = '*.py'
+        pattern = "*.py"
 
         print(helpers.color("[*] v2: Loading stagers from: %s" % (root_path)))
 
@@ -44,7 +44,7 @@ class StagerTemplateService(object):
                 file_path = os.path.join(root, filename)
 
                 # don't load up any of the templates
-                if fnmatch.fnmatch(filename, '*template.py'):
+                if fnmatch.fnmatch(filename, "*template.py"):
                     continue
 
                 # extract just the module name from the full path
@@ -57,14 +57,13 @@ class StagerTemplateService(object):
 
                 stager = mod.Stager(self.main_menu, [])
                 for key, value in stager.options.items():
-                    if value.get('SuggestedValues') is None:
-                        value['SuggestedValues'] = []
-                    if value.get('Strict') is None:
-                        value['Strict'] = False
+                    if value.get("SuggestedValues") is None:
+                        value["SuggestedValues"] = []
+                    if value.get("Strict") is None:
+                        value["Strict"] = False
 
                 self.loaded_stagers[slugify(stager_name)] = stager
 
 
 def slugify(stager_name: str):
     return stager_name.lower().replace("/", "_")
-

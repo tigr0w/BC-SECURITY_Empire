@@ -1,9 +1,13 @@
-from fastapi import HTTPException, Depends
+from fastapi import Depends, HTTPException
 
 from empire.server.server import main
 from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user
-from empire.server.v2.api.stager.stager_dto import domain_to_dto_template, StagerTemplate, StagerTemplates
+from empire.server.v2.api.stager.stager_dto import (
+    StagerTemplate,
+    StagerTemplates,
+    domain_to_dto_template,
+)
 
 stager_template_service = main.stagertemplatesv2
 
@@ -14,15 +18,25 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=StagerTemplates, dependencies=[Depends(get_current_active_user)])
+@router.get(
+    "/", response_model=StagerTemplates, dependencies=[Depends(get_current_active_user)]
+)
 async def get_stager_templates():
-    templates = list(map(lambda x: domain_to_dto_template(x[1], x[0]),
-                         stager_template_service.loaded_stagers.items()))
+    templates = list(
+        map(
+            lambda x: domain_to_dto_template(x[1], x[0]),
+            stager_template_service.loaded_stagers.items(),
+        )
+    )
 
-    return {'records': templates}
+    return {"records": templates}
 
 
-@router.get("/{uid}", response_model=StagerTemplate, dependencies=[Depends(get_current_active_user)])
+@router.get(
+    "/{uid}",
+    response_model=StagerTemplate,
+    dependencies=[Depends(get_current_active_user)],
+)
 async def get_stager_template(uid: str):
     template = stager_template_service.loaded_stagers.get(uid)
 

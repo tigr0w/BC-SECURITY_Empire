@@ -31,5 +31,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/collection/vaults/KeePassConfig.ps1'
+script_path: 'collection/vaults/KeePassConfig.ps1'
 script_end: Find-KeePassconfig | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-KeePassconfig completed'

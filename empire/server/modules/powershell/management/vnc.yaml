@@ -35,5 +35,5 @@ options:
     description: IP Address to use for reverse connection.
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/management/Invoke-Vnc.ps1'
+script_path: 'management/Invoke-Vnc.ps1'
 script_end: Invoke-Vnc {{ PARAMS }}

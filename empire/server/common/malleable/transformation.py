@@ -1,10 +1,16 @@
-
 from __future__ import absolute_import
-import os, base64, six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
-from pyparsing import *
-from .utility import MalleableError, MalleableUtil, MalleableObject
-from six.moves import range
+
 import ast
+import base64
+import os
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
+from pyparsing import *
+from six.moves import range
+
+from .utility import MalleableError, MalleableObject, MalleableUtil
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TRANSFORMATION
@@ -12,6 +18,7 @@ import ast
 # Defining the model through which arbitrary data can undergo
 # reversable transformations.
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 class Transform(MalleableObject):
     """A class housing the arbitrary functionality of a reversable transformation.
@@ -60,6 +67,7 @@ class Transform(MalleableObject):
                 str: The powershell code that would execute the reverse transformation on an
                     arbitrary string.
     """
+
     NONE = 0
     APPEND = 1
     BASE64 = 2
@@ -103,10 +111,17 @@ class Transform(MalleableObject):
         Returns:
             dict (str, obj)
         """
-        return dict(list(super(Transform, self)._serialize().items()) + list({
-            "type" : self.type,
-            "arg" : self.arg if self.type != Transform.MASK else MalleableUtil.to_hex(self.arg[0])
-        }.items()))
+        return dict(
+            list(super(Transform, self)._serialize().items())
+            + list(
+                {
+                    "type": self.type,
+                    "arg": self.arg
+                    if self.type != Transform.MASK
+                    else MalleableUtil.to_hex(self.arg[0]),
+                }.items()
+            )
+        )
 
     @classmethod
     def _deserialize(cls, data):
@@ -121,7 +136,15 @@ class Transform(MalleableObject):
         transform = super(Transform, cls)._deserialize(data)
         if data:
             transform.type = data["type"] if "type" in data else Transform.NONE
-            transform.arg = (data["arg"] if transform.type != Transform.MASK else MalleableUtil.from_hex(data["arg"])) if "arg" in data else None
+            transform.arg = (
+                (
+                    data["arg"]
+                    if transform.type != Transform.MASK
+                    else MalleableUtil.from_hex(data["arg"])
+                )
+                if "arg" in data
+                else None
+            )
             transform.apply_transform(transform.type, transform.arg)
         return transform
 
@@ -133,13 +156,13 @@ class Transform(MalleableObject):
             pyparsing object
         """
         return (
-            Group(Literal("append") + cls.VALUE) |
-            Group(Literal("base64url")) |
-            Group(Literal("base64")) |
-            Group(Literal("mask")) |
-            Group(Literal("netbiosu")) |
-            Group(Literal("netbios")) |
-            Group(Literal("prepend") + cls.VALUE)
+            Group(Literal("append") + cls.VALUE)
+            | Group(Literal("base64url"))
+            | Group(Literal("base64"))
+            | Group(Literal("mask"))
+            | Group(Literal("netbiosu"))
+            | Group(Literal("netbios"))
+            | Group(Literal("prepend") + cls.VALUE)
         ) + cls.SEMICOLON
 
     def apply_transform(self, type, arg):
@@ -149,22 +172,30 @@ class Transform(MalleableObject):
             type (int): Type of Transform to implement.
             arg (str): Argument to pass to the implementation.
         """
-        if type == Transform.APPEND: self._append(arg)
-        elif type == Transform.BASE64: self._base64()
-        elif type == Transform.BASE64URL: self._base64url()
-        elif type == Transform.MASK: self._mask(arg)
-        elif type == Transform.NETBIOS: self._netbios()
-        elif type == Transform.NETBIOSU: self._netbiosu()
-        elif type == Transform.PREPEND: self._prepend(arg)
-        else: self._none()
+        if type == Transform.APPEND:
+            self._append(arg)
+        elif type == Transform.BASE64:
+            self._base64()
+        elif type == Transform.BASE64URL:
+            self._base64url()
+        elif type == Transform.MASK:
+            self._mask(arg)
+        elif type == Transform.NETBIOS:
+            self._netbios()
+        elif type == Transform.NETBIOSU:
+            self._netbiosu()
+        elif type == Transform.PREPEND:
+            self._prepend(arg)
+        else:
+            self._none()
 
     def _none(self):
         """Configure the `none` Transform, which does nothing."""
-        self.transform = lambda data: data,
-        self.transform_r = lambda data: data,
-        self.generate_python = lambda var: "",
-        self.generate_python_r = lambda var: "",
-        self.generate_powershell = lambda var: "",
+        self.transform = (lambda data: data,)
+        self.transform_r = (lambda data: data,)
+        self.generate_python = (lambda var: "",)
+        self.generate_python_r = (lambda var: "",)
+        self.generate_powershell = (lambda var: "",)
         self.generate_powershell_r = lambda var: ""
 
     def _append(self, string):
@@ -177,39 +208,63 @@ class Transform(MalleableObject):
             MalleableError: If `string` is null.
         """
         if string is None:
-            MalleableError.throw(Transform.__class__, "append", "string argument must not be null")
+            MalleableError.throw(
+                Transform.__class__, "append", "string argument must not be null"
+            )
 
         self.transform = lambda data: append_transform(string, data)
         self.transform_r = lambda data: append_transform_r(string, data)
 
         def append_transform(string, data):
             if isinstance(string, str):
-                string = string.encode('latin-1')
+                string = string.encode("latin-1")
             if isinstance(data, str):
-                data = data.encode('latin-1')
+                data = data.encode("latin-1")
             r = data + string
             return r
 
         def append_transform_r(string, data):
             if isinstance(string, str):
-                string = string.encode('latin-1')
+                string = string.encode("latin-1")
             if isinstance(data, str):
-                data = data.encode('latin-1')
-            return data[:-len(string)]
+                data = data.encode("latin-1")
+            return data[: -len(string)]
 
-        self.generate_python = lambda var: "%(var)s+=b'%(string)s'\n" % {"var":var, "string":string}
-        self.generate_python_r = lambda var: "%(var)s=%(var)s[:-%(len)i]\n" % {"var":var, "len":len(string)}
-        self.generate_powershell = lambda var: "%(var)s+='%(string)s';" % {"var":var, "string":string}
-        self.generate_powershell_r = lambda var: "%(var)s=%(var)s.Substring(0,%(var)s.Length-%(len)i);" % {"var":var, "len":len(string)}
+        self.generate_python = lambda var: "%(var)s+=b'%(string)s'\n" % {
+            "var": var,
+            "string": string,
+        }
+        self.generate_python_r = lambda var: "%(var)s=%(var)s[:-%(len)i]\n" % {
+            "var": var,
+            "len": len(string),
+        }
+        self.generate_powershell = lambda var: "%(var)s+='%(string)s';" % {
+            "var": var,
+            "string": string,
+        }
+        self.generate_powershell_r = (
+            lambda var: "%(var)s=%(var)s.Substring(0,%(var)s.Length-%(len)i);"
+            % {"var": var, "len": len(string)}
+        )
 
     def _base64(self):
         """Configure the `base64` Transform, which base64 encodes an arbitrary input."""
         self.transform = lambda data: base64.b64encode(data)
         self.transform_r = lambda data: base64.b64decode(data)
-        self.generate_python = lambda var: "%(var)s=base64.b64encode(%(var)s)\n" % {"var":var}
-        self.generate_python_r = lambda var: "%(var)s=base64.b64decode(%(var)s)\n" % {"var":var}
-        self.generate_powershell = lambda var: "%(var)s=[Convert]::ToBase64String([System.Text.Encoding]::Default.GetBytes(%(var)s));" % {"var":var}
-        self.generate_powershell_r = lambda var: "%(var)s=[System.Text.Encoding]::Default.GetString([System.Convert]::FromBase64String(%(var)s));" % {"var":var}
+        self.generate_python = lambda var: "%(var)s=base64.b64encode(%(var)s)\n" % {
+            "var": var
+        }
+        self.generate_python_r = lambda var: "%(var)s=base64.b64decode(%(var)s)\n" % {
+            "var": var
+        }
+        self.generate_powershell = (
+            lambda var: "%(var)s=[Convert]::ToBase64String([System.Text.Encoding]::Default.GetBytes(%(var)s));"
+            % {"var": var}
+        )
+        self.generate_powershell_r = (
+            lambda var: "%(var)s=[System.Text.Encoding]::Default.GetString([System.Convert]::FromBase64String(%(var)s));"
+            % {"var": var}
+        )
 
     def _base64url(self):
         """Configure the `base64url` Transform, which base64 encodes an arbitary input using url-safe characters."""
@@ -220,7 +275,7 @@ class Transform(MalleableObject):
             if isinstance(data, str):
                 data = data.encode("latin-1")
             r = six.moves.urllib.parse.quote(base64.b64encode(data))
-            return r.encode('Latin-1')
+            return r.encode("Latin-1")
 
         def base64url_transform_r(data):
             if isinstance(data, str):
@@ -228,14 +283,26 @@ class Transform(MalleableObject):
             # Fix missing padding issue (Error parsing routing packet not fixed)
             missing_padding = len(data) % 4
             if missing_padding:
-                data += b'=' * (4 - missing_padding)
+                data += b"=" * (4 - missing_padding)
             r = base64.b64decode(six.moves.urllib.parse.unquote_to_bytes(data))
             return r
 
-        self.generate_python = lambda var: "%(var)s=urllib.quote(base64.b64encode(%(var)s))\n" % {"var":var}
-        self.generate_python_r = lambda var: "%(var)s=base64.b64decode(urllib.unquote(%(var)s))\n" % {"var":var}
-        self.generate_powershell = lambda var: "Add-Type -AssemblyName System.Web;%(var)s=[System.Web.HttpUtility]::UrlEncode([System.Convert]::ToBase64string([System.Text.Encoding]::Default.GetBytes(%(var)s)));" % {"var":var}
-        self.generate_powershell_r = lambda var: "Add-Type -AssemblyName System.Web;%(var)s=[System.Text.Encoding]::Default.GetString([System.Convert]::FromBase64String([System.Web.HttpUtility]::UrlDecode(%(var)s)));" % {"var":var}
+        self.generate_python = (
+            lambda var: "%(var)s=urllib.quote(base64.b64encode(%(var)s))\n"
+            % {"var": var}
+        )
+        self.generate_python_r = (
+            lambda var: "%(var)s=base64.b64decode(urllib.unquote(%(var)s))\n"
+            % {"var": var}
+        )
+        self.generate_powershell = (
+            lambda var: "Add-Type -AssemblyName System.Web;%(var)s=[System.Web.HttpUtility]::UrlEncode([System.Convert]::ToBase64string([System.Text.Encoding]::Default.GetBytes(%(var)s)));"
+            % {"var": var}
+        )
+        self.generate_powershell_r = (
+            lambda var: "Add-Type -AssemblyName System.Web;%(var)s=[System.Text.Encoding]::Default.GetString([System.Convert]::FromBase64String([System.Web.HttpUtility]::UrlDecode(%(var)s)));"
+            % {"var": var}
+        )
 
     def _mask(self, key):
         """Configure the `mask` Transform, which encodes an arbitrary input using the XOR operation
@@ -249,22 +316,30 @@ class Transform(MalleableObject):
         """
         if isinstance(key, str):
             key = bytearray.fromhex(key).decode()
-            key = key.encode('latin-1')
+            key = key.encode("latin-1")
 
         if not key:
-            MalleableError.throw(Transform.__class__, "mask", "key argument must not be empty")
+            MalleableError.throw(
+                Transform.__class__, "mask", "key argument must not be empty"
+            )
         self.transform = lambda data: mask_transform(data, key)
 
         def mask_transform(data, key):
             if isinstance(data, str):
-                data = data.encode('latin-1')
+                data = data.encode("latin-1")
             r = "".join([chr(c ^ key[0]) for c in data])
-            return r.encode('Latin-1')
+            return r.encode("Latin-1")
 
         self.transform_r = self.transform
-        self.generate_python = lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(f_ord(_)^%(key)s) for _ in %(var)s])\n" % {"key":ord(key[0]), "var":var}
+        self.generate_python = (
+            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(f_ord(_)^%(key)s) for _ in %(var)s])\n"
+            % {"key": ord(key[0]), "var": var}
+        )
         self.generate_python_r = self.generate_python
-        self.generate_powershell = lambda var: "%(var)s=[System.Text.Encoding]::Default.GetString($(for($_=0;$_ -lt %(var)s.length;$_++){[System.Text.Encoding]::Default.GetBytes(%(var)s)[$_] -bxor %(key)s}));" % {"key":key[0], "var":var}
+        self.generate_powershell = (
+            lambda var: "%(var)s=[System.Text.Encoding]::Default.GetString($(for($_=0;$_ -lt %(var)s.length;$_++){[System.Text.Encoding]::Default.GetBytes(%(var)s)[$_] -bxor %(key)s}));"
+            % {"key": key[0], "var": var}
+        )
         self.generate_powershell_r = self.generate_powershell
 
     def _netbios(self):
@@ -272,56 +347,90 @@ class Transform(MalleableObject):
         netbios algorithm."""
         self.transform = lambda data: netbios_transform(data)
         self.transform_r = lambda data: netbios_transform_r(data)
-        self.generate_python = lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr((f_ord(_)>>4)+0x61)+chr((f_ord(_)&0xF)+0x61) for _ in %(var)s])\n" % {"var":var}
-        self.generate_python_r = lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(((f_ord(%(var)s[_])-0x61)<<4)|((f_ord(%(var)s[_+1])-0x61)&0xF)) for _ in range(0,len(%(var)s),2)])\n" % {"var":var}
+        self.generate_python = (
+            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr((f_ord(_)>>4)+0x61)+chr((f_ord(_)&0xF)+0x61) for _ in %(var)s])\n"
+            % {"var": var}
+        )
+        self.generate_python_r = (
+            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(((f_ord(%(var)s[_])-0x61)<<4)|((f_ord(%(var)s[_+1])-0x61)&0xF)) for _ in range(0,len(%(var)s),2)])\n"
+            % {"var": var}
+        )
         self.generate_powershell = lambda var: netbios_powershell(var)
         self.generate_powershell_r = lambda var: netbios_powershell_r(var)
 
         def netbios_transform(data):
             if isinstance(data, str):
-                data = data.encode('latin-1')
-            r = "".join([chr((c>>4)+0x61)+chr((c&0xF)+0x61) for c in data])
-            return r.encode('latin-1')
+                data = data.encode("latin-1")
+            r = "".join([chr((c >> 4) + 0x61) + chr((c & 0xF) + 0x61) for c in data])
+            return r.encode("latin-1")
 
         def netbios_transform_r(data):
             if isinstance(data, str):
-                data = data.encode('latin-1')
-            r = "".join([chr(((data[i]-0x61)<<4)|((data[i+1]-0x61)&0xF)) for i in range(0, len(data), 2)])
-            return r.encode('latin-1')
+                data = data.encode("latin-1")
+            r = "".join(
+                [
+                    chr(((data[i] - 0x61) << 4) | ((data[i + 1] - 0x61) & 0xF))
+                    for i in range(0, len(data), 2)
+                ]
+            )
+            return r.encode("latin-1")
 
         def netbios_powershell(var):
-            return "$data2=[System.Text.Encoding]::Default.GetBytes(%(var)s);%(var)s=[System.Text.Encoding]::Default.GetString($(for($i=0;$i -lt %(var)s.Length;$i++){($data2[$i] -shr 4)+97;($data2[$i] -band 15)+97;}));" % {"var": var}
+            return (
+                "$data2=[System.Text.Encoding]::Default.GetBytes(%(var)s);%(var)s=[System.Text.Encoding]::Default.GetString($(for($i=0;$i -lt %(var)s.Length;$i++){($data2[$i] -shr 4)+97;($data2[$i] -band 15)+97;}));"
+                % {"var": var}
+            )
 
         def netbios_powershell_r(var):
-            return "$data2=[System.Text.Encoding]::Default.GetBytes(%(var)s);%(var)s=[System.Text.Encoding]::Default.GetString($(for($i=0;$i -lt %(var)s.Length;$i+=2){($data2[$i]-97 -shl 4) -bor ($data2[$i+1]-97 -band 15);}));" % {"var":var}
+            return (
+                "$data2=[System.Text.Encoding]::Default.GetBytes(%(var)s);%(var)s=[System.Text.Encoding]::Default.GetString($(for($i=0;$i -lt %(var)s.Length;$i+=2){($data2[$i]-97 -shl 4) -bor ($data2[$i+1]-97 -band 15);}));"
+                % {"var": var}
+            )
 
     def _netbiosu(self):
         """Configure the `netbiosu` Transform, which encodes an arbitrary input using the upper-case
         netbios algorithm."""
         self.transform = lambda data: netbiosu_transform(data)
         self.transform_r = lambda data: netbiosu_transform_r(data)
-        self.generate_python = lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr((f_ord(_)>>4)+0x41)+chr((f_ord(_)&0xF)+0x41) for _ in %(var)s])\n" % {"var":var}
-        self.generate_python_r = lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(((f_ord(%(var)s[_])-0x41)<<4)|((f_ord(%(var)s[_+1])-0x41)&0xF)) for _ in range(0,len(%(var)s),2)])\n" % {"var":var}
+        self.generate_python = (
+            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr((f_ord(_)>>4)+0x41)+chr((f_ord(_)&0xF)+0x41) for _ in %(var)s])\n"
+            % {"var": var}
+        )
+        self.generate_python_r = (
+            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(((f_ord(%(var)s[_])-0x41)<<4)|((f_ord(%(var)s[_+1])-0x41)&0xF)) for _ in range(0,len(%(var)s),2)])\n"
+            % {"var": var}
+        )
         self.generate_powershell = lambda var: netbiosu_powershell(var)
         self.generate_powershell_r = lambda var: netbiosu_powershell_r(var)
 
         def netbiosu_transform(data):
             if isinstance(data, str):
-                data = data.encode('latin-1')
-            r = "".join([chr((c>>4)+0x41)+chr((c&0xF)+0x41) for c in data])
-            return r.encode('latin-1')
+                data = data.encode("latin-1")
+            r = "".join([chr((c >> 4) + 0x41) + chr((c & 0xF) + 0x41) for c in data])
+            return r.encode("latin-1")
 
         def netbiosu_transform_r(data):
             if isinstance(data, str):
-                data = data.encode('latin-1')
-            r = "".join([chr(((data[i]-0x41)<<4)|((data[i+1]-0x41)&0xF)) for i in range(0, len(data), 2)])
-            return r.encode('latin-1')
+                data = data.encode("latin-1")
+            r = "".join(
+                [
+                    chr(((data[i] - 0x41) << 4) | ((data[i + 1] - 0x41) & 0xF))
+                    for i in range(0, len(data), 2)
+                ]
+            )
+            return r.encode("latin-1")
 
         def netbiosu_powershell(var):
-            return "$data2=[System.Text.Encoding]::Default.GetBytes(%(var)s);%(var)s=[System.Text.Encoding]::Default.GetString($(for($i=0;$i -lt %(var)s.Length;$i++){($data2[$i] -shr 4)+65;($data2[$i] -band 15)+65;}));" % {"var":var}
+            return (
+                "$data2=[System.Text.Encoding]::Default.GetBytes(%(var)s);%(var)s=[System.Text.Encoding]::Default.GetString($(for($i=0;$i -lt %(var)s.Length;$i++){($data2[$i] -shr 4)+65;($data2[$i] -band 15)+65;}));"
+                % {"var": var}
+            )
 
         def netbiosu_powershell_r(var):
-            return "$data2=[System.Text.Encoding]::Default.GetBytes(%(var)s);%(var)s=[System.Text.Encoding]::Default.GetString($(for($i=0;$i -lt %(var)s.Length;$i+=2){($data2[$i]-65 -shl 4) -bor ($data2[$i+1]-65 -band 15);}));" % {"var":var}
+            return (
+                "$data2=[System.Text.Encoding]::Default.GetBytes(%(var)s);%(var)s=[System.Text.Encoding]::Default.GetString($(for($i=0;$i -lt %(var)s.Length;$i+=2){($data2[$i]-65 -shl 4) -bor ($data2[$i+1]-65 -band 15);}));"
+                % {"var": var}
+            )
 
     def _prepend(self, string):
         """Configure the `prepend` Transform, which prepends a static string to an arbitrary input.
@@ -333,30 +442,45 @@ class Transform(MalleableObject):
             MalleableError: If `string` is null.
         """
         if string is None:
-            MalleableError.throw(Transform.__class__, "prepend", "string argument must not be null")
+            MalleableError.throw(
+                Transform.__class__, "prepend", "string argument must not be null"
+            )
 
         self.transform = lambda data: prepend_transform(string, data)
         self.transform_r = lambda data: prepend_transform_r(string, data)
 
         def prepend_transform(string, data):
             if isinstance(string, str):
-                string = string.encode('latin-1')
+                string = string.encode("latin-1")
             if isinstance(data, str):
-                data = data.encode('latin-1')
+                data = data.encode("latin-1")
             r = string + data
             return r
 
         def prepend_transform_r(string, data):
             if isinstance(string, str):
-                string = string.encode('latin-1')
+                string = string.encode("latin-1")
             if isinstance(data, str):
-                data = data.encode('latin-1')
-            return data[len(string):]
+                data = data.encode("latin-1")
+            return data[len(string) :]
 
-        self.generate_python = lambda var: "%(var)s=b'%(string)s'+%(var)s\n" % {"var":var, "string":string}
-        self.generate_python_r = lambda var: "%(var)s=%(var)s[%(len)i:]\n" % {"var":var, "len":len(string)}
-        self.generate_powershell = lambda var: "%(var)s='%(string)s'+%(var)s;" % {"var":var, "string":string}
-        self.generate_powershell_r = lambda var: "%(var)s=%(var)s.substring(%(len)i,%(var)s.Length-%(len)i);" % {"var":var, "len":len(string)}
+        self.generate_python = lambda var: "%(var)s=b'%(string)s'+%(var)s\n" % {
+            "var": var,
+            "string": string,
+        }
+        self.generate_python_r = lambda var: "%(var)s=%(var)s[%(len)i:]\n" % {
+            "var": var,
+            "len": len(string),
+        }
+        self.generate_powershell = lambda var: "%(var)s='%(string)s'+%(var)s;" % {
+            "var": var,
+            "string": string,
+        }
+        self.generate_powershell_r = (
+            lambda var: "%(var)s=%(var)s.substring(%(len)i,%(var)s.Length-%(len)i);"
+            % {"var": var, "len": len(string)}
+        )
+
 
 class Terminator(MalleableObject):
     """A class housing the arbitrary functionality of a reversable data storage mechanism.
@@ -368,6 +492,7 @@ class Terminator(MalleableObject):
         type (int): Type of Terminator to implement.
         arg (str): Argument to pass to the implementation.
     """
+
     NONE = 0
     PRINT = 1
     HEADER = 2
@@ -402,10 +527,10 @@ class Terminator(MalleableObject):
         Returns:
             dict (str, obj)
         """
-        return dict(list(super(Terminator, self)._serialize().items()) + list({
-            "type" : self.type,
-            "arg" : self.arg
-        }.items()))
+        return dict(
+            list(super(Terminator, self)._serialize().items())
+            + list({"type": self.type, "arg": self.arg}.items())
+        )
 
     @classmethod
     def _deserialize(cls, data):
@@ -431,11 +556,12 @@ class Terminator(MalleableObject):
             pyparsing object
         """
         return (
-            Group(Literal("header") + cls.VALUE) |
-            Group(Literal("parameter") + cls.VALUE) |
-            Group(Literal("print")) |
-            Group(Literal("uri-append"))
+            Group(Literal("header") + cls.VALUE)
+            | Group(Literal("parameter") + cls.VALUE)
+            | Group(Literal("print"))
+            | Group(Literal("uri-append"))
         ) + cls.SEMICOLON
+
 
 class Container(MalleableObject):
     """A class housing a sequence of Transforms.
@@ -473,10 +599,15 @@ class Container(MalleableObject):
         Returns:
             dict (str, obj): Serialized data (json)
         """
-        return dict(list(super(Container, self)._serialize().items()) + list({
-            "transforms" : [t._serialize() for t in self.transforms],
-            "terminator" : self.terminator._serialize()
-        }.items()))
+        return dict(
+            list(super(Container, self)._serialize().items())
+            + list(
+                {
+                    "transforms": [t._serialize() for t in self.transforms],
+                    "terminator": self.terminator._serialize(),
+                }.items()
+            )
+        )
 
     @classmethod
     def _deserialize(cls, data):
@@ -490,8 +621,16 @@ class Container(MalleableObject):
         """
         container = super(Container, cls)._deserialize(data)
         if data:
-            container.transforms = [Transform._deserialize(d) for d in data["transforms"]] if "transforms" in data else []
-            container.terminator = Terminator._deserialize(data["terminator"]) if "terminator" in data else Terminator()
+            container.transforms = (
+                [Transform._deserialize(d) for d in data["transforms"]]
+                if "transforms" in data
+                else []
+            )
+            container.terminator = (
+                Terminator._deserialize(data["terminator"])
+                if "terminator" in data
+                else Terminator()
+            )
         return container
 
     @classmethod
@@ -501,11 +640,11 @@ class Container(MalleableObject):
         Returns:
             pyparsing object
         """
-        return (cls.FIELD + Group(Suppress("{") + ZeroOrMore(
-                cls.COMMENT |
-                Transform._pattern() |
-                Terminator._pattern()
-            ) + Suppress("}")))
+        return cls.FIELD + Group(
+            Suppress("{")
+            + ZeroOrMore(cls.COMMENT | Transform._pattern() | Terminator._pattern())
+            + Suppress("}")
+        )
 
     def _parse(self, data):
         """Store the information from a parsed pyparsing result.
@@ -519,18 +658,29 @@ class Container(MalleableObject):
                 arg = item[1] if len(item) > 1 else None
                 if type:
                     type = type.lower()
-                    if type == "append": self.append(arg)
-                    elif type == "base64": self.base64()
-                    elif type == "base64url": self.base64url()
-                    elif type == "mask": self.mask()
-                    elif type == "netbios": self.netbios()
-                    elif type == "netbiosu": self.netbiosu()
-                    elif type == "prepend": self.prepend(arg)
+                    if type == "append":
+                        self.append(arg)
+                    elif type == "base64":
+                        self.base64()
+                    elif type == "base64url":
+                        self.base64url()
+                    elif type == "mask":
+                        self.mask()
+                    elif type == "netbios":
+                        self.netbios()
+                    elif type == "netbiosu":
+                        self.netbiosu()
+                    elif type == "prepend":
+                        self.prepend(arg)
 
-                    elif type == "print": self.print_()
-                    elif type == "header": self.header(arg)
-                    elif type == "parameter": self.parameter(arg)
-                    elif type == "uri-append": self.uriappend()
+                    elif type == "print":
+                        self.print_()
+                    elif type == "header":
+                        self.header(arg)
+                    elif type == "parameter":
+                        self.parameter(arg)
+                    elif type == "uri-append":
+                        self.uriappend()
 
     def append(self, string):
         """Add the `append` Transform to the Container's Transform sequence.
@@ -556,7 +706,8 @@ class Container(MalleableObject):
         """
         if not key:
             key = os.urandom(1)
-        while (ord(key) < 0 or ord(key) > 127): key = os.urandom(1)  # Requirement for powershell
+        while ord(key) < 0 or ord(key) > 127:
+            key = os.urandom(1)  # Requirement for powershell
         self.transforms.append(Transform(type=Transform.MASK, arg=key))
 
     def netbios(self):
@@ -618,7 +769,8 @@ class Container(MalleableObject):
         Returns:
             str: The transformed data.
         """
-        if data is None: data = ""
+        if data is None:
+            data = ""
         if isinstance(data, str):
             if ("b'" or 'b"') in data[:2]:
                 data = data[2:-1]
@@ -638,7 +790,8 @@ class Container(MalleableObject):
         Returns:
             str: The reverse-transformed data.
         """
-        if data is None: data = ""
+        if data is None:
+            data = ""
         if isinstance(data, str):
             if ("b'" or 'b"') in data[:2]:
                 data = data[2:-1]
@@ -683,7 +836,9 @@ class Container(MalleableObject):
             MalleableError: If `var` is empty.
         """
         if not var:
-            MalleableError.throw(Container, "generate_python_r", "var must not be empty")
+            MalleableError.throw(
+                Container, "generate_python_r", "var must not be empty"
+            )
         code = ""
         for t in self.transforms[::-1]:
             code += t.generate_python_r(var)
@@ -703,7 +858,9 @@ class Container(MalleableObject):
             MalleableError: If `var` is empty.
         """
         if not var:
-            MalleableError.throw(Container, "generate_powershell", "var must not be empty")
+            MalleableError.throw(
+                Container, "generate_powershell", "var must not be empty"
+            )
         code = ""
         for t in self.transforms:
             code += t.generate_powershell(var)
@@ -723,7 +880,9 @@ class Container(MalleableObject):
             MalleableError: If `var` is empty.
         """
         if not var:
-            MalleableError.throw(Container, "generate_powershell_r", "var must not be empty")
+            MalleableError.throw(
+                Container, "generate_powershell_r", "var must not be empty"
+            )
         code = ""
         for t in self.transforms[::-1]:
             code += t.generate_powershell_r(var)

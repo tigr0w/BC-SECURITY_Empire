@@ -36,5 +36,5 @@ options:
     description: Delay, in milliseconds, between ports being tested
     required: true
     value: '50'
-script_path: 'empire/server/data/module_source/exfil/Invoke-EgressCheck.ps1'
+script_path: 'exfil/Invoke-EgressCheck.ps1'
 script_end: Invoke-EgressCheck {{ PARAMS }}

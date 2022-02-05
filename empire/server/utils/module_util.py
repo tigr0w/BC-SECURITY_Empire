@@ -3,7 +3,9 @@ from typing import Optional, Tuple
 from empire.server.common import helpers
 
 
-def handle_error_message(msg: str = '', print_to_server: bool = True) -> Tuple[Optional[str], str]:
+def handle_error_message(
+    msg: str = "", print_to_server: bool = True
+) -> Tuple[Optional[str], str]:
     """
     Given a reason for a module execution error, print to server and return the message as a tuple back to
     the modules.py handler to send to the client
@@ -16,7 +18,9 @@ def handle_error_message(msg: str = '', print_to_server: bool = True) -> Tuple[O
     return None, msg
 
 
-def handle_validate_message(msg: str = '', print_to_server: bool = True) -> Tuple[bool, str]:
+def handle_validate_message(
+    msg: str = "", print_to_server: bool = True
+) -> Tuple[bool, str]:
     """
     Given a reason for a module execution error, print to server and return the message as a tuple back to
     the modules.py handler to send to the client

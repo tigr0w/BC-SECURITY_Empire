@@ -47,5 +47,6 @@ options:
       none, or other).
     required: false
     value: default
+script_path: 'code_execution/Invoke-Shellcode.ps1'
 advanced:
   custom_generate: true

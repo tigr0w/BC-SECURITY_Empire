@@ -55,5 +55,6 @@ options:
       none, or other).
     required: false
     value: default
+script_path: 'privesc/Invoke-WScriptBypassUAC.ps1'
 advanced:
   custom_generate: true

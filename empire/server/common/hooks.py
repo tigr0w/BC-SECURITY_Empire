@@ -1,5 +1,6 @@
-from empire.server.common import helpers
 from typing import Callable, Dict
+
+from empire.server.common import helpers
 
 
 class Hooks(object):
@@ -10,28 +11,29 @@ class Hooks(object):
     Add a hook to an event to do some task when an event happens.
     Potential future addition: Filters. Add a filter to an event to do some synchronous modification to the data.
     """
+
     # This event is triggered after the tasking is written to the database.
     # Its arguments are (tasking: models.Tasking)
-    AFTER_TASKING_HOOK = 'after_tasking_hook'
+    AFTER_TASKING_HOOK = "after_tasking_hook"
 
     # This event is triggered after the tasking results are received but before they are written to the database.
     # Its arguments are (tasking: models.Tasking) where tasking is the db record.
-    BEFORE_TASKING_RESULT_HOOK = 'before_tasking_result_hook'
+    BEFORE_TASKING_RESULT_HOOK = "before_tasking_result_hook"
 
-    BEFORE_TASKING_RESULT_FILTER = 'before_tasking_result_filter'
+    BEFORE_TASKING_RESULT_FILTER = "before_tasking_result_filter"
 
     # This event is triggered after the tasking results are received and after they are written to the database.
     # Its arguments are (tasking: models.Tasking) where tasking is the db record.
-    AFTER_TASKING_RESULT_HOOK = 'after_tasking_result_hook'
+    AFTER_TASKING_RESULT_HOOK = "after_tasking_result_hook"
 
     # This event is triggered after the agent has checked in and a record written to the database.
     # It has one argument (agent: models.Agent)
-    AFTER_AGENT_CHECKIN_HOOK = 'after_agent_checkin_hook'
+    AFTER_AGENT_CHECKIN_HOOK = "after_agent_checkin_hook"
 
     # This event is triggered after the agent has completed the stage2 of the checkin process,
     # and the sysinfo has been written to the database.
     # It has one argument (agent: models.Agent)
-    AFTER_AGENT_STAGE2_HOOK = 'after_agent_stage2_hook'
+    AFTER_AGENT_STAGE2_HOOK = "after_agent_stage2_hook"
 
     def __init__(self):
         self.hooks: Dict[str, Dict[str, Callable]] = {}
@@ -44,7 +46,7 @@ class Hooks(object):
         if event not in self.hooks:
             self.hooks[event] = {}
         self.hooks[event][name] = hook
-    
+
     def register_filter(self, event: str, name: str, filter: Callable):
         """
         Register a filter for a hook type.
@@ -63,7 +65,7 @@ class Hooks(object):
             return
         if name in self.hooks.get(event, {}):
             self.hooks[event].pop(name)
-    
+
     def unregister_filter(self, name: str, event: str = None):
         """
         Unregister a filter.
@@ -86,7 +88,7 @@ class Hooks(object):
             try:
                 hook(*args)
             except Exception as e:
-                print(helpers.color(f'[!] Hook {hook} failed: {e}'))
+                print(helpers.color(f"[!] Hook {hook} failed: {e}"))
 
     def run_filters(self, event: str, *args):
         """
@@ -101,7 +103,7 @@ class Hooks(object):
             try:
                 args = filter(*args)
             except Exception as e:
-                print(helpers.color(f'[!] Filter {filter} failed: {e}'))
+                print(helpers.color(f"[!] Filter {filter} failed: {e}"))
         return args
 
 

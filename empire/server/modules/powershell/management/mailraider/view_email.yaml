@@ -39,5 +39,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/management/MailRaider.ps1'
+script_path: 'management/MailRaider.ps1'
 script_end: View-Email {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n View-Email completed!"

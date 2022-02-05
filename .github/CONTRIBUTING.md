@@ -20,11 +20,23 @@ The more information you provide in a Github issue the easier it will be for us 
 
 ## Submitting Modules
 
-* Submit pull requests to the [dev branch](https://github.com/powershellempire/Empire/tree/dev). After testing, changes will be merged to master.
-* Base modules on the template at [./modules/template.py](https://github.com/PowerShellEmpire/Empire/blob/dev/lib/modules/template.py). **Note** that for some modules you may need to massage the output to get it into a nicely displayable text format [with Out-String](https://github.com/PowerShellEmpire/Empire/blob/0cbdb165a29e4a65ad8dddf03f6f0e36c33a7350/lib/modules/situational_awareness/network/powerview/get_user.py#L111).
+* Submit pull requests to the [dev branch](https://github.com/BC-SECURITY/Empire/tree/dev). After testing, changes will be merged to master.
+* Depending on what you're working on, base your module on [powershell_template.py](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell_template.py) or [python_template.py](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/python_template.py). **Note** that for some modules you may need to massage the output to get it into a nicely displayable text format with [Out-String](https://github.com/PowerShellEmpire/Empire/blob/0cbdb165a29e4a65ad8dddf03f6f0e36c33a7350/lib/modules/situational_awareness/network/powerview/get_user.py#L111).
 * Cite previous work in the **'Comments'** module section.
 * If your script.ps1 logic is large, may be reused by multiple modules, or is updated often, consider implementing the logic in the appropriate **data/module_source/*** directory and [pulling the script contents into the module on tasking](https://github.com/PowerShellEmpire/Empire/blob/0cbdb165a29e4a65ad8dddf03f6f0e36c33a7350/lib/modules/situational_awareness/network/powerview/get_user.py#L85-L95).
-* Use [approved PowerShell verbs](https://technet.microsoft.com/en-us/library/ms714428(v=vs.85).aspx) for any functions.
-* PowerShell Version 2 compatibility is **STRONGLY** preferred. 
-* TEST YOUR MODULE! Be sure to run it from an Empire agent before submitting a pull to ensure everything is working correctly.
+* Use [approved PowerShell verbs](https://docs.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7.1) for any functions.
+* TEST YOUR MODULE! Be sure to run it from an Empire agent and test Python 3.x functionality before submitting a pull to ensure everything is working correctly.
 * For additional guidelines for your PowerShell code itself, check out the [PowerSploit style guide](https://github.com/PowerShellMafia/PowerSploit/blob/master/README.md).
+* For more in-depth docs on developing modules, see the [Module Development docs](https://bc-security.gitbook.io/empire-wiki/module-development)
+
+## Code Formatting
+* As of Empire 4.4, we are using [psf/black](https://github.com/psf/black) for code formatting.
+    * Black is a Python code formatter that helps to keep the codebase uniform and easy to read
+* As of Empire 4.4, we are using [PyCQA/isort](https://github.com/PyCQA/isort)
+    * Isort is a Python utility that sorts and formats imports.
+* After implementing your changes:
+    1. run `black .` (or `poetry run black .`).
+    2. run `isort .` (or `poetry run isort .`).
+* The repo is also configured to use [pre-commit](https://pre-commit.com/) to automatically format code.
+  * Once you have pre-commit installed, you can run `pre-commit install` to install the pre-commit hooks.
+  * Then pre-commit will execute black and isort automatically before committing.

@@ -53,12 +53,13 @@ websockify = "^0.10.0"
 websockets = "^10.1"
 Flask-SocketIO = "^5.1.1"
 tk = "^0.1.0"
+pyperclip = "^1.8.2"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"
-pytest = "^6.2.5"
-black = "^21.12b0"
 isort = "^5.10.1"
+black = "^22.1.0"
+pytest = "^6.2.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -56,7 +56,7 @@ options:
     description: Check if 2003 Office files (*.doc and *.xls) contain a VBA macro
     required: false
     value: 'True'
-script_path: 'empire/server/data/module_source/collection/Invoke-SauronEye.ps1'
+script_path: 'collection/Invoke-SauronEye.ps1'
 script_end: Invoke-SauronEye -Command "{{ PARAMS }}"
 advanced:
   option_format_string: --{{ KEY }} {{ VALUE }}

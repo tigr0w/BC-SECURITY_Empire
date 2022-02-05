@@ -1,10 +1,10 @@
-from fastapi import HTTPException, Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from empire.server.database import models
 from empire.server.server import main
 from empire.server.v2.api.EmpireApiRouter import APIRouter
-from empire.server.v2.api.host.host_dto import Host, domain_to_dto_host, Hosts
+from empire.server.v2.api.host.host_dto import Host, Hosts, domain_to_dto_host
 from empire.server.v2.api.jwt_auth import get_current_active_user
 from empire.server.v2.api.shared_dependencies import get_db
 
@@ -18,8 +18,7 @@ router = APIRouter(
 )
 
 
-async def get_host(uid: int,
-                   db: Session = Depends(get_db)):
+async def get_host(uid: int, db: Session = Depends(get_db)):
     host = host_service.get_by_id(db, uid)
 
     if host:
@@ -38,4 +37,4 @@ async def read_host(uid: int, db_host: models.Host = Depends(get_host)):
 async def read_hosts(db: Session = Depends(get_db)):
     hosts = list(map(lambda x: domain_to_dto_host(x), host_service.get_all(db)))
 
-    return {'records': hosts}
+    return {"records": hosts}

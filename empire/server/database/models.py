@@ -1,10 +1,24 @@
 import enum
 
-from sqlalchemy import Column, Integer, Sequence, String, Boolean, ForeignKey, PickleType, Float, Text, Enum, \
-    UniqueConstraint, JSON, Table, ForeignKeyConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    Enum,
+    Float,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    PickleType,
+    Sequence,
+    String,
+    Table,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import relationship, deferred
+from sqlalchemy.orm import deferred, relationship
 from sqlalchemy_utc import UtcDateTime, utcnow
 
 from empire.server.utils.datetime_util import is_stale
@@ -12,30 +26,36 @@ from empire.server.utils.datetime_util import is_stale
 Base = declarative_base()
 
 
-tasking_download_assc = Table('tasking_download_assc', Base.metadata,
-                              Column('tasking_id', Integer),
-                              Column('agent_id', String(255)),
-                              Column('download_id', Integer, ForeignKey('downloads.id')),
-                              ForeignKeyConstraint(
-                                  ('tasking_id', 'agent_id'),
-                                  ('taskings.id', 'taskings.agent_id')
-                              ))
+tasking_download_assc = Table(
+    "tasking_download_assc",
+    Base.metadata,
+    Column("tasking_id", Integer),
+    Column("agent_id", String(255)),
+    Column("download_id", Integer, ForeignKey("downloads.id")),
+    ForeignKeyConstraint(
+        ("tasking_id", "agent_id"), ("taskings.id", "taskings.agent_id")
+    ),
+)
 
-agent_file_download_assc = Table('agent_file_download_assc', Base.metadata,
-                                 Column('agent_file_id', Integer, ForeignKey('agent_files.id')),
-                                 Column('download_id', Integer, ForeignKey('downloads.id'))
-                                 )
+agent_file_download_assc = Table(
+    "agent_file_download_assc",
+    Base.metadata,
+    Column("agent_file_id", Integer, ForeignKey("agent_files.id")),
+    Column("download_id", Integer, ForeignKey("downloads.id")),
+)
 
 
-stager_download_assc = Table('stager_download_assc', Base.metadata,
-                             Column('stager_id', Integer, ForeignKey('stagers.id')),
-                             Column('download_id', Integer, ForeignKey('downloads.id'))
-                             )
+stager_download_assc = Table(
+    "stager_download_assc",
+    Base.metadata,
+    Column("stager_id", Integer, ForeignKey("stagers.id")),
+    Column("download_id", Integer, ForeignKey("downloads.id")),
+)
 
 
 class User(Base):
-    __tablename__ = 'users'
-    id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
+    __tablename__ = "users"
+    id = Column(Integer, Sequence("user_id_seq"), primary_key=True)
     username = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=False)
     api_token = Column(String(50))
@@ -43,15 +63,16 @@ class User(Base):
     admin = Column(Boolean, nullable=False)
     notes = Column(Text)
     created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
 
     def __repr__(self):
-        return "<User(username='%s')>" % (
-            self.username)
+        return "<User(username='%s')>" % (self.username)
 
 
 class Listener(Base):
-    __tablename__ = 'listeners'
+    __tablename__ = "listeners"
     id = Column(Integer, Sequence("listener_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False, unique=True)
     module = Column(String(255), nullable=False)
@@ -62,12 +83,11 @@ class Listener(Base):
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
 
     def __repr__(self):
-        return "<Listener(name='%s')>" % (
-            self.name)
+        return "<Listener(name='%s')>" % (self.name)
 
 
 class Host(Base):
-    __tablename__ = 'hosts'
+    __tablename__ = "hosts"
     id = Column(Integer, Sequence("host_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False)
     internal_ip = Column(String(255))
@@ -76,10 +96,10 @@ class Host(Base):
 
 
 class Agent(Base):
-    __tablename__ = 'agents'
+    __tablename__ = "agents"
     session_id = Column(String(255), primary_key=True, nullable=False)
     name = Column(String(255), nullable=False)
-    host_id = Column(Integer, ForeignKey('hosts.id'))
+    host_id = Column(Integer, ForeignKey("hosts.id"))
     host = relationship(Host, lazy="joined")
     listener = Column(String(255), nullable=False)
     language = Column(String(255))
@@ -111,13 +131,12 @@ class Agent(Base):
     archived = Column(Boolean, nullable=False)
     proxy = Column(JSON)
 
-    @hybrid_property # todo @stale.expression
+    @hybrid_property  # todo @stale.expression
     def stale(self):
         return is_stale(self.lastseen_time, self.delay, self.jitter)
 
     def __repr__(self):
-        return "<Agent(name='%s')>" % (
-            self.name)
+        return "<Agent(name='%s')>" % (self.name)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -127,30 +146,34 @@ class Agent(Base):
 
 
 class AgentFile(Base):
-    __tablename__ = 'agent_files'
+    __tablename__ = "agent_files"
     id = Column(Integer, primary_key=True)
     session_id = Column(String(50))
     name = Column(Text, nullable=False)
     path = Column(Text, nullable=False)
     is_file = Column(Boolean, nullable=False)
-    parent_id = Column(Integer, ForeignKey('agent_files.id', ondelete='CASCADE'), nullable=True)
+    parent_id = Column(
+        Integer, ForeignKey("agent_files.id", ondelete="CASCADE"), nullable=True
+    )
     downloads = relationship("Download", secondary=agent_file_download_assc)
 
 
 class HostProcess(Base):
-    __tablename__ = 'host_processes'
-    host_id = Column(Integer, ForeignKey('hosts.id'), primary_key=True)
+    __tablename__ = "host_processes"
+    host_id = Column(Integer, ForeignKey("hosts.id"), primary_key=True)
     process_id = Column(Integer, primary_key=True)
     process_name = Column(Text)
     architecture = Column(String(255))
     user = Column(String(255))
-    agent = relationship(Agent,
-                         lazy="joined",
-                         primaryjoin="and_(Agent.process_id==foreign(HostProcess.process_id), Agent.host_id==foreign(HostProcess.host_id), Agent.archived == False)")
+    agent = relationship(
+        Agent,
+        lazy="joined",
+        primaryjoin="and_(Agent.process_id==foreign(HostProcess.process_id), Agent.host_id==foreign(HostProcess.host_id), Agent.archived == False)",
+    )
 
 
 class Config(Base):
-    __tablename__ = 'config'
+    __tablename__ = "config"
     staging_key = Column(String(255), primary_key=True)
     install_path = Column(Text, nullable=False)
     ip_whitelist = Column(Text, nullable=False)
@@ -163,8 +186,7 @@ class Config(Base):
     jwt_secret_key = Column(Text, nullable=False)
 
     def __repr__(self):
-        return "<Config(staging_key='%s')>" % (
-            self.staging_key)
+        return "<Config(staging_key='%s')>" % (self.staging_key)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -174,7 +196,7 @@ class Config(Base):
 
 
 class Credential(Base):
-    __tablename__ = 'credentials'
+    __tablename__ = "credentials"
     id = Column(Integer, Sequence("credential_id_seq"), primary_key=True)
     credtype = Column(String(255))
     domain = Column(Text)
@@ -185,14 +207,15 @@ class Credential(Base):
     sid = Column(String(255))
     notes = Column(Text)
     created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
 
     # todo doesn't work with mysql
     UniqueConstraint(credtype, domain, username, password)
 
     def __repr__(self):
-        return "<Credential(id='%s')>" % (
-            self.id)
+        return "<Credential(id='%s')>" % (self.id)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -208,7 +231,9 @@ class Download(Base):
     filename = Column(Text, nullable=True)
     size = Column(Integer, nullable=True)
     created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
 
 
 class TaskingStatus(enum.Enum):
@@ -217,9 +242,9 @@ class TaskingStatus(enum.Enum):
 
 
 class Tasking(Base):
-    __tablename__ = 'taskings'
+    __tablename__ = "taskings"
     id = Column(Integer, primary_key=True)
-    agent_id = Column(String(255), ForeignKey('agents.session_id'), primary_key=True)
+    agent_id = Column(String(255), ForeignKey("agents.session_id"), primary_key=True)
     agent = relationship(Agent, lazy="joined", innerjoin=True)
     input = Column(Text)
     input_full = deferred(Column(Text))
@@ -227,18 +252,19 @@ class Tasking(Base):
     # In most cases, this isn't needed and will match output. However, with the filter feature, we want to store
     # a copy of the original output if it gets modified by a filter.
     original_output = deferred(Column(Text, nullable=True))
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     user = relationship(User)
     created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
     module_name = Column(Text)
     task_name = Column(Text)
     status = Column(Enum(TaskingStatus), index=True)
     downloads = relationship("Download", secondary=tasking_download_assc)
 
     def __repr__(self):
-        return "<Tasking(id='%s')>" % (
-            self.id)
+        return "<Tasking(id='%s')>" % (self.id)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -248,17 +274,16 @@ class Tasking(Base):
 
 
 class Reporting(Base):
-    __tablename__ = 'reporting'
+    __tablename__ = "reporting"
     id = Column(Integer, Sequence("reporting_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False)
     event_type = Column(String(255))
     message = Column(Text)
     timestamp = Column(UtcDateTime, default=utcnow(), nullable=False)
-    taskID = Column(Integer, ForeignKey('taskings.id'))
+    taskID = Column(Integer, ForeignKey("taskings.id"))
 
     def __repr__(self):
-        return "<Reporting(id='%s')>" % (
-            self.id)
+        return "<Reporting(id='%s')>" % (self.id)
 
 
 class Keyword(Base):
@@ -267,11 +292,12 @@ class Keyword(Base):
     keyword = Column(String(255), unique=True)
     replacement = Column(String(255))
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
 
     def __repr__(self):
-        return "<KeywordReplacement(id='%s')>" % (
-            self.id)
+        return "<KeywordReplacement(id='%s')>" % (self.id)
 
 
 class Module(Base):
@@ -289,16 +315,20 @@ class Profile(Base):
     category = Column(String(255))
     data = Column(Text, nullable=False)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
 
 
 class Bypass(Base):
-    __tablename__= "bypasses"
+    __tablename__ = "bypasses"
     id = Column(Integer, Sequence("bypass_seq"), primary_key=True)
     name = Column(String(255), unique=True)
     code = Column(Text)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
 
 
 class Stager(Base):
@@ -309,6 +339,8 @@ class Stager(Base):
     options = Column(JSON)
     downloads = relationship("Download", secondary=stager_download_assc)
     one_liner = Column(Boolean)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )

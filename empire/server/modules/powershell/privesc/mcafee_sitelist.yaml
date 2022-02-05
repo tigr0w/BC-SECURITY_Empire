@@ -30,5 +30,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/privesc/Get-SiteListPassword.ps1'
+script_path: 'privesc/Get-SiteListPassword.ps1'
 script_end: Get-SiteListPassword {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SiteListPassword completed'

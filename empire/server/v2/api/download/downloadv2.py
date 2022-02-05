@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Depends, File, UploadFile
+from fastapi import Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from starlette.responses import FileResponse
 
@@ -23,17 +23,23 @@ async def get_download(uid: int, db: Session = Depends(get_db)):
     if download:
         return download
 
-    raise HTTPException(404, f'Download not found for id {uid}')
+    raise HTTPException(404, f"Download not found for id {uid}")
 
 
-@router.get("/{uid}", response_class=FileResponse, dependencies=[Depends(get_current_active_user)])
-async def read_download(uid: int,
-                        db: Session = Depends(get_db),
-                        db_download: models.Download = Depends(get_download)):
+@router.get(
+    "/{uid}",
+    response_class=FileResponse,
+    dependencies=[Depends(get_current_active_user)],
+)
+async def read_download(
+    uid: int,
+    db: Session = Depends(get_db),
+    db_download: models.Download = Depends(get_download),
+):
     if db_download.filename:
         filename = db_download.filename
     else:
-        filename = db_download.location.split('/')[-1]
+        filename = db_download.location.split("/")[-1]
 
     return FileResponse(db_download.location, filename=filename)
 
@@ -43,12 +49,10 @@ async def read_download(uid: int,
 # todo remove the install path from the location?
 # todo { records: [] }
 @router.get("/", dependencies=[Depends(get_current_active_user)])
-async def read_downloads(db: Session = Depends(get_db),
-                         query: str = None):
+async def read_downloads(db: Session = Depends(get_db), query: str = None):
     return download_service.get_all(db, query)
 
 
 @router.post("/", dependencies=[Depends(get_current_active_user)])
-async def create_download(db: Session = Depends(get_db),
-                          file: UploadFile = File(...)):
+async def create_download(db: Session = Depends(get_db), file: UploadFile = File(...)):
     return download_service.create_download(db, file)

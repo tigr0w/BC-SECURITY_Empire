@@ -26,11 +26,11 @@ class Plugin(object):
         self.mainMenu = mainMenu
 
     def onLoad(self):
-        """ Things to do during init: meant to be overridden by
-        the inheriting plugin. """
+        """Things to do during init: meant to be overridden by
+        the inheriting plugin."""
         pass
 
     def register(self, mainMenu):
-        """ Any modifications made to the main menu are done here
-        (meant to be overriden by child) """
+        """Any modifications made to the main menu are done here
+        (meant to be overriden by child)"""
         pass

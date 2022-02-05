@@ -40,5 +40,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
+script_path: collection/Get-SharpChromium.ps1
 advanced:
   custom_generate: true

@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Depends
+from fastapi import Depends, HTTPException
 
 import empire.server.common.empire
 from empire.server.server import main
@@ -15,6 +15,10 @@ router = APIRouter(
 )
 
 
-@router.get("/version", response_model=EmpireVersion, dependencies=[Depends(get_current_active_user)])
+@router.get(
+    "/version",
+    response_model=EmpireVersion,
+    dependencies=[Depends(get_current_active_user)],
+)
 async def read_empire_version():
     return {"version": empire.server.common.empire.VERSION.split(" ")[0]}

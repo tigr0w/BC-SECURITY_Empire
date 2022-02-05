@@ -1,11 +1,14 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Union, Dict, List
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
 from empire.server.database import models
-from empire.server.v2.api.shared_dto import DownloadDescription, domain_to_dto_download_description
+from empire.server.v2.api.shared_dto import (
+    DownloadDescription,
+    domain_to_dto_download_description,
+)
 
 
 class TaskOrderOptions(str, Enum):
@@ -15,10 +18,12 @@ class TaskOrderOptions(str, Enum):
     agent = "agent"
 
 
-def domain_to_dto_task(task: Union[models.Tasking, Dict],
-                       include_full_input: bool = True,
-                       include_original_output: bool = True,
-                       include_output: bool = True):
+def domain_to_dto_task(
+    task: Union[models.Tasking, Dict],
+    include_full_input: bool = True,
+    include_original_output: bool = True,
+    include_output: bool = True,
+):
     return Task.construct(  # .construct doesn't do any validation and speeds up the request a bit
         id=task.id,
         input=task.input,
@@ -28,12 +33,14 @@ def domain_to_dto_task(task: Union[models.Tasking, Dict],
         user_id=task.user_id,
         username=task.user.username,
         agent_id=task.agent_id,
-        downloads=list(map(lambda x: domain_to_dto_download_description(x), task.downloads)),  # todo tests
+        downloads=list(
+            map(lambda x: domain_to_dto_download_description(x), task.downloads)
+        ),  # todo tests
         module_name=task.module_name,
         task_name=task.task_name,
         status=task.status,
         created_at=task.created_at,
-        updated_at=task.updated_at
+        updated_at=task.updated_at,
     )
 
 
@@ -108,16 +115,16 @@ class DirectoryListPostRequest(BaseModel):
 
 
 class ProxyEnum(str, Enum):
-    socks4 = 'SOCKS4'
-    socks5 = 'SOCKS5'
-    http = 'HTTP'
-    ssl = 'SSL'
-    ssl_weak = 'SSL_WEAK'
-    ssl_anon = 'SSL_ANON'
-    tor = 'TOR'
-    https = 'HTTPS'
-    http_connect = 'HTTP_CONNECT'
-    https_connect = 'HTTPS_CONNECT'
+    socks4 = "SOCKS4"
+    socks5 = "SOCKS5"
+    http = "HTTP"
+    ssl = "SSL"
+    ssl_weak = "SSL_WEAK"
+    ssl_anon = "SSL_ANON"
+    tor = "TOR"
+    https = "HTTPS"
+    http_connect = "HTTP_CONNECT"
+    https_connect = "HTTPS_CONNECT"
 
 
 class ProxyItem(BaseModel):

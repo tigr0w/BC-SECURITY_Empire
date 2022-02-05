@@ -31,3 +31,6 @@
 [submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Sharpire"]
 	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Sharpire
 	url = https://github.com/BC-SECURITY/Sharpire
+[submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/ProcessInjection"]
+	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/ProcessInjection
+	url = https://github.com/3xpl01tc0d3r/ProcessInjection.git

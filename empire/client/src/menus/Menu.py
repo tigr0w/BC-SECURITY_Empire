@@ -1,6 +1,6 @@
 from prompt_toolkit.completion import Completion
 
-from empire.client.src.utils import table_util, print_util
+from empire.client.src.utils import print_util, table_util
 from empire.client.src.utils.autocomplete_util import filtered_search_list
 from empire.client.src.utils.cli_util import command
 
@@ -9,7 +9,8 @@ class Menu(object):
     """
     Base Menu object.
     """
-    def __init__(self, display_name: str = '', selected: str = ''):
+
+    def __init__(self, display_name: str = "", selected: str = ""):
         """
         :param display_name: The display name for the menu. This is used by the default get_prompt method.
         :param selected: The selected item. Applicable for Menus such UseStager or UseListener.
@@ -27,22 +28,22 @@ class Menu(object):
         :return: list[str]
         """
         return [
-            'admin',
-            'agents',
-            'back',
-            'chat',
-            'credentials',
-            'interact',
-            'listeners',
-            'main',
-            'plugins',
-            'sponsors',
-            'uselistener',
-            'usemodule',
-            'useplugin',
-            'usestager',
-            'usecredential',
-            'exit',
+            "admin",
+            "agents",
+            "back",
+            "chat",
+            "credentials",
+            "interact",
+            "listeners",
+            "main",
+            "plugins",
+            "sponsors",
+            "uselistener",
+            "usemodule",
+            "useplugin",
+            "usestager",
+            "usecredential",
+            "exit",
         ]
 
     def get_completions(self, document, complete_event, cmd_line, word_before_cursor):
@@ -91,7 +92,7 @@ class Menu(object):
         this will display a combination of the menu's display name and the selected item.
         :return:
         """
-        joined = '/'.join([self.display_name, self.selected]).strip('/')
+        joined = "/".join([self.display_name, self.selected]).strip("/")
         return f"(Empire: <ansiblue>{joined}</ansiblue>) > "
 
     @command
@@ -104,11 +105,15 @@ class Menu(object):
         help_list = []
         for name in self._cmd_registry:
             try:
-                description = print_util.text_wrap(getattr(self, name).__doc__.split('\n')[1].lstrip(), width=35)
-                usage = print_util.text_wrap(getattr(self, name).__doc__.split('\n')[3].lstrip()[7:], width=35)
+                description = print_util.text_wrap(
+                    getattr(self, name).__doc__.split("\n")[1].lstrip(), width=35
+                )
+                usage = print_util.text_wrap(
+                    getattr(self, name).__doc__.split("\n")[3].lstrip()[7:], width=35
+                )
                 help_list.append([name, description, usage])
             except:
                 continue
 
-        help_list.insert(0, ['Name', 'Description', 'Usage'])
-        table_util.print_table(help_list, 'Help Options')
+        help_list.insert(0, ["Name", "Description", "Usage"])
+        table_util.print_table(help_list, "Help Options")

@@ -6,23 +6,23 @@ from typing import Dict
 import yaml
 
 info_keys = {
-    'Name': 'name',
-    'Authors': 'authors',
-    'Description': 'description',
-    'Software': 'software',
-    'Techniques': 'techniques',
-    'Background': 'background',
-    'OutputExtension': 'output_extension',
-    'NeedsAdmin': 'needs_admin',
-    'OpsecSafe': 'opsec_safe',
-    'Language': 'language',
-    'MinLanguageVersion': 'min_language_version',
-    'Comments': 'comments',
+    "Name": "name",
+    "Authors": "authors",
+    "Description": "description",
+    "Software": "software",
+    "Techniques": "techniques",
+    "Background": "background",
+    "OutputExtension": "output_extension",
+    "NeedsAdmin": "needs_admin",
+    "OpsecSafe": "opsec_safe",
+    "Language": "language",
+    "MinLanguageVersion": "min_language_version",
+    "Comments": "comments",
 }
 
 
 def represent_none(self, _):
-    return self.represent_scalar('tag:yaml.org,2002:null', '')
+    return self.represent_scalar("tag:yaml.org,2002:null", "")
 
 
 def format_info(info: Dict) -> Dict:
@@ -38,20 +38,22 @@ def format_options(options: Dict) -> Dict:
     option_list = []
 
     for key, value in options.items():
-        option_list.append({
-            'name': key,
-            'description': value['Description'],
-            'required': value['Required'],
-            'value': value['Value']  # todo should value really be defaultValue?
-        })
+        option_list.append(
+            {
+                "name": key,
+                "description": value["Description"],
+                "required": value["Required"],
+                "value": value["Value"],  # todo should value really be defaultValue?
+            }
+        )
 
-    return {'options': option_list}
+    return {"options": option_list}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     yaml.add_representer(type(None), represent_none)
     root_path = f"../../modules/python"
-    pattern = '*.py'
+    pattern = "*.py"
     count = 0
     for root, dirs, files in os.walk(root_path):
         for filename in fnmatch.filter(files, pattern):
@@ -72,13 +74,15 @@ if __name__ == '__main__':
                 continue
 
             # don't load up any of the templates
-            if fnmatch.fnmatch(filename, '*template.py'):
+            if fnmatch.fnmatch(filename, "*template.py"):
                 continue
 
             module_name = file_path.split(root_path)[-1][0:-3]
 
-            with open(file_path, 'r') as stream:
-                spec = importlib.util.spec_from_file_location(module_name + ".py", file_path[:-3] + ".py")
+            with open(file_path, "r") as stream:
+                spec = importlib.util.spec_from_file_location(
+                    module_name + ".py", file_path[:-3] + ".py"
+                )
                 imp_mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(imp_mod)
                 my_module = imp_mod.Module(None)
@@ -88,6 +92,6 @@ if __name__ == '__main__':
 
                 info.update(options)
 
-                with open(file_path[:-3] + ".yaml", 'a') as out:
+                with open(file_path[:-3] + ".yaml", "a") as out:
                     yaml.dump(info, out, sort_keys=False)
                     count += 1

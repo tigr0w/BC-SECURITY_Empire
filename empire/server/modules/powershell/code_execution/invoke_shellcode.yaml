@@ -46,5 +46,6 @@ options:
     description: Binary filename in '/empire/server/downloads' to load and execute.
     required: false
     value: ''
+script_path: 'code_execution/Invoke-Shellcode.ps1'
 advanced:
   custom_generate: true

@@ -1,0 +1,162 @@
+- Name: ProcessInjection
+  Aliases: []
+  Description: |
+    The program is designed to perform process injection.
+  Author: 
+      Name: Anthony Rose
+      Handle: Cx01N
+      Link: https://twitter.com/Cx01N_
+  Help: 
+  Language: CSharp
+  CompatibleDotNetVersions:
+  - Net35
+  - Net40
+  Code: |
+    using System;
+    using System.IO;
+
+    using ProcessInjection;
+
+    public static class Task
+    {
+        public static Stream OutputStream { get; set; }
+        public static string Execute(string Command)
+        {
+            TextWriter realStdOut = Console.Out;
+            TextWriter realStdErr = Console.Error;
+            StreamWriter stdOutWriter = new StreamWriter(OutputStream);
+            StreamWriter stdErrWriter = new StreamWriter(OutputStream);
+            stdOutWriter.AutoFlush = true;
+            stdErrWriter.AutoFlush = true;
+            Console.SetOut(stdOutWriter);
+            Console.SetError(stdErrWriter);
+      
+            string[] args = Command.Split(' ');
+            ProcessInjection.ProcessInjection.Main(args);
+      
+            Console.Out.Flush();
+            Console.Error.Flush();
+            Console.SetOut(realStdOut);
+            Console.SetError(realStdErr);
+  
+            OutputStream.Close();
+            return "";
+        }
+    }
+  TaskingType: Assembly
+  UnsafeCompile: true
+  TokenTask: false
+  Options: []
+  ReferenceSourceLibraries:
+  - Name: ProcessInjection
+    Description: The program is designed to perform process injection.
+    Location: ProcessInjection\
+    Language: CSharp
+    CompatibleDotNetVersions: 
+    - Net35
+    - Net40
+    ReferenceAssemblies:
+    - Name: System.dll
+      Location: net40\System.dll
+      DotNetVersion: Net40
+    - Name: System.Core.dll
+      Location: net40\System.Core.dll
+      DotNetVersion: Net40
+    - Name: mscorlib.dll
+      Location: net40\mscorlib.dll
+      DotNetVersion: Net40
+    - Name: mscorlib.dll
+      Location: net35\mscorlib.dll
+      DotNetVersion: Net35
+    - Name: System.Core.dll
+      Location: net35\System.Core.dll
+      DotNetVersion: Net35
+    - Name: System.dll
+      Location: net35\System.dll
+      DotNetVersion: Net35
+    - Name: System.Drawing.dll
+      Location: net40\System.Drawing.dll
+      DotNetVersion: Net40
+    - Name: System.Windows.Forms.dll
+      Location: net40\System.Windows.Forms.dll
+      DotNetVersion: Net40
+    - Name: System.Drawing.dll
+      Location: net35\System.Drawing.dll
+      DotNetVersion: Net35
+    - Name: System.Windows.Forms.dll
+      Location: net35\System.Windows.Forms.dll
+      DotNetVersion: Net35
+    EmbeddedResources: []
+  ReferenceAssemblies: []
+  EmbeddedResources: []
+  Empire:
+    software: ''
+    techniques:
+      - T1055
+    background: true
+    output_extension:
+    needs_admin: false
+    opsec_safe: false
+    comments:
+      - https://github.com/3xpl01tc0d3r/ProcessInjection
+    options:
+      - name: Listener
+        description: Listener to use.
+        required: true
+        value: ''
+      - name: Language
+        description: Language of the stager to generate
+        required: true
+        value: powershell
+        strict: true
+        suggested_values:
+          - powershell
+          - csharp
+          - python
+      - name: Obfuscate
+        description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
+          for obfuscation types. For powershell only.
+        required: false
+        value: 'False'
+      - name: ObfuscateCommand
+        description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+          is True. For powershell only.
+        required: false
+        value: Token\All\1
+      - name: Bypasses
+        description: Bypasses as a space separated list to be prepended to the launcher.
+        required: false
+        value: 'mattifestation etw'
+      - name: UserAgent
+        description: User-agent string to use for the staging request (default, none, or
+          other).
+        required: false
+        value: default
+      - name: Proxy
+        description: Proxy to use for request (default, none, or other).
+        required: false
+        value: default
+      - name: ProxyCreds
+        description: Proxy credentials ([domain\]username:password) to use for request (default,
+          none, or other).
+        required: false
+        value: default
+      - name: pid
+        description: Specify the process id.
+        required: false
+        value: ''
+      - name: parentproc
+        description: Specify the parent process name.
+        required: false
+        value: ''
+      - name: Architecture
+        description: Architecture of the .dll to generate (x64 or x86).
+        required: true
+        value: both
+        strict: true
+        suggested_values:
+          - x64
+          - x86
+          - both
+    advanced:
+      custom_generate: true

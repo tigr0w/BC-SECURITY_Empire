@@ -55,5 +55,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/management/MailRaider.ps1'
+script_path: 'management/MailRaider.ps1'
 script_end: Invoke-MailSearch {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Invoke-MailSearch completed!"

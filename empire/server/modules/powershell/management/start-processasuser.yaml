@@ -40,5 +40,5 @@ options:
       of running "runas.exe /netonly")
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/management/Start-ProcessAsUser.ps1'
+script_path: 'management/Start-ProcessAsUser.ps1'
 script_end: Start-ProcessAsUser {{ PARAMS }}

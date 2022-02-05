@@ -37,5 +37,5 @@ options:
       public key
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/management/Invoke-SharpChiselClient.ps1'
+script_path: 'management/Invoke-SharpChiselClient.ps1'
 script_end: Invoke-SharpChiselClient {{ PARAMS }}

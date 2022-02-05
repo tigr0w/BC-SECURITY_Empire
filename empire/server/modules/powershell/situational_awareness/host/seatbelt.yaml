@@ -151,5 +151,6 @@ options:
     description: Runs in Quiet Mode.
     required: false
     value: 'False'
+script_path: 'situational_awareness/host/Invoke-Seatbelt.ps1'
 advanced:
   custom_generate: true

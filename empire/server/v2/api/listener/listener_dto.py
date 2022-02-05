@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -7,29 +7,36 @@ from empire.server.v2.api.shared_dto import CustomOptionSchema, to_value_type
 
 
 def domain_to_dto_template(listener, uid: str):
-    options = dict(map(
-        lambda x: (x[0], {
-            'description': x[1]['Description'],
-            'required': x[1]['Required'],
-            'value': x[1]['Value'],
-            'strict': x[1]['Strict'],
-            'suggested_values': x[1]['SuggestedValues'],
-            'value_type': to_value_type(x[1]['Value']),
-        }), listener.options.items()))
+    options = dict(
+        map(
+            lambda x: (
+                x[0],
+                {
+                    "description": x[1]["Description"],
+                    "required": x[1]["Required"],
+                    "value": x[1]["Value"],
+                    "strict": x[1]["Strict"],
+                    "suggested_values": x[1]["SuggestedValues"],
+                    "value_type": to_value_type(x[1]["Value"]),
+                },
+            ),
+            listener.options.items(),
+        )
+    )
 
     return ListenerTemplate(
         id=uid,
-        name=listener.info.get('Name'),
-        authors=listener.info.get('Authors'),
-        description=listener.info.get('Description'),
-        category=listener.info.get('Category'),
-        comments=listener.info.get('Comments'),
-        options=options
+        name=listener.info.get("Name"),
+        authors=listener.info.get("Authors"),
+        description=listener.info.get("Description"),
+        category=listener.info.get("Category"),
+        comments=listener.info.get("Comments"),
+        options=options,
     )
 
 
 def domain_to_dto_listener(listener):
-    options = dict(map(lambda x: (x[0], x[1]['Value']), listener.options.items()))
+    options = dict(map(lambda x: (x[0], x[1]["Value"]), listener.options.items()))
 
     return Listener(
         id=listener.id,
@@ -55,9 +62,7 @@ class ListenerTemplate(BaseModel):
             "example": {
                 "id": "http",
                 "name": "HTTP[S]",
-                "authors": [
-                    "@harmj0y"
-                ],
+                "authors": ["@harmj0y"],
                 "description": "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.",
                 "category": "client_server",
                 "comments": [],
@@ -67,147 +72,142 @@ class ListenerTemplate(BaseModel):
                         "required": True,
                         "value": "http",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "Host": {
                         "description": "Hostname/IP for staging.",
                         "required": True,
                         "value": "http://192.168.0.20",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "BindIP": {
                         "description": "The IP to bind to on the control server.",
                         "required": True,
                         "value": "0.0.0.0",
-                        "suggested_values": [
-                            "0.0.0.0"
-                        ],
-                        "strict": False
+                        "suggested_values": ["0.0.0.0"],
+                        "strict": False,
                     },
                     "Port": {
                         "description": "Port for the listener.",
                         "required": True,
                         "value": "",
-                        "suggested_values": [
-                            "1335",
-                            "1336"
-                        ],
-                        "strict": False
+                        "suggested_values": ["1335", "1336"],
+                        "strict": False,
                     },
                     "Launcher": {
                         "description": "Launcher string.",
                         "required": True,
                         "value": "powershell -noP -sta -w 1 -enc ",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "StagingKey": {
                         "description": "Staging key for initial agent negotiation.",
                         "required": True,
                         "value": "}q)jFnDKw&px/7QBhE9Y<6~[Z1>{+Ps@",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "DefaultDelay": {
                         "description": "Agent delay/reach back interval (in seconds).",
                         "required": True,
                         "value": "5",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "DefaultJitter": {
                         "description": "Jitter in agent reachback interval (0.0-1.0).",
                         "required": True,
                         "value": "0.0",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "DefaultLostLimit": {
                         "description": "Number of missed checkins before exiting",
                         "required": True,
                         "value": "60",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "DefaultProfile": {
                         "description": "Default communication profile for the agent.",
                         "required": True,
                         "value": "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "CertPath": {
                         "description": "Certificate path for https listeners.",
                         "required": False,
                         "value": "",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "KillDate": {
                         "description": "Date for the listener to exit (MM/dd/yyyy).",
                         "required": False,
                         "value": "",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "WorkingHours": {
                         "description": "Hours for the agent to operate (09:00-17:00).",
                         "required": False,
                         "value": "",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "Headers": {
                         "description": "Headers for the control server.",
                         "required": True,
                         "value": "Server:Microsoft-IIS/7.5",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "Cookie": {
                         "description": "Custom Cookie Name",
                         "required": False,
                         "value": "xNQsvLdAysjkonT",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "StagerURI": {
                         "description": "URI for the stager. Must use /download/. Example: /download/stager.php",
                         "required": False,
                         "value": "",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "UserAgent": {
                         "description": "User-agent string to use for the staging request (default, none, or other).",
                         "required": False,
                         "value": "default",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "Proxy": {
                         "description": "Proxy to use for request (default, none, or other).",
                         "required": False,
                         "value": "default",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "ProxyCreds": {
                         "description": "Proxy credentials ([domain\\]username:password) to use for request (default, none, or other).",
                         "required": False,
                         "value": "default",
                         "suggested_values": [],
-                        "strict": False
+                        "strict": False,
                     },
                     "SlackURL": {
                         "description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
                         "required": False,
                         "value": "",
                         "suggested_values": [],
-                        "strict": False
-                    }
-                }
+                        "strict": False,
+                    },
+                },
             }
         }
 
@@ -259,7 +259,7 @@ class ListenerPostRequest(BaseModel):
                     "UserAgent": "default",
                     "Proxy": "default",
                     "ProxyCreds": "default",
-                    "SlackURL": ""
+                    "SlackURL": "",
                 },
             }
         }
