@@ -499,7 +499,7 @@ class Modules(object):
                             }
                             self._load_module(yaml_module, root_path, file_path)
                 except Exception as e:
-                    print(e)
+                    print(f"Error loading module {filename}: {e}")
 
         Session().commit()
 
