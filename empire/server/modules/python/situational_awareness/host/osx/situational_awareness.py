@@ -1,7 +1,6 @@
 from __future__ import print_function
 
-from builtins import object
-from builtins import str
+from builtins import object, str
 from typing import Dict
 
 from empire.server.common.module_models import PydanticModule
@@ -9,14 +8,20 @@ from empire.server.common.module_models import PydanticModule
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
-        script = ''
-        if params['Debug']:
-            debug = params['Debug']
-            script += "Debug = " + str(debug) + '\n'
-        if params['HistoryCount']:
-            search = params['HistoryCount']
-            script += 'HistoryCount = ' + str(search) + '\n'
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
+        script = ""
+        if params["Debug"]:
+            debug = params["Debug"]
+            script += "Debug = " + str(debug) + "\n"
+        if params["HistoryCount"]:
+            search = params["HistoryCount"]
+            script += "HistoryCount = " + str(search) + "\n"
 
         script += """
 try:

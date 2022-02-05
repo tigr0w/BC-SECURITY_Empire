@@ -1,19 +1,25 @@
 from builtins import object
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 from empire.server.common.module_models import PydanticModule
 
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = "") -> Tuple[Optional[str], Optional[str]]:
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ) -> Tuple[Optional[str], Optional[str]]:
 
-        loginhook_script_path = params['LoginHookScript']
-        password = params['Password']
-        password = password.replace('$', '\$')
-        password = password.replace('$', '\$')
-        password = password.replace('!', '\!')
-        password = password.replace('!', '\!')
+        loginhook_script_path = params["LoginHookScript"]
+        password = params["Password"]
+        password = password.replace("$", "\$")
+        password = password.replace("$", "\$")
+        password = password.replace("!", "\!")
+        password = password.replace("!", "\!")
         script = """
 import subprocess
 import sys
@@ -51,6 +57,11 @@ try:
 except Exception as e:
     print("[!] Issue with LoginHook script: " + str(e))
 
-""" % (loginhook_script_path, password, loginhook_script_path, password)
+""" % (
+            loginhook_script_path,
+            password,
+            loginhook_script_path,
+            password,
+        )
 
         return script

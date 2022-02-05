@@ -41,12 +41,10 @@ def domain_to_dto_download_description(download: models.Download):
     if download.filename:  # todo can this be made as a @property?
         filename = download.filename
     else:
-        filename = download.location.split('/')[-1]
+        filename = download.location.split("/")[-1]
 
     return DownloadDescription(
-        id=download.id,
-        file_name=filename,
-        link=f'/api/v2beta/downloads/{download.id}'
+        id=download.id, file_name=filename, link=f"/api/v2beta/downloads/{download.id}"
     )
 
 

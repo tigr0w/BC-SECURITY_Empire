@@ -10,7 +10,7 @@ def domain_to_dto_bypass(bypass):
         name=bypass.name,
         code=bypass.code,
         created_at=bypass.created_at,
-        updated_at=bypass.updated_at
+        updated_at=bypass.updated_at,
     )
 
 
@@ -34,4 +34,3 @@ class BypassUpdateRequest(BaseModel):
 class BypassPostRequest(BaseModel):
     name: str
     code: str
-

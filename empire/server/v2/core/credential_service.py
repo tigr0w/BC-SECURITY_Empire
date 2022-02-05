@@ -5,7 +5,6 @@ from empire.server.database import models
 
 
 class CredentialService(object):
-
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -32,10 +31,12 @@ class CredentialService(object):
 
             return credential, None
         except IntegrityError:
-            return None, 'Credential not created. Duplicate detected.'
+            return None, "Credential not created. Duplicate detected."
 
     @staticmethod
-    def update_credential(db: Session, db_credential: models.Credential, credential_req):
+    def update_credential(
+        db: Session, db_credential: models.Credential, credential_req
+    ):
         db_credential.credtype = credential_req.credtype
         db_credential.domain = credential_req.domain
         db_credential.username = credential_req.username
@@ -50,4 +51,4 @@ class CredentialService(object):
 
             return db_credential, None
         except IntegrityError:
-            return None, 'Credential not updated. Duplicate detected.'
+            return None, "Credential not updated. Duplicate detected."

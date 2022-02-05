@@ -9,7 +9,6 @@ from empire.server.database import models
 
 
 class DownloadService(object):
-
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -22,10 +21,12 @@ class DownloadService(object):
         query = db.query(models.Download)
 
         if q:
-            query = query\
-                .filter(or_(models.Download.filename.like(f'%{q}%'),
-                            models.Download.location.like(f'%{q}%')))\
-
+            query = query.filter(
+                or_(
+                    models.Download.filename.like(f"%{q}%"),
+                    models.Download.location.like(f"%{q}%"),
+                )
+            )
         return query.all()
 
     @staticmethod
@@ -36,11 +37,15 @@ class DownloadService(object):
         :param file:
         :return:
         """
-        location = f'{db.query(models.Config).first().install_path}/downloads/{file.filename}'
+        location = (
+            f"{db.query(models.Config).first().install_path}/downloads/{file.filename}"
+        )
         with open(location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        download = models.Download(location=location, filename=file.filename, size=os.path.getsize(location))
+        download = models.Download(
+            location=location, filename=file.filename, size=os.path.getsize(location)
+        )
         db.add(download)
 
         return download

@@ -1,8 +1,7 @@
 from __future__ import print_function
 
 import pathlib
-from builtins import object
-from builtins import str
+from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -13,11 +12,21 @@ from empire.server.utils.module_util import handle_error_message
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(module_name=module.script_path, obfuscate=obfuscate, obfuscate_command=obfuscation_command)
-        
+        script, err = main_menu.modules.get_module_source(
+            module_name=module.script_path,
+            obfuscate=obfuscate,
+            obfuscate_command=obfuscation_command,
+        )
+
         if err:
             return handle_error_message(err)
 
@@ -26,15 +35,18 @@ class Module(object):
 
         for option, values in params.items():
             if option.lower() != "agent" and option.lower() != "outputfunction":
-                if values and values != '':
+                if values and values != "":
                     if option == "4624":
                         script_end += "$SecurityLog = Get-EventLog -LogName Security; $Filtered4624 = Find-4624Logons $SecurityLog;"
                         script_end += 'Write-Output "Event ID 4624 (Logon):`n";'
                         script_end += "Write-Output $Filtered4624.Values"
                         script_end += f" | {outputf}"
-                        script = main_menu.modules.finalize_module(script=script, script_end=script_end,
-                                                                   obfuscate=obfuscate,
-                                                                   obfuscation_command=obfuscation_command)
+                        script = main_menu.modules.finalize_module(
+                            script=script,
+                            script_end=script_end,
+                            obfuscate=obfuscate,
+                            obfuscation_command=obfuscation_command,
+                        )
                         return script
 
                     if option == "4648":
@@ -42,9 +54,12 @@ class Module(object):
                         script_end += 'Write-Output "Event ID 4648 (Explicit Credential Logon):`n";'
                         script_end += "Write-Output $Filtered4648.Values"
                         script_end += f" | {outputf}"
-                        script = main_menu.modules.finalize_module(script=script, script_end=script_end,
-                                                                   obfuscate=obfuscate,
-                                                                   obfuscation_command=obfuscation_command)
+                        script = main_menu.modules.finalize_module(
+                            script=script,
+                            script_end=script_end,
+                            obfuscate=obfuscate,
+                            obfuscation_command=obfuscation_command,
+                        )
                         return script
 
                     if option == "AppLocker":
@@ -52,9 +67,12 @@ class Module(object):
                         script_end += 'Write-Output "AppLocker Process Starts:`n";'
                         script_end += "Write-Output $AppLockerLogs.Values"
                         script_end += f" | {outputf}"
-                        script = main_menu.modules.finalize_module(script=script, script_end=script_end,
-                                                                   obfuscate=obfuscate,
-                                                                   obfuscation_command=obfuscation_command)
+                        script = main_menu.modules.finalize_module(
+                            script=script,
+                            script_end=script_end,
+                            obfuscate=obfuscate,
+                            obfuscation_command=obfuscation_command,
+                        )
                         return script
 
                     if option == "PSLogs":
@@ -62,9 +80,12 @@ class Module(object):
                         script_end += 'Write-Output "PowerShell Script Executions:`n";'
                         script_end += "Write-Output $PSLogs.Values"
                         script_end += f" | {outputf}"
-                        script = main_menu.modules.finalize_module(script=script, script_end=script_end,
-                                                                   obfuscate=obfuscate,
-                                                                   obfuscation_command=obfuscation_command)
+                        script = main_menu.modules.finalize_module(
+                            script=script,
+                            script_end=script_end,
+                            obfuscate=obfuscate,
+                            obfuscation_command=obfuscation_command,
+                        )
                         return script
 
                     if option == "SavedRDP":
@@ -72,17 +93,35 @@ class Module(object):
                         script_end += 'Write-Output "RDP Client Data:`n";'
                         script_end += "Write-Output $RdpClientData.Values"
                         script_end += f" | {outputf}"
-                        script = main_menu.modules.finalize_module(script=script, script_end=script_end,
-                                                                   obfuscate=obfuscate,
-                                                                   obfuscation_command=obfuscation_command)
+                        script = main_menu.modules.finalize_module(
+                            script=script,
+                            script_end=script_end,
+                            obfuscate=obfuscate,
+                            obfuscation_command=obfuscation_command,
+                        )
                         return script
 
         # if we get to this point, no switched were specified
-        script_end += "Get-ComputerDetails -Limit " + str(params['Limit'])
-        if (outputf == "Out-String"):
-            script_end += " -ToString | " + '%{$_ + \"`n\"};"`n' + str(module.name.split("/")[-1]) + ' completed!"'
+        script_end += "Get-ComputerDetails -Limit " + str(params["Limit"])
+        if outputf == "Out-String":
+            script_end += (
+                " -ToString | "
+                + '%{$_ + "`n"};"`n'
+                + str(module.name.split("/")[-1])
+                + ' completed!"'
+            )
         else:
-            script_end += f" | {outputf} | " + '%{$_ + \"`n\"};"`n' + str(module.name.split("/")[-1]) + ' completed!"'
+            script_end += (
+                f" | {outputf} | "
+                + '%{$_ + "`n"};"`n'
+                + str(module.name.split("/")[-1])
+                + ' completed!"'
+            )
 
-        script = main_menu.modules.finalize_module(script=script, script_end=script_end, obfuscate=obfuscate, obfuscation_command=obfuscation_command)
+        script = main_menu.modules.finalize_module(
+            script=script,
+            script_end=script_end,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )
         return script

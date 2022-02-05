@@ -4,7 +4,6 @@ from empire.server.database import models
 
 
 class BypassService(object):
-
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -26,7 +25,7 @@ class BypassService(object):
 
     def create_bypass(self, db: Session, bypass_req):
         if self.get_by_name(db, bypass_req.name):
-            return None, f'Bypass with name {bypass_req.name} already exists.'
+            return None, f"Bypass with name {bypass_req.name} already exists."
 
         bypass = models.Bypass(name=bypass_req.name, code=bypass_req.code)
 
@@ -40,7 +39,7 @@ class BypassService(object):
             if not self.get_by_name(db, bypass_req.name):
                 db_bypass.name = bypass_req.name
             else:
-                return None, f'Bypass with name {bypass_req.name} already exists.'
+                return None, f"Bypass with name {bypass_req.name} already exists."
 
         db_bypass.code = bypass_req.code
 

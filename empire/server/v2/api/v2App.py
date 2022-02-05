@@ -9,24 +9,19 @@ from starlette.templating import Jinja2Templates
 
 def initialize():
     # Not pretty but allows us to use main_menu by delaying the import
-    from empire.server.v2.api.agent import agentv2
-    from empire.server.v2.api.agent import taskv2
-    from empire.server.v2.api.agent import agentfilev2
-    from empire.server.v2.api.stager import stagertemplatev2
-    from empire.server.v2.api.stager import stagerv2
-    from empire.server.v2.api.listener import listenertemplatev2
-    from empire.server.v2.api.listener import listenerv2
-    from empire.server.v2.api.user import userv2
-    from empire.server.v2.api.module import modulev2
+    from empire.server.v2.api.agent import agentfilev2, agentv2, taskv2
     from empire.server.v2.api.bypass import bypassv2
-    from empire.server.v2.api.keyword import keywordv2
-    from empire.server.v2.api.profile import profilev2
     from empire.server.v2.api.credential import credentialv2
-    from empire.server.v2.api.host import hostv2
     from empire.server.v2.api.download import downloadv2
+    from empire.server.v2.api.host import hostv2
+    from empire.server.v2.api.keyword import keywordv2
+    from empire.server.v2.api.listener import listenertemplatev2, listenerv2
     from empire.server.v2.api.meta import metav2
+    from empire.server.v2.api.module import modulev2
     from empire.server.v2.api.plugin import pluginv2
-
+    from empire.server.v2.api.profile import profilev2
+    from empire.server.v2.api.stager import stagertemplatev2, stagerv2
+    from empire.server.v2.api.user import userv2
     from empire.server.v2.api.websocket import v2_socket
 
     v2App = FastAPI()
@@ -48,7 +43,7 @@ def initialize():
     v2App.include_router(downloadv2.router)
     v2App.include_router(metav2.router)
     v2App.include_router(pluginv2.router)
-    v2App.include_router(v2_socket.router) # todo naming convention
+    v2App.include_router(v2_socket.router)  # todo naming convention
 
     v2App.add_middleware(
         CORSMiddleware,
@@ -71,13 +66,16 @@ def initialize():
     # https://stackoverflow.com/questions/64522736/how-to-connect-vue-js-as-frontend-and-fastapi-as-backend
     # https://stackoverflow.com/questions/62928450/how-to-put-backend-and-frontend-together-returning-react-frontend-from-fastapi
     try:
-        v2App.mount("/", StaticFiles(directory="empire/server/v2/api/static"), name="static")
+        v2App.mount(
+            "/", StaticFiles(directory="empire/server/v2/api/static"), name="static"
+        )
     except Exception as e:
         pass
 
     @v2App.get("/ws-tester")
     async def ws_tester():
-        return HTMLResponse("""
+        return HTMLResponse(
+            """
 <!DOCTYPE html>
 <html>
     <head>
@@ -112,7 +110,7 @@ def initialize():
         </script>
     </body>
 </html>
-""")
-
+"""
+        )
 
     uvicorn.run(v2App, host="0.0.0.0", port=8000)

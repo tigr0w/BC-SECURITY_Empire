@@ -1,12 +1,15 @@
 from __future__ import absolute_import
-from pyparsing import *
+
 import binascii
+
+from pyparsing import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # UTILITY
 #
 # Defining helper functionality to optimize code quality.
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 class MalleableError(Exception):
     """Custom exception class used to identify local exceptions."""
@@ -55,19 +58,20 @@ class MalleableUtil(object):
             char: byte.
         """
         if isinstance(hex, bytes):
-            hex = hex.decode('latin-1')
+            hex = hex.decode("latin-1")
         if hex:
             r = bytes.fromhex(hex)
         else:
             r = None
         return r
 
+
 class MalleableObject(object):
     """Custom object class used to implement consistent functionality."""
 
     SEMICOLON = Suppress(";")
     FIELD = Word(alphanums + "_-")
-    VALUE = (QuotedString("\"", escChar="\\") | QuotedString("'", escChar="\\"))
+    VALUE = QuotedString('"', escChar="\\") | QuotedString("'", escChar="\\")
     COMMENT = Suppress("#") + Suppress(restOfLine)
 
     def __init__(self):

@@ -8,15 +8,16 @@ which help manage those events - logging them, fetching them, etc.
 import json
 
 from pydispatch import dispatcher
-from empire.server.database.base import SessionLocal
-from empire.server.database import models
 
+from empire.server.database import models
+from empire.server.database.base import SessionLocal
 
 # from empire.server.common import db # used in the disabled TODO below
 
 ################################################################################
 # Helper functions for logging common events
 ################################################################################
+
 
 def agent_rename(old_name, new_name):
     """
@@ -28,13 +29,15 @@ def agent_rename(old_name, new_name):
     # make sure to include new_name in there so it will persist if the agent
     # is renamed again - that way we can still trace the trail back if needed
     message = "[*] Agent {} has been renamed to {}".format(old_name, new_name)
-    signal = json.dumps({
-        'print': False,
-        'message': message,
-        'old_name': old_name,
-        'new_name': new_name,
-        'event_type': 'rename'
-    })
+    signal = json.dumps(
+        {
+            "print": False,
+            "message": message,
+            "old_name": old_name,
+            "new_name": new_name,
+            "event_type": "rename",
+        }
+    )
     # signal twice, once for each name (that way, if you search by sender,
     # the last thing in the old agent and the first thing in the new is that
     # it has been renamed)
@@ -58,7 +61,8 @@ def log_event(name, event_type, message, task_id=None):
                  queries of an agent's task and its result together.
     """
     with SessionLocal.begin() as db:
-        db.add(models.Reporting(name=name,
-                                event_type=event_type,
-                                message=message,
-                                taskID=task_id))
+        db.add(
+            models.Reporting(
+                name=name, event_type=event_type, message=message, taskID=task_id
+            )
+        )

@@ -1,7 +1,7 @@
 """ Implements Diffie-Hellman as a Jinja2 partial for use in stagers
 DH code from: https://github.com/lowazo/pyDHE """
-import os
 import hashlib
+import os
 
 # If a secure random number generator is unavailable, exit with an error.
 try:

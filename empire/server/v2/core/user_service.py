@@ -4,7 +4,6 @@ from empire.server.database import models
 
 
 class UserService(object):
-
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -20,7 +19,9 @@ class UserService(object):
     def get_by_name(db: Session, name: str):
         return db.query(models.User).filter(models.User.username == name).first()
 
-    def create_user(self, db: Session, username: str, hashed_password: str, admin: bool = False):
+    def create_user(
+        self, db: Session, username: str, hashed_password: str, admin: bool = False
+    ):
         db_user = self.get_by_name(db, username)
 
         if db_user:
@@ -30,7 +31,7 @@ class UserService(object):
             username=username,
             hashed_password=hashed_password,
             enabled=True,
-            admin=admin
+            admin=admin,
         )
 
         db.add(user)

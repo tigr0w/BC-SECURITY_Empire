@@ -3,12 +3,15 @@ from __future__ import absolute_import
 import random
 import string
 
-import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 from pyparsing import *
-from .utility import MalleableError, MalleableUtil, MalleableObject
-from .transformation import Transform, Terminator, Container
-from .transaction import MalleableRequest, MalleableResponse, Transaction
 from six.moves import range
+
+from .transaction import MalleableRequest, MalleableResponse, Transaction
+from .transformation import Container, Terminator, Transform
+from .utility import MalleableError, MalleableObject, MalleableUtil
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # IMPLEMENTATION
@@ -16,6 +19,7 @@ from six.moves import range
 # Defining the specific implementations of an interaction
 # between a web client request and a web server response.
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 class Get(Transaction):
     """The Get implementation of a Transaction.
@@ -52,15 +56,15 @@ class Get(Transaction):
             dict (str, obj)
         """
         d = super(Get, self)._serialize()
-        d["client"] = dict((list(d["client"].items()) if "client" in d else []) + list({
-            "metadata" : self.client.metadata._serialize()
-        }.items()))
-        d["server"] = dict((list(d["server"].items()) if "server" in d else []) + list({
-            "output" : self.server.output._serialize()
-        }.items()))
-        return dict(list(d.items()) + list({
-
-        }.items()))
+        d["client"] = dict(
+            (list(d["client"].items()) if "client" in d else [])
+            + list({"metadata": self.client.metadata._serialize()}.items())
+        )
+        d["server"] = dict(
+            (list(d["server"].items()) if "server" in d else [])
+            + list({"output": self.server.output._serialize()}.items())
+        )
+        return dict(list(d.items()) + list({}.items()))
 
     @classmethod
     def _deserialize(cls, data):
@@ -74,8 +78,16 @@ class Get(Transaction):
         """
         get = super(Get, cls)._deserialize(data)
         if data:
-            get.client.metadata = Container._deserialize(data["client"]["metadata"]) if ("client" in data and "metadata" in data["client"]) else Container()
-            get.server.output = Container._deserialize(data["server"]["output"]) if ("server" in data and "output" in data["server"]) else Container()
+            get.client.metadata = (
+                Container._deserialize(data["client"]["metadata"])
+                if ("client" in data and "metadata" in data["client"])
+                else Container()
+            )
+            get.server.output = (
+                Container._deserialize(data["server"]["output"])
+                if ("server" in data and "output" in data["server"])
+                else Container()
+            )
         return get
 
     @classmethod
@@ -97,19 +109,19 @@ class Get(Transaction):
         if data:
             for i in range(0, len(data), 2):
                 item = data[i]
-                arg = data[i+1] if len(data) > i+1 else None
+                arg = data[i + 1] if len(data) > i + 1 else None
                 if item and arg:
                     if item.lower() == "client":
                         for j in range(0, len(arg), 2):
                             item2 = arg[j]
-                            arg2 = arg[j+1] if len(arg) > j+1 else None
+                            arg2 = arg[j + 1] if len(arg) > j + 1 else None
                             if item2 and arg2:
                                 if item2.lower() == "metadata":
                                     self.client.metadata._parse(arg2)
                     elif item.lower() == "server":
                         for j in range(0, len(arg), 2):
                             item2 = arg[j]
-                            arg2 = arg[j+1] if len(arg) > j+1 else None
+                            arg2 = arg[j + 1] if len(arg) > j + 1 else None
                             if item2 and arg2:
                                 if item2.lower() == "output":
                                     self.server.output._parse(arg2)
@@ -127,7 +139,9 @@ class Get(Transaction):
         request = self.client._clone()
         request.host = host
         request.path = self.client.random_uri()
-        request.store(self.client.metadata.transform(metadata), self.client.metadata.terminator)
+        request.store(
+            self.client.metadata.transform(metadata), self.client.metadata.terminator
+        )
         return request
 
     def extract_client(self, request):
@@ -139,7 +153,7 @@ class Get(Transaction):
         Returns:
             str: metadata
         """
-        for u in (self.client.uris if self.client.uris else ["/"]):
+        for u in self.client.uris if self.client.uris else ["/"]:
             if u.lower() in request.path.lower():
                 metadata = request.extract(self.client, self.client.metadata.terminator)
                 if metadata:
@@ -159,7 +173,9 @@ class Get(Transaction):
             Transaction.Server: Constructed Server response.
         """
         response = self.server._clone()
-        response.store(self.server.output.transform(output), self.server.output.terminator)
+        response.store(
+            self.server.output.transform(output), self.server.output.terminator
+        )
         return response
 
     def extract_server(self, response):
@@ -173,6 +189,7 @@ class Get(Transaction):
         """
         output = response.extract(self.server, self.server.output.terminator)
         return self.server.output.transform_r(output) if output else None
+
 
 class Post(Transaction):
     """The Post implementation of a Transaction.
@@ -212,16 +229,20 @@ class Post(Transaction):
             dict (str, obj)
         """
         d = super(Post, self)._serialize()
-        d["client"] = dict((list(d["client"].items()) if "client" in d else []) + list({
-            "id" : self.client.id._serialize(),
-            "output" : self.client.output._serialize()
-        }.items()))
-        d["server"] = dict((list(d["server"].items()) if "server" in d else []) + list({
-            "output" : self.server.output._serialize()
-        }.items()))
-        return dict(list(d.items()) + list({
-
-        }.items()))
+        d["client"] = dict(
+            (list(d["client"].items()) if "client" in d else [])
+            + list(
+                {
+                    "id": self.client.id._serialize(),
+                    "output": self.client.output._serialize(),
+                }.items()
+            )
+        )
+        d["server"] = dict(
+            (list(d["server"].items()) if "server" in d else [])
+            + list({"output": self.server.output._serialize()}.items())
+        )
+        return dict(list(d.items()) + list({}.items()))
 
     @classmethod
     def _deserialize(cls, data):
@@ -235,9 +256,21 @@ class Post(Transaction):
         """
         post = super(Post, cls)._deserialize(data)
         if data:
-            post.client.id = Container._deserialize(data["client"]["id"]) if ("client" in data and "id" in data["client"]) else Container()
-            post.client.output = Container._deserialize(data["client"]["output"]) if ("client" in data and "output" in data["client"]) else Container()
-            post.server.output = Container._deserialize(data["server"]["output"]) if ("server" in data and "output" in data["server"]) else Container()
+            post.client.id = (
+                Container._deserialize(data["client"]["id"])
+                if ("client" in data and "id" in data["client"])
+                else Container()
+            )
+            post.client.output = (
+                Container._deserialize(data["client"]["output"])
+                if ("client" in data and "output" in data["client"])
+                else Container()
+            )
+            post.server.output = (
+                Container._deserialize(data["server"]["output"])
+                if ("server" in data and "output" in data["server"])
+                else Container()
+            )
         return post
 
     @classmethod
@@ -259,12 +292,12 @@ class Post(Transaction):
         if data:
             for i in range(0, len(data), 2):
                 item = data[i]
-                arg = data[i+1] if len(data) > i+1 else None
+                arg = data[i + 1] if len(data) > i + 1 else None
                 if item and arg:
                     if item.lower() == "client":
                         for j in range(0, len(arg), 2):
                             item2 = arg[j]
-                            arg2 = arg[j+1] if len(arg) > j+1 else None
+                            arg2 = arg[j + 1] if len(arg) > j + 1 else None
                             if item2 and arg2:
                                 if item2.lower() == "id":
                                     self.client.id._parse(arg2)
@@ -273,7 +306,7 @@ class Post(Transaction):
                     elif item.lower() == "server":
                         for j in range(0, len(arg), 2):
                             item2 = arg[j]
-                            arg2 = arg[j+1] if len(arg) > j+1 else None
+                            arg2 = arg[j + 1] if len(arg) > j + 1 else None
                             if item2 and arg2:
                                 if item2.lower() == "output":
                                     self.server.output._parse(arg2)
@@ -293,7 +326,9 @@ class Post(Transaction):
         request.host = host
         request.path = self.client.random_uri()
         request.store(self.client.id.transform(id), self.client.id.terminator)
-        request.store(self.client.output.transform(output), self.client.output.terminator)
+        request.store(
+            self.client.output.transform(output), self.client.output.terminator
+        )
         return request
 
     def extract_client(self, request):
@@ -305,18 +340,18 @@ class Post(Transaction):
         Returns:
             tuple: id, output
         """
-        for u in (self.client.uris if self.client.uris else ["/"]):
+        for u in self.client.uris if self.client.uris else ["/"]:
             if u.lower() in request.path.lower():
                 id = request.extract(self.client, self.client.id.terminator)
                 if isinstance(id, str):
-                    id = id.encode('latin-1')
+                    id = id.encode("latin-1")
                 output = request.extract(self.client, self.client.output.terminator)
                 trans_r = self.client.id.transform_r(id) if id else None
                 if isinstance(trans_r, str):
                     trans_r = trans_r.encode("latin-1")
                 return (
                     trans_r,
-                    self.client.output.transform_r(output) if output else None
+                    self.client.output.transform_r(output) if output else None,
                 )
         return (None, None)
 
@@ -330,7 +365,9 @@ class Post(Transaction):
             Transaction.Server: Constructed Server response.
         """
         response = self.server._clone()
-        response.store(self.server.output.transform(output), self.server.output.terminator)
+        response.store(
+            self.server.output.transform(output), self.server.output.terminator
+        )
         return response
 
     def extract_server(self, response):
@@ -344,6 +381,7 @@ class Post(Transaction):
         """
         output = response.extract(self.server, self.server.output.terminator)
         return self.server.output.transform_r(output) if output else None
+
 
 class Stager(Transaction):
     """The Stager implementation of a Transaction.
@@ -365,7 +403,7 @@ class Stager(Transaction):
         # This catches it and generates a random http-stager uri
         if not self.client.uris:
             self.client.uris = []
-            self.client.uris.append('/' + self.get_random_string(8) + '/')
+            self.client.uris.append("/" + self.get_random_string(8) + "/")
 
     def _clone(self):
         """Deep copy of the Stager Transaction.
@@ -386,15 +424,15 @@ class Stager(Transaction):
             dict (str, obj)
         """
         d = super(Stager, self)._serialize()
-        d["client"] = dict((list(d["client"].items()) if "client" in d else []) + list({
-            "metadata" : self.client.metadata._serialize()
-        }.items()))
-        d["server"] = dict((list(d["server"].items()) if "server" in d else []) + list({
-            "output" : self.server.output._serialize()
-        }.items()))
-        return dict(list(d.items()) + list({
-
-        }.items()))
+        d["client"] = dict(
+            (list(d["client"].items()) if "client" in d else [])
+            + list({"metadata": self.client.metadata._serialize()}.items())
+        )
+        d["server"] = dict(
+            (list(d["server"].items()) if "server" in d else [])
+            + list({"output": self.server.output._serialize()}.items())
+        )
+        return dict(list(d.items()) + list({}.items()))
 
     @classmethod
     def _deserialize(cls, data):
@@ -408,8 +446,16 @@ class Stager(Transaction):
         """
         stager = super(Stager, cls)._deserialize(data)
         if data:
-            stager.client.metadata = Container._deserialize(data["client"]["metadata"]) if ("client" in data and "metadata" in data["client"]) else Container()
-            stager.server.output = Container._deserialize(data["server"]["output"]) if ("server" in data and "output" in data["server"]) else Container()
+            stager.client.metadata = (
+                Container._deserialize(data["client"]["metadata"])
+                if ("client" in data and "metadata" in data["client"])
+                else Container()
+            )
+            stager.server.output = (
+                Container._deserialize(data["server"]["output"])
+                if ("server" in data and "output" in data["server"])
+                else Container()
+            )
         return stager
 
     @classmethod
@@ -431,19 +477,19 @@ class Stager(Transaction):
         if data:
             for i in range(0, len(data), 2):
                 item = data[i]
-                arg = data[i+1] if len(data) > i+1 else None
+                arg = data[i + 1] if len(data) > i + 1 else None
                 if item and arg:
                     if item.lower() == "client":
                         for j in range(0, len(arg), 2):
                             item2 = arg[j]
-                            arg2 = arg[j+1] if len(arg) > j+1 else None
+                            arg2 = arg[j + 1] if len(arg) > j + 1 else None
                             if item2 and arg2:
                                 if item2.lower() == "metadata":
                                     self.client.metadata._parse(arg2)
                     elif item.lower() == "server":
                         for j in range(0, len(arg), 2):
                             item2 = arg[j]
-                            arg2 = arg[j+1] if len(arg) > j+1 else None
+                            arg2 = arg[j + 1] if len(arg) > j + 1 else None
                             if item2 and arg2:
                                 if item2.lower() == "output":
                                     self.server.output._parse(arg2)
@@ -460,7 +506,9 @@ class Stager(Transaction):
         request = self.client._clone()
         request.host = host
         request.path = self.client.random_uri()
-        request.store(self.client.metadata.transform(metadata), self.client.metadata.terminator)
+        request.store(
+            self.client.metadata.transform(metadata), self.client.metadata.terminator
+        )
         return request
 
     def extract_client(self, request):
@@ -471,7 +519,7 @@ class Stager(Transaction):
 
         Returns: None
         """
-        for u in (self.client.uris if self.client.uris else ["/"]):
+        for u in self.client.uris if self.client.uris else ["/"]:
             if u.lower() in request.path.lower():
                 metadata = request.extract(self.client, self.client.metadata.terminator)
                 if metadata:
@@ -488,7 +536,9 @@ class Stager(Transaction):
             Transaction.Server: Constructed Server response.
         """
         response = self.server._clone()
-        response.store(self.server.output.transform(output), self.server.output.terminator)
+        response.store(
+            self.server.output.transform(output), self.server.output.terminator
+        )
         return response
 
     def extract_server(self, response):
@@ -505,6 +555,5 @@ class Stager(Transaction):
 
     def get_random_string(self, length):
         letters = string.ascii_lowercase
-        result_str = ''.join(random.choice(letters) for i in range(length))
+        result_str = "".join(random.choice(letters) for i in range(length))
         return result_str
-

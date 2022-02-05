@@ -5,7 +5,6 @@ from empire.server.database.base import SessionLocal
 
 
 class KeywordService(object):
-
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -19,7 +18,9 @@ class KeywordService(object):
 
     @staticmethod
     def get_by_keyword(db: Session, keyword: str):
-        return db.query(models.Keyword).filter(models.Keyword.keyword == keyword).first()
+        return (
+            db.query(models.Keyword).filter(models.Keyword.keyword == keyword).first()
+        )
 
     @staticmethod
     def delete_keyword(db: Session, keyword: models.Keyword):
@@ -27,9 +28,11 @@ class KeywordService(object):
 
     def create_keyword(self, db: Session, keyword_req):
         if self.get_by_keyword(db, keyword_req.keyword):
-            return None, f'Keyword with name {keyword_req.keyword} already exists.'
+            return None, f"Keyword with name {keyword_req.keyword} already exists."
 
-        db_keyword = models.Keyword(keyword=keyword_req.keyword, replacement=keyword_req.replacement)
+        db_keyword = models.Keyword(
+            keyword=keyword_req.keyword, replacement=keyword_req.replacement
+        )
 
         db.add(db_keyword)
         db.flush()
@@ -41,7 +44,7 @@ class KeywordService(object):
             if not self.get_by_keyword(db, keyword_req.keyword):
                 db_keyword.keyword = keyword_req.keyword
             else:
-                return None, f'Keyword with name {keyword_req.keyword} already exists.'
+                return None, f"Keyword with name {keyword_req.keyword} already exists."
 
         db_keyword.replacement = keyword_req.replacement
 

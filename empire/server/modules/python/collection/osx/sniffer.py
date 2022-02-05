@@ -6,18 +6,23 @@ from empire.server.common.module_models import PydanticModule
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False,
-                 obfuscation_command: str = "") -> str:
-        script = '\n'
-        for item in ['ctypes','threading','sys','os','errno','base64']:
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ) -> str:
+        script = "\n"
+        for item in ["ctypes", "threading", "sys", "os", "errno", "base64"]:
             script += "import %s \n" % item
-        savePath = params['SavePath']
-        Debug = params['Debug']
-        maxPackets = params['MaxPackets']
-        libcPath = params['LibcDylib']
-        pcapPath = params['PcapDylib']
-        if params['CaptureInterface']:
-            script += "INTERFACE = '%s' \n" % params['CaptureInterface']
+        savePath = params["SavePath"]
+        Debug = params["Debug"]
+        maxPackets = params["MaxPackets"]
+        libcPath = params["LibcDylib"]
+        pcapPath = params["PcapDylib"]
+        if params["CaptureInterface"]:
+            script += "INTERFACE = '%s' \n" % params["CaptureInterface"]
         else:
             script += "INTERFACE = '' \n"
         script += "DEBUG = %s \n" % Debug
@@ -25,7 +30,6 @@ class Module(object):
         script += "PCAP_CAPTURE_COUNT = %s \n" % maxPackets
         script += "OSX_PCAP_DYLIB = '%s' \n" % pcapPath
         script += "OSX_LIBC_DYLIB = '%s' \n" % libcPath
-
 
         script += R"""
 IN_MEMORY = False

@@ -3,17 +3,17 @@
 Credential handling functionality for Empire.
 
 """
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-from builtins import input
-from builtins import str
-from builtins import object
-from . import helpers
 import os
-from empire.server.database.base import SessionLocal
+from builtins import input, object, str
+
+from sqlalchemy import and_, or_
+
 from empire.server.database import models
-from sqlalchemy import or_, and_
+from empire.server.database.base import SessionLocal
+
+from . import helpers
 
 
 class Credentials(object):
@@ -39,7 +39,11 @@ class Credentials(object):
         Check if this credential ID is valid.
         """
         with SessionLocal() as db:
-            if db.query(models.Credential).filter(models.Credential.id == credentialID).first():
+            if (
+                db.query(models.Credential)
+                .filter(models.Credential.id == credentialID)
+                .first()
+            ):
                 return True
 
         return False
@@ -55,30 +59,54 @@ class Credentials(object):
         # if we're returning a single credential by ID
         with SessionLocal() as db:
             if self.is_credential_valid(filter_term):
-                results = db.query(models.Credential).filter(models.Credential.id == filter_term).first()
+                results = (
+                    db.query(models.Credential)
+                    .filter(models.Credential.id == filter_term)
+                    .first()
+                )
 
             # if we're filtering by host/username
-            elif filter_term and filter_term != '':
-                filter_term = filter_term.replace('*', '%')
+            elif filter_term and filter_term != "":
+                filter_term = filter_term.replace("*", "%")
                 search = "%{}%".format(filter_term)
-                results = db.query(models.Credential).filter(or_(models.Credential.domain.like(search),
-                                                                             models.Credential.username.like(search),
-                                                                             models.Credential.host.like(search),
-                                                                             models.Credential.password.like(search))).all()
+                results = (
+                    db.query(models.Credential)
+                    .filter(
+                        or_(
+                            models.Credential.domain.like(search),
+                            models.Credential.username.like(search),
+                            models.Credential.host.like(search),
+                            models.Credential.password.like(search),
+                        )
+                    )
+                    .all()
+                )
 
             # if we're filtering by credential type (hash, plaintext, token)
             elif credtype and credtype != "":
-                results = db.query(models.Credential).filter(models.Credential.credtype.ilike(f'%credtype%')).all()
+                results = (
+                    db.query(models.Credential)
+                    .filter(models.Credential.credtype.ilike(f"%credtype%"))
+                    .all()
+                )
 
             # if we're filtering by content in the note field
             elif note and note != "":
                 search = "%{}%".format(note)
-                results = db.query(models.Credential).filter(models.Credential.note.ilike(f'%search%')).all()
+                results = (
+                    db.query(models.Credential)
+                    .filter(models.Credential.note.ilike(f"%search%"))
+                    .all()
+                )
 
             # if we're filtering by content in the OS field
             elif os and os != "":
                 search = "%{}%".format(os)
-                results = db.query(models.Credential).filter(models.Credential.os.ilike('%search%')).all()
+                results = (
+                    db.query(models.Credential)
+                    .filter(models.Credential.os.ilike("%search%"))
+                    .all()
+                )
 
             # otherwise return all credentials
             else:
@@ -92,41 +120,58 @@ class Credentials(object):
         """
         return self.get_credentials(credtype="hash", filterTerm="krbtgt")
 
-    def add_credential(self, credtype, domain, username, password, host, os='', sid='', notes=''):
+    def add_credential(
+        self, credtype, domain, username, password, host, os="", sid="", notes=""
+    ):
         """
         Add a credential with the specified information to the database.
         """
         with SessionLocal.begin() as db:
-            results = db.query(models.Credential).filter(and_(models.Credential.credtype.like(credtype),
-                                                                          models.Credential.domain.like(domain),
-                                                                          models.Credential.username.like(username),
-                                                                          models.Credential.password.like(password))).all()
+            results = (
+                db.query(models.Credential)
+                .filter(
+                    and_(
+                        models.Credential.credtype.like(credtype),
+                        models.Credential.domain.like(domain),
+                        models.Credential.username.like(username),
+                        models.Credential.password.like(password),
+                    )
+                )
+                .all()
+            )
 
             if len(results) == 0:
-                credential = models.Credential(credtype=credtype,
-                                               domain=domain,
-                                               username=username,
-                                               password=password,
-                                               host=host,
-                                               os=os,
-                                               sid=sid,
-                                               notes=notes)
+                credential = models.Credential(
+                    credtype=credtype,
+                    domain=domain,
+                    username=username,
+                    password=password,
+                    host=host,
+                    os=os,
+                    sid=sid,
+                    notes=notes,
+                )
                 db.add(credential)
                 db.flush()
 
-    def export_credentials(self, export_path=''):
+    def export_credentials(self, export_path=""):
         """
         Export the credentials in the database to an output file.
         """
 
-        if export_path == '':
+        if export_path == "":
             print(helpers.color("[!] Export path cannot be ''"))
 
         export_path += ".csv"
 
         if os.path.exists(export_path):
             try:
-                choice = input(helpers.color("[>] File %s already exists, overwrite? [y/N] " % (export_path), "red"))
+                choice = input(
+                    helpers.color(
+                        "[>] File %s already exists, overwrite? [y/N] " % (export_path),
+                        "red",
+                    )
+                )
                 if choice.lower() != "" and choice.lower()[0] == "y":
                     pass
                 else:
@@ -140,9 +185,13 @@ class Credentials(object):
             print(helpers.color("[!] No credentials in the database."))
             return
 
-        with open(export_path, 'w') as output_file:
-            output_file.write("CredID,CredType,Domain,Username,Password,Host,OS,SID,Notes\n")
+        with open(export_path, "w") as output_file:
+            output_file.write(
+                "CredID,CredType,Domain,Username,Password,Host,OS,SID,Notes\n"
+            )
             for cred in creds:
-                output_file.write("\"%s\"\n" % ('","'.join([str(x) for x in cred])))
+                output_file.write('"%s"\n' % ('","'.join([str(x) for x in cred])))
 
-            print("\n" + helpers.color("[*] Credentials exported to %s\n" % (export_path)))
+            print(
+                "\n" + helpers.color("[*] Credentials exported to %s\n" % (export_path))
+            )

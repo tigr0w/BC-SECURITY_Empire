@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -40,7 +40,7 @@ def domain_to_dto_agent(agent):
         # todo could make this a typed class later to match the schema
         #  this still needs work because while the task accepts string for proxy type
         #  this returns int. We can avoid the stupid mapping of the agents just use the string values instead.
-        proxies=agent.proxy
+        proxies=agent.proxy,
     )
 
 

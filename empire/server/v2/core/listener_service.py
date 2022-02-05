@@ -1,7 +1,7 @@
 import copy
 import hashlib
 import json
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, List, Optional, Tuple
 
 from pydispatch import dispatcher
 from sqlalchemy.orm import Session
@@ -14,11 +14,12 @@ from empire.server.v2.core.listener_template_service import ListenerTemplateServ
 
 
 class ListenerService(object):
-
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
-        self.listener_template_service: ListenerTemplateService = main_menu.listenertemplatesv2
+        self.listener_template_service: ListenerTemplateService = (
+            main_menu.listenertemplatesv2
+        )
 
         # All running listeners. This is the object instances, NOT the database models.
         # When updating options for a listener, we'll go to the db as the source of truth.
@@ -60,7 +61,7 @@ class ListenerService(object):
         :return: listener object
         """
         for listener in self._active_listeners.values():
-            if listener.options['Name'] == name:
+            if listener.options["Name"] == name:
                 return listener
 
     def update_listener(self, db: Session, db_listener: models.Listener, listener_req):
@@ -68,10 +69,12 @@ class ListenerService(object):
             if not self.get_by_name(db, listener_req.name):
                 db_listener.name = listener_req.name
             else:
-                return None, f'Listener with name {listener_req.name} already exists.'
+                return None, f"Listener with name {listener_req.name} already exists."
 
         db_listener.enabled = listener_req.enabled
-        template_instance, err = self._validate_listener_options(db_listener.module, listener_req.options)
+        template_instance, err = self._validate_listener_options(
+            db_listener.module, listener_req.options
+        )
 
         if err:
             return None, err
@@ -82,11 +85,13 @@ class ListenerService(object):
 
     def create_listener(self, db: Session, listener_req):
         if self.get_by_name(db, listener_req.name):
-            return None, f'Listener with name {listener_req.name} already exists.'
+            return None, f"Listener with name {listener_req.name} already exists."
 
-        listener_req.options['Name'] = listener_req.name
+        listener_req.options["Name"] = listener_req.name
 
-        template_instance, err = self._validate_listener_options(listener_req.template, listener_req.options)
+        template_instance, err = self._validate_listener_options(
+            listener_req.template, listener_req.options
+        )
 
         if err:
             return None, err
@@ -109,8 +114,10 @@ class ListenerService(object):
     def start_existing_listener(self, db: Session, listener: models.Listener):
         listener.enabled = True
 
-        options = dict(map(lambda x: (x[0], x[1]['Value']), listener.options.items()))
-        template_instance, err = self._validate_listener_options(listener.module, options)
+        options = dict(map(lambda x: (x[0], x[1]["Value"]), listener.options.items()))
+        template_instance, err = self._validate_listener_options(
+            listener.module, options
+        )
 
         if err:
             return None, err
@@ -120,24 +127,24 @@ class ListenerService(object):
         self._active_listeners[listener.id] = template_instance
 
         message = "[+] Listener successfully started!"
-        signal = json.dumps({
-            'print': True,
-            'message': message,
-            'listener_options': listener.options
-        })
+        signal = json.dumps(
+            {"print": True, "message": message, "listener_options": listener.options}
+        )
         # dispatcher.send(signal, sender="listeners/{}/{}".format(listener.module, listener.name))
 
         return listener, None
 
     def _start_existing_listeners(self):
         with SessionLocal.begin() as db:
-            listeners = db.query(models.Listener).filter(models.Listener.enabled == True).all()
+            listeners = (
+                db.query(models.Listener).filter(models.Listener.enabled == True).all()
+            )
             for listener in listeners:
                 self.start_existing_listener(db, listener)
 
     def _start_listener(self, db: Session, template_instance, template_name):
-        category = template_instance.info['Category']
-        name = template_instance.options['Name']['Value']
+        category = template_instance.info["Category"]
+        name = template_instance.options["Name"]["Value"]
         try:
             print(helpers.color(f"[*] v2: Starting listener '{name}'"))
             success = template_instance.start(name=name)
@@ -148,22 +155,25 @@ class ListenerService(object):
                 # in a breaking change we could just store a str,str dict for the options.
                 # we don't add the listener to the db unless it successfully starts. Makes it a problem when trying
                 # to split this out.
-                db_listener = models.Listener(name=name,
-                                              module=template_name,
-                                              listener_category=category,
-                                              enabled=True,
-                                              options=listener_options
-                                              )
+                db_listener = models.Listener(
+                    name=name,
+                    module=template_name,
+                    listener_category=category,
+                    enabled=True,
+                    options=listener_options,
+                )
 
                 db.add(db_listener)
                 db.flush()
 
                 message = "[+] Listener successfully started!"
-                signal = json.dumps({
-                    'print': True,
-                    'message': message,
-                    'listener_options': listener_options
-                })
+                signal = json.dumps(
+                    {
+                        "print": True,
+                        "message": message,
+                        "listener_options": listener_options,
+                    }
+                )
                 # dispatcher.send(signal, sender="listeners/{}/{}".format(template_name, name))
 
                 self._active_listeners[db_listener.id] = template_instance
@@ -173,12 +183,14 @@ class ListenerService(object):
                 # if self.mainMenu.socketio:
                 #     self.mainMenu.socketio.emit('listeners/new', self.get_listener_for_socket(name), broadcast=True)
             else:
-                return None, '[!] v2: Listener failed to start!'
+                return None, "[!] v2: Listener failed to start!"
 
         except Exception as e:
             return None, f"[!] v2: Error starting listener: {e}"
 
-    def _validate_listener_options(self, template: str, params: Dict) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    def _validate_listener_options(
+        self, template: str, params: Dict
+    ) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
         """
         Validates the new listener's options. Constructs a new "Listener" object.
         :param template:
@@ -186,7 +198,7 @@ class ListenerService(object):
         :return:
         """
         if not self.listener_template_service.get_listener_template(template):
-            return None, f'Listener Template {template} not found'
+            return None, f"Listener Template {template} not found"
 
         template_instance = self.listener_template_service.new_instance(template)
 
@@ -198,32 +210,45 @@ class ListenerService(object):
         for instance_key, option_meta in instance.options.items():
             if instance_key in params:
                 option_type = type(params[instance_key])
-                expected_option_type = option_meta.get('Type') or type(option_meta['Value'])
+                expected_option_type = option_meta.get("Type") or type(
+                    option_meta["Value"]
+                )
                 if option_type != expected_option_type:
                     casted = safe_cast(params[instance_key], expected_option_type)
                     if casted is None:
-                        return None, f'incorrect type for option {instance_key}. Expected {expected_option_type} but got {option_type}'
+                        return (
+                            None,
+                            f"incorrect type for option {instance_key}. Expected {expected_option_type} but got {option_type}",
+                        )
                     else:
                         params[instance_key] = casted
-                if option_meta['Strict'] and params[instance_key] not in option_meta['SuggestedValues']:
-                    return None, f'{instance_key} must be set to one of the suggested values.'
-                elif option_meta['Required'] and (params[instance_key] is None or params[instance_key] == ''):
-                    return None, f'required listener option missing: {instance_key}'
+                if (
+                    option_meta["Strict"]
+                    and params[instance_key] not in option_meta["SuggestedValues"]
+                ):
+                    return (
+                        None,
+                        f"{instance_key} must be set to one of the suggested values.",
+                    )
+                elif option_meta["Required"] and (
+                    params[instance_key] is None or params[instance_key] == ""
+                ):
+                    return None, f"required listener option missing: {instance_key}"
                 else:
                     options[instance_key] = params[instance_key]
-            elif option_meta['Required']:
-                return None, f'required listener option missing: {instance_key}'
+            elif option_meta["Required"]:
+                return None, f"required listener option missing: {instance_key}"
 
         revert_options = {}
         for key, value in options.items():
-            revert_options[key] = instance.options[key]['Value']
-            instance.options[key]['Value'] = value
+            revert_options[key] = instance.options[key]["Value"]
+            instance.options[key]["Value"] = value
 
         self._normalize_listener_options(instance)
         validated, err = instance.validate_options()
         if not validated:
             for key, value in revert_options.items():
-                instance.options[key]['Value'] = value
+                instance.options[key]["Value"] = value
             return None, err
 
         return instance, None
@@ -234,30 +259,31 @@ class ListenerService(object):
         This is adapted from the old set_listener_option which does some coercions on the http fields.
         """
         for option_name, option_meta in instance.options.items():
-            value = option_meta['Value']
+            value = option_meta["Value"]
             # parse and auto-set some host parameters
-            if option_name == 'Host':
-                if not value.startswith('http'):
-                    parts = value.split(':')
+            if option_name == "Host":
+                if not value.startswith("http"):
+                    parts = value.split(":")
                     # if there's a current ssl cert path set, assume this is https
-                    if ('CertPath' in instance.options) and (
-                            instance.options['CertPath']['Value'] != ''):
-                        protocol = 'https'
+                    if ("CertPath" in instance.options) and (
+                        instance.options["CertPath"]["Value"] != ""
+                    ):
+                        protocol = "https"
                         default_port = 443
                     else:
-                        protocol = 'http'
+                        protocol = "http"
                         default_port = 80
 
-                elif value.startswith('https'):
-                    value = value.split('//')[1]
-                    parts = value.split(':')
-                    protocol = 'https'
+                elif value.startswith("https"):
+                    value = value.split("//")[1]
+                    parts = value.split(":")
+                    protocol = "https"
                     default_port = 443
 
-                elif value.startswith('http'):
-                    value = value.split('//')[1]
-                    parts = value.split(':')
-                    protocol = 'http'
+                elif value.startswith("http"):
+                    value = value.split("//")[1]
+                    parts = value.split(":")
+                    protocol = "http"
                     default_port = 80
 
                 ##################################################################################################################################
@@ -265,55 +291,68 @@ class ListenerService(object):
                 # Unsure if this section is needed
                 if len(parts) != 1 and parts[-1].isdigit():
                     # if a port is specified with http://host:port
-                    instance.options['Host']['Value'] = "%s://%s" % (protocol, value)
-                    if instance.options['Port']['Value'] == '':
-                        instance.options['Port']['Value'] = parts[-1]
-                elif instance.options['Port']['Value'] != '':
+                    instance.options["Host"]["Value"] = "%s://%s" % (protocol, value)
+                    if instance.options["Port"]["Value"] == "":
+                        instance.options["Port"]["Value"] = parts[-1]
+                elif instance.options["Port"]["Value"] != "":
                     # otherwise, check if the port value was manually set
-                    instance.options['Host']['Value'] = "%s://%s:%s" % (
-                        protocol, value, instance.options['Port']['Value'])
+                    instance.options["Host"]["Value"] = "%s://%s:%s" % (
+                        protocol,
+                        value,
+                        instance.options["Port"]["Value"],
+                    )
                 else:
                     # otherwise use default port
-                    instance.options['Host']['Value'] = "%s://%s" % (protocol, value)
-                    if instance.options['Port']['Value'] == '':
-                        instance.options['Port']['Value'] = default_port
+                    instance.options["Host"]["Value"] = "%s://%s" % (protocol, value)
+                    if instance.options["Port"]["Value"] == "":
+                        instance.options["Port"]["Value"] = default_port
 
-            elif option_name == 'CertPath' and value != '':
-                instance.options[option_name]['Value'] = value
-                host = instance.options['Host']['Value']
+            elif option_name == "CertPath" and value != "":
+                instance.options[option_name]["Value"] = value
+                host = instance.options["Host"]["Value"]
                 # if we're setting a SSL cert path, but the host is specific at http
-                if host.startswith('http:'):
-                    instance.options['Host']['Value'] = instance.options['Host']['Value'].replace(
-                        'http:', 'https:')
+                if host.startswith("http:"):
+                    instance.options["Host"]["Value"] = instance.options["Host"][
+                        "Value"
+                    ].replace("http:", "https:")
 
-            elif option_name == 'Port':
-                instance.options[option_name]['Value'] = value
+            elif option_name == "Port":
+                instance.options[option_name]["Value"] = value
                 # Check if Port is set and add it to host
-                parts = instance.options['Host']['Value']
-                if parts.startswith('https'):
+                parts = instance.options["Host"]["Value"]
+                if parts.startswith("https"):
                     address = parts[8:]
-                    address = ''.join(address.split(':')[0])
+                    address = "".join(address.split(":")[0])
                     protocol = "https"
-                    instance.options['Host']['Value'] = "%s://%s:%s" % (
-                        protocol, address, instance.options['Port']['Value'])
-                elif parts.startswith('http'):
+                    instance.options["Host"]["Value"] = "%s://%s:%s" % (
+                        protocol,
+                        address,
+                        instance.options["Port"]["Value"],
+                    )
+                elif parts.startswith("http"):
                     address = parts[7:]
-                    address = ''.join(address.split(':')[0])
+                    address = "".join(address.split(":")[0])
                     protocol = "http"
-                    instance.options['Host']['Value'] = "%s://%s:%s" % (
-                        protocol, address, instance.options['Port']['Value'])
+                    instance.options["Host"]["Value"] = "%s://%s:%s" % (
+                        protocol,
+                        address,
+                        instance.options["Port"]["Value"],
+                    )
 
-            elif option_name == 'StagingKey':
+            elif option_name == "StagingKey":
                 # if the staging key isn't 32 characters, assume we're md5 hashing it
                 value = str(value).strip()
                 if len(value) != 32:
-                    staging_key_hash = hashlib.md5(value.encode('UTF-8')).hexdigest()
-                    print(helpers.color(
-                        '[!] Warning: staging key not 32 characters, using hash of staging key instead: %s' % (
-                            staging_key_hash)))
-                    instance.options[option_name]['Value'] = staging_key_hash
+                    staging_key_hash = hashlib.md5(value.encode("UTF-8")).hexdigest()
+                    print(
+                        helpers.color(
+                            "[!] Warning: staging key not 32 characters, using hash of staging key instead: %s"
+                            % (staging_key_hash)
+                        )
+                    )
+                    instance.options[option_name]["Value"] = staging_key_hash
                 else:
-                    instance.options[option_name]['Value'] = str(value)
+                    instance.options[option_name]["Value"] = str(value)
 
     # def get_listener_for_socket(self, name):
     #     listener = SessionLocal().query(models.Listener).filter(models.Listener.name == name).first()

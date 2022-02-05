@@ -7,25 +7,20 @@ from starlette.testclient import TestClient
 
 @pytest.fixture(scope="session")
 def client():
-    sys.argv = ['', 'server', '--config', 'empire/test/test_config.yaml']
+    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
 
-    from empire.server.v2.api.stager import stagerv2
-    from empire.server.v2.api.stager import stagertemplatev2
-    from empire.server.v2.api.listener import listenertemplatev2
-    from empire.server.v2.api.listener import listenerv2
-    from empire.server.v2.api.agent import agentv2
-    from empire.server.v2.api.agent import taskv2
-    from empire.server.v2.api.agent import agentfilev2
-    from empire.server.v2.api.module import modulev2
+    from empire.server.v2.api.agent import agentfilev2, agentv2, taskv2
     from empire.server.v2.api.bypass import bypassv2
-    from empire.server.v2.api.keyword import keywordv2
-    from empire.server.v2.api.profile import profilev2
     from empire.server.v2.api.credential import credentialv2
-    from empire.server.v2.api.host import hostv2
-    from empire.server.v2.api.user import userv2
-    from empire.server.v2.api.host import processv2
     from empire.server.v2.api.download import downloadv2
+    from empire.server.v2.api.host import hostv2, processv2
+    from empire.server.v2.api.keyword import keywordv2
+    from empire.server.v2.api.listener import listenertemplatev2, listenerv2
     from empire.server.v2.api.meta import metav2
+    from empire.server.v2.api.module import modulev2
+    from empire.server.v2.api.profile import profilev2
+    from empire.server.v2.api.stager import stagertemplatev2, stagerv2
+    from empire.server.v2.api.user import userv2
 
     v2App = FastAPI()
     v2App.include_router(listenertemplatev2.router)
@@ -48,10 +43,10 @@ def client():
 
     yield TestClient(v2App)
 
-    print('cleanup')
+    print("cleanup")
 
-    from empire.server.database.models import Base
     from empire.server.database.base import engine
+    from empire.server.database.models import Base
 
     Base.metadata.drop_all(engine)
 
@@ -59,46 +54,41 @@ def client():
 @pytest.fixture(scope="session", autouse=True)
 def admin_auth_token(client):
     response = client.post(
-        '/token',
-        headers={'Content-Type': 'application/x-www-form-urlencoded'},
+        "/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         data={
-            'grant_type': 'password',
-            'username': 'empireadmin',
-            'password': 'password123'
-        })
+            "grant_type": "password",
+            "username": "empireadmin",
+            "password": "password123",
+        },
+    )
 
     # todo this is not working. need to manually set tokens :(
-    client.headers['Authorization'] = f'Bearer: {response.json()["access_token"]}'
+    client.headers["Authorization"] = f'Bearer: {response.json()["access_token"]}'
 
-    yield response.json()['access_token']
+    yield response.json()["access_token"]
 
 
 @pytest.fixture(scope="session", autouse=True)
 def admin_auth_header(admin_auth_token):
-    return {'Authorization': f'Bearer {admin_auth_token}'}
+    return {"Authorization": f"Bearer {admin_auth_token}"}
 
 
 @pytest.fixture(scope="session", autouse=True)
 def regular_auth_token(client, admin_auth_token):
     client.post(
-        '/api/v2beta/users/',
-        headers={'Authorization': f'Bearer {admin_auth_token}'},
-        json={
-            'username': 'vinnybod',
-            'password': 'hunter2',
-            'is_admin': False
-        })
+        "/api/v2beta/users/",
+        headers={"Authorization": f"Bearer {admin_auth_token}"},
+        json={"username": "vinnybod", "password": "hunter2", "is_admin": False},
+    )
 
     response = client.post(
-        '/token',
-        headers={'Content-Type': 'application/x-www-form-urlencoded'},
-        data={
-            'grant_type': 'password',
-            'username': 'vinnybod',
-            'password': 'hunter2'
-        })
+        "/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={"grant_type": "password", "username": "vinnybod", "password": "hunter2"},
+    )
 
-    yield response.json()['access_token']
+    yield response.json()["access_token"]
 
 
 @pytest.fixture(scope="session")
@@ -111,38 +101,9 @@ def db():
 @pytest.fixture(scope="function")
 def base_listener():
     return {
-        'name': 'new-listener-1',
-        'template': 'http',
-        'options': {
-            "Name": "new-listener-1",
-            "Host": "http://localhost:1336",
-            "BindIP": "0.0.0.0",
-            "Port": '1336',
-            "Launcher": "powershell -noP -sta -w 1 -enc ",
-            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
-            "DefaultDelay": "5",
-            "DefaultJitter": "0.0",
-            "DefaultLostLimit": "60",
-            "DefaultProfile": "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-            "CertPath": "",
-            "KillDate": "",
-            "WorkingHours": "",
-            "Headers": "Server:Microsoft-IIS/7.5",
-            "Cookie": "",
-            "StagerURI": "",
-            "UserAgent": "default",
-            "Proxy": "default",
-            "ProxyCreds": "default",
-            "SlackURL": ""
-        }
-    }
-
-
-def base_listener_non_fixture():
-    return {
-        'name': 'new-listener-1',
-        'template': 'http',
-        'options': {
+        "name": "new-listener-1",
+        "template": "http",
+        "options": {
             "Name": "new-listener-1",
             "Host": "http://localhost:1336",
             "BindIP": "0.0.0.0",
@@ -162,8 +123,37 @@ def base_listener_non_fixture():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": ""
-        }
+            "SlackURL": "",
+        },
+    }
+
+
+def base_listener_non_fixture():
+    return {
+        "name": "new-listener-1",
+        "template": "http",
+        "options": {
+            "Name": "new-listener-1",
+            "Host": "http://localhost:1336",
+            "BindIP": "0.0.0.0",
+            "Port": "1336",
+            "Launcher": "powershell -noP -sta -w 1 -enc ",
+            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
+            "DefaultDelay": "5",
+            "DefaultJitter": "0.0",
+            "DefaultLostLimit": "60",
+            "DefaultProfile": "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+            "CertPath": "",
+            "KillDate": "",
+            "WorkingHours": "",
+            "Headers": "Server:Microsoft-IIS/7.5",
+            "Cookie": "",
+            "StagerURI": "",
+            "UserAgent": "default",
+            "Proxy": "default",
+            "ProxyCreds": "default",
+            "SlackURL": "",
+        },
     }
 
 
@@ -184,7 +174,7 @@ def base_stager():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "Bypasses": "mattifestation etw"
+            "Bypasses": "mattifestation etw",
         },
     }
 
@@ -207,6 +197,6 @@ def base_stager_2():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "Bypasses": "mattifestation etw"
+            "Bypasses": "mattifestation etw",
         },
     }

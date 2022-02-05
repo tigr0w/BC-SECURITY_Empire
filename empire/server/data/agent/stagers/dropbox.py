@@ -12,8 +12,9 @@ This file is a Jinja2 template.
 
 import random
 import string
-import urllib2
 import time
+
+import urllib2
 
 {% include 'common/rc4.py' %}
 {% include 'common/aes.py' %}

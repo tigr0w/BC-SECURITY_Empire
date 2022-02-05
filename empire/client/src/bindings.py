@@ -13,12 +13,15 @@ bindings = KeyBindings()
 
 @Condition
 def ctrl_c_filter():
-    if menu_state.current_menu_name == 'ChatMenu' or menu_state.current_menu_name == 'ShellMenu':
+    if (
+        menu_state.current_menu_name == "ChatMenu"
+        or menu_state.current_menu_name == "ShellMenu"
+    ):
         return True
     return False
 
 
-@bindings.add('c-c', filter=ctrl_c_filter)
+@bindings.add("c-c", filter=ctrl_c_filter)
 def do_ctrl_c(event):
     """
     If ctrl-c is pressed from the chat or shell menus, go back a menu.
@@ -26,7 +29,9 @@ def do_ctrl_c(event):
     menu_state.pop()
 
 
-@bindings.add('f1', 'up', 'up', 'down', 'down', 'left', 'right', 'left', 'right', 'b', 'a')
+@bindings.add(
+    "f1", "up", "up", "down", "down", "left", "right", "left", "right", "b", "a"
+)
 def do_konami(event):
     custom_formatters = [
         formatters.Label(),
@@ -40,4 +45,4 @@ def do_konami(event):
     with ProgressBar(formatters=custom_formatters, color_depth=color_depth) as pb:
         for i in pb(range(1000), label=""):
             time.sleep(0.001)
-    print('Downloaded L33t Hax...')
+    print("Downloaded L33t Hax...")

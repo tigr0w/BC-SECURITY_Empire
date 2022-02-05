@@ -24,14 +24,16 @@ class ListenerTemplateService(object):
     def new_instance(self, template: str):
         instance = type(self._loaded_listener_templates[template])(self.main_menu)
         for key, value in instance.options.items():
-            if value.get('SuggestedValues') is None:
-                value['SuggestedValues'] = []
-            if value.get('Strict') is None:
-                value['Strict'] = False
+            if value.get("SuggestedValues") is None:
+                value["SuggestedValues"] = []
+            if value.get("Strict") is None:
+                value["Strict"] = False
 
         return instance
 
-    def get_listener_template(self, name: str) -> Optional[object]:  # would be nice to have a BaseListener object.
+    def get_listener_template(
+        self, name: str
+    ) -> Optional[object]:  # would be nice to have a BaseListener object.
         return self._loaded_listener_templates.get(name)
 
     def get_listener_templates(self):
@@ -43,7 +45,7 @@ class ListenerTemplateService(object):
         """
 
         root_path = f"{db.query(models.Config).first().install_path}/listeners/"
-        pattern = '*.py'
+        pattern = "*.py"
         print(helpers.color("[*] v2: Loading listeners from: %s" % root_path))
 
         for root, dirs, files in os.walk(root_path):
@@ -51,7 +53,7 @@ class ListenerTemplateService(object):
                 file_path = os.path.join(root, filename)
 
                 # don't load up any of the templates
-                if fnmatch.fnmatch(filename, '*template.py'):
+                if fnmatch.fnmatch(filename, "*template.py"):
                     continue
 
                 # extract just the listener module name from the full path
@@ -64,10 +66,10 @@ class ListenerTemplateService(object):
                 listener = mod.Listener(self.main_menu, [])
 
                 for key, value in listener.options.items():
-                    if value.get('SuggestedValues') is None:
-                        value['SuggestedValues'] = []
-                    if value.get('Strict') is None:
-                        value['Strict'] = False
+                    if value.get("SuggestedValues") is None:
+                        value["SuggestedValues"] = []
+                    if value.get("Strict") is None:
+                        value["Strict"] = False
 
                 self._loaded_listener_templates[slugify(listener_name)] = listener
 

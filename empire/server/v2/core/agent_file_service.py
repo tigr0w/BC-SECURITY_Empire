@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 from sqlalchemy import and_
 from sqlalchemy.orm import Session, aliased
@@ -11,31 +11,62 @@ class AgentFileService(object):
         self.main_menu = main_menu
 
     @staticmethod
-    def get_file(db: Session, agent_id: str, uid: int) -> Optional[Tuple[models.AgentFile, List[models.AgentFile]]]:
-        found = db.query(models.AgentFile).filter(and_(
-            models.AgentFile.session_id == agent_id,
-            models.AgentFile.id == uid)).first()
+    def get_file(
+        db: Session, agent_id: str, uid: int
+    ) -> Optional[Tuple[models.AgentFile, List[models.AgentFile]]]:
+        found = (
+            db.query(models.AgentFile)
+            .filter(
+                and_(
+                    models.AgentFile.session_id == agent_id, models.AgentFile.id == uid
+                )
+            )
+            .first()
+        )
 
         if not found:
             return None
 
-        children = db.query(models.AgentFile).filter(and_(
-            models.AgentFile.session_id == agent_id,
-            models.AgentFile.parent_id == found.id)).all()
+        children = (
+            db.query(models.AgentFile)
+            .filter(
+                and_(
+                    models.AgentFile.session_id == agent_id,
+                    models.AgentFile.parent_id == found.id,
+                )
+            )
+            .all()
+        )
 
         return found, children
 
     @staticmethod
-    def get_file_by_path(db: Session, agent_id: str, path: str) -> Optional[Tuple[models.AgentFile, List[models.AgentFile]]]:
-        found = db.query(models.AgentFile).filter(and_(
-            models.AgentFile.session_id == agent_id,
-            models.AgentFile.path == path)).first()
+    def get_file_by_path(
+        db: Session, agent_id: str, path: str
+    ) -> Optional[Tuple[models.AgentFile, List[models.AgentFile]]]:
+        found = (
+            db.query(models.AgentFile)
+            .filter(
+                and_(
+                    models.AgentFile.session_id == agent_id,
+                    models.AgentFile.path == path,
+                )
+            )
+            .first()
+        )
 
         if not found:
             return None
 
-        children = db.query(models.AgentFile).filter(and_(
-            models.AgentFile.session_id == agent_id,
-            models.AgentFile.parent_id == found.id)).all()
+        children = (
+            db.query(models.AgentFile)
+            .filter(
+                and_(
+                    models.AgentFile.session_id == agent_id,
+                    models.AgentFile.parent_id == found.id,
+                )
+            )
+            .all()
+        )
 
         return found, children

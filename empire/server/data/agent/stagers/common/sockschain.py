@@ -46,7 +46,14 @@ mainly to merge bug fixes found in Sourceforge
 
 """
 
-import base64, errno, os, socket, sys, select, struct, threading
+import base64
+import errno
+import os
+import select
+import socket
+import struct
+import sys
+import threading
 
 PY2 = ((2, 0) < sys.version_info < (3, 0))
 if PY2:
@@ -62,6 +69,8 @@ DEFAULT_TIMEOUT = 30
 ##[ SSL compatibility code ]##################################################
 
 import hashlib
+
+
 def sha1hex(data):
   hl = hashlib.sha1()
   hl.update(data)
