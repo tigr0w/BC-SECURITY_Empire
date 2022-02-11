@@ -5,7 +5,6 @@ import string
 
 import bcrypt
 
-from empire.server.common import bypasses
 from empire.server.common.config import empire_config
 from empire.server.database import models
 
@@ -46,16 +45,6 @@ def get_default_functions():
                         replacement=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))),
         models.Function(keyword='Invoke_Mimikatz',
                         replacement=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5)))
-    ]
-
-
-def get_default_bypasses():
-    return [
-        models.Bypass(name="mattifestation", code=bypasses.mattifestation_amsibypass()),
-        models.Bypass(name="liberman", code=bypasses.liberman_amsibypass()),
-        models.Bypass(name="rastamouse", code=bypasses.rastamouse_amsibypass()),
-        models.Bypass(name="scriptblocklog", code=bypasses.scriptBlockLogBypass()),
-        models.Bypass(name="etw", code=bypasses.ETWBypass())
     ]
 
 

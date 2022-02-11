@@ -28,10 +28,12 @@ from itertools import cycle
 
 import donut
 import macholib.MachO
+import yaml
 from past.utils import old_div
 
 from empire.server.database import models
 from empire.server.database.base import Session
+from empire.server.utils.data_util import ps_convert_to_oneliner
 
 from . import helpers
 
@@ -46,7 +48,51 @@ class Stagers(object):
         #     [ ("stager_name", instance) ]
         self.stagers = {}
 
+        self.load_bypasses()
         self.load_stagers()
+
+    def load_bypasses(self):
+        root_path = f"{self.mainMenu.installPath}/bypasses/"
+
+        print(helpers.color(f"[*] Loading bypasses from: {root_path}"))
+
+        for root, dirs, files in os.walk(root_path):
+            for filename in files:
+                if not filename.lower().endswith(
+                    ".yaml"
+                ) and not filename.lower().endswith(".yml"):
+                    continue
+
+                file_path = os.path.join(root, filename)
+
+                # don't load up any of the templates
+                if fnmatch.fnmatch(filename, "*template.yaml"):
+                    continue
+                if file_path is not None:
+                    bypass_name = file_path.split(root_path)[-1][0:-5]
+
+                try:
+                    with open(file_path, "r") as stream:
+                        yaml2 = yaml.safe_load(stream)
+                        yaml_bypass = {k: v for k, v in yaml2.items() if v is not None}
+
+                        if (
+                            Session()
+                            .query(models.Bypass)
+                            .filter(models.Bypass.name == yaml_bypass["name"])
+                            .first()
+                            is None
+                        ):
+                            yaml_bypass["script"] = ps_convert_to_oneliner(
+                                yaml_bypass["script"]
+                            )
+                            my_model = models.Bypass(
+                                name=yaml_bypass["name"], code=yaml_bypass["script"]
+                            )
+                            Session().add(my_model)
+                    Session().commit()
+                except Exception as e:
+                    print(e)
 
     def load_stagers(self):
         """
