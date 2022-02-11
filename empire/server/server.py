@@ -2925,7 +2925,13 @@ def start_restful_api(
         # check for loaded plugins
         active_plugins = list(empireMenu.loadedPlugins.keys())
         for plugin_name in active_plugins:
-            data = empireMenu.loadedPlugins[plugin_name].info[0]
+            plugin = empireMenu.loadedPlugins[plugin_name]
+            # check if plugin info is tuple. This is because the original example plugin
+            # accidentally created a tuple with a trailing comma
+            if isinstance(plugin, tuple):
+                data = empireMenu.loadedPlugins[plugin_name].info[0]
+            else:
+                data = empireMenu.loadedPlugins[plugin_name].info
             data["options"] = empireMenu.loadedPlugins[plugin_name].options
             plugins.append(data)
 
