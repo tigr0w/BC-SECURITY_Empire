@@ -2928,11 +2928,11 @@ def start_restful_api(
             plugin = empireMenu.loadedPlugins[plugin_name]
             # check if plugin info is tuple. This is because the original example plugin
             # accidentally created a tuple with a trailing comma
-            if isinstance(plugin, tuple):
-                data = empireMenu.loadedPlugins[plugin_name].info[0]
+            if isinstance(plugin.info, tuple):
+                data = plugin.info[0]
             else:
-                data = empireMenu.loadedPlugins[plugin_name].info
-            data["options"] = empireMenu.loadedPlugins[plugin_name].options
+                data = plugin.info
+            data["options"] = plugin.options
             plugins.append(data)
 
         return jsonify({"plugins": plugins})
