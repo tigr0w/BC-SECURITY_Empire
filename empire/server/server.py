@@ -1788,34 +1788,23 @@ def start_restful_api(
             return jsonify({"error": "Please enter a valid listener name."})
         else:
             active_listener = main.listeners.activeListeners[listener_name]
-            if (
-                active_listener["moduleName"] != "meterpreter"
-                or active_listener["moduleName"] != "http_mapi"
-            ):
-                listener_options = active_listener["options"]
-                listener_comms = main.listeners.loadedListeners[
-                    active_listener["moduleName"]
-                ].generate_comms(listener_options, language="powershell")
+            listener_options = active_listener["options"]
+            listener_comms = main.listeners.loadedListeners[
+                active_listener["moduleName"]
+            ].generate_comms(listener_options, language="powershell")
 
-                main.agents.add_agent_task_db(
-                    agent_name,
-                    "TASK_UPDATE_LISTENERNAME",
-                    listener_options["Name"]["Value"],
-                )
-                main.agents.add_agent_task_db(
-                    agent_name, "TASK_SWITCH_LISTENER", listener_comms
-                )
+            main.agents.add_agent_task_db(
+                agent_name,
+                "TASK_UPDATE_LISTENERNAME",
+                listener_options["Name"]["Value"],
+            )
+            main.agents.add_agent_task_db(
+                agent_name, "TASK_SWITCH_LISTENER", listener_comms
+            )
 
-                msg = "Tasked agent to update comms to %s listener" % listener_name
-                main.agents.save_agent_log(agent_name, msg)
-                return jsonify({"success": True})
-            else:
-                return jsonify(
-                    {
-                        "error": "Ineligible listener for updatecomms command: %s"
-                        % active_listener["moduleName"]
-                    }
-                )
+            msg = "Tasked agent to update comms to %s listener" % listener_name
+            main.agents.save_agent_log(agent_name, msg)
+            return jsonify({"success": True})
 
     @app.route("/api/agents/<string:agent_name>/proxy", methods=["GET"])
     def get_proxy_info(agent_name):

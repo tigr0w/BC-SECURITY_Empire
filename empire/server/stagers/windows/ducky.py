@@ -124,12 +124,7 @@ class Stager(object):
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
         else:
-            if module_name.lower() == "meterpreter":
-                import base64
-
-                enc = base64.b64encode(launcher)
-            else:
-                enc = launcher.split(" ")[-1]
+            enc = launcher.split(" ")[-1]
 
             ducky_code = "DELAY 3000\n"
             ducky_code += "GUI r\n"
