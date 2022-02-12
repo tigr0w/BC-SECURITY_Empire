@@ -51,9 +51,9 @@ passlib = {version = "^1.7.4", extras = ["bcrypt"]}
 donut-shellcode = "^0.9.2"
 websockify = "^0.10.0"
 websockets = "^10.1"
-Flask-SocketIO = "^5.1.1"
 tk = "^0.1.0"
 pyperclip = "^1.8.2"
+python-socketio = "^5.5.1"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"

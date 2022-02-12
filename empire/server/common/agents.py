@@ -58,7 +58,6 @@ from __future__ import absolute_import, print_function
 import base64
 import json
 import os
-import sqlite3
 import string
 import threading
 
@@ -78,7 +77,7 @@ from empire.server.database.base import SessionLocal
 # Empire imports
 from empire.server.database.models import TaskingStatus
 
-from . import encryption, events, helpers, messages, packets
+from . import encryption, helpers, messages, packets
 
 
 class Agents(object):
@@ -195,8 +194,6 @@ class Agents(object):
 
         with SessionLocal.begin() as db:
             db.add(agent)
-            # Todo do we need to send the db session with the hook?
-            hooks.run_hooks(hooks.AFTER_AGENT_CHECKIN_HOOK, agent)
 
         # dispatch this event
         message = "[*] New agent {} checked in".format(sessionID)
@@ -1141,13 +1138,6 @@ class Agents(object):
                             listener=listenerName,
                         )
 
-                        if self.mainMenu.socketio:
-                            self.mainMenu.socketio.emit(
-                                "agents/new",
-                                self.get_agent_for_socket(sessionID),
-                                broadcast=True,
-                            )
-
                         clientSessionKey = (
                             self.mainMenu.agents.get_agent_session_key_db(sessionID)
                         )
@@ -1225,13 +1215,6 @@ class Agents(object):
                         nonce=nonce,
                         listener=listenerName,
                     )
-
-                    if self.mainMenu.socketio:
-                        self.mainMenu.socketio.emit(
-                            "agents/new",
-                            self.get_agent_for_socket(sessionID),
-                            broadcast=True,
-                        )
 
                     # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
                     data = "%s%s" % (nonce, serverPub.publicKey)
@@ -1368,11 +1351,8 @@ class Agents(object):
             dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
             agent = self.mainMenu.agents.get_agent_for_socket(sessionID)
-            if self.mainMenu.socketio:
-                self.mainMenu.socketio.emit("agents/stage2", agent, broadcast=True)
-
             hooks.run_hooks(
-                hooks.AFTER_AGENT_STAGE2_HOOK,
+                hooks.AFTER_AGENT_CHECKIN_HOOK,
                 self.get_agent_from_name_or_session_id(sessionID),
             )
 
@@ -1620,7 +1600,7 @@ class Agents(object):
                 # signal that this agent returned results
                 message = "[*] Agent {} returned results.".format(sessionID)
                 signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
             # return a 200/valid
             return "VALID"
@@ -1658,7 +1638,18 @@ class Agents(object):
                 "event_type": "result",
             }
         )
-        dispatcher.send(signal, sender="agents/{}".format(session_id))
+        # dispatcher.send(signal, sender="agents/{}".format(session_id))
+
+        tasking = (
+            db.query(models.Tasking)
+            .filter(
+                and_(
+                    models.Tasking.id == task_id,
+                    models.Tasking.agent_id == session_id,
+                )
+            )
+            .first()
+        )
 
         # insert task results into the database, if it's not a file
         if (
@@ -1667,17 +1658,6 @@ class Agents(object):
             not in ["TASK_DOWNLOAD", "TASK_CMD_JOB_SAVE", "TASK_CMD_WAIT_SAVE"]
             and data is not None
         ):
-            # Update result with data
-            tasking = (
-                db.query(models.Tasking)
-                .filter(
-                    and_(
-                        models.Tasking.id == task_id,
-                        models.Tasking.agent_id == session_id,
-                    )
-                )
-                .first()
-            )
             # add keystrokes to database
             if "function Get-Keystrokes" in tasking.input:
                 key_log_task_id = tasking.id
@@ -1701,31 +1681,6 @@ class Agents(object):
             tasking = hooks.run_filters(hooks.BEFORE_TASKING_RESULT_FILTER, tasking)
 
             db.flush()
-
-            hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, tasking)
-
-            if (
-                self.mainMenu.socketio
-                and "function Get-Keystrokes" not in tasking.input
-            ):
-                result_string = tasking.output
-                if isinstance(result_string, bytes):
-                    result_string = tasking.output.decode("UTF-8")
-
-                self.mainMenu.socketio.emit(
-                    f"agents/{session_id}/task",
-                    {
-                        "taskID": tasking.id,
-                        "command": tasking.input,
-                        "results": result_string,
-                        "user_id": tasking.user_id,
-                        "created_at": tasking.created_at,
-                        "updated_at": tasking.updated_at,
-                        "username": tasking.user.username,
-                        "agent": tasking.agent_id,
-                    },
-                    broadcast=True,
-                )
 
         # TODO: for heavy traffic packets, check these first (i.e. SOCKS?)
         #       so this logic is skipped
@@ -1852,18 +1807,6 @@ class Agents(object):
                 file_data = helpers.decode_base64(data.encode("UTF-8"))
                 name = self.get_agent_name_db(session_id)
 
-                # this whole big block could probably be cleaned up so we don't have to redo this tasking lookup.
-                tasking = (
-                    db.query(models.Tasking)
-                    .filter(
-                        and_(
-                            models.Tasking.id == task_id,
-                            models.Tasking.agent_id == session_id,
-                        )
-                    )
-                    .first()
-                )
-                # TODO VR: Need to handle all the other tasking types that are creating their own db sessions.
                 if index == "0":
                     self.save_file(name, path, file_data, filesize, tasking, db)
                 else:
@@ -1967,18 +1910,6 @@ class Agents(object):
             msg = "[+] Output saved to .%s" % (final_save_path)
             self.save_agent_log(session_id, msg)
 
-            # Retrieve tasking data
-            tasking: models.Tasking = (
-                db.query(models.Tasking)
-                .filter(
-                    and_(
-                        models.Tasking.id == task_id,
-                        models.Tasking.agent_id == session_id,
-                    )
-                )
-                .first()
-            )
-
             # attach file to tasking
             download = models.Download(
                 location=final_save_path, size=os.path.getsize(final_save_path)
@@ -1986,13 +1917,6 @@ class Agents(object):
             db.add(download)
             db.flush()
             tasking.downloads.append(download)
-            # todo vr: what is this used for.
-            # Send server notification for saving file
-            # self.mainMenu.socketio.emit(f'agents/{session_id}/task', {
-            #     'taskID': tasking.id, 'command': tasking.input,
-            #     'results': msg, 'user_id': tasking.user_id,
-            #     'created_at': tasking.created_at, 'updated_at': tasking.updated_at,
-            #     'username': tasking.user.username, 'agent': tasking.agent}, broadcast=True)
 
         elif response_name == "TASK_CMD_JOB":
             # check if this is the powershell keylogging task, if so, write output to file instead of screen
@@ -2153,3 +2077,5 @@ class Agents(object):
                     "[!] Unknown response %s from %s" % (response_name, session_id)
                 )
             )
+
+        hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, tasking)

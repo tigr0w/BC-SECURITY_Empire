@@ -58,9 +58,6 @@ rest_group.add_argument(
     nargs=1,
     help="Port to run the Empire RESTful API on. Defaults to 1337",
 )
-rest_group.add_argument(
-    "--socketport", type=int, nargs=1, help="Port to run socketio on. Defaults to 5000"
-)
 
 args = parent_parser.parse_args()
 

@@ -29,17 +29,15 @@ class DownloadService(object):
             )
         return query.all()
 
-    @staticmethod
-    def create_download(db: Session, file: UploadFile):
+    def create_download(self, db: Session, file: UploadFile):
         """
         Upload the file to the downloads directory and save a reference to the db.
         :param db:
         :param file:
         :return:
         """
-        location = (
-            f"{db.query(models.Config).first().install_path}/downloads/{file.filename}"
-        )
+        # TODO VR should this should be pulled from empire_config instead of main_menu
+        location = f"{self.main_menu.directory['downloads']}{file.filename}"
         with open(location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 

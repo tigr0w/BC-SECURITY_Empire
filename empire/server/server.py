@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import logging
 import os
 import signal
 import ssl
@@ -8,7 +7,6 @@ import sys
 import time
 from time import sleep
 
-import flask
 import urllib3
 from flask import Flask, jsonify, make_response, request
 
@@ -20,11 +18,6 @@ from empire.server.common.empire import MainMenu
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.v2.api import v2App
-
-# Check if running Python 3
-if sys.version[0] == "2":
-    print(helpers.color("[!] Please use Python 3"))
-    sys.exit()
 
 # Disable http warnings
 if empire_config.yaml.get("suppress-self-cert-warning", True):
@@ -126,148 +119,6 @@ def start_restful_api(empireMenu: MainMenu, suppress=False, ip="0.0.0.0", port=1
     )
     app.run(host=ip, port=int(port), ssl_context=context, threaded=True)
 
-
-def start_sockets(
-    empire_menu: MainMenu, ip="0.0.0.0", port: int = 5000, suppress: bool = False
-):
-    app = Flask(__name__)
-    app.json_encoder = MyJsonEncoder
-    socketio = SocketIO(
-        app, cors_allowed_origins="*", json=flask.json, async_mode="threading"
-    )
-
-    empire_menu.socketio = socketio
-    room = "general"  # A socketio user is in the general channel if the join the chat.
-    chat_participants = {}
-    chat_log = (
-        []
-    )  # This is really just meant to provide some context to a user that joins the convo.
-
-    # In the future we can expand to store chat messages in the db if people want to retain a whole chat log.
-
-    if suppress:
-        # suppress the normal Flask output
-        log = logging.getLogger("werkzeug")
-        log.setLevel(logging.ERROR)
-
-    def get_user_from_token():
-        # user = empire_menu.users.get_user_from_token(request.args.get("token", ""))
-        if user:
-            user["password"] = ""
-            user["api_token"] = ""
-
-        return user
-
-    @socketio.on("connect")
-    def connect():
-        user = get_user_from_token()
-        if user:
-            print(helpers.color(f"[+] {user['username']} connected to socketio"))
-            return
-
-        return False
-
-    @socketio.on("disconnect")
-    def test_disconnect():
-        user = get_user_from_token()
-        print(
-            helpers.color(
-                f"[+] {'Client' if user is None else user['username']} disconnected from socketio"
-            )
-        )
-
-    @socketio.on("chat/join")
-    def on_join(data=None):
-        """
-        The calling user gets added to the "general"  chat room.
-        Note: while 'data' is unused, it is good to leave it as a parameter for compatibility reasons.
-        The server fails if a client sends data when none is expected.
-        :return: emits a join event with the user's details.
-        """
-        user = get_user_from_token()
-        if user["username"] not in chat_participants:
-            chat_participants[user["username"]] = user
-        join_room(room)
-        socketio.emit(
-            "chat/join",
-            {
-                "user": user,
-                "username": user["username"],
-                "message": f"{user['username']} has entered the room.",
-            },
-            room=room,
-        )
-
-    @socketio.on("chat/leave")
-    def on_leave(data=None):
-        """
-        The calling user gets removed from the "general" chat room.
-        :return: emits a leave event with the user's details.
-        """
-        user = get_user_from_token()
-        if user is not None:
-            chat_participants.pop(user["username"], None)
-            leave_room(room)
-            socketio.emit(
-                "chat/leave",
-                {
-                    "user": user,
-                    "username": user["username"],
-                    "message": user["username"] + " has left the room.",
-                },
-                to=room,
-            )
-
-    @socketio.on("chat/message")
-    def on_message(data):
-        """
-        The calling user sends a message.
-        :param data: contains the user's message.
-        :return: Emits a message event containing the message and the user's username
-        """
-        user = get_user_from_token()
-        chat_log.append({"username": user["username"], "message": data["message"]})
-        socketio.emit(
-            "chat/message",
-            {"username": user["username"], "message": data["message"]},
-            to=room,
-        )
-
-    @socketio.on("chat/history")
-    def on_history(data=None):
-        """
-        The calling user gets sent the last 20 messages.
-        :return: Emit chat messages to the calling user.
-        """
-        sid = request.sid
-        for x in range(len(chat_log[-20:])):
-            username = chat_log[x]["username"]
-            message = chat_log[x]["message"]
-            socketio.emit(
-                "chat/message",
-                {"username": username, "message": message, "history": True},
-                to=sid,
-            )
-
-    @socketio.on("chat/participants")
-    def on_participants(data=None):
-        """
-        The calling user gets sent a list of "general" chat participants.
-        :return: emit participant event containing list of users.
-        """
-        sid = request.sid
-        socketio.emit("chat/participants", list(chat_participants.values()), to=sid)
-
-    print(helpers.color("[*] Starting Empire SocketIO on %s:%s" % (ip, port)))
-
-    cert_path = os.path.abspath("./empire/server/data/")
-    proto = ssl.PROTOCOL_TLS
-    context = ssl.SSLContext(proto)
-    context.load_cert_chain(
-        "{}/empire-chain.pem".format(cert_path), "{}/empire-priv.key".format(cert_path)
-    )
-    socketio.run(app, host=ip, port=port, ssl_context=context)
-
     # def server_startup_validator():
     #     print(helpers.color('[*] Testing APIs'))
     #     rng = random.SystemRandom()
@@ -323,11 +174,6 @@ def run(args):
         args.restip = "0.0.0.0"
     else:
         args.restip = args.restip[0]
-
-    if not args.socketport:
-        args.socketport = "5000"
-    else:
-        args.socketport = args.socketport[0]
 
     if args.version:
         print(empire.VERSION)

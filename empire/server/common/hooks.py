@@ -1,3 +1,4 @@
+import asyncio
 from typing import Callable, Dict
 
 from empire.server.common import helpers
@@ -11,6 +12,10 @@ class Hooks(object):
     Add a hook to an event to do some task when an event happens.
     Potential future addition: Filters. Add a filter to an event to do some synchronous modification to the data.
     """
+
+    # This event is triggered after the creation of a listener.
+    # Its arguments are (listener: models.Listener)
+    AFTER_LISTENER_CREATED_HOOK = "after_listener_created_hook"
 
     # This event is triggered after the tasking is written to the database.
     # Its arguments are (tasking: models.Tasking)
@@ -26,14 +31,10 @@ class Hooks(object):
     # Its arguments are (tasking: models.Tasking) where tasking is the db record.
     AFTER_TASKING_RESULT_HOOK = "after_tasking_result_hook"
 
-    # This event is triggered after the agent has checked in and a record written to the database.
-    # It has one argument (agent: models.Agent)
-    AFTER_AGENT_CHECKIN_HOOK = "after_agent_checkin_hook"
-
     # This event is triggered after the agent has completed the stage2 of the checkin process,
     # and the sysinfo has been written to the database.
     # It has one argument (agent: models.Agent)
-    AFTER_AGENT_STAGE2_HOOK = "after_agent_stage2_hook"
+    AFTER_AGENT_CHECKIN_HOOK = "after_agent_checkin_hook"
 
     def __init__(self):
         self.hooks: Dict[str, Dict[str, Callable]] = {}
@@ -77,6 +78,7 @@ class Hooks(object):
         if name in self.filters.get(event, {}):
             self.filters[event].pop(name)
 
+    # todo can this be made async?
     def run_hooks(self, event: str, *args):
         """
         Run all hooks for a hook type.
@@ -86,7 +88,18 @@ class Hooks(object):
             return
         for hook in self.hooks.get(event, {}).values():
             try:
-                hook(*args)
+                if asyncio.iscoroutinefunction(hook):
+                    try:  # https://stackoverflow.com/a/61331974/
+                        loop = asyncio.get_running_loop()
+                    except RuntimeError:
+                        loop = None
+
+                    if loop and loop.is_running():
+                        loop.create_task(hook(*args))
+                    else:
+                        asyncio.run(hook(*args))
+                else:
+                    hook(*args)
             except Exception as e:
                 print(helpers.color(f"[!] Hook {hook} failed: {e}"))
 

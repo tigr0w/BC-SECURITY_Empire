@@ -299,8 +299,6 @@ class AgentTaskService(object):
             status=TaskingStatus.queued,
         )
         db.add(task)
-        # update last seen time for user
-        db.execute(update(models.User).where(models.User.id == user_id))
         db.flush()
 
         hooks.run_hooks(hooks.AFTER_TASKING_HOOK, task)

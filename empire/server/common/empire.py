@@ -9,11 +9,13 @@ menu loops.
 """
 from __future__ import absolute_import, print_function
 
+import asyncio
 import json
 import os
 import threading
 import time
 from builtins import input, str
+from socket import SocketIO
 from typing import Optional
 
 from prompt_toolkit import HTML, PromptSession
@@ -121,6 +123,7 @@ class MainMenu(object):
         self.autoRuns = {}
         self.directory = {}
 
+        self.get_directories()
         message = "[*] Empire starting up..."
         signal = json.dumps({"print": True, "message": message})
         # dispatcher.send(signal, sender="empire")
@@ -181,9 +184,11 @@ class MainMenu(object):
         if self.args.debug is not None:
             print(helpers.color(msg))
         if self.socketio:
-            self.socketio.emit(
-                f"plugins/{plugin_name}/notifications",
-                {"message": msg, "plugin_name": plugin_name},
+            asyncio.run(
+                self.socketio.emit(
+                    f"plugins/{plugin_name}/notifications",
+                    {"message": msg, "plugin_name": plugin_name},
+                )
             )
 
     def shutdown(self):

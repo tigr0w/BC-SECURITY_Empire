@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from starlette.responses import FileResponse
+from starlette.responses import Response
+from starlette.status import HTTP_204_NO_CONTENT
 
 from empire.server.database import models
 from empire.server.server import main
@@ -90,3 +91,5 @@ async def delete_stager(
     db_stager: models.Stager = Depends(get_stager),
 ):
     stager_service.delete_stager(db, db_stager)
+
+    return Response(status_code=HTTP_204_NO_CONTENT)

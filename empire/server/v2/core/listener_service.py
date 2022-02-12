@@ -7,6 +7,7 @@ from pydispatch import dispatcher
 from sqlalchemy.orm import Session
 
 from empire.server.common import helpers
+from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.utils.type_util import safe_cast
@@ -93,10 +94,20 @@ class ListenerService(object):
             listener_req.template, listener_req.options
         )
 
+        # todo vr if we switch to a raise exception model, could we eliminate all the if err checks?
         if err:
             return None, err
 
-        return self._start_listener(db, template_instance, listener_req.template)
+        db_listener, err = self._start_listener(
+            db, template_instance, listener_req.template
+        )
+
+        if err:
+            return None, err
+
+        hooks.run_hooks(hooks.AFTER_LISTENER_CREATED_HOOK, db_listener)
+
+        return db_listener, None
 
     def stop_listener(self, db_listener: models.Listener):
         if self._active_listeners.get(db_listener.id):
@@ -179,9 +190,6 @@ class ListenerService(object):
                 self._active_listeners[db_listener.id] = template_instance
 
                 return db_listener, None
-                # todo can this be implemented with hooks?
-                # if self.mainMenu.socketio:
-                #     self.mainMenu.socketio.emit('listeners/new', self.get_listener_for_socket(name), broadcast=True)
             else:
                 return None, "[!] v2: Listener failed to start!"
 
@@ -353,11 +361,3 @@ class ListenerService(object):
                     instance.options[option_name]["Value"] = staging_key_hash
                 else:
                     instance.options[option_name]["Value"] = str(value)
-
-    # def get_listener_for_socket(self, name):
-    #     listener = SessionLocal().query(models.Listener).filter(models.Listener.name == name).first()
-    #
-    #     return {'ID': listener.id, 'name': listener.name, 'module': listener.module,
-    #             'listener_type': listener.listener_type,
-    #             'listener_category': listener.listener_category, 'options': listener.options,
-    #             'created_at': listener.created_at}
