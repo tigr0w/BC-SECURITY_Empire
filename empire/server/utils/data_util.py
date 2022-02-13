@@ -148,3 +148,22 @@ def get_powershell_name():
 
 def convert_obfuscation_command(obfuscate_command):
     return "".join(obfuscate_command.split()).replace(",", ",home,").replace("\\", ",")
+
+
+def ps_convert_to_oneliner(psscript):
+    """
+    Converts a PowerShell script to a one-liner.
+    """
+    psscript = psscript.replace('"kernel32"', '`"kernel32`"')
+    psscript = psscript.replace('"Kernel32.dll"', '`"Kernel32.dll`"')
+    psscript = psscript.replace('"RtlMoveMemory"', '`"RtlMoveMemory`"')
+    psscript = psscript.replace('"amsi.dll"', '`"amsi.dll`"')
+    psscript = psscript.replace('"Amsi"', '`"Amsi`"')
+    psscript = psscript.replace('"Scan"', '`"Scan`"')
+    psscript = psscript.replace('"Buffer"', '`"Buffer`"')
+    psscript = psscript.replace('@"', '"')
+    psscript = psscript.replace('"@', '"')
+    psscript = psscript.replace("\n", "")
+    psscript = psscript.replace("    ", "")
+
+    return psscript

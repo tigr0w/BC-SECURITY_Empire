@@ -59,10 +59,7 @@ class Module(object):
         for option, values in params.items():
             if option.lower() != "agent" and option.lower() != "listener":
                 if values and values != "":
-                    if option.lower() == "payload":
-                        payload = "windows/meterpreter/" + str(values)
-                        script_end += " -" + str(option) + " " + payload
-                    elif option.lower() == "shellcode":
+                    if option.lower() == "shellcode":
                         # transform the shellcode to the correct format
                         sc = ",0".join(values.split("\\"))[0:]
                         script_end += " -" + str(option) + " @(" + sc + ")"

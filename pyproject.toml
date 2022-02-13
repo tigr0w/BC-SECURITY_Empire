@@ -67,6 +67,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.isort]
 profile = "black"
+supported_extensions = ['pxd', 'py', 'pyi', 'pyx', 'plugin']
 
 [tool.black]
 extend-exclude = '''
@@ -74,3 +75,4 @@ extend-exclude = '''
     | (empire/client/generated-stagers*)
     | (empire/client/downloads*)
 '''
+include = '\.plugin?$'

