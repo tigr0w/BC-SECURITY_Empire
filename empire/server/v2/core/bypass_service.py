@@ -1,11 +1,61 @@
+import fnmatch
+import os
+
+import yaml
 from sqlalchemy.orm import Session
 
+from empire.server.common import helpers
 from empire.server.database import models
+from empire.server.database.base import SessionLocal
+from empire.server.utils.data_util import ps_convert_to_oneliner
 
 
 class BypassService(object):
     def __init__(self, main_menu):
         self.main_menu = main_menu
+
+        with SessionLocal.begin() as db:
+            self._load_bypasses(db)
+
+    def _load_bypasses(self, db):
+        root_path = f"{db.query(models.Config).first().install_path}/listeners/"
+        print(helpers.color(f"[*] v2: Loading bypasses from: {root_path}"))
+
+        for root, dirs, files in os.walk(root_path):
+            for filename in files:
+                if not filename.lower().endswith(
+                    ".yaml"
+                ) and not filename.lower().endswith(".yml"):
+                    continue
+
+                file_path = os.path.join(root, filename)
+
+                # don't load up any of the templates
+                if fnmatch.fnmatch(filename, "*template.yaml"):
+                    continue
+                if file_path is not None:
+                    bypass_name = file_path.split(root_path)[-1][0:-5]
+
+                try:
+                    with open(file_path, "r") as stream:
+                        yaml2 = yaml.safe_load(stream)
+                        yaml_bypass = {k: v for k, v in yaml2.items() if v is not None}
+
+                        if (
+                            db.query(models.Bypass)
+                            .filter(models.Bypass.name == yaml_bypass["name"])
+                            .first()
+                            is None
+                        ):
+                            yaml_bypass["script"] = ps_convert_to_oneliner(
+                                yaml_bypass["script"]
+                            )
+                            my_model = models.Bypass(
+                                name=yaml_bypass["name"], code=yaml_bypass["script"]
+                            )
+                            db.add(my_model)
+                except Exception as e:
+                    print(e)
 
     @staticmethod
     def get_all(db: Session):
