@@ -1,5 +1,21 @@
 1/24/2022
 ------------
+- Version 4.4.0 Master Release
+        - Added auto copy to clipboard feature (@Cx01N)
+        - Added directory settings to yaml for downloads/stagers/obfuscated_modules (@Cx01N)
+        - Added C# process injection module (Cx01N)
+        - Added bypass yamls for PowerShell (@Hubbl3)
+        - Added Black and Isort integration (@Vinnybod)
+        - Added tests for loading and generating scripts with defaults (@Vinnybod)
+        - Updated Psinject to use updated version of reflective pick and bypasses (@Hubbl3)
+        - Fixed check for preobfuscation of files (Cx01N)
+        - Fixed issue with plugins using tuple (@Vinnybod)
+        - Removed random capitialization function for listeners (@Cx01N)
+        - Removed meterpreter and mapi listeners (@Cx01N)
+
+
+1/24/2022
+------------
 - Version 4.3.3 Master Release
         - Added a hook for when an agent is fully checked in (stage2) (@Vinnybod)
 
