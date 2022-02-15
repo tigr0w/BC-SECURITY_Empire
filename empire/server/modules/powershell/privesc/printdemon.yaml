@@ -32,5 +32,5 @@ options:
     description: Optional name for the registered printer
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/privesc/Invoke-PrintDemon.ps1'
+script_path: 'privesc/Invoke-PrintDemon.ps1'
 script_end: Invoke-PrintDemon {{ PARAMS }}

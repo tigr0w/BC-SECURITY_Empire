@@ -32,5 +32,5 @@ options:
     description: Set JScript as script code
     required: false
     value: 'True'
-script_path: 'empire/server/data/module_source/code_execution/Invoke-ClearScript.ps1'
+script_path: 'code_execution/Invoke-ClearScript.ps1'
 script_end: Invoke-ClearScript {{ PARAMS }}

@@ -24,4 +24,4 @@ options:
     description: FQDN/IPv4 and port of the AROX server (e.g. 1.2.3.4:443 or hax0r.com:443)
     required: true
     value: ''
-script_path: 'empire/server/data/module_source/python/management/socks.py'
+script_path: 'python/management/socks.py'

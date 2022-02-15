@@ -78,5 +78,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
+script_path: 'lateral_movement/Invoke-PsExec.ps1'
 advanced:
   custom_generate: true

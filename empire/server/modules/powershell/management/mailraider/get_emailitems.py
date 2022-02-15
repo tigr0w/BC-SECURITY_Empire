@@ -1,7 +1,6 @@
 from __future__ import print_function
 
-from builtins import object
-from builtins import str
+from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -12,35 +11,46 @@ from empire.server.utils.module_util import handle_error_message
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
-        
-        module_name = 'Get-EmailItems'
-        folder_name = params['FolderName']
-        max_emails = params['MaxEmails']
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
 
-        # read in the common powerview.ps1 module source code
-        module_source = main_menu.installPath + "/data/module_source/management/MailRaider.ps1"
-        if obfuscate:
-            data_util.obfuscate_module(moduleSource=module_source, obfuscationCommand=obfuscation_command)
-            module_source = module_source.replace("module_source", "obfuscated_module_source")
-        try:
-            f = open(module_source, 'r')
-        except:
-            return handle_error_message("[!] Could not read module source path at: " + str(module_source))
+        module_name = "Get-EmailItems"
+        folder_name = params["FolderName"]
+        max_emails = params["MaxEmails"]
 
-        module_code = f.read()
-        f.close()
+        # read in the common module source code
+        script, err = main_menu.modules.get_module_source(
+            module_name=module.script_path,
+            obfuscate=obfuscate,
+            obfuscate_command=obfuscation_command,
+        )
 
-        script = module_code + "\n"
+        if err:
+            return handle_error_message(err)
 
-        script_end = "Get-OutlookFolder -Name '%s' | Get-EmailItems -MaxEmails %s" %(folder_name, max_emails)
+        script = script + "\n"
+        script_end = "Get-OutlookFolder -Name '%s' | Get-EmailItems -MaxEmails %s" % (
+            folder_name,
+            max_emails,
+        )
 
         outputf = params.get("OutputFunction", "Out-String")
-        script_end += f" | {outputf} | " + '%{$_ + \"`n\"};"`n' + str(module.name.split("/")[-1]) + ' completed!"'
+        script_end += (
+            f" | {outputf} | "
+            + '%{$_ + "`n"};"`n'
+            + str(module.name.split("/")[-1])
+            + ' completed!"'
+        )
 
-        if obfuscate:
-            script_end = helpers.obfuscate(main_menu.installPath, psScript=script_end, obfuscationCommand=obfuscation_command)
-        script += script_end
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(
+            script=script,
+            script_end=script_end,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )
         return script

@@ -45,5 +45,6 @@ options:
     description: Optional an array of computernames to run the script on.
     required: false
     value: ''
+script_path: 'management/Invoke-ReflectivePEInjection.ps1'
 advanced:
   custom_generate: true

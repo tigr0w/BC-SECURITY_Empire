@@ -38,5 +38,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
+script_path: 'management/MailRaider.ps1'
 advanced:
   custom_generate: true

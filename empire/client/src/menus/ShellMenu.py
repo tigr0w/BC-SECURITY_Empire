@@ -11,7 +11,7 @@ from empire.client.src.utils.cli_util import register_cli_commands
 @register_cli_commands
 class ShellMenu(Menu):
     def __init__(self):
-        super().__init__(display_name='', selected='')
+        super().__init__(display_name="", selected="")
         self.stop_threads = False
 
     def autocomplete(self):
@@ -19,15 +19,17 @@ class ShellMenu(Menu):
 
     def get_completions(self, document, complete_event, cmd_line, word_before_cursor):
         if position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(document, complete_event, cmd_line, word_before_cursor)
+            yield from super().get_completions(
+                document, complete_event, cmd_line, word_before_cursor
+            )
 
     def on_enter(self, **kwargs) -> bool:
-        if 'selected' not in kwargs:
+        if "selected" not in kwargs:
             return False
         else:
-            self.use(kwargs['selected'])
+            self.use(kwargs["selected"])
             self.stop_threads = False
-            print(print_util.color('[*] Exit Shell Menu with Ctrl+C'))
+            print(print_util.color("[*] Exit Shell Menu with Ctrl+C"))
             return True
 
     def on_leave(self):
@@ -43,9 +45,11 @@ class ShellMenu(Menu):
         Usage: shell
         """
         self.selected = agent_name
-        self.session_id = state.agents[self.selected]['session_id']
-        self.language = state.agents[self.selected]['language']
-        shell_return = threading.Thread(target=self.update_directory, args=[self.session_id])
+        self.session_id = state.agents[self.selected]["session_id"]
+        self.language = state.agents[self.selected]["language"]
+        shell_return = threading.Thread(
+            target=self.update_directory, args=[self.session_id]
+        )
         shell_return.daemon = True
         shell_return.start()
 
@@ -53,14 +57,18 @@ class ShellMenu(Menu):
         """
         Update current directory
         """
-        if self.language == 'powershell':
-            task_id: int = state.agent_shell(session_id, '(Resolve-Path .\).Path')['taskID']
-        elif self.language == 'python':
-            task_id: int = state.agent_shell(session_id, 'echo $PWD')['taskID']
-        elif self.language == 'ironpython':
-            task_id: int = state.agent_shell(session_id, 'cd .')['taskID']
-        elif self.language == 'csharp':
-            task_id: int = state.agent_shell(session_id, '(Resolve-Path .\).Path')['taskID']
+        if self.language == "powershell":
+            task_id: int = state.agent_shell(session_id, "(Resolve-Path .\).Path")[
+                "taskID"
+            ]
+        elif self.language == "python":
+            task_id: int = state.agent_shell(session_id, "echo $PWD")["taskID"]
+        elif self.language == "ironpython":
+            task_id: int = state.agent_shell(session_id, "cd .")["taskID"]
+        elif self.language == "csharp":
+            task_id: int = state.agent_shell(session_id, "(Resolve-Path .\).Path")[
+                "taskID"
+            ]
             pass
 
         count = 0
@@ -71,7 +79,7 @@ class ShellMenu(Menu):
             time.sleep(1)
 
         if result:
-            temp_name = result.split('\r')[0]
+            temp_name = result.split("\r")[0]
             del state.cached_agent_results.get(session_id, {})[task_id]
             self.display_name = temp_name
             self.get_prompt()
@@ -83,12 +91,16 @@ class ShellMenu(Menu):
         Usage:  <shell_cmd>
         """
         response = state.agent_shell(agent_name, shell_cmd)
-        if shell_cmd.split()[0].lower() in ['cd', 'set-location']:
-            shell_return = threading.Thread(target=self.update_directory, args=[agent_name])
+        if shell_cmd.split()[0].lower() in ["cd", "set-location"]:
+            shell_return = threading.Thread(
+                target=self.update_directory, args=[agent_name]
+            )
             shell_return.daemon = True
             shell_return.start()
         else:
-            shell_return = threading.Thread(target=self.tasking_id_returns, args=[response['taskID']])
+            shell_return = threading.Thread(
+                target=self.tasking_id_returns, args=[response["taskID"]]
+            )
             shell_return.daemon = True
             shell_return.start()
 

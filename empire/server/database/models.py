@@ -1,10 +1,21 @@
 import enum
 
-from sqlalchemy import Column, Integer, Sequence, String, Boolean, ForeignKey, PickleType, Float, Text, Enum, \
-    UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    PickleType,
+    Sequence,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import relationship, deferred
+from sqlalchemy.orm import deferred, relationship
 from sqlalchemy_utc import UtcDateTime, utcnow
 
 from empire.server.utils.datetime_util import is_stale

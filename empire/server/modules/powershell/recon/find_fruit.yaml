@@ -62,5 +62,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
+script_path: 'recon/Find-Fruit.ps1'
 advanced:
   custom_generate: true

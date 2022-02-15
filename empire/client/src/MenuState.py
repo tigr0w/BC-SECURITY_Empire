@@ -16,7 +16,7 @@ class MenuState:
     def current_menu_name(self) -> str:
         if self.current_menu:
             return self.current_menu.__class__.__name__
-        return ''
+        return ""
 
     def push(self, menu: Menu, **kwargs):
         if menu.on_enter(**kwargs):
@@ -28,7 +28,7 @@ class MenuState:
     def pop(self):
         # Potential bug in old and new implementations? Not calling on_enter
         # and can't call it because we don't have the kwargs.
-        if menu_state.current_menu_name != 'MainMenu':
+        if menu_state.current_menu_name != "MainMenu":
             self.current_menu.on_leave()
             del self.menu_history[-1]
             self.current_menu = self.menu_history[-1]

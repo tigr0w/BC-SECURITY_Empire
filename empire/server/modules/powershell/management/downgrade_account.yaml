@@ -46,5 +46,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/situational_awareness/network/powerview.ps1'
+script_path: 'situational_awareness/network/powerview.ps1'
 script_end: Invoke-DowngradeAccount {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Invoke-DowngradeAccount completed!"

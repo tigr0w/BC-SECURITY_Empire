@@ -86,5 +86,5 @@ options:
     description: Run time duration in minutes.
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/privesc/Invoke-Tater.ps1'
+script_path: 'privesc/Invoke-Tater.ps1'
 script_end: Invoke-Tater -Tool "2" {{ PARAMS }}

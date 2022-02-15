@@ -46,5 +46,5 @@ options:
     description: Switch. Don't ping hosts before enumeration.
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/situational_awareness/network/Invoke-SmbScanner.ps1'
+script_path: 'situational_awareness/network/Invoke-SmbScanner.ps1'
 script_end: Invoke-SMBScanner {{ PARAMS }}

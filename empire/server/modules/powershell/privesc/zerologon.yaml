@@ -30,5 +30,5 @@ options:
     description: Reset target computers password to the default NTLM hash
     required: false
     value: 'False'
-script_path: 'empire/server/data/module_source/privesc/Invoke-ZeroLogon.ps1'
+script_path: 'privesc/Invoke-ZeroLogon.ps1'
 script_end: Invoke-ZeroLogon {{ PARAMS }}

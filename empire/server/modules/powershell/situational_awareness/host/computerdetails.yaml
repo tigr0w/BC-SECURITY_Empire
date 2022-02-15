@@ -54,5 +54,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
+script_path: 'situational_awareness/host/Get-ComputerDetails.ps1'
 advanced:
   custom_generate: true

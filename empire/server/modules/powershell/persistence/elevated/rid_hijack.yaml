@@ -42,5 +42,5 @@ options:
     description: Switch. Enable the defined account.
     required: false
     value: ''
-script_path: 'empire/server/data/module_source/persistence/Invoke-RIDHijacking.ps1'
+script_path: 'persistence/Invoke-RIDHijacking.ps1'
 script_end: Invoke-RIDHijacking {{ PARAMS }}

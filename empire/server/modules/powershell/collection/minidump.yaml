@@ -32,5 +32,6 @@ options:
       to the current user directory.
     required: false
     value: ''
+script_path: 'collection/Out-Minidump.ps1'
 advanced:
   custom_generate: true

@@ -6,9 +6,7 @@ import socket
 import ssl
 import struct
 import sys
-from builtins import hex
-from builtins import next
-from builtins import object
+from builtins import hex, next, object
 
 MTYPE_NOOP = 0x00   # No-op. Used for keepalive messages
 MTYPE_COPEN = 0x01  # Open Channel messages

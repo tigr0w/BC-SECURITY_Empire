@@ -67,5 +67,6 @@ options:
       none, or other).
     required: false
     value: default
+script_path: 'management/Invoke-RunAs.ps1'
 advanced:
   custom_generate: true

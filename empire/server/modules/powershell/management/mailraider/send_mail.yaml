@@ -61,5 +61,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/management/MailRaider.ps1'
+script_path: 'management/MailRaider.ps1'
 script_end: Invoke-SendMail {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Invoke-SendMail completed!"

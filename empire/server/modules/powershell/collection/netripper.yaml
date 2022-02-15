@@ -49,5 +49,5 @@ options:
     description: Strings to search for in traffic.
     required: true
     value: user,login,pass,database,config
-script_path: 'empire/server/data/module_source/collection/Invoke-NetRipper.ps1'
+script_path: 'collection/Invoke-NetRipper.ps1'
 script_end: Invoke-NetRipper {{ PARAMS }}

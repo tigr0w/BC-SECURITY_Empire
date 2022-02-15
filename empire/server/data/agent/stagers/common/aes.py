@@ -3,11 +3,12 @@ Implements AES in python as a jinja2 partial.
 AES code from https://github.com/ricmoo/pyaes
 """
 import copy
-import struct
 import hashlib
-import random
 import hmac
 import os
+import random
+import struct
+
 
 def to_bufferable(binary):
     return binary

@@ -1,13 +1,17 @@
 import os
 import platform
-import sys
 import socket
 import subprocess
-import platform
+import sys
+
 if platform.python_implementation() == 'IronPython':
-    from System.Diagnostics import Process
     from System import Environment
-    from System.Security.Principal import WindowsIdentity, WindowsPrincipal, WindowsBuiltInRole
+    from System.Diagnostics import Process
+    from System.Security.Principal import (
+        WindowsBuiltInRole,
+        WindowsIdentity,
+        WindowsPrincipal,
+    )
 else:
     import pwd
 

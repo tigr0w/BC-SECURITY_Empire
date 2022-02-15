@@ -46,5 +46,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'empire/server/data/module_source/collection/Get-SQLQuery.ps1'
+script_path: 'collection/Get-SQLQuery.ps1'
 script_end: Get-SQLQuery {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SQLQuery completed'

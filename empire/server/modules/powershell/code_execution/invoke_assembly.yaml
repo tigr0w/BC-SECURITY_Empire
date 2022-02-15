@@ -31,5 +31,6 @@ options:
     description: Any arguments to be passed to the assembly
     required: false
     value: ''
+script_path: 'code_execution/Invoke-Assembly.ps1'
 advanced:
   custom_generate: true

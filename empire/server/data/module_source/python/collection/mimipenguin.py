@@ -1,11 +1,11 @@
 from __future__ import print_function
 
-import os
-import platform
-import re
 import base64
 import binascii
 import crypt
+import os
+import platform
+import re
 import string
 
 
