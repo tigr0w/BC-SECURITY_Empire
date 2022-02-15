@@ -12,6 +12,7 @@
         - Fixed issue with plugins using tuple (@Vinnybod)
         - Removed random capitialization function for listeners (@Cx01N)
         - Removed meterpreter and mapi listeners (@Cx01N)
+        - Powerview - added functions for group managed service accounts and fine grained pw pol (@jfmaes)
 
 
 1/24/2022
