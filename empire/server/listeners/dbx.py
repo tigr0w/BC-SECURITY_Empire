@@ -9,13 +9,14 @@ from builtins import object, str
 from typing import List, Optional, Tuple
 
 import dropbox
-from pydispatch import dispatcher
 
 from empire.server.common import encryption, helpers, templating
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_validate_message
+
+# from pydispatch import dispatcher
 
 
 class Listener(object):
@@ -967,9 +968,9 @@ def send_message(packets=None):
                 listenerName = self.options["Name"]["Value"]
                 message = "[!] Error downloading data from '{}' : {}".format(path, err)
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/dropbox/{}".format(listenerName)
-                )
+                # dispatcher.send(
+                #     signal, sender="listeners/dropbox/{}".format(listenerName)
+                # )
 
                 return None
             return res.content
@@ -982,9 +983,9 @@ def send_message(packets=None):
                 listenerName = self.options["Name"]["Value"]
                 message = "[!] Error uploading data to '{}'".format(path)
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/dropbox/{}".format(listenerName)
-                )
+                # dispatcher.send(
+                #     signal, sender="listeners/dropbox/{}".format(listenerName)
+                # )
 
         def delete_file(dbx, path):
             # helper to delete a file at the given path
@@ -994,9 +995,9 @@ def send_message(packets=None):
                 listenerName = self.options["Name"]["Value"]
                 message = "[!] Error deleting data at '{}'".format(path)
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/dropbox/{}".format(listenerName)
-                )
+                # dispatcher.send(
+                #     signal, sender="listeners/dropbox/{}".format(listenerName)
+                # )
 
         # make a copy of the currently set listener options for later stager/agent generation
         listenerOptions = copy.deepcopy(listenerOptions)
@@ -1039,21 +1040,21 @@ def send_message(packets=None):
             listenerName = self.options["Name"]["Value"]
             message = "[*] Dropbox folder '{}' already exists".format(stagingFolder)
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
+            # dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
         try:
             dbx.files_create_folder(taskingsFolder)
         except dropbox.exceptions.ApiError:
             listenerName = self.options["Name"]["Value"]
             message = "[*] Dropbox folder '{}' already exists".format(taskingsFolder)
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
+            # dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
         try:
             dbx.files_create_folder(resultsFolder)
         except dropbox.exceptions.ApiError:
             listenerName = self.options["Name"]["Value"]
             message = "[*] Dropbox folder '{}' already exists".format(resultsFolder)
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
+            # dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
         # upload the stager.ps1 code
         stagerCodeps = self.generate_stager(
@@ -1099,10 +1100,10 @@ def send_message(packets=None):
                                 )
                             )
                             signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/dropbox/{}".format(listenerName),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/dropbox/{}".format(listenerName),
+                            # )
                             continue
                         stageData = res.content
 
@@ -1122,12 +1123,12 @@ def send_message(packets=None):
                                     signal = json.dumps(
                                         {"print": True, "message": message}
                                     )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/dropbox/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    # dispatcher.send(
+                                    #     signal,
+                                    #     sender="listeners/dropbox/{}".format(
+                                    #         listenerName
+                                    #     ),
+                                    # )
                                 try:
                                     stageName = "%s/%s_2.txt" % (
                                         stagingFolder,
@@ -1140,12 +1141,12 @@ def send_message(packets=None):
                                     signal = json.dumps(
                                         {"print": True, "message": message}
                                     )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/dropbox/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    # dispatcher.send(
+                                    #     signal,
+                                    #     sender="listeners/dropbox/{}".format(
+                                    #         listenerName
+                                    #     ),
+                                    # )
                                     dbx.files_upload(results, stageName)
                                 except dropbox.exceptions.ApiError:
                                     listenerName = self.options["Name"]["Value"]
@@ -1155,12 +1156,12 @@ def send_message(packets=None):
                                     signal = json.dumps(
                                         {"print": True, "message": message}
                                     )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/dropbox/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    # dispatcher.send(
+                                    #     signal,
+                                    #     sender="listeners/dropbox/{}".format(
+                                    #         listenerName
+                                    #     ),
+                                    # )
 
                     if stage == "3":
                         try:
@@ -1173,10 +1174,10 @@ def send_message(packets=None):
                                 )
                             )
                             signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/dropbox/{}".format(listenerName),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/dropbox/{}".format(listenerName),
+                            # )
                             continue
                         stageData = res.content
 
@@ -1197,12 +1198,12 @@ def send_message(packets=None):
                                     signal = json.dumps(
                                         {"print": True, "message": message}
                                     )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/dropbox/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    # dispatcher.send(
+                                    #     signal,
+                                    #     sender="listeners/dropbox/{}".format(
+                                    #         listenerName
+                                    #     ),
+                                    # )
 
                                     try:
                                         dbx.files_delete(fileName)
@@ -1216,12 +1217,12 @@ def send_message(packets=None):
                                         signal = json.dumps(
                                             {"print": True, "message": message}
                                         )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/dropbox/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        # dispatcher.send(
+                                        #     signal,
+                                        #     sender="listeners/dropbox/{}".format(
+                                        #         listenerName
+                                        #     ),
+                                        # )
 
                                     try:
                                         fileName2 = fileName.replace(

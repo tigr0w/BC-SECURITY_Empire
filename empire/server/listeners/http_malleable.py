@@ -15,13 +15,14 @@ from builtins import object, str
 from typing import List, Optional, Tuple
 
 from flask import Flask, Response, make_response, request
-from pydispatch import dispatcher
 
 from empire.server.common import encryption, helpers, malleable, packets, templating
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_validate_message
+
+# from pydispatch import dispatcher
 
 
 class Listener(object):
@@ -1623,9 +1624,9 @@ class Listener(object):
                 len(request.data),
             )
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(
-                signal, sender="listeners/http_malleable/{}".format(listenerName)
-            )
+            # dispatcher.send(
+            #     signal, sender="listeners/http_malleable/{}".format(listenerName)
+            # )
 
             try:
                 # build malleable request from flask request
@@ -1696,12 +1697,12 @@ class Listener(object):
                                         signal = json.dumps(
                                             {"print": True, "message": message}
                                         )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http_malleable/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        # dispatcher.send(
+                                        #     signal,
+                                        #     sender="listeners/http_malleable/{}".format(
+                                        #         listenerName
+                                        #     ),
+                                        # )
 
                                         # build stager (stage 1)
                                         stager = self.generate_stager(
@@ -1742,12 +1743,12 @@ class Listener(object):
                                         signal = json.dumps(
                                             {"print": True, "message": message}
                                         )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http_malleable/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        # dispatcher.send(
+                                        #     signal,
+                                        #     sender="listeners/http_malleable/{}".format(
+                                        #         listenerName
+                                        #     ),
+                                        # )
 
                                         # TODO: handle this with malleable??
                                         tempListenerOptions = None
@@ -1822,12 +1823,12 @@ class Listener(object):
                                         signal = json.dumps(
                                             {"print": True, "message": message}
                                         )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http_malleable/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        # dispatcher.send(
+                                        #     signal,
+                                        #     sender="listeners/http_malleable/{}".format(
+                                        #         listenerName
+                                        #     ),
+                                        # )
 
                                         return Response(self.default_response(), 404)
 
@@ -1839,12 +1840,12 @@ class Listener(object):
                                         signal = json.dumps(
                                             {"print": True, "message": message}
                                         )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http_malleable/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        # dispatcher.send(
+                                        #     signal,
+                                        #     sender="listeners/http_malleable/{}".format(
+                                        #         listenerName
+                                        #     ),
+                                        # )
 
                                         if b"not in cache" in results:
                                             # signal the client to restage
@@ -1868,12 +1869,12 @@ class Listener(object):
                                         signal = json.dumps(
                                             {"print": False, "message": message}
                                         )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        # dispatcher.send(
+                                        #     signal,
+                                        #     sender="listeners/http/{}".format(
+                                        #         listenerName
+                                        #     ),
+                                        # )
 
                                         malleableResponse = (
                                             implementation.construct_server("")
@@ -1897,12 +1898,12 @@ class Listener(object):
                                             signal = json.dumps(
                                                 {"print": True, "message": message}
                                             )
-                                            dispatcher.send(
-                                                signal,
-                                                sender="listeners/http_malleable/{}".format(
-                                                    listenerName
-                                                ),
-                                            )
+                                            # dispatcher.send(
+                                            #     signal,
+                                            #     sender="listeners/http_malleable/{}".format(
+                                            #         listenerName
+                                            #     ),
+                                            # )
 
                                             # note: stage 1 negotiation comms are hard coded, so we can't use malleable
                                             return Response(
@@ -1919,12 +1920,12 @@ class Listener(object):
                                             signal = json.dumps(
                                                 {"print": False, "message": message}
                                             )
-                                            dispatcher.send(
-                                                signal,
-                                                sender="listeners/http_malleable/{}".format(
-                                                    listenerName
-                                                ),
-                                            )
+                                            # dispatcher.send(
+                                            #     signal,
+                                            #     sender="listeners/http_malleable/{}".format(
+                                            #         listenerName
+                                            #     ),
+                                            # )
 
                                             # build malleable response with results
                                             malleableResponse = (
@@ -1952,12 +1953,12 @@ class Listener(object):
                                     signal = json.dumps(
                                         {"print": False, "message": message}
                                     )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/http_malleable/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    # dispatcher.send(
+                                    #     signal,
+                                    #     sender="listeners/http_malleable/{}".format(
+                                    #         listenerName
+                                    #     ),
+                                    # )
 
                                     # build malleable response with no results
                                     malleableResponse = implementation.construct_server(
@@ -1976,22 +1977,22 @@ class Listener(object):
                                 )
                             )
                             signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/http_malleable/{}".format(
-                                    listenerName
-                                ),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/http_malleable/{}".format(
+                            #         listenerName
+                            #     ),
+                            # )
 
                     # log invalid request
                     message = "[!] /{} requested by {} with no routing packet.".format(
                         request_uri, clientIP
                     )
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal,
-                        sender="listeners/http_malleable/{}".format(listenerName),
-                    )
+                    # dispatcher.send(
+                    #     signal,
+                    #     sender="listeners/http_malleable/{}".format(listenerName),
+                    # )
 
                 else:
                     # log invalid uri
@@ -1999,10 +2000,10 @@ class Listener(object):
                         request_uri, clientIP
                     )
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal,
-                        sender="listeners/http_malleable/{}".format(listenerName),
-                    )
+                    # dispatcher.send(
+                    #     signal,
+                    #     sender="listeners/http_malleable/{}".format(listenerName),
+                    # )
 
             except malleable.MalleableError as e:
                 # probably an issue with the malleable library, please report it :)
@@ -2052,9 +2053,9 @@ class Listener(object):
                 port, e.__class__.__name__, str(e)
             )
             signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(
-                signal, sender="listeners/http_malleable/{}".format(listenerName)
-            )
+            # dispatcher.send(
+            #     signal, sender="listeners/http_malleable/{}".format(listenerName)
+            # )
 
     def start(self, name=""):
         """

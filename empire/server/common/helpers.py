@@ -40,16 +40,13 @@ Includes:
 """
 from __future__ import division, print_function
 
-import json
-
-from future import standard_library
-
-standard_library.install_aliases()
 import base64
 import binascii
 import datetime
 import fnmatch
 import hashlib
+import json
+import numbers
 import os
 import random
 import re
@@ -66,7 +63,6 @@ from datetime import datetime
 
 import iptools
 import netifaces
-from past.utils import old_div
 
 ###############################################################
 #
@@ -656,6 +652,17 @@ def get_file_datetime():
     Return the current date/time in a format workable for a file name.
     """
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def old_div(a, b):
+    """
+    Equivalent to ``a / b`` on Python 2 without ``from __future__ import
+    division``.
+    """
+    if isinstance(a, numbers.Integral) and isinstance(b, numbers.Integral):
+        return a // b
+    else:
+        return a / b
 
 
 def get_file_size(file):

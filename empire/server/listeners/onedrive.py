@@ -10,7 +10,7 @@ import traceback
 from builtins import object, str
 from typing import List, Optional, Tuple
 
-from pydispatch import dispatcher
+# from pydispatch import dispatcher
 from requests import Request, Session
 
 from empire.server.common import encryption, helpers
@@ -687,9 +687,9 @@ class Listener(object):
             else:
                 message = "[*] {} folder already exists".format(base_folder)
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/onedrive/{}".format(listener_name)
-                )
+                # dispatcher.send(
+                #     signal, sender="listeners/onedrive/{}".format(listener_name)
+                # )
 
             for item in [staging_folder, taskings_folder, results_folder]:
                 item_object = s.get(
@@ -712,9 +712,9 @@ class Listener(object):
                 else:
                     message = "[*] {}/{} already exists".format(base_folder, item)
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal, sender="listeners/onedrive/{}".format(listener_name)
-                    )
+                    # dispatcher.send(
+                    #     signal, sender="listeners/onedrive/{}".format(listener_name)
+                    # )
 
         def upload_launcher():
             ps_launcher = self.mainMenu.stagers.generate_launcher(
@@ -775,9 +775,9 @@ class Listener(object):
                 print(helpers.color("[!] Something went wrong uploading stager"))
                 message = r.content
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/onedrive/{}".format(listener_name)
-                )
+                # dispatcher.send(
+                #     signal, sender="listeners/onedrive/{}".format(listener_name)
+                # )
 
         listener_options = copy.deepcopy(listenerOptions)
 
@@ -801,9 +801,9 @@ class Listener(object):
             token = renew_token(client_id, client_secret, refresh_token)
             message = "[*] Refreshed auth token"
             signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(
-                signal, sender="listeners/onedrive/{}".format(listener_name)
-            )
+            # dispatcher.send(
+            #     signal, sender="listeners/onedrive/{}".format(listener_name)
+            # )
         else:
             try:
                 token = get_token(client_id, client_secret, auth_code)
@@ -813,7 +813,7 @@ class Listener(object):
 
             message = "[*] Got new auth token"
             signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="listeners/onedrive")
+            # dispatcher.send(signal, sender="listeners/onedrive")
 
         s.headers["Authorization"] = "Bearer " + token["access_token"]
 
@@ -843,9 +843,9 @@ class Listener(object):
                     s.headers["Authorization"] = "Bearer " + token["access_token"]
                     message = "[*] Refreshed auth token"
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal, sender="listeners/onedrive/{}".format(listener_name)
-                    )
+                    # dispatcher.send(
+                    #     signal, sender="listeners/onedrive/{}".format(listener_name)
+                    # )
                     upload_stager()
                 if token["update"]:
                     with SessionLocal.begin() as db:
@@ -874,10 +874,10 @@ class Listener(object):
                                 base_folder, staging_folder, item["name"], item["size"]
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
                             content = s.get(
                                 item["@microsoft.graph.downloadUrl"]
                             ).content
@@ -891,10 +891,10 @@ class Listener(object):
                                 str(len(return_val)),
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
                             s.put(
                                 "%s/drive/root:/%s/%s/%s_2.txt:/content"
                                 % (base_url, base_folder, staging_folder, agent_name),
@@ -904,10 +904,10 @@ class Listener(object):
                                 base_folder, staging_folder, item["name"]
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
                             s.delete("%s/drive/items/%s" % (base_url, item["id"]))
 
                         if (
@@ -917,10 +917,10 @@ class Listener(object):
                                 base_folder, staging_folder, item["name"], item["size"]
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
                             content = s.get(
                                 item["@microsoft.graph.downloadUrl"]
                             ).content
@@ -956,10 +956,10 @@ class Listener(object):
                                 str(len(enc_code)),
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
                             s.put(
                                 "%s/drive/root:/%s/%s/%s_4.txt:/content"
                                 % (base_url, base_folder, staging_folder, agent_name),
@@ -969,10 +969,10 @@ class Listener(object):
                                 base_folder, staging_folder, item["name"]
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
                             s.delete("%s/drive/items/%s" % (base_url, item["id"]))
 
                     except Exception as e:
@@ -984,9 +984,9 @@ class Listener(object):
                         )
                         message = traceback.format_exc()
                         signal = json.dumps({"print": False, "message": message})
-                        dispatcher.send(
-                            signal, sender="listeners/onedrive/{}".format(listener_name)
-                        )
+                        # dispatcher.send(
+                        #     signal, sender="listeners/onedrive/{}".format(listener_name)
+                        # )
 
                 agent_ids = self.mainMenu.agents.get_agents_for_listener(listener_name)
 
@@ -1013,10 +1013,10 @@ class Listener(object):
                                 )
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
 
                             r = s.put(
                                 "%s/drive/root:/%s/%s/%s.txt:/content"
@@ -1030,10 +1030,10 @@ class Listener(object):
                                 )
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
 
                 search = s.get(
                     "%s/drive/root:/%s/%s?expand=children"
@@ -1075,10 +1075,10 @@ class Listener(object):
                                 )
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
                             r = s.get(item["@microsoft.graph.downloadUrl"])
                             self.mainMenu.agents.handle_agent_data(
                                 staging_key,
@@ -1090,19 +1090,19 @@ class Listener(object):
                                 results_folder, item["name"]
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/onedrive/{}".format(listener_name),
+                            # )
                             s.delete("%s/drive/items/%s" % (base_url, item["id"]))
                     except Exception as e:
                         message = "[!] Error handling agent results for {}, {}".format(
                             item["name"], e
                         )
                         signal = json.dumps({"print": False, "message": message})
-                        dispatcher.send(
-                            signal, sender="listeners/onedrive/{}".format(listener_name)
-                        )
+                        # dispatcher.send(
+                        #     signal, sender="listeners/onedrive/{}".format(listener_name)
+                        # )
 
             except Exception as e:
                 print(
@@ -1113,9 +1113,9 @@ class Listener(object):
                 )
                 message = traceback.format_exc()
                 signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/onedrive/{}".format(listener_name)
-                )
+                # dispatcher.send(
+                #     signal, sender="listeners/onedrive/{}".format(listener_name)
+                # )
 
             s.close()
 

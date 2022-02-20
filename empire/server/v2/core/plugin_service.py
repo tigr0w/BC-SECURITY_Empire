@@ -89,5 +89,5 @@ class PluginService(object):
         return self.loaded_plugins[uid]
 
     def shutdown(self):
-        for plugin in self.loaded_plugins:
+        for plugin in self.loaded_plugins.values():
             plugin.shutdown()

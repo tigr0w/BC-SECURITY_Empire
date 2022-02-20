@@ -43,8 +43,11 @@ def domain_to_dto_download_description(download: models.Download):
     else:
         filename = download.location.split("/")[-1]
 
+    # todo file_name -> filename
     return DownloadDescription(
-        id=download.id, file_name=filename, link=f"/api/v2beta/downloads/{download.id}"
+        id=download.id,
+        file_name=filename,
+        link=f"/api/v2beta/downloads/{download.id}/download",
     )
 
 

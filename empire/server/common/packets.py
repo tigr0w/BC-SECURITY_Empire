@@ -66,10 +66,11 @@ import os
 import struct
 import sys
 
-from pydispatch import dispatcher
-
 # Empire imports
 from . import encryption
+
+# from pydispatch import dispatcher
+
 
 # 0         -> error
 # 1-99      -> standard functionality

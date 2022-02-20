@@ -7,8 +7,10 @@ from starlette.testclient import TestClient
 
 @pytest.fixture(scope="session")
 def client():
+    # todo could make test_config a bit more dynamic so we can generate random db names
+    #  can we do the pathing in a way that we can run tests from any directory?
+    #  test bootstrapping should clear the files dir and test db.
     sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
-
     from empire.server.v2.api.agent import agentfilev2, agentv2, taskv2
     from empire.server.v2.api.bypass import bypassv2
     from empire.server.v2.api.credential import credentialv2
@@ -47,7 +49,9 @@ def client():
 
     from empire.server.database.base import engine
     from empire.server.database.models import Base
+    from empire.server.server import main
 
+    main.shutdown()
     Base.metadata.drop_all(engine)
 
 
@@ -62,9 +66,6 @@ def admin_auth_token(client):
             "password": "password123",
         },
     )
-
-    # todo this is not working. need to manually set tokens :(
-    client.headers["Authorization"] = f'Bearer: {response.json()["access_token"]}'
 
     yield response.json()["access_token"]
 

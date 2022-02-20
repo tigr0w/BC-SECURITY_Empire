@@ -23,9 +23,6 @@
 
 from __future__ import print_function
 
-from future import standard_library
-
-standard_library.install_aliases()
 import re
 import time
 from builtins import chr, object, range, str

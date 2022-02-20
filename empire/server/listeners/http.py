@@ -14,7 +14,8 @@ from builtins import str
 from typing import List, Optional, Tuple
 
 from flask import Flask, make_response, request, send_from_directory
-from pydispatch import dispatcher
+
+# from pydispatch import dispatcher
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets, templating
@@ -1237,7 +1238,7 @@ def send_message(packets=None):
                     request.remote_addr
                 )
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                 return make_response(self.default_response(), 404)
 
         @app.after_request
@@ -1297,7 +1298,7 @@ def send_message(packets=None):
                 request.host, request_uri, clientIP
             )
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
             routingPacket = None
             cookie = request.headers.get("Cookie")
@@ -1312,9 +1313,9 @@ def send_message(packets=None):
                             clientIP, cookie
                         )
                         signal = json.dumps({"print": False, "message": message})
-                        dispatcher.send(
-                            signal, sender="listeners/http/{}".format(listenerName)
-                        )
+                        # dispatcher.send(
+                        #     signal, sender="listeners/http/{}".format(listenerName)
+                        # )
                         cookieParts = cookie.split(";")
                         for part in cookieParts:
                             if part.startswith(self.session_cookie):
@@ -1346,10 +1347,10 @@ def send_message(packets=None):
                                     )
                                 )
                                 signal = json.dumps({"print": True, "message": message})
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http/{}".format(listenerName),
-                                )
+                                # dispatcher.send(
+                                #     signal,
+                                #     sender="listeners/http/{}".format(listenerName),
+                                # )
                                 stage = self.generate_stager(
                                     language=language,
                                     listenerOptions=listenerOptions,
@@ -1364,10 +1365,10 @@ def send_message(packets=None):
                                     request_uri, clientIP, results
                                 )
                                 signal = json.dumps({"print": True, "message": message})
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http/{}".format(listenerName),
-                                )
+                                # dispatcher.send(
+                                #     signal,
+                                #     sender="listeners/http/{}".format(listenerName),
+                                # )
 
                                 if b"not in cache" in results:
                                     # signal the client to restage
@@ -1390,10 +1391,10 @@ def send_message(packets=None):
                                 signal = json.dumps(
                                     {"print": False, "message": message}
                                 )
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http/{}".format(listenerName),
-                                )
+                                # dispatcher.send(
+                                #     signal,
+                                #     sender="listeners/http/{}".format(listenerName),
+                                # )
                                 return make_response(results, 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http')
@@ -1407,7 +1408,7 @@ def send_message(packets=None):
                     request_uri, clientIP
                 )
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                 return make_response(self.default_response(), 404)
 
         @app.route("/<path:request_uri>", methods=["POST"])
@@ -1425,7 +1426,7 @@ def send_message(packets=None):
                 clientIP, len(requestData)
             )
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
@@ -1452,9 +1453,9 @@ def send_message(packets=None):
                                 sessionID, clientIP
                             )
                             signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal, sender="listeners/http/{}".format(listenerName)
-                            )
+                            # dispatcher.send(
+                            #     signal, sender="listeners/http/{}".format(listenerName)
+                            # )
 
                             hopListenerName = request.headers.get("Hop-Name")
 
@@ -1506,9 +1507,9 @@ def send_message(packets=None):
                                 )
                             )
                             signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal, sender="listeners/http/{}".format(listenerName)
-                            )
+                            # dispatcher.send(
+                            #     signal, sender="listeners/http/{}".format(listenerName)
+                            # )
                             return make_response(self.default_response(), 404)
                         elif results.startswith(b"VALID"):
                             listenerName = self.options["Name"]["Value"]
@@ -1516,9 +1517,9 @@ def send_message(packets=None):
                                 clientIP
                             )
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal, sender="listeners/http/{}".format(listenerName)
-                            )
+                            # dispatcher.send(
+                            #     signal, sender="listeners/http/{}".format(listenerName)
+                            # )
                             return make_response(self.default_response(), 200)
                         else:
                             return make_response(results, 200)
@@ -1573,7 +1574,7 @@ def send_message(packets=None):
             listenerName = self.options["Name"]["Value"]
             message = "[!] Listener startup on port {} failed: {}".format(port, e)
             signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
     def start(self, name=""):
         """

@@ -34,3 +34,5 @@ empire/client/generated-stagers
 
 empire/server/v2/api/static/*
 starkiller-dist.tar.gz
+
+empire/test/downloads

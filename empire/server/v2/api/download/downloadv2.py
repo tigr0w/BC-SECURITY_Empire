@@ -1,12 +1,22 @@
-from fastapi import Depends, File, HTTPException, UploadFile
+import math
+from typing import List, Optional
+
+from fastapi import Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 from starlette.responses import FileResponse
 
 from empire.server.database import models
 from empire.server.server import main
+from empire.server.v2.api.download.download_dto import (
+    DownloadOrderOptions,
+    Downloads,
+    DownloadSourceFilter,
+    domain_to_dto_download,
+)
 from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user
 from empire.server.v2.api.shared_dependencies import get_db
+from empire.server.v2.api.shared_dto import OrderDirection
 
 download_service = main.downloadsv2
 
@@ -26,12 +36,8 @@ async def get_download(uid: int, db: Session = Depends(get_db)):
     raise HTTPException(404, f"Download not found for id {uid}")
 
 
-@router.get(
-    "/{uid}",
-    response_class=FileResponse,
-    dependencies=[Depends(get_current_active_user)],
-)
-async def read_download(
+@router.get("/{uid}/download", response_class=FileResponse)
+async def download_download(
     uid: int,
     db: Session = Depends(get_db),
     db_download: models.Download = Depends(get_download),
@@ -44,15 +50,56 @@ async def read_download(
     return FileResponse(db_download.location, filename=filename)
 
 
-# todo At the moment downloads don't have a backref to their joined objects.
-#  maybe that's fine?
-# todo remove the install path from the location?
-# todo { records: [] }
+@router.get(
+    "/{uid}",
+    dependencies=[Depends(get_current_active_user)],
+)
+async def read_download(
+    uid: int,
+    db: Session = Depends(get_db),
+    db_download: models.Download = Depends(get_download),
+):
+    return domain_to_dto_download(db_download)
+
+
+# todo basically everything should go to downloads which means the path should start after downloads.
 @router.get("/", dependencies=[Depends(get_current_active_user)])
-async def read_downloads(db: Session = Depends(get_db), query: str = None):
-    return download_service.get_all(db, query)
+async def read_downloads(
+    db: Session = Depends(get_db),
+    limit: int = -1,
+    page: int = 1,
+    order_direction: OrderDirection = OrderDirection.desc,
+    order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
+    query: str = None,
+    sources: Optional[List[DownloadSourceFilter]] = Query(None),
+):
+    downloads, total = download_service.get_all(
+        db=db,
+        download_types=sources,
+        q=query,
+        limit=limit,
+        offset=(page - 1) * limit,
+        order_by=order_by,
+        order_direction=order_direction,
+    )
+
+    downloads_converted = list(map(lambda x: domain_to_dto_download(x), downloads))
+
+    return Downloads(
+        records=downloads_converted,
+        page=page,
+        total_pages=math.ceil(total / limit)
+        if limit > 0
+        else page,  # TODO this probably needs to be fixed on taskv2
+        limit=limit,
+        total=total,
+    )
 
 
-@router.post("/", dependencies=[Depends(get_current_active_user)])
-async def create_download(db: Session = Depends(get_db), file: UploadFile = File(...)):
-    return download_service.create_download(db, file)
+@router.post("/", status_code=201)
+async def create_download(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_active_user),
+    file: UploadFile = File(...),
+):
+    return domain_to_dto_download(download_service.create_download(db, user, file))

@@ -20,7 +20,8 @@ from typing import Optional
 
 from prompt_toolkit import HTML, PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
-from pydispatch import dispatcher
+
+# from pydispatch import dispatcher
 from sqlalchemy import and_, func, or_
 
 from empire.server.common import hooks_internal
@@ -447,7 +448,7 @@ class MainMenu(object):
                         "obfuscated_file": os.path.basename(file),
                     }
                 )
-                dispatcher.send(signal, sender="empire")
+                # dispatcher.send(signal, sender="empire")
             else:
                 print(
                     helpers.color(

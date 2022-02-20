@@ -65,7 +65,7 @@ import threading
 from builtins import object, str
 from datetime import datetime, timezone
 
-from pydispatch import dispatcher
+# from pydispatch import dispatcher
 from sqlalchemy import and_, func, or_, update
 from sqlalchemy.orm import Session, undefer
 from zlib_wrapper import decompress
@@ -317,6 +317,8 @@ class Agents(object):
             sessionID = nameid
 
         lang = self.get_language_db(sessionID)
+
+        # todo this doesn't work for non-windows. All files are stored flat.
         parts = path.split("\\")
 
         # construct the appropriate save path
@@ -1156,7 +1158,7 @@ class Agents(object):
                             sessionID
                         )
                         signal = json.dumps({"print": True, "message": message})
-                        dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                         return "ERROR: Invalid PowerShell public key"
 
             elif language.lower() == "python":
@@ -1165,7 +1167,7 @@ class Agents(object):
                         sessionID
                     )
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                     return "Error: Invalid Python key post format from %s" % (sessionID)
                 else:
                     try:
@@ -1175,7 +1177,7 @@ class Agents(object):
                             sessionID
                         )
                         signal = json.dumps({"print": True, "message": message})
-                        dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                         return "Error: Invalid Python key post format from {}".format(
                             sessionID
                         )
@@ -1192,7 +1194,7 @@ class Agents(object):
                         sessionID, clientIP
                     )
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
                     delay = listenerOptions["DefaultDelay"]["Value"]
                     jitter = listenerOptions["DefaultJitter"]["Value"]
@@ -1228,7 +1230,7 @@ class Agents(object):
                     sessionID, clientIP, language
                 )
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 return "ERROR: invalid language: {}".format(language)
 
         elif meta == "STAGE2":
@@ -1249,7 +1251,7 @@ class Agents(object):
                         )
                     )
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                     # remove the agent from the cache/database
                     self.mainMenu.agents.remove_agent_db(sessionID)
                     return (
@@ -1263,7 +1265,7 @@ class Agents(object):
                 ):
                     message = "[!] Invalid nonce returned from {}".format(sessionID)
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                     # remove the agent from the cache/database
                     self.mainMenu.agents.remove_agent_db(sessionID)
                     return "ERROR: Invalid nonce returned from %s" % (sessionID)
@@ -1272,7 +1274,7 @@ class Agents(object):
                     sessionID, message
                 )
                 signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
                 listener = str(parts[1], "utf-8")
                 domainname = str(parts[2], "utf-8")
@@ -1299,7 +1301,7 @@ class Agents(object):
                     )
                 )
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 # remove the agent from the cache/database
                 self.mainMenu.agents.remove_agent_db(sessionID)
                 return (
@@ -1348,7 +1350,7 @@ class Agents(object):
                 sessionID, clientIP
             )
             signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="agents/{}".format(sessionID))
+            # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
             agent = self.mainMenu.agents.get_agent_for_socket(sessionID)
             hooks.run_hooks(
@@ -1390,7 +1392,7 @@ class Agents(object):
                 sessionID, clientIP, meta
             )
             signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="agents/{}".format(sessionID))
+            # dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
     def handle_agent_data(
         self,
@@ -1411,7 +1413,7 @@ class Agents(object):
                 len(routingPacket)
             )
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="empire")
+            # dispatcher.send(signal, sender="empire")
             return None
 
         if isinstance(routingPacket, str):
@@ -1431,7 +1433,7 @@ class Agents(object):
                     )
                 )
                 signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 dataToReturn.append(
                     (
                         language,
@@ -1453,7 +1455,7 @@ class Agents(object):
                     sessionID
                 )
                 signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 dataToReturn.append(
                     ("", "ERROR: sessionID %s not in cache!" % (sessionID))
                 )
@@ -1463,7 +1465,7 @@ class Agents(object):
                     sessionID
                 )
                 signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 dataToReturn.append(
                     (
                         language,
@@ -1478,7 +1480,7 @@ class Agents(object):
                     )
                 )
                 signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 dataToReturn.append(
                     (
                         language,
@@ -1912,7 +1914,9 @@ class Agents(object):
 
             # attach file to tasking
             download = models.Download(
-                location=final_save_path, size=os.path.getsize(final_save_path)
+                location=final_save_path,
+                filename=final_save_path.split("/")[-1],
+                size=os.path.getsize(final_save_path),
             )
             db.add(download)
             db.flush()
@@ -1930,7 +1934,7 @@ class Agents(object):
                         )
                     )
                     signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+                    # dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
                     return
 
                 with open(savePath, "a+") as f:
@@ -2061,7 +2065,7 @@ class Agents(object):
             self.save_agent_log(session_id, data)
             message = "[+] Updated comms for {} to {}".format(session_id, listener_name)
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="agents/{}".format(session_id))
+            # dispatcher.send(signal, sender="agents/{}".format(session_id))
 
         elif response_name == "TASK_UPDATE_LISTENERNAME":
             # The agent listener name variable has been updated agent side

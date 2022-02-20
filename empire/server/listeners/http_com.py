@@ -13,7 +13,8 @@ from builtins import object, str
 from typing import List, Optional, Tuple
 
 from flask import Flask, make_response, request, send_from_directory
-from pydispatch import dispatcher
+
+# from pydispatch import dispatcher
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets
@@ -779,9 +780,9 @@ class Listener(object):
                     request.remote_addr
                 )
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/http_com/{}".format(listenerName)
-                )
+                # dispatcher.send(
+                #     signal, sender="listeners/http_com/{}".format(listenerName)
+                # )
                 return make_response(self.default_response(), 404)
 
         @app.after_request
@@ -841,7 +842,7 @@ class Listener(object):
                 request.host, request_uri, clientIP
             )
             signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
+            # dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
 
             routingPacket = None
             reqHeader = request.headers.get(listenerOptions["RequestHeader"]["Value"])
@@ -880,10 +881,10 @@ class Listener(object):
                                     )
                                 )
                                 signal = json.dumps({"print": True, "message": message})
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http_com/{}".format(listenerName),
-                                )
+                                # dispatcher.send(
+                                #     signal,
+                                #     sender="listeners/http_com/{}".format(listenerName),
+                                # )
                                 stage = self.generate_stager(
                                     language=language,
                                     listenerOptions=listenerOptions,
@@ -898,10 +899,10 @@ class Listener(object):
                                     request_uri, clientIP, results
                                 )
                                 signal = json.dumps({"print": True, "message": message})
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http_com/{}".format(listenerName),
-                                )
+                                # dispatcher.send(
+                                #     signal,
+                                #     sender="listeners/http_com/{}".format(listenerName),
+                                # )
 
                                 if "not in cache" in results:
                                     # signal the client to restage
@@ -924,10 +925,10 @@ class Listener(object):
                                 signal = json.dumps(
                                     {"print": False, "message": message}
                                 )
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http_com/{}".format(listenerName),
-                                )
+                                # dispatcher.send(
+                                #     signal,
+                                #     sender="listeners/http_com/{}".format(listenerName),
+                                # )
                                 return make_response(base64.b64encode(results), 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http_com')
@@ -941,9 +942,9 @@ class Listener(object):
                     request_uri, clientIP
                 )
                 signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/http_com/{}".format(listenerName)
-                )
+                # dispatcher.send(
+                #     signal, sender="listeners/http_com/{}".format(listenerName)
+                # )
                 return make_response(self.default_response(), 404)
 
         @app.route("/<path:request_uri>", methods=["POST"])
@@ -982,10 +983,10 @@ class Listener(object):
                                 sessionID, clientIP
                             )
                             signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/http_com/{}".format(listenerName),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/http_com/{}".format(listenerName),
+                            # )
 
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
                             agentCode = self.generate_agent(
@@ -1011,19 +1012,19 @@ class Listener(object):
                                 )
                             )
                             signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/http_com/{}".format(listenerName),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/http_com/{}".format(listenerName),
+                            # )
                             return make_response(self.default_response(), 200)
                         elif results == b"VALID":
                             listenerName = self.options["Name"]["Value"]
                             message = "[*] Valid results return by {}".format(clientIP)
                             signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/http_com/{}".format(listenerName),
-                            )
+                            # dispatcher.send(
+                            #     signal,
+                            #     sender="listeners/http_com/{}".format(listenerName),
+                            # )
                             return make_response(self.default_response(), 200)
                         else:
                             return make_response(base64.b64encode(results), 200)
@@ -1073,7 +1074,7 @@ class Listener(object):
             message = "[!] Listener startup on port {} failed: {}".format(port, e)
             message += "[!] Ensure the folder specified in CertPath exists and contains your pem and private key file."
             signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
+            # dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
 
     def start(self, name=""):
         """

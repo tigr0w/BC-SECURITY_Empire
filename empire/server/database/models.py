@@ -52,6 +52,13 @@ stager_download_assc = Table(
     Column("download_id", Integer, ForeignKey("downloads.id")),
 )
 
+# this doesn't actually join to anything atm, but is used for the filtering in api/v2/downloads
+upload_download_assc = Table(
+    "upload_download_assc",
+    Base.metadata,
+    Column("download_id", Integer, ForeignKey("downloads.id")),
+)
+
 
 class User(Base):
     __tablename__ = "users"

@@ -1,7 +1,5 @@
 import copy
 import os
-import random
-import string
 import uuid
 from typing import Dict, Optional, Tuple
 
@@ -117,7 +115,7 @@ class StagerService(object):
 
         download = models.Download(
             location=generated,
-            filename=None if db_stager else self.get_one_liner_filename(db_stager),
+            filename=generated.split("/")[-1],
             size=os.path.getsize(generated),
         )
         db.add(download)
@@ -159,7 +157,7 @@ class StagerService(object):
 
         download = models.Download(
             location=generated,
-            filename=None if db_stager else self.get_one_liner_filename(db_stager),
+            filename=generated.split("/")[-1],
             size=os.path.getsize(generated),
         )
         db.add(download)
@@ -178,10 +176,13 @@ class StagerService(object):
         out_file = template_instance.options.get("OutFile", {}).get("Value")
         if out_file and len(out_file) > 0:
             file_name = template_instance.options["OutFile"]["Value"].split("/")[-1]
-        else:
+        else:  # todo use a better default name
             file_name = f"{uuid.uuid4()}.txt"
 
-        file_name = f"{self.main_menu.installPath}/data/generated-stagers/{file_name}"
+        # TODO VR should this should be pulled from empire_config instead of main_menu
+        file_name = (
+            f"{self.main_menu.directory['downloads']}generated-stagers/{file_name}"
+        )
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
         mode = "w" if type(resp) == str else "wb"
         with open(file_name, mode) as f:
@@ -192,8 +193,3 @@ class StagerService(object):
     @staticmethod
     def delete_stager(db: Session, stager: models.Stager):
         db.delete(stager)
-
-    @staticmethod
-    def get_one_liner_filename(db_stager: models.Stager):
-        random_chars = "".join(random.choice(string.ascii_letters) for i in range(10))
-        return f"stager_{db_stager.module}_{db_stager.id if db_stager.id > 0 else random_chars}.txt"

@@ -24,10 +24,10 @@ import ssl
 import threading
 from http.server import BaseHTTPRequestHandler
 
-from pydispatch import dispatcher
-
 # Empire imports
 from . import helpers
+
+# from pydispatch import dispatcher
 
 
 def default_page(path_to_html_file="empty"):

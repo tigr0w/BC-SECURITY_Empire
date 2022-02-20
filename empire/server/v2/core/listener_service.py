@@ -3,7 +3,7 @@ import hashlib
 import json
 from typing import Dict, List, Optional, Tuple
 
-from pydispatch import dispatcher
+# from pydispatch import dispatcher
 from sqlalchemy.orm import Session
 
 from empire.server.common import helpers
@@ -119,7 +119,7 @@ class ListenerService(object):
         db.delete(db_listener)
 
     def shutdown_listeners(self):
-        for key, listener in self._active_listeners:
+        for key, listener in self._active_listeners.items():
             listener.shutdown()
 
     def start_existing_listener(self, db: Session, listener: models.Listener):

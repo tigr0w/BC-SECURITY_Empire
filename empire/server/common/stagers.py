@@ -26,12 +26,12 @@ from itertools import cycle
 
 import donut
 import macholib.MachO
-from past.utils import old_div
 
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 
 from . import helpers
+from .helpers import old_div
 
 
 class Stagers(object):

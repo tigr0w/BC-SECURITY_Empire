@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 from json import JSONEncoder
 
@@ -31,6 +32,8 @@ class MyJsonEncoder(JSONEncoder):
         if isinstance(o, bytes):
             return o.decode("latin-1")
 
+        # todo TaskingStatus not serializing
+        #  Object of type User is not JSON Serializable
         return super(MyJsonEncoder, self).default(o)
 
 
@@ -111,4 +114,16 @@ def initialize():
     except Exception as e:
         pass
 
-    uvicorn.run(v2App, host="0.0.0.0", port=8000)
+    cert_path = os.path.abspath("./empire/server/data/")
+
+    # todo this gets the cert working, but ajax requests are not working, since browsers
+    #  do not like self signed certs.
+    # todo if the server fails to start we should exit.
+    uvicorn.run(
+        v2App,
+        host="0.0.0.0",
+        port=1337,
+        # ssl_keyfile="%s/empire-priv.key" % cert_path,
+        # ssl_certfile="%s/empire-chain.pem" % cert_path,
+        # log_level="info",
+    )

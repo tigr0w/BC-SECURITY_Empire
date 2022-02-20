@@ -2,7 +2,7 @@ import fnmatch
 import json
 import os
 
-from pydispatch import dispatcher
+# from pydispatch import dispatcher
 from sqlalchemy.orm import Session
 
 from empire.server.common import helpers
