@@ -25,6 +25,7 @@ from empire.server.v2.api.agent.task_dto import (
     Task,
     TaskOrderOptions,
     Tasks,
+    UploadPostRequest,
     WorkingHoursPostRequest,
     domain_to_dto_task,
 )
@@ -34,9 +35,11 @@ from empire.server.v2.api.shared_dependencies import get_db
 from empire.server.v2.api.shared_dto import OrderDirection
 from empire.server.v2.core.agent_service import AgentService
 from empire.server.v2.core.agent_task_service import AgentTaskService
+from empire.server.v2.core.download_service import DownloadService
 
 agent_task_service: AgentTaskService = main.agenttasksv2
 agent_service: AgentService = main.agentsv2
+download_service: DownloadService = main.downloadsv2
 
 router = APIRouter(
     prefix="/api/v2beta/agents",
@@ -231,13 +234,22 @@ async def create_task_module(
 
 @router.post("/{agent_id}/tasks/upload", status_code=201, response_model=Task)
 async def create_task_upload(
-    file: UploadFile = File(...),
-    path_to_file: str = Form(...),
+    upload_request: UploadPostRequest,
     db_agent: models.Agent = Depends(get_agent),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    file_data = await file.read()
+    download = download_service.get_by_id(db, upload_request.file_id)
+
+    if not download:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Download not found for id {upload_request.file_id}",
+        )
+
+    with open(download.location, "rb") as f:
+        file_data = f.read()
+
     file_data = base64.b64encode(file_data).decode("UTF-8")
     raw_data = base64.b64decode(file_data)
 
@@ -251,7 +263,7 @@ async def create_task_upload(
         )
 
     resp, err = agent_task_service.create_task_upload(
-        db, db_agent, file_data, path_to_file, current_user.id
+        db, db_agent, file_data, upload_request.path_to_file, current_user.id
     )
 
     if err:

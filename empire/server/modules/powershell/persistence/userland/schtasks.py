@@ -76,7 +76,7 @@ class Module(object):
 
             script += "schtasks /Delete /F /TN " + task_name + ";"
             script += "'Schtasks persistence removed.'"
-            script = main_menu.modules.finalize_module(
+            script = main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
@@ -198,7 +198,7 @@ class Module(object):
 
         script += "'Schtasks persistence established " + status_msg + "'"
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,

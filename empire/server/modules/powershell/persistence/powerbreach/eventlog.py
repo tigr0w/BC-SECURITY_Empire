@@ -119,7 +119,7 @@ Invoke-EventLogBackdoor"""
             % (parts[0], " ".join(parts[1:]))
         )
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,

@@ -1,6 +1,7 @@
 import fnmatch
 import importlib.util
 import os
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -13,15 +14,15 @@ class StagerTemplateService(object):
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
-        # loaded listener format:
-        #     {"listenerModuleName": moduleInstance, ...}
-        self.loaded_stagers = {}
+        # loaded stager format:
+        #     {"stagerModuleName": moduleInstance, ...}
+        self._loaded_stager_templates = {}
 
         with SessionLocal.begin() as db:
-            self.load_stagers(db)
+            self._load_stagers(db)
 
     def new_instance(self, template: str):
-        instance = type(self.loaded_stagers[template])(self.main_menu)
+        instance = type(self._loaded_stager_templates[template])(self.main_menu)
         for key, value in instance.options.items():
             if value.get("SuggestedValues") is None:
                 value["SuggestedValues"] = []
@@ -30,7 +31,17 @@ class StagerTemplateService(object):
 
         return instance
 
-    def load_stagers(self, db: Session):
+    def get_stager_template(
+        self, name: str
+    ) -> Optional[object]:  # would be nice to have a BaseListener object.
+        return self._loaded_stager_templates.get(name)
+
+    def get_stager_templates(
+        self,
+    ):  # todo not sure if these should return .items or the raw dict
+        return self._loaded_stager_templates.items()
+
+    def _load_stagers(self, db: Session):
         """
         Load stagers from the install + "/stagers/*" path
         """
@@ -62,7 +73,7 @@ class StagerTemplateService(object):
                     if value.get("Strict") is None:
                         value["Strict"] = False
 
-                self.loaded_stagers[slugify(stager_name)] = stager
+                self._loaded_stager_templates[slugify(stager_name)] = stager
 
 
 def slugify(stager_name: str):

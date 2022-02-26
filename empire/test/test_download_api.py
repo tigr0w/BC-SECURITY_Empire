@@ -52,8 +52,8 @@ def test_create_download_appends_number_if_already_exists(client, admin_auth_hea
 
     assert response.status_code == 201
     assert response.json()["id"] > 0
-    assert response.json()["location"].endswith("(2).yaml")
-    assert response.json()["filename"].endswith("(2).yaml")
+    assert response.json()["location"].endswith(").yaml")
+    assert response.json()["filename"].endswith(").yaml")
 
 
 def test_get_download(client, admin_auth_header):
@@ -61,16 +61,15 @@ def test_get_download(client, admin_auth_header):
 
     assert response.status_code == 200
     assert response.json()["id"] == 1
-    assert response.json()["filename"] == "test-upload.yaml"
+    assert "test-upload" in response.json()["filename"]
 
 
 def test_download_download(client, admin_auth_header):
     response = client.get("/api/v2beta/downloads/1/download", headers=admin_auth_header)
 
     assert response.status_code == 200
-    assert (
-        response.headers.get("content-disposition")
-        == 'attachment; filename="test-upload.yaml"'
+    assert response.headers.get("content-disposition").startswith(
+        "attachment; filename*=utf-8''test-upload"
     )
 
 
@@ -91,9 +90,8 @@ def test_get_downloads_with_query(client, admin_auth_header):
     assert response.json()["total"] == 0
     assert response.json()["records"] == []
 
-    q = urllib.parse.urlencode({"query": "test-upload(2)"})
+    q = urllib.parse.urlencode({"query": "test-upload"})
     response = client.get(f"/api/v2beta/downloads?{q}", headers=admin_auth_header)
 
     assert response.status_code == 200
-    assert response.json()["total"] == 1
-    assert response.json()["records"][0]["id"] == 3
+    assert response.json()["total"] > 1

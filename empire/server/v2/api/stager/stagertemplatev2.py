@@ -25,7 +25,7 @@ async def get_stager_templates():
     templates = list(
         map(
             lambda x: domain_to_dto_template(x[1], x[0]),
-            stager_template_service.loaded_stagers.items(),
+            stager_template_service.get_stager_templates(),
         )
     )
 
@@ -38,7 +38,7 @@ async def get_stager_templates():
     dependencies=[Depends(get_current_active_user)],
 )
 async def get_stager_template(uid: str):
-    template = stager_template_service.loaded_stagers.get(uid)
+    template = stager_template_service.get_stager_template(uid)
 
     if not template:
         raise HTTPException(status_code=404, detail="Stager template not found")

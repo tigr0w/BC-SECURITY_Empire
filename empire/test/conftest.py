@@ -1,4 +1,6 @@
+import os
 import sys
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
@@ -7,9 +9,8 @@ from starlette.testclient import TestClient
 
 @pytest.fixture(scope="session")
 def client():
-    # todo could make test_config a bit more dynamic so we can generate random db names
-    #  can we do the pathing in a way that we can run tests from any directory?
-    #  test bootstrapping should clear the files dir and test db.
+    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
+
     sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
     from empire.server.v2.api.agent import agentfilev2, agentv2, taskv2
     from empire.server.v2.api.bypass import bypassv2
@@ -55,7 +56,7 @@ def client():
     Base.metadata.drop_all(engine)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def admin_auth_token(client):
     response = client.post(
         "/token",
@@ -70,12 +71,12 @@ def admin_auth_token(client):
     yield response.json()["access_token"]
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def admin_auth_header(admin_auth_token):
     return {"Authorization": f"Bearer {admin_auth_token}"}
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def regular_auth_token(client, admin_auth_token):
     client.post(
         "/api/v2beta/users/",

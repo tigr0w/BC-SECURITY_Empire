@@ -7,6 +7,7 @@ on:
       - sponsors-master
       - dev
       - sponsors-dev
+      - 5.0-dev
 
 jobs:
   lint:
@@ -25,6 +26,8 @@ jobs:
         python-version: [ '3.8', '3.9' ]
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
       - name: Setup Python
         uses: actions/setup-python@v2
         with:

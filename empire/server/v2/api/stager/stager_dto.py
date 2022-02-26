@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -174,8 +174,10 @@ class Stager(BaseModel):
     downloads: List[DownloadDescription]
     options: Dict[str, str]
     user_id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[
+        datetime
+    ]  # optional because if its not saved yet, it will be None
+    updated_at: Optional[datetime]
 
 
 class Stagers(BaseModel):

@@ -18,7 +18,7 @@ class BypassService(object):
             self._load_bypasses(db)
 
     def _load_bypasses(self, db):
-        root_path = f"{db.query(models.Config).first().install_path}/listeners/"
+        root_path = f"{db.query(models.Config).first().install_path}/bypasses/"
         print(helpers.color(f"[*] v2: Loading bypasses from: {root_path}"))
 
         for root, dirs, files in os.walk(root_path):

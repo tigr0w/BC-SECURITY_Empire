@@ -85,7 +85,7 @@ class Module(object):
             )
             script = data_util.keyword_obfuscation(script)
 
-            script = main_menu.modules.finalize_module(
+            script = main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
@@ -264,7 +264,7 @@ class Module(object):
 
         script += "'WMI persistence established " + status_msg + "'"
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,

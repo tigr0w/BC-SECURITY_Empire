@@ -84,6 +84,11 @@ class DownloadPostRequest(BaseModel):
     path_to_file: str
 
 
+class UploadPostRequest(BaseModel):
+    path_to_file: str
+    file_id: int
+
+
 class ScriptCommandPostRequest(BaseModel):
     command: str
 

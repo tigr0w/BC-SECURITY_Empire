@@ -45,7 +45,7 @@ class Module(object):
                 "Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\%s';'%s debugger removed.'"
                 % (target_binary, target_binary)
             )
-            script = main_menu.modules.finalize_module(
+            script = main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
@@ -121,7 +121,7 @@ class Module(object):
                 + "'"
             )
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,

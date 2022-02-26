@@ -40,7 +40,7 @@ class StagerService(object):
         :param params:
         :return:
         """
-        if not self.stager_template_service.loaded_stagers.get(template):
+        if not self.stager_template_service.get_stager_template(template):
             return None, f"Stager Template {template} not found"
 
         if params.get("Listener") and not self.listener_service.get_by_name(

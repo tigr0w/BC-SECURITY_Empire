@@ -8,7 +8,7 @@ def test_get_listener_templates(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == 200
-    assert len(response.json()["records"]) == 10
+    assert len(response.json()["records"]) >= 8
 
 
 def test_get_listener_template(client, admin_auth_header):

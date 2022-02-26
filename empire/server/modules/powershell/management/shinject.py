@@ -29,7 +29,7 @@ class Module(object):
         arch = params["Arch"]
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(
+        script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
@@ -68,7 +68,7 @@ class Module(object):
         )
         script_end += "; shellcode injected into pid {}".format(str(proc_id))
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,

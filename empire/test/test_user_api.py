@@ -48,11 +48,11 @@ def test_get_user(client, admin_auth_header):
 
 def test_get_me(client, regular_auth_token):
     response = client.get(
-        "/api/v2beta/users/2", headers={"Authorization": f"Bearer {regular_auth_token}"}
+        "/api/v2beta/users/me",
+        headers={"Authorization": f"Bearer {regular_auth_token}"},
     )
 
     assert response.status_code == 200
-    assert response.json()["id"] == 2
     assert response.json()["username"] == "vinnybod"
 
 
@@ -97,7 +97,7 @@ def test_update_user_as_not_admin_not_me(client, regular_auth_token):
 
 def test_update_user_as_not_admin_me(client, regular_auth_token):
     response = client.put(
-        "/api/v2beta/users/2",
+        "/api/v2beta/users/3",
         headers={"Authorization": f"Bearer {regular_auth_token}"},
         json={"username": "xyz", "enabled": True, "is_admin": True},
     )
@@ -122,11 +122,20 @@ def test_update_user_password_not_me(client, regular_auth_token):
     )
 
 
-# todo shouldn't mess with the admin user because it will mess up the fixtures. meh.
-def test_update_user_password(client, admin_auth_header):
+def test_update_user_password(client):
+    response = client.post(
+        "/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "grant_type": "password",
+            "username": "another-user",
+            "password": "hunter2",
+        },
+    )
+
     response = client.put(
-        "/api/v2beta/users/1/password",
-        headers=admin_auth_header,
+        "/api/v2beta/users/2/password",
+        headers={"Authorization": f"Bearer {response.json()['access_token']}"},
         json={"password": "QWERTY"},
     )
 
@@ -137,7 +146,7 @@ def test_update_user_password(client, admin_auth_header):
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         data={
             "grant_type": "password",
-            "username": "empireadmin",
+            "username": "another-user",
             "password": "QWERTY",
         },
     )

@@ -24,7 +24,7 @@ class Module(object):
             % (params["Domain"], params["User"])
         )
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,

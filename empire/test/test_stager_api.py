@@ -193,9 +193,10 @@ def test_download_stager_file(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == 200
-    assert (
-        response.headers.get("content-type").split(";")[0] == "application/x-msdownload"
-    )
+    assert response.headers.get("content-type").split(";")[0] in [
+        "application/x-msdownload",
+        "application/x-msdos-program",
+    ]
     assert type(response.content) == bytes
 
 
