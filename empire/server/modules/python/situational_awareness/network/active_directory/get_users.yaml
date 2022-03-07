@@ -34,7 +34,7 @@ script: |
   import sys, os, subprocess, re
   BindDN = "{{ BindDN }}"
   LDAPAddress = "{{ LDAPAddress }}"
-  password = "{{ Password }}
+  password = "{{ Password }}"
 
   regex = re.compile('.+@([^.]+)\..+')
   global tld
