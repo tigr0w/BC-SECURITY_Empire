@@ -178,12 +178,13 @@ class MainMenu(cmd.Cmd):
         print(helpers.color("[*] Searching for plugins at {}".format(plugin_path)))
 
         # Import old v1 plugins (remove in 5.0)
-        plugin_names = [name for _, name, _ in pkgutil.walk_packages([plugin_path])]
+        plugin_names =  os.listdir(plugin_path)
         for plugin_name in plugin_names:
-            if plugin_name.lower() != "example":
-                file_path = os.path.join(plugin_path, plugin_name + ".py")
+            if not plugin_name.lower().startswith("__init__") and plugin_name.lower().endswith(".py"):
+                file_path = os.path.join(plugin_path, plugin_name)
                 plugins.load_plugin(self, plugin_name, file_path)
 
+        # Import new v2 plugins
         for root, dirs, files in os.walk(plugin_path):
             for filename in files:
                 if not filename.lower().endswith(".plugin"):
