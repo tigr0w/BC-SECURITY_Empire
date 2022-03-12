@@ -75,7 +75,7 @@ class AdminMenu(Menu):
     @command
     def obfuscate(self, obfucate_bool: str):
         """
-        Turn on obfuscate all future powershell commands run on all agents. CANNOT BE USED WITH KEYWORD_OBFUSCATION.
+        Turn on obfuscate all future powershell commands run on all agents.
 
         Usage: obfuscate <obfucate_bool>
         """
@@ -140,7 +140,7 @@ class AdminMenu(Menu):
     @command
     def keyword_obfuscation(self, keyword: str, replacement: str = None):
         """
-        Add key words to to be obfuscated from commands. Empire will generate a random word if no replacement word is provided. CANNOT BE USED WITH OBFUSCATE.
+        Add key words to to be obfuscated from commands. Empire will generate a random word if no replacement word is provided.
 
         Usage: keyword_obfuscation <keyword> [replacement]
         """

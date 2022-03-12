@@ -23,6 +23,16 @@
             - listener, agent, and task hooks now triggered via hooks
             -
 
+3/6/2022
+------------
+- Version 4.4.1 Master Release
+        - Fixed agent generation with custom headers (@Hubbl3)
+        - Fixed missing quote in get_users.yaml (@Cx01N)
+        - Fixed displaying info for plugins (@Cx01N)
+        - Fixed legacy plugin loading to ignore folders (@Cx01N)
+        - Removed http_mapi.ps1
+        - Removed comment that global obfuscation and keyword obfuscation cannot be combined (@Cx01N)
+
 2/14/2022
 ------------
 - Version 4.4.0 Master Release
@@ -38,7 +48,6 @@
         - Removed random capitialization function for listeners (@Cx01N)
         - Removed meterpreter and mapi listeners (@Cx01N)
         - Powerview - added functions for group managed service accounts and fine grained pw pol (@jfmaes)
-
 
 1/24/2022
 ------------

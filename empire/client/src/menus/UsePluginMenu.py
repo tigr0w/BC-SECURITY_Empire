@@ -38,6 +38,7 @@ class UsePluginMenu(UseMenu):
             return False
         else:
             self.use(kwargs["selected"])
+            self.info()
             self.options()
             self.display_cached_results()
             return True
@@ -87,15 +88,6 @@ class UsePluginMenu(UseMenu):
         Usage: generate
         """
         self.execute()
-
-    @command
-    def info(self):
-        """
-        Info about current plugin (ex: Authors, Description, etc)
-
-        Usage: info
-        """
-        print(print_util.color("[!] TODO: info to plugins API endpoint"))
 
 
 use_plugin_menu = UsePluginMenu()
