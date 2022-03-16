@@ -13,7 +13,7 @@ import time
 from builtins import object, str
 from typing import List
 
-from flask import Flask, make_response, request, send_from_directory
+from flask import Flask, make_response, render_template, request, send_from_directory
 from pydispatch import dispatcher
 from werkzeug.serving import WSGIRequestHandler
 
@@ -161,9 +161,6 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
-        # randomize the length of the default_response and index_page headers to evade signature based scans
-        self.header_offset = random.randint(0, 64)
-
         self.session_cookie = ""
 
         # check if the current session cookie not empty and then generate random cookie
@@ -174,123 +171,7 @@ class Listener(object):
         """
         Returns an IIS 7.5 404 not found page.
         """
-
-        return "\r\n".join(
-            [
-                '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-                '<html xmlns="http://www.w3.org/1999/xhtml">',
-                "<head>",
-                '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>',
-                "<title>404 - File or directory not found.</title>",
-                '<style type="text/css">',
-                "<!--",
-                "body{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}",
-                "fieldset{padding:0 15px 10px 15px;} ",
-                "h1{font-size:2.4em;margin:0;color:#FFF;}",
-                "h2{font-size:1.7em;margin:0;color:#CC0000;} ",
-                "h3{font-size:1.2em;margin:10px 0 0 0;color:#000000;} ",
-                '#header{width:96%;margin:0 0 0 0;padding:6px 2% 6px 2%;font-family:"trebuchet MS", Verdana, sans-serif;color:#FFF;',
-                "background-color:#555555;}",
-                "#content{margin:0 0 0 2%;position:relative;}",
-                ".content-container{background:#FFF;width:96%;margin-top:8px;padding:10px;position:relative;}",
-                "-->",
-                "</style>",
-                "</head>",
-                "<body>",
-                '<div id="header"><h1>Server Error</h1></div>',
-                '<div id="content">',
-                ' <div class="content-container"><fieldset>',
-                "  <h2>404 - File or directory not found.</h2>",
-                "  <h3>The resource you are looking for might have been removed, had its name changed, or is temporarily unavailable.</h3>",
-                " </fieldset></div>",
-                "</div>",
-                "</body>",
-                "</html>",
-                " "
-                * self.header_offset,  # randomize the length of the header to evade signature based detection
-            ]
-        )
-
-    def method_not_allowed_page(self):
-        """
-        Imitates IIS 7.5 405 "method not allowed" page.
-        """
-
-        return "\r\n".join(
-            [
-                '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-                '<html xmlns="http://www.w3.org/1999/xhtml">',
-                "<head>",
-                '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>',
-                "<title>405 - HTTP verb used to access this page is not allowed.</title>",
-                '<style type="text/css">',
-                "<!--",
-                "body{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}",
-                "fieldset{padding:0 15px 10px 15px;} ",
-                "h1{font-size:2.4em;margin:0;color:#FFF;}",
-                "h2{font-size:1.7em;margin:0;color:#CC0000;} ",
-                "h3{font-size:1.2em;margin:10px 0 0 0;color:#000000;} ",
-                '#header{width:96%;margin:0 0 0 0;padding:6px 2% 6px 2%;font-family:"trebuchet MS", Verdana, sans-serif;color:#FFF;',
-                "background-color:#555555;}",
-                "#content{margin:0 0 0 2%;position:relative;}",
-                ".content-container{background:#FFF;width:96%;margin-top:8px;padding:10px;position:relative;}",
-                "-->",
-                "</style>",
-                "</head>",
-                "<body>",
-                '<div id="header"><h1>Server Error</h1></div>',
-                '<div id="content">',
-                ' <div class="content-container"><fieldset>',
-                "  <h2>405 - HTTP verb used to access this page is not allowed.</h2>",
-                "  <h3>The page you are looking for cannot be displayed because an invalid method (HTTP verb) was used to attempt access.</h3>",
-                " </fieldset></div>",
-                "</div>",
-                "</body>",
-                "</html>\r\n",
-            ]
-        )
-
-    def index_page(self):
-        """
-        Returns a default HTTP server page.
-        """
-
-        return "\r\n".join(
-            [
-                '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-                '<html xmlns="http://www.w3.org/1999/xhtml">',
-                "<head>",
-                '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />',
-                "<title>IIS7</title>",
-                '<style type="text/css">',
-                "<!--",
-                "body {",
-                "	color:#000000;",
-                "	background-color:#B3B3B3;",
-                "	margin:0;",
-                "}",
-                "",
-                "#container {",
-                "	margin-left:auto;",
-                "	margin-right:auto;",
-                "	text-align:center;",
-                "	}",
-                "",
-                "a img {",
-                "	border:none;",
-                "}",
-                "",
-                "-->",
-                "</style>",
-                "</head>",
-                "<body>",
-                '<div id="container">',
-                '<a href="http://go.microsoft.com/fwlink/?linkid=66138&amp;clcid=0x409"><img src="welcome.png" alt="IIS7" width="571" height="411" /></a>',
-                "</div>",
-                "</body>",
-                "</html>",
-            ]
-        )
+        return render_template("default.html")
 
     def validate_options(self):
         """
@@ -1194,7 +1075,8 @@ def send_message(packets=None):
         proxy = self.options["Proxy"]["Value"]
         proxyCreds = self.options["ProxyCreds"]["Value"]
 
-        app = Flask(__name__)
+        template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+        app = Flask(__name__, template_folder=template_dir)
         self.app = app
 
         # Set HTTP/1.1 as in IIS 7.5 instead of /1.0
@@ -1241,7 +1123,9 @@ def send_message(packets=None):
 
         @app.after_request
         def change_header(response):
-            "Modify the headers response server."
+            """
+            Modify the headers response server.
+            """
             headers = listenerOptions["Headers"]["Value"]
             for key in headers.split("|"):
                 value = key.split(":")
@@ -1250,7 +1134,9 @@ def send_message(packets=None):
 
         @app.after_request
         def add_proxy_headers(response):
-            "Add HTTP headers to avoid proxy caching."
+            """
+            Add HTTP headers to avoid proxy caching.
+            """
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
@@ -1261,7 +1147,7 @@ def send_message(packets=None):
             """
             Returns IIS 7.5 405 page for every Flask 405 error.
             """
-            return make_response(self.method_not_allowed_page(), 405)
+            return render_template("method_not_allowed.html"), 405
 
         @app.route("/")
         @app.route("/iisstart.htm")
@@ -1269,9 +1155,7 @@ def send_message(packets=None):
             """
             Return default server web page if user navigates to index.
             """
-
-            static_dir = self.mainMenu.installPath + "/data/misc/"
-            return make_response(self.index_page(), 200)
+            return render_template("index.html"), 200
 
         @app.route("/<path:request_uri>", methods=["GET"])
         def handle_get(request_uri):
