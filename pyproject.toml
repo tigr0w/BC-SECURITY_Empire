@@ -72,4 +72,4 @@ extend-exclude = '''
     | (empire/client/generated-stagers*)
     | (empire/client/downloads*)
 '''
-include = '\.plugin?$'
+#include = '.*\.(plugin)$'

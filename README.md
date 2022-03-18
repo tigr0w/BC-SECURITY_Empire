@@ -96,7 +96,7 @@ Join us in [our Discord](https://discord.gg/P8PZPyf) to with any comments, quest
 [Starkiller](https://github.com/BC-SECURITY/Starkiller) is a GUI for PowerShell Empire that interfaces remotely with Empire via its API. Starkiller can be ran as a replacement for the Empire client or in a mixed environment with Starkiller and Empire clients.
 
 ## Contribution Rules
-See [Contributing](./CONTRIBUTING.md)
+See [Contributing](./.github/CONTRIBUTING.md)
 
 ## Official Discord Channel
 <p align="center">
