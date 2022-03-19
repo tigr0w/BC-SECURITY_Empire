@@ -52,7 +52,7 @@ cli = sys.modules["flask.cli"]
 cli.show_server_banner = lambda *x: None
 
 # Disable http warnings
-if empire_config.yaml.get("suppress-self-cert-warning", True):
+if empire_config.supress_self_cert_warning:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Set proxy IDs
@@ -3269,7 +3269,7 @@ def run(args):
         """
         Autorun plugin commands at server startup.
         """
-        plugins = empire_config.yaml.get("plugins")
+        plugins = empire_config.plugins
         if plugins:
             for plugin in plugins:
                 use_plugin = main.loadedPlugins[plugin]
