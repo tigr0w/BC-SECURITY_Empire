@@ -13,7 +13,6 @@ import cmd
 import fnmatch
 import json
 import os
-import pkgutil
 import sys
 import threading
 import time
