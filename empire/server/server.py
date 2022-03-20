@@ -2752,16 +2752,14 @@ def start_restful_api(
             keyword_replacement = request.json["keyword_replacement"]
             keyword_obfuscation = (
                 Session()
-                .query(models.Function)
-                .filter(models.Function.keyword == keyword)
+                .query(models.Keyword)
+                .filter(models.Keyword.keyword == keyword)
                 .first()
             )
             if not keyword_obfuscation:
                 try:
                     Session().add(
-                        models.Function(
-                            keyword=keyword, replacement=keyword_replacement
-                        )
+                        models.Keyword(keyword=keyword, replacement=keyword_replacement)
                     )
                     msg = f"[*] Keyword obfuscation set to replace {request.json['keyword_obfuscation']} with {keyword_replacement}"
                 except Exception as e:

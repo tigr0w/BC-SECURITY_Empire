@@ -8,7 +8,7 @@ from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.database.defaults import (
     get_default_config,
-    get_default_functions,
+    get_default_keyword_obfuscation,
     get_default_user,
 )
 from empire.server.database.models import Base
@@ -97,9 +97,9 @@ if len(Session().query(models.Config).all()) == 0:
     Session().commit()
     Session.remove()
 
-if len(Session().query(models.Function).all()) == 0:
-    print(color("[*] Adding default keyword obfuscation functions."))
-    functions = get_default_functions()
+if len(Session().query(models.Keyword).all()) == 0:
+    print(color('[*] Adding default keyword obfuscation functions.'))
+    functions = get_default_keyword_obfuscation()
 
     for function in functions:
         Session().add(function)

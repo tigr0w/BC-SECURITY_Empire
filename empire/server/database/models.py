@@ -233,8 +233,8 @@ class Reporting(Base):
             self.id)
 
 
-class Function(Base):
-    __tablename__ = "functions"
+class Keyword(Base):
+    __tablename__ = "keywords"
     keyword = Column(String(255), primary_key=True)
     replacement = Column(String(255))
 
