@@ -53,19 +53,17 @@ handle_agent_data() is the main function that should be used by external listene
 Most methods utilize self.lock to deal with the concurreny issue of kicking off threaded listeners.
 
 """
-from __future__ import absolute_import, print_function
-
 import base64
 import json
+import logging
 import os
 import string
 import threading
 
 # -*- encoding: utf-8 -*-
 from builtins import object, str
-from datetime import datetime, timezone
+from typing import Dict
 
-# from pydispatch import dispatcher
 from sqlalchemy import and_, func, or_, update
 from sqlalchemy.orm import Session, undefer
 from zlib_wrapper import decompress
@@ -73,11 +71,11 @@ from zlib_wrapper import decompress
 from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
-
-# Empire imports
 from empire.server.database.models import TaskingStatus
 
-from . import encryption, helpers, messages, packets
+from . import encryption, helpers, packets
+
+log = logging.getLogger(__name__)
 
 
 class Agents(object):
@@ -102,6 +100,10 @@ class Agents(object):
 
         # used to protect self.agents and self.mainMenu.conn during threaded listener access
         self.lock = threading.Lock()
+
+        # Since each agent logs to a different file, we can have multiple locks to reduce
+        #  waiting time when writing to the file.
+        self.agent_log_locks: Dict[str, threading.Lock] = {}
 
         # reinitialize any agents that already exist in the database
         dbAgents = self.get_agents_db()
@@ -195,17 +197,8 @@ class Agents(object):
         with SessionLocal.begin() as db:
             db.add(agent)
 
-        # dispatch this event
-        message = "[*] New agent {} checked in".format(sessionID)
-        signal = json.dumps(
-            {
-                "print": True,
-                "message": message,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "event_type": "checkin",
-            }
-        )
-        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+        message = f"New agent {sessionID} checked in"
+        log.info(message)
 
         # initialize the tasking/result buffers along with the client session key
         self.agents[sessionID] = {"sessionKey": sessionKey, "functions": []}
@@ -274,10 +267,8 @@ class Agents(object):
             if agent:
                 db.delete(agent)
 
-        # dispatch this event
-        message = "[*] Agent {} deleted".format(session_id)
-        signal = json.dumps({"print": True, "message": message})
-        # dispatcher.send(signal, sender="agents/{}".format(session_id))
+        message = f"Agent {session_id} deleted"
+        log.info(message)
 
     def is_ip_allowed(self, ip_address):
         """
@@ -334,11 +325,10 @@ class Agents(object):
             safePath = os.path.abspath(self.mainMenu.directory["downloads"])
 
             if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
-                message = "[!] WARNING: agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
+                message = "Agent {} attempted skywalker exploit! Attempted overwrite of {} with data {}".format(
                     sessionID, path, data
                 )
-                signal = json.dumps({"print": True, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                log.warning(message)
                 return
 
             # make the recursive directory structure if it doesn't already exist
@@ -353,31 +343,22 @@ class Agents(object):
                 f = open("%s/%s" % (save_path, filename), "ab")
 
             if "python" in lang:
-                print(
-                    helpers.color(
-                        "[*] Compressed size of %s download: %s"
-                        % (filename, helpers.get_file_size(data)),
-                        color="green",
-                    )
+                log.info(
+                    f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
                 )
                 d = decompress.decompress()
                 dec_data = d.dec_data(data)
-                print(
-                    helpers.color(
-                        "[*] Final size of %s wrote: %s"
-                        % (filename, helpers.get_file_size(dec_data["data"])),
-                        color="green",
-                    )
+                log.info(
+                    f"Final size of {filename} wrote: {helpers.get_file_size(dec_data['data'])}"
                 )
                 if not dec_data["crc32_check"]:
-                    message = "[!] WARNING: File agent {} failed crc32 check during decompression!\n[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!".format(
+                    message = "File agent {} failed crc32 check during decompression!\n[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!".format(
                         nameid,
                         dec_data["header_crc32"],
                         dec_data["dec_crc32"],
                         dec_data["crc32_check"],
                     )
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(signal, sender="agents/{}".format(nameid))
+                    log.warning(message)
                 data = dec_data["data"]
 
             f.write(data)
@@ -418,11 +399,8 @@ class Agents(object):
         )
 
         # notify everyone that the file was downloaded
-        message = "[+] Part of file {} from {} saved [{}%] to {}".format(
-            filename, sessionID, percent, save_path
-        )
-        signal = json.dumps({"print": True, "message": message})
-        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+        message = f"Part of file {filename} from {sessionID} saved [{percent}%] to {save_path}"
+        log.info(message)
 
     def save_module_file(self, sessionID, path, data):
         """
@@ -441,31 +419,22 @@ class Agents(object):
 
         # decompress data if coming from a python agent:
         if "python" in lang:
-            print(
-                helpers.color(
-                    "[*] Compressed size of %s download: %s"
-                    % (filename, helpers.get_file_size(data)),
-                    color="green",
-                )
+            log.info(
+                f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
             )
             d = decompress.decompress()
             dec_data = d.dec_data(data)
-            print(
-                helpers.color(
-                    "[*] Final size of %s wrote: %s"
-                    % (filename, helpers.get_file_size(dec_data["data"])),
-                    color="green",
-                )
+            log.info(
+                f"Final size of {filename} wrote: {helpers.get_file_size(dec_data['data'])}"
             )
             if not dec_data["crc32_check"]:
-                message = "[!] WARNING: File agent {} failed crc32 check during decompression!\n[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!".format(
+                message = "File agent {} failed crc32 check during decompression!\n[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!".format(
                     sessionID,
                     dec_data["header_crc32"],
                     dec_data["dec_crc32"],
                     dec_data["crc32_check"],
                 )
-                signal = json.dumps({"print": True, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                log.warning(message)
             data = dec_data["data"]
 
         try:
@@ -474,11 +443,10 @@ class Agents(object):
             safePath = os.path.abspath(self.mainMenu.directory["downloads"])
 
             if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
-                message = "[!] WARNING: agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
+                message = "agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
                     sessionID, path, data
                 )
-                signal = json.dumps({"print": True, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                log.warning(message)
                 return
 
             # make the recursive directory structure if it doesn't already exist
@@ -492,20 +460,18 @@ class Agents(object):
             self.lock.release()
 
         # notify everyone that the file was downloaded
-        message = "[+] File {} from {} saved".format(path, sessionID)
-        signal = json.dumps({"print": True, "message": message})
-        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+        message = f"File {path} from {sessionID} saved"
+        log.info(message)
 
         return save_path + "/" + filename
 
-    def save_agent_log(self, sessionID, data):
+    def save_agent_log(self, session_id, data):
         """
         Save the agent console output to the agent's log file.
         """
         if isinstance(data, bytes):
             data = data.decode("UTF-8")
-        name = self.get_agent_name_db(sessionID)
-        save_path = f"{self.mainMenu.directory['downloads']}{name}/"
+        save_path = f"{self.mainMenu.directory['downloads']}{session_id}/"
 
         # make the recursive directory structure if it doesn't already exist
         if not os.path.exists(save_path):
@@ -513,15 +479,14 @@ class Agents(object):
 
         current_time = helpers.get_datetime()
 
-        try:
-            self.lock.acquire()
+        if session_id not in self.agent_log_locks:
+            self.agent_log_locks[session_id] = threading.Lock()
+        lock = self.agent_log_locks[session_id]
 
-            with open("%s/agent.log" % (save_path), "a") as f:
+        with lock:
+            with open(f"{save_path}/agent.log", "a") as f:
                 f.write("\n" + current_time + " : " + "\n")
                 f.write(data + "\n")
-        finally:
-
-            self.lock.release()
 
     ###############################################################
     #
@@ -919,12 +884,10 @@ class Agents(object):
                 config.autorun_command = task_command
                 config.autorun_data = module_data
         except Exception:
-            print(
-                helpers.color(
-                    "[!] Error: script autoruns not a database field, run --reset to reset DB schema."
-                )
+            log.error(
+                "script autoruns not a database field, run --reset to reset DB schema."
             )
-            print(helpers.color("[!] Warning: this will reset ALL agent connections!"))
+            log.warning("this will reset ALL agent connections!")
 
     def clear_autoruns_db(self):
         """
@@ -940,7 +903,8 @@ class Agents(object):
     # Agent tasking methods
     #
     ###############################################################
-
+    # TODO VR This is only called by redirector and autoruns. The callers should
+    #  be updated to use the new tasking methods.
     def add_agent_task_db(
         self, session_id, task_name, task="", module_name=None, uid=1
     ):
@@ -956,12 +920,11 @@ class Agents(object):
                 session_id = name_id
 
             if session_id not in self.agents:
-                print(helpers.color("[!] Agent %s not active." % agent_name))
+                log.warning(f"Agent {agent_name} not active.")
             else:
                 if session_id:
-                    message = "[*] Tasked {} to run {}".format(session_id, task_name)
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(signal, sender="agents/{}".format(session_id))
+                    message = f"Tasked {session_id} to run {task_name}"
+                    log.info(message)
 
                     pk = (
                         db.query(func.max(models.Tasking.id))
@@ -986,32 +949,8 @@ class Agents(object):
                         )
                     )
 
-                    try:
-                        self.lock.acquire()
-
-                        # dispatch this event
-                        message = "[*] Agent {} tasked with task ID {}".format(
-                            session_id, pk
-                        )
-                        signal = json.dumps(
-                            {
-                                "print": True,
-                                "message": message,
-                                "task_name": task_name,
-                                "task_id": pk,
-                                "task": task,
-                                "event_type": "task",
-                            }
-                        )
-                        # dispatcher.send(signal, sender="agents/{}".format(session_id))
-
-                        # todo still needed?
-                        # write out the last tasked script to "LastTask" if in debug mode
-                        if self.args and self.args.debug:
-                            with open("%s/LastTask" % (self.installPath), "w") as f:
-                                f.write(task)
-                    finally:
-                        self.lock.release()
+                    message = f"Agent {session_id} tasked with task ID {pk}"
+                    log.info(message)
 
                     return pk
 
@@ -1028,7 +967,7 @@ class Agents(object):
             session_id = name_id
 
         if session_id not in self.agents:
-            print(helpers.color("[!] Agent %s not active." % agent_name))
+            log.error(f"Agent {agent_name} not active.")
             return []
         else:
             tasks = (
@@ -1077,21 +1016,16 @@ class Agents(object):
 
         elif meta == "STAGE1":
             # step 3 of negotiation -> client posts public key
-            message = "[*] Agent {} from {} posted public key".format(
-                sessionID, clientIP
-            )
-            signal = json.dumps({"print": False, "message": message})
-            # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+            message = f"Agent {sessionID} from {clientIP} posted public key"
+            log.info(message)
 
             # decrypt the agent's public key
             try:
                 message = encryption.aes_decrypt_and_verify(stagingKey, encData)
             except Exception as e:
-                print("exception e:" + str(e))
                 # if we have an error during decryption
-                message = "[!] HMAC verification failed from '{}'".format(sessionID)
-                signal = json.dumps({"print": True, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                message = f"HMAC verification failed from '{sessionID}'"
+                log.error(message, exc_info=True)
                 return "ERROR: HMAC verification failed"
 
             if language.lower() == "powershell" or language.lower() == "csharp":
@@ -1102,22 +1036,17 @@ class Agents(object):
 
                 # client posts RSA key
                 if (len(message) < 400) or (not message.endswith("</RSAKeyValue>")):
-                    message = "[!] Invalid PowerShell key post format from {}".format(
-                        sessionID
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    message = f"Invalid PowerShell key post format from {sessionID}"
+                    log.error(message)
                     return "ERROR: Invalid PowerShell key post format"
                 else:
                     # convert the RSA key from the stupid PowerShell export format
                     rsaKey = encryption.rsa_xml_to_key(message)
 
                     if rsaKey:
-                        message = "[*] Agent {} from {} posted valid PowerShell RSA key".format(
-                            sessionID, clientIP
-                        )
-                        signal = json.dumps({"print": False, "message": message})
-                        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                        message = f"Agent {sessionID} from {clientIP} posted valid PowerShell RSA key"
+                        log.info(message)
+
                         nonce = helpers.random_string(16, charset=string.digits)
                         delay = listenerOptions["DefaultDelay"]["Value"]
                         jitter = listenerOptions["DefaultJitter"]["Value"]
@@ -1154,33 +1083,22 @@ class Agents(object):
                         return encryptedMsg
 
                     else:
-                        message = "[!] Agent {} returned an invalid PowerShell public key!".format(
-                            sessionID
-                        )
-                        signal = json.dumps({"print": True, "message": message})
-                        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                        message = f"Agent {sessionID} returned an invalid PowerShell public key!"
+                        log.error(message)
                         return "ERROR: Invalid PowerShell public key"
 
             elif language.lower() == "python":
                 if (len(message) < 1000) or (len(message) > 2500):
-                    message = "[!] Invalid Python key post format from {}".format(
-                        sessionID
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    message = f"Invalid Python key post format from {sessionID}"
+                    log.error(message)
                     return "Error: Invalid Python key post format from %s" % (sessionID)
                 else:
                     try:
                         int(message)
                     except:
-                        message = "[!] Invalid Python key post format from {}".format(
-                            sessionID
-                        )
-                        signal = json.dumps({"print": True, "message": message})
-                        # dispatcher.send(signal, sender="agents/{}".format(sessionID))
-                        return "Error: Invalid Python key post format from {}".format(
-                            sessionID
-                        )
+                        message = f"Invalid Python key post format from {sessionID}"
+                        log.error(message)
+                        return message
 
                     # client posts PUBc key
                     clientPub = int(message)
@@ -1190,11 +1108,10 @@ class Agents(object):
 
                     nonce = helpers.random_string(16, charset=string.digits)
 
-                    message = "[*] Agent {} from {} posted valid Python PUB key".format(
-                        sessionID, clientIP
+                    message = (
+                        f"Agent {sessionID} from {clientIP} posted valid Python PUB key"
                     )
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    log.info(message)
 
                     delay = listenerOptions["DefaultDelay"]["Value"]
                     jitter = listenerOptions["DefaultJitter"]["Value"]
@@ -1226,12 +1143,9 @@ class Agents(object):
                     return encryptedMsg
 
             else:
-                message = "[*] Agent {} from {} using an invalid language specification: {}".format(
-                    sessionID, clientIP, language
-                )
-                signal = json.dumps({"print": True, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
-                return "ERROR: invalid language: {}".format(language)
+                message = f"Agent {sessionID} from {clientIP} using an invalid language specification: {language}"
+                log.info(message)
+                return f"ERROR: invalid language: {language}"
 
         elif meta == "STAGE2":
             # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
@@ -1245,36 +1159,23 @@ class Agents(object):
                 parts = message.split(b"|")
 
                 if len(parts) < 12:
-                    message = (
-                        "[!] Agent {} posted invalid sysinfo checkin format: {}".format(
-                            sessionID, message
-                        )
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                    message = f"Agent {sessionID} posted invalid sysinfo checkin format: {message}"
+                    log.info(message)
                     # remove the agent from the cache/database
                     self.mainMenu.agents.remove_agent_db(sessionID)
-                    return (
-                        "ERROR: Agent %s posted invalid sysinfo checkin format: %s"
-                        % (sessionID, message)
-                    )
+                    return message
 
                 # verify the nonce
                 if int(parts[0]) != (
                     int(self.mainMenu.agents.get_agent_nonce_db(sessionID)) + 1
                 ):
-                    message = "[!] Invalid nonce returned from {}".format(sessionID)
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(signal, sender="agents/{}".format(sessionID))
-                    # remove the agent from the cache/database
+                    message = f"Invalid nonce returned from {sessionID}"
+                    log.error(message)
                     self.mainMenu.agents.remove_agent_db(sessionID)
-                    return "ERROR: Invalid nonce returned from %s" % (sessionID)
+                    return f"ERROR: Invalid nonce returned from {sessionID}"
 
-                message = "[!] Nonce verified: agent {} posted valid sysinfo checkin format: {}".format(
-                    sessionID, message
-                )
-                signal = json.dumps({"print": False, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                message = f"Nonce verified: agent {sessionID} posted valid sysinfo checkin format: {message}"
+                log.debug(message)
 
                 listener = str(parts[1], "utf-8")
                 domainname = str(parts[2], "utf-8")
@@ -1296,18 +1197,11 @@ class Agents(object):
 
             except Exception as e:
                 message = (
-                    "[!] Exception in agents.handle_agent_staging() for {} : {}".format(
-                        sessionID, e
-                    )
+                    f"Exception in agents.handle_agent_staging() for {sessionID} : {e}"
                 )
-                signal = json.dumps({"print": True, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
-                # remove the agent from the cache/database
+                log.error(message, exc_info=True)
                 self.mainMenu.agents.remove_agent_db(sessionID)
-                return (
-                    "Error: Exception in agents.handle_agent_staging() for %s : %s"
-                    % (sessionID, e)
-                )
+                return f"Error: Exception in agents.handle_agent_staging() for {sessionID} : {e}"
 
             if domainname and domainname.strip() != "":
                 username = "%s\\%s" % (domainname, username)
@@ -1346,11 +1240,8 @@ class Agents(object):
                 helpers.slackMessage(slack_webhook_url, slack_text)
 
             # signal everyone that this agent is now active
-            message = "[+] Initial agent {} from {} now active (Slack)".format(
-                sessionID, clientIP
-            )
-            signal = json.dumps({"print": True, "message": message})
-            # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+            message = f"Initial agent {sessionID} from {clientIP} now active (Slack)"
+            log.info(message)
 
             agent = self.mainMenu.agents.get_agent_for_socket(sessionID)
             hooks.run_hooks(
@@ -1359,8 +1250,7 @@ class Agents(object):
             )
 
             # save the initial sysinfo information in the agent log
-            output = messages.display_agent(agent, returnAsString=True)
-            output += "[+] Agent %s now active:\n" % (sessionID)
+            output = f"Agent {sessionID} now active"
             self.mainMenu.agents.save_agent_log(sessionID, output)
 
             # if a script autorun is set, set that as the agent's first tasking
@@ -1383,16 +1273,13 @@ class Agents(object):
                     if e == "endautorun":
                         pass
                     else:
-                        print(helpers.color("[!] End of Autorun Queue"))
+                        log.info("End of Autorun Queue")
 
             return "STAGE2: %s" % (sessionID)
 
         else:
-            message = "[!] Invalid staging request packet from {} at {} : {}".format(
-                sessionID, clientIP, meta
-            )
-            signal = json.dumps({"print": True, "message": message})
-            # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+            message = f"Invalid staging request packet from {sessionID} at {clientIP} : {meta}"
+            log.error(message)
 
     def handle_agent_data(
         self,
@@ -1409,11 +1296,10 @@ class Agents(object):
         Abstracted out sufficiently for any listener module to use.
         """
         if len(routingPacket) < 20:
-            message = "[!] handle_agent_data(): routingPacket wrong length: {}".format(
-                len(routingPacket)
+            message = (
+                f"handle_agent_data(): routingPacket wrong length: {len(routingPacket)}"
             )
-            signal = json.dumps({"print": False, "message": message})
-            # dispatcher.send(signal, sender="empire")
+            log.error(message)
             return None
 
         if isinstance(routingPacket, str):
@@ -1427,13 +1313,9 @@ class Agents(object):
         # process each routing packet
         for sessionID, (language, meta, additional, encData) in routingPacket.items():
             if meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
-                message = (
-                    "[*] handle_agent_data(): sessionID {} issued a {} request".format(
-                        sessionID, meta
-                    )
-                )
-                signal = json.dumps({"print": False, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                message = f"handle_agent_data(): sessionID {sessionID} issued a {meta} request"
+                log.debug(message)
+
                 dataToReturn.append(
                     (
                         language,
@@ -1451,21 +1333,15 @@ class Agents(object):
                 )
 
             elif sessionID not in self.agents:
-                message = "[!] handle_agent_data(): sessionID {} not present".format(
-                    sessionID
-                )
-                signal = json.dumps({"print": False, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
-                dataToReturn.append(
-                    ("", "ERROR: sessionID %s not in cache!" % (sessionID))
-                )
+                message = f"handle_agent_data(): sessionID {sessionID} not present"
+                log.warning(message)
+
+                dataToReturn.append(("", f"ERROR: sessionID {sessionID} not in cache!"))
 
             elif meta == "TASKING_REQUEST":
-                message = "[*] handle_agent_data(): sessionID {} issued a TASKING_REQUEST".format(
-                    sessionID
-                )
-                signal = json.dumps({"print": False, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                message = f"handle_agent_data(): sessionID {sessionID} issued a TASKING_REQUEST"
+                log.debug(message)
+
                 dataToReturn.append(
                     (
                         language,
@@ -1475,12 +1351,9 @@ class Agents(object):
 
             elif meta == "RESULT_POST":
                 message = (
-                    "[*] handle_agent_data(): sessionID {} issued a RESULT_POST".format(
-                        sessionID
-                    )
+                    f"handle_agent_data(): sessionID {sessionID} issued a RESULT_POST"
                 )
-                signal = json.dumps({"print": False, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                log.debug(message)
                 dataToReturn.append(
                     (
                         language,
@@ -1489,11 +1362,8 @@ class Agents(object):
                 )
 
             else:
-                message = "[!] handle_agent_data(): sessionID {} gave unhandled meta tag in routing packet: {}".format(
-                    sessionID, meta
-                )
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                message = f"handle_agent_data(): sessionID {sessionID} gave unhandled meta tag in routing packet: {meta}"
+                log.error(message)
         return dataToReturn
 
     def handle_agent_request(
@@ -1505,11 +1375,8 @@ class Agents(object):
         TODO: does this need self.lock?
         """
         if sessionID not in self.agents:
-            message = "[!] handle_agent_request(): sessionID {} not present".format(
-                sessionID
-            )
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="agents/{}".format(sessionID))
+            message = f"handle_agent_request(): sessionID {sessionID} not present"
+            log.error(message)
             return None
 
         # update the client's last seen time
@@ -1564,11 +1431,8 @@ class Agents(object):
         """
 
         if sessionID not in self.agents:
-            message = "[!] handle_agent_response(): sessionID {} not in cache".format(
-                sessionID
-            )
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="agents/{}".format(sessionID))
+            message = f"handle_agent_response(): sessionID {sessionID} not in cache"
+            log.error(message)
             return None
 
         # extract the agent's session key
@@ -1600,20 +1464,15 @@ class Agents(object):
                 results = True
             if results:
                 # signal that this agent returned results
-                message = "[*] Agent {} returned results.".format(sessionID)
-                signal = json.dumps({"print": False, "message": message})
-                # dispatcher.send(signal, sender="agents/{}".format(sessionID))
+                message = f"Agent {sessionID} returned results."
+                log.info(message)
 
             # return a 200/valid
             return "VALID"
 
         except Exception as e:
-            message = "[!] Error processing result packet from {} : {}".format(
-                sessionID, e
-            )
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="agents/{}".format(sessionID))
-
+            message = f"Error processing result packet from {sessionID} : {e}"
+            log.error(message, exc_info=True)
             return None
 
     def process_agent_packet(
@@ -1630,17 +1489,8 @@ class Agents(object):
             session_id = name_id
 
         # report the agent result in the reporting database
-        message = "[*] Agent {} got results".format(session_id)
-        signal = json.dumps(
-            {
-                "print": False,
-                "message": message,
-                "response_name": response_name,
-                "task_id": task_id,
-                "event_type": "result",
-            }
-        )
-        # dispatcher.send(signal, sender="agents/{}".format(session_id))
+        message = f"Agent {session_id} got results"
+        log.info(message)
 
         tasking = (
             db.query(models.Tasking)
@@ -1689,23 +1539,21 @@ class Agents(object):
 
         if response_name == "ERROR":
             # error code
-            message = "[!] Received error response from {}".format(session_id)
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="agents/{}".format(session_id))
+            message = f"Received error response from {session_id}"
+            log.error(message)
 
             if isinstance(data, bytes):
                 data = data.decode("UTF-8")
             # update the agent log
-            self.save_agent_log(session_id, "[!] Error response: " + data)
+            self.save_agent_log(session_id, "Error response: " + data)
 
         elif response_name == "TASK_SYSINFO":
             # sys info response -> update the host info
             data = data.decode("utf-8")
             parts = data.split("|")
             if len(parts) < 12:
-                message = "[!] Invalid sysinfo response from {}".format(session_id)
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(session_id))
+                message = f"Invalid sysinfo response from {session_id}"
+                log.error(message)
             else:
                 # extract appropriate system information
                 listener = parts[1]
@@ -1766,9 +1614,8 @@ class Agents(object):
         elif response_name == "TASK_EXIT":
             # exit command response
             # let everyone know this agent exited
-            message = "[!] Agent {} exiting".format(session_id)
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="agents/{}".format(session_id))
+            message = f"Agent {session_id} exiting"
+            log.error(message)
 
             # update the agent results and log
             self.save_agent_log(session_id, data)
@@ -1798,11 +1645,8 @@ class Agents(object):
 
             parts = data.split("|")
             if len(parts) != 4:
-                message = "[!] Received invalid file download response from {}".format(
-                    session_id
-                )
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="agents/{}".format(session_id))
+                message = f"Received invalid file download response from {session_id}"
+                log.error(message)
             else:
                 index, path, filesize, data = parts
                 # decode the file data and save it off as appropriate
@@ -1909,7 +1753,7 @@ class Agents(object):
             final_save_path = self.save_module_file(name, save_path, file_data)
 
             # update the agent log
-            msg = "[+] Output saved to .%s" % (final_save_path)
+            msg = "Output saved to .%s" % (final_save_path)
             self.save_agent_log(session_id, msg)
 
             # attach file to tasking
@@ -1928,13 +1772,8 @@ class Agents(object):
                 safePath = os.path.abspath(f"{self.mainMenu.directory['downloads']}")
                 savePath = f"{self.mainMenu.directory['downloads']}/{session_id}/keystrokes.txt"
                 if not os.path.abspath(savePath).startswith(safePath):
-                    message = (
-                        "[!] WARNING: agent {} attempted skywalker exploit!".format(
-                            self.sessionID
-                        )
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+                    message = f"agent {self.sessionID} attempted skywalker exploit!"
+                    log.warning(message)
                     return
 
                 with open(savePath, "a+") as f:
@@ -2063,23 +1902,17 @@ class Agents(object):
             self.update_agent_listener_db(session_id, listener_name)
             # update the agent log
             self.save_agent_log(session_id, data)
-            message = "[+] Updated comms for {} to {}".format(session_id, listener_name)
-            signal = json.dumps({"print": False, "message": message})
-            # dispatcher.send(signal, sender="agents/{}".format(session_id))
+            message = f"Updated comms for {session_id} to {listener_name}"
+            log.info(message)
 
         elif response_name == "TASK_UPDATE_LISTENERNAME":
             # The agent listener name variable has been updated agent side
             # update the agent log
             self.save_agent_log(session_id, data)
-            message = "[+] Listener for '{}' updated to '{}'".format(session_id, data)
-            signal = json.dumps({"print": False, "message": message})
-            # dispatcher.send(signal, sender="agents/{}".format(session_id))
+            message = f"Listener for '{session_id}' updated to '{data}'"
+            log.info(message)
 
         else:
-            print(
-                helpers.color(
-                    "[!] Unknown response %s from %s" % (response_name, session_id)
-                )
-            )
+            log.warning("Unknown response %s from %s" % (response_name, session_id))
 
         hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, tasking)

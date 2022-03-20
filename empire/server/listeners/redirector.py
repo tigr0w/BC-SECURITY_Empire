@@ -1,17 +1,16 @@
-from __future__ import print_function
-
 import base64
 import copy
+import logging
 import os
 import random
 from builtins import object, str
 from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util
-from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
@@ -58,32 +57,20 @@ class Listener(object):
         self.mainMenu = mainMenu
         self.threads = {}  # used to keep track of any threaded instances of this server
 
-        # optional/specific for this module
-
-        # set the default staging key to the controller db default
-        # self.options['StagingKey']['Value'] = str(helpers.get_config('staging_key')[0])
+        self.instance_log = log
 
     def default_response(self):
         """
         If there's a default response expected from the server that the client needs to ignore,
         (i.e. a default HTTP page), put the generation here.
         """
-        print(
-            helpers.color("[!] default_response() not implemented for pivot listeners")
-        )
+        self.instance_log.info("default_response() not implemented for pivot listeners")
         return b""
 
     def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
-
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                return handle_validate_message(f'[!] Option "{key}" is required.')
-
         return True, None
 
     def generate_launcher(
@@ -106,11 +93,7 @@ class Listener(object):
         bypasses = [] if bypasses is None else bypasses
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): no language specified!"
-                )
-            )
+            log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
         # Previously, we had to do a lookup for the listener and check through threads on the instance.
@@ -283,8 +266,8 @@ class Listener(object):
                         launcherBase += 'if re.search("Little Snitch", out):\n'
                         launcherBase += "   sys.exit()\n"
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
-                    print(helpers.color(p, color="red"))
+                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                    log.error(p, exc_info=True)
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
@@ -419,24 +402,17 @@ class Listener(object):
 
                 compiler = self.mainMenu.loadedPlugins.get("csharpserver")
                 if not compiler.status == "ON":
-                    print(helpers.color("[!] csharpserver plugin not running"))
+                    self.instance_log.error(
+                        f"{listenerName} csharpserver plugin not running"
+                    )
                 else:
                     file_name = compiler.do_send_stager(stager_yaml, "Sharpire")
                     return file_name
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -452,11 +428,7 @@ class Listener(object):
         implemented to return the stage1 key-negotiation stager code.
         """
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_stager(): no language specified!")
             return None
 
         profile = listenerOptions["DefaultProfile"]["Value"]
@@ -566,10 +538,8 @@ class Listener(object):
                 return stager
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_agent(
@@ -585,11 +555,7 @@ class Listener(object):
         implemented to return the actual staged agent code.
         """
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_agent(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_agent(): no language specified!")
             return None
 
         language = language.lower()
@@ -686,10 +652,8 @@ class Listener(object):
             code = ""
             return code
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_comms(self, listenerOptions, language=None):
@@ -894,17 +858,11 @@ def send_message(packets=None):
                 return socks_import + updateServers + sendMessage
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                    )
+                log.error(
+                    "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_comms(): no language specified!")
 
     def start(self, name=""):
         """
@@ -920,11 +878,8 @@ def send_message(packets=None):
             # check if a listener for the agent already exists
 
             if self.mainMenu.listeners.is_listener_valid(tempOptions["Name"]["Value"]):
-                print(
-                    helpers.color(
-                        "[!] Pivot listener already exists on agent %s"
-                        % (tempOptions["Name"]["Value"])
-                    )
+                log.error(
+                    f"{listenerName}: Pivot listener already exists on agent {tempOptions['Name']['Value']}"
                 )
                 return False
 
@@ -1062,23 +1017,17 @@ def send_message(packets=None):
                     script = """
                     """
 
-                    print(helpers.color("[!] Python pivot listener not implemented"))
+                    log.error("Python pivot listener not implemented")
                     return False
 
                 else:
-                    print(
-                        helpers.color(
-                            "[!] Unable to determine the language for the agent"
-                        )
-                    )
+                    log.error("Unable to determine the language for the agent")
 
             else:
                 if not isElevated:
-                    print(
-                        helpers.color("[!] Agent must be elevated to run a redirector")
-                    )
+                    log.error("Agent must be elevated to run a redirector")
                 else:
-                    print(helpers.color("[!] Agent is not present in the cache"))
+                    log.error("Agent is not present in the cache")
                 return False
 
     def shutdown(self, name=""):
@@ -1087,7 +1036,8 @@ def send_message(packets=None):
         named listener here.
         """
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
+            self.instance_log.info(f"{name}: shutting down...")
+            log.info(f"{name}: shutting down...")
 
             sessionID = self.mainMenu.agents.get_agent_id_db(name)
             isElevated = self.mainMenu.agents.is_agent_elevated(sessionID)
@@ -1175,14 +1125,9 @@ def send_message(packets=None):
                     self.mainMenu.agents.save_agent_log(sessionID, msg)
 
                 elif self.mainMenu.agents.get_language_db(sessionID).startswith("py"):
-
-                    print(helpers.color("[!] Shutdown not implemented for python"))
+                    log.error("Shutdown not implemented for python")
 
             else:
-                print(
-                    helpers.color(
-                        "[!] Agent is not present in the cache or not elevated"
-                    )
-                )
+                log.error("Agent is not present in the cache or not elevated")
 
         pass

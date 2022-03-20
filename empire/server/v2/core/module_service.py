@@ -1,5 +1,6 @@
 import fnmatch
 import importlib.util
+import logging
 import os
 import pathlib
 from typing import Dict, List, Optional, Tuple
@@ -19,6 +20,8 @@ from empire.server.v2.api.module.module_dto import (
     ModuleBulkUpdateRequest,
     ModuleUpdateRequest,
 )
+
+log = logging.getLogger(__name__)
 
 
 class ModuleService(object):
@@ -104,11 +107,7 @@ class ModuleService(object):
         if not module_data.isascii():
             # This previously returned 'None, 'module source contains non-ascii characters'
             # Was changed in 4.3 to print a warning.
-            print(
-                helpers.color(
-                    "[!] Warning: module source contains non-ascii characters"
-                )
-            )
+            log.warning(f"Module source for {module_id} contains non-ascii characters")
 
         if module.language == LanguageEnum.powershell:
             module_data = helpers.strip_powershell_comments(module_data)
@@ -372,10 +371,8 @@ class ModuleService(object):
             return f"{script_file}|{param_string}", None
 
         except Exception as e:
-            print(e)
-            msg = f"[!] Compile Error"
-            print(helpers.color(msg))
-            return None, msg
+            log.error(f"dotnet compile error: {e}")
+            return None, "dotnet compile error"
 
     def _load_modules(self, db: Session):
         """
@@ -383,7 +380,7 @@ class ModuleService(object):
         """
         root_path = f"{db.query(models.Config).first().install_path}/modules/"
 
-        print(helpers.color(f"[*] v2: Loading modules from: {root_path}"))
+        log.info(f"v2: Loading modules from: {root_path}")
 
         for root, dirs, files in os.walk(root_path):
             for filename in files:
@@ -418,7 +415,7 @@ class ModuleService(object):
                             }
                             self._load_module(db, yaml_module, root_path, file_path)
                 except Exception as e:
-                    print(e)
+                    log.warning(e)
 
     def _load_module(self, db: Session, yaml_module, root_path, file_path: str):
         # extract just the module name from the full path

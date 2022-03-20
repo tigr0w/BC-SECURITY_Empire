@@ -220,13 +220,6 @@ class Listener(object):
                     )
                 )
 
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): invalid listener name specification!"
-                )
-            )
-
     def generate_stager(
         self,
         listenerOptions,

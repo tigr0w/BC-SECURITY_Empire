@@ -19,10 +19,11 @@ from flask import Flask, Response, make_response, render_template, request
 from empire.server.common import encryption, helpers, malleable, packets, templating
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
-from empire.server.utils import data_util
+from empire.server.utils import data_util, log_util
 from empire.server.utils.module_util import handle_validate_message
 
-# from pydispatch import dispatcher
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
@@ -130,6 +131,8 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
+        self.instance_log = log
+
     def default_response(self):
         """
         Returns an IIS 7.5 404 not found page.
@@ -140,12 +143,6 @@ class Listener(object):
         """
         Validate all options for this listener.
         """
-
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                return handle_validate_message(f'[!] Option "{key}" is required.')
 
         profile_name = self.options["Profile"]["Value"]
         profile_data = (
@@ -245,11 +242,7 @@ class Listener(object):
         """
         bypasses = [] if bypasses is None else bypasses
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): no language specified!"
-                )
-            )
+            log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
         # Previously, we had to do a lookup for the listener and check through threads on the instance.
@@ -592,18 +585,9 @@ class Listener(object):
                     return launcherBase
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
-                    )
+                log.error(
+                    "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -619,10 +603,8 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_malleable generate_stager(): no language specified!"
-                )
+            log.error(
+                "listeners/http_malleable generate_stager(): no language specified!"
             )
             return None
 
@@ -743,10 +725,8 @@ class Listener(object):
                 return stager
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_malleable generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
         return None
@@ -764,10 +744,8 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_malleable generate_agent(): no language specified!"
-                )
+            log.error(
+                "listeners/http_malleable generate_agent(): no language specified!"
             )
             return None
 
@@ -872,10 +850,8 @@ class Listener(object):
 
             return code
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_malleable generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http_malleable generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_comms(self, listenerOptions, language=None):
@@ -1439,17 +1415,11 @@ class Listener(object):
                 return updateServers + sendMessage
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/template generate_comms(): no language specified!")
 
     def start_server(self, listenerOptions):
         """
@@ -1501,17 +1471,8 @@ class Listener(object):
 
             # log request
             listenerName = self.options["Name"]["Value"]
-            message = "[*] {} request for {}/{} from {} ({} bytes)".format(
-                request.method.upper(),
-                request.host,
-                request_uri,
-                clientIP,
-                len(request.data),
-            )
-            signal = json.dumps({"print": False, "message": message})
-            # dispatcher.send(
-            #     signal, sender="listeners/http_malleable/{}".format(listenerName)
-            # )
+            message = f"{listenerName}: {request.method.upper()} request for {request.host}/{request_uri} from {clientIP} ({len(request.data)} bytes)"
+            self.instance_log.info(message)
 
             try:
                 # build malleable request from flask request
@@ -1576,18 +1537,9 @@ class Listener(object):
                                         # step 2 of negotiation -> server returns stager (stage 1)
 
                                         # log event
-                                        message = "[*] Sending {} stager (stage 1) to {}".format(
-                                            language, clientIP
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        # dispatcher.send(
-                                        #     signal,
-                                        #     sender="listeners/http_malleable/{}".format(
-                                        #         listenerName
-                                        #     ),
-                                        # )
+                                        message = f"{listenerName} Sending {language} stager (stage 1) to {clientIP}"
+                                        self.instance_log.info(message)
+                                        log.info(message)
 
                                         # build stager (stage 1)
                                         stager = self.generate_stager(
@@ -1622,18 +1574,9 @@ class Listener(object):
                                         ]["sessionKey"]
 
                                         # log event
-                                        message = "[*] Sending agent (stage 2) to {} at {}".format(
-                                            sessionID, clientIP
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        # dispatcher.send(
-                                        #     signal,
-                                        #     sender="listeners/http_malleable/{}".format(
-                                        #         listenerName
-                                        #     ),
-                                        # )
+                                        message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
+                                        self.instance_log.info(message)
+                                        log.info(message)
 
                                         # TODO: handle this with malleable??
                                         tempListenerOptions = None
@@ -1702,43 +1645,22 @@ class Listener(object):
                                         b"error"
                                     ) or results[:10].lower().startswith(b"exception"):
                                         # agent returned an error
-                                        message = "[!] Error returned for results by {} : {}".format(
-                                            clientIP, results
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        # dispatcher.send(
-                                        #     signal,
-                                        #     sender="listeners/http_malleable/{}".format(
-                                        #         listenerName
-                                        #     ),
-                                        # )
+                                        message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
+                                        self.instance_log.error(message)
+                                        log.error(message)
 
                                         return Response(self.default_response(), 404)
 
                                     elif results.startswith(b"ERROR:"):
                                         # error parsing agent data
-                                        message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(
-                                            request_uri, clientIP, results
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        # dispatcher.send(
-                                        #     signal,
-                                        #     sender="listeners/http_malleable/{}".format(
-                                        #         listenerName
-                                        #     ),
-                                        # )
+                                        message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
+                                        self.instance_log.error(message)
+                                        log.error(message)
 
                                         if b"not in cache" in results:
                                             # signal the client to restage
-                                            print(
-                                                helpers.color(
-                                                    "[*] Orphaned agent from %s, signaling restaging"
-                                                    % (clientIP)
-                                                )
+                                            log.info(
+                                                f"{listenerName} Orphaned agent from {clientIP}, signaling restaging"
                                             )
                                             return make_response("", 401)
 
@@ -1746,20 +1668,8 @@ class Listener(object):
 
                                     elif results == b"VALID":
                                         # agent posted results
-                                        message = (
-                                            "[*] Valid results returned by {}".format(
-                                                clientIP
-                                            )
-                                        )
-                                        signal = json.dumps(
-                                            {"print": False, "message": message}
-                                        )
-                                        # dispatcher.send(
-                                        #     signal,
-                                        #     sender="listeners/http/{}".format(
-                                        #         listenerName
-                                        #     ),
-                                        # )
+                                        message = f"{listenerName} Valid results returned by {clientIP}"
+                                        self.instance_log.info(message)
 
                                         malleableResponse = (
                                             implementation.construct_server("")
@@ -1774,21 +1684,9 @@ class Listener(object):
                                         if request.method == b"POST":
                                             # step 4 of negotiation -> server returns RSA(nonce+AESsession))
 
-                                            # log event
-                                            message = (
-                                                "[*] Sending session key to {}".format(
-                                                    clientIP
-                                                )
-                                            )
-                                            signal = json.dumps(
-                                                {"print": True, "message": message}
-                                            )
-                                            # dispatcher.send(
-                                            #     signal,
-                                            #     sender="listeners/http_malleable/{}".format(
-                                            #         listenerName
-                                            #     ),
-                                            # )
+                                            message = f"{listenerName}: Sending session key to {clientIP}"
+                                            self.instance_log.info(message)
+                                            log.info(message)
 
                                             # note: stage 1 negotiation comms are hard coded, so we can't use malleable
                                             return Response(
@@ -1799,18 +1697,8 @@ class Listener(object):
 
                                         else:
                                             # agent requested taskings
-                                            message = "[*] Agent from {} retrieved taskings".format(
-                                                clientIP
-                                            )
-                                            signal = json.dumps(
-                                                {"print": False, "message": message}
-                                            )
-                                            # dispatcher.send(
-                                            #     signal,
-                                            #     sender="listeners/http_malleable/{}".format(
-                                            #         listenerName
-                                            #     ),
-                                            # )
+                                            message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                                            self.instance_log.info(message)
 
                                             # build malleable response with results
                                             malleableResponse = (
@@ -1830,20 +1718,8 @@ class Listener(object):
 
                                 else:
                                     # no tasking for agent
-                                    message = (
-                                        "[*] Agent from {} retrieved taskings".format(
-                                            clientIP
-                                        )
-                                    )
-                                    signal = json.dumps(
-                                        {"print": False, "message": message}
-                                    )
-                                    # dispatcher.send(
-                                    #     signal,
-                                    #     sender="listeners/http_malleable/{}".format(
-                                    #         listenerName
-                                    #     ),
-                                    # )
+                                    message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                                    self.instance_log.info(message)
 
                                     # build malleable response with no results
                                     malleableResponse = implementation.construct_server(
@@ -1856,57 +1732,31 @@ class Listener(object):
                                     )
                         else:
                             # log error parsing routing packet
-                            message = (
-                                "[!] Error parsing routing packet from {}: {}.".format(
-                                    clientIP, str(agentInfo)
-                                )
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            # dispatcher.send(
-                            #     signal,
-                            #     sender="listeners/http_malleable/{}".format(
-                            #         listenerName
-                            #     ),
-                            # )
+                            message = f"{listenerName} Error parsing routing packet from {clientIP}: {str(agentInfo)}."
+                            self.instance_log.error(message)
+                            log.error(message)
 
                     # log invalid request
-                    message = "[!] /{} requested by {} with no routing packet.".format(
-                        request_uri, clientIP
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(
-                    #     signal,
-                    #     sender="listeners/http_malleable/{}".format(listenerName),
-                    # )
+                    message = f"/{request_uri} requested by {clientIP} with no routing packet."
+                    self.instance_log.error(message)
 
                 else:
                     # log invalid uri
-                    message = "[!] unknown uri /{} requested by {}.".format(
-                        request_uri, clientIP
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    # dispatcher.send(
-                    #     signal,
-                    #     sender="listeners/http_malleable/{}".format(listenerName),
-                    # )
+                    message = f"{listenerName}: unknown uri /{request_uri} requested by {clientIP}."
+                    self.instance_log.warning(message)
 
             except malleable.MalleableError as e:
                 # probably an issue with the malleable library, please report it :)
-                message = "[!] Malleable had trouble handling a request for /{} by {}: {}.".format(
-                    request_uri, clientIP, str(e)
-                )
-                signal = json.dumps({"print": True, "message": message})
+                message = f"{listenerName}: Malleable had trouble handling a request for /{request_uri} by {clientIP}: {str(e)}."
+                self.instance_log.error(message, exc_info=True)
+                log.error(message, exc_info=True)
 
             return Response(self.default_response(), 200)
 
         try:
             if host.startswith("https"):
                 if certPath.strip() == "" or not os.path.isdir(certPath):
-                    print(
-                        helpers.color(
-                            "[!] Unable to find certpath %s, using default." % certPath
-                        )
-                    )
+                    log.info(f"Unable to find certpath {certPath}, using default.")
                     certPath = "setup"
                 certPath = os.path.abspath(certPath)
                 pyversion = sys.version_info
@@ -1928,25 +1778,19 @@ class Listener(object):
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
         except Exception as e:
-            print(
-                helpers.color(
-                    "[!] Listener startup on port %s failed - %s: %s"
-                    % (port, e.__class__.__name__, str(e))
-                )
-            )
-            message = "[!] Listener startup on port {} failed - {}: {}".format(
-                port, e.__class__.__name__, str(e)
-            )
-            signal = json.dumps({"print": True, "message": message})
-            # dispatcher.send(
-            #     signal, sender="listeners/http_malleable/{}".format(listenerName)
-            # )
+            message = f"Listener startup on port {port} failed - {e.__class__.__name__}: {str(e)}"
+            self.instance_log.error(message, exc_info=True)
+            log.error(message, exc_info=True)
 
     def start(self, name=""):
         """
         Start a threaded instance of self.start_server() and store it in
         the self.threads dictionary keyed by the listener name.
         """
+        self.instance_log = log_util.get_listener_logger(
+            LOG_NAME_PREFIX, self.options["Name"]["Value"]
+        )
+
         listenerOptions = self.options
         if name and name != "":
             self.threads[name] = helpers.KThread(
@@ -1971,17 +1815,14 @@ class Listener(object):
         Terminates the server thread stored in the self.threads dictionary,
         keyed by the listener name.
         """
-
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
-            self.threads[name].kill()
+            to_kill = name
         else:
-            print(
-                helpers.color(
-                    "[!] Killing listener '%s'" % (self.options["Name"]["Value"])
-                )
-            )
-            self.threads[self.options["Name"]["Value"]].kill()
+            to_kill = self.options["Name"]["Value"]
+
+        self.instance_log.info(f"{to_kill}: shutting down...")
+        log.info(f"{to_kill}: shutting down...")
+        self.threads[to_kill].kill()
 
     def generate_cookie(self):
         """

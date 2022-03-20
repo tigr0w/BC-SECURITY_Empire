@@ -1,9 +1,10 @@
+import logging
 import sys
 from typing import Dict
 
 import yaml
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class EmpireConfig(object):
@@ -11,20 +12,21 @@ class EmpireConfig(object):
         self.yaml: Dict = {}
         if "--config" in sys.argv:
             location = sys.argv[sys.argv.index("--config") + 1]
-            print(f"Loading config from {location}")
+            log.info(f"Loading config from {location}")
             self.set_yaml(location)
         if len(self.yaml.items()) == 0:
-            print(helpers.color("[*] Loading default config"))
-            self.set_yaml("./empire/server/config.yaml")
+            default_location = "./empire/server/config.yaml"
+            log.info(f"Loading default config from {default_location}")
+            self.set_yaml(default_location)
 
     def set_yaml(self, location: str):
         try:
             with open(location, "r") as stream:
                 self.yaml = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
-            print(exc)
+            log.error(exc)
         except FileNotFoundError as exc:
-            print(exc)
+            log.error(exc)
 
 
 empire_config = EmpireConfig()

@@ -28,10 +28,21 @@ client_parser.add_argument(
 # Server Args
 general_group = server_parser.add_argument_group("General Options")
 general_group.add_argument(
+    "-l",
+    "--log-level",
+    dest="log_level",
+    type=str.upper,
+    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    help="Set the logging level",
+)
+general_group.add_argument(
+    "-d",
     "--debug",
-    nargs="?",
-    const="1",
-    help="Debug level for output (default of 1, 2 for msg display).",
+    help="Set the logging level to DEBUG",
+    action="store_const",
+    dest="log_level",
+    const="DEBUG",
+    default=None,
 )
 general_group.add_argument(
     "--reset", action="store_true", help="Resets Empire's database to defaults."

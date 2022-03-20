@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -6,12 +7,26 @@ import pytest
 from fastapi import FastAPI
 from starlette.testclient import TestClient
 
+TEST_CONFIG_DIR = "empire/test/test_config.yaml"
+
 
 @pytest.fixture(scope="session")
 def client():
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
+    shutil.rmtree("empire/test/downloads", ignore_errors=True)
 
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
+    sys.argv = ["", "server", "--config", TEST_CONFIG_DIR]
+
+    from empire import arguments
+
+    args = arguments.parent_parser.parse_args()
+
+    import empire.server.server
+    from empire.server.common.empire import MainMenu
+
+    # todo vr could this weirdness be avoided if we make main menu an injected dependency for fastapi?
+    empire.server.server.main = MainMenu(args)
+
     from empire.server.v2.api.agent import agentfilev2, agentv2, taskv2
     from empire.server.v2.api.bypass import bypassv2
     from empire.server.v2.api.credential import credentialv2
@@ -54,6 +69,13 @@ def client():
 
     main.shutdown()
     Base.metadata.drop_all(engine)
+
+
+@pytest.fixture(scope="session")
+def empire_config():
+    from empire.server.common.config import empire_config
+
+    return empire_config
 
 
 @pytest.fixture(scope="session")

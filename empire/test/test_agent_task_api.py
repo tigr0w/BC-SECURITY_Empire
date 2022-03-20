@@ -22,13 +22,14 @@ def listener(client, admin_auth_header):
 
 @pytest.fixture(scope="module", autouse=True)
 def agent(db):
+    name = f'agent_{__name__.split(".")[-1]}'
     from empire.server.server import main
 
-    agent = db.query(models.Agent).filter(models.Agent.session_id == "TEST123").first()
+    agent = db.query(models.Agent).filter(models.Agent.session_id == name).first()
     if not agent:
         agent = models.Agent(
-            name="TEST123",
-            session_id="TEST123",
+            name=name,
+            session_id=name,
             delay=1,
             jitter=0.1,
             external_ip="1.1.1.1",
@@ -49,10 +50,13 @@ def agent(db):
             archived=False,
         )
         db.add(agent)
-        db.flush()
-        db.commit()
+    else:
+        agent.archived = False
 
-    main.agents.agents["TEST123"] = {
+    db.flush()
+    db.commit()
+
+    main.agents.agents[name] = {
         "sessionKey": agent.session_key,
         "functions": agent.functions,
     }
@@ -703,17 +707,6 @@ def test_create_task_exit_agent_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
-def test_create_task_exit(client, admin_auth_header, agent):
-    response = client.post(
-        f"/api/v2beta/agents/{agent.session_id}/tasks/exit",
-        headers=admin_auth_header,
-        json={},
-    )
-
-    assert response.status_code == 201
-    assert response.json()["id"] > 0
-
-
 def test_get_tasks_for_agent_agent_not_found(client, admin_auth_header):
     response = client.get("/api/v2beta/agents/abc/tasks", headers=admin_auth_header)
     assert response.status_code == 404
@@ -784,3 +777,33 @@ def test_delete_task(client, admin_auth_header, agent):
     )
 
     assert response.status_code == 204
+
+
+def test_last_task(client, admin_auth_header, agent, empire_config):
+    response = client.post(
+        f"/api/v2beta/agents/{agent.session_id}/tasks/shell",
+        headers=admin_auth_header,
+        json={"command": 'echo "HELLO WORLD"'},
+    )
+
+    assert response.status_code == 201
+
+    location = empire_config.yaml["debug"]["last_task"]["file"]
+    with open(location, "r") as f:
+        last_task = f.read()
+
+    assert 'echo "HELLO WORLD"' in last_task
+
+
+def test_create_task_exit(client, admin_auth_header, agent):
+    """
+    This is at the end so it doesn't interfere with other tests
+    """
+    response = client.post(
+        f"/api/v2beta/agents/{agent.session_id}/tasks/exit",
+        headers=admin_auth_header,
+        json={},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["id"] > 0

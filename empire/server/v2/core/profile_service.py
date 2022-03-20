@@ -1,13 +1,15 @@
 import fnmatch
 import json
+import logging
 import os
 
-# from pydispatch import dispatcher
 from sqlalchemy.orm import Session
 
 from empire.server.common import helpers
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
+
+log = logging.getLogger(__name__)
 
 
 class ProfileService(object):
@@ -25,9 +27,7 @@ class ProfileService(object):
         malleable_path = (
             f"{db.query(models.Config).first().install_path}/data/profiles/"
         )
-        print(
-            helpers.color(f"[*] v2: Loading malleable profiles from: {malleable_path}")
-        )
+        log.info(f"v2: Loading malleable profiles from: {malleable_path}")
 
         malleable_directories = os.listdir(malleable_path)
 
@@ -56,11 +56,7 @@ class ProfileService(object):
                         .first()
                     )
                     if not profile:
-                        message = "[*] Loading malleable profile {}".format(
-                            profile_name
-                        )
-                        signal = json.dumps({"print": False, "message": message})
-                        # dispatcher.send(signal, sender="empire")
+                        log.debug(f"Adding malleable profile: {profile_name}")
 
                         with open(file_path, "r") as stream:
                             profile_data = stream.read()

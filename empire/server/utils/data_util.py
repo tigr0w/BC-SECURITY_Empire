@@ -1,9 +1,11 @@
+import logging
 import os
 import subprocess
 
-from empire.server.common import helpers
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
+
+log = logging.getLogger(__name__)
 
 
 def keyword_obfuscation(data):
@@ -60,9 +62,7 @@ def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=Fal
         with open(moduleSource, "r") as f:
             moduleCode = f.read()
     except:
-        print(
-            helpers.color("[!] Could not read module source path at: " + moduleSource)
-        )
+        log.error(f"Could not read module source path at: {moduleSource}")
         return ""
 
     # Get the random function name generated at install and patch the stager with the proper function name
@@ -79,11 +79,8 @@ def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=Fal
         with open(obfuscatedSource, "w") as f:
             f.write(obfuscatedCode)
     except:
-        print(
-            helpers.color(
-                "[!] Could not write obfuscated module source path at: "
-                + obfuscatedSource
-            )
+        log.error(
+            f"Could not write obfuscated module source path at: {obfuscatedSource}"
         )
         return ""
 
@@ -93,10 +90,8 @@ def obfuscate(installPath, psScript, obfuscationCommand):
     Obfuscate PowerShell scripts using Invoke-Obfuscation
     """
     if not is_powershell_installed():
-        print(
-            helpers.color(
-                "[!] PowerShell is not installed and is required to use obfuscation, please install it first."
-            )
+        log.error(
+            "PowerShell is not installed and is required to use obfuscation, please install it first."
         )
         return ""
     # When obfuscating large scripts, command line length is too long. Need to save to temp file
@@ -121,7 +116,7 @@ def obfuscate(installPath, psScript, obfuscationCommand):
 
         return ps_script
     except:
-        print(helpers.color("[!] Could not write obfuscated module"))
+        log.error("Could not write obfuscated module")
         return ""
 
 

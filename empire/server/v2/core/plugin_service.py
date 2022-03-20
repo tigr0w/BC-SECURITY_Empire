@@ -1,5 +1,6 @@
 import fnmatch
 import importlib
+import logging
 import os
 import pkgutil
 from importlib.machinery import SourceFileLoader
@@ -10,6 +11,8 @@ from empire.server.common import helpers
 from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
+
+log = logging.getLogger(__name__)
 
 
 class PluginService(object):
@@ -33,16 +36,16 @@ class PluginService(object):
                     use_plugin.options[option]["Value"] = value
                 results = use_plugin.execute("")
                 if results is False:
-                    print(helpers.color(f"[!] Plugin failed to run: {plugin}"))
+                    log.error(f"Plugin failed to run: {plugin}")
                 else:
-                    print(helpers.color(f"[+] Plugin {plugin} ran successfully!"))
+                    log.info(f"Plugin {plugin} ran successfully!")
 
     def startup_plugins(self, db: Session):
         """
         Load plugins at the start of Empire
         """
         plugin_path = db.query(models.Config).first().install_path + "/plugins"
-        print(helpers.color("[*] Searching for plugins at {}".format(plugin_path)))
+        log.info(f"Searching for plugins at {plugin_path}")
 
         # Import old v1 plugins (remove in 5.0)
         plugin_names = os.listdir(plugin_path)

@@ -1,7 +1,8 @@
 import asyncio
+import logging
 from typing import Callable, Dict
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class Hooks(object):
@@ -101,7 +102,7 @@ class Hooks(object):
                 else:
                     hook(*args)
             except Exception as e:
-                print(helpers.color(f"[!] Hook {hook} failed: {e}"))
+                log.error(f"Hook {hook} failed: {e}", exc_info=True)
 
     def run_filters(self, event: str, *args):
         """
@@ -116,7 +117,7 @@ class Hooks(object):
             try:
                 args = filter(*args)
             except Exception as e:
-                print(helpers.color(f"[!] Filter {filter} failed: {e}"))
+                log.error(f"Filter {filter} failed: {e}", exc_info=True)
         return args
 
 

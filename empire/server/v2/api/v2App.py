@@ -123,6 +123,7 @@ def initialize():
         v2App,
         host="0.0.0.0",
         port=1337,
+        log_config=None,
         # ssl_keyfile="%s/empire-priv.key" % cert_path,
         # ssl_certfile="%s/empire-chain.pem" % cert_path,
         # log_level="info",

@@ -1,13 +1,15 @@
 import fnmatch
+import logging
 import os
 
 import yaml
 from sqlalchemy.orm import Session
 
-from empire.server.common import helpers
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.utils.data_util import ps_convert_to_oneliner
+
+log = logging.getLogger(__name__)
 
 
 class BypassService(object):
@@ -19,7 +21,7 @@ class BypassService(object):
 
     def _load_bypasses(self, db):
         root_path = f"{db.query(models.Config).first().install_path}/bypasses/"
-        print(helpers.color(f"[*] v2: Loading bypasses from: {root_path}"))
+        log.info(f"v2: Loading bypasses from: {root_path}")
 
         for root, dirs, files in os.walk(root_path):
             for filename in files:
@@ -55,7 +57,7 @@ class BypassService(object):
                             )
                             db.add(my_model)
                 except Exception as e:
-                    print(e)
+                    log.error(e)
 
     @staticmethod
     def get_all(db: Session):

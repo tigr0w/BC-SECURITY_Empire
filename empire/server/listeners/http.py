@@ -1,8 +1,5 @@
-from __future__ import print_function
-
 import base64
 import copy
-import json
 import logging
 import os
 import random
@@ -14,16 +11,16 @@ from builtins import str
 from typing import List, Optional, Tuple
 
 from flask import Flask, make_response, render_template, request, send_from_directory
-
-# from pydispatch import dispatcher
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets, templating
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
-from empire.server.utils import data_util
+from empire.server.utils import data_util, log_util
 from empire.server.utils.module_util import handle_validate_message
-from empire.server.v2.core.listener_service import ListenerService
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
@@ -170,6 +167,8 @@ class Listener(object):
         if self.session_cookie == "":
             self.options["Cookie"]["Value"] = self.generate_cookie()
 
+        self.instance_log = log
+
     def default_response(self):
         """
         Returns an IIS 7.5 404 not found page.
@@ -185,13 +184,6 @@ class Listener(object):
             a.strip("/")
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
-
-        # todo when we remove v1, we can remove this check, since its handled in the listener service.
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                return handle_validate_message(f'[!] Option "{key}" is required.')
 
         # If we've selected an HTTPS listener without specifying CertPath, let us know.
         if (
@@ -223,10 +215,8 @@ class Listener(object):
         """
         bypasses = [] if bypasses is None else bypasses
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_launcher(): no language specified!"
-                )
+            log.error(
+                f"{listenerName}: listeners/http generate_launcher(): no language specified!"
             )
             return None
 
@@ -403,8 +393,8 @@ class Listener(object):
                         )
                         launcherBase += "   sys.exit()\n"
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
-                    print(helpers.color(p, color="red"))
+                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                    log.error(p)
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
@@ -549,24 +539,17 @@ class Listener(object):
 
                 compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
                 if not compiler.status == "ON":
-                    print(helpers.color("[!] csharpserver plugin not running"))
+                    self.instance_log.error(
+                        f"{listenerName} csharpserver plugin not running"
+                    )
                 else:
                     file_name = compiler.do_send_stager(stager_yaml, "Sharpire")
                     return file_name
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
-                    )
+                self.instance_log.error(
+                    f"{listenerName}: listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -582,11 +565,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_stager(): no language specified!")
             return None
 
         profile = listenerOptions["DefaultProfile"]["Value"]
@@ -707,10 +686,8 @@ class Listener(object):
                 return stager
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_agent(
@@ -726,11 +703,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_agent(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_agent(): no language specified!")
             return None
 
         language = language.lower()
@@ -830,10 +803,8 @@ class Listener(object):
             code = ""
             return code
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_agent(): invalid language specification, only 'powershell', 'python', & 'csharp' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_agent(): invalid language specification, only 'powershell', 'python', & 'csharp' are currently supported for this module."
             )
 
     def generate_comms(self, listenerOptions, language=None):
@@ -1046,29 +1017,28 @@ def send_message(packets=None):
                 return socks_import + updateServers + sendMessage
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                    )
+                log.error(
+                    "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_comms(): no language specified!")
 
     def start_server(self, listenerOptions):
         """
         Threaded function that actually starts up the Flask server.
         """
+        # TODO VR Since name is editable, we should probably use the listener's id here.
+        #  But its not available until we do some refactoring. For now, we'll just use the name.
+        self.instance_log = log_util.get_listener_logger(
+            LOG_NAME_PREFIX, self.options["Name"]["Value"]
+        )
 
         # make a copy of the currently set listener options for later stager/agent generation
         listenerOptions = copy.deepcopy(listenerOptions)
 
         # suppress the normal Flask output
-        log = logging.getLogger("werkzeug")
-        log.setLevel(logging.ERROR)
+        werkzeug_log = logging.getLogger("werkzeug")
+        werkzeug_log.setLevel(logging.ERROR)
 
         bindIP = listenerOptions["BindIP"]["Value"]
         host = listenerOptions["Host"]["Value"]
@@ -1118,12 +1088,10 @@ def send_message(packets=None):
             Before every request, check if the IP address is allowed.
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
+                # todo vr still an open question of what should go to the root logger vs. the listener's logger vs both
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] {} on the blacklist/not on the whitelist requested resource".format(
-                    request.remote_addr
-                )
-                signal = json.dumps({"print": True, "message": message})
-                # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                message = f"{listenerName}: {request.remote_addr} on the blacklist/not on the whitelist requested resource"
+                self.instance_log.info(message)
                 return make_response(self.default_response(), 404)
 
         @app.after_request
@@ -1181,11 +1149,8 @@ def send_message(packets=None):
             clientIP = request.remote_addr
 
             listenerName = self.options["Name"]["Value"]
-            message = "[*] GET request for {}/{} from {}".format(
-                request.host, request_uri, clientIP
-            )
-            signal = json.dumps({"print": False, "message": message})
-            # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            message = f"{listenerName}: GET request for {request.host}/{request_uri} from {clientIP}"
+            self.instance_log.info(message)
 
             routingPacket = None
             cookie = request.headers.get("Cookie")
@@ -1196,13 +1161,8 @@ def send_message(packets=None):
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
                     if self.session_cookie in cookie:
                         listenerName = self.options["Name"]["Value"]
-                        message = "[*] GET cookie value from {} : {}".format(
-                            clientIP, cookie
-                        )
-                        signal = json.dumps({"print": False, "message": message})
-                        # dispatcher.send(
-                        #     signal, sender="listeners/http/{}".format(listenerName)
-                        # )
+                        message = f"{listenerName}: GET cookie value from {clientIP} : {cookie}"
+                        self.instance_log.info(message)
                         cookieParts = cookie.split(";")
                         for part in cookieParts:
                             if part.startswith(self.session_cookie):
@@ -1227,17 +1187,10 @@ def send_message(packets=None):
                             if results == b"STAGE0":
                                 # handle_agent_data() signals that the listener should return the stager.ps1 code
                                 # step 2 of negotiation -> return stager.ps1 (stage 1)
-                                listenerName = self.options["Name"]["Value"]
-                                message = (
-                                    "[*] Sending {} stager (stage 1) to {}".format(
-                                        language, clientIP
-                                    )
-                                )
-                                signal = json.dumps({"print": True, "message": message})
-                                # dispatcher.send(
-                                #     signal,
-                                #     sender="listeners/http/{}".format(listenerName),
-                                # )
+                                message = f"{listenerName}: Sending {language} stager (stage 1) to {clientIP}"
+                                self.instance_log.info(message)
+                                log.info(message)
+
                                 stage = self.generate_stager(
                                     language=language,
                                     listenerOptions=listenerOptions,
@@ -1248,22 +1201,13 @@ def send_message(packets=None):
 
                             elif results.startswith(b"ERROR:"):
                                 listenerName = self.options["Name"]["Value"]
-                                message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(
-                                    request_uri, clientIP, results
-                                )
-                                signal = json.dumps({"print": True, "message": message})
-                                # dispatcher.send(
-                                #     signal,
-                                #     sender="listeners/http/{}".format(listenerName),
-                                # )
+                                message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
+                                self.instance_log.error(message)
 
                                 if b"not in cache" in results:
                                     # signal the client to restage
-                                    print(
-                                        helpers.color(
-                                            "[*] Orphaned agent from %s, signaling restaging"
-                                            % (clientIP)
-                                        )
+                                    log.info(
+                                        f"{listenerName}: Orphaned agent from {clientIP}, signaling restaging"
                                     )
                                     return make_response(self.default_response(), 401)
                                 else:
@@ -1272,30 +1216,20 @@ def send_message(packets=None):
                             else:
                                 # actual taskings
                                 listenerName = self.options["Name"]["Value"]
-                                message = "[*] Agent from {} retrieved taskings".format(
-                                    clientIP
-                                )
-                                signal = json.dumps(
-                                    {"print": False, "message": message}
-                                )
-                                # dispatcher.send(
-                                #     signal,
-                                #     sender="listeners/http/{}".format(listenerName),
-                                # )
+                                message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                                self.instance_log.info(message)
                                 return make_response(results, 200)
                         else:
-                            # dispatcher.send("[!] Results are None...", sender='listeners/http')
+                            message = f"{listenerName}: Results are None for {request_uri} from {clientIP}"
+                            self.instance_log.debug(message)
                             return make_response(self.default_response(), 200)
                 else:
                     return make_response(self.default_response(), 200)
 
             else:
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] {} requested by {} with no routing packet.".format(
-                    request_uri, clientIP
-                )
-                signal = json.dumps({"print": True, "message": message})
-                # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                message = f"{listenerName}: {request_uri} requested by {clientIP} with no routing packet."
+                self.instance_log.error(message)
                 return make_response(self.default_response(), 404)
 
         @app.route("/<path:request_uri>", methods=["POST"])
@@ -1305,15 +1239,11 @@ def send_message(packets=None):
             """
             stagingKey = listenerOptions["StagingKey"]["Value"]
             clientIP = request.remote_addr
-
             requestData = request.get_data()
 
             listenerName = self.options["Name"]["Value"]
-            message = "[*] POST request data length from {} : {}".format(
-                clientIP, len(requestData)
-            )
-            signal = json.dumps({"print": False, "message": message})
-            # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            message = f"{listenerName}: POST request data length from {clientIP} : {len(requestData)}"
+            self.instance_log.info(message)
 
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
@@ -1336,13 +1266,9 @@ def send_message(packets=None):
                             ]
 
                             listenerName = self.options["Name"]["Value"]
-                            message = "[*] Sending agent (stage 2) to {} at {}".format(
-                                sessionID, clientIP
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            # dispatcher.send(
-                            #     signal, sender="listeners/http/{}".format(listenerName)
-                            # )
+                            message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
+                            self.instance_log.info(message)
+                            log.info(message)
 
                             hopListenerName = request.headers.get("Hop-Name")
 
@@ -1388,25 +1314,15 @@ def send_message(packets=None):
                             :10
                         ].lower().startswith(b"exception"):
                             listenerName = self.options["Name"]["Value"]
-                            message = (
-                                "[!] Error returned for results by {} : {}".format(
-                                    clientIP, results
-                                )
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            # dispatcher.send(
-                            #     signal, sender="listeners/http/{}".format(listenerName)
-                            # )
+                            message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
+                            self.instance_log.error(message)
                             return make_response(self.default_response(), 404)
                         elif results.startswith(b"VALID"):
                             listenerName = self.options["Name"]["Value"]
-                            message = "[*] Valid results returned by {}".format(
-                                clientIP
+                            message = (
+                                f"{listenerName}: Valid results returned by {clientIP}"
                             )
-                            signal = json.dumps({"print": False, "message": message})
-                            # dispatcher.send(
-                            #     signal, sender="listeners/http/{}".format(listenerName)
-                            # )
+                            self.instance_log.info(message)
                             return make_response(self.default_response(), 200)
                         else:
                             return make_response(results, 200)
@@ -1455,13 +1371,11 @@ def send_message(packets=None):
                 app.run(host=bindIP, port=int(port), threaded=True)
 
         except Exception as e:
-            print(
-                helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
-            )
             listenerName = self.options["Name"]["Value"]
-            message = "[!] Listener startup on port {} failed: {}".format(port, e)
-            signal = json.dumps({"print": True, "message": message})
-            # dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            log.error(
+                f"{listenerName}: Listener startup on port {port} failed: {e}",
+                exc_info=True,
+            )
 
     def start(self, name=""):
         """
@@ -1492,17 +1406,14 @@ def send_message(packets=None):
         Terminates the server thread stored in the self.threads dictionary,
         keyed by the listener name.
         """
-
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
-            self.threads[name].kill()
+            to_kill = name
         else:
-            print(
-                helpers.color(
-                    "[!] Killing listener '%s'" % (self.options["Name"]["Value"])
-                )
-            )
-            self.threads[self.options["Name"]["Value"]].kill()
+            to_kill = self.options["Name"]["Value"]
+
+        self.instance_log.info(f"{to_kill}: shutting down...")
+        log.info(f"{to_kill}: shutting down...")
+        self.threads[to_kill].kill()
 
     def generate_cookie(self):
         """

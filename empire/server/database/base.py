@@ -1,9 +1,8 @@
-import subprocess
+import logging
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
-from empire import arguments
 from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.database.defaults import (
@@ -12,6 +11,9 @@ from empire.server.database.defaults import (
     get_default_user,
 )
 from empire.server.database.models import Base
+
+log = logging.getLogger(__name__)
+
 
 database_config = empire_config.yaml.get("database", {})
 
@@ -53,58 +55,20 @@ SessionLocal = sessionmaker(bind=engine)
 Base.metadata.create_all(engine)
 
 
-def color(string, color=None):
-    """
-    Change text color for the Linux terminal.
-    Note: this is duplicate code copied from helpers.py because it cannot be imported into this file due to a circular
-    reference. There are plans to refactor these circular references out, but this is the near term solution.
-    """
-    attr = []
-    # bold
-    attr.append("1")
-
-    if color:
-        if color.lower() == "red":
-            attr.append("31")
-        elif color.lower() == "green":
-            attr.append("32")
-        elif color.lower() == "yellow":
-            attr.append("33")
-        elif color.lower() == "blue":
-            attr.append("34")
-        return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
-
-    else:
-        if string.strip().startswith("[!]"):
-            attr.append("31")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
-        elif string.strip().startswith("[+]"):
-            attr.append("32")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
-        elif string.strip().startswith("[*]"):
-            attr.append("34")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
-        elif string.strip().startswith("[>]"):
-            attr.append("33")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
-        else:
-            return string
-
-
 with SessionLocal.begin() as db:
     # When Empire starts up for the first time, it will create the database and create
     # these default records.
     if len(db.query(models.User).all()) == 0:
-        print(color("[*] Setting up database."))
-        print(color("[*] Adding default user."))
+        log.info("Setting up database.")
+        log.info("Adding default user.")
         db.add(get_default_user())
 
     if len(db.query(models.Config).all()) == 0:
-        print(color("[*] Adding database config."))
+        log.info("Adding database config.")
         db.add(get_default_config())
 
     if len(db.query(models.Keyword).all()) == 0:
-        print(color("[*] Adding default keyword obfuscation functions."))
+        log.info("Adding default keyword obfuscation functions.")
         functions = get_default_functions()
 
         for function in functions:

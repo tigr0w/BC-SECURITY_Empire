@@ -1,7 +1,6 @@
-from __future__ import print_function
-
 import base64
 import errno
+import logging
 import os
 import random
 from builtins import object, str
@@ -10,6 +9,9 @@ from typing import List, Optional, Tuple
 from empire.server.common import helpers, packets
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
@@ -80,7 +82,7 @@ class Listener(object):
         self.mainMenu = mainMenu
         self.threads = {}
 
-        # optional/specific for this module
+        self.instance_log = log
 
     def default_response(self):
         """
@@ -93,12 +95,6 @@ class Listener(object):
         """
         Validate all options for this listener.
         """
-
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                return handle_validate_message(f'[!] Option "{key}" is required.')
 
         return True, None
 
@@ -122,11 +118,7 @@ class Listener(object):
         bypasses = [] if bypasses is None else bypasses
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_hop generate_launcher(): no language specified!"
-                )
-            )
+            log.error("listeners/http_hop generate_launcher(): no language specified!")
             return None
 
         # Previously, we had to do a lookup for the listener and check through threads on the instance.
@@ -260,8 +252,8 @@ class Listener(object):
                         launcherBase += 'if re.search("Little Snitch", out):\n'
                         launcherBase += "   sys.exit()\n"
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stagger: " + str(e)
-                    print(helpers.color(p, color="red"))
+                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                    log.error(p, exc_info=True)
 
                 if userAgent.lower() == "default":
                     userAgent = profile.split("|")[1]
@@ -359,18 +351,9 @@ class Listener(object):
                     return launcherBase
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http_hop generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/http_hop generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_hop generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -385,11 +368,7 @@ class Listener(object):
         If you want to support staging for the listener module, generate_stager must be
         implemented to return the stage1 key-negotiation stager code.
         """
-        print(
-            helpers.color(
-                "[!] generate_stager() not implemented for listeners/http_hop"
-            )
-        )
+        log.error("generate_stager() not implemented for listeners/http_hop")
         return ""
 
     def generate_agent(
@@ -399,9 +378,7 @@ class Listener(object):
         If you want to support staging for the listener module, generate_agent must be
         implemented to return the actual staged agent code.
         """
-        print(
-            helpers.color("[!] generate_agent() not implemented for listeners/http_hop")
-        )
+        log.error("generate_agent() not implemented for listeners/http_hop")
         return ""
 
     def generate_comms(self, listenerOptions, language=None):
@@ -587,17 +564,11 @@ def send_message(packets=None):
                 return socks_import + updateServers + sendMessage
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http_hop generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/http_hop generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_hop generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/http_hop generate_comms(): no language specified!")
 
     def start(self, name=""):
         """
@@ -646,26 +617,20 @@ def send_message(packets=None):
 
                 with open(saveName, "w") as f:
                     f.write(hopCode)
-                    print(
-                        helpers.color(
-                            "[*] Hop redirector written to %s . Place this file on the redirect server."
-                            % (saveName)
-                        )
+                    log.info(
+                        f"Hop redirector written to {saveName} . Place this file on the redirect server."
                     )
 
             return True
 
         else:
-            print(
-                helpers.color(
-                    "[!] Redirect listener name %s not a valid listener!"
-                    % (redirectListenerName)
-                )
+            log.error(
+                f"Redirect listener name {redirectListenerName} not a valid listener!"
             )
             return False
 
     def shutdown(self, name=""):
         """
-        Nothing to actually shut down for a hop listner.
+        Nothing to actually shut down for a hop listener.
         """
         pass

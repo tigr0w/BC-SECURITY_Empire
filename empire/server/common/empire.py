@@ -7,10 +7,10 @@ Contains the Main, Listener, Agents, Agent, and Module
 menu loops.
 
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
 import asyncio
-import json
+import logging
 import os
 import threading
 import time
@@ -20,8 +20,6 @@ from typing import Optional
 
 from prompt_toolkit import HTML, PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
-
-# from pydispatch import dispatcher
 from sqlalchemy import and_, func, or_
 
 from empire.server.common import hooks_internal
@@ -50,9 +48,10 @@ from empire.server.v2.core.stager_template_service import StagerTemplateService
 from empire.server.v2.core.user_service import UserService
 
 from . import agents, credentials, helpers, listeners, stagers
-from .events import log_event
 
 VERSION = "5.0.0-alpha1 BC Security Fork"
+
+log = logging.getLogger(__name__)
 
 
 class MainMenu(object):
@@ -62,10 +61,6 @@ class MainMenu(object):
     """
 
     def __init__(self, args=None):
-
-        # set up the event handling system
-        # dispatcher.connect(self.handle_event, sender=dispatcher.Any)
-
         time.sleep(1)
 
         self.lock = threading.Lock()
@@ -125,65 +120,14 @@ class MainMenu(object):
         self.directory = {}
 
         self.get_directories()
-        message = "[*] Empire starting up..."
-        signal = json.dumps({"print": True, "message": message})
-        # dispatcher.send(signal, sender="empire")
-
-    def handle_event(self, signal, sender):
-        """
-        Whenver an event is received from the dispatcher, log it to the DB,
-        decide whether it should be printed, and if so, print it.
-        If self.args.debug, also log all events to a file.
-        """
-        # load up the signal so we can inspect it
-        try:
-            signal_data = json.loads(signal)
-        except ValueError:
-            print(
-                helpers.color(
-                    "[!] Error: bad signal received {} from sender {}".format(
-                        signal, sender
-                    )
-                )
-            )
-            return
-
-        # if this is related to a task, set task_id; this is its own column in
-        # the DB (else the column will be set to None/null)
-        task_id = None
-        if "task_id" in signal_data:
-            task_id = signal_data["task_id"]
-
-        if "event_type" in signal_data:
-            event_type = signal_data["event_type"]
-        else:
-            event_type = "dispatched_event"
-
-        # print any signal that indicates we should
-        if "print" in signal_data and signal_data["print"]:
-            print(helpers.color(signal_data["message"]))
-
-        # get a db cursor, log this event to the DB, then close the cursor
-        # TODO instead of "dispatched_event" put something useful in the "event_type" column
-        log_event(sender, event_type, json.dumps(signal_data), task_id=task_id)
-
-        # if --debug X is passed, log out all dispatcher signals
-        if self.args.debug:
-            with open("empire.debug", "a") as debug_file:
-                debug_file.write(
-                    "%s %s : %s\n" % (helpers.get_datetime(), sender, signal)
-                )
-
-            if self.args.debug == "2":
-                # if --debug 2, also print the output to the screen
-                print(" %s : %s" % (sender, signal))
+        log.info("Empire starting up...")
 
     def plugin_socketio_message(self, plugin_name, msg):
         """
         Send socketio message to the socket address
         """
-        if self.args.debug is not None:
-            print(helpers.color(msg))
+        # todo vr plugins could get their own loggers in the future.
+        log.info(f"{plugin_name}: {msg}")
         if self.socketio:
             asyncio.run(
                 self.socketio.emit(
@@ -196,18 +140,12 @@ class MainMenu(object):
         """
         Perform any shutdown actions.
         """
-        print("\n" + helpers.color("[!] Shutting down..."))
-
-        message = "[*] Empire shutting down..."
-        signal = json.dumps({"print": True, "message": message})
-        # dispatcher.send(signal, sender="empire")
+        log.info("Empire shutting down...")
 
         # enumerate all active servers/listeners and shut them down
         self.listenersv2.shutdown_listeners()
 
-        message = "[*] Shutting down plugins..."
-        signal = json.dumps({"print": True, "message": message})
-        # dispatcher.send(signal, sender="empire")
+        log.info("Shutting down plugins...")
         self.pluginsv2.shutdown()
 
     def teamserver(self):
@@ -329,7 +267,7 @@ class MainMenu(object):
             .all()
         )
 
-        print(helpers.color(f"[*] Writing {self.installPath}/data/sessions.csv"))
+        log.info(f"Writing {self.installPath}/data/sessions.csv")
         try:
             self.lock.acquire()
             with open(self.installPath + "/data/sessions.csv", "w") as f:
@@ -359,7 +297,7 @@ class MainMenu(object):
             .all()
         )
 
-        print(helpers.color(f"[*] Writing {self.installPath}/data/credentials.csv"))
+        log.info(f"Writing {self.installPath}/data/credentials.csv")
         try:
             self.lock.acquire()
             with open(self.installPath + "/data/credentials.csv", "w") as f:
@@ -389,7 +327,7 @@ class MainMenu(object):
         # Empire Log
         rows = self.run_report_query()
 
-        print(helpers.color(f"[*] Writing {self.installPath}/data/master.log"))
+        log.info(f"Writing {self.installPath}/data/master.log")
         try:
             self.lock.acquire()
             with open(self.installPath + "/data/master.log", "w") as f:
@@ -427,10 +365,8 @@ class MainMenu(object):
         Preobfuscate PowerShell module_source files
         """
         if not data_util.is_powershell_installed():
-            print(
-                helpers.color(
-                    "[!] PowerShell is not installed and is required to use obfuscation, please install it first."
-                )
+            log.error(
+                "PowerShell is not installed and is required to use obfuscation, please install it first."
             )
             return
 
@@ -440,22 +376,11 @@ class MainMenu(object):
         for file in files:
             file = os.getcwd() + "/" + file
             if reobfuscate or not data_util.is_obfuscated(file):
-                message = "[*] Obfuscating {}...".format(os.path.basename(file))
-                signal = json.dumps(
-                    {
-                        "print": True,
-                        "message": message,
-                        "obfuscated_file": os.path.basename(file),
-                    }
-                )
-                # dispatcher.send(signal, sender="empire")
+                message = f"Obfuscating {os.path.basename(file)}..."
+                log.info(message)
             else:
-                print(
-                    helpers.color(
-                        "[*] "
-                        + os.path.basename(file)
-                        + " was already obfuscated. Not reobfuscating."
-                    )
+                log.warning(
+                    f"{os.path.basename(file)} was already obfuscated. Not reobfuscating."
                 )
             data_util.obfuscate_module(file, obfuscation_command, reobfuscate)
 

@@ -37,7 +37,7 @@ Includes:
     slackMessage() - send notifications to the Slack API
     generate_random_script_var_name() - use in scripts to generate random variable names
 """
-from __future__ import division, print_function
+from __future__ import division
 
 import base64
 import binascii
@@ -45,13 +45,13 @@ import datetime
 import fnmatch
 import hashlib
 import json
+import logging
 import numbers
 import os
 import random
 import re
 import socket
 import string
-import subprocess
 import sys
 import threading
 import urllib.error
@@ -62,6 +62,9 @@ from datetime import datetime
 
 import iptools
 import netifaces
+
+log = logging.getLogger(__name__)
+
 
 ###############################################################
 #
@@ -201,7 +204,7 @@ def strip_python_comments(data):
     Strip block comments, line comments, empty lines, verbose statements,
     and debug statements from a Python source file.
     """
-    print(color("[!] strip_python_comments is deprecated and should not be used"))
+    log.warning("strip_python_comments is deprecated and should not be used")
     lines = data.split("\n")
     strippedLines = [
         line
@@ -294,7 +297,7 @@ def get_powerview_psreflect_overhead(script):
     try:
         return strip_powershell_comments(pattern.findall(script)[0])
     except:
-        print(color("[!] Error extracting psreflect overhead from script!"))
+        log.error("Error extracting psreflect overhead from script!")
         return ""
 
 
@@ -347,11 +350,8 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
             )
         except:
             functionDependencies = []
-            print(
-                color(
-                    "[!] Error in retrieving dependencies for function %s !"
-                    % (requiredFunction)
-                )
+            log.error(
+                f"Error in retrieving dependencies for function {requiredFunction} !"
             )
 
         for functionDependency in functionDependencies:
@@ -418,7 +418,7 @@ def generate_dynamic_powershell_script(script, functionNames):
         try:
             newScript += functions[functionDependency] + "\n"
         except:
-            print(color("[!] Key error with function %s !" % (functionDependency)))
+            log.error(f"Key error with function {functionDependency} !")
 
     # if any psreflect methods are needed, add in the overhead at the end
     if any(el in set(psreflect_functions) for el in functionDependencies):
@@ -464,7 +464,7 @@ def parse_credentials(data):
             return [("plaintext", domain, username, password, "", "")]
 
         else:
-            print(color("[!] Error in parsing prompted credential output."))
+            log.error("Error in parsing prompted credential output.")
             return None
 
     # python/collection/prompt (Mac OS)
@@ -703,7 +703,7 @@ def lhost():
     except socket.gaierror:
         pass
     except:
-        print("Unexpected error:", sys.exc_info()[0])
+        log.error("Unexpected error:", exc_info=True)
         return ip
 
     if (ip == "" or ip.startswith("127.")) and os.name != "nt":
@@ -715,7 +715,7 @@ def lhost():
                     if ip != "":
                         break
                 except:
-                    print("Unexpected error:", sys.exc_info()[0])
+                    log.error(f"Unexpected error:", exc_info=True)
                     pass
     return ip
 

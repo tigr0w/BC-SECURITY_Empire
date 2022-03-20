@@ -20,7 +20,14 @@ database:
 modules:
   retain-last-value: false
 directories:
-  # todo should test directory be embedded under server?
   downloads: empire/test/downloads/
   module_source: empire/server/data/module_source/
   obfuscated_module_source: empire/server/data/obfuscated_module_source/
+logging:
+  level: INFO
+  directory: empire/server/downloads/logs/
+  simple_console: true
+debug:
+  last_task:
+    enabled: true
+    file: empire/server/downloads/logs/last_task.txt

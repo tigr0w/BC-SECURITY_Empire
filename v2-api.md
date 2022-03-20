@@ -1,7 +1,7 @@
 V2 API Docs
 -----------
 
-**These docs are for the v2 API while its in development and will move to the empire-docs repo when its ready**
+**These docs are for Empire 5.0 while its in development and will move to the empire-docs repo when its ready**
 
 ## Introduction
 The V2 API is a RESTful API that provides access to the data in Empire.

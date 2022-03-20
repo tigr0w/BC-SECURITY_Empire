@@ -18,11 +18,10 @@ Includes:
     DiffieHellman()             -   Mark Loiseau's DiffieHellman implementation, see ./data/licenses/ for license info
 
 """
-from __future__ import print_function
-
 import base64
 import hashlib
 import hmac
+import logging
 import os
 import random
 import string
@@ -35,6 +34,8 @@ from Crypto.PublicKey import RSA
 from Crypto.Util import number
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+log = logging.getLogger(__name__)
 
 
 def to_bufferable(binary):
@@ -284,13 +285,13 @@ class DiffieHellman(object):
 
         # Sanity check fors generator and keyLength
         if generator not in valid_generators:
-            print("Error: Invalid generator. Using default.")
+            log.error("Error: Invalid generator. Using default.")
             self.generator = default_generator
         else:
             self.generator = generator
 
         if keyLength < min_keyLength:
-            print("Error: keyLength is too small. Setting to minimum.")
+            log.error("Error: keyLength is too small. Setting to minimum.")
             self.keyLength = min_keyLength
         else:
             self.keyLength = keyLength
@@ -318,7 +319,7 @@ class DiffieHellman(object):
         if group in list(primes.keys()):
             return primes[group]
         else:
-            print("Error: No prime with group %i. Using default." % group)
+            log.error(f"Error: No prime with group {group:d}. Using default.")
             return primes[default_group]
 
     def genRandom(self, bits):

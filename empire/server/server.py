@@ -1,22 +1,59 @@
 #!/usr/bin/env python3
+import logging
 import os
 import subprocess
 import sys
 import time
-from time import sleep
+from pathlib import Path
 
 import urllib3
 from flask import jsonify, make_response, request
 
 # Empire imports
-from empire.arguments import args
-from empire.server.common import empire, helpers
+from empire.server.common import empire
 from empire.server.common.config import empire_config
+from empire.server.utils.log_util import LOG_FORMAT, SIMPLE_LOG_FORMAT, ColorFormatter
 from empire.server.v2.api import v2App
+
+log = logging.getLogger(__name__)
+
 
 # Disable http warnings
 if empire_config.yaml.get("suppress-self-cert-warning", True):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+def setup_logging(args):
+    if args.log_level:
+        log_level = logging.getLevelName(args.log_level.upper())
+    else:
+        log_level = logging.getLevelName(
+            empire_config.yaml.get("logging", {}).get("level", "INFO").upper()
+        )
+
+    logging_dir = empire_config.yaml.get("logging", {}).get(
+        "directory", "empire/server/downloads/logs/"
+    )
+    log_dir = Path(logging_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    root_log_file = log_dir / "empire_server.log"
+    root_logger = logging.getLogger()
+    # If this isn't set to DEBUG, then we won't see debug messages from the listeners.
+    root_logger.setLevel(logging.DEBUG)
+
+    root_logger_file_handler = logging.FileHandler(root_log_file)
+    root_logger_file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    root_logger.addHandler(root_logger_file_handler)
+
+    simple_console = empire_config.yaml.get("logging", {}).get("simple_console", True)
+    if simple_console:
+        stream_format = SIMPLE_LOG_FORMAT
+    else:
+        stream_format = LOG_FORMAT
+    root_logger_stream_handler = logging.StreamHandler()
+    root_logger_stream_handler.setFormatter(ColorFormatter(stream_format))
+    root_logger_stream_handler.setLevel(log_level)
+    root_logger.addHandler(root_logger_stream_handler)
 
 
 def start_restful_api():
@@ -53,10 +90,13 @@ def start_restful_api():
         return jsonify({"success": True})
 
 
-main = empire.MainMenu(args=args)
+main = None
 
 
 def run(args):
+    setup_logging(args)
+    global main
+    main = empire.MainMenu(args=args)
     if not args.restport:
         args.restport = "1337"
     else:
@@ -68,7 +108,8 @@ def run(args):
         args.restip = args.restip[0]
 
     if args.version:
-        print(empire.VERSION)
+        # todo vr this isn't exiting properly.
+        log.info(empire.VERSION)
 
     elif args.reset:
         # Reset called from database/base.py
@@ -76,20 +117,20 @@ def run(args):
 
     else:
         if not os.path.exists("./empire/server/data/empire-chain.pem"):
-            print(helpers.color("[*] Certificate not found. Generating..."))
+            log.info("Certificate not found. Generating...")
             subprocess.call("./setup/cert.sh")
             time.sleep(3)
 
         def thread_v2_api():
             v2App.initialize()
 
-        # thread_v2_api()
+        thread_v2_api()
 
-        thread3 = helpers.KThread(target=thread_v2_api)
-        thread3.daemon = True
-        thread3.start()
-        sleep(2)
+        # thread3 = helpers.KThread(target=thread_v2_api)
+        # thread3.daemon = True
+        # thread3.start()
+        # sleep(2)
 
-        main.teamserver()
+        # main.teamserver()
 
     sys.exit()

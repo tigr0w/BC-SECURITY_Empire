@@ -1,17 +1,17 @@
 import copy
 import hashlib
-import json
+import logging
 from typing import Dict, List, Optional, Tuple
 
-# from pydispatch import dispatcher
 from sqlalchemy.orm import Session
 
-from empire.server.common import helpers
 from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.utils.type_util import safe_cast
 from empire.server.v2.core.listener_template_service import ListenerTemplateService
+
+log = logging.getLogger(__name__)
 
 
 class ListenerService(object):
@@ -137,11 +137,7 @@ class ListenerService(object):
         db.flush()
         self._active_listeners[listener.id] = template_instance
 
-        message = "[+] Listener successfully started!"
-        signal = json.dumps(
-            {"print": True, "message": message, "listener_options": listener.options}
-        )
-        # dispatcher.send(signal, sender="listeners/{}/{}".format(listener.module, listener.name))
+        log.info(f'Listener "{listener.name}" successfully started')
 
         return listener, None
 
@@ -157,7 +153,7 @@ class ListenerService(object):
         category = template_instance.info["Category"]
         name = template_instance.options["Name"]["Value"]
         try:
-            print(helpers.color(f"[*] v2: Starting listener '{name}'"))
+            log.info(f"v2: Starting listener '{name}'")
             success = template_instance.start(name=name)
 
             if success:
@@ -177,24 +173,19 @@ class ListenerService(object):
                 db.add(db_listener)
                 db.flush()
 
-                message = "[+] Listener successfully started!"
-                signal = json.dumps(
-                    {
-                        "print": True,
-                        "message": message,
-                        "listener_options": listener_options,
-                    }
-                )
-                # dispatcher.send(signal, sender="listeners/{}/{}".format(template_name, name))
-
+                log.info(f'Listener "{name}" successfully started')
                 self._active_listeners[db_listener.id] = template_instance
 
                 return db_listener, None
             else:
-                return None, "[!] v2: Listener failed to start!"
+                msg = f"Failed to start listener '{name}'"
+                log.error(msg)
+                return None, msg
 
         except Exception as e:
-            return None, f"[!] v2: Error starting listener: {e}"
+            msg = f"Failed to start listener '{name}': {e}"
+            log.error(msg)
+            return None, msg
 
     def _validate_listener_options(
         self, template: str, params: Dict
@@ -352,11 +343,8 @@ class ListenerService(object):
                 value = str(value).strip()
                 if len(value) != 32:
                     staging_key_hash = hashlib.md5(value.encode("UTF-8")).hexdigest()
-                    print(
-                        helpers.color(
-                            "[!] Warning: staging key not 32 characters, using hash of staging key instead: %s"
-                            % (staging_key_hash)
-                        )
+                    log.warning(
+                        f"Warning: staging key not 32 characters, using hash of staging key instead: {staging_key_hash}"
                     )
                     instance.options[option_name]["Value"] = staging_key_hash
                 else:

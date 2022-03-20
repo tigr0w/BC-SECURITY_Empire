@@ -13,10 +13,11 @@ The Stagers() class in instantiated in ./server.py by the main menu and includes
     generate_dylib() - generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application
 
 """
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division
 
 import base64
 import errno
+import logging
 import os
 import shutil
 import subprocess
@@ -32,6 +33,8 @@ from empire.server.database.base import SessionLocal
 
 from . import helpers
 from .helpers import old_div
+
+log = logging.getLogger(__name__)
 
 
 class Stagers(object):
@@ -86,9 +89,9 @@ class Stagers(object):
             db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
             active_listener = self.mainMenu.listenersv2.get_active_listeners()[
                 db_listener.id
-            ]  # todo another function for get 1
+            ]  # todo vr another function for get 1
             if not active_listener:
-                print(helpers.color(f"[!] Invalid listener: {listenerName}"))
+                log.error(f"Invalid listener: {listenerName}")
                 return ""
 
             launcher_code = active_listener.generate_launcher(
@@ -142,9 +145,7 @@ class Stagers(object):
                 return dllPatched
 
         else:
-            print(
-                helpers.color("[!] Original .dll for arch %s does not exist!" % (arch))
-            )
+            log.error(f"Original .dll for arch {arch} does not exist!")
 
     def generate_powershell_exe(self, posh_code, dot_net_version="net40"):
         """
@@ -158,7 +159,7 @@ class Stagers(object):
 
         compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
-            print(helpers.color("[!] csharpserver plugin not running"))
+            log.error("csharpserver plugin not running")
         else:
             file_name = compiler.do_send_stager(stager_yaml, "CSharpPS")
 
@@ -194,7 +195,7 @@ class Stagers(object):
 
         compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
-            print(helpers.color("[!] csharpserver plugin not running"))
+            log.error("csharpserver plugin not running")
         else:
             file_name = compiler.do_send_stager(stager_yaml, "CSharpPy")
 
@@ -231,11 +232,7 @@ class Stagers(object):
             macho = macholib.MachO.MachO(f.name)
 
             if int(macho.headers[0].header.filetype) != MH_EXECUTE:
-                print(
-                    helpers.color(
-                        "[!] Macho binary template is not the correct filetype"
-                    )
-                )
+                log.error("Macho binary template is not the correct filetype")
                 return ""
 
             cmds = macho.headers[0].commands
@@ -274,7 +271,7 @@ class Stagers(object):
 
             return patchedMachO
         else:
-            print(helpers.color("[!] Unable to patch MachO binary"))
+            log.error("Unable to patch MachO binary")
 
     def generate_dylib(self, launcherCode, arch, hijacker):
         """
@@ -312,7 +309,7 @@ class Stagers(object):
         macho = macholib.MachO.MachO(f.name)
 
         if int(macho.headers[0].header.filetype) != MH_DYLIB:
-            print(helpers.color("[!] Dylib template is not the correct filetype"))
+            log.error("Dylib template is not the correct filetype")
             return ""
 
         cmds = macho.headers[0].commands
@@ -347,7 +344,7 @@ class Stagers(object):
 
             return patchedDylib
         else:
-            print(helpers.color("[!] Unable to patch dylib"))
+            log.error("Unable to patch dylib")
 
     def generate_appbundle(self, launcherCode, Arch, icon, AppName, disarm):
 
@@ -381,9 +378,7 @@ class Stagers(object):
         macho = macholib.MachO.MachO(f.name)
 
         if int(macho.headers[0].header.filetype) != MH_EXECUTE:
-            print(
-                helpers.color("[!] Macho binary template is not the correct filetype")
-            )
+            log.error("Macho binary template is not the correct filetype")
             return ""
 
         cmds = macho.headers[0].commands
@@ -523,7 +518,7 @@ class Stagers(object):
             return zipbundle
 
         else:
-            print(helpers.color("[!] Unable to patch application"))
+            log.error("Unable to patch application")
 
     def generate_pkg(self, launcher, bundleZip, AppName):
 

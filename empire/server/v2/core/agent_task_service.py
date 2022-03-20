@@ -1,11 +1,14 @@
 import json
+import logging
+import threading
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, func, update
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, joinedload, undefer
 
 from empire.server.common import helpers
+from empire.server.common.config import empire_config
 from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.models import TaskingStatus
@@ -14,6 +17,8 @@ from empire.server.v2.api.shared_dto import OrderDirection
 from empire.server.v2.core.listener_service import ListenerService
 from empire.server.v2.core.module_service import ModuleService
 
+log = logging.getLogger(__name__)
+
 
 class AgentTaskService(object):
     def __init__(self, main_menu):
@@ -21,6 +26,8 @@ class AgentTaskService(object):
 
         self.module_service: ModuleService = main_menu.modulesv2
         self.listener_service: ListenerService = main_menu.listenersv2
+
+        self.last_task_lock = threading.Lock()
 
     @staticmethod
     def get_tasks(
@@ -259,8 +266,8 @@ class AgentTaskService(object):
             db, agent, "TASK_SET_PROXY", json.dumps(body), user_id=user_id
         )
 
-    @staticmethod
     def add_task(
+        self,
         db: Session,
         agent: models.Agent,
         task_name,
@@ -274,9 +281,9 @@ class AgentTaskService(object):
         if agent.archived:
             return None, f"[!] Agent {agent.session_id} is archived."
 
-        message = "[*] Tasked {} to run {}".format(agent.session_id, task_name)
-        signal = json.dumps({"print": True, "message": message})
-        # dispatcher.send(signal, sender="agents/{}".format(agent.session_id))
+        message = f"Tasked {agent.session_id} to run {task_name}"
+        log.info(message)
+        self.main_menu.agents.save_agent_log(agent.session_id, message)
 
         pk = (
             db.query(func.max(models.Tasking.id))
@@ -301,21 +308,17 @@ class AgentTaskService(object):
         db.add(task)
         db.flush()
 
+        last_task_config = empire_config.yaml.get("debug", {}).get("last_task", {})
+        if last_task_config.get("enabled") is True:
+            with self.last_task_lock:
+                location = last_task_config["file"]
+                with open(location, "w") as f:
+                    f.write(task_input)
+
         hooks.run_hooks(hooks.AFTER_TASKING_HOOK, task)
 
-        # dispatch this event
-        message = "[*] Agent {} tasked with task ID {}".format(agent.session_id, pk)
-        signal = json.dumps(
-            {
-                "print": True,
-                "message": message,
-                "task_name": task_name,
-                "task_id": pk,
-                "task": task_input,
-                "event_type": "task",
-            }
-        )
-        # dispatcher.send(signal, sender=f"agents/{agent.session_id}")
+        message = f"Agent {agent.session_id} tasked with task ID {pk}"
+        log.info(message)
 
         return task, None
 

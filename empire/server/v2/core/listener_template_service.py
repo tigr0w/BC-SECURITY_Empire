@@ -1,5 +1,6 @@
 import fnmatch
 import importlib.util
+import logging
 import os
 from typing import Optional
 
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session
 from empire.server.common import helpers
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
+
+log = logging.getLogger(__name__)
 
 
 class ListenerTemplateService(object):
@@ -46,7 +49,7 @@ class ListenerTemplateService(object):
 
         root_path = f"{db.query(models.Config).first().install_path}/listeners/"
         pattern = "*.py"
-        print(helpers.color("[*] v2: Loading listeners from: %s" % root_path))
+        log.info(f"v2: Loading listener templates from: {root_path}")
 
         for root, dirs, files in os.walk(root_path):
             for filename in fnmatch.filter(files, pattern):

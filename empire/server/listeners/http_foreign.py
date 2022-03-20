@@ -1,6 +1,5 @@
-from __future__ import print_function
-
 import base64
+import logging
 import random
 from builtins import object, str
 from typing import List, Optional, Tuple
@@ -8,6 +7,9 @@ from typing import List, Optional, Tuple
 from empire.server.common import helpers, packets
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
@@ -103,6 +105,8 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
+        self.instance_log = log
+
     def default_response(self):
         """
         If there's a default response expected from the server that the client needs to ignore,
@@ -119,12 +123,6 @@ class Listener(object):
             a.strip("/")
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
-
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                return handle_validate_message(f'[!] Option "{key}" is required.')
 
         return True, None
 
@@ -148,10 +146,8 @@ class Listener(object):
         bypasses = [] if bypasses is None else bypasses
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_foreign generate_launcher(): no language specified!"
-                )
+            log.error(
+                "listeners/http_foreign generate_launcher(): no language specified!"
             )
             return None
 
@@ -298,8 +294,8 @@ class Listener(object):
                         )
                         launcherBase += "   sys.exit()\n"
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stagger: " + str(e)
-                    print(helpers.color(p, color="red"))
+                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                    log.error(p, exc_info=True)
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
@@ -398,18 +394,9 @@ class Listener(object):
                     return launcherBase
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http_foreign generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/http_foreign generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_foreign generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -424,11 +411,7 @@ class Listener(object):
         If you want to support staging for the listener module, generate_stager must be
         implemented to return the stage1 key-negotiation stager code.
         """
-        print(
-            helpers.color(
-                "[!] generate_stager() not implemented for listeners/template"
-            )
-        )
+        log.error("generate_stager() not implemented for listeners/template")
         return ""
 
     def generate_agent(
@@ -438,9 +421,7 @@ class Listener(object):
         If you want to support staging for the listener module, generate_agent must be
         implemented to return the actual staged agent code.
         """
-        print(
-            helpers.color("[!] generate_agent() not implemented for listeners/template")
-        )
+        log.error("generate_agent() not implemented for listeners/template")
         return ""
 
     def generate_comms(self, listenerOptions, language=None):
@@ -635,17 +616,11 @@ def send_message(packets=None):
                 return socks_import + updateServers + sendMessage
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http_foreign generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/http_foreign generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_foreign generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/http_foreign generate_comms(): no language specified!")
 
     def start(self, name=""):
         """

@@ -58,7 +58,6 @@ if __name__ == "__main__":
     for root, dirs, files in os.walk(root_path):
         for filename in fnmatch.filter(files, pattern):
             file_path = os.path.join(root, filename)
-            print(file_path)
 
             # if 'eventvwr' not in file_path and 'seatbelt' not in file_path and 'logonpasswords' not in file_path \
             #         and 'invoke_assembly' not in file_path.lower() and 'sherlock' not in file_path and 'kerberoast' not in file_path \
