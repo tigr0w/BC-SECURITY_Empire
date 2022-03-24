@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--   Updated changelog to use [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) (@Vinnybod).
+- Updated changelog to use [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) (@Vinnybod).
+- Added tests for listener launchers (@Vinnybod).
 
 ## [4.4.1] - 2022-03-06
 

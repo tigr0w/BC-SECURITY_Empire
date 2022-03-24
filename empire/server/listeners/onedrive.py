@@ -304,10 +304,10 @@ class Listener(object):
             if language.startswith("pyth"):
                 print(
                     helpers.color(
-                        "[!] listeners/onedrive generate_launcher(): Python agent not implimented yet"
+                        "[!] listeners/onedrive generate_launcher(): Python agent not implemented yet"
                     )
                 )
-                return "python not implimented yet"
+                return "Python not implemented yet"
 
         else:
             print(
