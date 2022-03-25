@@ -12,12 +12,11 @@ jobs:
         with:
           submodules: 'recursive'
           ref: sponsors-dev
+          fetch-depth: 0
       - name: Set up upstream repo
         run: |
-          git remote add upstream git@github.com:BC-SECURITY/Empire.git
+          git remote add upstream https://github.com/bc-security/empire.git
           git fetch upstream
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Initialize mandatory git config
         run: |
           git config user.name "GitHub Actions"
@@ -31,6 +30,7 @@ jobs:
             git reset --hard origin/sponsors-dev
           fi
       - name: Merge dev branch
+        shell: '/bin/bash {0}'
         run: |
           git merge --no-edit upstream/dev
           if [ $? -ne 0 ]; then
@@ -38,14 +38,15 @@ jobs:
             exit 1
           fi
           
-          git diff master --exit-code --quiet
-          if [ $? -ne 0 ]; then
+          git diff sponsors-dev --exit-code --quiet
+          if [ $? -eq 0 ]; then
             echo "No changes needed to merge."
             echo "MERGE_STATUS=NO_CHANGES" >> $GITHUB_ENV
           else
             echo "Changes needed to merge."
             echo "MERGE_STATUS=CHANGES" >> $GITHUB_ENV
           fi
+          exit 0
       - name: Push to GitHub
         if: ${{ env.MERGE_STATUS == 'CHANGES' }}
         run: |
