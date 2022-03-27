@@ -16,9 +16,7 @@ def get_listener_logger(log_name_prefix: str, listener_name: str):
 
     log.propagate = False
 
-    logging_dir = empire_config.yaml.get("logging", {}).get(
-        "directory", "empire/server/downloads/logs/"
-    )
+    logging_dir = empire_config.logging.directory
     log_dir = Path(logging_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -30,7 +28,7 @@ def get_listener_logger(log_name_prefix: str, listener_name: str):
 
     listener_stream_handler = logging.StreamHandler()
     listener_stream_handler.setLevel(logging.WARNING)
-    simple_console = empire_config.yaml.get("logging", {}).get("simple_console", True)
+    simple_console = empire_config.logging.simple_console
     if simple_console:
         stream_format = SIMPLE_LOG_FORMAT
     else:

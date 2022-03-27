@@ -32,6 +32,21 @@ class DirectoriesConfig(BaseModel):
     obfuscated_module_source: str
 
 
+class LoggingConfig(BaseModel):
+    level: str = "INFO"
+    directory: str = "empire/server/downloads/logs/"
+    simple_console: bool = True
+
+
+class LastTaskConfig(BaseModel):
+    enabled: bool = False
+    file: str = "empire/server/data/last_task.txt"
+
+
+class DebugConfig(BaseModel):
+    last_task: LastTaskConfig
+
+
 class EmpireConfig(BaseModel):
     supress_self_cert_warning: bool = Field(
         alias="supress-self-cert-warning", default=True
@@ -41,6 +56,8 @@ class EmpireConfig(BaseModel):
     plugins: Dict[str, Dict[str, str]] = {}
     directories: DirectoriesConfig
     keyword_obfuscation: List[str] = []
+    logging: LoggingConfig
+    debug: DebugConfig
 
     def __init__(self, config_dict: Dict):
         super().__init__(**config_dict)

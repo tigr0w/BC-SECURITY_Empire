@@ -473,9 +473,9 @@ class ModuleService(object):
         """
         try:
             if obfuscate:
-                obfuscated_module_source = empire_config.yaml.get("directories", {})[
-                    "obfuscated_module_source"
-                ]
+                obfuscated_module_source = (
+                    empire_config.directories.obfuscated_module_source
+                )
                 module_path = os.path.join(obfuscated_module_source, module_name)
                 # If pre-obfuscated module exists then return code
                 if os.path.exists(module_path):
@@ -485,9 +485,7 @@ class ModuleService(object):
 
                 # If pre-obfuscated module does not exist then generate obfuscated code and return it
                 else:
-                    module_source = empire_config.yaml.get("directories", {})[
-                        "module_source"
-                    ]
+                    module_source = empire_config.directories.module_source
                     module_path = os.path.join(module_source, module_name)
                     with open(module_path, "r") as f:
                         module_code = f.read()
@@ -500,9 +498,7 @@ class ModuleService(object):
 
             # Use regular/unobfuscated code
             else:
-                module_source = empire_config.yaml.get("directories", {})[
-                    "module_source"
-                ]
+                module_source = empire_config.directories.module_source
                 module_path = os.path.join(module_source, module_name)
                 with open(module_path, "r") as f:
                     module_code = f.read()

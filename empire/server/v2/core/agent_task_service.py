@@ -308,10 +308,10 @@ class AgentTaskService(object):
         db.add(task)
         db.flush()
 
-        last_task_config = empire_config.yaml.get("debug", {}).get("last_task", {})
-        if last_task_config.get("enabled") is True:
+        last_task_config = empire_config.debug.last_task
+        if last_task_config.enabled:
             with self.last_task_lock:
-                location = last_task_config["file"]
+                location = last_task_config.file
                 with open(location, "w") as f:
                     f.write(task_input)
 

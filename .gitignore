@@ -31,6 +31,7 @@ empire/client/generated-stagers
 **/Covenant/obj/
 **/Sharpire/bin/
 **/Sharpire/obj/
+*.log
 
 empire/server/v2/api/static/*
 starkiller-dist.tar.gz

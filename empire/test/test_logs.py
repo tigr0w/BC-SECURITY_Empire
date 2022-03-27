@@ -37,14 +37,14 @@ def test_extended_log_format(monkeypatch):
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
     from empire import arguments
+    from empire.server.common.config import EmpireConfig
     from empire.server.server import setup_logging
     from empire.server.utils.log_util import LOG_FORMAT, ColorFormatter
 
-    config_mock = MagicMock()
     test_config = _load_test_config()
     test_config["logging"]["simple_console"] = False
-    config_mock.yaml = test_config
-    monkeypatch.setattr("empire.server.server.empire_config", config_mock)
+    modified_config = EmpireConfig(test_config)
+    monkeypatch.setattr("empire.server.server.empire_config", modified_config)
 
     args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
     setup_logging(args)
@@ -65,13 +65,13 @@ def test_log_level_by_config(monkeypatch):
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
     from empire import arguments
+    from empire.server.common.config import EmpireConfig
     from empire.server.server import setup_logging
 
-    config_mock = MagicMock()
     test_config = _load_test_config()
     test_config["logging"]["level"] = "WaRNiNG"  # case insensitive
-    config_mock.yaml = test_config
-    monkeypatch.setattr("empire.server.server.empire_config", config_mock)
+    modified_config = EmpireConfig(test_config)
+    monkeypatch.setattr("empire.server.server.empire_config", modified_config)
 
     args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
     setup_logging(args)

@@ -27,13 +27,9 @@ def setup_logging(args):
     if args.log_level:
         log_level = logging.getLevelName(args.log_level.upper())
     else:
-        log_level = logging.getLevelName(
-            empire_config.yaml.get("logging", {}).get("level", "INFO").upper()
-        )
+        log_level = logging.getLevelName(empire_config.logging.level.upper())
 
-    logging_dir = empire_config.yaml.get("logging", {}).get(
-        "directory", "empire/server/downloads/logs/"
-    )
+    logging_dir = empire_config.logging.directory
     log_dir = Path(logging_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
     root_log_file = log_dir / "empire_server.log"
@@ -45,7 +41,7 @@ def setup_logging(args):
     root_logger_file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
     root_logger.addHandler(root_logger_file_handler)
 
-    simple_console = empire_config.yaml.get("logging", {}).get("simple_console", True)
+    simple_console = empire_config.logging.simple_console
     if simple_console:
         stream_format = SIMPLE_LOG_FORMAT
     else:
