@@ -1,9 +1,9 @@
 import logging
 import sys
-from typing import Dict, Union
+from typing import Dict, List, Union
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Extra, Field
 
 log = logging.getLogger(__name__)
 
@@ -40,11 +40,15 @@ class EmpireConfig(BaseModel):
     modules: ModulesConfig
     plugins: Dict[str, Dict[str, str]] = {}
     directories: DirectoriesConfig
+    keyword_obfuscation: List[str] = []
 
-    # For backwards compatibility
-    @property
-    def yaml(self):
-        return self.dict()
+    def __init__(self, config_dict: Dict):
+        super().__init__(**config_dict)
+        # For backwards compatibility
+        self.yaml = config_dict
+
+    class Config:
+        extra = Extra.allow
 
 
 def set_yaml(location: str):
@@ -66,4 +70,4 @@ if len(config_dict.items()) == 0:
     log.info("Loading default config")
     config_dict = set_yaml("./empire/server/config.yaml")
 
-empire_config = EmpireConfig(**config_dict)
+empire_config = EmpireConfig(config_dict)

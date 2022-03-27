@@ -24,12 +24,12 @@ def test_create_keyword_name_conflict(client, admin_auth_header):
     response = client.post(
         "/api/v2beta/keywords/",
         headers=admin_auth_header,
-        json={"keyword": "Invoke_Mimikatz", "replacement": "Invoke-Hax"},
+        json={"keyword": "Invoke-Mimikatz", "replacement": "Invoke-Hax"},
     )
 
     assert response.status_code == 400
     assert (
-        response.json()["detail"] == "Keyword with name Invoke_Mimikatz already exists."
+        response.json()["detail"] == "Keyword with name Invoke-Mimikatz already exists."
     )
 
 
@@ -60,12 +60,12 @@ def test_update_keyword_name_conflict(client, admin_auth_header):
     response = client.put(
         "/api/v2beta/keywords/1",
         headers=admin_auth_header,
-        json={"keyword": "Invoke_Mimikatz", "replacement": "Invoke-Whatever"},
+        json={"keyword": "Invoke-Mimikatz", "replacement": "Invoke-Whatever"},
     )
 
     assert response.status_code == 400
     assert (
-        response.json()["detail"] == "Keyword with name Invoke_Mimikatz already exists."
+        response.json()["detail"] == "Keyword with name Invoke-Mimikatz already exists."
     )
 
 

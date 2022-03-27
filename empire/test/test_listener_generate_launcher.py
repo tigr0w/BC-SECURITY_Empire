@@ -8,13 +8,11 @@ from empire.server.database import models
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_staging_key():
-    from empire.server.database.base import Session
-
-    config = Session().query(models.Config).first()
+def setup_staging_key(db):
+    config = db.query(models.Config).first()
     config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
-    Session().add(config)
-    Session().commit()
+    db.add(config)
+    db.commit()
     yield
 
 
@@ -217,7 +215,9 @@ def test_http_malleable_generate_launcher(monkeypatch):
         profile_mock
     )
     profile_mock.data = _fake_malleable_profile()
-    monkeypatch.setattr("empire.server.listeners.http_malleable.Session", session_mock)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.SessionLocal", session_mock
+    )
 
     main_menu = Mock()
     http_malleable_listener = Listener(main_menu, [])
@@ -285,6 +285,7 @@ def test_onedrive_generate_launcher(monkeypatch):
 
     main_menu = Mock()
     onedrive_listener = Listener(main_menu, [])
+    onedrive_listener.stager_url = "http://localhost/stager.php"
 
     main_menu.listeners.activeListeners = {
         "fake_listener": {
