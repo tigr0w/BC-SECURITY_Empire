@@ -44,10 +44,18 @@ def get_default_config():
 
 
 def get_default_keyword_obfuscation():
-    keyword_obfuscation_list = empire_config.yaml.get("keyword_obfuscation", {})
+    keyword_obfuscation_list = empire_config.keyword_obfuscation
     obfuscated_keywords = []
     for value in keyword_obfuscation_list:
-        obfuscated_keywords.append(models.Keyword(keyword=value, replacement=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))))
+        obfuscated_keywords.append(
+            models.Keyword(
+                keyword=value,
+                replacement="".join(
+                    random.choice(string.ascii_uppercase + string.digits)
+                    for _ in range(5)
+                ),
+            )
+        )
     return obfuscated_keywords
 
 
