@@ -583,10 +583,10 @@ class EmpireCliState(object):
 
         return response.json()
 
-    def agent_script_import(self, agent_name, script_location: str):
+    def agent_script_import(self, agent_name, script_name: str):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/agents/{agent_name}/script_import",
-            json={"script": script_location},
+            json={"script_name": script_name},
             verify=False,
             params={"token": self.token},
         )

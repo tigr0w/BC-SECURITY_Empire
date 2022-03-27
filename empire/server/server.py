@@ -1710,7 +1710,7 @@ def start_restful_api(
         """
         Imports a PowerShell script and keeps it in memory in the agent.
 
-        Takes {'script':'script_location'}
+        Takes {'script_name':'script_name'}
         """
         agent = main.agents.get_agent_from_name_or_session_id(agent_name)
 
@@ -1719,26 +1719,25 @@ def start_restful_api(
                 jsonify({"error": "agent name %s not found" % agent_name}), 404
             )
 
-        path = main.installPath + "/" + request.json["script"]
+        script_name = request.json["script_name"]
 
-        if path != "" and os.path.exists(path):
-            with open(path, "r") as open_file:
-                script_data = open_file.read()
-
-            # strip out comments and blank lines from the imported script
-            script_data = helpers.strip_powershell_comments(script_data)
-
-            # add task command to agent taskings
-            msg = "tasked agent %s to run command %s" % (agent.session_id, script_data)
-            main.agents.save_agent_log(agent.session_id, msg)
-            task_id = main.agents.add_agent_task_db(
-                agent.session_id, "TASK_SCRIPT_IMPORT", script_data, uid=g.user["id"]
-            )
-
-            return jsonify({"success": True, "taskID": task_id})
-
-        else:
+        try:
+            with open(f"{main.directory['downloads']}{script_name}", "r") as f:
+                script_data = f.read()
+        except:
             return make_response(jsonify({"error": "Unable to find script"}))
+
+        # strip out comments and blank lines from the imported script
+        script_data = helpers.strip_powershell_comments(script_data)
+
+        # add task command to agent taskings
+        msg = "tasked agent %s to run command %s" % (agent.session_id, script_data)
+        main.agents.save_agent_log(agent.session_id, msg)
+        task_id = main.agents.add_agent_task_db(
+            agent.session_id, "TASK_SCRIPT_IMPORT", script_data, uid=g.user["id"]
+        )
+
+        return jsonify({"success": True, "taskID": task_id})
 
     @app.route("/api/agents/<string:agent_name>/script_command", methods=["POST"])
     def task_agent_script_command(agent_name):

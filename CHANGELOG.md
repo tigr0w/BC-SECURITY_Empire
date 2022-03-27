@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Split ls/dir command line to get the first element for ls/dir command (@CyrilleFranchet)
 - Updated lastwritetime on ls/dir command (@CyrilleFranchet)
 - Fix script_end variable on privesc/ask module (@CyrilleFranchet)
+- script_import will upload a file from the client's machine (@Cx01N)
 
 ## [4.4.1] - 2022-03-06
 
