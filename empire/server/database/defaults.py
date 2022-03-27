@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from empire.server.common.config import empire_config
 from empire.server.database import models
 
-database_config = empire_config.yaml.get("database", {}).get("defaults", {})
+database_config = empire_config.database.defaults
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -46,21 +46,20 @@ def get_default_config():
     )
 
 
-def get_default_functions():
-    return [
-        models.Keyword(
-            keyword="Invoke_Empire",
-            replacement="".join(
-                random.choice(string.ascii_uppercase + string.digits) for _ in range(5)
-            ),
-        ),
-        models.Keyword(
-            keyword="Invoke_Mimikatz",
-            replacement="".join(
-                random.choice(string.ascii_uppercase + string.digits) for _ in range(5)
-            ),
-        ),
-    ]
+def get_default_keyword_obfuscation():
+    keyword_obfuscation_list = empire_config.yaml.get("keyword_obfuscation", {})
+    obfuscated_keywords = []
+    for value in keyword_obfuscation_list:
+        obfuscated_keywords.append(
+            models.Keyword(
+                keyword=value,
+                replacement="".join(
+                    random.choice(string.ascii_uppercase + string.digits)
+                    for _ in range(5)
+                ),
+            )
+        )
+    return obfuscated_keywords
 
 
 def get_staging_key():

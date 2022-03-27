@@ -254,7 +254,7 @@ class ModuleService(object):
     ) -> Tuple[Optional[str], Optional[str]]:
         if module.script_path:
             script_path = os.path.join(
-                empire_config.yaml.get("directories", {})["module_source"],
+                empire_config.directories.module_source,
                 module.script_path,
             )
             with open(script_path, "r") as stream:
@@ -442,7 +442,7 @@ class ModuleService(object):
         elif my_model.script_path:
             if not os.path.exists(
                 os.path.join(
-                    empire_config.yaml.get("directories", {})["module_source"],
+                    empire_config.directories.module_source,
                     my_model.script_path,
                 )
             ):

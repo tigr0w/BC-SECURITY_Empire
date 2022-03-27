@@ -298,9 +298,9 @@ class Listener(object):
 
             if language.startswith("pyth"):
                 log.error(
-                    "listeners/onedrive generate_launcher(): Python agent not implimented yet"
+                    "listeners/onedrive generate_launcher(): Python agent not implemented yet"
                 )
-                return "python not implimented yet"
+                return "Python not implemented yet"
 
     def generate_stager(
         self, listenerOptions, encode=False, encrypt=True, language=None, token=None

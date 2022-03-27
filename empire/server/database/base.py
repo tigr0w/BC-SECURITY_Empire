@@ -7,25 +7,24 @@ from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.database.defaults import (
     get_default_config,
-    get_default_functions,
+    get_default_keyword_obfuscation,
     get_default_user,
 )
 from empire.server.database.models import Base
 
 log = logging.getLogger(__name__)
 
+database_config = empire_config.database
 
-database_config = empire_config.yaml.get("database", {})
-
-if database_config.get("type") == "mysql":
-    url = database_config.get("url")
-    username = database_config.get("username") or ""
-    password = database_config.get("password") or ""
+if database_config.type == "mysql":
+    url = database_config.url
+    username = database_config.username
+    password = database_config.password
     engine = create_engine(
         f"mysql+pymysql://{username}:{password}@{url}/empire", echo=False
     )
 else:
-    location = database_config.get("location", "data/empire.db")
+    location = database_config.location
     engine = create_engine(
         f"sqlite:///{location}",
         connect_args={
@@ -35,7 +34,7 @@ else:
         echo=False,
     )
 
-# todo Taking away scoped session fixes the segmentation fault errors.
+# todo vr Taking away scoped session fixes the segmentation fault errors.
 # but it causes db bootstrapping to not work properly....
 # SessionLocal = scoped_session(sessionmaker(bind=engine))
 SessionLocal = sessionmaker(bind=engine)
@@ -43,7 +42,9 @@ SessionLocal = sessionmaker(bind=engine)
 # todo https://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
 # args = arguments.args
 # if args.reset:
-#     choice = input("\x1b[1;33m[>] Would you like to reset your Empire instance? [y/N]: \x1b[0m")
+#     choice = input(
+#         "\x1b[1;33m[>] Would you like to reset your Empire instance? [y/N]: \x1b[0m"
+#     )
 #     if choice.lower() == "y":
 #         # The reset script will delete the default db file. This will drop tables if connected to MySQL or
 #         # a different SQLite .db file.
@@ -69,7 +70,7 @@ with SessionLocal.begin() as db:
 
     if len(db.query(models.Keyword).all()) == 0:
         log.info("Adding default keyword obfuscation functions.")
-        functions = get_default_functions()
+        functions = get_default_keyword_obfuscation()
 
         for function in functions:
             db.add(function)

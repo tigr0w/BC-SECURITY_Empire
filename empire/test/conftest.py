@@ -8,6 +8,18 @@ from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 TEST_CONFIG_DIR = "empire/test/test_config.yaml"
+DEFAULT_ARGV = ["", "server", "--config", "empire/test/test_config.yaml"]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_args():
+    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
+    sys.argv = DEFAULT_ARGV
+
+
+@pytest.fixture(scope="session")
+def default_argv():
+    return DEFAULT_ARGV
 
 
 @pytest.fixture(scope="session")

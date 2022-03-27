@@ -1,0 +1,55 @@
+name: Sponsor - On Release
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release_kali:
+    if: ${{ !contains(github.ref, '-') && !contains(github.ref, 'kali') && !contains(github.ref, 'rc') && !contains(github.ref, 'alpha') && !contains(github.ref, 'beta') && github.repository == 'BC-SECURITY/Empire-Sponsors' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+          ref: 'kali-master'
+          fetch-depth: 0
+      - name: Initialize mandatory git config
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email noreply@github.com
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Setup poetry
+        run: |
+          curl -sL https://install.python-poetry.org | python - -y
+      - name: Merge sponsors-master -> kali-master
+        run: |
+          git merge origin/sponsors-master --no-edit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push to kali-master
+        run: |
+          git push origin kali-master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set application version as variable
+        run: |
+          echo "APP_VERSION=$(poetry version -s)" >> $GITHUB_ENV
+      - name: Extract release notes
+        id: extract_release_notes
+        uses: vinnybod/extract-release-notes@v1
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          tag_name: v${{ env.APP_VERSION }}-kali
+          release_name: v${{ env.APP_VERSION }}-kali
+          body: ${{ steps.extract_release_notes.outputs.release_notes }}
+          draft: false
+          prerelease: false
+      

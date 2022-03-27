@@ -72,7 +72,7 @@ else  {
 
         script = main_menu.modulesv2.finalize_module(
             script=script,
-            script_end=script_end,
+            script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )

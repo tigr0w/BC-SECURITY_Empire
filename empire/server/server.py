@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 # Disable http warnings
-if empire_config.yaml.get("suppress-self-cert-warning", True):
+if empire_config.supress_self_cert_warning:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 

