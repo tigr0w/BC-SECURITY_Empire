@@ -54,7 +54,7 @@ class Module(object):
                 obfuscationCommand=launcher_obfuscate_command,
                 userAgent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxyCreds,
+                proxyCreds=proxy_creds,
                 bypasses=params["Bypasses"],
             )
 

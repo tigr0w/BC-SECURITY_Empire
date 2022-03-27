@@ -8,27 +8,31 @@ from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.database.defaults import (
     get_default_config,
-    get_default_functions,
+    get_default_keyword_obfuscation,
     get_default_user,
 )
 from empire.server.database.models import Base
 
-database_config = empire_config.yaml.get('database', {})
+database_config = empire_config.database
 
-if database_config.get('type') == 'mysql':
-    url = database_config.get('url')
-    username = database_config.get('username') or ''
-    password = database_config.get('password') or ''
-    engine = create_engine(f'mysql+pymysql://{username}:{password}@{url}/empire', echo=False)
+if database_config.type == "mysql":
+    url = database_config.url
+    username = database_config.username
+    password = database_config.password
+    engine = create_engine(
+        f"mysql+pymysql://{username}:{password}@{url}/empire", echo=False
+    )
 else:
-    location = database_config.get('location', 'data/empire.db')
-    engine = create_engine(f'sqlite:///{location}?check_same_thread=false', echo=False)
+    location = database_config.location
+    engine = create_engine(f"sqlite:///{location}?check_same_thread=false", echo=False)
 
 Session = scoped_session(sessionmaker(bind=engine))
 
 args = arguments.args
 if args.reset:
-    choice = input("\x1b[1;33m[>] Would you like to reset your Empire instance? [y/N]: \x1b[0m")
+    choice = input(
+        "\x1b[1;33m[>] Would you like to reset your Empire instance? [y/N]: \x1b[0m"
+    )
     if choice.lower() == "y":
         # The reset script will delete the default db file. This will drop tables if connected to MySQL or
         # a different SQLite .db file.
@@ -48,32 +52,32 @@ def color(string, color=None):
     """
     attr = []
     # bold
-    attr.append('1')
+    attr.append("1")
 
     if color:
         if color.lower() == "red":
-            attr.append('31')
+            attr.append("31")
         elif color.lower() == "green":
-            attr.append('32')
+            attr.append("32")
         elif color.lower() == "yellow":
-            attr.append('33')
+            attr.append("33")
         elif color.lower() == "blue":
-            attr.append('34')
-        return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
+            attr.append("34")
+        return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
 
     else:
         if string.strip().startswith("[!]"):
-            attr.append('31')
-            return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
+            attr.append("31")
+            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
         elif string.strip().startswith("[+]"):
-            attr.append('32')
-            return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
+            attr.append("32")
+            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
         elif string.strip().startswith("[*]"):
-            attr.append('34')
-            return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
+            attr.append("34")
+            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
         elif string.strip().startswith("[>]"):
-            attr.append('33')
-            return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
+            attr.append("33")
+            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
         else:
             return string
 
@@ -81,21 +85,21 @@ def color(string, color=None):
 # When Empire starts up for the first time, it will create the database and create
 # these default records.
 if len(Session().query(models.User).all()) == 0:
-    print(color('[*] Setting up database.'))
-    print(color('[*] Adding default user.'))
+    print(color("[*] Setting up database."))
+    print(color("[*] Adding default user."))
     Session().add(get_default_user())
     Session().commit()
     Session.remove()
 
 if len(Session().query(models.Config).all()) == 0:
-    print(color('[*] Adding database config.'))
+    print(color("[*] Adding database config."))
     Session().add(get_default_config())
     Session().commit()
     Session.remove()
 
-if len(Session().query(models.Function).all()) == 0:
+if len(Session().query(models.Keyword).all()) == 0:
     print(color('[*] Adding default keyword obfuscation functions.'))
-    functions = get_default_functions()
+    functions = get_default_keyword_obfuscation()
 
     for function in functions:
         Session().add(function)

@@ -7,7 +7,7 @@ from empire.server.database.base import Session
 
 
 def keyword_obfuscation(data):
-    functions = Session().query(models.Function).all()
+    functions = Session().query(models.Keyword).all()
 
     for function in functions:
         data = data.replace(function.keyword, function.replacement)
