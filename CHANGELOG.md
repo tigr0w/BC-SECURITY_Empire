@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated changelog to use [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) (@Vinnybod).
 - Added tests for listener launchers (@Vinnybod).
+- Add a step to run the test suite on the Docker image itself (@Vinnybod)
+- Removed .plugin from the black configuration (@Vinnybod)
+- Removed random caps from backdoorlnk (@Cx01N)
+- Added html files for listener responses (@Cx01N)
+- Converted server config to a typed class (@Vinnybod)
+- Add keyword obfuscation to the config.yaml (@Vinnybod)
+- Fix proxy_creds variable name in bypassuac (@Cx01N)
+- Updated launcher_bat to use web request for launcher (@Cx01N)
+- updated malleable profiles with banzarloader (@Cx01N)
+- Added C# execution modules (@Cx01N)
+- Add tests for launcher code (@Vinnybod)
+- Split ls/dir command line to get the first element for ls/dir command (@CyrilleFranchet)
+- Updated lastwritetime on ls/dir command (@CyrilleFranchet)
+- Fix script_end variable on privesc/ask module (@CyrilleFranchet)
 
 ## [4.4.1] - 2022-03-06
 
