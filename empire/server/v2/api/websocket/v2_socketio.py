@@ -1,5 +1,7 @@
 import json
 
+from sqlalchemy.orm import Session
+
 from empire.server.common import helpers
 from empire.server.common.hooks import hooks
 from empire.server.database import models
@@ -141,16 +143,16 @@ def setup_socket_events(sio, empire_menu):
         """
         await sio.emit("chat/participants", list(chat_participants.values()), room=sid)
 
-    async def agent_socket_hook(agent: models.Agent):
+    async def agent_socket_hook(db: Session, agent: models.Agent):
         await sio.emit("agents/new", domain_to_dto_agent(agent).dict())
 
-    async def task_socket_hook(task: models.Tasking):
+    async def task_socket_hook(db: Session, task: models.Tasking):
         if "function Get-Keystrokes" not in task.input:
             await sio.emit(
                 f"agents/{task.agent_id}/task", domain_to_dto_task(task).dict()
             )
 
-    async def listener_socket_hook(listener: models.Listener):
+    async def listener_socket_hook(db: Session, listener: models.Listener):
         await sio.emit("listeners/new", domain_to_dto_listener(listener).dict())
 
     hooks.register_hook(

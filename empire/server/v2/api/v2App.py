@@ -78,6 +78,7 @@ def initialize():
         allow_origins=[
             "*",
             "http://localhost",
+            "http://localhost:8080",
             "http://localhost:8081",
         ],
         allow_credentials=True,

@@ -15,26 +15,26 @@ class Hooks(object):
     """
 
     # This event is triggered after the creation of a listener.
-    # Its arguments are (listener: models.Listener)
+    # Its arguments are (db: Session, listener: models.Listener)
     AFTER_LISTENER_CREATED_HOOK = "after_listener_created_hook"
 
     # This event is triggered after the tasking is written to the database.
-    # Its arguments are (tasking: models.Tasking)
+    # Its arguments are (db: Session, tasking: models.Tasking)
     AFTER_TASKING_HOOK = "after_tasking_hook"
 
     # This event is triggered after the tasking results are received but before they are written to the database.
-    # Its arguments are (tasking: models.Tasking) where tasking is the db record.
+    # Its arguments are (db: Session, tasking: models.Tasking) where tasking is the db record.
     BEFORE_TASKING_RESULT_HOOK = "before_tasking_result_hook"
 
     BEFORE_TASKING_RESULT_FILTER = "before_tasking_result_filter"
 
     # This event is triggered after the tasking results are received and after they are written to the database.
-    # Its arguments are (tasking: models.Tasking) where tasking is the db record.
+    # Its arguments are (db: Session, tasking: models.Tasking) where tasking is the db record.
     AFTER_TASKING_RESULT_HOOK = "after_tasking_result_hook"
 
     # This event is triggered after the agent has completed the stage2 of the checkin process,
     # and the sysinfo has been written to the database.
-    # It has one argument (agent: models.Agent)
+    # It has one argument (db: Session, agent: models.Agent)
     AFTER_AGENT_CHECKIN_HOOK = "after_agent_checkin_hook"
 
     def __init__(self):

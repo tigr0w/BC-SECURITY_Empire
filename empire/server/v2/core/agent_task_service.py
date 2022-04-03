@@ -315,7 +315,7 @@ class AgentTaskService(object):
                 with open(location, "w") as f:
                     f.write(task_input)
 
-        hooks.run_hooks(hooks.AFTER_TASKING_HOOK, task)
+        hooks.run_hooks(hooks.AFTER_TASKING_HOOK, db, task)
 
         message = f"Agent {agent.session_id} tasked with task ID {pk}"
         log.info(message)

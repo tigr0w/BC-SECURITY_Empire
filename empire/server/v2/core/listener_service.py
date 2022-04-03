@@ -105,7 +105,7 @@ class ListenerService(object):
         if err:
             return None, err
 
-        hooks.run_hooks(hooks.AFTER_LISTENER_CREATED_HOOK, db_listener)
+        hooks.run_hooks(hooks.AFTER_LISTENER_CREATED_HOOK, db, db_listener)
 
         return db_listener, None
 

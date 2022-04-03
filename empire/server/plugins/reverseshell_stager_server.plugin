@@ -13,7 +13,7 @@ class Plugin(Plugin):
         print(helpers.color("[*] Loading Empire reverseshell server plugin"))
         self.info = {
             "Name": "reverseshell_stager_server",
-            "Author": ["@Cx01N"],
+            "Authors": ["@Cx01N"],
             "Description": (
                 "Server for reverseshell using msfvenom to act as a stage 0."
             ),

@@ -1,0 +1,95 @@
+import csv
+import threading
+
+from sqlalchemy import func
+
+from empire.server.common.plugins import Plugin
+from empire.server.database import models
+from empire.server.database.base import SessionLocal
+
+
+class Plugin(Plugin):
+    def onLoad(self):
+        self.info = {
+            "Name": "basic_reporting",
+            "Authors": ["@vinnybod"],
+            "Description": "Generates credentials.csv, sessions.csv, and master.log. Writes to server/data directory.",
+            "Software": "",
+            "Techniques": [],
+            "Comments": [],
+        }
+
+        self.options = {}
+        self.lock = threading.Lock()
+        self.install_path = ""
+
+    def execute(self, command):
+        """
+        Parses commands from the API
+        """
+        try:
+            results = self.generate_report()
+            return results
+        except:
+            return False
+
+    def register(self, mainMenu):
+        """
+        Any modifications to the mainMenu go here - e.g.
+        registering functions to be run by user commands
+        """
+        self.install_path = mainMenu.installPath
+
+    def substring(self, session, column, delimeter):
+        """
+        https://stackoverflow.com/a/57763081
+        """
+        if session.bind.dialect.name == "sqlite":
+            return func.substr(column, func.instr(column, delimeter) + 1)
+        elif session.bind.dialect.name == "mysql":
+            return func.substring_index(column, delimeter, -1)
+
+    def generate_report(self):
+        with self.lock:
+            with SessionLocal() as db:
+                with open(self.install_path + "/data/sessions.csv", "w") as f:
+                    out = csv.writer(f)
+                    out.writerow(["SessionID", "Hostname", "User Name", "First Check-in"])
+
+                    for row in db.query(models.Agent).all():
+                        out.writerow([row.session_id, row.hostname, row.username, row.checkin_time])
+
+                with open(self.install_path + "/data/credentials.csv", "w") as f:
+                    out = csv.writer(f)
+                    out.writerow(["Domain", "Username", "Host", "Cred Type", "Password"])
+
+                    for row in db.query(models.Credential).all():
+                        out.writerow([row.domain, row.username, row.host, row.credtype, row.password])
+
+                with open(self.install_path + "/data/master.log", "w") as f:
+                    f.write("Empire Master Taskings & Results Log by timestamp\n")
+                    f.write("=" * 50 + "\n\n")
+                    for row in db.query(models.Tasking).all():
+                        row: models.Tasking
+                        f.write(
+                            f"\n{xstr(row.created_at)} - {xstr(row.id)} ({xstr(row.agent_id)})> "
+                            f"{xstr(row.user.username)}\n {xstr(row.input)}\n {xstr(row.output)}\n"
+                        )
+
+    def shutdown(self):
+        """
+        Kills additional processes that were spawned
+        """
+        # If the plugin spawns a process provide a shutdown method for when Empire exits else leave it as pass
+        pass
+
+
+def xstr(s):
+    """
+    Safely cast to a string with a handler for None
+    """
+    if s is None:
+        return ""
+    if isinstance(s, bytes):
+        return s.decode("utf-8")
+    return str(s)

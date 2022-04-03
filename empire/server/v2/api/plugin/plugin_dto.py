@@ -26,13 +26,13 @@ def domain_to_dto_plugin(plugin: Plugin, uid: str):
 
     return Plugin(
         id=uid,
-        name=plugin.info[0].get("Name"),
-        authors=plugin.info[0].get("Authors"),
-        description=plugin.info[0].get("Description"),
-        category=plugin.info[0].get("Category"),
-        comments=plugin.info[0].get("Comments"),
-        techniques=plugin.info[0].get("Techniques"),
-        software=plugin.info[0].get("Software"),
+        name=plugin.info.get("Name"),
+        authors=plugin.info.get("Authors"),
+        description=plugin.info.get("Description"),
+        category=plugin.info.get("Category"),
+        comments=plugin.info.get("Comments"),
+        techniques=plugin.info.get("Techniques"),
+        software=plugin.info.get("Software"),
         options=options,
     )
 

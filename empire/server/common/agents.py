@@ -38,7 +38,6 @@ The Agents() class in instantiated in ./server.py by the main menu and includes:
     set_agent_functions_db()    - sets the tab-completable functions for the agent in the database
     set_autoruns_db()           - sets the global script autorun in the config in the database
     clear_autoruns_db()         - clears the currently set global script autoruns in the config in the database
-    add_agent_task_db()         - adds a task to the specified agent's buffer in the database
     get_agent_tasks_db()        - retrieves tasks for our agent from the database
     get_agent_tasks_listener_db()- retrieves tasks for our agent from the database keyed by listener name
     clear_agent_tasks_db()      - clear out one (or all) agent tasks in the database
@@ -202,44 +201,6 @@ class Agents(object):
 
         # initialize the tasking/result buffers along with the client session key
         self.agents[sessionID] = {"sessionKey": sessionKey, "functions": []}
-
-    def get_agent_for_socket(self, session_id):
-        with SessionLocal() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(models.Agent.session_id == session_id)
-                .first()
-            )
-
-        return {
-            "session_id": agent.session_id,
-            "listener": agent.listener,
-            "name": agent.name,
-            "language": agent.language,
-            "language_version": agent.language_version,
-            "delay": agent.delay,
-            "jitter": agent.jitter,
-            "external_ip": agent.external_ip,
-            "internal_ip": agent.internal_ip,
-            "username": agent.username,
-            "high_integrity": int(agent.high_integrity or 0),
-            "process_name": agent.process_name,
-            "process_id": agent.process_id,
-            "hostname": agent.hostname,
-            "os_details": agent.os_details,
-            "session_key": str(agent.session_key),
-            "nonce": agent.nonce,
-            "checkin_time": agent.checkin_time,
-            "lastseen_time": agent.lastseen_time,
-            "parent": agent.parent,
-            "children": agent.children,
-            "servers": agent.servers,
-            "profile": agent.profile,
-            "functions": agent.functions,
-            "kill_date": agent.kill_date,
-            "working_hours": agent.working_hours,
-            "lost_limit": agent.lost_limit,
-        }
 
     def remove_agent_db(self, session_id):
         """
@@ -903,57 +864,6 @@ class Agents(object):
     # Agent tasking methods
     #
     ###############################################################
-    # TODO VR This is only called by redirector and autoruns. The callers should
-    #  be updated to use the new tasking methods.
-    def add_agent_task_db(
-        self, session_id, task_name, task="", module_name=None, uid=1
-    ):
-        """
-        Add a task to the specified agent's buffer in the database.
-        """
-        with SessionLocal.begin() as db:
-            agent_name = session_id
-            # see if we were passed a name instead of an ID
-            name_id = self.get_agent_id_db(session_id)
-
-            if name_id:
-                session_id = name_id
-
-            if session_id not in self.agents:
-                log.warning(f"Agent {agent_name} not active.")
-            else:
-                if session_id:
-                    message = f"Tasked {session_id} to run {task_name}"
-                    log.info(message)
-
-                    pk = (
-                        db.query(func.max(models.Tasking.id))
-                        .filter(models.Tasking.agent_id == session_id)
-                        .first()[0]
-                    )
-
-                    if pk is None:
-                        pk = 0
-                    pk = (pk + 1) % 65536
-
-                    db.add(
-                        models.Tasking(
-                            id=pk,
-                            agent_id=session_id,
-                            input=task[:100],
-                            input_full=task,
-                            user_id=uid,
-                            module_name=module_name,
-                            task_name=task_name,
-                            status=TaskingStatus.queued,
-                        )
-                    )
-
-                    message = f"Agent {session_id} tasked with task ID {pk}"
-                    log.info(message)
-
-                    return pk
-
     def get_agent_tasks_db(self, session_id, db: Session):
         """
         Retrieve tasks that have been queued for our agent from the database.
@@ -1002,6 +912,7 @@ class Agents(object):
         stagingKey,
         listenerOptions,
         clientIP="0.0.0.0",
+        db: Session = None,
     ):
         """
         Handles agent staging/key-negotiation.
@@ -1243,9 +1154,9 @@ class Agents(object):
             message = f"Initial agent {sessionID} from {clientIP} now active (Slack)"
             log.info(message)
 
-            agent = self.mainMenu.agents.get_agent_for_socket(sessionID)
             hooks.run_hooks(
                 hooks.AFTER_AGENT_CHECKIN_HOOK,
+                db,
                 self.get_agent_from_name_or_session_id(sessionID),
             )
 
@@ -1254,9 +1165,12 @@ class Agents(object):
             self.mainMenu.agents.save_agent_log(sessionID, output)
 
             # if a script autorun is set, set that as the agent's first tasking
-            autorun = self.get_autoruns_db()
-            if autorun and autorun[0] != "" and autorun[1] != "":
-                self.add_agent_task_db(sessionID, autorun[0], autorun[1])
+            # TODO VR autoruns haven't really worked in a while anyway...
+            #  Would be nice to reintroduce it, but it's a little tricky in the
+            #  multi-user architecture.
+            # autorun = self.get_autoruns_db()
+            # if autorun and autorun[0] != "" and autorun[1] != "":
+            #     self.add_agent_task_db(sessionID, autorun[0], autorun[1])
 
             if (
                 language.lower() in self.mainMenu.autoRuns
@@ -1316,21 +1230,23 @@ class Agents(object):
                 message = f"handle_agent_data(): sessionID {sessionID} issued a {meta} request"
                 log.debug(message)
 
-                dataToReturn.append(
-                    (
-                        language,
-                        self.handle_agent_staging(
-                            sessionID,
+                with SessionLocal.begin() as db:
+                    dataToReturn.append(
+                        (
                             language,
-                            meta,
-                            additional,
-                            encData,
-                            stagingKey,
-                            listenerOptions,
-                            clientIP,
-                        ),
+                            self.handle_agent_staging(
+                                sessionID,
+                                language,
+                                meta,
+                                additional,
+                                encData,
+                                stagingKey,
+                                listenerOptions,
+                                clientIP,
+                                db,
+                            ),
+                        )
                     )
-                )
 
             elif sessionID not in self.agents:
                 message = f"handle_agent_data(): sessionID {sessionID} not present"
@@ -1529,8 +1445,8 @@ class Agents(object):
                 tasking.original_output = data
                 tasking.output = data
 
-            hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, tasking)
-            tasking = hooks.run_filters(hooks.BEFORE_TASKING_RESULT_FILTER, tasking)
+            hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, db, tasking)
+            tasking = hooks.run_filters(hooks.BEFORE_TASKING_RESULT_FILTER, db, tasking)
 
             db.flush()
 
@@ -1915,4 +1831,4 @@ class Agents(object):
         else:
             log.warning("Unknown response %s from %s" % (response_name, session_id))
 
-        hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, tasking)
+        hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, db, tasking)

@@ -7,6 +7,7 @@ from builtins import object, str
 from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets
+from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util
 
 LOG_NAME_PREFIX = __name__
@@ -999,9 +1000,12 @@ def send_message(packets=None):
                     if "Host" not in list(self.options.keys()):
                         self.options["Host"]["Value"] = host
 
-                    self.mainMenu.agents.add_agent_task_db(
-                        tempOptions["Name"]["Value"], "TASK_SHELL", script
-                    )
+                    with SessionLocal.begin() as db:
+                        agent = self.mainMenu.agentsv2.get_by_id(
+                            db, tempOptions["Name"]["Value"]
+                        )
+                        self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
+
                     msg = "Tasked agent to install Pivot listener "
                     self.mainMenu.agents.save_agent_log(
                         tempOptions["Name"]["Value"], msg
@@ -1118,9 +1122,9 @@ def send_message(packets=None):
                     script += " -Reset"
                     script += " -FirewallName %s" % (sessionID)
 
-                    self.mainMenu.agents.add_agent_task_db(
-                        sessionID, "TASK_SHELL", script
-                    )
+                    with SessionLocal.begin() as db:
+                        agent = self.mainMenu.agentsv2.get_by_id(db, sessionID)
+                        self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
                     msg = "Tasked agent to uninstall Pivot listener "
                     self.mainMenu.agents.save_agent_log(sessionID, msg)
 

@@ -3,13 +3,14 @@ import json
 import jq as jq
 import terminaltables
 from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 
 
-def ps_hook(tasking: models.Tasking):
+def ps_hook(db: Session, tasking: models.Tasking):
     """
     This hook watches for the 'ps' command and writes the processes into the processes table.
 
@@ -83,7 +84,7 @@ def ps_hook(tasking: models.Tasking):
                         db_process.process_name = process_name
 
 
-def ps_filter(tasking: models.Tasking):
+def ps_filter(db: Session, tasking: models.Tasking):
     """
     This filter converts the JSON results of the ps command and converts it to a PowerShell-ish table.
 
@@ -119,7 +120,7 @@ def ps_filter(tasking: models.Tasking):
     return tasking
 
 
-def ls_filter(tasking: models.Tasking):
+def ls_filter(db: Session, tasking: models.Tasking):
     """
     This filter converts the JSON results of the ls command and converts it to a PowerShell-ish table.
 
@@ -155,7 +156,7 @@ def ls_filter(tasking: models.Tasking):
     return tasking
 
 
-def ipconfig_filter(tasking: models.Tasking):
+def ipconfig_filter(db: Session, tasking: models.Tasking):
     """
     This filter converts the JSON results of the ifconfig/ipconfig command and converts it to a PowerShell-ish table.
 
@@ -187,7 +188,7 @@ def ipconfig_filter(tasking: models.Tasking):
     return tasking
 
 
-def route_filter(tasking: models.Tasking):
+def route_filter(db: Session, tasking: models.Tasking):
     """
     This filter converts the JSON results of the route command and converts it to a PowerShell-ish table.
 

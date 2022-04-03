@@ -31,7 +31,7 @@ def domain_to_dto_task(
         output=None if not include_output else task.output,
         original_output=None if not include_original_output else task.original_output,
         user_id=task.user_id,
-        username=task.user.username,
+        username=None if not task.user else task.user.username,
         agent_id=task.agent_id,
         downloads=list(
             map(lambda x: domain_to_dto_download_description(x), task.downloads)

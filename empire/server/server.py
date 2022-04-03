@@ -127,6 +127,4 @@ def run(args):
         # thread3.start()
         # sleep(2)
 
-        # main.teamserver()
-
     sys.exit()
