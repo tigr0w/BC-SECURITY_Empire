@@ -1,0 +1,49 @@
+name: Public - Tag Release
+on:
+  workflow_dispatch:
+    inputs:
+      sponsorTag:
+        description: 'The earliest release notes to include in the release. Example: v4.5.0'
+        type: string
+        required: true
+
+jobs:
+  tag_release:
+    if: contains(fromJson('["refs/heads/master"]'), github.ref) && github.repository == 'BC-SECURITY/Empire'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Initialize mandatory git config
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email noreply@github.com
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Setup poetry
+        run: |
+          curl -sL https://install.python-poetry.org | python - -y
+      - name: Set application version as variable
+        run: |
+          echo "APP_VERSION=$(poetry version -s)" >> $GITHUB_ENV
+      - name: Extract release notes
+        id: extract_release_notes
+        # This is modified to pull multiple versions of the release notes
+        uses: vinnybod/extract-release-notes@main
+        with:
+          earliest_version: ${{ github.event.inputs.sponsorTag }}
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          tag_name: v${{ env.APP_VERSION }}
+          release_name: v${{ env.APP_VERSION }}
+          body: ${{ steps.extract_release_notes.outputs.release_notes }}
+          draft: false
+          prerelease: false
