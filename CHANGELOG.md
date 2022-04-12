@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.5.2] - 2022-04-12
+
 ## [4.5.1] - 2022-03-27
 
 -   Fixed empire_config `yaml` property to include fields that don't exist on the config object (@Vinnybod)
@@ -220,7 +222,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.2...HEAD
+
+[4.5.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.1...v4.5.2
 
 [4.5.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.0...v4.5.1
 
