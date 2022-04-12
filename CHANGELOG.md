@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.5.2] - 2022-04-12
+-   Fix string format errors in dbx listener (@awsmhacks)
+-   Fix script_end error in schtasks.py (@harry-cmdzero)
+-   Add workflows for doing the public releases (@Vinnybod)
+-   Pull out common code from listeners to a listener_utils module (@Cx01N)
+-   Fix missing script_path and fix variable references in service_stager and service_exe_stager (@harry-cmdzero)
 
 ## [4.5.1] - 2022-03-27
 
