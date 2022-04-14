@@ -53,11 +53,8 @@ Please see our [Releases](https://github.com/BC-SECURITY/Empire/releases) or [Ch
 #### 5.0-alpha Instructions
 1. Run your poetry install as before
 2. At the moment, the client is not updated for the new API, so you must use starkiller 2.0.0-alpha
-   To download Starkiller, download a [GitHub Personal Access Token](https://github.com/settings/tokens) and add it to your env
-   `export GITHUB_OAUTH_TOKEN=<your token>`. The token needs to have repo access.
-3. Run `./download-starkiller.sh` which will extract the starkiller static files to the right directory
-   To run the script, you need to have [fetch](https://github.com/gruntwork-io/fetch) installed, which can be installed by [homebrew](https://brew.sh/)
-   This is obviously not the ideal quickstart, but it works for now.
+   As long as you cloned the repo with `--recurse-submodules`, you should be good to go. If you didn't,
+   run `git submodule update --init --recursive`
 4. Start Empire with `./ps-empire server`
 5. After you startup the server, navigate to `http://localhost:8000/index.html` for Starkiller
 6. Navigate to `http://localhost:8000/docs#/` for the Swagger documentation

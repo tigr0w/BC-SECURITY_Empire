@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import datetime
 from json import JSONEncoder
@@ -11,6 +12,8 @@ from starlette.staticfiles import StaticFiles
 
 from empire.server.v2.api.EmpireCORSMiddleware import EmpireCORSMiddleware
 from empire.server.v2.api.websocket.v2_socketio import setup_socket_events
+
+log = logging.getLogger(__name__)
 
 
 class MyJsonWrapper(object):
@@ -110,8 +113,11 @@ def initialize():
 
     try:
         v2App.mount(
-            "/", StaticFiles(directory="empire/server/v2/api/static"), name="static"
+            "/",
+            StaticFiles(directory="empire/server/v2/api/starkiller/dist"),
+            name="static",
         )
+        log.info("Starkiller served at http://localhost:1337/index.html")
     except Exception as e:
         pass
 

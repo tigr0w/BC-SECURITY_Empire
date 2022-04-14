@@ -21,7 +21,10 @@ class HostProcessService(object):
         return (
             db.query(models.HostProcess)
             .filter(
-                and_(models.HostProcess.process_id == uid, models.Host.id == db_host.id)
+                and_(
+                    models.HostProcess.process_id == uid,
+                    models.HostProcess.host_id == db_host.id,
+                )
             )
             .first()
         )

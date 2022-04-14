@@ -57,15 +57,18 @@ def test_update_bypass_not_found(client, admin_auth_header):
 
 
 def test_update_bypass_name_conflict(client, admin_auth_header):
+    response = client.get("/api/v2beta/bypasses/1", headers=admin_auth_header)
+    bypass_1_name = response.json()["name"]
+
     response = client.put(
-        "/api/v2beta/bypasses/5",
+        f"/api/v2beta/bypasses/5",
         headers=admin_auth_header,
-        json={"name": "mattifestation", "code": "x=0;"},
+        json={"name": bypass_1_name, "code": "x=0;"},
     )
 
     assert response.status_code == 400
     assert (
-        response.json()["detail"] == "Bypass with name mattifestation already exists."
+        response.json()["detail"] == f"Bypass with name {bypass_1_name} already exists."
     )
 
 

@@ -28,6 +28,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
+          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
@@ -56,6 +57,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
+          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Build docker image
         run: docker-compose -f .github/docker-compose.yml build
       - name: Run tests on docker image
