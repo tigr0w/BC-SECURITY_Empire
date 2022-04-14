@@ -35,11 +35,11 @@ class Module(object):
 
         # generate the .bat launcher code to write out to the specified location
         launcher = main_menu.stagertemplatesv2.new_instance("windows/launcher_bat")
-        launcher.options["Listener"] = params["Listener"]
-        launcher.options["UserAgent"] = params["UserAgent"]
-        launcher.options["Proxy"] = params["Proxy"]
-        launcher.options["ProxyCreds"] = params["ProxyCreds"]
-        launcher.options["Delete"] = "True"
+        launcher.options["Listener"]["Value"] = params["Listener"]
+        launcher.options["UserAgent"]["Value"] = params["UserAgent"]
+        launcher.options["Proxy"]["Value"] = params["Proxy"]
+        launcher.options["ProxyCreds"]["Value"] = params["ProxyCreds"]
+        launcher.options["Delete"]["Value"] = "True"
         launcher_code = launcher.generate()
 
         # PowerShell code to write the launcher.bat out

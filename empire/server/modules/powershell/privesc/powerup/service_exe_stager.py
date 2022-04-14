@@ -38,13 +38,13 @@ class Module(object):
 
         # generate the .bat launcher code to write out to the specified location
         launcher = main_menu.stagertemplatesv2.new_instance("windows/launcher_bat")
-        launcher.options["Listener"] = params["Listener"]
-        launcher.options["UserAgent"] = params["UserAgent"]
-        launcher.options["Proxy"] = params["Proxy"]
-        launcher.options["ProxyCreds"] = params["ProxyCreds"]
-        launcher.options["ObfuscateCommand"] = params["ObfuscateCommand"]
-        launcher.options["Obfuscate"] = params["Obfuscate"]
-        launcher.options["Bypasses"] = params["Bypasses"]
+        launcher.options["Listener"]["Value"] = params["Listener"]
+        launcher.options["UserAgent"]["Value"] = params["UserAgent"]
+        launcher.options["Proxy"]["Value"] = params["Proxy"]
+        launcher.options["ProxyCreds"]["Value"] = params["ProxyCreds"]
+        launcher.options["ObfuscateCommand"]["Value"] = params["ObfuscateCommand"]
+        launcher.options["Obfuscate"]["Value"] = params["Obfuscate"]
+        launcher.options["Bypasses"]["Value"] = params["Bypasses"]
         if params["Delete"].lower() == "true":
             launcher.options["Delete"] = "True"
         else:

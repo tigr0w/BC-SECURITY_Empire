@@ -35,7 +35,6 @@ Includes:
     dict_factory() - helper that returns the SQLite query results as a dictionary
     KThread() - a subclass of threading.Thread, with a kill() method
     slackMessage() - send notifications to the Slack API
-    generate_random_script_var_name() - use in scripts to generate random variable names
 """
 from __future__ import division
 
@@ -160,16 +159,6 @@ def random_string(length=-1, charset=string.ascii_letters):
         length = random.randrange(6, 16)
     random_string = "".join(random.choice(charset) for x in range(length))
     return random_string
-
-
-def generate_random_script_var_name(origvariname, globDebug=False):
-    if globDebug:
-        return origvariname
-    else:
-        origvariname = origvariname.encode("UTF-8")
-        entrop = bytes(globentropy)
-        hash_object = hashlib.sha1(origvariname + entrop).hexdigest()
-        return hash_object[: (3 + (globentropy % 3))]
 
 
 def obfuscate_call_home_address(data):

