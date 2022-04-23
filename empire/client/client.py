@@ -272,27 +272,27 @@ class EmpireCli(object):
             if cmd_line[1] in state.listener_types:
                 menu_state.push(self.menus["UseListenerMenu"], selected=cmd_line[1])
             else:
-                print(f"No listener {cmd_line[1]}")
+                print(print_util.color(f"[!] Listener not found: {cmd_line[1]}"))
         elif cmd_line[0] == "usestager" and len(cmd_line) > 1:
             if cmd_line[1] in state.stagers:
                 menu_state.push(self.menus["UseStagerMenu"], selected=cmd_line[1])
             else:
-                print(f"No stager {cmd_line[1]}")
+                print(print_util.color(f"[!] Stager not found: {cmd_line[1]}"))
         elif cmd_line[0] == "interact" and len(cmd_line) > 1:
             if cmd_line[1] in state.agents:
                 menu_state.push(self.menus["InteractMenu"], selected=cmd_line[1])
             else:
-                print(f"No agent {cmd_line[1]}")
+                print(print_util.color(f"[!] Agent not found: {cmd_line[1]}"))
         elif cmd_line[0] == "useplugin" and len(cmd_line) > 1:
             if cmd_line[1] in state.plugins:
                 menu_state.push(self.menus["UsePluginMenu"], selected=cmd_line[1])
             else:
-                print(f"No plugin {cmd_line[1]}")
+                print(print_util.color(f"[!] Plugin not found: {cmd_line[1]}"))
         elif cmd_line[0] == "usecredential" and len(cmd_line) > 1:
             if cmd_line[1] in state.credentials or cmd_line[1] == "add":
                 menu_state.push(self.menus["UseCredentialMenu"], selected=cmd_line[1])
             else:
-                print(f"[!] No credential {cmd_line[1]}")
+                print(print_util.color(f"[!] Credential not found: {cmd_line[1]}"))
         elif cmd_line[0] == "usemodule" and len(cmd_line) > 1:
             if cmd_line[1] in state.modules:
                 if menu_state.current_menu_name == "InteractMenu":
@@ -304,7 +304,7 @@ class EmpireCli(object):
                 else:
                     menu_state.push(self.menus["UseModuleMenu"], selected=cmd_line[1])
             else:
-                print(f"No module {cmd_line[1]}")
+                print(print_util.color(f"[!] Module not found: {cmd_line[1]}"))
         elif cmd_line[0] == "editlistener" and len(cmd_line) > 1:
             if menu_state.current_menu_name == "ListenerMenu":
                 if cmd_line[1] in state.listeners:
@@ -312,7 +312,7 @@ class EmpireCli(object):
                         self.menus["EditListenerMenu"], selected=cmd_line[1]
                     )
             else:
-                print(f"No listener {cmd_line[1]}")
+                print(print_util.color(f"[!] Listener not found: {cmd_line[1]}"))
         elif text.strip() == "shell":
             if menu_state.current_menu_name == "InteractMenu":
                 menu_state.push(

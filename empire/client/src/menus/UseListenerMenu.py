@@ -73,7 +73,7 @@ class UseListenerMenu(UseMenu):
         # Validate options before generating listener, used specifically for onedrive listener AuthCode
         validate_response = state.validate_listener(self.selected, post_body)
         if "error" in validate_response.keys():
-            print(print_util.color(validate_response["error"]))
+            print(print_util.color("[!] Error: " + validate_response["error"]))
             return
 
         response = state.create_listener(self.selected, post_body)
