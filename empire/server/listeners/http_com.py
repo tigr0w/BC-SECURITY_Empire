@@ -144,7 +144,7 @@ class Listener(object):
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return render_template("default.html")
+        return open(f"{self.template_dir }/default.html", "r").read()
 
     def validate_options(self):
         """
@@ -652,7 +652,7 @@ class Listener(object):
         port = listenerOptions["Port"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
 
-        template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=template_dir)
         self.app = app
 
