@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.5.3] - 2022-04-24
+-   Fixed issue where default_response is needed for external/generate_agent (@Cx01N)
+-   Added check if bypass language is compatible (@Cx01N)
+-   Added error message formatting for listeners and stagers (@Cx01N)
+-   Added `zip` to the Dockerfile which is necessary to create ms files such as docx (@junquera)
 
 ## [4.5.2] - 2022-04-12
 
