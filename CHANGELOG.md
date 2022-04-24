@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.5.3] - 2022-04-24
+-   Fixed issue where default_response is needed for external/generate_agent (@Cx01N)
+-   Added check if bypass language is compatible (@Cx01N)
+-   Added error message formatting for listeners and stagers (@Cx01N)
+-   Added `zip` to the Dockerfile which is necessary to create ms files such as docx (@junquera)
+
 ## [4.5.2] - 2022-04-12
+
 -   Fix string format errors in dbx listener (@awsmhacks)
 -   Fix script_end error in schtasks.py (@harry-cmdzero)
 -   Add workflows for doing the public releases (@Vinnybod)
@@ -227,7 +234,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.3...HEAD
+
+[4.5.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.2...v4.5.3
 
 [4.5.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.1...v4.5.2
 

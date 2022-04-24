@@ -2586,6 +2586,7 @@ def start_restful_api(
                     "code": bypass.code,
                     "created_at": bypass.created_at,
                     "updated_at": bypass.updated_at,
+                    "language": bypass.language,
                 }
             )
 
@@ -2607,6 +2608,7 @@ def start_restful_api(
             "code": bypass.code,
             "created_at": bypass.created_at,
             "updated_at": bypass.updated_at,
+            "language": bypass.language,
         }
 
     @app.route("/api/bypasses", methods=["POST"])
@@ -2632,6 +2634,7 @@ def start_restful_api(
                 "code": bypass.code,
                 "created_at": bypass.created_at,
                 "updated_at": bypass.updated_at,
+                "language": bypass.language,
             }
 
         return make_response(jsonify({"error": f"bypass {name} already exists"}), 400)
@@ -2657,6 +2660,7 @@ def start_restful_api(
             "code": bypass.code,
             "created_at": bypass.created_at,
             "updated_at": bypass.updated_at,
+            "language": bypass.language,
         }
 
     @app.route("/api/bypasses/<int:uid>", methods=["DELETE"])
