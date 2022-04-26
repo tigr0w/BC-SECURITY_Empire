@@ -10,13 +10,13 @@ on:
 
 jobs:
   build:
+    if: ${{ github.repository == 'BC-SECURITY/Empire' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
       - name: Publish Docker
-        if: ${{ github.repository == 'BC-SECURITY/Empire' }}
         uses: elgohr/Publish-Docker-Github-Action@2.9
         with:
           name: bcsecurity/empire

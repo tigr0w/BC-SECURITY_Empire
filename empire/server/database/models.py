@@ -233,8 +233,8 @@ class Reporting(Base):
             self.id)
 
 
-class Function(Base):
-    __tablename__ = "functions"
+class Keyword(Base):
+    __tablename__ = "keywords"
     keyword = Column(String(255), primary_key=True)
     replacement = Column(String(255))
 
@@ -264,5 +264,6 @@ class Bypass(Base):
     id = Column(Integer, Sequence("bypass_seq"), primary_key=True)
     name = Column(String(255), unique=True)
     code = Column(Text)
+    language = String(255)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
     updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)

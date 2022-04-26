@@ -30,6 +30,7 @@ import donut
 import macholib.MachO
 import yaml
 from past.utils import old_div
+from sqlalchemy import and_
 
 from empire.server.database import models
 from empire.server.database.base import Session
@@ -68,8 +69,6 @@ class Stagers(object):
                 # don't load up any of the templates
                 if fnmatch.fnmatch(filename, "*template.yaml"):
                     continue
-                if file_path is not None:
-                    bypass_name = file_path.split(root_path)[-1][0:-5]
 
                 try:
                     with open(file_path, "r") as stream:
@@ -87,7 +86,9 @@ class Stagers(object):
                                 yaml_bypass["script"]
                             )
                             my_model = models.Bypass(
-                                name=yaml_bypass["name"], code=yaml_bypass["script"]
+                                name=yaml_bypass["name"],
+                                code=yaml_bypass["script"],
+                                language=yaml_bypass["language"],
                             )
                             Session().add(my_model)
                     Session().commit()
@@ -177,14 +178,19 @@ class Stagers(object):
         """
         bypasses_parsed = []
         for bypass in bypasses.split(" "):
-            b = (
+            bypass = (
                 Session()
                 .query(models.Bypass)
                 .filter(models.Bypass.name == bypass)
                 .first()
             )
-            if b:
-                bypasses_parsed.append(b.code)
+            if bypass:
+                if bypass.language == language:
+                    bypasses_parsed.append(bypass.code)
+                else:
+                    print(
+                        helpers.color(f"[!] Invalid bypass language: {bypass.language}")
+                    )
 
         if not listenerName in self.mainMenu.listeners.activeListeners:
             print(helpers.color("[!] Invalid listener: %s" % (listenerName)))
