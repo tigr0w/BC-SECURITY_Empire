@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Converted reset.sh script to Python and add tests (@Vinnybod)
 -   Add a `--reset` flag to the client (@Vinnybod)
 
+## [4.5.4] - 2022-04-26
+
+-   Fixed typo from 4.5.3 with the bypass database model (@Vinnybod)
+
 ## [4.5.3] - 2022-04-24
+
 -   Fixed issue where default_response is needed for external/generate_agent (@Cx01N)
 -   Added check if bypass language is compatible (@Cx01N)
 -   Added error message formatting for listeners and stagers (@Cx01N)
@@ -236,7 +241,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.4...HEAD
+
+[4.5.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.3...v4.5.4
 
 [4.5.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.2...v4.5.3
 
