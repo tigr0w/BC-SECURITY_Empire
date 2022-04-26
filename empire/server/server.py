@@ -52,7 +52,7 @@ cli = sys.modules["flask.cli"]
 cli.show_server_banner = lambda *x: None
 
 # Disable http warnings
-if empire_config.yaml.get("suppress-self-cert-warning", True):
+if empire_config.supress_self_cert_warning:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Set proxy IDs
@@ -1710,7 +1710,7 @@ def start_restful_api(
         """
         Imports a PowerShell script and keeps it in memory in the agent.
 
-        Takes {'script':'script_location'}
+        Takes {'script_name':'script_name'}
         """
         agent = main.agents.get_agent_from_name_or_session_id(agent_name)
 
@@ -1719,26 +1719,25 @@ def start_restful_api(
                 jsonify({"error": "agent name %s not found" % agent_name}), 404
             )
 
-        path = main.installPath + "/" + request.json["script"]
+        script_name = request.json["script_name"]
 
-        if path != "" and os.path.exists(path):
-            with open(path, "r") as open_file:
-                script_data = open_file.read()
-
-            # strip out comments and blank lines from the imported script
-            script_data = helpers.strip_powershell_comments(script_data)
-
-            # add task command to agent taskings
-            msg = "tasked agent %s to run command %s" % (agent.session_id, script_data)
-            main.agents.save_agent_log(agent.session_id, msg)
-            task_id = main.agents.add_agent_task_db(
-                agent.session_id, "TASK_SCRIPT_IMPORT", script_data, uid=g.user["id"]
-            )
-
-            return jsonify({"success": True, "taskID": task_id})
-
-        else:
+        try:
+            with open(f"{main.directory['downloads']}{script_name}", "r") as f:
+                script_data = f.read()
+        except:
             return make_response(jsonify({"error": "Unable to find script"}))
+
+        # strip out comments and blank lines from the imported script
+        script_data = helpers.strip_powershell_comments(script_data)
+
+        # add task command to agent taskings
+        msg = "tasked agent %s to run command %s" % (agent.session_id, script_data)
+        main.agents.save_agent_log(agent.session_id, msg)
+        task_id = main.agents.add_agent_task_db(
+            agent.session_id, "TASK_SCRIPT_IMPORT", script_data, uid=g.user["id"]
+        )
+
+        return jsonify({"success": True, "taskID": task_id})
 
     @app.route("/api/agents/<string:agent_name>/script_command", methods=["POST"])
     def task_agent_script_command(agent_name):
@@ -2587,6 +2586,7 @@ def start_restful_api(
                     "code": bypass.code,
                     "created_at": bypass.created_at,
                     "updated_at": bypass.updated_at,
+                    "language": bypass.language,
                 }
             )
 
@@ -2608,6 +2608,7 @@ def start_restful_api(
             "code": bypass.code,
             "created_at": bypass.created_at,
             "updated_at": bypass.updated_at,
+            "language": bypass.language,
         }
 
     @app.route("/api/bypasses", methods=["POST"])
@@ -2633,6 +2634,7 @@ def start_restful_api(
                 "code": bypass.code,
                 "created_at": bypass.created_at,
                 "updated_at": bypass.updated_at,
+                "language": bypass.language,
             }
 
         return make_response(jsonify({"error": f"bypass {name} already exists"}), 400)
@@ -2658,6 +2660,7 @@ def start_restful_api(
             "code": bypass.code,
             "created_at": bypass.created_at,
             "updated_at": bypass.updated_at,
+            "language": bypass.language,
         }
 
     @app.route("/api/bypasses/<int:uid>", methods=["DELETE"])
@@ -2752,16 +2755,14 @@ def start_restful_api(
             keyword_replacement = request.json["keyword_replacement"]
             keyword_obfuscation = (
                 Session()
-                .query(models.Function)
-                .filter(models.Function.keyword == keyword)
+                .query(models.Keyword)
+                .filter(models.Keyword.keyword == keyword)
                 .first()
             )
             if not keyword_obfuscation:
                 try:
                     Session().add(
-                        models.Function(
-                            keyword=keyword, replacement=keyword_replacement
-                        )
+                        models.Keyword(keyword=keyword, replacement=keyword_replacement)
                     )
                     msg = f"[*] Keyword obfuscation set to replace {request.json['keyword_obfuscation']} with {keyword_replacement}"
                 except Exception as e:
@@ -3269,7 +3270,7 @@ def run(args):
         """
         Autorun plugin commands at server startup.
         """
-        plugins = empire_config.yaml.get("plugins")
+        plugins = empire_config.plugins
         if plugins:
             for plugin in plugins:
                 use_plugin = main.loadedPlugins[plugin]

@@ -25,6 +25,8 @@ jobs:
         python-version: [ '3.8', '3.9' ]
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
@@ -35,7 +37,7 @@ jobs:
       - id: cache-dependencies
         uses: actions/cache@v1
         with:
-          path: ~/.local/share/virtualenvs
+          path: /home/runner/.cache/pypoetry/virtualenvs
           key: ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
@@ -44,3 +46,18 @@ jobs:
       - name: Run test suite
         run: |
           poetry run pytest
+  test_image:
+    needs: test
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    name: Test Docker Image
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Build docker image
+        run: docker-compose -f .github/docker-compose.yml build
+      - name: Run tests on docker image
+        run: docker-compose -f .github/docker-compose.yml run test
+
+

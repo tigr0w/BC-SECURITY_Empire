@@ -79,11 +79,19 @@ class UseModuleMenu(UseMenu):
         if "File" in self.record_options:
             # if a full path upload to server, else use file from download directory
             if pathlib.Path(self.record_options["File"]["Value"]).is_file():
-                file_directory = self.record_options["File"]["Value"]
-                filename = file_directory.split("/")[-1]
-                self.record_options["File"]["Value"] = filename
+                try:
+                    file_directory = self.record_options["File"]["Value"]
+                    filename = file_directory.split("/")[-1]
+                    self.record_options["File"]["Value"] = filename
 
-                data = get_data_from_file(file_directory)
+                    data = get_data_from_file(file_directory)
+                except:
+                    print(
+                        print_util.color(
+                            "[!] Error: Invalid filename or file does not exist"
+                        )
+                    )
+                    return
                 response = state.upload_file(filename, data)
                 if "success" in response.keys():
                     print(print_util.color("[+] File uploaded to server successfully"))

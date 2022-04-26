@@ -90,7 +90,7 @@ class InteractMenu(Menu):
                     display=HTML(f"{full['taskID']} <purple>({help_text})</purple>"),
                     start_position=-len(word_before_cursor),
                 )
-        elif cmd_line[0] in ["upload"]:
+        elif cmd_line[0] in ["upload", "script_import"]:
             if len(cmd_line) > 1 and cmd_line[1] == "-p":
                 yield Completion(
                     state.search_files(), start_position=-len(word_before_cursor)
@@ -159,25 +159,49 @@ class InteractMenu(Menu):
         )
 
     @command
-    def script_import(self, script_location: str) -> None:
+    def script_import(self, local_script_location: str) -> None:
         """
-        Imports a PowerShell script from the server and keeps it in memory in the agent.
+        Uploads a PowerShell script to the server and runs it in memory on the agent. Use '-p' for a file selection dialog.
 
-        Usage: script_import <script_location>
+        Usage: script_import <local_script_location>
         """
-        response = state.agent_script_import(self.session_id, script_location)
-
-        if "success" in response.keys():
+        try:
+            filename = local_script_location.split("/")[-1]
+            data = get_data_from_file(local_script_location)
+        except:
             print(
-                print_util.color(
-                    "[*] Tasked "
-                    + self.selected
-                    + " to run Task "
-                    + str(response["taskID"])
-                )
+                print_util.color("[!] Error: Invalid filename or file does not exist")
             )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+            return
+
+        if data:
+            response = state.upload_file(filename, data)
+            if "success" in response.keys():
+                print(print_util.color("[+] File uploaded to server successfully"))
+
+                # Save copy off to downloads folder so last value points to the correct file
+                data = base64.b64decode(data.encode("UTF-8"))
+                with open(f"{state.directory['downloads']}{filename}", "wb+") as f:
+                    f.write(data)
+
+            elif "error" in response.keys():
+                print(print_util.color("[!] Error: " + response["error"]))
+
+            response = state.agent_script_import(self.session_id, filename)
+            if "success" in response.keys():
+                print(
+                    print_util.color(
+                        "[*] Tasked "
+                        + self.selected
+                        + " to run Task "
+                        + str(response["taskID"])
+                    )
+                )
+            elif "error" in response.keys():
+                print(print_util.color("[!] Error: " + response["error"]))
+
+        else:
+            print(print_util.color("[!] Error: Invalid file path"))
 
     @command
     def script_command(self, script_cmd: str) -> None:

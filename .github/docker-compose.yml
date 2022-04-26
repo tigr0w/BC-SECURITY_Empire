@@ -1,0 +1,10 @@
+# This is for running the tests in the Docker file so we can hopefully catch
+# any issues with the Dockerfile itself. Will become useful as we add more tests
+# (the majority of which are already in 5.0)
+version: '3'
+
+services:
+  test:
+    build: ../
+    entrypoint: poetry
+    command: run python -m pytest .

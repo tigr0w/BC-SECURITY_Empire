@@ -147,7 +147,7 @@ class Modules(object):
         msg = f"tasked agent {session_id} to run module {module.name}"
         self.main_menu.agents.save_agent_log(session_id, msg)
 
-        if empire_config.yaml.get("modules", {}).get("retain-last-value", True):
+        if empire_config.modules.retain_last_value:
             self._set_default_values(module, cleaned_options)
 
         return {"success": True, "taskID": task_id, "msg": msg}, None
@@ -160,9 +160,9 @@ class Modules(object):
         """
         try:
             if obfuscate:
-                obfuscated_module_source = empire_config.yaml.get("directories", {})[
-                    "obfuscated_module_source"
-                ]
+                obfuscated_module_source = (
+                    empire_config.directories.obfuscated_module_source
+                )
                 module_path = os.path.join(obfuscated_module_source, module_name)
                 # If pre-obfuscated module exists then return code
                 if os.path.exists(module_path):
@@ -172,9 +172,7 @@ class Modules(object):
 
                 # If pre-obfuscated module does not exist then generate obfuscated code and return it
                 else:
-                    module_source = empire_config.yaml.get("directories", {})[
-                        "module_source"
-                    ]
+                    module_source = empire_config.directories.module_source
                     module_path = os.path.join(module_source, module_name)
                     with open(module_path, "r") as f:
                         module_code = f.read()
@@ -187,9 +185,7 @@ class Modules(object):
 
             # Use regular/unobfuscated code
             else:
-                module_source = empire_config.yaml.get("directories", {})[
-                    "module_source"
-                ]
+                module_source = empire_config.directories.module_source
                 module_path = os.path.join(module_source, module_name)
                 with open(module_path, "r") as f:
                     module_code = f.read()
@@ -334,7 +330,7 @@ class Modules(object):
     ) -> Tuple[Optional[str], Optional[str]]:
         if module.script_path:
             script_path = os.path.join(
-                empire_config.yaml.get("directories", {})["module_source"],
+                empire_config.directories.module_source,
                 module.script_path,
             )
             with open(script_path, "r") as stream:
@@ -530,7 +526,7 @@ class Modules(object):
         elif my_model.script_path:
             if not path.exists(
                 os.path.join(
-                    empire_config.yaml.get("directories", {})["module_source"],
+                    empire_config.directories.module_source,
                     my_model.script_path,
                 )
             ):

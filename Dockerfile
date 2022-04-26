@@ -32,7 +32,8 @@ RUN apt-get update && \
 	    python3-dev \
 	    python3-pip \
 	    apt-transport-https \
-        xclip \
+	    xclip \
+	    zip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb && \

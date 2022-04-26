@@ -12,6 +12,25 @@ It will then open a pull request into `sponsors-dev`.
 
 Review and merge the pull request. **DO NOT SQUASH**
 
+If this step fails, it is probably due to a merge conflict. In this case,
+the merge conflicts need to be resolved, and its best to run this locally.
+
+```bash
+cd /tmp
+git clone git@github.com:bc-security/empire-sponsors.git
+cd empire-sponsors
+git remote add upstream git@github.com:bc-security/empire.git
+git fetch upstream
+git checkout sponsors-dev
+git checkout -b pre-release/merge-dev
+git merge upstream/dev
+
+# Fix the conflicts, then:
+git add -A
+git merge —continue
+git push origin pre-release/merge-dev
+```
+
 ### 2. Start Release
 Start a release by running the `Sponsors - Create Release` manual workflow on the sponsors-dev branch.
 The workflow will then create a release branch, push it to the repo, and create a pull request into `sponsors-dev` and `sponsors-master`.

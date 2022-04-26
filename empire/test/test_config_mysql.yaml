@@ -1,7 +1,7 @@
 suppress-self-cert-warning: true
 database:
-  type: sqlite
-  location: empire/server/data/empire.db
+  type: mysql
+  url: localhost:3306
   defaults:
     # staging key will first look at OS environment variables, then here.
     # If empty, will be prompted (like Empire <3.7).
@@ -19,15 +19,7 @@ database:
     ip-blacklist: ""
 modules:
   retain-last-value: false
-plugins:
-  # Auto-load plugin with defined settings
-  csharpserver:
-    status: start
 directories:
   downloads: empire/server/downloads/
   module_source: empire/server/data/module_source/
   obfuscated_module_source: empire/server/data/obfuscated_module_source/
-keyword_obfuscation:
-  # List of keywords to obfuscate
-  - Invoke-Empire
-  - Invoke-Mimikatz

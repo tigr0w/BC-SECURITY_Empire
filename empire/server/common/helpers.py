@@ -8,7 +8,6 @@ Includes:
     validate_ntlm() - checks if the passed string is an NTLM hash
     generate_ip_list() - generates an IP range list from a variety of inputs
     random_string() - returns a random string of the specified number of characters
-    randomize_capitalization() - randomizes the capitalization of a string
     chunks() - used to split a string into chunks
     strip_python_comments() - strips Python newlines and comments
     enc_powershell() - encodes a PowerShell command into a form usable by powershell.exe -enc ...
@@ -36,7 +35,6 @@ Includes:
     dict_factory() - helper that returns the SQLite query results as a dictionary
     KThread() - a subclass of threading.Thread, with a kill() method
     slackMessage() - send notifications to the Slack API
-    generate_random_script_var_name() - use in scripts to generate random variable names
 """
 from __future__ import division, print_function
 
@@ -164,30 +162,11 @@ def random_string(length=-1, charset=string.ascii_letters):
     return random_string
 
 
-def generate_random_script_var_name(origvariname, globDebug=False):
-    if globDebug:
-        return origvariname
-    else:
-        origvariname = origvariname.encode("UTF-8")
-        entrop = bytes(globentropy)
-        hash_object = hashlib.sha1(origvariname + entrop).hexdigest()
-        return hash_object[: (3 + (globentropy % 3))]
-
-
-def randomize_capitalization(data):
-    """
-    Randomize the capitalization of a string.
-    """
-    return "".join(random.choice([k.upper(), k]) for k in data)
-
-
 def obfuscate_call_home_address(data):
     """
     Poowershell script to base64 encode variable contents and execute on command as if clear text in powershell
     """
-    tmp = "$(" + randomize_capitalization(
-        "[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"
-    )
+    tmp = "$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('"
     tmp += (enc_powershell(data)).decode("UTF-8") + "')))"
     return tmp
 

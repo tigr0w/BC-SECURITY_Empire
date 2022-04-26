@@ -13,7 +13,6 @@ import cmd
 import fnmatch
 import json
 import os
-import pkgutil
 import sys
 import threading
 import time
@@ -47,7 +46,7 @@ from . import (
 )
 from .events import log_event
 
-VERSION = "4.4.1 BC Security Fork"
+VERSION = "4.5.3 BC Security Fork"
 
 
 class MainMenu(cmd.Cmd):
@@ -178,9 +177,11 @@ class MainMenu(cmd.Cmd):
         print(helpers.color("[*] Searching for plugins at {}".format(plugin_path)))
 
         # Import old v1 plugins (remove in 5.0)
-        plugin_names =  os.listdir(plugin_path)
+        plugin_names = os.listdir(plugin_path)
         for plugin_name in plugin_names:
-            if not plugin_name.lower().startswith("__init__") and plugin_name.lower().endswith(".py"):
+            if not plugin_name.lower().startswith(
+                "__init__"
+            ) and plugin_name.lower().endswith(".py"):
                 file_path = os.path.join(plugin_path, plugin_name)
                 plugins.load_plugin(self, plugin_name, file_path)
 

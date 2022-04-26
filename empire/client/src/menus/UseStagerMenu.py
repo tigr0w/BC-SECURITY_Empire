@@ -88,7 +88,7 @@ class UseStagerMenu(UseMenu):
         response = state.create_stager(self.selected, post_body)
 
         if "error" in response:
-            print(print_util.color(response["error"]))
+            print(print_util.color("[!] Error: " + response["error"]))
             return
         elif response[self.selected].get("OutFile", {}).get("Value"):
             if response[self.selected].get("Output", "") == "":
