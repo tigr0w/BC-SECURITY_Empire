@@ -264,6 +264,6 @@ class Bypass(Base):
     id = Column(Integer, Sequence("bypass_seq"), primary_key=True)
     name = Column(String(255), unique=True)
     code = Column(Text)
-    language = String(255)
+    language = Column(String(255))
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
     updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
