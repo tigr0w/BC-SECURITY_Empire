@@ -1,9 +1,8 @@
-import subprocess
+import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from empire import arguments
 from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.database.defaults import (
@@ -28,20 +27,14 @@ else:
 
 Session = scoped_session(sessionmaker(bind=engine))
 
-args = arguments.args
-if args.reset:
-    choice = input(
-        "\x1b[1;33m[>] Would you like to reset your Empire instance? [y/N]: \x1b[0m"
-    )
-    if choice.lower() == "y":
-        # The reset script will delete the default db file. This will drop tables if connected to MySQL or
-        # a different SQLite .db file.
-        Base.metadata.drop_all(engine)
-        subprocess.call("./setup/reset.sh")
-    else:
-        pass
 
 Base.metadata.create_all(engine)
+
+
+def reset_db():
+    Base.metadata.drop_all(engine)
+    if database_config.type == "sqlite":
+        os.unlink(database_config.location)
 
 
 def color(string, color=None):
@@ -98,7 +91,7 @@ if len(Session().query(models.Config).all()) == 0:
     Session.remove()
 
 if len(Session().query(models.Keyword).all()) == 0:
-    print(color('[*] Adding default keyword obfuscation functions.'))
+    print(color("[*] Adding default keyword obfuscation functions."))
     functions = get_default_keyword_obfuscation()
 
     for function in functions:

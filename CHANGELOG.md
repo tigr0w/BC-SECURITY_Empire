@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+-   Converted reset.sh script to Python and add tests (@Vinnybod)
+-   Add a `--reset` flag to the client (@Vinnybod)
 
 ## [4.5.3] - 2022-04-24
 -   Fixed issue where default_response is needed for external/generate_agent (@Cx01N)

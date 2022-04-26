@@ -1,5 +1,6 @@
 import re
 import shlex
+import sys
 import threading
 import time
 from typing import Dict, List, Optional, get_type_hints
@@ -11,7 +12,6 @@ from prompt_toolkit.completion import Completer
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
-from empire.arguments import args
 from empire.client.src.bindings import bindings
 from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.EmpireCliState import state
@@ -35,7 +35,7 @@ from empire.client.src.menus.UsePluginMenu import use_plugin_menu
 from empire.client.src.menus.UseStagerMenu import use_stager_menu
 from empire.client.src.MenuState import menu_state
 from empire.client.src.ShortcutHandler import shortcut_handler
-from empire.client.src.utils import print_util
+from empire.client.src.utils import file_util, print_util
 
 
 class MyCustomCompleter(Completer):
@@ -407,7 +407,24 @@ class EmpireCli(object):
                     menu_state.current_menu.execute_shortcut(cmd_line[0], cmd_line[1:])
 
 
-def start():
+def reset():
+    # todo empire_config in the client should be converted to a class like the one in the server.
+    download_dir = empire_config.yaml.get("directories", {}).get("downloads")
+    if download_dir:
+        file_util.remove_dir_contents(download_dir)
+    stager_dir = empire_config.yaml.get("directories", {}).get("generated-stagers")
+    if stager_dir:
+        file_util.remove_dir_contents(stager_dir)
+
+
+def start(args):
+    if args.reset:
+        choice = input(
+            "\x1b[1;33m[>] Would you like to reset your Empire Client instance? [y/N]: \x1b[0m"
+        )
+        if choice.lower() == "y":
+            reset()
+            sys.exit()
     try:
         empire = EmpireCli()
         empire.main()
