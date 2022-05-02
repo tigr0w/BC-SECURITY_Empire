@@ -12,6 +12,7 @@ from prompt_toolkit.completion import Completer
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
+from empire.arguments import args
 from empire.client.src.bindings import bindings
 from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.EmpireCliState import state
