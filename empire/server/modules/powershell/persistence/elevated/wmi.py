@@ -6,6 +6,7 @@ from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
+from empire.server.common.empire import MainMenu
 from empire.server.common.module_models import PydanticModule
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_error_message
@@ -14,7 +15,7 @@ from empire.server.utils.module_util import handle_error_message
 class Module(object):
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: PydanticModule,
         params: Dict,
         obfuscate: bool = False,
@@ -83,7 +84,7 @@ class Module(object):
             script += (
                 "'WMI persistence with subscription named " + sub_name + " removed.'"
             )
-            script = data_util.keyword_obfuscation(script)
+            script = main_menu.obfuscationv2.obfuscate_keywords(script)
 
             script = main_menu.modulesv2.finalize_module(
                 script=script,

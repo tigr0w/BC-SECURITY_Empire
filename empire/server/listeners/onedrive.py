@@ -10,6 +10,7 @@ from typing import List, Optional, Tuple
 from requests import Request, Session
 
 from empire.server.common import encryption, helpers
+from empire.server.common.empire import MainMenu
 from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
 from empire.server.utils.module_util import handle_validate_message
@@ -19,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
         self.info = {
             "Name": "Onedrive",
             "Authors": ["@mr64bit"],
@@ -287,8 +288,7 @@ class Listener(object):
                 launcher = data_util.ps_convert_to_oneliner(launcher)
 
                 if obfuscate:
-                    launcher = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    launcher = self.mainMenu.obfuscationv2.obfuscate(
                         launcher,
                         obfuscationCommand=obfuscationCommand,
                     )
@@ -329,7 +329,7 @@ class Listener(object):
             stager = f.read()
             f.close()
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
+            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             stager = stager.replace(
                 "REPLACE_STAGING_FOLDER", "%s/%s" % (base_folder, staging_folder)
@@ -519,7 +519,7 @@ class Listener(object):
             agent_code = f.read()
             f.close()
 
-            agent_code = data_util.keyword_obfuscation(agent_code)
+            agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
 
             comms_code = self.generate_comms(
                 listener_options,

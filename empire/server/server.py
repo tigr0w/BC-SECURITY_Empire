@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 
 import urllib3
-from flask import jsonify, make_response, request
 
 # Empire imports
 from empire.server.common import empire
@@ -16,6 +15,7 @@ from empire.server.utils.log_util import LOG_FORMAT, SIMPLE_LOG_FORMAT, ColorFor
 from empire.server.v2.api import v2App
 
 log = logging.getLogger(__name__)
+main = None
 
 
 # Disable http warnings
@@ -52,43 +52,6 @@ def setup_logging(args):
     root_logger.addHandler(root_logger_stream_handler)
 
 
-def start_restful_api():
-    # todo vr: can we remove the global obfuscate flag and if not, how should it be handled in v2?
-    def set_admin_options():
-        """
-        Admin menu options for obfuscation
-        """
-        # Set global obfuscation
-        if "obfuscate" in request.json:
-            if request.json["obfuscate"].lower() == "true":
-                main.obfuscate = True
-            else:
-                main.obfuscate = False
-            msg = f"[*] Global obfuscation set to {request.json['obfuscate']}"
-
-        # if obfuscate command is given then set, otherwise use default
-        elif "obfuscate_command" in request.json:
-            main.obfuscateCommand = request.json["obfuscate_command"]
-            msg = f"[*] Global obfuscation command set to {request.json['obfuscate_command']}"
-
-        elif "preobfuscation" in request.json:
-            obfuscate_command = request.json["preobfuscation"]
-            if request.json["force_reobfuscation"].lower() == "true":
-                force_reobfuscation = True
-            else:
-                force_reobfuscation = False
-            msg = f"[*] Preobfuscating all modules with {obfuscate_command}"
-            main.preobfuscate_modules(obfuscate_command, force_reobfuscation)
-        else:
-            return make_response(
-                jsonify({"error": "JSON body must include key valid admin option"}), 400
-            )
-        return jsonify({"success": True})
-
-
-main = None
-
-
 def run(args):
     setup_logging(args)
     global main
@@ -104,11 +67,11 @@ def run(args):
         args.restip = args.restip[0]
 
     if args.version:
-        # todo vr this isn't exiting properly.
         log.info(empire.VERSION)
+        sys.exit()
 
     elif args.reset:
-        # Reset called from database/base.py
+        # todo vr Reset called from database/base.py
         sys.exit()
 
     else:
@@ -117,14 +80,6 @@ def run(args):
             subprocess.call("./setup/cert.sh")
             time.sleep(3)
 
-        def thread_v2_api():
-            v2App.initialize()
-
-        thread_v2_api()
-
-        # thread3 = helpers.KThread(target=thread_v2_api)
-        # thread3.daemon = True
-        # thread3.start()
-        # sleep(2)
+        v2App.initialize()
 
     sys.exit()

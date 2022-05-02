@@ -1,5 +1,7 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
+from starlette.responses import Response
+from starlette.status import HTTP_204_NO_CONTENT
 
 from empire.server.database import models
 from empire.server.server import main
@@ -70,9 +72,7 @@ async def update_bypass(
     return domain_to_dto_bypass(resp)
 
 
-# should there be a way to task agents to die without deleting them?
-# what if i want to browse their tasks?
-@router.delete("/{uid}", status_code=204)
+@router.delete("/{uid}", status_code=HTTP_204_NO_CONTENT, response_class=Response)
 async def delete_bypass(
     uid: str,
     db: Session = Depends(get_db),

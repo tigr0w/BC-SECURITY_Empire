@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Dict, List, Union
+from typing import Dict, List
 
 import yaml
 from pydantic import BaseModel, Extra, Field
@@ -8,9 +8,26 @@ from pydantic import BaseModel, Extra, Field
 log = logging.getLogger(__name__)
 
 
+class DatabaseDefaultObfuscationConfig(BaseModel):
+    language: str = "powershell"
+    enabled: bool = False
+    command: str = r"Token\All\1"
+    module: str = "invoke-obfuscation"
+
+
+class DatabaseDefaultsConfig(BaseModel):
+    staging_key: str = "RANDOM"
+    username: str = "empireadmin"
+    password: str = "password123"
+    obfuscation: List[DatabaseDefaultObfuscationConfig] = []
+    keyword_obfuscation: List[str] = []
+    ip_whitelist: str = Field("", alias="ip-whitelist")
+    ip_blacklist: str = Field("", alias="ip-blacklist")
+
+
 class DatabaseConfig(BaseModel):
     type: str
-    defaults: Dict[str, Union[bool, int, str]]
+    defaults: DatabaseDefaultsConfig
 
     # sqlite
     location: str = "empire/server/data/empire.db"
@@ -55,7 +72,6 @@ class EmpireConfig(BaseModel):
     modules: ModulesConfig
     plugins: Dict[str, Dict[str, str]] = {}
     directories: DirectoriesConfig
-    keyword_obfuscation: List[str] = []
     logging: LoggingConfig
     debug: DebugConfig
 

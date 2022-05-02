@@ -124,7 +124,10 @@ async def update_listener(
 
 
 @router.delete(
-    "/{uid}", status_code=204, dependencies=[Depends(get_current_active_user)]
+    "/{uid}",
+    status_code=HTTP_204_NO_CONTENT,
+    response_class=Response,
+    dependencies=[Depends(get_current_active_user)],
 )
 async def delete_listener(
     uid: int,
@@ -132,5 +135,3 @@ async def delete_listener(
     db_listener: models.Listener = Depends(get_listener),
 ):
     listener_service.delete_listener(db, db_listener)
-
-    return Response(status_code=HTTP_204_NO_CONTENT)

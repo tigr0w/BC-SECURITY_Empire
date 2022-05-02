@@ -9,7 +9,6 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Integer,
-    PickleType,
     Sequence,
     String,
     Table,
@@ -188,8 +187,6 @@ class Config(Base):
     autorun_command = Column(Text, nullable=False)
     autorun_data = Column(Text, nullable=False)
     rootuser = Column(Boolean, nullable=False)
-    obfuscate = Column(Boolean, nullable=False)
-    obfuscate_command = Column(Text, nullable=False)
     jwt_secret_key = Column(Text, nullable=False)
 
     def __repr__(self):
@@ -351,3 +348,11 @@ class Stager(Base):
     updated_at = Column(
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
+
+
+class ObfuscationConfig(Base):
+    __tablename__ = "obfuscation_config"
+    language = Column(String(255), primary_key=True)
+    command = Column(Text)
+    module = Column(String(255))
+    enabled = Column(Boolean)

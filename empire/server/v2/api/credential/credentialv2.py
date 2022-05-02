@@ -1,5 +1,7 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
+from starlette.responses import Response
+from starlette.status import HTTP_204_NO_CONTENT
 
 from empire.server.database import models
 from empire.server.server import main
@@ -87,7 +89,10 @@ async def update_credential(
 
 
 @router.delete(
-    "/{uid}", status_code=204, dependencies=[Depends(get_current_active_user)]
+    "/{uid}",
+    status_code=HTTP_204_NO_CONTENT,
+    response_class=Response,
+    dependencies=[Depends(get_current_active_user)],
 )
 async def delete_credential(
     uid: str,

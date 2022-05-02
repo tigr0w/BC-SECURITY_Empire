@@ -255,22 +255,20 @@ def test_create_task_module(client, admin_auth_header, agent):
         f"/api/v2beta/agents/{agent.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "powershell_situational_awareness_host_seatbelt",
-            "options": {  # todo if i don't include an optional field, what should be expected?
-                "Command": "-group=all",
-                "Group": "",
-                "Computername": "",
-                "Username": "",
-                "Password": "",
-                "Full": "True",
-                "Quiet": "True",
+            "module_slug": "powershell_credentials_invoke_internal_monologue",
+            "options": {  # todo vr if i don't include an optional field, what should be expected?
+                "Challenge": "1122334455667788",
+                "Downgrade": "",
+                "Impersonate": "",
+                "Restore": "",
+                "Verbose": "",
             },
         },
     )
 
     assert response.status_code == 201
     assert response.json()["id"] > 0
-    assert response.json()["input"].startswith("function Invoke-Seatbelt")
+    assert response.json()["input"].startswith("function Invoke-InternalMonologue")
     assert response.json()["agent_id"] == agent.session_id
 
 

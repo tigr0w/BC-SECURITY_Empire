@@ -8,27 +8,16 @@ def convert_options_to_params(options):
     return params
 
 
-def fake_obfuscate(installPath, psScript, obfuscationCommand):
+def fake_obfuscate(psScript, obfuscationCommand):
     return psScript
 
 
-def test_load_modules(monkeypatch, capsys):
+def test_load_modules(monkeypatch, capsys, db):
     """
     This is just meant to be a small smoke test to ensure that the modules
     that come with Empire can be loaded properly at startup and a script can
     be generated with the default values.
     """
-    monkeypatch.setattr(
-        "empire.server.v2.core.module_service.SessionLocal", MagicMock()
-    )
-
-    data_util_mock = Mock()
-    data_util_mock.obfuscate = Mock(side_effect=fake_obfuscate)
-    data_util_mock.keyword_obfuscation = Mock(side_effect=lambda x: x)
-    monkeypatch.setattr(
-        "empire.server.v2.core.module_service.data_util", data_util_mock
-    )
-
     from empire.server.v2.core.module_service import ModuleService
 
     main_menu = Mock()
@@ -38,6 +27,14 @@ def test_load_modules(monkeypatch, capsys):
     agent_mock.language_version = "7.0"
     main_menu.agents.get_agent_db.return_value = agent_mock
 
+    main_menu.obfuscationv2 = Mock()
+    obf_conf_mock = MagicMock()
+    main_menu.obfuscationv2.get_obfuscation_config = Mock(
+        side_effect=lambda x, y: obf_conf_mock
+    )
+    main_menu.obfuscationv2.obfuscate = Mock(side_effect=fake_obfuscate)
+    main_menu.obfuscationv2.obfuscate_keywords = Mock(side_effect=lambda x: x)
+
     modules = ModuleService(main_menu)
 
     # Fail if a module fails to load.
@@ -45,10 +42,12 @@ def test_load_modules(monkeypatch, capsys):
         out, err = capsys.readouterr()
         assert "Error loading module" not in out
 
+    assert len(modules.modules) > 0
+
     for key, module in modules.modules.items():
         if not module.advanced.custom_generate:
             resp, err = modules._generate_script(
-                module, convert_options_to_params(module.options), 1
+                db, module, convert_options_to_params(module.options), None
             )
 
             # not gonna bother mocking out the csharp server right now.

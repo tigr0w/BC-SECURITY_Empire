@@ -8,9 +8,15 @@ database:
     staging-key: RANDOM
     username: empireadmin
     password: password123
-    obfuscate: false
-    # Note the escaped backslashes
-    obfuscate-command: "Token\\All\\1"
+    obfuscation:
+      - language: powershell
+        enabled: false
+        command: "Token\\All\\1"
+        module: "invoke-obfuscation"
+    keyword_obfuscation:
+      - Invoke-Empire
+      - Invoke-Mimikatz
+    # TODO VR: Rename or remove
     # an IP white list to ONLY accept clients from
     #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
     ip-whitelist: ""
@@ -20,9 +26,9 @@ database:
 modules:
   retain-last-value: false
 directories:
-  downloads: empire/server/downloads/
+  downloads: empire/test/downloads/
   module_source: empire/server/data/module_source/
-  obfuscated_module_source: empire/server/data/obfuscated_module_source/
+  obfuscated_module_source: empire/test/data/obfuscated_module_source/
 keyword_obfuscation:
   # List of keywords to obfuscate
   - Invoke-Empire

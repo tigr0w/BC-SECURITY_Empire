@@ -83,7 +83,10 @@ async def update_stager(
 
 
 @router.delete(
-    "/{uid}", status_code=204, dependencies=[Depends(get_current_active_user)]
+    "/{uid}",
+    status_code=HTTP_204_NO_CONTENT,
+    response_class=Response,
+    dependencies=[Depends(get_current_active_user)],
 )
 async def delete_stager(
     uid: int,
@@ -91,5 +94,3 @@ async def delete_stager(
     db_stager: models.Stager = Depends(get_stager),
 ):
     stager_service.delete_stager(db, db_stager)
-
-    return Response(status_code=HTTP_204_NO_CONTENT)

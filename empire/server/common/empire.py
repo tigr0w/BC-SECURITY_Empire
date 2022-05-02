@@ -11,8 +11,6 @@ from __future__ import absolute_import
 
 import asyncio
 import logging
-import os
-import threading
 import time
 from socket import SocketIO
 from typing import Optional
@@ -29,17 +27,17 @@ from empire.server.v2.core.credential_service import CredentialService
 from empire.server.v2.core.download_service import DownloadService
 from empire.server.v2.core.host_process_service import HostProcessService
 from empire.server.v2.core.host_service import HostService
-from empire.server.v2.core.keyword_service import KeywordService
 from empire.server.v2.core.listener_service import ListenerService
 from empire.server.v2.core.listener_template_service import ListenerTemplateService
 from empire.server.v2.core.module_service import ModuleService
+from empire.server.v2.core.obfuscation_service import ObfuscationService
 from empire.server.v2.core.plugin_service import PluginService
 from empire.server.v2.core.profile_service import ProfileService
 from empire.server.v2.core.stager_service import StagerService
 from empire.server.v2.core.stager_template_service import StagerTemplateService
 from empire.server.v2.core.user_service import UserService
 
-from . import agents, credentials, helpers, listeners, stagers
+from . import agents, credentials, listeners, stagers
 
 VERSION = "5.0.0-alpha1 BC Security Fork"
 
@@ -55,19 +53,15 @@ class MainMenu(object):
     def __init__(self, args=None):
         time.sleep(1)
 
-        self.lock = threading.Lock()
-
         # pull out some common configuration information
+        # Todo vr how much of this config do we actually need to store in the db at this point
+        #  vs just the config file?
         (
             self.isroot,
             self.installPath,
             self.ipWhiteList,
             self.ipBlackList,
-            self.obfuscate,
-            self.obfuscateCommand,
-        ) = data_util.get_config(
-            "rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command"
-        )
+        ) = data_util.get_config("rootuser, install_path,ip_whitelist,ip_blacklist")
 
         # parse/handle any passed command line arguments
         self.args = args
@@ -82,7 +76,7 @@ class MainMenu(object):
         self.stagersv2 = StagerService(self)
         self.usersv2 = UserService(self)
         self.bypassesv2 = BypassService(self)
-        self.keywordsv2 = KeywordService(self)
+        self.obfuscationv2 = ObfuscationService(self)
         self.profilesv2 = ProfileService(self)
         self.credentialsv2 = CredentialService(self)
         self.hostsv2 = HostService(self)
@@ -136,30 +130,6 @@ class MainMenu(object):
 
         log.info("Shutting down plugins...")
         self.pluginsv2.shutdown()
-
-    def preobfuscate_modules(self, obfuscation_command, reobfuscate=False):
-        """
-        Preobfuscate PowerShell module_source files
-        """
-        if not data_util.is_powershell_installed():
-            log.error(
-                "PowerShell is not installed and is required to use obfuscation, please install it first."
-            )
-            return
-
-        # Preobfuscate all module_source files
-        files = [file for file in helpers.get_module_source_files()]
-
-        for file in files:
-            file = os.getcwd() + "/" + file
-            if reobfuscate or not data_util.is_obfuscated(file):
-                message = f"Obfuscating {os.path.basename(file)}..."
-                log.info(message)
-            else:
-                log.warning(
-                    f"{os.path.basename(file)} was already obfuscated. Not reobfuscating."
-                )
-            data_util.obfuscate_module(file, obfuscation_command, reobfuscate)
 
     def get_directories(self):
         """

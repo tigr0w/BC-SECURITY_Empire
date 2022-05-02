@@ -813,66 +813,6 @@ def encode_base64(data):
     return base64.encodebytes(data).strip()
 
 
-def complete_path(text, line, arg=False):
-    """
-    Helper for tab-completion of file paths.
-    """
-
-    # stolen from dataq at
-    #   http://stackoverflow.com/questions/16826172/filename-tab-completion-in-cmd-cmd-of-python
-
-    if arg:
-        # if we have "command something path"
-        argData = line.split()[1:]
-    else:
-        # if we have "command path"
-        argData = line.split()[0:]
-
-    if not argData or len(argData) == 1:
-        completions = os.listdir("./")
-    else:
-        dir, part, base = argData[-1].rpartition("/")
-        if part == "":
-            dir = "./"
-        elif dir == "":
-            dir = "/"
-
-        completions = []
-        for f in os.listdir(dir):
-            if f.startswith(base):
-                if os.path.isfile(os.path.join(dir, f)):
-                    completions.append(f)
-                else:
-                    completions.append(f + "/")
-
-    return completions
-
-
-def dict_factory(cursor, row):
-    """
-    Helper that returns the SQLite query results as a dictionary.
-
-    From Colin Burnett: http://stackoverflow.com/questions/811548/sqlite-and-python-return-a-dictionary-using-fetchone
-    """
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
-
-
-def get_module_source_files():
-    """
-    Get the filepaths of PowerShell module_source files located
-    in the data/module_source directory.
-    """
-    paths = []
-    pattern = "*.ps1"
-    for root, dirs, files in os.walk("empire/server/data/module_source"):
-        for filename in fnmatch.filter(files, pattern):
-            paths.append(os.path.join(root, filename))
-    return paths
-
-
 class KThread(threading.Thread):
     """
     A subclass of threading.Thread, with a kill() method.

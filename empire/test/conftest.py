@@ -26,6 +26,7 @@ def default_argv():
 def client():
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
+    shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)
 
     sys.argv = ["", "server", "--config", TEST_CONFIG_DIR]
 
@@ -44,10 +45,10 @@ def client():
     from empire.server.v2.api.credential import credentialv2
     from empire.server.v2.api.download import downloadv2
     from empire.server.v2.api.host import hostv2, processv2
-    from empire.server.v2.api.keyword import keywordv2
     from empire.server.v2.api.listener import listenertemplatev2, listenerv2
     from empire.server.v2.api.meta import metav2
     from empire.server.v2.api.module import modulev2
+    from empire.server.v2.api.obfuscation import obfuscationv2
     from empire.server.v2.api.profile import profilev2
     from empire.server.v2.api.stager import stagertemplatev2, stagerv2
     from empire.server.v2.api.user import userv2
@@ -62,7 +63,7 @@ def client():
     v2App.include_router(agentv2.router)
     v2App.include_router(modulev2.router)
     v2App.include_router(bypassv2.router)
-    v2App.include_router(keywordv2.router)
+    v2App.include_router(obfuscationv2.router)
     v2App.include_router(profilev2.router)
     v2App.include_router(credentialv2.router)
     v2App.include_router(hostv2.router)

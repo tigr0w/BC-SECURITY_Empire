@@ -10,6 +10,7 @@ from typing import List, Optional, Tuple
 import dropbox
 
 from empire.server.common import encryption, helpers, templating
+from empire.server.common.empire import MainMenu
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
@@ -20,7 +21,7 @@ log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
 
         self.info = {
             "Name": "Dropbox",
@@ -289,8 +290,7 @@ class Listener(object):
                 stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
-                    stager = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    stager = self.mainMenu.obfuscationv2.obfuscate(
                         stager,
                         obfuscationCommand=obfuscationCommand,
                     )

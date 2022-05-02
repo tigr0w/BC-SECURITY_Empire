@@ -40,7 +40,7 @@ class Module(object):
                 obfuscate_command=obfuscation_command,
             )
             if obfuscate:
-                data_util.obfuscate_module(
+                main_menu.obfuscationv2.obfuscate_module(
                     moduleSource=aux_module_source,
                     obfuscationCommand=obfuscation_command,
                 )

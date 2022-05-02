@@ -20,6 +20,7 @@ from empire.server.v2.api.module.module_dto import (
     ModuleBulkUpdateRequest,
     ModuleUpdateRequest,
 )
+from empire.server.v2.core.obfuscation_service import ObfuscationService
 
 log = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ log = logging.getLogger(__name__)
 class ModuleService(object):
     def __init__(self, main_menu):
         self.main_menu = main_menu
+        self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
+
         self.modules = {}
 
         with SessionLocal.begin() as db:
@@ -63,13 +66,15 @@ class ModuleService(object):
 
     def execute_module(
         self,
+        db: Session,
         module_id: str,
         params: Dict,
         ignore_language_version_check: bool = False,
         ignore_admin_check: bool = False,
     ) -> Tuple[Optional[Dict], Optional[str]]:
         """
-        Execute the module.
+        Execute the module. Note this doesn't actually add the task to the queue,
+        it only generates the module data needed for a task to be created.
         :param module_id: str
         :param params: the execution parameters
         :param user_id: the user executing the module
@@ -89,12 +94,10 @@ class ModuleService(object):
         if err:
             return None, err
 
-        # todo remove global obfuscate?
         module_data = self._generate_script(
+            db,
             module,
             cleaned_options,
-            self.main_menu.obfuscate,
-            self.main_menu.obfuscateCommand,
         )
         if isinstance(module_data, tuple):
             (module_data, err) = module_data
@@ -222,27 +225,37 @@ class ModuleService(object):
 
     def _generate_script(
         self,
+        db: Session,
         module: PydanticModule,
         params: Dict,
-        obfuscate=False,
-        obfuscate_command="",
+        obfuscation_config: models.ObfuscationConfig = None,
     ) -> Tuple[Optional[str], Optional[str]]:
         """
         Generate the script to execute
         :param module: the execution parameters (already validated)
         :param params: the execution parameters
-        :param obfuscate:
-        :param obfuscate_command:
+        :param obfuscation_config: the obfuscation config. If not provided, will look up from the database.
         :return: tuple containing the generated script and an error if it exists
         """
+        if not obfuscation_config:
+            obfuscation_config = self.obfuscation_service.get_obfuscation_config(
+                db, module.language
+            )
+
         if module.advanced.custom_generate:
+            # In a future release we could refactor the modules to accept a obuscation_config,
+            #  but there's little benefit to doing so at this point. So I'm saving myself the pain.
             return module.advanced.generate_class.generate(
-                self.main_menu, module, params, obfuscate, obfuscate_command
+                self.main_menu,
+                module,
+                params,
+                obfuscation_config.enabled,
+                obfuscation_config.command,
             )
         elif module.language == LanguageEnum.powershell:
-            return self._generate_script_powershell(
-                module, params, obfuscate, obfuscate_command
-            )
+            return self._generate_script_powershell(module, params, obfuscation_config)
+        # We don't have obfuscation for other languages yet, but when we do,
+        # we can pass it in here.
         elif module.language == LanguageEnum.python:
             return self._generate_script_python(module, params)
         elif module.language == LanguageEnum.csharp:
@@ -274,9 +287,11 @@ class ModuleService(object):
         self,
         module: PydanticModule,
         params: Dict,
-        obfuscate=False,
-        obfuscate_command="",
+        obfuscaton_config: models.ObfuscationConfig,
     ) -> Tuple[Optional[str], Optional[str]]:
+        obfuscate = obfuscaton_config.enabled
+        obfuscate_command = obfuscaton_config.command
+
         if module.script_path:
             script, err = self.get_module_source(
                 module_name=module.script_path,
@@ -288,8 +303,7 @@ class ModuleService(object):
                 return None, err
         else:
             if obfuscate:
-                script = data_util.obfuscate(
-                    installPath=self.main_menu.installPath,
+                script = self.obfuscation_service.obfuscate(
                     psScript=module.script,
                     obfuscationCommand=obfuscate_command,
                 )
@@ -489,8 +503,7 @@ class ModuleService(object):
                     module_path = os.path.join(module_source, module_name)
                     with open(module_path, "r") as f:
                         module_code = f.read()
-                    obfuscated_module_code = data_util.obfuscate(
-                        installPath=self.main_menu.installPath,
+                    obfuscated_module_code = self.obfuscation_service.obfuscate(
                         psScript=module_code,
                         obfuscationCommand=obfuscate_command,
                     )
@@ -517,13 +530,12 @@ class ModuleService(object):
         Combine script and script end with obfuscation if needed.
         """
         if obfuscate:
-            script_end = data_util.obfuscate(
-                self.main_menu.installPath,
+            script_end = self.obfuscation_service.obfuscate(
                 psScript=script_end,
                 obfuscationCommand=obfuscation_command,
             )
         script += script_end
-        script = data_util.keyword_obfuscation(script)
+        script = self.obfuscation_service.obfuscate_keywords(script)
         return script
 
     @staticmethod

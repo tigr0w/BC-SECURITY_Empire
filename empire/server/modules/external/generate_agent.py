@@ -6,6 +6,7 @@ from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
+from empire.server.common.empire import MainMenu
 from empire.server.common.module_models import PydanticModule
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_error_message
@@ -14,7 +15,7 @@ from empire.server.utils.module_util import handle_error_message
 class Module(object):
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: PydanticModule,
         params: Dict,
         Listener: str = "",
@@ -79,7 +80,7 @@ class Module(object):
                 % (host, staging_key, session_key, session_id)
             )
             # Get the random function name generated at install and patch the stager with the proper function name
-            code = data_util.keyword_obfuscation(agent_code)
+            code = main_menu.obfuscationv2.obfuscate_keywords(agent_code)
         else:
             stager_code = main_menu.listenertemplatesv2.new_instance(
                 active_listener["moduleName"]

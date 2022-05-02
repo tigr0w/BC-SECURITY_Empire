@@ -116,7 +116,7 @@ class Module(object):
             + "/data/module_source/exfil/Invoke-ExfilDataToGitHub.ps1"
         )
         if obfuscate:
-            data_util.obfuscate_module(
+            self.mainMenu.obfuscationv2.obfuscate_module(
                 moduleSource=moduleSource, obfuscationCommand=obfuscationCommand
             )
             moduleSource = moduleSource.replace(

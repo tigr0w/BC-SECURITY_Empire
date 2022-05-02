@@ -6,6 +6,7 @@ from typing import List, Optional
 from fastapi import Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 from starlette.responses import Response
+from starlette.status import HTTP_204_NO_CONTENT
 
 from empire.server.database import models
 from empire.server.database.models import TaskingStatus
@@ -472,7 +473,9 @@ async def create_task_exit(
     return domain_to_dto_task(resp)
 
 
-@router.delete("/{agent_id}/tasks/{uid}", status_code=204, response_class=Response)
+@router.delete(
+    "/{agent_id}/tasks/{uid}", status_code=HTTP_204_NO_CONTENT, response_class=Response
+)
 async def delete_task(
     uid: int, db: Session = Depends(get_db), db_task: models.Tasking = Depends(get_task)
 ):

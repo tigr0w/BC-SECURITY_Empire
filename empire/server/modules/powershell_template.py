@@ -4,6 +4,7 @@ from builtins import object, str
 from typing import Dict, Optional, Tuple
 
 from empire.server.common import helpers
+from empire.server.common.empire import MainMenu
 from empire.server.common.module_models import PydanticModule
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_error_message
@@ -12,12 +13,12 @@ from empire.server.utils.module_util import handle_error_message
 class Module(object):
     """
     STOP. In most cases you will not need this file.
-    Take a look at the wiki: TODO Link. to see if you truly need this.
+    Take a look at the wiki: https://bc-security.gitbook.io/empire-wiki/module-development
     """
 
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: PydanticModule,
         params: Dict,
         obfuscate: bool = False,
@@ -26,7 +27,7 @@ class Module(object):
         # First method: Read in the source script from module_source
         module_source = main_menu.installPath + "/data/module_source/..."
         if obfuscate:
-            data_util.obfuscate_module(
+            main_menu.obfuscationv2.obfuscate_module(
                 moduleSource=module_source, obfuscationCommand=obfuscation_command
             )
             module_source = module_source.replace(
@@ -76,12 +77,11 @@ Invoke-Something"""
                     else:
                         scriptEnd += " -" + str(option) + " " + str(values)
         if obfuscate:
-            scriptEnd = helpers.obfuscate(
+            scriptEnd = main_menu.obfuscationv2.obfuscate(
                 psScript=scriptEnd,
-                installPath=main_menu.installPath,
                 obfuscationCommand=obfuscation_command,
             )
         script += scriptEnd
-        script = data_util.keyword_obfuscation(script)
+        script = main_menu.obfuscationv2.obfuscate_keywords(script)
 
         return script

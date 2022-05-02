@@ -13,6 +13,8 @@ from flask import Flask, make_response, render_template, request, send_from_dire
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets
+from empire.server.common.empire import MainMenu
+from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
 from empire.server.utils.module_util import handle_validate_message
 
@@ -21,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
 
         self.info = {
             "Name": "HTTP[S] COM",
@@ -296,8 +298,7 @@ class Listener(object):
                 stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
-                    stager = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    stager = self.mainMenu.obfuscationv2.obfuscate(
                         stager,
                         obfuscationCommand=obfuscationCommand,
                     )
@@ -351,7 +352,7 @@ class Listener(object):
             f.close()
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
+            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # make sure the server ends with "/"
             if not host.endswith("/"):
@@ -395,8 +396,7 @@ class Listener(object):
                     unobfuscated_stager += line
 
             if obfuscate:
-                unobfuscated_stager = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
                     unobfuscated_stager,
                     obfuscationCommand=obfuscationCommand,
                 )
@@ -448,7 +448,7 @@ class Listener(object):
             f.close()
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            code = data_util.keyword_obfuscation(code)
+            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # patch in the comms methods
             commsCode = self.generate_comms(
@@ -479,8 +479,7 @@ class Listener(object):
                     "$KillDate,", "$KillDate = '" + str(killDate) + "',"
                 )
             if obfuscate:
-                code = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                code = self.mainMenu.obfuscationv2.obfuscate(
                     code,
                     obfuscationCommand=obfuscationCommand,
                 )
@@ -732,12 +731,20 @@ class Listener(object):
                                 self.instance_log.info(message)
                                 log.info(message)
 
-                                stage = self.generate_stager(
-                                    language=language,
-                                    listenerOptions=listenerOptions,
-                                    obfuscate=self.mainMenu.obfuscate,
-                                    obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                )
+                                with SessionLocal() as db:
+                                    obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                        db, language
+                                    )
+                                    stage = self.generate_stager(
+                                        language=language,
+                                        listenerOptions=listenerOptions,
+                                        obfuscate=False
+                                        if not obf_config
+                                        else obf_config.enabled,
+                                        obfuscationCommand=""
+                                        if not obf_config
+                                        else obf_config.command,
+                                    )
                                 return make_response(base64.b64encode(stage), 200)
 
                             elif results.startswith(b"ERROR:"):
