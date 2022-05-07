@@ -653,7 +653,7 @@ class Listener(object):
         stagingKey = listenerOptions["StagingKey"]["Value"]
 
         self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
-        app = Flask(__name__, template_folder=template_dir)
+        app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
         # Set HTTP/1.1 as in IIS 7.5 instead of /1.0
