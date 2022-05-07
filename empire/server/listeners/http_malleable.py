@@ -1386,7 +1386,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
         # initialize flask server
         self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
-        app = Flask(__name__, template_folder=template_dir)
+        app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
         @app.route("/", methods=["GET", "POST"])
