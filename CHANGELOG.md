@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Converted reset.sh script to Python and add tests (@Vinnybod)
 -   Add a `--reset` flag to the client (@Vinnybod)
 
+## [4.5.5] - 2022-05-07
+
+-   Fixed http bug in malleable, http-com, and onedrive listeners (@Cx01N)
+-   Updated jq to 1.2.2 to avoid install errors (@Cx01N)
+
 ## [4.5.4] - 2022-04-26
 
 -   Fixed typo from 4.5.3 with the bypass database model (@Vinnybod)
@@ -241,7 +246,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.5...HEAD
+
+[4.5.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.4...v4.5.5
 
 [4.5.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.3...v4.5.4
 
