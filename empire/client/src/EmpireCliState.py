@@ -268,7 +268,7 @@ class EmpireCliState(object):
             if self.directory[key][-1] != "/":
                 self.directory[key] += "/"
 
-    # I think we we will break out the socketio handler and http requests to new classes that the state imports.
+    # I think we will break out the socketio handler and http requests to new classes that the state imports.
     # This will do for this iteration.
     def get_listeners(self):
         response = requests.get(

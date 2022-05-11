@@ -106,10 +106,10 @@ class Menu(object):
         for name in self._cmd_registry:
             try:
                 description = print_util.text_wrap(
-                    getattr(self, name).__doc__.split("\n")[1].lstrip(), width=35
+                    getattr(self, name).__doc__.split("\n")[1].lstrip(), width=60
                 )
                 usage = print_util.text_wrap(
-                    getattr(self, name).__doc__.split("\n")[3].lstrip()[7:], width=35
+                    getattr(self, name).__doc__.split("\n")[3].lstrip()[7:], width=40
                 )
                 help_list.append([name, description, usage])
             except:

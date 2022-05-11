@@ -3,17 +3,21 @@ from typing import List
 from terminaltables import SingleTable
 
 import empire.client.src.utils.print_util as print_utils
+from empire.client.src.EmpireCliConfig import empire_config
 
 
 def print_table(
     data: List[List[str]] = None,
     title: str = "",
     colored_header: bool = True,
-    no_borders: bool = False,
+    borders: bool = None,
     end_space: bool = True,
 ):
     if data is None:
         return
+
+    if borders is None:
+        borders = empire_config.yaml.get("tables", {}).get("borders", True)
 
     # Make header blue
     if colored_header:
@@ -24,7 +28,7 @@ def print_table(
     table.title = title
     table.inner_row_border = True
 
-    if no_borders:
+    if not borders:
         table.inner_row_border = False
         table.inner_column_border = False
         table.outer_border = False
@@ -39,10 +43,16 @@ def print_table(
 
 
 def print_agent_table(
-    data: List[List[str]] = None, formatting: List[List[str]] = None, title: str = ""
+    data: List[List[str]] = None,
+    formatting: List[List[str]] = None,
+    title: str = "",
+    borders: bool = None,
 ):
     if data is None:
         return
+
+    if borders is None:
+        borders = empire_config.yaml.get("tables", {}).get("borders", True)
 
     # Make header blue
     for x in range(len(data[0])):
@@ -66,6 +76,13 @@ def print_agent_table(
     table = SingleTable(data)
     table.title = title
     table.inner_row_border = True
+
+    if not borders:
+        table.inner_row_border = False
+        table.inner_column_border = False
+        table.outer_border = False
+        table.inner_footing_row_border = False
+        table.inner_heading_row_border = False
 
     print("")
     print(table.table)

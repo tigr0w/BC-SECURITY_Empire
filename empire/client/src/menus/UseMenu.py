@@ -217,7 +217,7 @@ class UseMenu(Menu):
                     )
 
         table_util.print_table(
-            record_list, "Record Info", colored_header=False, no_borders=True
+            record_list, "Record Info", colored_header=False, borders=False
         )
 
     def suggested_values_for_option(self, option: str) -> List[str]:

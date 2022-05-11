@@ -458,7 +458,7 @@ class InteractMenu(Menu):
             record_list,
             "View Task",
             colored_header=False,
-            no_borders=True,
+            borders=False,
             end_space=False,
         )
         print(print_util.color(" results", "blue"))
