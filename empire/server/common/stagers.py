@@ -82,9 +82,18 @@ class Stagers(object):
         with SessionLocal.begin() as db:
             bypasses_parsed = []
             for bypass in bypasses.split(" "):
-                b = db.query(models.Bypass).filter(models.Bypass.name == bypass).first()
-                if b:
-                    bypasses_parsed.append(b.code)
+                bypass = (
+                    db.query(models.Bypass).filter(models.Bypass.name == bypass).first()
+                )
+                if bypass:
+                    if bypass.language == language:
+                        bypasses_parsed.append(bypass.code)
+                    else:
+                        print(
+                            helpers.color(
+                                f"[!] Invalid bypass language: {bypass.language}"
+                            )
+                        )
 
             db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
             active_listener = self.mainMenu.listenersv2.get_active_listeners()[

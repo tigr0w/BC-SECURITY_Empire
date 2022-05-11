@@ -143,7 +143,7 @@ class Listener(object):
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return render_template("default.html")
+        return open(f"{self.template_dir }/default.html", "r").read()
 
     def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
@@ -1353,8 +1353,8 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
         log.setLevel(logging.ERROR)
 
         # initialize flask server
-        template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
-        app = Flask(__name__, template_folder=template_dir)
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+        app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
         @app.route("/", methods=["GET", "POST"])

@@ -34,7 +34,24 @@ It will be cleaned up as we get closer to the official release.
 - global obfuscation config is now its own db entity and removed from the config table. It is written in a way to eventually support more languages or "obfuscation modules" in the future.
 - keyword_obfuscation config property moved under database defaults. obfuscate and obfuscateCommand defaults moved under `database.defaults.obfuscation`
 
+## [4.5.5] - 2022-05-07
+
+-   Fixed http bug in malleable, http-com, and onedrive listeners (@Cx01N)
+-   Updated jq to 1.2.2 to avoid install errors (@Cx01N)
+
+## [4.5.4] - 2022-04-26
+
+-   Fixed typo from 4.5.3 with the bypass database model (@Vinnybod)
+
+## [4.5.3] - 2022-04-24
+
+-   Fixed issue where default_response is needed for external/generate_agent (@Cx01N)
+-   Added check if bypass language is compatible (@Cx01N)
+-   Added error message formatting for listeners and stagers (@Cx01N)
+-   Added `zip` to the Dockerfile which is necessary to create ms files such as docx (@junquera)
+
 ## [4.5.2] - 2022-04-12
+
 -   Fix string format errors in dbx listener (@awsmhacks)
 -   Fix script_end error in schtasks.py (@harry-cmdzero)
 -   Add workflows for doing the public releases (@Vinnybod)
@@ -254,7 +271,13 @@ It will be cleaned up as we get closer to the official release.
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.5...HEAD
+
+[4.5.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.4...v4.5.5
+
+[4.5.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.3...v4.5.4
+
+[4.5.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.2...v4.5.3
 
 [4.5.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.1...v4.5.2
 

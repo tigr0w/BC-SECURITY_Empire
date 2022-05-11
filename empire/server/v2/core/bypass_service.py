@@ -35,8 +35,6 @@ class BypassService(object):
                 # don't load up any of the templates
                 if fnmatch.fnmatch(filename, "*template.yaml"):
                     continue
-                if file_path is not None:
-                    bypass_name = file_path.split(root_path)[-1][0:-5]
 
                 try:
                     with open(file_path, "r") as stream:
@@ -53,7 +51,9 @@ class BypassService(object):
                                 yaml_bypass["script"]
                             )
                             my_model = models.Bypass(
-                                name=yaml_bypass["name"], code=yaml_bypass["script"]
+                                name=yaml_bypass["name"],
+                                code=yaml_bypass["script"],
+                                language=yaml_bypass["language"],
                             )
                             db.add(my_model)
                 except Exception as e:
