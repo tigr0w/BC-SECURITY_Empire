@@ -1,4 +1,5 @@
 import base64
+import os
 from tkinter import *
 from tkinter import filedialog
 from typing import Dict, Optional
@@ -45,6 +46,9 @@ class EmpireCliState(object):
 
         # directories for download/upload files
         self.directory = {}
+
+        # install path for client
+        self.install_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
     def register_menu(self, menu: Menu):
         self.menus.append(menu)

