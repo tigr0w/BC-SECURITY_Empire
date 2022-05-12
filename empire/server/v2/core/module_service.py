@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from empire.server.common import helpers
 from empire.server.common.config import empire_config
 from empire.server.common.converter.load_covenant import _convert_covenant_to_empire
-from empire.server.common.module_models import LanguageEnum, PydanticModule
+from empire.server.common.module_models import EmpireModule, LanguageEnum
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.utils import data_util
@@ -42,7 +42,7 @@ class ModuleService(object):
         return self.modules.get(uid)
 
     def update_module(
-        self, db: Session, module: PydanticModule, module_req: ModuleUpdateRequest
+        self, db: Session, module: EmpireModule, module_req: ModuleUpdateRequest
     ):
         db_module: models.Module = (
             db.query(models.Module).filter(models.Module.id == module.id).first()
@@ -151,14 +151,14 @@ class ModuleService(object):
 
     def _validate_module_params(
         self,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict[str, str],
         ignore_language_version_check: bool = False,
         ignore_admin_check: bool = False,
     ) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
         """
         Given a module and execution params, validate the input and return back a clean Dict for execution.
-        :param module: PydanticModule
+        :param module: EmpireModule
         :param params: the execution parameters
         :return: tuple with options and the error message (if applicable)
         """
@@ -226,7 +226,7 @@ class ModuleService(object):
     def _generate_script(
         self,
         db: Session,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscation_config: models.ObfuscationConfig = None,
     ) -> Tuple[Optional[str], Optional[str]]:
@@ -263,7 +263,7 @@ class ModuleService(object):
 
     @staticmethod
     def _generate_script_python(
-        module: PydanticModule, params: Dict
+        module: EmpireModule, params: Dict
     ) -> Tuple[Optional[str], Optional[str]]:
         if module.script_path:
             script_path = os.path.join(
@@ -285,7 +285,7 @@ class ModuleService(object):
 
     def _generate_script_powershell(
         self,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscaton_config: models.ObfuscationConfig,
     ) -> Tuple[Optional[str], Optional[str]]:
@@ -358,7 +358,7 @@ class ModuleService(object):
         return script, None
 
     def _generate_script_csharp(
-        self, module: PydanticModule, params: Dict
+        self, module: EmpireModule, params: Dict
     ) -> Tuple[Optional[str], Optional[str]]:
         try:
             compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
@@ -429,7 +429,7 @@ class ModuleService(object):
                             }
                             self._load_module(db, yaml_module, root_path, file_path)
                 except Exception as e:
-                    log.warning(e)
+                    log.error(f"Error loading module: {e}")
 
     def _load_module(self, db: Session, yaml_module, root_path, file_path: str):
         # extract just the module name from the full path
@@ -439,10 +439,10 @@ class ModuleService(object):
             cov_yaml_module = _convert_covenant_to_empire(yaml_module, file_path)
             module_name = f"{module_name[:-9]}/{cov_yaml_module['name']}"
             cov_yaml_module["id"] = self.slugify(module_name)
-            my_model = PydanticModule(**cov_yaml_module)
+            my_model = EmpireModule(**cov_yaml_module)
         else:
             yaml_module["id"] = self.slugify(module_name)
-            my_model = PydanticModule(**yaml_module)
+            my_model = EmpireModule(**yaml_module)
 
         if my_model.advanced.custom_generate:
             if not os.path.exists(file_path[:-4] + "py"):

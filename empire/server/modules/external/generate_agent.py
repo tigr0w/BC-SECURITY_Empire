@@ -7,7 +7,7 @@ from typing import Dict
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
-from empire.server.common.module_models import PydanticModule
+from empire.server.common.module_models import EmpireModule
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_error_message
 
@@ -16,7 +16,7 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu: MainMenu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         Listener: str = "",
         Language: str = "",

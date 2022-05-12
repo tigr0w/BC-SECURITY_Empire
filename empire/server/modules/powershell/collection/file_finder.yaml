@@ -1,6 +1,8 @@
 name: Invoke-FileFinder
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Finds sensitive files on the domain.
 software: ''
 techniques:
@@ -71,8 +73,7 @@ options:
     required: false
     value: ''
   - name: SearchSYSVOL
-    description: Switch. Search for login scripts on the SYSVOL of the primary DCs for
-      each specified domain.
+    description: Switch. Search for login scripts on the SYSVOL of the primary DCs for each specified domain.
     required: false
     value: ''
   - name: Threads
@@ -82,7 +83,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: true
     suggested_values:
       - Out-String
@@ -90,5 +91,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/powerview.ps1'
+script_path: situational_awareness/network/powerview.ps1
 script_end: Invoke-FileFinder {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-FileFinder completed'

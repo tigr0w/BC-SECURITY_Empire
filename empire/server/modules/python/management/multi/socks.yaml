@@ -1,6 +1,8 @@
 name: SOCKSv5 Proxy
 authors:
-  - klustic
+  - name: klustic
+    handle: ''
+    link: ''
 description: Spawn an AROX relay to extend a SOCKS proxy through your agent.
 software: ''
 techniques:
@@ -12,8 +14,8 @@ opsec_safe: true
 language: python
 min_language_version: '3'
 comments:
-  - You must set up a standalone AlmondRocks server for this to connect to! Refer to
-    the AlmondRocks Github project for more details.
+  - You must set up a standalone AlmondRocks server for this to connect to! Refer to the AlmondRocks Github project for more
+    details.
   - 'Repo: https://github.com/klustic/AlmondRocks'
 options:
   - name: Agent
@@ -24,4 +26,4 @@ options:
     description: FQDN/IPv4 and port of the AROX server (e.g. 1.2.3.4:443 or hax0r.com:443)
     required: true
     value: ''
-script_path: 'python/management/socks.py'
+script_path: python/management/socks.py

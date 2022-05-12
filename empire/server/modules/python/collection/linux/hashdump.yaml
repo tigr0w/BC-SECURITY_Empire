@@ -1,6 +1,8 @@
 name: Linux Hashdump
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Extracts the /etc/passwd and /etc/shadow, unshadowing the result.
 software: ''
 techniques:
@@ -11,13 +13,13 @@ needs_admin: true
 opsec_safe: true
 language: python
 min_language_version: '3.6'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to execute module on.
     required: true
     value: ''
-script: |
+script: |-
   import time;
   f2 = open("/etc/shadow")
   shadow = f2.readlines()

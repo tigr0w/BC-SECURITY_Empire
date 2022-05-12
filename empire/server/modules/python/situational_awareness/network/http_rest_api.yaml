@@ -1,7 +1,11 @@
 name: HTTP REST API
 authors:
-  - '@TweekFawkes'
-  - '@scottjpack'
+  - name: Bryce Kunz
+    handle: '@TweekFawkes'
+    link: https://twitter.com/TweekFawkes
+  - name: ''
+    handle: '@scottjpack'
+    link: ''
 description: Interacts with a HTTP REST API and returns the results back to the screen.
 software: ''
 techniques:
@@ -28,7 +32,7 @@ options:
     description: The HTTP request method to use.
     required: true
     value: GET
-script: |
+script: |-
   import urllib.request as urllib2
 
   requmethod = "{{ RequMethod }}"

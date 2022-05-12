@@ -1,8 +1,10 @@
 name: Invoke-MetasploitPayload
 authors:
-  - '@jaredhaight'
-description: Spawns a new, hidden PowerShell window that downloadsand executes a Metasploit
-  payload. This relies on theexploit/multi/scripts/web_delivery metasploit module.
+  - name: ''
+    handle: '@jaredhaight'
+    link: ''
+description: Spawns a new, hidden PowerShell window that downloadsand executes a Metasploit payload. This relies on theexploit/multi/scripts/web_delivery
+  metasploit module.
 software: ''
 techniques:
   - T1055
@@ -23,5 +25,5 @@ options:
     description: URL from the Metasploit web_delivery module
     required: true
     value: ''
-script_path: 'code_execution/Invoke-MetasploitPayload.ps1'
+script_path: code_execution/Invoke-MetasploitPayload.ps1
 script_end: Invoke-MetasploitPayload {{ PARAMS }}

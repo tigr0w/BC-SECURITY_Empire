@@ -10,7 +10,18 @@ class Stager(object):
 
         self.info = {
             "Name": "BunnyLauncher",
-            "Authors": ["@kisasondi", "@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@kisasondi",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates a bunny script that runs a one-liner stage0 launcher for Empire.",
             "Comments": [
                 "This stager is modification of the ducky stager by @harmj0y,",

@@ -1,6 +1,8 @@
 name: Get OUs
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: This module will list all OUs from active directory
 software: ''
 techniques:
@@ -30,7 +32,7 @@ options:
     description: Password to connect to LDAP
     required: false
     value: ''
-script: |
+script: |-
   import sys, os, subprocess, re
   BindDN = "{{ BindDN }}"
   LDAPAddress = "{{ LDAPAddress }}"

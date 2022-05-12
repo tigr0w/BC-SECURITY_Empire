@@ -10,7 +10,13 @@ class Stager(object):
 
         self.info = {
             "Name": "HTA",
-            "Authors": ["@subTee"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@subTee",
+                    "Link": "",
+                }
+            ],
             "Description": "Generates an HTA (HyperText Application) For Internet Explorer",
             "Comments": [
                 "You will need to deliver a url to the target to launch the HTA.  Often bypasses Whitelists since it is executed by mshta.exe"

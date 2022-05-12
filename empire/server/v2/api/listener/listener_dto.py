@@ -3,7 +3,7 @@ from typing import Dict, List
 
 from pydantic import BaseModel
 
-from empire.server.v2.api.shared_dto import CustomOptionSchema, to_value_type
+from empire.server.v2.api.shared_dto import Author, CustomOptionSchema, to_value_type
 
 
 def domain_to_dto_template(listener, uid: str):
@@ -24,10 +24,21 @@ def domain_to_dto_template(listener, uid: str):
         )
     )
 
+    authors = list(
+        map(
+            lambda x: {
+                "name": x["Name"],
+                "handle": x["Handle"],
+                "link": x["Link"],
+            },
+            listener.info.get("Authors") or [],
+        )
+    )
+
     return ListenerTemplate(
         id=uid,
         name=listener.info.get("Name"),
-        authors=listener.info.get("Authors"),
+        authors=authors,
         description=listener.info.get("Description"),
         category=listener.info.get("Category"),
         comments=listener.info.get("Comments"),
@@ -51,7 +62,7 @@ def domain_to_dto_listener(listener):
 class ListenerTemplate(BaseModel):
     id: str
     name: str
-    authors: List[str]
+    authors: List[Author]
     description: str
     category: str
     comments: List[str]
@@ -62,7 +73,7 @@ class ListenerTemplate(BaseModel):
             "example": {
                 "id": "http",
                 "name": "HTTP[S]",
-                "authors": ["@harmj0y"],
+                "authors": ["@harmj0y"],  # TODO VR
                 "description": "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.",
                 "category": "client_server",
                 "comments": [],
@@ -240,7 +251,7 @@ class ListenerPostRequest(BaseModel):
                 "name": "MyListener",
                 "template": "http",
                 "options": {
-                    "Name": "MyListener",  # TODO Name should not be an option
+                    "Name": "MyListener",  # TODO VR Name should not be an option
                     "Host": "http://localhost:1336",
                     "BindIP": "0.0.0.0",
                     "Port": "1336",

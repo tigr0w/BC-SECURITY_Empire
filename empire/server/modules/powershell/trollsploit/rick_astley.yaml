@@ -1,7 +1,11 @@
 name: Get-RickAstley
 authors:
-  - '@SadProcessor'
-  - '@harmj0y'
+  - name: ''
+    handle: '@SadProcessor'
+    link: ''
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Runs @SadProcessor's beeping rickroll.
 software: ''
 techniques:
@@ -19,5 +23,5 @@ options:
     description: Agent to run module on.
     required: true
     value: ''
-script: 'empire/server/data/module_source/trollsploit/Get-RickAstley.ps1'
+script: empire/server/data/module_source/trollsploit/Get-RickAstley.ps1
 script_end: Get-RickAstley | Out-String | %{$_ + "`n"};"`nGet-RickAstley completed!

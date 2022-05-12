@@ -1,6 +1,8 @@
 name: HTTP-Login
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Tests credentials against Basic Authentication.
 software: ''
 techniques:
@@ -57,7 +59,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -65,5 +67,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'recon/HTTP-Login.ps1'
+script_path: recon/HTTP-Login.ps1
 script_end: Test-Login {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'HTTP-Login completed'

@@ -1,9 +1,12 @@
 name: Prompt
 authors:
-  - '@FuzzyNop'
-  - '@harmj0y'
-description: Launches a specified application with an prompt for credentials with
-  osascript.
+  - name: ''
+    handle: '@FuzzyNop'
+    link: ''
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Launches a specified application with an prompt for credentials with osascript.
 software: ''
 techniques:
   - T1141

@@ -13,7 +13,18 @@ class Stager(object):
 
         self.info = {
             "Name": "Shellcode Launcher",
-            "Authors": ["@xorrior", "@monogas"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@monogas",
+                    "Link": "",
+                },
+            ],
             "Description": "Generate a windows shellcode stager",
             "Comments": [""],
         }

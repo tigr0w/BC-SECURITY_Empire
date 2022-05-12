@@ -1,9 +1,10 @@
 name: Invoke-ReflectivePEInjection
 authors:
-  - '@JosephBialek'
-description: Uses PowerSploit's Invoke-ReflectivePEInjection to reflectively load
-  a DLL/EXE in to the PowerShell process or reflectively load a DLL in to a remote
-  process.
+  - name: Joseph Bialek
+    handle: '@JosephBialek'
+    link: https://twitter.com/JosephBialek
+description: Uses PowerSploit's Invoke-ReflectivePEInjection to reflectively load a DLL/EXE in to the PowerShell process or
+  reflectively load a DLL in to a remote process.
 software: S0194
 techniques:
   - T1055
@@ -37,14 +38,13 @@ options:
     required: false
     value: ''
   - name: ForceASLR
-    description: Optional, will force the use of ASLR on the PE being loaded even if
-      the PE indicates it doesn't support ASLR.
+    description: Optional, will force the use of ASLR on the PE being loaded even if the PE indicates it doesn't support ASLR.
     required: true
     value: 'False'
   - name: ComputerName
     description: Optional an array of computernames to run the script on.
     required: false
     value: ''
-script_path: 'management/Invoke-ReflectivePEInjection.ps1'
+script_path: management/Invoke-ReflectivePEInjection.ps1
 advanced:
   custom_generate: true

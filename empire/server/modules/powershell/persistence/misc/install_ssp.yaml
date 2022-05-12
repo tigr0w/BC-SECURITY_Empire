@@ -1,6 +1,8 @@
 name: Install-SSP
 authors:
-  - '@mattifestation'
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
 description: Installs a security support provider (SSP) dll.
 software: ''
 techniques:

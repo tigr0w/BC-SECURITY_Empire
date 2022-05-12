@@ -1,6 +1,8 @@
 name: Keylog
 authors:
-  - Nikaiw
+  - name: Nikaiw
+    handle: ''
+    link: ''
 description: X userland keylogger based on pupy
 software: ''
 techniques:
@@ -18,7 +20,7 @@ options:
     description: Agent to keylog.
     required: true
     value: ''
-script: |
+script: |-
   # -*- coding: utf-8 -*-
   # inspired from https://github.com/amoffat/pykeylogger
   import sys

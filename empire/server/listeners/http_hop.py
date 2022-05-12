@@ -20,7 +20,13 @@ class Listener(object):
 
         self.info = {
             "Name": "HTTP[S] Hop",
-            "Authors": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": (
                 "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach."
             ),

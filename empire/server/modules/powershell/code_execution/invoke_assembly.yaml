@@ -1,9 +1,10 @@
 name: Invoke-Assembly
 authors:
-  - '@kevin'
-description: Loads the specified assembly into memory and invokes the main method.
-  The Main method and class containing Main must both be PUBLIC for Invoke-Assembly
-  to execute it
+  - name: ''
+    handle: '@kevin'
+    link: ''
+description: Loads the specified assembly into memory and invokes the main method. The Main method and class containing Main
+  must both be PUBLIC for Invoke-Assembly to execute it
 software: ''
 techniques:
   - T1059
@@ -23,14 +24,13 @@ options:
     required: true
     value: ''
   - name: File
-    description: Filename in '/empire/server/downloads' to load and execute.
-      supported.
+    description: Filename in '/empire/server/downloads' to load and execute. supported.
     required: true
     value: ''
   - name: Arguments
     description: Any arguments to be passed to the assembly
     required: false
     value: ''
-script_path: 'code_execution/Invoke-Assembly.ps1'
+script_path: code_execution/Invoke-Assembly.ps1
 advanced:
   custom_generate: true

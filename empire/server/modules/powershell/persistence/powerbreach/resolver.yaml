@@ -1,6 +1,8 @@
 name: Invoke-ResolverBackdoor
 authors:
-  - '@sixdub'
+  - name: ''
+    handle: '@sixdub'
+    link: ''
 description: Starts the Resolver Backdoor.
 software: S0194
 techniques:

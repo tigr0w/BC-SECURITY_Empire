@@ -1,6 +1,8 @@
 name: Invoke-Script
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Run a custom script. Useful for mass-taskings or script autoruns.
 software: ''
 techniques:
@@ -11,7 +13,7 @@ needs_admin: false
 opsec_safe: true
 language: powershell
 min_language_version: '2'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to run module on.
@@ -22,8 +24,7 @@ options:
     required: false
     value: ''
   - name: ScriptCmd
-    description: Script command (Invoke-X) from file to run, along with any specified
-      arguments.
+    description: Script command (Invoke-X) from file to run, along with any specified arguments.
     required: true
     value: ''
 advanced:

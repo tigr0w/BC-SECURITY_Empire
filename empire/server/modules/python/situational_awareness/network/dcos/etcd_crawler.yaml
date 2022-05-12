@@ -1,7 +1,11 @@
 name: Etcd Crawler
 authors:
-  - '@scottjpack'
-  - '@TweekFawkes'
+  - name: ''
+    handle: '@scottjpack'
+    link: ''
+  - name: Bryce Kunz
+    handle: '@TweekFawkes'
+    link: https://twitter.com/TweekFawkes
 description: Pull keys and values from an etcd configuration store
 software: ''
 techniques:
@@ -28,11 +32,10 @@ options:
     required: true
     value: '1026'
   - name: Depth
-    description: How far into the ETCD hierarchy to recurse.  0 for root keys only,
-      "-1" for no limitation
+    description: How far into the ETCD hierarchy to recurse.  0 for root keys only, "-1" for no limitation
     required: true
     value: '-1'
-script: |
+script: |-
   import urllib2
   import json
 

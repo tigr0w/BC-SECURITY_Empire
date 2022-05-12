@@ -1,6 +1,8 @@
 name: Hashdump
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Extracts found user hashes out of /var/db/dslocal/nodes/Default/users/*.plist
 software: ''
 techniques:
@@ -18,7 +20,7 @@ options:
     description: Agent to execute module on.
     required: true
     value: ''
-script: |
+script: |-
   import os
   import base64
   def getUserHash(userName):

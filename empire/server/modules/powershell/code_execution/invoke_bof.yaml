@@ -1,6 +1,8 @@
 name: Invoke-BOF
 authors:
-  - '@Cx01N'
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
 description: |
   This script will load the BOF file (aka COFF file) into memory, map all sections,
   perform relocation, serialize beacon parameters, and jump into the entry point
@@ -29,7 +31,7 @@ options:
   - name: EntryPoint
     description: Name of the function exported to execute in the beacon object file.
     required: true
-    value: 'go'
+    value: go
   - name: ArguementList
     description: List of arguments that will be passed to the beacon, available through BeaconParse API.
     required: false
@@ -42,6 +44,6 @@ options:
       - 'True'
       - 'False'
     strict: true
-script_path: 'code_execution/Invoke-Bof.ps1'
+script_path: code_execution/Invoke-Bof.ps1
 advanced:
   custom_generate: true

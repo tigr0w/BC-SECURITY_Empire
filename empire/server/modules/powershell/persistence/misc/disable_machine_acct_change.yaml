@@ -1,8 +1,9 @@
 name: Invoke-DisableMachineAcctChange
 authors:
-  - '@harmj0y'
-description: Disables the machine account for the target system from changing its
-  password automatically.
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Disables the machine account for the target system from changing its password automatically.
 software: ''
 techniques:
   - T1098
@@ -12,7 +13,7 @@ needs_admin: true
 opsec_safe: true
 language: powershell
 min_language_version: '2'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to run module on.

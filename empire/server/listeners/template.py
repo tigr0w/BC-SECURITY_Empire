@@ -17,7 +17,13 @@ class Listener(object):
 
         self.info = {
             "Name": "Template",
-            "Authors": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": ("Listener template"),
             # categories - client_server, peer_to_peer, broadcast, third_party
             "Category": ("client_server"),

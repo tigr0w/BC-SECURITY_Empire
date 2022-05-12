@@ -25,7 +25,13 @@ class Listener(object):
 
         self.info = {
             "Name": "Dropbox",
-            "Authors": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": ("Starts a Dropbox listener."),
             "Category": ("third_party"),
             "Comments": [],

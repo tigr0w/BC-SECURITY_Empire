@@ -1,7 +1,11 @@
 name: Shellcode Inject x64
 authors:
-  - '@xorrior'
-  - '@midnite_runr'
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+  - name: ''
+    handle: '@midnite_runr'
+    link: ''
 description: Inject shellcode into a x64 bit process
 software: ''
 techniques:

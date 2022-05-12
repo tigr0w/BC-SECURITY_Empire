@@ -1,6 +1,8 @@
 name: Invoke-LockWorkStation
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Locks the workstation's display.
 software: ''
 techniques:

@@ -11,7 +11,28 @@ class Stager(object):
 
         self.info = {
             "Name": "AppleScript",
-            "Authors": ["@harmj0y", "@dchrastil", "@import-au"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@dchrastil",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@DisK0nn3cT",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@import-au",
+                    "Link": "",
+                },
+            ],
             "Description": "An OSX office macro that supports newer versions of Office.",
             "Comments": [
                 "http://stackoverflow.com/questions/6136798/vba-shell-function-in-office-2011-for-mac"

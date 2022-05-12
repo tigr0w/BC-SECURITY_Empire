@@ -19,7 +19,13 @@ class Plugin(Plugin):
         self.csharpserver_proc = None
         self.info = {
             "Name": "csharpserver",
-            "Authors": ["@Cx01N"],
+            "Authors": [
+                {
+                    "Name": "Anthony Rose",
+                    "Handle": "@Cx01N",
+                    "Link": "https://twitter.com/Cx01N_",
+                }
+            ],
             "Description": ("Empire C# server for agents."),
             "Software": "",
             "Techniques": [""],

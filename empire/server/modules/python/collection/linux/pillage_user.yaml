@@ -1,8 +1,9 @@
 name: Linux PillageUser
 authors:
-  - '@harmj0y'
-description: 'Pillages the current user for their bash_history, ssh known hosts, recent
-  folders, etc. '
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: 'Pillages the current user for their bash_history, ssh known hosts, recent folders, etc. '
 software: ''
 techniques:
   - T1139
@@ -12,22 +13,21 @@ needs_admin: false
 opsec_safe: true
 language: python
 min_language_version: '2.6'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to execute module on.
     required: true
     value: ''
   - name: Sleep
-    description: Switch. Sleep the agent's normal interval between downloads, otherwise
-      use one blast.
+    description: Switch. Sleep the agent's normal interval between downloads, otherwise use one blast.
     required: false
     value: 'True'
   - name: AllUsers
     description: Switch. Run for all users (needs root privileges!)
     required: false
     value: 'False'
-script: |
+script: |-
   import os
 
   # custom function to send download packets back

@@ -1,9 +1,10 @@
 name: Sandbox-Keychain-Dump
 authors:
-  - '@import-au'
-description: 'Uses Apple Security utility to dump the contents of the keychain. WARNING:
-  Will prompt user for access to each key.On Newer versions of Sierra and High Sierra,
-  this will also ask the user for their password for each key.'
+  - name: ''
+    handle: '@import-au'
+    link: ''
+description: 'Uses Apple Security utility to dump the contents of the keychain. WARNING: Will prompt user for access to each
+  key.On Newer versions of Sierra and High Sierra, this will also ask the user for their password for each key.'
 software: ''
 techniques:
   - T1142
@@ -24,7 +25,7 @@ options:
     description: File to output AppleScript to, otherwise displayed on the screen.
     required: false
     value: ''
-script: |
+script: |-
   import subprocess
   import re
 

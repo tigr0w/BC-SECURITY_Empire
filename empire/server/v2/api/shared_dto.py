@@ -37,6 +37,12 @@ class DownloadDescription(BaseModel):
         orm_mode = True
 
 
+class Author(BaseModel):
+    name: str
+    handle: str
+    link: str
+
+
 def domain_to_dto_download_description(download: models.Download):
     if download.filename:  # todo can this be made as a @property?
         filename = download.filename

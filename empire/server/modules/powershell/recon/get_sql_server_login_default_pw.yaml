@@ -1,9 +1,12 @@
 name: Get-SQLServerLoginDefaultPw
 authors:
-  - '@_nullbind'
-  - '@0xbadjuju'
-description: Based on the instance name, test if SQL Server is configured with default
-  passwords.
+  - name: ''
+    handle: '@_nullbind'
+    link: ''
+  - name: ''
+    handle: '@0xbadjuju'
+    link: ''
+description: Based on the instance name, test if SQL Server is configured with default passwords.
 software: ''
 techniques:
   - T1256
@@ -26,8 +29,7 @@ options:
     required: false
     value: ''
   - name: Password
-    description: SQL Server or domain account password to authenticate with. Only used
-      for CheckAll
+    description: SQL Server or domain account password to authenticate with. Only used for CheckAll
     required: false
     value: ''
   - name: Instance

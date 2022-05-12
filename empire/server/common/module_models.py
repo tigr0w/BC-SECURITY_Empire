@@ -10,14 +10,14 @@ class LanguageEnum(str, Enum):
     csharp = "csharp"
 
 
-class PydanticModuleAdvanced(BaseModel):
+class EmpireModuleAdvanced(BaseModel):
     option_format_string: str = '-{{ KEY }} "{{ VALUE }}"'
     option_format_string_boolean: str = "-{{ KEY }}"
     custom_generate: bool = False
     generate_class: Any = None
 
 
-class PydanticModuleOption(BaseModel):
+class EmpireModuleOption(BaseModel):
     name: str
     name_in_code: Optional[str]
     description: str = ""
@@ -27,11 +27,16 @@ class PydanticModuleOption(BaseModel):
     strict: bool = False
 
 
-# TODO Rename
-class PydanticModule(BaseModel):
+class EmpireModuleAuthor(BaseModel):
+    name: str
+    handle: str
+    link: str
+
+
+class EmpireModule(BaseModel):
     id: str
     name: str
-    authors: List[str] = []
+    authors: List[EmpireModuleAuthor] = []
     description: str = ""
     software: str = ""
     techniques: List[str] = []
@@ -42,10 +47,10 @@ class PydanticModule(BaseModel):
     language: LanguageEnum
     min_language_version: Optional[str]
     comments: List[str] = []
-    options: List[PydanticModuleOption] = []
+    options: List[EmpireModuleOption] = []
     script: Optional[str] = None
     script_path: Optional[str] = None
     script_end: str = " {{ PARAMS }}"
     enabled: bool = True
-    advanced: PydanticModuleAdvanced = PydanticModuleAdvanced()
+    advanced: EmpireModuleAdvanced = EmpireModuleAdvanced()
     compiler_yaml: Optional[str]

@@ -21,7 +21,13 @@ class Plugin(Plugin):
         self.csharpserver_proc = None
         self.info = {
             "Name": "websockify",
-            "Authors": ["@Cx01N"],
+            "Authors": [
+                {
+                    "Name": "Anthony Rose",
+                    "Handle": "@Cx01N",
+                    "Link": "https://twitter.com/Cx01N_",
+                }
+            ],
             "Description": (
                 "Websockify server for TCP proxy/bridge to connect applications. For example: "
                 "run the websockify server to connect the VNC server to noVNC."

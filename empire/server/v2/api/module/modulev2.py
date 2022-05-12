@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from empire.server.common.module_models import PydanticModule
+from empire.server.common.module_models import EmpireModule
 from empire.server.server import main
 from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user
@@ -57,7 +57,7 @@ async def read_modules():
 @router.get(
     "/{uid}", response_model=Module, dependencies=[Depends(get_current_active_user)]
 )
-async def read_module(uid: str, module: PydanticModule = Depends(get_module)):
+async def read_module(uid: str, module: EmpireModule = Depends(get_module)):
     return domain_to_dto_module(module, uid)
 
 
@@ -67,7 +67,7 @@ async def read_module(uid: str, module: PydanticModule = Depends(get_module)):
 async def update_module(
     uid: str,
     module_req: ModuleUpdateRequest,
-    module: PydanticModule = Depends(get_module),
+    module: EmpireModule = Depends(get_module),
     db: Session = Depends(get_db),
 ):
     module_service.update_module(db, module, module_req)

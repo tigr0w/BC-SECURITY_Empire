@@ -1,8 +1,10 @@
 name: Out-Minidump
 authors:
-  - '@mattifestation'
-description: 'Generates a full-memory dump of a process. Note: To dump another user''s
-  process, you must be running from an elevated prompt (e.g to dump lsass)'
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+description: "Generates a full-memory dump of a process. Note: To dump another user's process, you must be running from an\
+  \ elevated prompt (e.g to dump lsass)"
 software: ''
 techniques:
   - T1033
@@ -28,10 +30,9 @@ options:
     required: false
     value: ''
   - name: DumpFilePath
-    description: Specifies the folder path where dump files will be written. Defaults
-      to the current user directory.
+    description: Specifies the folder path where dump files will be written. Defaults to the current user directory.
     required: false
     value: ''
-script_path: 'collection/Out-Minidump.ps1'
+script_path: collection/Out-Minidump.ps1
 advanced:
   custom_generate: true

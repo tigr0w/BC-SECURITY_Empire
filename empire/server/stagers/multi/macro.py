@@ -11,7 +11,28 @@ class Stager(object):
 
         self.info = {
             "Name": "Macro",
-            "Authors": ["@enigma0x3", "@harmj0y", "@DisK0nn3cT", "@malcomvetter"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@enigma0x3",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@DisK0nn3cT",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@malcomvetter",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates a Win/Mac cross platform MS Office macro for Empire, compatible with Office 97-2016 including Mac 2011 and 2016 (sandboxed).",
             "Comments": [
                 "http://enigma0x3.wordpress.com/2014/01/11/using-a-powershell-payload-in-a-client-side-attack/",

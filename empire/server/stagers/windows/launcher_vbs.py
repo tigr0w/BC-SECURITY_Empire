@@ -10,7 +10,18 @@ class Stager(object):
 
         self.info = {
             "Name": "VBS Launcher",
-            "Authors": ["@harmj0y", "@enigma0x3"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@enigma0x3",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates a .vbs launcher for Empire.",
             "Comments": ["https://github.com/enigma0x3/Powershell-Infection"],
         }

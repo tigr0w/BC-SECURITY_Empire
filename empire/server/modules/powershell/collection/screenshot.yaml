@@ -1,9 +1,12 @@
 name: Get-Screenshot
 authors:
-  - '@obscuresec'
-  - '@harmj0y'
-description: Takes a screenshot of the current desktop and returns the output as a
-  .PNG.
+  - name: ''
+    handle: '@obscuresec'
+    link: ''
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Takes a screenshot of the current desktop and returns the output as a .PNG.
 software: ''
 techniques:
   - T1113
@@ -24,6 +27,6 @@ options:
     description: 'JPEG Compression ratio: 1 to 100.'
     required: false
     value: ''
-script_path: 'collection/Get-Screenshot.ps1'
+script_path: collection/Get-Screenshot.ps1
 advanced:
   custom_generate: true

@@ -1,6 +1,8 @@
 name: Find-DomainShare
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Finds shares on machines in the domain. Part of PowerView.
 software: S0194
 techniques:
@@ -51,8 +53,7 @@ options:
     required: false
     value: ''
   - name: SearchScope
-    description: Specifies the scope to search under, Base/OneLevel/Subtree (default
-      of Subtree)
+    description: Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)
     required: false
     value: ''
   - name: ResultPageSize
@@ -60,13 +61,11 @@ options:
     required: false
     value: ''
   - name: ServerTimeLimit
-    description: Specifies the maximum amount of time the server spends searching. Default
-      of 120 seconds.
+    description: Specifies the maximum amount of time the server spends searching. Default of 120 seconds.
     required: false
     value: ''
   - name: Tombstone
-    description: Switch. Specifies that the search should also return deleted/tombstoned
-      objects.
+    description: Switch. Specifies that the search should also return deleted/tombstoned objects.
     required: false
     value: ''
   - name: Delay
@@ -74,8 +73,7 @@ options:
     required: false
     value: ''
   - name: Jitter
-    description: Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults
-      to +/- 0.3.
+    description: Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults to +/- 0.3.
     required: false
     value: ''
   - name: Threads
@@ -85,7 +83,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -93,5 +91,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/powerview.ps1'
+script_path: situational_awareness/network/powerview.ps1
 script_end: Find-DomainShare {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-DomainShare completed'

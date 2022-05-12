@@ -19,7 +19,13 @@ class Listener(object):
 
         self.info = {
             "Name": "HTTP[S]",
-            "Authors": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": ("Starts a 'foreign' http[s] Empire listener."),
             "Category": ("client_server"),
             "Comments": [],

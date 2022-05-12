@@ -13,7 +13,13 @@ class Stager(object):
         # metadata info about the module, not modified during runtime
         self.info = {
             "Name": "Macroless code execution in MSWord",
-            "Authors": ["james fitts"],
+            "Authors": [
+                {
+                    "Name": "James Fitts",
+                    "Handle": "",
+                    "Link": "",
+                }
+            ],
             "Description": "Creates a macroless document utilizing a formula field for code execution",
             "Comments": ["Hard work by Etienne Stalmas and Saif El-Sherei"],
         }

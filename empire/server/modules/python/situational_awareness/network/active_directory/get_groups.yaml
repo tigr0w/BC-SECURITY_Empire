@@ -1,6 +1,8 @@
 name: Get Groups
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: This module will list all groups in active directory
 software: ''
 techniques:

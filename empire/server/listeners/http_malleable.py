@@ -32,7 +32,18 @@ class Listener(object):
 
         self.info = {
             "Name": "HTTP[S] MALLEABLE",
-            "Authors": ["@harmj0y", "@johneiser"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@johneiser",
+                    "Link": "",
+                },
+            ],
             "Description": (
                 "Starts a http[s] listener (PowerShell or Python) that adheres to a Malleable C2 profile."
             ),

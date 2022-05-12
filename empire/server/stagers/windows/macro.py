@@ -12,7 +12,18 @@ class Stager(object):
 
         self.info = {
             "Name": "Macro",
-            "Authors": ["@enigma0x3", "@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@enigma0x3",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates an office macro for Empire, compatible with office 97-2003, and 2007 file types.",
             "Comments": [
                 "http://enigma0x3.wordpress.com/2014/01/11/using-a-powershell-payload-in-a-client-side-attack/"

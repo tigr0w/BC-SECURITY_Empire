@@ -10,7 +10,13 @@ class Stager(object):
 
         self.info = {
             "Name": "LNKLauncher",
-            "Authors": ["@theguly"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@theguly",
+                    "Link": "",
+                }
+            ],
             "Description": "Create a .LNK file that launches the Empire stager.",
             "Background": False,
             "OutputExtension": None,

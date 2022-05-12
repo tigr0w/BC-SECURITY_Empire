@@ -1,6 +1,8 @@
 name: Find-Fruit
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Searches a network range for potentially vulnerable web services.
 software: ''
 techniques:
@@ -54,7 +56,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -62,6 +64,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'recon/Find-Fruit.ps1'
+script_path: recon/Find-Fruit.ps1
 advanced:
   custom_generate: true

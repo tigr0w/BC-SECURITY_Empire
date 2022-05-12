@@ -29,7 +29,13 @@ class Stager(object):
 
         self.info = {
             "Name": "pyInstaller Launcher",
-            "Authors": ["@TweekFawkes"],
+            "Authors": [
+                {
+                    "Name": "Bryce Kunz",
+                    "Handle": "@TweekFawkes",
+                    "Link": "https://twitter.com/TweekFawkes",
+                }
+            ],
             "Description": "Generates an ELF binary payload launcher for Empire using pyInstaller.",
             "Comments": [
                 "Needs to have pyInstaller setup on the system you are creating the stager on. For debian based operatins systems try the following command: apt-get -y install python-pip && pip install pyinstaller"

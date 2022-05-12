@@ -1,8 +1,9 @@
 name: View-Email
 authors:
-  - '@xorrior'
-description: Selects the specified folder and then outputs the email item at the specified
-  index.
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+description: Selects the specified folder and then outputs the email item at the specified index.
 software: ''
 techniques:
   - T1114
@@ -31,7 +32,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -39,5 +40,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'management/MailRaider.ps1'
+script_path: management/MailRaider.ps1
 script_end: View-Email {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n View-Email completed!"

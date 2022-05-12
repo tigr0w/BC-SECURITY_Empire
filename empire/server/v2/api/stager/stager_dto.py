@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from empire.server.database import models
 from empire.server.v2.api.shared_dto import (
+    Author,
     CustomOptionSchema,
     DownloadDescription,
     domain_to_dto_download_description,
@@ -30,10 +31,21 @@ def domain_to_dto_template(stager, uid: str):
         )
     )
 
+    authors = list(
+        map(
+            lambda x: {
+                "name": x["Name"],
+                "handle": x["Handle"],
+                "link": x["Link"],
+            },
+            stager.info.get("Authors") or [],
+        )
+    )
+
     return StagerTemplate(
         id=uid,
         name=stager.info.get("Name"),
-        authors=stager.info.get("Authors"),
+        authors=authors,
         description=stager.info.get("Description"),
         comments=stager.info.get("Comments"),
         options=options,
@@ -59,7 +71,7 @@ def domain_to_dto_stager(stager: models.Stager):
 class StagerTemplate(BaseModel):
     id: str
     name: str
-    authors: List[str]
+    authors: List[Author]
     description: str
     comments: List[str]
     options: Dict[str, CustomOptionSchema]

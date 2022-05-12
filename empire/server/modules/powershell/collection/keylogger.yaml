@@ -1,10 +1,16 @@
 name: Get-KeyStrokes
 authors:
-  - '@obscuresec'
-  - '@mattifestation'
-  - '@harmj0y'
-description: Logs keys pressed, time and the active window (when changed) to the keystrokes.txt
-  file. This file is located in the agents downloads directory Empire/downloads/<AgentName>/keystrokes.txt.
+  - name: ''
+    handle: '@obscuresec'
+    link: ''
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Logs keys pressed, time and the active window (when changed) to the keystrokes.txt file. This file is located
+  in the agents downloads directory Empire/downloads/<AgentName>/keystrokes.txt.
 software: ''
 techniques:
   - T1056
@@ -22,9 +28,8 @@ options:
     required: true
     value: ''
   - name: Sleep
-    description: Sleep time [ms] between key presses. Shorter times may increase CPU
-      usage on the target.
+    description: Sleep time [ms] between key presses. Shorter times may increase CPU usage on the target.
     required: false
     value: '1'
-script_path: 'collection/Get-Keystrokes.ps1'
+script_path: collection/Get-Keystrokes.ps1
 script_end: Get-Keystrokes {{ PARAMS }}

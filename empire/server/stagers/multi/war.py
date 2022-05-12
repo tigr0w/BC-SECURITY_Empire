@@ -12,7 +12,13 @@ class Stager(object):
 
         self.info = {
             "Name": "WAR",
-            "Authors": ["Andrew @ch33kyf3ll0w Bonstrom"],
+            "Authors": [
+                {
+                    "Name": "Andrew Bonstrom",
+                    "Handle": "@ch33kyf3ll0w",
+                    "Link": "",
+                }
+            ],
             "Description": "Generates a Deployable War file.",
             "Comments": [
                 "You will need to deploy the WAR file to activate. Great for interfaces that accept a WAR file such as Apache Tomcat, JBoss, or Oracle Weblogic Servers."

@@ -1,7 +1,11 @@
 name: LaunchAgent - UserLand Persistence
 authors:
-  - '@xorrior'
-  - '@n0pe_sled'
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+  - name: ''
+    handle: '@n0pe_sled'
+    link: ''
 description: Installs an Empire launchAgent.
 software: ''
 techniques:
@@ -12,7 +16,7 @@ needs_admin: false
 opsec_safe: false
 language: python
 min_language_version: '2.6'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to execute module on.
@@ -23,18 +27,15 @@ options:
     required: true
     value: ''
   - name: SafeChecks
-    description: Switch. Checks for LittleSnitch or a SandBox, exit the staging process
-      if true. Defaults to True.
+    description: Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.
     required: true
     value: 'True'
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: PLISTName
-    description: Name of the PLIST to install. Name will also be used for the plist
-      file.
+    description: Name of the PLIST to install. Name will also be used for the plist file.
     required: true
     value: com.proxy.initialize.plist
 advanced:

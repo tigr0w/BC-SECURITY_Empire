@@ -1,6 +1,8 @@
 name: Get Group Members
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: This module will return a list of group members
 software: ''
 techniques:
@@ -34,7 +36,7 @@ options:
     description: Group to check which users are a member of
     required: false
     value: Domain Admins
-script: |
+script: |-
   import sys, os, subprocess, re
   BindDN = "{{ BindDN }}"
   LDAPAddress = "{{ LDAPAddress }}"

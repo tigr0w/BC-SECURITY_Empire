@@ -1,6 +1,8 @@
 name: Find Fruit
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Searches for low-hanging web applications.
 software: ''
 techniques:
@@ -31,7 +33,7 @@ options:
     description: True/False to force SSL
     required: false
     value: 'False'
-script: |
+script: |-
   import urllib2
   import sys
   import re

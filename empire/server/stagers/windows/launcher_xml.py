@@ -10,7 +10,13 @@ class Stager(object):
 
         self.info = {
             "Name": "msbuild_xml",
-            "Authors": ["@p3nt4"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@p3nt4",
+                    "Link": "",
+                }
+            ],
             "Description": "Generates an XML file to be run with MSBuild.exe",
             "Comments": ["On the endpoint simply launch MSBuild.exe payload.xml"],
         }

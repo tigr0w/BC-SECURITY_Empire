@@ -1,9 +1,12 @@
 name: Invoke-RickASCII
 authors:
-  - '@lee_holmes'
-  - '@harmj0y'
-description: Spawns a a new powershell.exe process that runs Lee Holmes' ASCII Rick
-  Roll.
+  - name: ''
+    handle: '@lee_holmes'
+    link: ''
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Spawns a a new powershell.exe process that runs Lee Holmes' ASCII Rick Roll.
 software: ''
 techniques:
   - T1491

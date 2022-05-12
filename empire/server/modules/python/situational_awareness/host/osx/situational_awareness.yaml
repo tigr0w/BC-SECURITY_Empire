@@ -1,7 +1,11 @@
 name: Situational Awareness
 authors:
-  - Alex Rymdeko-Harvey
-  - '@Killswitch-GUI'
+  - name: Alex Rymdeko-Harvey
+    handle: ''
+    link: ''
+  - name: ''
+    handle: '@Killswitch-GUI'
+    link: ''
 description: This module will enumerate the basic items needed for OP.
 software: ''
 techniques:

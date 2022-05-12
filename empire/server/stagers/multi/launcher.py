@@ -10,7 +10,13 @@ class Stager(object):
 
         self.info = {
             "Name": "Launcher",
-            "Authors": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": "Generates a one-liner stage0 launcher for Empire.",
             "Comments": [""],
         }

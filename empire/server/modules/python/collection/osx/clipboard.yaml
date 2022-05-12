@@ -1,6 +1,8 @@
 name: ClipboardGrabber
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: This module will write log output of clipboard to stdout (or disk).
 software: ''
 techniques:
@@ -27,7 +29,7 @@ options:
     description: Optional for how long you would like to monitor clipboard in (s).
     required: true
     value: '0'
-script: |
+script: |-
   def func(monitortime=0):
       from AppKit import NSPasteboard, NSStringPboardType
       import time

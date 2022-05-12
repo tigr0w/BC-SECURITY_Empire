@@ -1,6 +1,8 @@
 name: Invoke-WinEnum
 authors:
-  - '@xorrior'
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
 description: Collects revelant information about a host and the current user context.
 software: ''
 techniques:
@@ -26,5 +28,5 @@ options:
     description: UserName to enumerate. Defaults to the current user context.
     required: false
     value: ''
-script_path: 'situational_awareness/host/Invoke-WinEnum.ps1'
+script_path: situational_awareness/host/Invoke-WinEnum.ps1
 script_end: Invoke-WinEnum {{ PARAMS }}

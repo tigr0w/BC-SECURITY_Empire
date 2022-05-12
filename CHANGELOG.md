@@ -33,6 +33,7 @@ It will be cleaned up as we get closer to the official release.
 - reporting is now a plugin
 - global obfuscation config is now its own db entity and removed from the config table. It is written in a way to eventually support more languages or "obfuscation modules" in the future.
 - keyword_obfuscation config property moved under database defaults. obfuscate and obfuscateCommand defaults moved under `database.defaults.obfuscation`
+- Convert authors to have a name, handle, and link instead of just a string for modules, listeners, stagers, and plugins
 
 ## [4.5.5] - 2022-05-07
 

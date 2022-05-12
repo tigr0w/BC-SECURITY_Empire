@@ -1,9 +1,13 @@
 name: LinuxPrivChecker
 authors:
-  - '@Killswitch_GUI'
-  - '@SecuritySift'
-description: This script is intended to be executed locally ona Linux box to enumerate
-  basic system info, and search for commonprivilege escalation vectors with pure python.
+  - name: ''
+    handle: '@Killswitch_GUI'
+    link: ''
+  - name: ''
+    handle: '@SecuritySift'
+    link: ''
+description: This script is intended to be executed locally ona Linux box to enumerate basic system info, and search for commonprivilege
+  escalation vectors with pure python.
 software: ''
 techniques:
   - T1166
@@ -20,7 +24,7 @@ options:
     description: Agent to run on.
     required: true
     value: ''
-script: |
+script: |-
   def callFunctionLinux():
       try:
           import subprocess as sub

@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from empire.server.common.plugins import Plugin
-from empire.server.v2.api.shared_dto import CustomOptionSchema, to_value_type
+from empire.server.v2.api.shared_dto import Author, CustomOptionSchema, to_value_type
 
 
 def domain_to_dto_plugin(plugin: Plugin, uid: str):
@@ -24,10 +24,21 @@ def domain_to_dto_plugin(plugin: Plugin, uid: str):
         )
     )
 
+    authors = list(
+        map(
+            lambda x: {
+                "name": x["Name"],
+                "handle": x["Handle"],
+                "link": x["Link"],
+            },
+            plugin.info.get("Authors") or [],
+        )
+    )
+
     return Plugin(
         id=uid,
         name=plugin.info.get("Name"),
-        authors=plugin.info.get("Authors"),
+        authors=authors,
         description=plugin.info.get("Description"),
         category=plugin.info.get("Category"),
         comments=plugin.info.get("Comments"),
@@ -40,7 +51,7 @@ def domain_to_dto_plugin(plugin: Plugin, uid: str):
 class Plugin(BaseModel):
     id: str
     name: str
-    authors: List[str]
+    authors: List[Author]
     description: str
     techniques: List[str] = []
     software: Optional[str]

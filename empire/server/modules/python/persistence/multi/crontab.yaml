@@ -1,6 +1,8 @@
 name: Persistence with crontab
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: This module establishes persistence via crontab
 software: ''
 techniques:
@@ -34,7 +36,7 @@ options:
     description: File name for the launcher.
     required: true
     value: ''
-script: |
+script: |-
   import subprocess
   import sys
   Remove = "{{ Remove }}"

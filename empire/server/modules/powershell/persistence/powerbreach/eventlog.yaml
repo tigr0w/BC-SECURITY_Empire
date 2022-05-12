@@ -1,6 +1,8 @@
 name: Invoke-EventLogBackdoor
 authors:
-  - '@sixdub'
+  - name: ''
+    handle: '@sixdub'
+    link: ''
 description: Starts the event-loop backdoor.
 software: ''
 techniques:

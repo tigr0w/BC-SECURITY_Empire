@@ -1,6 +1,8 @@
 name: Chronos API Add Job
 authors:
-  - '@TweekFawkes'
+  - name: Bryce Kunz
+    handle: '@TweekFawkes'
+    link: https://twitter.com/TweekFawkes
 description: Add a Chronos job using the HTTP API service for the Chronos Framework
 software: ''
 techniques:
@@ -54,7 +56,7 @@ options:
     description: The last successful run for the job (optional).
     required: false
     value: ''
-script: |
+script: |-
   import urllib2
 
   target = "{{ Target }}"

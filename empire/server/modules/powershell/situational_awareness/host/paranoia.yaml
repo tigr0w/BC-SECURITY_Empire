@@ -1,8 +1,10 @@
 name: Invoke-Paranoia
 authors:
-  - pasv
-description: Continuously check running processes for the presence of suspicious users,
-  members of groups, process names, and for any processes running off of USB drives.
+  - name: pasv
+    handle: ''
+    link: ''
+description: Continuously check running processes for the presence of suspicious users, members of groups, process names,
+  and for any processes running off of USB drives.
 software: ''
 techniques:
   - T1057
@@ -31,5 +33,5 @@ options:
     description: AD Groups to watch out for (Default is 'Domain Admins')
     required: false
     value: ''
-script_path: 'situational_awareness/host/Invoke-Paranoia.ps1'
+script_path: situational_awareness/host/Invoke-Paranoia.ps1
 script_end: Invoke-Paranoia {{ PARAMS }}

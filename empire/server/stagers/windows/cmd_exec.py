@@ -13,7 +13,13 @@ class Stager(object):
 
         self.info = {
             "Name": "Stage 0 - Cmd Exec",
-            "Authors": ["@Cx01N"],
+            "Authors": [
+                {
+                    "Name": "Anthony Rose",
+                    "Handle": "@Cx01N",
+                    "Link": "https://twitter.com/Cx01N_",
+                }
+            ],
             "Description": "Generates windows command executable using msfvenom to act as a stage 0.",
             "Comments": [""],
         }

@@ -1,9 +1,10 @@
 name: Start-MonitorTCPConnections
 authors:
-  - '@erikbarzdukas'
-description: Monitors hosts for TCP connections to a specified domain name or IPv4
-  address. Useful for session hijacking and finding users interacting with sensitive
-  services.
+  - name: ''
+    handle: '@erikbarzdukas'
+    link: ''
+description: Monitors hosts for TCP connections to a specified domain name or IPv4 address. Useful for session hijacking and
+  finding users interacting with sensitive services.
 software: ''
 techniques:
   - T1049
@@ -28,5 +29,5 @@ options:
     description: Interval in seconds to check for the connection
     required: true
     value: '15'
-script_path: 'situational_awareness/host/Start-MonitorTCPConnections.ps1'
+script_path: situational_awareness/host/Start-MonitorTCPConnections.ps1
 script_end: Start-TCPMonitor {{ PARAMS }}

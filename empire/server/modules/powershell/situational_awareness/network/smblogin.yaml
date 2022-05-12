@@ -1,8 +1,9 @@
 name: Invoke-SMBLogin
 authors:
-  - Mauricio Velazco (@mvelazco)
-description: Validates username & password combination(s) across a host or group of
-  hosts using the SMB protocol.
+  - name: Mauricio Velazco (@mvelazco)
+    handle: ''
+    link: ''
+description: Validates username & password combination(s) across a host or group of hosts using the SMB protocol.
 software: ''
 techniques:
   - T1135
@@ -26,8 +27,7 @@ options:
     required: false
     value: ''
   - name: ComputerName
-    description: A single computer name (ip) or a list of comma separated computer names
-      (ips)
+    description: A single computer name (ip) or a list of comma separated computer names (ips)
     required: true
     value: ''
   - name: Domain
@@ -45,7 +45,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -53,5 +53,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/Invoke-SMBLogin.ps1'
+script_path: situational_awareness/network/Invoke-SMBLogin.ps1
 script_end: Invoke-SMBLogin {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-SMBLogin completed'

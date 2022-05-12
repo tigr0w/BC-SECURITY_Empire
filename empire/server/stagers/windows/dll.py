@@ -11,7 +11,13 @@ class Stager(object):
 
         self.info = {
             "Name": "DLL Launcher",
-            "Authors": ["@sixdub"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@sixdub",
+                    "Link": "",
+                }
+            ],
             "Description": "Generate a PowerPick Reflective DLL to inject with stager code.",
             "Comments": [""],
         }

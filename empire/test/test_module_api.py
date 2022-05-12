@@ -18,7 +18,8 @@ def test_get_modules(client, admin_auth_header):
     response = client.get("/api/v2beta/modules/", headers=admin_auth_header)
 
     assert response.status_code == 200
-    assert len(response.json()["records"]) >= 394
+
+    assert len(response.json()["records"]) >= 392
 
 
 def test_update_module(client, admin_auth_header):

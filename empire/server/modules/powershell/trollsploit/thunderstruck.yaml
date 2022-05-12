@@ -1,8 +1,9 @@
 name: Invoke-Thunderstruck
 authors:
-  - '@obscuresec'
-description: Play's a hidden version of AC/DC's Thunderstruck video while maxing out
-  a computer's volume.
+  - name: ''
+    handle: '@obscuresec'
+    link: ''
+description: Play's a hidden version of AC/DC's Thunderstruck video while maxing out a computer's volume.
 software: ''
 techniques:
   - T1491

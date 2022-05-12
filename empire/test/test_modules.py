@@ -1,4 +1,7 @@
+import logging
 from unittest.mock import MagicMock, Mock
+
+import pytest
 
 
 def convert_options_to_params(options):
@@ -12,13 +15,22 @@ def fake_obfuscate(psScript, obfuscationCommand):
     return psScript
 
 
-def test_load_modules(monkeypatch, capsys, db):
+def test_load_modules(monkeypatch, caplog, db):
     """
     This is just meant to be a small smoke test to ensure that the modules
     that come with Empire can be loaded properly at startup and a script can
     be generated with the default values.
     """
     from empire.server.v2.core.module_service import ModuleService
+
+    caplog.set_level(logging.DEBUG)
+
+    main_menu = Mock()
+    main_menu.installPath = "empire/server"
+
+    agent_mock = Mock()
+    agent_mock.language_version = "7.0"
+    main_menu.agents.get_agent_db.return_value = agent_mock
 
     main_menu = Mock()
     main_menu.installPath = "empire/server"
@@ -38,9 +50,9 @@ def test_load_modules(monkeypatch, capsys, db):
     modules = ModuleService(main_menu)
 
     # Fail if a module fails to load.
-    if capsys:
-        out, err = capsys.readouterr()
-        assert "Error loading module" not in out
+    messages = [x.message for x in caplog.records if x.levelno >= logging.WARNING]
+    if messages:
+        pytest.fail("warning messages encountered during testing: {}".format(messages))
 
     assert len(modules.modules) > 0
 

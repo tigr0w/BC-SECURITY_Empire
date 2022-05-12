@@ -1,8 +1,9 @@
 name: Get-NetLocalGroup
 authors:
-  - '@harmj0y'
-description: Returns a list of all current users in a specified local group on a local
-  or remote machine. Part of PowerView.
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Returns a list of all current users in a specified local group on a local or remote machine. Part of PowerView.
 software: S0194
 techniques:
   - T1482
@@ -32,19 +33,18 @@ options:
     required: false
     value: ''
   - name: Recurse
-    description: Switch. If the local member member is a domain group, recursively try
-      to resolve its members to get a list of domain users who can access this machine.
+    description: Switch. If the local member member is a domain group, recursively try to resolve its members to get a list
+      of domain users who can access this machine.
     required: false
     value: ''
   - name: API
-    description: Switch. Use API calls instead of the WinNT service provider. Less information,
-      but the results are faster.
+    description: Switch. Use API calls instead of the WinNT service provider. Less information, but the results are faster.
     required: false
     value: ''
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -52,5 +52,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/powerview.ps1'
+script_path: situational_awareness/network/powerview.ps1
 script_end: Get-NetLocalGroup {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-NetLocalGroup completed'

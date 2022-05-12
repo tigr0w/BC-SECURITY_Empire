@@ -1,9 +1,10 @@
 name: Invoke-RIDHijacking
 authors:
-  - Sebastian Castro @r4wd3r
-description: Runs Invoke-RIDHijacking. Allows setting desired privileges to an existent
-  account by modifying the Relative Identifier value copy used to create the access
-  token. This module needs administrative privileges.
+  - name: Sebastian Castro @r4wd3r
+    handle: ''
+    link: ''
+description: Runs Invoke-RIDHijacking. Allows setting desired privileges to an existent account by modifying the Relative
+  Identifier value copy used to create the access token. This module needs administrative privileges.
 software: ''
 techniques:
   - T1003
@@ -42,5 +43,5 @@ options:
     description: Switch. Enable the defined account.
     required: false
     value: ''
-script_path: 'persistence/Invoke-RIDHijacking.ps1'
+script_path: persistence/Invoke-RIDHijacking.ps1
 script_end: Invoke-RIDHijacking {{ PARAMS }}

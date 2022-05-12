@@ -1,8 +1,9 @@
 name: Screenshot
 authors:
-  - '@harmj0y'
-description: Takes a screenshot of an OSX desktop using screencapture and returns
-  the data.
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Takes a screenshot of an OSX desktop using screencapture and returns the data.
 software: ''
 techniques:
   - T1113
@@ -12,7 +13,7 @@ needs_admin: false
 opsec_safe: false
 language: python
 min_language_version: '2.6'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to execute module on.

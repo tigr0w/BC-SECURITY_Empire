@@ -1,6 +1,8 @@
 name: SudoSpawn
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Spawns a new Empire agent using sudo.
 software: T1169
 techniques:
@@ -11,7 +13,7 @@ needs_admin: false
 opsec_safe: true
 language: python
 min_language_version: '3'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to execute module on.
@@ -30,8 +32,7 @@ options:
     required: true
     value: 'True'
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
 advanced:

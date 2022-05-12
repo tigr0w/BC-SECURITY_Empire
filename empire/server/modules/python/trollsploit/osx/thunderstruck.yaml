@@ -1,6 +1,8 @@
 name: Open Safari in the background and play Thunderstruck.
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Open Safari in the background and play Thunderstruck.
 software: ''
 techniques:
@@ -18,7 +20,7 @@ options:
     description: Agent to run on.
     required: true
     value: ''
-script: |
+script: |-
   import subprocess
 
   try:

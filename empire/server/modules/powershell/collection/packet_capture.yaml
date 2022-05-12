@@ -1,7 +1,11 @@
 name: Invoke-PacketCapture
 authors:
-  - '@obscuresec'
-  - '@mattifestation'
+  - name: ''
+    handle: '@obscuresec'
+    link: ''
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
 description: Starts a packet capture on a host using netsh.
 software: ''
 techniques:

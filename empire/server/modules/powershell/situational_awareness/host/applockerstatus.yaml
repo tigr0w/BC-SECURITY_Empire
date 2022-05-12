@@ -1,9 +1,13 @@
 name: Get-AppLockerConfig
 authors:
-  - '@matterpreter'
-  - Matt Hand
-description: This script is used to query the current AppLocker policy on the target
-  and check the status of a user-defined executable or all executables in a path.
+  - name: ''
+    handle: '@matterpreter'
+    link: ''
+  - name: Matt Hand
+    handle: ''
+    link: ''
+description: This script is used to query the current AppLocker policy on the target and check the status of a user-defined
+  executable or all executables in a path.
 software: ''
 techniques:
   - T1012
@@ -32,7 +36,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String

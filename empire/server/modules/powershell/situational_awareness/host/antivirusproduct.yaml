@@ -1,7 +1,11 @@
 name: Get-AntiVirusProduct
 authors:
-  - '@mh4x0f'
-  - Jan Egil Ring
+  - name: ''
+    handle: '@mh4x0f'
+    link: ''
+  - name: Jan Egil Ring
+    handle: ''
+    link: ''
 description: Get antivirus product information.
 software: ''
 techniques:
@@ -26,7 +30,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String

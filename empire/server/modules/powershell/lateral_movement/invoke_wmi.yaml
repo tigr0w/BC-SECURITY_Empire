@@ -1,6 +1,8 @@
 name: Invoke-WMI
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Executes a stager on remote hosts using WMI.
 software: ''
 techniques:
@@ -11,7 +13,7 @@ needs_admin: false
 opsec_safe: true
 language: powershell
 min_language_version: '2'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to run module on.
@@ -34,20 +36,18 @@ options:
     required: false
     value: ''
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
-      for obfuscation types. For powershell only.
+    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
+      only.
     required: false
     value: 'False'
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
-      is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
     required: false
     value: Token\All\1
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: 'mattifestation etw'
-    value: 'False'
+    value: mattifestation etw
   - name: UserName
     description: '[domain\]username to use to execute command.'
     required: false
@@ -57,8 +57,7 @@ options:
     required: false
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: Proxy
@@ -66,8 +65,7 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
     required: false
     value: default
 advanced:

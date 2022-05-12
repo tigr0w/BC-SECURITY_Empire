@@ -2,11 +2,11 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
-from empire.server.common.module_models import LanguageEnum, PydanticModule
-from empire.server.v2.api.shared_dto import CustomOptionSchema, to_value_type
+from empire.server.common.module_models import EmpireModule, LanguageEnum
+from empire.server.v2.api.shared_dto import Author, CustomOptionSchema, to_value_type
 
 
-def domain_to_dto_module(module: PydanticModule, uid: str):
+def domain_to_dto_module(module: EmpireModule, uid: str):
     options = {x.name: x for x in module.options}
     options = dict(
         map(
@@ -24,6 +24,7 @@ def domain_to_dto_module(module: PydanticModule, uid: str):
             options.items(),
         )
     )
+
     return Module(
         id=uid,
         name=module.name,
@@ -47,7 +48,7 @@ class Module(BaseModel):
     id: str
     name: str
     enabled: bool
-    authors: List[str]
+    authors: List[Author]
     description: str
     background: bool
     language: LanguageEnum

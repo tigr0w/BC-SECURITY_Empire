@@ -12,7 +12,13 @@ class Plugin(Plugin):
     def onLoad(self):
         self.info = {
             "Name": "basic_reporting",
-            "Authors": ["@vinnybod"],
+            "Authors": [
+                {
+                    "Name": "Vincent Rose",
+                    "Handle": "@vinnybod",
+                    "Link": "https://github.com/vinnybod",
+                }
+            ],
             "Description": "Generates credentials.csv, sessions.csv, and master.log. Writes to server/data directory.",
             "Software": "",
             "Techniques": [],

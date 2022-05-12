@@ -11,7 +11,13 @@ class Stager(object):
 
         self.info = {
             "Name": "Nim Powershell Launcher",
-            "Authors": ["@hubbl3"],
+            "Authors": [
+                {
+                    "Name": "Jake Krasnov",
+                    "Handle": "@hubbl3",
+                    "Link": "https://twitter.com/_Hubbl3",
+                }
+            ],
             "Description": "Generate an unmanaged binary that loads the CLR and executes a powershell one liner",
             "Comments": ["Based on the work of @bytebl33d3r"],
         }

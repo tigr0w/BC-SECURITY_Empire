@@ -10,7 +10,18 @@ class Stager(object):
 
         self.info = {
             "Name": "DuckyLauncher",
-            "Authors": ["@harmj0y", "@kisasondi"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@kisasondi",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates a ducky script that runes a one-liner stage0 launcher for Empire.",
             "Comments": [""],
         }

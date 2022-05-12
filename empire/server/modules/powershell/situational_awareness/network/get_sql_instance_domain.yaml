@@ -1,11 +1,14 @@
 name: Get-SQLInstanceDomain
 authors:
-  - '@_nullbind'
-  - '@0xbadjuju'
-description: Returns a list of SQL Server instances discovered by querying a domain
-  controller for systems with registered MSSQL service principal names. The function
-  will default to the current user's domain and logon server, but an alternative domain
-  controller can be provided. UDP scanning of management servers is optional.
+  - name: ''
+    handle: '@_nullbind'
+    link: ''
+  - name: ''
+    handle: '@0xbadjuju'
+    link: ''
+description: Returns a list of SQL Server instances discovered by querying a domain controller for systems with registered
+  MSSQL service principal names. The function will default to the current user's domain and logon server, but an alternative
+  domain controller can be provided. UDP scanning of management servers is optional.
 software: ''
 techniques:
   - T1046
@@ -39,8 +42,7 @@ options:
     required: false
     value: 'False'
   - name: UDPTimeOut
-    description: Timeout in seconds for UDP scans of management servers. Longer timeout
-      = more accurate.
+    description: Timeout in seconds for UDP scans of management servers. Longer timeout = more accurate.
     required: false
     value: '3'
   - name: Username
@@ -54,7 +56,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -62,5 +64,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/Get-SQLInstanceDomain.ps1'
+script_path: situational_awareness/network/Get-SQLInstanceDomain.ps1
 script_end: Get-SQLInstanceDomain {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SQLInstanceDomain completed'

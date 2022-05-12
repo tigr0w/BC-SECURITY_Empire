@@ -1,8 +1,9 @@
 name: Get-SubnetRanges
 authors:
-  - '@benichmt1'
-description: Pulls hostnames from AD, performs a Reverse DNS lookup, and parses the
-  output into ranges.
+  - name: ''
+    handle: '@benichmt1'
+    link: ''
+description: Pulls hostnames from AD, performs a Reverse DNS lookup, and parses the output into ranges.
 software: S0194
 techniques:
   - T1016
@@ -30,7 +31,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String

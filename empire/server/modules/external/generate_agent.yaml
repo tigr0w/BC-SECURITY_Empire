@@ -1,7 +1,10 @@
 name: generate_agent
 authors:
-  - '@harmj0y'
-description: Generates an agent code instance for a specified listener, pre-staged, and register the agent in the database. This allows the agent to begin beconing behavior immediately.
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Generates an agent code instance for a specified listener, pre-staged, and register the agent in the database.
+  This allows the agent to begin beconing behavior immediately.
 software:
 techniques:
   - T1214
@@ -26,10 +29,10 @@ options:
       - powershell
       - python
       - ironpython
-    strict: True
+    strict: true
   - name: OutFile
     description: Output file to write the agent code to.
-    required: True
-    value: '/tmp/agent'
+    required: true
+    value: /tmp/agent
 advanced:
   custom_generate: true

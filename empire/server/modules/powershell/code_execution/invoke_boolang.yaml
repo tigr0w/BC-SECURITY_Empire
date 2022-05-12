@@ -1,7 +1,11 @@
 name: Invoke-Boolang
 authors:
-  - '@byt3bl33d3r'
-  - '@Cx01N'
+  - name: ''
+    handle: '@byt3bl33d3r'
+    link: https://twitter.com/byt3bl33d3r
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
 description: Executes Boo code from an embedded compiler.
 software: ''
 techniques:
@@ -24,5 +28,5 @@ options:
     description: Base64 encoded boolang code
     required: true
     value: ''
-script_path: 'code_execution/Invoke-Boolang.ps1'
+script_path: code_execution/Invoke-Boolang.ps1
 script_end: Invoke-Boolang {{ PARAMS }}

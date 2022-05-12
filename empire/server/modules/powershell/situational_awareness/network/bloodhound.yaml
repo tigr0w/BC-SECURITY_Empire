@@ -1,8 +1,14 @@
 name: Invoke-BloodHound
 authors:
-  - '@harmj0y'
-  - '@_wald0'
-  - '@cptjesus'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: Andy Robbins
+    handle: '@_wald0'
+    link: https://twitter.com/_wald0
+  - name: Rohan Vazarkar
+    handle: '@cptjesus'
+    link: https://twitter.com/cptjesus
 description: Execute BloodHound data collection.
 software: ''
 techniques:
@@ -41,8 +47,8 @@ options:
     required: false
     value: ''
   - name: CollectionMethod
-    description: The method to collect data. 'Group', 'ComputerOnly', 'LocalGroup',
-      'GPOLocalGroup', 'Session', 'LoggedOn', 'Trusts, 'Stealth', or 'Default'.
+    description: The method to collect data. 'Group', 'ComputerOnly', 'LocalGroup', 'GPOLocalGroup', 'Session', 'LoggedOn',
+      'Trusts, 'Stealth', or 'Default'.
     required: true
     value: Default
   - name: SearchForest
@@ -81,5 +87,5 @@ options:
     description: The number of cypher queries to queue up for neo4j RESTful API ingestion.
     required: true
     value: '1000'
-script_path: 'situational_awareness/network/BloodHound.ps1'
+script_path: situational_awareness/network/BloodHound.ps1
 script_end: Invoke-BloodHound {{ PARAMS }} | Out-String | %{$_ + "`n"};"`n Invoke-BloodHound completed!"

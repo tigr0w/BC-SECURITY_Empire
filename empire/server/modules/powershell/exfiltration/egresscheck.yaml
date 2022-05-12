@@ -1,8 +1,10 @@
 name: Invoke-EgressCheck
 authors:
-  - Stuart Morgan <stuart.morgan@mwrinfosecurity.com>
-description: This module will generate traffic on a provided range of ports and supports
-  both TCP and UDP. Useful to identify direct egress channels.
+  - name: Stuart Morgan <stuart.morgan@mwrinfosecurity.com>
+    handle: ''
+    link: ''
+description: This module will generate traffic on a provided range of ports and supports both TCP and UDP. Useful to identify
+  direct egress channels.
 software: ''
 techniques:
   - T1041
@@ -28,13 +30,12 @@ options:
     required: true
     value: TCP
   - name: portrange
-    description: The range of ports to connect on. This can be a comma separated list
-      or dash-separated ranges.
+    description: The range of ports to connect on. This can be a comma separated list or dash-separated ranges.
     required: true
     value: 22-25,53,80,443,445,3306,3389
   - name: delay
     description: Delay, in milliseconds, between ports being tested
     required: true
     value: '50'
-script_path: 'exfil/Invoke-EgressCheck.ps1'
+script_path: exfil/Invoke-EgressCheck.ps1
 script_end: Invoke-EgressCheck {{ PARAMS }}

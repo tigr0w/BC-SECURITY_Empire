@@ -4,6 +4,7 @@ from typing import List
 from pydantic import BaseModel
 
 
+# TODO VR Authors
 def domain_to_dto_bypass(bypass):
     return Bypass(
         id=bypass.id,

@@ -1,6 +1,8 @@
 name: Browser Dump
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: This module will dump browser history from Safari and Chrome.
 software: ''
 techniques:
@@ -22,7 +24,7 @@ options:
     description: Number of URLs to return.
     required: true
     value: '3'
-script: |
+script: |-
   import sqlite3
   import os
 

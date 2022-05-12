@@ -23,7 +23,13 @@ class Listener(object):
     def __init__(self, mainMenu: MainMenu, params=[]):
         self.info = {
             "Name": "Onedrive",
-            "Authors": ["@mr64bit"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@mr64bit",
+                    "Link": "",
+                }
+            ],
             "Description": (
                 "Starts a Onedrive listener. Setup instructions here:        gist.github.com/mr64bit/3fd8f321717c9a6423f7949d494b6cd9"
             ),

@@ -1,6 +1,8 @@
 name: Webcam
 authors:
-  - Juuso Salonen
+  - name: Juuso Salonen
+    handle: ''
+    link: ''
 description: Searches for keychain candidates and attempts to decrypt the user's keychain.
 software: ''
 techniques:
@@ -26,7 +28,7 @@ options:
     description: Manual location of keychain to decrypt, otherwise default.
     required: false
     value: ''
-script: |
+script: |-
   import base64
   import os
 

@@ -20,7 +20,13 @@ class Listener(object):
 
         self.info = {
             "Name": "redirector",
-            "Authors": ["@xorrior"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                }
+            ],
             "Description": (
                 "Internal redirector listener. Active agent required. Listener options will be copied from another existing agent. Requires the active agent to be in an elevated context."
             ),
