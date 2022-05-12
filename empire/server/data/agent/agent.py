@@ -84,19 +84,9 @@ for headerRaw in headersRaw:
 
 ################################################
 #
-# communication methods
-#
-################################################
-
-REPLACE_COMMS
-
-
-################################################
-#
 # encryption methods
 #
 ################################################
-
 def decode_routing_packet(data):
     """
     Parse ALL routing packets and only process the ones applicable

