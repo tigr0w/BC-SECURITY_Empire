@@ -853,11 +853,11 @@ class Listener(object):
         bindIP = listenerOptions["BindIP"]["Value"]
         port = listenerOptions["Port"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
-        userAgent = self.options["UserAgent"]["Value"]
-        listenerName = self.options["Name"]["Value"]
-        proxy = self.options["Proxy"]["Value"]
-        proxyCreds = self.options["ProxyCreds"]["Value"]
-        stagerURI = listenerOptions["StagerURI"]["Value"]  # todo: stagerURI not used
+        stagerURI = listenerOptions["StagerURI"]["Value"]
+        userAgent = listenerOptions["UserAgent"]["Value"]
+        listenerName = listenerOptions["Name"]["Value"]
+        proxy = listenerOptions["Proxy"]["Value"]
+        proxyCreds = listenerOptions["ProxyCreds"]["Value"]
 
         self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=self.template_dir)
@@ -866,18 +866,38 @@ class Listener(object):
         # Set HTTP/1.1 as in IIS 7.5 instead of /1.0
         WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
-        @app.route("/download/<stager>")
-        def send_stager(stager):
+        @app.route("/download/<stager>/")
+        @app.route("/download/<stager>/<options>")
+        def send_stager(stager, options=None):
             if "po" in stager:
+                if options:
+                    options = base64.b64decode(options).decode("UTF-8")
+                    options = options.split(":")
+
+                    obfuscate_command = options[0]
+                    bypasses = options[1]
+
+                if obfuscate_command:
+                    obfuscate = True
+                else:
+                    obfuscate = False
+
+                if not bypasses:
+                    bypasses = ""
+
                 launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName,
+                    listenerName=listenerName,
                     language="powershell",
                     encode=False,
                     userAgent=userAgent,
                     proxy=proxy,
                     proxyCreds=proxyCreds,
+                    obfuscate=obfuscate,
+                    obfuscationCommand=obfuscate_command,
+                    bypasses=bypasses,
                 )
                 return launcher
+
             elif "py" in stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
                     listenerName,
@@ -888,6 +908,7 @@ class Listener(object):
                     proxyCreds=proxyCreds,
                 )
                 return launcher
+
             else:
                 return make_response(self.default_response(), 404)
 
