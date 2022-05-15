@@ -51,31 +51,17 @@ async def read_plugin(uid: str, plugin=Depends(get_plugin)):
 
 
 @router.post("/{uid}/execute", dependencies=[Depends(get_current_active_user)])
-async def execute_module(
+async def execute_plugin(
     uid: str,
     plugin_req: PluginExecutePostRequest,
     plugin=Depends(get_plugin),
     db: Session = Depends(get_db),
 ):
-    # todo can this logic be moved to the service
-    #  and can the field parsing be abstracted out with the others?
-    #  Since this modifies shared object state, probably need a lock on each plugin.
-    # set all passed module options
-    for key, value in plugin_req.options.items():
-        if key not in plugin.options:
-            raise HTTPException(400, f"invalid module option {key}")
+    results, err = plugin_service.execute_plugin(db, plugin, plugin_req)
 
-        plugin.options[key]["Value"] = value
-
-    for option, values in plugin.options.items():
-        if values["Required"] and ((not values["Value"]) or (values["Value"] == "")):
-            raise HTTPException(400, f"required module option missing {option}")
-        if values["Strict"] and values["Value"] not in values["SuggestedValues"]:
-            raise HTTPException(
-                400, f"{option} must be set to one of suggested values."
-            )
-
-    results = plugin.execute(plugin_req.options)
+    # A plugin can return False for some internal error, or it can raise an actual exception.
     if results is False:
         raise HTTPException(500, "internal plugin error")
+    if err:
+        raise HTTPException(status_code=400, detail=err)
     return {} if results is None else results

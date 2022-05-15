@@ -1,14 +1,14 @@
 import copy
 import hashlib
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
 from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
-from empire.server.utils.type_util import safe_cast
+from empire.server.utils.option_util import set_options, validate_options
 from empire.server.v2.core.listener_template_service import ListenerTemplateService
 
 log = logging.getLogger(__name__)
@@ -189,68 +189,39 @@ class ListenerService(object):
 
     def _validate_listener_options(
         self, template: str, params: Dict
-    ) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    ) -> Tuple[Optional[Any], Optional[str]]:
         """
         Validates the new listener's options. Constructs a new "Listener" object.
         :param template:
         :param params:
-        :return:
+        :return: (Listener, error)
         """
         if not self.listener_template_service.get_listener_template(template):
             return None, f"Listener Template {template} not found"
 
         template_instance = self.listener_template_service.new_instance(template)
+        cleaned_options, err = validate_options(template_instance, params)
 
-        return self._validate(template_instance, params)
-
-    def _validate(self, instance, params: Dict):
-        options = {}
-
-        for instance_key, option_meta in instance.options.items():
-            if instance_key in params:
-                option_type = type(params[instance_key])
-                expected_option_type = option_meta.get("Type") or type(
-                    option_meta["Value"]
-                )
-                if option_type != expected_option_type:
-                    casted = safe_cast(params[instance_key], expected_option_type)
-                    if casted is None:
-                        return (
-                            None,
-                            f"incorrect type for option {instance_key}. Expected {expected_option_type} but got {option_type}",
-                        )
-                    else:
-                        params[instance_key] = casted
-                if (
-                    option_meta["Strict"]
-                    and params[instance_key] not in option_meta["SuggestedValues"]
-                ):
-                    return (
-                        None,
-                        f"{instance_key} must be set to one of the suggested values.",
-                    )
-                elif option_meta["Required"] and (
-                    params[instance_key] is None or params[instance_key] == ""
-                ):
-                    return None, f"required listener option missing: {instance_key}"
-                else:
-                    options[instance_key] = params[instance_key]
-            elif option_meta["Required"]:
-                return None, f"required listener option missing: {instance_key}"
-
-        revert_options = {}
-        for key, value in options.items():
-            revert_options[key] = instance.options[key]["Value"]
-            instance.options[key]["Value"] = value
-
-        self._normalize_listener_options(instance)
-        validated, err = instance.validate_options()
-        if not validated:
-            for key, value in revert_options.items():
-                instance.options[key]["Value"] = value
+        if err:
             return None, err
 
-        return instance, None
+        revert_options = {}
+        for key, value in template_instance.options.items():
+            revert_options[key] = template_instance.options[key]["Value"]
+            template_instance.options[key]["Value"] = value
+
+        set_options(template_instance, cleaned_options)
+
+        # todo We should update the validate_options method to also return a string error
+        self._normalize_listener_options(template_instance)
+        validated, err = template_instance.validate_options()
+        if not validated:
+            for key, value in revert_options.items():
+                template_instance.options[key]["Value"] = value
+
+            return None, err
+
+        return template_instance, None
 
     @staticmethod
     def _normalize_listener_options(instance) -> None:

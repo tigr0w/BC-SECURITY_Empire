@@ -2,15 +2,14 @@ import fnmatch
 import importlib
 import logging
 import os
-import pkgutil
 from importlib.machinery import SourceFileLoader
 
 from sqlalchemy.orm import Session
 
-from empire.server.common import helpers
 from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
+from empire.server.utils.option_util import validate_options
 
 log = logging.getLogger(__name__)
 
@@ -87,11 +86,23 @@ class PluginService(object):
 
         self.loaded_plugins[plugin_name] = plugin_obj
 
+    def execute_plugin(self, db: Session, plugin, plugin_req):
+        cleaned_options, err = validate_options(plugin, plugin_req.options)
+
+        if err:
+            return None, err
+
+        try:
+            return plugin.execute(plugin_req.options), None
+        except Exception as e:
+            log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
+            return False, str(e)
+
     def get_all(self):
         return self.loaded_plugins
 
     def get_by_id(self, uid: str):
-        return self.loaded_plugins[uid]
+        return self.loaded_plugins.get(uid)
 
     def shutdown(self):
         for plugin in self.loaded_plugins.values():

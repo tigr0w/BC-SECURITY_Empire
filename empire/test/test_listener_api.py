@@ -30,7 +30,7 @@ def test_create_listener_validation_fails_required_field(
         "/api/v2beta/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "required listener option missing: Port"
+    assert response.json()["detail"] == "required option missing: Port"
 
 
 # todo there are no listeners with strict fields. need to fake it somehow, or just wait until
@@ -233,7 +233,7 @@ def test_update_listener_reverts_if_validation_fails(client, admin_auth_header):
         json=listener,
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "required listener option missing: Host"
+    assert response.json()["detail"] == "required option missing: Host"
 
     response = client.get(
         f"/api/v2beta/listeners/{my_globals['listener_id']}", headers=admin_auth_header

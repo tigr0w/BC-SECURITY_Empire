@@ -45,7 +45,7 @@ def test_create_stager_validation_fails_required_field(
         "/api/v2beta/stagers/", headers=admin_auth_header, json=base_stager
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "required stager option missing: Listener"
+    assert response.json()["detail"] == "required option missing: Listener"
 
 
 def test_create_stager_validation_fails_strict_field(

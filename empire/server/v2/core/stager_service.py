@@ -1,11 +1,12 @@
 import copy
 import os
 import uuid
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
 from empire.server.database import models
+from empire.server.utils.option_util import set_options, validate_options
 from empire.server.v2.core.listener_service import ListenerService
 from empire.server.v2.core.stager_template_service import StagerTemplateService
 
@@ -33,12 +34,12 @@ class StagerService(object):
 
     def validate_stager_options(
         self, db: Session, template: str, params: Dict
-    ) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    ) -> Tuple[Optional[Any], Optional[str]]:
         """
         Validates the new listener's options. Constructs a new "Listener" object.
         :param template:
         :param params:
-        :return:
+        :return: (Stager, error)
         """
         if not self.stager_template_service.get_stager_template(template):
             return None, f"Stager Template {template} not found"
@@ -49,40 +50,21 @@ class StagerService(object):
             return None, f'Listener {params["Listener"]} not found'
 
         template_instance = self.stager_template_service.new_instance(template)
+        cleaned_options, err = validate_options(template_instance, params)
 
-        return self._validate(template_instance, params)
-
-    @staticmethod
-    def _validate(instance, params: Dict):
-        options = {}
-
-        for option, option_value in instance.options.items():
-            if option in params:
-                if (
-                    option_value["Strict"]
-                    and params[option] not in option_value["SuggestedValues"]
-                ):
-                    return None, f"{option} must be set to one of the suggested values."
-                elif option_value["Required"] and not params[option]:
-                    return None, f"required stager option missing: {option}"
-                else:
-                    options[option] = params[option]
-            elif option_value["Required"]:
-                return None, f"required stager option missing: {option}"
+        if err:
+            return None, err
 
         revert_options = {}
-        for key, value in options.items():
-            revert_options[key] = instance.options[key]["Value"]
-            instance.options[key]["Value"] = value
+        for key, value in template_instance.options.items():
+            revert_options[key] = template_instance.options[key]["Value"]
+            template_instance.options[key]["Value"] = value
 
-        # todo We should update the validate_options method to also return a string error
-        # todo stager instances don't have a validate method. but they COULD!
-        # if not instance.validate_options():
-        #     for key, value in revert_options.items():
-        #         instance.options[key]['Value'] = value
-        #     return None, 'Validation failed'
+        set_options(template_instance, cleaned_options)
 
-        return instance, None
+        # todo stager instances don't have a validate method. but they could
+
+        return template_instance, None
 
     def create_stager(self, db: Session, stager_req, save: bool, user_id: int):
         if save and self.get_by_name(db, stager_req.name):

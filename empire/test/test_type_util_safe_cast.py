@@ -1,4 +1,4 @@
-from empire.server.utils.type_util import safe_cast
+from empire.server.utils.option_util import safe_cast
 
 
 def test_safe_cast_string():

@@ -112,12 +112,25 @@ class MainMenu(object):
         # todo vr plugins could get their own loggers in the future.
         log.info(f"{plugin_name}: {msg}")
         if self.socketio:
-            asyncio.run(
-                self.socketio.emit(
-                    f"plugins/{plugin_name}/notifications",
-                    {"message": msg, "plugin_name": plugin_name},
+            try:  # https://stackoverflow.com/a/61331974/
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                loop.create_task(
+                    self.socketio.emit(
+                        f"plugins/{plugin_name}/notifications",
+                        {"message": msg, "plugin_name": plugin_name},
+                    )
                 )
-            )
+            else:
+                asyncio.run(
+                    self.socketio.emit(
+                        f"plugins/{plugin_name}/notifications",
+                        {"message": msg, "plugin_name": plugin_name},
+                    )
+                )
 
     def shutdown(self):
         """

@@ -2,7 +2,6 @@ import fnmatch
 import importlib.util
 import logging
 import os
-import pathlib
 from typing import Dict, List, Optional, Tuple
 
 import yaml
@@ -14,8 +13,7 @@ from empire.server.common.converter.load_covenant import _convert_covenant_to_em
 from empire.server.common.module_models import EmpireModule, LanguageEnum
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
-from empire.server.utils import data_util
-from empire.server.utils.type_util import safe_cast
+from empire.server.utils.option_util import safe_cast
 from empire.server.v2.api.module.module_dto import (
     ModuleBulkUpdateRequest,
     ModuleUpdateRequest,
