@@ -116,6 +116,12 @@ class Listener(object):
                 "Required": False,
                 "Value": "",
             },
+            "JA3_Evasion": {
+                "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
+                "Required": False,
+                "Value": "False",
+                "SuggestedValues": ["True", "False"],
+            },
         }
 
         # required:
@@ -1798,6 +1804,8 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
             return Response(self.default_response(), 200)
 
         try:
+            ja3_evasion = listenerOptions["JA3_Evasion"]["Value"]
+
             if host.startswith("https"):
                 if certPath.strip() == "" or not os.path.isdir(certPath):
                     print(
@@ -1822,6 +1830,10 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     "%s/empire-chain.pem" % (certPath),
                     "%s/empire-priv.key" % (certPath),
                 )
+
+                if ja3_evasion:
+                    context.set_ciphers(listener_util.generate_random_cipher())
+
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)

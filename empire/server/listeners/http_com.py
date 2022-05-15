@@ -119,6 +119,12 @@ class Listener(object):
                 "Required": False,
                 "Value": "",
             },
+            "JA3_Evasion": {
+                "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
+                "Required": False,
+                "Value": "False",
+                "SuggestedValues": ["True", "False"],
+            },
         }
 
         # required:
@@ -845,6 +851,8 @@ class Listener(object):
         try:
             certPath = listenerOptions["CertPath"]["Value"]
             host = listenerOptions["Host"]["Value"]
+            ja3_evasion = listenerOptions["JA3_Evasion"]["Value"]
+
             if certPath.strip() != "" and host.startswith("https"):
                 certPath = os.path.abspath(certPath)
 
@@ -862,18 +870,10 @@ class Listener(object):
                     "%s/empire-chain.pem" % (certPath),
                     "%s/empire-priv.key" % (certPath),
                 )
-                # setting the cipher list allows for modification of the JA3 signature. Select a random cipher to change
-                # it every time the listener is launched
-                cipherlist = [
-                    "ECDHE-RSA-AES256-GCM-SHA384",
-                    "ECDHE-RSA-AES128-GCM-SHA256",
-                    "ECDHE-RSA-AES256-SHA384",
-                    "ECDHE-RSA-AES256-SHA",
-                    "AES256-SHA256",
-                    "AES128-SHA256",
-                ]
-                selectciph = random.choice(cipherlist)
-                context.set_ciphers(selectciph)
+
+                if ja3_evasion:
+                    context.set_ciphers(listener_util.generate_random_cipher())
+
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)

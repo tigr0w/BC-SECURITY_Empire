@@ -90,3 +90,23 @@ def generate_cookie():
     cookie = helpers.random_string(random.randint(6, 16), charset=chars)
 
     return cookie
+
+
+def generate_random_cipher():
+    """
+    Generate random cipher
+    """
+    random_tls12 = [
+        "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES256-SHA384",
+        "ECDHE-RSA-AES256-SHA",
+        "AES256-SHA256",
+        "AES128-SHA256",
+    ]
+    tls12 = random.choice(random_tls12)
+
+    tls10 = "ECDHE-RSA-AES256-SHA"
+    cipher = f"{tls12}:{tls10}"
+
+    return cipher
