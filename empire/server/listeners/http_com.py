@@ -593,23 +593,30 @@ class Listener(object):
                     obfuscate_command = options[0]
                     bypasses = options[1]
 
-                if obfuscate_command:
-                    obfuscate = True
+                    if obfuscate_command:
+                        obfuscate = True
+                    else:
+                        obfuscate = False
+
+                    if not bypasses:
+                        bypasses = ""
+
+                    launcher = self.mainMenu.stagers.generate_launcher(
+                        listenerName=listenerName,
+                        language="powershell",
+                        encode=False,
+                        obfuscate=obfuscate,
+                        obfuscationCommand=obfuscate_command,
+                        bypasses=bypasses,
+                    )
+                    return launcher
                 else:
-                    obfuscate = False
-
-                if not bypasses:
-                    bypasses = ""
-
-                launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName=listenerName,
-                    language="powershell",
-                    encode=False,
-                    obfuscate=obfuscate,
-                    obfuscationCommand=obfuscate_command,
-                    bypasses=bypasses,
-                )
-                return launcher
+                    launcher = self.mainMenu.stagers.generate_launcher(
+                        listenerName=listenerName,
+                        language="powershell",
+                        encode=False,
+                    )
+                    return launcher
 
             else:
                 return make_response(self.default_response(), 404)

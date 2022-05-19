@@ -877,26 +877,37 @@ class Listener(object):
                     obfuscate_command = options[0]
                     bypasses = options[1]
 
-                if obfuscate_command:
-                    obfuscate = True
+                    if obfuscate_command:
+                        obfuscate = True
+                    else:
+                        obfuscate = False
+
+                    if not bypasses:
+                        bypasses = ""
+
+                    launcher = self.mainMenu.stagers.generate_launcher(
+                        listenerName=listenerName,
+                        language="powershell",
+                        encode=False,
+                        userAgent=userAgent,
+                        proxy=proxy,
+                        proxyCreds=proxyCreds,
+                        obfuscate=obfuscate,
+                        obfuscationCommand=obfuscate_command,
+                        bypasses=bypasses,
+                    )
+                    return launcher
+
                 else:
-                    obfuscate = False
-
-                if not bypasses:
-                    bypasses = ""
-
-                launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName=listenerName,
-                    language="powershell",
-                    encode=False,
-                    userAgent=userAgent,
-                    proxy=proxy,
-                    proxyCreds=proxyCreds,
-                    obfuscate=obfuscate,
-                    obfuscationCommand=obfuscate_command,
-                    bypasses=bypasses,
-                )
-                return launcher
+                    launcher = self.mainMenu.stagers.generate_launcher(
+                        listenerName=listenerName,
+                        language="powershell",
+                        encode=False,
+                        userAgent=userAgent,
+                        proxy=proxy,
+                        proxyCreds=proxyCreds,
+                    )
+                    return launcher
 
             elif "py" in stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
