@@ -1103,19 +1103,29 @@ class Listener(object):
                                 version = ""
 
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
-                            agentCode = self.generate_agent(
-                                language=language,
-                                listenerOptions=tempListenerOptions,
-                                obfuscate=self.mainMenu.obfuscate,
-                                obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                version=version,
-                            )
-                            encryptedAgent = encryption.aes_encrypt_then_hmac(
-                                sessionKey, agentCode
-                            )
-                            # TODO: wrap ^ in a routing packet?
+                            with SessionLocal() as db:
+                                obf_config = (
+                                    self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                        db, language
+                                    )
+                                )
+                                agentCode = self.generate_agent(
+                                    language=language,
+                                    listenerOptions=tempListenerOptions,
+                                    obfuscate=False
+                                    if not obf_config
+                                    else obf_config.enabled,
+                                    obfuscationCommand=""
+                                    if not obf_config
+                                    else obf_config.command,
+                                    version=version,
+                                )
+                                encryptedAgent = encryption.aes_encrypt_then_hmac(
+                                    sessionKey, agentCode
+                                )
+                                # TODO: wrap ^ in a routing packet?
 
-                            return make_response(encryptedAgent, 200)
+                                return make_response(encryptedAgent, 200)
 
                         elif results[:10].lower().startswith(b"error") or results[
                             :10
