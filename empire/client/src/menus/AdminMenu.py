@@ -318,7 +318,7 @@ class AdminMenu(Menu):
             for key, value in state.profiles[profile_name].items():
                 record_list.append([print_util.color(key, "blue"), value])
             table_util.print_table(
-                record_list, "Malleable Profile", colored_header=False, no_borders=True
+                record_list, "Malleable Profile", colored_header=False, borders=False
             )
 
     @command

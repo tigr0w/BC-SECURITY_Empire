@@ -84,7 +84,11 @@ class AgentMenu(Menu):
                 "Listener",
             ],
         )
-        table_util.print_agent_table(agent_list, agent_formatting, "Agents")
+        table_util.print_agent_table(
+            agent_list,
+            agent_formatting,
+            "Agents",
+        )
 
     @command
     def kill(self, agent_name: str) -> None:

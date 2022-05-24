@@ -43,6 +43,7 @@ namespace Covenant.Models.Grunts
 
         public string Code { get; set; } = "";
         public bool Compiled { get; set; } = false;
+        public bool Confuse { get; set; } = false;
         public GruntTaskingType TaskingType { get; set; } = GruntTaskingType.Assembly;
 
         private List<GruntTaskReferenceSourceLibrary> GruntTaskReferenceSourceLibraries { get; set; } = new List<GruntTaskReferenceSourceLibrary>();
@@ -282,7 +283,7 @@ namespace Covenant.Models.Grunts
                         EmbeddedResources = resources,
                         UnsafeCompile = this.UnsafeCompile,
                         OutputKind = OutputKind.WindowsApplication,
-                        Confuse = true,
+                        Confuse = this.Confuse,
                         // TODO: Fix optimization to work with GhostPack
                         Optimize = !this.ReferenceSourceLibraries.Select(RSL => RSL.Name).Contains("Seatbelt")
                     })
@@ -301,7 +302,7 @@ namespace Covenant.Models.Grunts
                         References = references35,
                         EmbeddedResources = resources,
                         UnsafeCompile = this.UnsafeCompile,
-                        Confuse = true,
+                        Confuse = this.Confuse,
                         // TODO: Fix optimization to work with GhostPack
                         Optimize = !this.ReferenceSourceLibraries.Select(RSL => RSL.Name).Contains("Seatbelt")
                     }))
@@ -366,7 +367,7 @@ namespace Covenant.Models.Grunts
                         EmbeddedResources = resources,
                         UnsafeCompile = this.UnsafeCompile,
                         OutputKind = OutputKind.WindowsApplication,
-                        Confuse = true,
+                        Confuse = this.Confuse,
                         // TODO: Fix optimization to work with GhostPack. It also doesn't work with Sharpire. Not sure if this actuall works with anything...
                         Optimize = !this.ReferenceSourceLibraries.Select(RSL => RSL.Name).Contains("Seatbelt")
                     })
@@ -385,7 +386,7 @@ namespace Covenant.Models.Grunts
                         References = references40,
                         EmbeddedResources = resources,
                         UnsafeCompile = this.UnsafeCompile,
-                        Confuse = true,
+                        Confuse = this.Confuse,
                         // TODO: Fix optimization to work with GhostPack
                         Optimize = !this.ReferenceSourceLibraries.Select(RSL => RSL.Name).Contains("Seatbelt")
                     }))

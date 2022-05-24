@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.0] - 2022-05-24
+
+-   Added Certify C# module (@Cx01N)
+-   Added embedded VNC client and launcher (@Cx01N)
+-   Added obfuscate option to C# payloads (@Hubbl3)
+-   Added global obfuscation to C# modules (@Cx01N)
+-   Added -BasicParsing to .bat launcher (@X0RW3LL)
+-   Added obfuscation to bat launcher for HTTP and HTTP COM (@Cx01N)
+-   Added option to enable/disable JA3 evasion (@Cx01N)
+-   Added JA3 evasion technique to Malleable HTTP (@Cx01N)
+-   Added option to client config to remove borders on tables (@Cx01N)
+-   Updated staging for agents (@Cx01N)
+-   Updated confuser to confuserex 2 (@Cx01N)
+-   Fixed nim install on Ubuntu by using choosenim installer (@vinnybod)
+-   Converted reset.sh script to Python and add tests (@Vinnybod)
+-   Add a `--reset` flag to the client (@Vinnybod)
+
 ## [4.5.5] - 2022-05-07
 
 -   Fixed http bug in malleable, http-com, and onedrive listeners (@Cx01N)
@@ -244,7 +261,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.5...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.0...HEAD
+
+[4.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.5...v4.6.0
 
 [4.5.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.4...v4.5.5
 

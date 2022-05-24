@@ -24,6 +24,11 @@ client_parser.add_argument(
     nargs=1,
     help="Specify a config.yaml different from the config.yaml in the empire/client directory.",
 )
+client_parser.add_argument(
+    "--reset",
+    action="store_true",
+    help="Resets Empire's client to defaults and deletes any app data accumulated over previous runs.",
+)
 
 # Server Args
 general_group = server_parser.add_argument_group("General Options")
@@ -34,7 +39,9 @@ general_group.add_argument(
     help="Debug level for output (default of 1, 2 for msg display).",
 )
 general_group.add_argument(
-    "--reset", action="store_true", help="Resets Empire's database to defaults."
+    "--reset",
+    action="store_true",
+    help="Resets Empire's database and deletes any app data accumulated over previous runs.",
 )
 general_group.add_argument(
     "-v", "--version", action="store_true", help="Display current Empire version."
@@ -74,5 +81,5 @@ rest_group.add_argument(
 
 args = parent_parser.parse_args()
 
-if parent_parser.parse_args().subparser_name == None:
+if parent_parser.parse_args().subparser_name is None:
     parent_parser.print_help()
