@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [4.6.0] - 2022-05-24
+
 -   Converted reset.sh script to Python and add tests (@Vinnybod)
 -   Add a `--reset` flag to the client (@Vinnybod)
 
@@ -246,7 +249,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.5...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.0...HEAD
+
+[4.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.5...v4.6.0
 
 [4.5.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.4...v4.5.5
 
