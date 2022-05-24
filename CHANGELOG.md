@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed nim install on Ubuntu by using choosenim installer (@vinnybod)
 -   Converted reset.sh script to Python and add tests (@Vinnybod)
 -   Add a `--reset` flag to the client (@Vinnybod)
+
 ## [4.5.5] - 2022-05-07
 
 -   Fixed http bug in malleable, http-com, and onedrive listeners (@Cx01N)
