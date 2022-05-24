@@ -433,13 +433,14 @@ def start_restful_api(
         stager_out = copy.deepcopy(stager.options)
 
         if ("OutFile" in stager_out) and (stager_out["OutFile"]["Value"] != ""):
-            if isinstance(stager.generate(), str):
+            generated_stager = stager.generate()
+            if isinstance(generated_stager, str):
                 # if the output was intended for a file, return the base64 encoded text
                 stager_out["Output"] = base64.b64encode(
-                    stager.generate().encode("UTF-8")
+                    generated_stager.encode("UTF-8")
                 )
             else:
-                stager_out["Output"] = base64.b64encode(stager.generate())
+                stager_out["Output"] = base64.b64encode(generated_stager)
 
         else:
             # otherwise return the text of the stager generation
