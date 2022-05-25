@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import logging
 import os
+import pathlib
+import shutil
 import subprocess
 import sys
 import time
@@ -11,6 +13,8 @@ import urllib3
 # Empire imports
 from empire.server.common import empire
 from empire.server.common.config import empire_config
+from empire.server.database import base
+from empire.server.utils import file_util
 from empire.server.utils.log_util import LOG_FORMAT, SIMPLE_LOG_FORMAT, ColorFormatter
 from empire.server.v2.api import v2App
 
@@ -52,6 +56,41 @@ def setup_logging(args):
     root_logger.addHandler(root_logger_stream_handler)
 
 
+CSHARP_DIR_BASE = os.path.join(os.path.dirname(__file__), "csharp/Covenant")
+INVOKE_OBFS_SRC_DIR_BASE = os.path.join(
+    os.path.dirname(__file__), "powershell/Invoke-Obfuscation"
+)
+INVOKE_OBFS_DST_DIR_BASE = "/usr/local/share/powershell/Modules/Invoke-Obfuscation"
+
+
+def reset():
+    base.reset_db()
+
+    file_util.remove_dir_contents(empire_config.directories.downloads)
+
+    if os.path.exists(f"{CSHARP_DIR_BASE}/bin"):
+        shutil.rmtree(f"{CSHARP_DIR_BASE}/bin")
+
+    if os.path.exists(f"{CSHARP_DIR_BASE}/obj"):
+        shutil.rmtree(f"{CSHARP_DIR_BASE}/obj")
+
+    file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net35")
+    file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net40")
+    file_util.remove_dir_contents(
+        f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/netcoreapp3.0"
+    )
+
+    # invoke obfuscation
+    if os.path.exists(f"{INVOKE_OBFS_DST_DIR_BASE}"):
+        shutil.rmtree(INVOKE_OBFS_DST_DIR_BASE)
+    pathlib.Path(pathlib.Path(INVOKE_OBFS_SRC_DIR_BASE).parent).mkdir(
+        parents=True, exist_ok=True
+    )
+    shutil.copytree(
+        INVOKE_OBFS_SRC_DIR_BASE, INVOKE_OBFS_DST_DIR_BASE, dirs_exist_ok=True
+    )
+
+
 def run(args):
     setup_logging(args)
     global main
@@ -71,7 +110,12 @@ def run(args):
         sys.exit()
 
     elif args.reset:
-        # todo vr Reset called from database/base.py
+        choice = input(
+            "\x1b[1;33m[>] Would you like to reset your Empire Server instance? [y/N]: \x1b[0m"
+        )
+        if choice.lower() == "y":
+            reset()
+
         sys.exit()
 
     else:

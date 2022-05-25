@@ -59,8 +59,8 @@ RUN mkdir -p /usr/local/share/powershell/Modules && \
 
 RUN sudo pip install poetry && sudo poetry config virtualenvs.create false && sudo poetry install
 
-RUN /empire/setup/reset.sh
-RUN rm -rf /empire/server/data/empire*
+RUN yes | ./ps-empire server --reset
+RUN rm -rf /empire/empire/server/data/empire*
 
 ENTRYPOINT ["./ps-empire"]
 CMD ["server"]

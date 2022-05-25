@@ -48,10 +48,12 @@ namespace Covenant
                     //interpret the message
                     var data = Encoding.ASCII.GetString(buffer, 0, bytesRec);
                     string[] recMessage = data.Split(",");
-                    //Data is sent with the TaskName first and then
+                    //Data is sent with the TaskName first, then confuse bool and then yaml
                     var bytesTaskName = Convert.FromBase64String(recMessage[0]);
-                    var bytesYAML = Convert.FromBase64String(recMessage[1]);
+                    var bytesConfuse = Convert.FromBase64String(recMessage[1]);
+                    var bytesYAML = Convert.FromBase64String(recMessage[2]);
                     string strTaskName = Encoding.UTF8.GetString(bytesTaskName);
+                    string strConfuse = Encoding.UTF8.GetString(bytesConfuse);
                     string strYAML = Encoding.UTF8.GetString(bytesYAML);
                     // Initialize the task from the passed YAML
                     DbInitializer.IngestTask(service, strYAML);
@@ -62,6 +64,7 @@ namespace Covenant
                         if (strTaskName != "close")
                         {
                             GruntTask tsk = tsks.First(tk => tk.Name == strTaskName);
+                            //randomize task name, this prevents collision of tasks when multiple users are compiling tasks
                             var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
                             var stringChars = new char[5];
                             var random = new Random();
@@ -71,6 +74,10 @@ namespace Covenant
                             }
                             var randNew = new String(stringChars);
                             tsk.Name = tsk.Name + "_" + randNew;
+                            if (strConfuse == "true")
+                            {
+                                tsk.Confuse = true;
+                            }
                             tsk.Compile();
                             string message = "FileName:" + tsk.Name;
                             var msgBytes = Encoding.ASCII.GetBytes(message);

@@ -11,11 +11,11 @@ def test_load_sqlite():
     config: EmpireConfig = empire_config
 
     assert config.database.type == "sqlite"
-    assert config.database.location == "empire/server/data/test_empire.db"
+    assert config.database.location == "empire/test/test_empire.db"
 
 
 def test_load_mysql(default_argv):
-    sys.argv = ["", "server", "--config", "empire/test/test_config_mysql.yaml"]
+    sys.argv = ["", "server", "--config", "empire/test/test_server_config_mysql.yaml"]
     import empire.server.common.config
 
     reload(empire.server.common.config)

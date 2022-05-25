@@ -34,6 +34,9 @@
 [submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/ProcessInjection"]
 	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/ProcessInjection
 	url = https://github.com/3xpl01tc0d3r/ProcessInjection.git
+[submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Certify"]
+	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Certify
+	url = https://github.com/GhostPack/Certify.git
 [submodule "empire/server/v2/api/starkiller"]
 	path = empire/server/v2/api/starkiller
 	url = git@github.com:BC-SECURITY/Starkiller-Sponsors.git

