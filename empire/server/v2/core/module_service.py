@@ -362,7 +362,10 @@ class ModuleService(object):
             compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
             if not compiler.status == "ON":
                 return None, "csharpserver plugin not running"
-            file_name = compiler.do_send_message(module.compiler_yaml, module.name)
+            # hardcoded to true for testing will need to pull from menu options
+            file_name = compiler.do_send_message(
+                module.compiler_yaml, module.name, confuse=self.main_menu.obfuscate
+            )
             if file_name == "failed":
                 return None, "module compile failed"
 

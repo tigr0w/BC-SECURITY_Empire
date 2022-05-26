@@ -10,7 +10,7 @@ def patch_config(empire_config):
     """
     orig_src_dir = empire_config.directories.module_source
     try:
-        empire_config.directories.module_source = "empire/test/data/module_source"
+        empire_config.directories.module_source = "empire/test/data/module_source/"
         yield empire_config
     finally:
         empire_config.directories.module_source = orig_src_dir

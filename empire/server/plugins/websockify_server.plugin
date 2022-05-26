@@ -20,7 +20,7 @@ class Plugin(Plugin):
         self.main_menu = None
         self.csharpserver_proc = None
         self.info = {
-            "Name": "websockify",
+            "Name": "websockify_server",
             "Authors": [
                 {
                     "Name": "Anthony Rose",
@@ -137,6 +137,7 @@ class Plugin(Plugin):
                 listen_host=source_host,
                 listen_port=source_port,
             )
+
             self.websockify_proc = helpers.KThread(target=server.serve_forever)
             self.websockify_proc.daemon = True
             self.websockify_proc.start()

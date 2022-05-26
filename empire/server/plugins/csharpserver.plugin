@@ -17,6 +17,7 @@ class Plugin(Plugin):
         print(helpers.color("[*] Loading Empire C# server plugin"))
         self.main_menu = None
         self.csharpserver_proc = None
+        self.thread = None
         self.info = {
             "Name": "csharpserver",
             "Authors": [
@@ -132,9 +133,9 @@ class Plugin(Plugin):
                     self.info["Name"], "[!] Empire C# server is already started"
                 )
 
-            thread = helpers.KThread(target=self.thread_csharp_responses, args=())
-            thread.daemon = True
-            thread.start()
+            self.thread = helpers.KThread(target=self.thread_csharp_responses, args=())
+            self.thread.daemon = True
+            self.thread.start()
 
     def thread_csharp_responses(self):
         while True:
@@ -142,13 +143,21 @@ class Plugin(Plugin):
             if output:
                 print(helpers.color("[*] " + output.decode("UTF-8")))
 
-    def do_send_message(self, compiler_yaml, task_name):
+    def do_send_message(self, compiler_yaml, task_name, confuse=False):
         bytes_yaml = compiler_yaml.encode("UTF-8")
         b64_yaml = base64.b64encode(bytes_yaml)
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
+
+        # check for confuse bool and convert to string
+        if confuse:
+            bytes_confuse = 'true'.encode("UTF-8")
+        else:
+            bytes_confuse = 'false'.encode("UTF-8")
+        b64_confuse = base64.b64encode(bytes_confuse)
+
         deliminator = ",".encode("UTF-8")
-        message = b64_task_name + deliminator + b64_yaml
+        message = b64_task_name + deliminator + b64_confuse + deliminator + b64_yaml
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.tcp_ip, self.tcp_port))
         s.send(message)
@@ -166,13 +175,22 @@ class Plugin(Plugin):
 
         return file_name
 
-    def do_send_stager(self, stager, task_name):
+    def do_send_stager(self, stager, task_name, confuse=False):
         bytes_yaml = stager.encode("UTF-8")
         b64_yaml = base64.b64encode(bytes_yaml)
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
+        #compiler only checks for true and ignores otherwise
+
+        # check for confuse bool and convert to string
+        if confuse:
+            bytes_confuse = 'true'.encode("UTF-8")
+        else:
+            bytes_confuse = 'false'.encode("UTF-8")
+        b64_confuse = base64.b64encode(bytes_confuse)
+
         deliminator = ",".encode("UTF-8")
-        message = b64_task_name + deliminator + b64_yaml
+        message = b64_task_name + deliminator + b64_confuse + deliminator + b64_yaml
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.tcp_ip, self.tcp_port))
         s.send(message)
@@ -193,9 +211,10 @@ class Plugin(Plugin):
     def shutdown(self):
         try:
             b64_yaml = base64.b64encode(("dummy data").encode("UTF-8"))
+            b64_confuse = base64.b64encode(("false").encode("UTF-8"))
             b64_task_name = base64.b64encode(("close").encode("UTF-8"))
             deliminator = ",".encode("UTF-8")
-            message = b64_task_name + deliminator + b64_yaml
+            message = b64_task_name + deliminator + b64_confuse + deliminator + b64_yaml
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.tcp_ip, self.tcp_port))
             s.send(message)

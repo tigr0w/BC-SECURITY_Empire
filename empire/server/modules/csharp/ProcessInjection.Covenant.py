@@ -93,7 +93,9 @@ class Module(object):
         # convert back to yaml string
         compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
 
-        file_name = compiler.do_send_message(compiler_yaml, module.name)
+        file_name = compiler.do_send_message(
+            compiler_yaml, module.name, confuse=main_menu.obfuscate
+        )
         if file_name == "failed":
             return None, "module compile failed"
 

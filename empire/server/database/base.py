@@ -1,4 +1,5 @@
 import logging
+import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -55,6 +56,12 @@ SessionLocal = sessionmaker(bind=engine)
 #         pass
 
 Base.metadata.create_all(engine)
+
+
+def reset_db():
+    Base.metadata.drop_all(engine)
+    if database_config.type == "sqlite":
+        os.unlink(database_config.location)
 
 
 with SessionLocal.begin() as db:

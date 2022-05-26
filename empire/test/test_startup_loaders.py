@@ -1,9 +1,11 @@
 import sys
 from unittest.mock import MagicMock, Mock
 
+from empire.test.conftest import SERVER_CONFIG_LOC
+
 
 def test_bypass_loader(monkeypatch):
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
     session_mock = MagicMock()
     monkeypatch.setattr(
         "empire.server.v2.core.bypass_service.SessionLocal", session_mock
@@ -28,7 +30,7 @@ def test_bypass_loader(monkeypatch):
 
 
 def test_listener_template_loader(monkeypatch):
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
     session_mock = MagicMock()
     monkeypatch.setattr(
         "empire.server.v2.core.listener_template_service.SessionLocal", session_mock
@@ -49,7 +51,7 @@ def test_listener_template_loader(monkeypatch):
 
 
 def test_stager_template_loader(monkeypatch):
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
     session_mock = MagicMock()
     monkeypatch.setattr(
         "empire.server.v2.core.stager_template_service.SessionLocal", session_mock
@@ -70,7 +72,7 @@ def test_stager_template_loader(monkeypatch):
 
 
 def test_profile_loader(monkeypatch):
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
     session_mock = MagicMock()
     monkeypatch.setattr(
         "empire.server.v2.core.profile_service.SessionLocal", session_mock

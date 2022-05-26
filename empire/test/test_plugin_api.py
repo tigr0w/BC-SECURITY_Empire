@@ -36,7 +36,7 @@ def test_execute_plugin_not_found(client, admin_auth_header):
 
 def test_execute_plugin_validation_failed(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/plugins/websockify/execute",
+        "/api/v2beta/plugins/websockify_server/execute",
         json={
             "options": {
                 "SourceHost": "0.0.0.0",

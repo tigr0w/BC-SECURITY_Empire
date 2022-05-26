@@ -82,6 +82,7 @@ def get_staging_key():
     # will automatically be selected.
     staging_key = os.getenv("STAGING_KEY") or database_config.staging_key
     punctuation = "!#%&()*+,-./:;<=>?@[]^_{|}~"
+
     if staging_key == "BLANK":
         choice = input(
             "\n [>] Enter server negotiation password, enter for random generation: "
@@ -89,7 +90,12 @@ def get_staging_key():
         if choice != "" and choice != "RANDOM":
             return hashlib.md5(choice.encode("utf-8")).hexdigest()
 
-    print("\x1b[1;34m[*] Generating random staging key\x1b[0m")
-    return "".join(
-        random.sample(string.ascii_letters + string.digits + punctuation, 32)
-    )
+    elif staging_key == "RANDOM":
+        print("\x1b[1;34m[*] Generating random staging key\x1b[0m")
+        return "".join(
+            random.sample(string.ascii_letters + string.digits + punctuation, 32)
+        )
+
+    else:
+        print(f"\x1b[1;34m[*] Using configured staging key: {staging_key}\x1b[0m")
+        return staging_key
