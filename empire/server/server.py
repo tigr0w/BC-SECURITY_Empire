@@ -94,7 +94,13 @@ def reset():
 def run(args):
     setup_logging(args)
     global main
-    main = empire.MainMenu(args=args)
+
+    # Calling run more than once, such as in the test suite
+    # Will generate more instances of MainMenu, which then
+    # causes shutdown failure.
+    if main is None:
+        main = empire.MainMenu(args=args)
+
     if not args.restport:
         args.restport = "1337"
     else:
