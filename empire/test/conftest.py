@@ -29,7 +29,7 @@ def client():
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
     shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)
 
-    sys.argv = ["", "server", "--config", TEST_CONFIG_DIR]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     from empire import arguments
 
@@ -171,6 +171,7 @@ def base_listener():
             "Proxy": "default",
             "ProxyCreds": "default",
             "SlackURL": "",
+            "JA3_Evasion": "False",
         },
     }
 
@@ -200,6 +201,7 @@ def base_listener_non_fixture():
             "Proxy": "default",
             "ProxyCreds": "default",
             "SlackURL": "",
+            "JA3_Evasion": "False",
         },
     }
 

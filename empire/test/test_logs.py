@@ -6,11 +6,13 @@ from unittest.mock import MagicMock
 
 import yaml
 
+from empire.test.conftest import SERVER_CONFIG_LOC
+
 
 def test_simple_log_format(monkeypatch):
     logging.getLogger().handlers.clear()
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
@@ -32,7 +34,7 @@ def test_simple_log_format(monkeypatch):
 def test_extended_log_format(monkeypatch):
     logging.getLogger().handlers.clear()
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
@@ -60,7 +62,7 @@ def test_extended_log_format(monkeypatch):
 def test_log_level_by_config(monkeypatch):
     logging.getLogger().handlers.clear()
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml"]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
@@ -90,7 +92,7 @@ def test_log_level_by_arg(monkeypatch):
         "",
         "server",
         "--config",
-        "empire/test/test_config.yaml",
+        SERVER_CONFIG_LOC,
         "--log-level",
         "ERROR",
     ]
@@ -119,7 +121,7 @@ def test_log_level_by_arg(monkeypatch):
 def test_log_level_by_debug_arg(monkeypatch):
     logging.getLogger().handlers.clear()
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
-    sys.argv = ["", "server", "--config", "empire/test/test_config.yaml", "--debug"]
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC, "--debug"]
 
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
@@ -139,6 +141,6 @@ def test_log_level_by_debug_arg(monkeypatch):
 
 
 def _load_test_config():
-    with open("empire/test/test_config.yaml", "r") as f:
+    with open(SERVER_CONFIG_LOC, "r") as f:
         loaded = yaml.safe_load(f)
     return loaded

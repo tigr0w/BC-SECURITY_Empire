@@ -641,10 +641,8 @@ class Listener(object):
                 return comms
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/dbx generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                    )
+                log.error(
+                    "listeners/dbx generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
                 )
         else:
             log.error("listeners/dbx generate_comms(): no language specified!")

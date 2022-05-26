@@ -17,6 +17,7 @@ class Plugin(Plugin):
         print(helpers.color("[*] Loading Empire C# server plugin"))
         self.main_menu = None
         self.csharpserver_proc = None
+        self.thread = None
         self.info = {
             "Name": "csharpserver",
             "Authors": [
@@ -132,9 +133,9 @@ class Plugin(Plugin):
                     self.info["Name"], "[!] Empire C# server is already started"
                 )
 
-            thread = helpers.KThread(target=self.thread_csharp_responses, args=())
-            thread.daemon = True
-            thread.start()
+            self.thread = helpers.KThread(target=self.thread_csharp_responses, args=())
+            self.thread.daemon = True
+            self.thread.start()
 
     def thread_csharp_responses(self):
         while True:

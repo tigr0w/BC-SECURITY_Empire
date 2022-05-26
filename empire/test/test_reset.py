@@ -1,12 +1,30 @@
+import shutil
 import sys
+from importlib import reload
 from pathlib import Path
 
 import pytest
 
 from empire.test.conftest import CLIENT_CONFIG_LOC
 
-# TODO VR Need to test this for real, not just with the test
-# TODO VR See if this fixes issues we had in 5.0 with argparsing
+
+@pytest.fixture(scope="module", autouse=True)
+def wrap_reset(server_config_dict):
+    """
+    This wraps the reset tests by backing up the db and restoring it.
+    """
+    # Move the db to a temp location
+    db_loc = server_config_dict["database"]["location"]
+    db_loc_backup = db_loc + ".backup"
+    db_loc_path = Path(db_loc)
+    db_loc_backup_path = Path(db_loc_backup)
+
+    shutil.copyfile(db_loc, db_loc_backup)
+
+    yield
+
+    # Restore the db
+    db_loc_backup_path.rename(db_loc_path)
 
 
 def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
@@ -69,10 +87,12 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
 
+    import empire.arguments
+
+    reload(empire.arguments)
     from empire.arguments import args
     from empire.server import server
 
-    # db should generate after import
     assert Path(server_config_dict["database"]["location"]).exists()
 
     server.CSHARP_DIR_BASE = csharp_dir
@@ -138,7 +158,10 @@ def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
             client_config_dict["directories"]["generated-stagers"] + f[0]
         ).exists()
 
+    import empire.arguments
     import empire.client.client as client
+
+    reload(empire.arguments)
     from empire.arguments import args
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
