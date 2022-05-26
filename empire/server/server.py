@@ -93,13 +93,6 @@ def reset():
 
 def run(args):
     setup_logging(args)
-    global main
-
-    # Calling run more than once, such as in the test suite
-    # Will generate more instances of MainMenu, which then
-    # causes shutdown failure.
-    if main is None:
-        main = empire.MainMenu(args=args)
 
     if not args.restport:
         args.restport = "1337"
@@ -125,6 +118,14 @@ def run(args):
         sys.exit()
 
     else:
+        global main
+
+        # Calling run more than once, such as in the test suite
+        # Will generate more instances of MainMenu, which then
+        # causes shutdown failure.
+        if main is None:
+            main = empire.MainMenu(args=args)
+
         if not os.path.exists("./empire/server/data/empire-chain.pem"):
             log.info("Certificate not found. Generating...")
             subprocess.call("./setup/cert.sh")
