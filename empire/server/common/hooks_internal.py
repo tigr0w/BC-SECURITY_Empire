@@ -94,7 +94,7 @@ def ps_filter(db: Session, tasking: models.Tasking):
         "ps",
         "tasklist",
     ] or tasking.agent.language not in ["powershell", "ironpython"]:
-        return tasking
+        return db, tasking
 
     output = json.loads(tasking.output.decode("utf-8"))
     output_list = []
@@ -117,7 +117,7 @@ def ps_filter(db: Session, tasking: models.Tasking):
     table.inner_column_border = False
     tasking.output = table.table
 
-    return tasking
+    return db, tasking
 
 
 def ls_filter(db: Session, tasking: models.Tasking):
@@ -130,7 +130,7 @@ def ls_filter(db: Session, tasking: models.Tasking):
         tasking.input.strip().split()[0] not in ["ls", "dir"]
         or tasking.agent.language != "powershell"
     ):
-        return tasking
+        return db, tasking
 
     output = json.loads(tasking.output.decode("utf-8"))
     output_list = []
@@ -153,7 +153,7 @@ def ls_filter(db: Session, tasking: models.Tasking):
     table.inner_column_border = False
     tasking.output = table.table
 
-    return tasking
+    return db, tasking
 
 
 def ipconfig_filter(db: Session, tasking: models.Tasking):
@@ -166,7 +166,7 @@ def ipconfig_filter(db: Session, tasking: models.Tasking):
         tasking.input.strip() not in ["ipconfig", "ifconfig"]
         or tasking.agent.language != "powershell"
     ):
-        return tasking
+        return db, tasking
 
     output = json.loads(tasking.output.decode("utf-8"))
     if isinstance(output, dict):  # if there's only one adapter, it won't be a list.
@@ -185,7 +185,7 @@ def ipconfig_filter(db: Session, tasking: models.Tasking):
     table.inner_column_border = False
     tasking.output = table.table
 
-    return tasking
+    return db, tasking
 
 
 def route_filter(db: Session, tasking: models.Tasking):
@@ -195,7 +195,7 @@ def route_filter(db: Session, tasking: models.Tasking):
     if the results are from the Python or C# agents, it does nothing.
     """
     if tasking.input.strip() not in ["route"] or tasking.agent.language != "powershell":
-        return tasking
+        return db, tasking
 
     output = json.loads(tasking.output.decode("utf-8"))
 
@@ -219,7 +219,7 @@ def route_filter(db: Session, tasking: models.Tasking):
     table.inner_column_border = False
     tasking.output = table.table
 
-    return tasking
+    return db, tasking
 
 
 def initialize():

@@ -11,6 +11,10 @@ def callback_filter(tasking):
     return {"test": "test"}
 
 
+def callback_filter_multi(db, tasking):
+    return {"fake_db": True}, {"test": "updated"}
+
+
 def test_register_hook():
     hooks.register_hook(hooks.AFTER_TASKING_RESULT_HOOK, "test_hook", callback_hook)
     assert (
@@ -56,3 +60,16 @@ def test_run_filter():
     returned = hooks.run_filters(hooks.BEFORE_TASKING_RESULT_FILTER, {})
 
     assert returned.get("test") == "test"
+
+
+def test_run_filter_multi_param():
+    hooks.register_filter(
+        hooks.BEFORE_TASKING_RESULT_FILTER, "test_filter", callback_filter_multi
+    )
+
+    db, tasking = hooks.run_filters(
+        hooks.BEFORE_TASKING_RESULT_FILTER, {"fake_db": True}, {"test": "test"}
+    )
+
+    assert db.get("fake_db") is True
+    assert tasking.get("test") == "updated"

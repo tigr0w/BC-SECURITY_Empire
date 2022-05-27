@@ -1446,7 +1446,9 @@ class Agents(object):
                 tasking.output = data
 
             hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, db, tasking)
-            tasking = hooks.run_filters(hooks.BEFORE_TASKING_RESULT_FILTER, db, tasking)
+            db, tasking = hooks.run_filters(
+                hooks.BEFORE_TASKING_RESULT_FILTER, db, tasking
+            )
 
             db.flush()
 

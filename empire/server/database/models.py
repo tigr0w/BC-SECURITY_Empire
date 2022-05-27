@@ -240,7 +240,7 @@ class Download(Base):
     )
 
 
-class TaskingStatus(enum.Enum):
+class TaskingStatus(str, enum.Enum):
     queued = "queued"
     pulled = "pulled"
 
