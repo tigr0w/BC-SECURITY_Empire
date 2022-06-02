@@ -257,7 +257,7 @@ class ModuleService(object):
         elif module.language == LanguageEnum.python:
             return self._generate_script_python(module, params)
         elif module.language == LanguageEnum.csharp:
-            return self._generate_script_csharp(module, params)
+            return self._generate_script_csharp(module, params, obfuscation_config)
 
     @staticmethod
     def _generate_script_python(
@@ -302,8 +302,7 @@ class ModuleService(object):
         else:
             if obfuscate:
                 script = self.obfuscation_service.obfuscate(
-                    psScript=module.script,
-                    obfuscationCommand=obfuscate_command,
+                    module.script, obfuscate_command
                 )
             else:
                 script = module.script
@@ -356,15 +355,17 @@ class ModuleService(object):
         return script, None
 
     def _generate_script_csharp(
-        self, module: EmpireModule, params: Dict
+        self,
+        module: EmpireModule,
+        params: Dict,
+        obfuscation_config: models.ObfuscationConfig,
     ) -> Tuple[Optional[str], Optional[str]]:
         try:
             compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
             if not compiler.status == "ON":
                 return None, "csharpserver plugin not running"
-            # hardcoded to true for testing will need to pull from menu options
             file_name = compiler.do_send_message(
-                module.compiler_yaml, module.name, confuse=self.main_menu.obfuscate
+                module.compiler_yaml, module.name, confuse=obfuscation_config.enabled
             )
             if file_name == "failed":
                 return None, "module compile failed"

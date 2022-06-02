@@ -581,7 +581,7 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
     assert delay_err["loc"] == ["body", "delay"]
     assert delay_err["msg"] == "ensure this value is greater than or equal to 0"
     assert jitter_err["loc"] == ["body", "jitter"]
-    assert jitter_err["msg"] == "ensure this value is less than 1"
+    assert jitter_err["msg"] == "ensure this value is less than or equal to 1"
 
 
 def test_create_task_update_sleep(client, admin_auth_header, agent):

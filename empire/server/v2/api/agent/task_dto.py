@@ -99,7 +99,7 @@ class SysinfoPostRequest(BaseModel):
 
 class SleepPostRequest(BaseModel):
     delay: int = Field(ge=0)
-    jitter: float = Field(gt=0, lt=1)
+    jitter: float = Field(ge=0, le=1)
 
 
 class CommsPostRequest(BaseModel):
