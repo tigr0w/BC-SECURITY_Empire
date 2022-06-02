@@ -32,7 +32,7 @@ class EmpireCORSMiddleware(CORSMiddleware):
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if not scope["path"].startswith("/socket.io"):
+        if not scope.get("path", "").startswith("/socket.io"):
             await super().__call__(scope, receive, send)
             return
         else:

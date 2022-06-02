@@ -42,6 +42,7 @@ class MyJsonEncoder(JSONEncoder):
 
 def initialize():
     # Not pretty but allows us to use main_menu by delaying the import
+    from empire.server.server import main
     from empire.server.v2.api.agent import agentfilev2, agentv2, taskv2
     from empire.server.v2.api.bypass import bypassv2
     from empire.server.v2.api.credential import credentialv2
@@ -57,6 +58,13 @@ def initialize():
     from empire.server.v2.api.user import userv2
 
     v2App = FastAPI()
+
+    @v2App.on_event("shutdown")
+    def shutdown_event():
+        log.info("Shutting down Empire Server...")
+        if main:
+            log.info("Shutting down MainMenu...")
+            main.shutdown()
 
     v2App.include_router(listenertemplatev2.router)
     v2App.include_router(listenerv2.router)
@@ -107,8 +115,6 @@ def initialize():
     v2App.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
     v2App.add_websocket_route("/socket.io/", sio_app)
 
-    from empire.server.server import main
-
     setup_socket_events(sio, main)
 
     try:
@@ -131,6 +137,7 @@ def initialize():
         host="0.0.0.0",
         port=1337,
         log_config=None,
+        lifespan="on",
         # ssl_keyfile="%s/empire-priv.key" % cert_path,
         # ssl_certfile="%s/empire-chain.pem" % cert_path,
         # log_level="info",

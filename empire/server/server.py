@@ -3,6 +3,7 @@ import logging
 import os
 import pathlib
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -89,6 +90,23 @@ def reset():
     shutil.copytree(
         INVOKE_OBFS_SRC_DIR_BASE, INVOKE_OBFS_DST_DIR_BASE, dirs_exist_ok=True
     )
+
+
+def shutdown_handler(signum, frame):
+    """
+    This is used to gracefully shutdown Empire if uvicorn is not running yet.
+    Otherwise, the "shutdown" event in v2App.py will be used.
+    """
+    log.info("Shutting down Empire Server...")
+
+    if main:
+        log.info("Shutting down MainMenu...")
+        main.shutdown()
+
+    exit(0)
+
+
+signal.signal(signal.SIGINT, shutdown_handler)
 
 
 def run(args):
