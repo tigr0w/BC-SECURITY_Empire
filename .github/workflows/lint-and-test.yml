@@ -29,20 +29,27 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
+      # Poetry cache depends on OS, Python version and Poetry version.
+      # https://gist.github.com/gh640/233a6daf68e9e937115371c0ecd39c61
+      - name: Cache Poetry cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+      # virtualenv cache should depends on OS, Python version and `poetry.lock` (and optionally workflow files).
+      - name: Cache Packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.local
+          key: poetry-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.github/workflows/*.yml') }}
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Bootstrap poetry
+      - name: Install Poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y
-      - id: cache-dependencies
-        uses: actions/cache@v1
-        with:
-          path: /home/runner/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry install
       - name: Run test suite
