@@ -97,17 +97,17 @@ class ProxyMenu(UseMenu):
             self.proxy_list.insert(
                 int(position),
                 {
-                    "proxytype": self.record_options["Proxy_Type"]["Value"],
-                    "addr": self.record_options["Address"]["Value"],
-                    "port": int(self.record_options["Port"]["Value"]),
+                    "proxytype": self.record_options["proxy_type"]["value"],
+                    "addr": self.record_options["address"]["value"],
+                    "port": int(self.record_options["port"]["value"]),
                 },
             )
         else:
             self.proxy_list.append(
                 {
-                    "proxytype": self.record_options["Proxy_Type"]["Value"],
-                    "addr": self.record_options["Address"]["Value"],
-                    "port": int(self.record_options["Port"]["Value"]),
+                    "proxytype": self.record_options["proxy_type"]["value"],
+                    "addr": self.record_options["address"]["value"],
+                    "port": int(self.record_options["port"]["value"]),
                 }
             )
 
@@ -165,29 +165,10 @@ class ProxyMenu(UseMenu):
 
         table_util.print_table(proxies, "Active Proxies")
 
-    @command
-    def options(self):
-        """
-        Print the current record options
-
-        Usage: options
-        """
-        record_list = []
-        for key, value in self.record_options.items():
-            name = key
-            record_value = print_util.text_wrap(value.get("Value", ""))
-            required = print_util.text_wrap(value.get("Required", ""))
-            description = print_util.text_wrap(value.get("Description", ""))
-            record_list.append([name, record_value, required, description])
-
-        record_list.insert(0, ["Name", "Value", "Required", "Description"])
-
-        table_util.print_table(record_list, "Record Options")
-
     def suggested_values_for_option(self, option: str) -> List[str]:
         try:
             lower = {k.lower(): v for k, v in self.record_options.items()}
-            return lower.get(option, {}).get("SuggestedValues", [])
+            return lower.get(option, {}).get("suggested_values", [])
         except AttributeError:
             return []
 

@@ -2,20 +2,20 @@ suppress-self-cert-warning: true
 auto-copy-stagers: true
 servers:
   localhost:
-    host: https://localhost
+    host: http://localhost
     port: 1337
     socketport: 5000
     username: empireadmin
     password: password123
     autoconnect: true
   other-server:
-    host: https://localhost
+    host: http://localhost
     port: 1337
     socketport: 5000
     username: empireadmin
     password: password123
   another-one:
-    host: https://localhost
+    host: http://localhost
     port: 1337
     socketport: 5000
     username: empireadmin
@@ -39,52 +39,52 @@ shortcuts:
     ps:
       shell: ps
     sc:
-      module: powershell/collection/screenshot
+      module: powershell_collection_screenshot
       params:
         - name: Ratio
           value: 80
     keylog:
-      module: powershell/collection/keylogger
+      module: powershell_collection_keylogger
       params:
         - name: Sleep
           value: 1
     sherlock:
-      module: powershell/privesc/sherlock
+      module: powershell_privesc_sherlock
     mimikatz:
-      module: powershell/credentials/mimikatz/logonpasswords
+      module: powershell_credentials_mimikatz_logonpasswords
     psinject:
-      module: powershell/management/psinject
+      module: powershell_management_psinject
       params:
         - name: Listener
           dynamic: true
         - name: ProcId
           dynamic: true
     revtoself:
-      module: powershell/credentials/tokens
+      module: powershell_credentials_tokens
       params:
         - name: RevToSelf
           value: true
     shinject:
-      module: powershell/management/shinject
+      module: powershell_management_shinject
       params:
         - name: Listener
           dynamic: true
         - name: ProcId
           dynamic: true
     spawn:
-      module: powershell/management/spawn
+      module: powershell_management_spawn
       params:
         - name: Listener
           dynamic: true
     steal_token:
-      module: powershell/credentials/tokens
+      module: powershell_credentials_tokens
       params:
         - name: ImpersonateUser
           value: true
         - name: ProcessID
           dynamic: true
     bypassuac:
-      module: powershell/privesc/bypassuac_eventvwr
+      module: powershell_privesc_bypassuac_eventvwr
       params:
         - name: Listener
           dynamic: true
@@ -94,12 +94,12 @@ shortcuts:
     ps:
       shell: ps
     sc:
-      module: python/collection/osx/screenshot
+      module: python_collection_osx_screenshot
       params:
         - name: SavePath
           dynamic: true
     keylog:
-      module: python/collection/osx/keylogger
+      module: python_collection_osx_keylogger
       params:
         - name: LogFile
           dynamic: true

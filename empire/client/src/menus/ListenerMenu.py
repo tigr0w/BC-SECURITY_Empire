@@ -55,19 +55,16 @@ class ListenerMenu(Menu):
         listener_list = list(
             map(
                 lambda x: [
-                    x["ID"],
+                    x["id"],
                     x["name"],
-                    x["module"],
-                    x["listener_category"],
+                    x["template"],
                     date_util.humanize_datetime(x["created_at"]),
                     x["enabled"],
                 ],
                 state.listeners.values(),
             )
         )
-        listener_list.insert(
-            0, ["ID", "Name", "Module", "Listener Category", "Created At", "Enabled"]
-        )
+        listener_list.insert(0, ["ID", "Name", "Template", "Created At", "Enabled"])
 
         table_util.print_table(listener_list, "Listeners List")
 
@@ -84,9 +81,9 @@ class ListenerMenu(Menu):
         record_list = []
         for key, value in state.listeners[listener_name]["options"].items():
             name = key
-            record_value = print_util.text_wrap(value.get("Value", ""))
-            required = print_util.text_wrap(value.get("Required", ""))
-            description = print_util.text_wrap(value.get("Description", ""))
+            record_value = print_util.text_wrap(value.get("value", ""))
+            required = print_util.text_wrap(value.get("required", ""))
+            description = print_util.text_wrap(value.get("description", ""))
             record_list.append([name, record_value, required, description])
 
         record_list.insert(0, ["Name", "Value", "Required", "Description"])
@@ -100,37 +97,11 @@ class ListenerMenu(Menu):
 
         Usage: kill <listener_name>
         """
-        response = state.kill_listener(listener_name)
-        if "success" in response.keys():
+        response = state.kill_listener(state.listeners[listener_name]["id"])
+        if response.status_code == 204:
             print(print_util.color("[*] Listener " + listener_name + " killed"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def enable(self, listener_name: str) -> None:
-        """
-        Enable the selected listener
-
-        Usage: enable <listener_name>
-        """
-        response = state.enable_listener(listener_name)
-        if "success" in response.keys():
-            print(print_util.color("[*] Listener " + listener_name + " enabled"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def disable(self, listener_name: str) -> None:
-        """
-        Disable the selected listener
-
-        Usage: disable <listener_name>
-        """
-        response = state.disable_listener(listener_name)
-        if "success" in response.keys():
-            print(print_util.color("[*] Listener " + listener_name + " disabled"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        elif "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
 
     @command
     def editlistener(self, listener_name: str) -> None:

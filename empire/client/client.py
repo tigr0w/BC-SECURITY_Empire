@@ -250,7 +250,7 @@ class EmpireCli(object):
                 state.empire_version,
                 len(state.modules),
                 len(state.listeners),
-                len(state.get_active_agents()),
+                len(state.active_agents),
             )
             menu_state.push(self.menus["MainMenu"])
         elif text.strip() == "listeners":
@@ -342,7 +342,7 @@ class EmpireCli(object):
                     )
                     pass
                 elif state.listeners[menu_state.current_menu.agent_options["listener"]][
-                    "module"
+                    "template"
                 ] not in ["http", "http_hop", "redirector"]:
                     print(
                         print_util.color(

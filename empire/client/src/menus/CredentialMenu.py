@@ -31,7 +31,7 @@ class CredentialMenu(Menu):
                 )
                 yield Completion(
                     cred,
-                    display=HTML(f"{full['ID']} <purple>({help_text})</purple>"),
+                    display=HTML(f"{full['id']} <purple>({help_text})</purple>"),
                     start_position=-len(word_before_cursor),
                 )
             yield Completion("all", start_position=-len(word_before_cursor))
@@ -52,22 +52,21 @@ class CredentialMenu(Menu):
 
         Usage: list
         """
-        cred_list = list(
-            map(
-                lambda x: [
-                    x["ID"],
-                    x["credtype"],
-                    x["domain"],
-                    x["username"],
-                    x["host"],
-                    x["password"][:50],
-                    x["sid"],
-                    x["os"],
-                    x["notes"],
-                ],
-                state.get_credentials(),
+        cred_list = []
+        for cred in state.get_credentials().values():
+            cred_list.append(
+                [
+                    str(cred["id"]),
+                    cred["credtype"],
+                    cred["domain"],
+                    cred["username"],
+                    cred["host"],
+                    cred["password"][:50],
+                    cred["sid"],
+                    cred["os"],
+                ]
             )
-        )
+
         cred_list.insert(
             0,
             [
@@ -79,7 +78,6 @@ class CredentialMenu(Menu):
                 "Password/Hash",
                 "SID",
                 "OS",
-                "Notes",
             ],
         )
 
@@ -109,11 +107,11 @@ class CredentialMenu(Menu):
 
     @staticmethod
     def remove_credential(cred_id: str):
-        remove_response = state.remove_credential(cred_id)
-        if "success" in remove_response.keys():
-            print(print_util.color("[*] Credential " + cred_id + " removed."))
-        elif "error" in remove_response.keys():
-            print(print_util.color("[!] Error: " + remove_response["error"]))
+        response = state.remove_credential(cred_id)
+        if response.status_code == 204:
+            print(print_util.color("[*] Credential " + cred_id + " removed"))
+        elif "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
 
 
 credential_menu = CredentialMenu()

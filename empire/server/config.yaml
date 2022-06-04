@@ -17,7 +17,7 @@ database:
         command: "Token\\All\\1"
         module: "invoke-obfuscation"
       - language: csharp
-        enabled: true
+        enabled: false
         command: ""
         module: "confuser"
     keyword_obfuscation:

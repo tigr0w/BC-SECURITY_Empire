@@ -50,11 +50,8 @@ class UseListenerMenu(UseMenu):
         """
         if module in state.listener_types:
             self.selected = module
-            # TODO: Add API endpoint for listener info
-            self.record = state.get_listener_options(self.selected)["listenerinfo"]
-            self.record_options = state.get_listener_options(self.selected)[
-                "listeneroptions"
-            ]
+            self.record = state.get_listener_options(self.selected)
+            self.record_options = self.record["options"]
 
     @command
     def execute(self):
@@ -67,20 +64,19 @@ class UseListenerMenu(UseMenu):
         # todo alias start to execute and generate
         # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
+        temp_record = {}
         for key, value in self.record_options.items():
-            post_body[key] = self.record_options[key]["Value"]
+            post_body[key] = self.record_options[key]["value"]
 
-        # Validate options before generating listener, used specifically for onedrive listener AuthCode
-        validate_response = state.validate_listener(self.selected, post_body)
-        if "error" in validate_response.keys():
-            print(print_util.color("[!] Error: " + validate_response["error"]))
-            return
+        temp_record["options"] = post_body
+        temp_record["name"] = post_body["Name"]
+        temp_record["template"] = self.record["id"]
 
-        response = state.create_listener(self.selected, post_body)
-        if "success" in response.keys():
+        response = state.create_listener(temp_record)
+        if "id" in response.keys():
             return
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        elif "detail" in response.keys():
+            print(print_util.color("[!] Error: " + response["detail"]))
 
     @command
     def generate(self):

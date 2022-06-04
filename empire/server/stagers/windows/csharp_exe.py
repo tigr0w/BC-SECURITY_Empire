@@ -121,14 +121,9 @@ class Stager(object):
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
         outfile = self.options["OutFile"]["Value"]
 
-        if not self.mainMenu.listeners.is_listener_valid(listener_name):
-            # not a valid listener, return nothing for the script
-            return "[!] Invalid listener: " + listener_name
-
-        else:
-            obfuscate_script = False
-            if obfuscate.lower() == "true":
-                obfuscate_script = True
+        obfuscate_script = False
+        if obfuscate.lower() == "true":
+            obfuscate_script = True
 
         # generate the PowerShell one-liner with all of the proper options set
         launcher = self.mainMenu.stagers.generate_launcher(

@@ -78,11 +78,11 @@ class UseModuleMenu(UseMenu):
         # Find file then upload to server
         if "File" in self.record_options:
             # if a full path upload to server, else use file from download directory
-            if pathlib.Path(self.record_options["File"]["Value"]).is_file():
+            if pathlib.Path(self.record_options["File"]["value"]).is_file():
                 try:
-                    file_directory = self.record_options["File"]["Value"]
+                    file_directory = self.record_options["File"]["value"]
                     filename = file_directory.split("/")[-1]
-                    self.record_options["File"]["Value"] = filename
+                    self.record_options["File"]["value"] = filename
 
                     data = get_data_from_file(file_directory)
                 except:
@@ -93,14 +93,14 @@ class UseModuleMenu(UseMenu):
                     )
                     return
                 response = state.upload_file(filename, data)
-                if "success" in response.keys():
+                if "id" in response.keys():
                     print(print_util.color("[+] File uploaded to server successfully"))
 
-                elif "error" in response.keys():
-                    if response["error"].startswith("[!]"):
-                        msg = response["error"]
+                elif "detail" in response.keys():
+                    if response["detail"].startswith("[!]"):
+                        msg = response["detail"]
                     else:
-                        msg = f"[!] Error: {response['error']}"
+                        msg = f"[!] Error: {response['detail']}"
                     print(print_util.color(msg))
 
                 # Save copy off to downloads folder so last value points to the correct file
@@ -109,29 +109,33 @@ class UseModuleMenu(UseMenu):
                     f.write(data)
 
         post_body = {}
-        for key, value in self.record_options.items():
-            post_body[key] = self.record_options[key]["Value"]
+        post_body["options"] = {}
 
-        response = state.execute_module(self.selected, post_body)
-        if "success" in response.keys():
-            if "Agent" in post_body.keys():
+        for key, value in self.record_options.items():
+            post_body["options"][key] = self.record_options[key]["value"]
+
+        post_body["module_slug"] = self.record["id"]
+
+        response = state.execute_module(
+            self.record_options["Agent"]["value"], post_body
+        )
+        if "status" in response.keys():
+            if "Agent" in post_body["options"].keys():
                 print(
                     print_util.color(
                         "[*] Tasked "
-                        + self.record_options["Agent"]["Value"]
+                        + self.record_options["Agent"]["value"]
                         + " to run Task "
-                        + str(response["taskID"])
+                        + str(response["id"])
                     )
                 )
                 menu_state.pop()
-            else:
-                print(print_util.color("[*] " + str(response["msg"])))
 
-        elif "error" in response.keys():
-            if response["error"].startswith("[!]"):
-                msg = response["error"]
+        elif "detail" in response.keys():
+            if response["detail"].startswith("[!]"):
+                msg = response["detail"]
             else:
-                msg = f"[!] Error: {response['error']}"
+                msg = f"[!] Error: {response['detail']}"
             print(print_util.color(msg))
 
     @command

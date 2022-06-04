@@ -14,6 +14,7 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+from empire.client.src.utils.data_util import get_random_string
 
 
 @register_cli_commands
@@ -82,37 +83,44 @@ class UseStagerMenu(UseMenu):
         # todo validation and error handling
         # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
+        temp_record = {}
         for key, value in self.record_options.items():
-            post_body[key] = self.record_options[key]["Value"]
+            post_body[key] = self.record_options[key]["value"]
 
-        response = state.create_stager(self.selected, post_body)
+        temp_record["options"] = post_body
+        temp_record["name"] = get_random_string(10)
+        temp_record["template"] = self.record["id"]
 
-        if "error" in response:
-            print(print_util.color("[!] Error: " + response["error"]))
+        response = state.create_stager(temp_record)
+
+        if "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
             return
-        elif response[self.selected].get("OutFile", {}).get("Value"):
-            if response[self.selected].get("Output", "") == "":
+        elif response.get("options").get("OutFile"):
+            stager_data = state.download_stager(response["downloads"][0]["link"])
+            if stager_data == "":
                 # todo stagers endpoint needs to give modules a way to return errors better.
                 #  This says if the output is empty then something must have gone wrong.
-                print(print_util.color("[!] Stager output empty."))
+                print(print_util.color("[!] Error: Stager output empty."))
                 return
-            file_name = (
-                response[self.selected].get("OutFile").get("Value").split("/")[-1]
-            )
-            output_bytes = base64.b64decode(response[self.selected]["Output"])
+            file_name = response["downloads"][0]["file_name"]
+            # output_bytes = base64.b64decode(response[self.selected]["Output"])
             directory = f"{state.directory['generated-stagers']}{file_name}"
             with open(directory, "wb") as f:
-                f.write(output_bytes)
+                f.write(stager_data)
             print(
                 print_util.color(
                     f"[+] {file_name} written to {os.path.abspath(directory)}"
                 )
             )
         else:
-            print(print_util.color(response[self.selected]["Output"]))
+            stager_data = state.download_stager(
+                response["downloads"][0]["link"]
+            ).decode("UTF-8")
+            print(stager_data)
             if empire_config.yaml.get("auto-copy-stagers", {}):
                 print(print_util.color(f"[+] Stager copied to clipboard."))
-                pyperclip.copy(response[self.selected]["Output"])
+                pyperclip.copy(stager_data)
 
     @command
     def generate(self):
