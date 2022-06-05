@@ -91,6 +91,10 @@ def reset():
         INVOKE_OBFS_SRC_DIR_BASE, INVOKE_OBFS_DST_DIR_BASE, dirs_exist_ok=True
     )
 
+    file_util.remove_file("data/sessions.csv")
+    file_util.remove_file("data/credentials.csv")
+    file_util.remove_file("data/master.log")
+
 
 def shutdown_handler(signum, frame):
     """
