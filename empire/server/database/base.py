@@ -41,20 +41,6 @@ else:
 # SessionLocal = scoped_session(sessionmaker(bind=engine))
 SessionLocal = sessionmaker(bind=engine)
 
-# todo https://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
-# args = arguments.args
-# if args.reset:
-#     choice = input(
-#         "\x1b[1;33m[>] Would you like to reset your Empire instance? [y/N]: \x1b[0m"
-#     )
-#     if choice.lower() == "y":
-#         # The reset script will delete the default db file. This will drop tables if connected to MySQL or
-#         # a different SQLite .db file.
-#         Base.metadata.drop_all(engine)
-#         subprocess.call("./setup/reset.sh")
-#     else:
-#         pass
-
 Base.metadata.create_all(engine)
 
 
