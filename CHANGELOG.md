@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.1] - 2022-06-10
+-   Use a BC-Security fork of Donut to resolve a python 3.10 issue (@Cx01N)
+-   Update reflective pick dlls (@Hubbl3)
+
 ## [4.6.0] - 2022-05-24
 
 -   Added Certify C# module (@Cx01N)
@@ -261,7 +265,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.1...HEAD
+
+[4.6.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.0...v4.6.1
 
 [4.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.5...v4.6.0
 
