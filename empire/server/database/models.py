@@ -135,7 +135,7 @@ class Agent(Base):
     notes = Column(Text)
     architecture = Column(String(255))
     archived = Column(Boolean, nullable=False)
-    proxy = Column(JSON)
+    proxies = Column(JSON)
 
     @hybrid_property  # todo @stale.expression
     def stale(self):

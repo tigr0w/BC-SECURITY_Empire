@@ -661,39 +661,37 @@ def test_create_task_directory_list(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
 
 
-# TODO VR
 def test_create_task_proxy_list(client, admin_auth_header, agent):
-    pass
-    # proxy_body = {
-    #     "proxies": [
-    #         {
-    #             "proxy_type": "HTTP",
-    #             "host": "proxy.com",
-    #             "port": 8080,
-    #         },
-    #         {
-    #             "proxy_type": "SOCKS5",
-    #             "host": "proxy2.com",
-    #             "port": 8081,
-    #         },
-    #     ]
-    # }
-    #
-    # response = client.post(
-    #     f"/api/v2beta/agents/{agent.session_id}/tasks/proxy_list",
-    #     headers=admin_auth_header,
-    #     json=proxy_body,
-    # )
-    #
-    # assert response.status_code == 201
-    # assert response.json()["id"] > 0
-    #
-    # response = client.get(
-    #     f"/api/v2beta/agents/{agent.session_id}", headers=admin_auth_header
-    # )
-    #
-    # assert response.status_code == 200
-    # assert response.json()["proxies"] == proxy_body
+    proxy_body = {
+        "proxies": [
+            {
+                "proxy_type": "HTTP",
+                "host": "proxy.com",
+                "port": 8080,
+            },
+            {
+                "proxy_type": "SOCKS5",
+                "host": "proxy2.com",
+                "port": 8081,
+            },
+        ]
+    }
+
+    response = client.post(
+        f"/api/v2beta/agents/{agent.session_id}/tasks/proxy_list",
+        headers=admin_auth_header,
+        json=proxy_body,
+    )
+
+    assert response.status_code == 201
+    assert response.json()["id"] > 0
+
+    response = client.get(
+        f"/api/v2beta/agents/{agent.session_id}", headers=admin_auth_header
+    )
+
+    assert response.status_code == 200
+    assert response.json()["proxies"] == proxy_body
 
 
 def test_create_task_exit_agent_not_found(client, admin_auth_header):

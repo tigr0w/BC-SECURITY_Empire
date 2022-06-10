@@ -3,6 +3,8 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
+from empire.server.v2.api.shared_dto import PROXY_ID
+
 
 def domain_to_dto_agent(agent):
     return Agent(
@@ -38,10 +40,21 @@ def domain_to_dto_agent(agent):
         stale=agent.stale,
         archived=agent.archived,
         # todo could make this a typed class later to match the schema
-        #  this still needs work because while the task accepts string for proxy type
-        #  this returns int. We can avoid the stupid mapping of the agents just use the string values instead.
-        proxies=agent.proxy,
+        proxies=to_proxy_dto(agent.proxies),
     )
+
+
+def to_proxy_dto(proxies):
+    if proxies:
+        converted = []
+        for p in proxies["proxies"]:
+            p_copy = p.copy()
+            p_copy["proxy_type"] = PROXY_ID[p["proxy_type"]]
+            converted.append(p_copy)
+
+        return {"proxies": converted}
+
+    return {}
 
 
 class Agent(BaseModel):

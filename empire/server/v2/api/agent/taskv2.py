@@ -3,7 +3,7 @@ import math
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
@@ -33,7 +33,7 @@ from empire.server.v2.api.agent.task_dto import (
 from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user, get_current_user
 from empire.server.v2.api.shared_dependencies import get_db
-from empire.server.v2.api.shared_dto import OrderDirection
+from empire.server.v2.api.shared_dto import PROXY_NAME, OrderDirection
 from empire.server.v2.core.agent_service import AgentService
 from empire.server.v2.core.agent_task_service import AgentTaskService
 from empire.server.v2.core.download_service import DownloadService
@@ -48,24 +48,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
     dependencies=[Depends(get_current_active_user)],
 )
-
-
-# Set proxy IDs
-PROXY_NAME = {
-    "SOCKS4": 1,
-    "SOCKS5": 2,
-    "HTTP": 3,
-    "SSL": 4,
-    "SSL_WEAK": 5,
-    "SSL_ANON": 6,
-    "TOR": 7,
-    "HTTPS": 8,
-    "HTTP_CONNECT": 9,
-    "HTTPS_CONNECT": 10,
-}
-
-# inverse of PROXY_NAME
-PROXY_ID = {v: k for k, v in PROXY_NAME.items()}
 
 
 async def get_agent(agent_id: str, db: Session = Depends(get_db)):
@@ -444,7 +426,8 @@ async def create_task_update_proxy_list(
     current_user: models.User = Depends(get_current_user),
 ):
     # We have to use a string enum to get the api to accept strings
-    #  then convert to int manually
+    # then convert to int manually. Agent code could be refactored to just
+    # use strings, then this conversion could be removed.
     proxy_list_dict = proxy_list_request.dict()
     for proxy in proxy_list_dict["proxies"]:
         proxy["proxy_type"] = PROXY_NAME[proxy["proxy_type"]]

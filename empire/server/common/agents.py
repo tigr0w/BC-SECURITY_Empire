@@ -60,6 +60,7 @@ import string
 import threading
 
 # -*- encoding: utf-8 -*-
+import warnings
 from builtins import object, str
 from typing import Dict
 
@@ -142,7 +143,11 @@ class Agents(object):
         """
         Checks if a given sessionID corresponds to an active agent.
         """
-
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         # see if we were passed a name instead of an ID
         nameid = self.get_agent_id_db(sessionID)
         if nameid:
@@ -460,7 +465,11 @@ class Agents(object):
         Check whether a specific sessionID is currently elevated.
         This means root for OS X/Linux and high integrity for Windows.
         """
-
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         # see if we were passed a name instead of an ID
         nameid = self.get_agent_id_db(session_id)
         if nameid:
@@ -488,6 +497,11 @@ class Agents(object):
         """
         Return complete information for the specified agent from the database.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             agent = (
                 db.query(models.Agent)
@@ -506,6 +520,11 @@ class Agents(object):
         """
         Return the nonce for this sessionID.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             nonce = (
                 db.query(models.Agent.nonce)
@@ -523,6 +542,11 @@ class Agents(object):
         """
         Return the language used by this agent.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         # see if we were passed a name instead of an ID
         name_id = self.get_agent_id_db(session_id)
         if name_id:
@@ -541,6 +565,11 @@ class Agents(object):
         """
         Return AES session key from the database for this sessionID.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             agent = (
                 db.query(models.Agent)
@@ -560,6 +589,11 @@ class Agents(object):
         """
         Get an agent sessionID based on the name.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             agent = db.query(models.Agent).filter((models.Agent.name == name)).first()
 
@@ -572,6 +606,11 @@ class Agents(object):
         """
         Return an agent name based on sessionID.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             agent = (
                 db.query(models.Agent)
@@ -593,6 +632,11 @@ class Agents(object):
         """
         Return an agent's hostname based on sessionID.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             agent = (
                 db.query(models.Agent)
@@ -614,6 +658,11 @@ class Agents(object):
         """
         Return an agent's operating system details based on sessionID.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             agent = (
                 db.query(models.Agent)
@@ -634,6 +683,11 @@ class Agents(object):
         """
         Return agent objects linked to a given listener name.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             agents = (
                 db.query(models.Agent.session_id)
@@ -653,6 +707,11 @@ class Agents(object):
         """
         Return any global script autoruns.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             results = db.query(models.Config.autorun_command).all()
             if results[0].autorun_command:
@@ -808,6 +867,11 @@ class Agents(object):
         """
         Update the agent's last seen timestamp in the database.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal.begin() as db:
             db.execute(
                 update(models.Agent).where(
@@ -822,6 +886,11 @@ class Agents(object):
         """
         Update the specified agent's linked listener name in the database.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal.begin() as db:
             agent = (
                 db.query(models.Agent)
@@ -839,6 +908,11 @@ class Agents(object):
         """
         Set the global script autorun in the config in the database.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed."
+            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
+            DeprecationWarning,
+        )
         try:
             with SessionLocal.begin() as db:
                 config = db.query(models.Config).first()
@@ -864,11 +938,11 @@ class Agents(object):
     # Agent tasking methods
     #
     ###############################################################
-    def get_agent_tasks_db(self, session_id, db: Session):
+    def get_queued_agent_tasks_db(self, session_id, db: Session):
         """
         Retrieve tasks that have been queued for our agent from the database.
+        Set them to 'pulled'.
         """
-
         agent_name = session_id
 
         # see if we were passed a name instead of an ID
@@ -880,17 +954,13 @@ class Agents(object):
             log.error(f"Agent {agent_name} not active.")
             return []
         else:
-            tasks = (
-                db.query(models.Tasking)
-                .filter(
-                    and_(
-                        models.Tasking.agent_id == session_id,
-                        models.Tasking.status == TaskingStatus.queued,
-                    )
-                )
-                .options(undefer("input_full"))
-                .all()
+            tasks, total = self.mainMenu.agenttasksv2.get_tasks(
+                db=db,
+                agents=[session_id],
+                include_full_input=True,
+                status=TaskingStatus.queued,
             )
+
             for task in tasks:
                 task.status = TaskingStatus.pulled
 
@@ -1302,7 +1372,7 @@ class Agents(object):
         # todo db session should probably start as early as possible?
         with SessionLocal.begin() as db:
             # retrieve all agent taskings from the cache
-            taskings = self.get_agent_tasks_db(sessionID, db)
+            taskings = self.get_queued_agent_tasks_db(sessionID, db)
 
             if taskings and taskings != []:
 

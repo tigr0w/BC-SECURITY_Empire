@@ -5,8 +5,6 @@ and abstracts the invocation of launcher generation.
 
 The Stagers() class in instantiated in ./server.py by the main menu and includes:
 
-    load_stagers() - loads stagers from the install path
-    set_stager_option() - sets and option for all stagers
     generate_launcher() - abstracted functionality that invokes the generate_launcher() method for a given listener
     generate_dll() - generates a PowerPick Reflective DLL to inject with base64-encoded stager code
     generate_macho() - generates a macho binary with an embedded python interpreter that runs the launcher code

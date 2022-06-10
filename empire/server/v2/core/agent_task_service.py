@@ -262,7 +262,7 @@ class AgentTaskService(object):
     def create_task_proxy_list(
         self, db: Session, agent: models.Agent, body: Dict, user_id: int
     ):
-        agent.proxy = body
+        agent.proxies = body
         return self.add_task(
             db, agent, "TASK_SET_PROXY", json.dumps(body), user_id=user_id
         )

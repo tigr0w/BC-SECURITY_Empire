@@ -1,5 +1,7 @@
 import os
+import random
 import shutil
+import string
 import sys
 from pathlib import Path
 
@@ -24,7 +26,7 @@ def default_argv():
 
 
 @pytest.fixture(scope="session")
-def client():
+def client(empire_config):
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
     shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)
@@ -90,6 +92,11 @@ def client():
 @pytest.fixture(scope="session")
 def empire_config():
     from empire.server.common.config import empire_config
+
+    # This could be used to dynamically change the db location if we ever try to
+    # run multiple tests in parallel.
+    # random_string = "".join(random.choice(string.ascii_letters) for x in range(5))
+    # empire_config.database.location = f"empire/test/test_empire_{random_string}.db"
 
     return empire_config
 

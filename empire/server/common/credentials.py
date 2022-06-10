@@ -4,6 +4,7 @@ Credential handling functionality for Empire.
 
 """
 import logging
+import warnings
 from builtins import object
 
 from sqlalchemy import and_, or_
@@ -36,6 +37,10 @@ class Credentials(object):
         """
         Check if this credential ID is valid.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed. Use credential_service.get_by_id() instead.",
+            DeprecationWarning,
+        )
         with SessionLocal() as db:
             if (
                 db.query(models.Credential)
@@ -53,7 +58,10 @@ class Credentials(object):
         'credtype' can be specified to return creds of a specific type.
         Values are: hash, plaintext, and token.
         """
-
+        warnings.warn(
+            "This has been deprecated and may be removed. Use credential_service.get_all().",
+            DeprecationWarning,
+        )
         # if we're returning a single credential by ID
         with SessionLocal() as db:
             if self.is_credential_valid(filter_term):
@@ -112,18 +120,16 @@ class Credentials(object):
 
             return results
 
-    def get_krbtgt(self):
-        """
-        Return all krbtgt credentials from the database.
-        """
-        return self.get_credentials(credtype="hash", filterTerm="krbtgt")
-
     def add_credential(
         self, credtype, domain, username, password, host, os="", sid="", notes=""
     ):
         """
         Add a credential with the specified information to the database.
         """
+        warnings.warn(
+            "This has been deprecated and may be removed. Use credential_service.create_credential().",
+            DeprecationWarning,
+        )
         with SessionLocal.begin() as db:
             results = (
                 db.query(models.Credential)

@@ -1,7 +1,9 @@
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from empire.server.database import models
+from empire.server.v2.api.credential.credential_dto import CredentialPostRequest
 
 
 class CredentialService(object):
@@ -9,8 +11,23 @@ class CredentialService(object):
         self.main_menu = main_menu
 
     @staticmethod
-    def get_all(db: Session):
-        return db.query(models.Credential).all()
+    def get_all(db: Session, search: str = None, credtype: str = None):
+        query = db.query(models.Credential)
+
+        if search:
+            query = query.filter(
+                or_(
+                    models.Credential.domain.like(f"%{search}%"),
+                    models.Credential.username.like(f"%{search}%"),
+                    models.Credential.password.like(f"%{search}%"),
+                    models.Credential.host.like(f"%{search}%"),
+                )
+            )
+
+        if credtype:
+            query = query.filter(models.Credential.credtype == credtype)
+
+        return query.all()
 
     @staticmethod
     def get_by_id(db: Session, uid: int):
@@ -21,7 +38,7 @@ class CredentialService(object):
         db.delete(credential)
 
     @staticmethod
-    def create_credential(db: Session, credential_dto):
+    def create_credential(db: Session, credential_dto: CredentialPostRequest):
         credential = models.Credential(**credential_dto.dict())
 
         try:

@@ -48,7 +48,6 @@ def test_update_credential_not_found(client, admin_auth_header, base_credential)
     assert response.json()["detail"] == "Credential not found for id 9999"
 
 
-# todo
 def test_update_credential_unique_constraint_failure(
     client, admin_auth_header, base_credential
 ):
@@ -92,11 +91,6 @@ def test_get_credential(client, admin_auth_header):
 
     assert response.status_code == 200
     assert response.json()["id"] == 1
-    # todo
-    # assert len(response.json()['code']) > 0
-
-
-#
 
 
 def test_get_credentials(client, admin_auth_header):
@@ -104,6 +98,23 @@ def test_get_credentials(client, admin_auth_header):
 
     assert response.status_code == 200
     assert len(response.json()["records"]) > 0
+
+
+def test_get_credentials_search(client, admin_auth_header):
+    response = client.get(
+        "/api/v2beta/credentials?search=hunt", headers=admin_auth_header
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()["records"]) == 1
+    assert response.json()["records"][0]["password"] == "hunter2"
+
+    response = client.get(
+        "/api/v2beta/credentials?search=qwerty", headers=admin_auth_header
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()["records"]) == 0
 
 
 def test_delete_credential(client, admin_auth_header):

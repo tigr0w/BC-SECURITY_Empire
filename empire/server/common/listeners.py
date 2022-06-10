@@ -1,3 +1,4 @@
+import warnings
 from builtins import object
 
 
@@ -13,4 +14,8 @@ class Listeners(object):
         self.args = args
 
     def is_listener_valid(self, name):
+        warnings.warn(
+            "This has been deprecated and may be removed. Use listener_service.get_active_listener_by_name().",
+            DeprecationWarning,
+        )
         return self.mainMenu.listenersv2.get_active_listener_by_name(name) is not None

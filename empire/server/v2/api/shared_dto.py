@@ -68,3 +68,21 @@ def to_value_type(value: typing.Any) -> ValueType:
         return ValueType.integer
     else:
         return ValueType.string
+
+
+# Set proxy IDs
+PROXY_NAME = {
+    "SOCKS4": 1,
+    "SOCKS5": 2,
+    "HTTP": 3,
+    "SSL": 4,
+    "SSL_WEAK": 5,
+    "SSL_ANON": 6,
+    "TOR": 7,
+    "HTTPS": 8,
+    "HTTP_CONNECT": 9,
+    "HTTPS_CONNECT": 10,
+}
+
+# inverse of PROXY_NAME
+PROXY_ID = {v: k for k, v in PROXY_NAME.items()}
