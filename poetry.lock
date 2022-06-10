@@ -179,11 +179,18 @@ python-versions = "*"
 
 [[package]]
 name = "donut-shellcode"
-version = "0.9.2"
+version = "0.9.3"
 description = "Donut Python C extension"
 category = "main"
 optional = false
 python-versions = ">=3.0"
+develop = false
+
+[package.source]
+type = "git"
+url = "https://github.com/BC-SECURITY/donut.git"
+reference = "master"
+resolved_reference = "e75bdcd632a632e6c3aec4799a37d0cf73618198"
 
 [[package]]
 name = "dropbox"
@@ -1023,7 +1030,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "4474c916c48585cec870bfea7057b8316a7d7c67f96c8bd7982e76d950af8d1c"
+content-hash = "623496cd1a96f8aaa6de1a684c5bd5cfec13b8dcba1c659cbff47fea961ff8ec"
 
 [metadata.files]
 altgraph = [
@@ -1173,9 +1180,7 @@ cryptography = [
 docopt = [
     {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
 ]
-donut-shellcode = [
-    {file = "donut-shellcode-0.9.2.tar.gz", hash = "sha256:85c6ddfc1370657779bdcb0564dd4f194f9fa10cae22f537d47857ee277b110d"},
-]
+donut-shellcode = []
 dropbox = [
     {file = "dropbox-11.9.0-py2-none-any.whl", hash = "sha256:9c5cfc092c49b38219854a4bac2898696a5714ef0189dcc6447246d2d89a198a"},
     {file = "dropbox-11.9.0-py3-none-any.whl", hash = "sha256:81f07a7596f548bdc55abd116b534a2575f4239f1e5a9a24f15f9146453d34d4"},
