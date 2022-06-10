@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.6.1] - 2022-06-10
+-   Use a BC-Security fork of Donut to resolve a python 3.10 issue (@Cx01N)
+-   Update reflective pick dlls (@Hubbl3)
 
 ## [4.6.0] - 2022-05-24
 
