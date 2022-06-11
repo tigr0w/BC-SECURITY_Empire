@@ -45,12 +45,12 @@ class Module(object):
         if obfuscate and not pathlib.Path(obfuscated_module_source).is_file():
             script = main_menu.obfuscationv2.obfuscate(
                 psScript=module_code,
-                obfuscationCommand=main_menu.obfuscateCommand,
+                obfuscationCommand=obfuscation_command,
             )
         else:
             script = module_code
 
-        script_end += (
+        script_end = (
             "\n"
             + """$Servers = Get-DomainComputer | ForEach-Object {try{Resolve-DNSName $_.dnshostname -Type A -errorAction SilentlyContinue}catch{Write-Warning 'Computer Offline or Not Responding'} } | Select-Object -ExpandProperty IPAddress -ErrorAction SilentlyContinue; $count = 0; $subarry =@(); foreach($i in $Servers){$IPByte = $i.Split("."); $subarry += $IPByte[0..2] -join"."} $final = $subarry | group; Write-Output{The following subnetworks were discovered:}; $final | ForEach-Object {Write-Output "$($_.Name).0/24 - $($_.Count) Hosts"}; """
         )

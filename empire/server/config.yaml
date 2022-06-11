@@ -16,10 +16,12 @@ database:
         enabled: false
         command: "Token\\All\\1"
         module: "invoke-obfuscation"
+        preobfuscatable: true
       - language: csharp
         enabled: false
         command: ""
         module: "confuser"
+        preobfuscatable: false
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz

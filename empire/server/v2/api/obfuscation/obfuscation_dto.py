@@ -37,6 +37,7 @@ def domain_to_dto_obfuscation_config(obf_conf: models.ObfuscationConfig):
         enabled=obf_conf.enabled,
         command=obf_conf.command,
         module=obf_conf.module,
+        preobfuscatable=obf_conf.preobfuscatable,
     )
 
 
@@ -45,6 +46,14 @@ class ObfuscationConfig(BaseModel):
     enabled: bool
     command: str
     module: str
+    preobfuscatable: bool
+
+    class Config:
+        orm_mode = True
+
+
+class ObfuscationConfigs(BaseModel):
+    records: List[ObfuscationConfig]
 
 
 class ObfuscationConfigUpdateRequest(BaseModel):

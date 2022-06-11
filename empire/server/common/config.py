@@ -13,6 +13,7 @@ class DatabaseDefaultObfuscationConfig(BaseModel):
     enabled: bool = False
     command: str = r"Token\All\1"
     module: str = "invoke-obfuscation"
+    preobfuscatable: bool = True
 
 
 class DatabaseDefaultsConfig(BaseModel):

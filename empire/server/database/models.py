@@ -357,3 +357,4 @@ class ObfuscationConfig(Base):
     command = Column(Text)
     module = Column(String(255))
     enabled = Column(Boolean)
+    preobfuscatable = Column(Boolean)

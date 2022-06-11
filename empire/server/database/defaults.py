@@ -71,6 +71,7 @@ def get_default_obfuscation_config():
                 command=config.command,
                 module=config.module,
                 enabled=config.enabled,
+                preobfuscatable=config.preobfuscatable,
             )
         )
 

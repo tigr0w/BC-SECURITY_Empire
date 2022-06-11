@@ -116,6 +116,15 @@ def test_delete_keyword(client, admin_auth_header):
     assert response.status_code == 404
 
 
+def test_get_obfuscation_configs(client, admin_auth_header):
+    response = client.get("/api/v2beta/obfuscation/global", headers=admin_auth_header)
+
+    assert response.status_code == 200
+    assert len(response.json()["records"]) > 1
+    assert response.json()["records"][0]["language"] == "powershell"
+    assert response.json()["records"][1]["language"] == "csharp"
+
+
 def test_get_obfuscation_config_not_found(client, admin_auth_header):
     response = client.get(
         "/api/v2beta/obfuscation/global/python", headers=admin_auth_header
@@ -177,6 +186,20 @@ def test_update_obfuscation_config(client, admin_auth_header):
     assert response.json()["enabled"] is True
 
 
+def test_preobfuscate_post_not_preobfuscatable(
+    client, admin_auth_header, empire_config
+):
+    response = client.post(
+        "/api/v2beta/obfuscation/global/csharp/preobfuscate", headers=admin_auth_header
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Obfuscation language csharp is not preobfuscatable."
+    )
+
+
 def test_preobfuscate_post(client, admin_auth_header, empire_config):
     with patch_config(empire_config):
         response = client.post(
@@ -198,6 +221,20 @@ def test_preobfuscate_post(client, admin_auth_header, empire_config):
                 count += 1
 
         assert count > 0
+
+
+def test_preobfuscate_delete_not_preobfuscatable(
+    client, admin_auth_header, empire_config
+):
+    response = client.delete(
+        "/api/v2beta/obfuscation/global/csharp/preobfuscate", headers=admin_auth_header
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Obfuscation language csharp is not preobfuscatable."
+    )
 
 
 def test_preobfuscate_delete(client, admin_auth_header, empire_config):

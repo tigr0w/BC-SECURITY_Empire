@@ -14,6 +14,7 @@ from empire.server.v2.api.obfuscation.obfuscation_dto import (
     Keywords,
     KeywordUpdateRequest,
     ObfuscationConfig,
+    ObfuscationConfigs,
     ObfuscationConfigUpdateRequest,
     domain_to_dto_obfuscation_config,
 )
@@ -101,6 +102,13 @@ async def get_obfuscation_config(language: str, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/global", response_model=ObfuscationConfigs)
+async def read_obfuscation_configs(db: Session = Depends(get_db)):
+    obf_configs = obfuscation_service.get_all_obfuscation_configs(db)
+
+    return {"records": obf_configs}
+
+
 @router.get("/global/{language}", response_model=ObfuscationConfig)
 async def read_obfuscation_config(
     language: str,
@@ -138,6 +146,12 @@ async def preobfuscate_modules(
     db_obf_config: models.ObfuscationConfig = Depends(get_obfuscation_config),
     db: Session = Depends(get_db),
 ):
+    if not db_obf_config.preobfuscatable:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Obfuscation language {language} is not preobfuscatable.",
+        )
+
     background_tasks.add_task(
         obfuscation_service.preobfuscate_modules, db, db_obf_config, reobfuscate
     )
@@ -148,5 +162,14 @@ async def preobfuscate_modules(
     status_code=HTTP_204_NO_CONTENT,
     response_class=Response,
 )
-async def remove_preobfuscated_modules(language: str):
+async def remove_preobfuscated_modules(
+    language: str,
+    db_obf_config: models.ObfuscationConfig = Depends(get_obfuscation_config),
+):
+    if not db_obf_config.preobfuscatable:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Obfuscation language {language} is not preobfuscatable.",
+        )
+
     obfuscation_service.remove_preobfuscated_modules(language)

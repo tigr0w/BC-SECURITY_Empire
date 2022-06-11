@@ -64,6 +64,9 @@ class ObfuscationService(object):
 
         return db_keyword, None
 
+    def get_all_obfuscation_configs(self, db: Session):
+        return db.query(models.ObfuscationConfig).all()
+
     @staticmethod
     def get_obfuscation_config(db: Session, language: str):
         return (
