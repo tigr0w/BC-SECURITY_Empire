@@ -14,7 +14,9 @@ class AgentService(object):
     def get_all(
         db: Session, include_archived: bool = False, include_stale: bool = True
     ):
-        query = db.query(models.Agent)
+        query = db.query(models.Agent).filter(
+            models.Agent.host_id != ""
+        )  # don't return agents that haven't fully checked in.
 
         if not include_archived:
             query = query.filter(models.Agent.archived == False)

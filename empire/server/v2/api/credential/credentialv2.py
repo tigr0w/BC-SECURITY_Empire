@@ -17,13 +17,18 @@ from empire.server.v2.api.credential.credential_dto import (
 from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user
 from empire.server.v2.api.shared_dependencies import get_db
+from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 
 credential_service = main.credentialsv2
 
 router = APIRouter(
     prefix="/api/v2beta/credentials",
     tags=["credentials"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found", "model": NotFoundResponse},
+        400: {"description": "Bad request", "model": BadRequestResponse},
+    },
+    dependencies=[Depends(get_current_active_user)],
 )
 
 
@@ -36,18 +41,14 @@ async def get_credential(uid: int, db: Session = Depends(get_db)):
     raise HTTPException(404, f"Credential not found for id {uid}")
 
 
-@router.get(
-    "/{uid}", response_model=Credential, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/{uid}", response_model=Credential)
 async def read_credential(
     uid: int, db_credential: models.Credential = Depends(get_credential)
 ):
     return domain_to_dto_credential(db_credential)
 
 
-@router.get(
-    "/", response_model=Credentials, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/", response_model=Credentials)
 async def read_credentials(
     db: Session = Depends(get_db),
     search: Optional[str] = None,
@@ -67,7 +68,6 @@ async def read_credentials(
     "/",
     status_code=201,
     response_model=Credential,
-    dependencies=[Depends(get_current_active_user)],
 )
 async def create_credential(
     credential_req: CredentialPostRequest, db: Session = Depends(get_db)
@@ -80,9 +80,7 @@ async def create_credential(
     return domain_to_dto_credential(resp)
 
 
-@router.put(
-    "/{uid}", response_model=Credential, dependencies=[Depends(get_current_active_user)]
-)
+@router.put("/{uid}", response_model=Credential)
 async def update_credential(
     uid: int,
     credential_req: CredentialUpdateRequest,
@@ -101,7 +99,6 @@ async def update_credential(
     "/{uid}",
     status_code=HTTP_204_NO_CONTENT,
     response_class=Response,
-    dependencies=[Depends(get_current_active_user)],
 )
 async def delete_credential(
     uid: str,

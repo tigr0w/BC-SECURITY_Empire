@@ -14,13 +14,18 @@ from empire.server.v2.api.profile.profile_dto import (
     ProfileUpdateRequest,
 )
 from empire.server.v2.api.shared_dependencies import get_db
+from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 
 profile_service = main.profilesv2
 
 router = APIRouter(
     prefix="/api/v2beta/malleable-profiles",
     tags=["malleable-profiles"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found", "model": NotFoundResponse},
+        400: {"description": "Bad request", "model": BadRequestResponse},
+    },
+    dependencies=[Depends(get_current_active_user)],
 )
 
 
@@ -33,16 +38,12 @@ async def get_profile(uid: int, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail=f"Profile not found for id {uid}")
 
 
-@router.get(
-    "/{uid}", response_model=Profile, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/{uid}", response_model=Profile)
 async def read_profile(uid: int, db_profile: models.Profile = Depends(get_profile)):
     return db_profile
 
 
-@router.get(
-    "/", response_model=Profiles, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/", response_model=Profiles)
 async def read_profiles(db: Session = Depends(get_db)):
     profiles = profile_service.get_all(db)
 
@@ -53,7 +54,6 @@ async def read_profiles(db: Session = Depends(get_db)):
     "/",
     status_code=201,
     response_model=Profile,
-    dependencies=[Depends(get_current_active_user)],
 )
 async def create_profile(
     profile_req: ProfilePostRequest, db: Session = Depends(get_db)
@@ -67,9 +67,7 @@ async def create_profile(
 
 
 # todo should it write to the filesystem too.
-@router.put(
-    "/{uid}", response_model=Profile, dependencies=[Depends(get_current_active_user)]
-)
+@router.put("/{uid}", response_model=Profile)
 async def update_profile(
     uid: int,
     profile_req: ProfileUpdateRequest,
@@ -88,7 +86,6 @@ async def update_profile(
     "/{uid}",
     status_code=HTTP_204_NO_CONTENT,
     response_class=Response,
-    dependencies=[Depends(get_current_active_user)],
 )
 async def delete_profile(
     uid: str,

@@ -16,14 +16,22 @@ from empire.server.v2.api.download.download_dto import (
 from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user
 from empire.server.v2.api.shared_dependencies import get_db
-from empire.server.v2.api.shared_dto import OrderDirection
+from empire.server.v2.api.shared_dto import (
+    BadRequestResponse,
+    NotFoundResponse,
+    OrderDirection,
+)
 
 download_service = main.downloadsv2
 
 router = APIRouter(
     prefix="/api/v2beta/downloads",
     tags=["downloads"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found", "model": NotFoundResponse},
+        400: {"description": "Bad request", "model": BadRequestResponse},
+    },
+    dependencies=[Depends(get_current_active_user)],
 )
 
 
@@ -52,7 +60,6 @@ async def download_download(
 
 @router.get(
     "/{uid}",
-    dependencies=[Depends(get_current_active_user)],
 )
 async def read_download(
     uid: int,
@@ -63,7 +70,7 @@ async def read_download(
 
 
 # todo basically everything should go to downloads which means the path should start after downloads.
-@router.get("/", dependencies=[Depends(get_current_active_user)])
+@router.get("/")
 async def read_downloads(
     db: Session = Depends(get_db),
     limit: int = -1,

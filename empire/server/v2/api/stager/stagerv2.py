@@ -8,6 +8,7 @@ from empire.server.server import main
 from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user
 from empire.server.v2.api.shared_dependencies import get_db
+from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.v2.api.stager.stager_dto import (
     Stager,
     StagerPostRequest,
@@ -21,7 +22,11 @@ stager_service = main.stagersv2
 router = APIRouter(
     prefix="/api/v2beta/stagers",
     tags=["stagers"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found", "model": NotFoundResponse},
+        400: {"description": "Bad request", "model": BadRequestResponse},
+    },
+    dependencies=[Depends(get_current_active_user)],
 )
 
 
@@ -34,18 +39,14 @@ async def get_stager(uid: int, db: Session = Depends(get_db)):
     raise HTTPException(404, f"Stager not found for id {uid}")
 
 
-@router.get(
-    "/", response_model=Stagers, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/", response_model=Stagers)
 async def read_stagers(db: Session = Depends(get_db)):
     stagers = list(map(lambda x: domain_to_dto_stager(x), stager_service.get_all(db)))
 
     return {"records": stagers}
 
 
-@router.get(
-    "/{uid}", response_model=Stager, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/{uid}", response_model=Stager)
 async def read_stager(uid: int, db_stager: models.Stager = Depends(get_stager)):
     return domain_to_dto_stager(db_stager)
 
@@ -86,7 +87,6 @@ async def update_stager(
     "/{uid}",
     status_code=HTTP_204_NO_CONTENT,
     response_class=Response,
-    dependencies=[Depends(get_current_active_user)],
 )
 async def delete_stager(
     uid: int,

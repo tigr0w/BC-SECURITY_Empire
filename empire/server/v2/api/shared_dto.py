@@ -7,6 +7,14 @@ from pydantic import BaseModel
 from empire.server.database import models
 
 
+class BadRequestResponse(BaseModel):
+    detail: str
+
+
+class NotFoundResponse(BaseModel):
+    detail: str
+
+
 class ValueType(str, Enum):
     string = "STRING"
     float = "FLOAT"

@@ -15,13 +15,18 @@ from empire.server.v2.api.listener.listener_dto import (
     domain_to_dto_listener,
 )
 from empire.server.v2.api.shared_dependencies import get_db
+from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 
 listener_service = main.listenersv2
 
 router = APIRouter(
     prefix="/api/v2beta/listeners",
     tags=["listeners"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found", "model": NotFoundResponse},
+        400: {"description": "Bad request", "model": BadRequestResponse},
+    },
+    dependencies=[Depends(get_current_active_user)],
 )
 
 
@@ -34,16 +39,12 @@ async def get_listener(uid: int, db: Session = Depends(get_db)):
     raise HTTPException(404, f"Listener not found for id {uid}")
 
 
-@router.get(
-    "/{uid}", response_model=Listener, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/{uid}", response_model=Listener)
 async def read_listener(uid: int, db_listener: models.Listener = Depends(get_listener)):
     return domain_to_dto_listener(db_listener)
 
 
-@router.get(
-    "/", response_model=Listeners, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/", response_model=Listeners)
 async def read_listeners(db: Session = Depends(get_db)):
     listeners = list(
         map(lambda x: domain_to_dto_listener(x), listener_service.get_all(db))
@@ -52,12 +53,7 @@ async def read_listeners(db: Session = Depends(get_db)):
     return {"records": listeners}
 
 
-@router.post(
-    "/",
-    status_code=201,
-    response_model=Listener,
-    dependencies=[Depends(get_current_active_user)],
-)
+@router.post("/", status_code=201, response_model=Listener)
 async def create_listener(
     listener_req: ListenerPostRequest, db: Session = Depends(get_db)
 ):
@@ -75,9 +71,7 @@ async def create_listener(
     return domain_to_dto_listener(resp)
 
 
-@router.put(
-    "/{uid}", response_model=Listener, dependencies=[Depends(get_current_active_user)]
-)
+@router.put("/{uid}", response_model=Listener)
 async def update_listener(
     uid: int,
     listener_req: ListenerUpdateRequest,
@@ -127,7 +121,6 @@ async def update_listener(
     "/{uid}",
     status_code=HTTP_204_NO_CONTENT,
     response_class=Response,
-    dependencies=[Depends(get_current_active_user)],
 )
 async def delete_listener(
     uid: int,

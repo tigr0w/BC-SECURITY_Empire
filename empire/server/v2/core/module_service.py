@@ -243,13 +243,17 @@ class ModuleService(object):
         if module.advanced.custom_generate:
             # In a future release we could refactor the modules to accept a obuscation_config,
             #  but there's little benefit to doing so at this point. So I'm saving myself the pain.
-            return module.advanced.generate_class.generate(
-                self.main_menu,
-                module,
-                params,
-                obfuscation_config.enabled,
-                obfuscation_config.command,
-            )
+            try:
+                module.advanced.generate_class.generate(
+                    self.main_menu,
+                    module,
+                    params,
+                    obfuscation_config.enabled,
+                    obfuscation_config.command,
+                )
+            except Exception as e:
+                log.error(f"Error generating script: {e}", exc_info=True)
+                return None, f"Error generating script."
         elif module.language == LanguageEnum.powershell:
             return self._generate_script_powershell(module, params, obfuscation_config)
         # We don't have obfuscation for other languages yet, but when we do,

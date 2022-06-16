@@ -16,7 +16,9 @@ from empire.server.v2.api.shared_dependencies import get_db
 # This all comes from the amazing fastapi docs: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 SECRET_KEY = SessionLocal().query(models.Config).first().jwt_secret_key
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Long token expiration until refresh token is implemented
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 
 class Token(BaseModel):

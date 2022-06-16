@@ -6,16 +6,22 @@ from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user
 from empire.server.v2.api.plugin.plugin_dto import (
     PluginExecutePostRequest,
+    Plugins,
     domain_to_dto_plugin,
 )
 from empire.server.v2.api.shared_dependencies import get_db
+from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 
 plugin_service = main.pluginsv2
 
 router = APIRouter(
     prefix="/api/v2beta/plugins",
     tags=["plugins"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found", "model": NotFoundResponse},
+        400: {"description": "Bad request", "model": BadRequestResponse},
+    },
+    dependencies=[Depends(get_current_active_user)],
 )
 
 
@@ -28,13 +34,7 @@ async def get_plugin(uid: str):
     raise HTTPException(status_code=404, detail=f"Plugin not found for id {uid}")
 
 
-@router.get(
-    "/",
-    # todo is there an equivalent for this that doesn't cause fastapi to convert the object twice?
-    #  Still want to display the response type in the docs
-    # response_model=Modules,
-    dependencies=[Depends(get_current_active_user)],
-)
+@router.get("/", response_model=Plugins)
 async def read_plugins():
     plugins = list(
         map(
@@ -45,12 +45,12 @@ async def read_plugins():
     return {"records": plugins}
 
 
-@router.get("/{uid}", dependencies=[Depends(get_current_active_user)])
+@router.get("/{uid}")
 async def read_plugin(uid: str, plugin=Depends(get_plugin)):
     return domain_to_dto_plugin(plugin, uid)
 
 
-@router.post("/{uid}/execute", dependencies=[Depends(get_current_active_user)])
+@router.post("/{uid}/execute")
 async def execute_plugin(
     uid: str,
     plugin_req: PluginExecutePostRequest,

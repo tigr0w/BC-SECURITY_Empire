@@ -7,13 +7,17 @@ from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.host.host_dto import Host, Hosts, domain_to_dto_host
 from empire.server.v2.api.jwt_auth import get_current_active_user
 from empire.server.v2.api.shared_dependencies import get_db
+from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 
 host_service = main.hostsv2
 
 router = APIRouter(
     prefix="/api/v2beta/hosts",
     tags=["hosts"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found", "model": NotFoundResponse},
+        400: {"description": "Bad request", "model": BadRequestResponse},
+    },
     dependencies=[Depends(get_current_active_user)],
 )
 

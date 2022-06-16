@@ -18,6 +18,7 @@ from empire.server.v2.api.jwt_auth import (
     get_password_hash,
 )
 from empire.server.v2.api.shared_dependencies import get_db
+from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.v2.api.user.user_dto import (
     User,
     UserPostRequest,
@@ -33,7 +34,10 @@ user_service = main.usersv2
 # Might also just move auth out of user router.
 router = APIRouter(
     tags=["users"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found", "model": NotFoundResponse},
+        400: {"description": "Bad request", "model": BadRequestResponse},
+    },
 )
 
 
