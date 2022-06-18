@@ -79,7 +79,6 @@ class Hooks(object):
         if name in self.filters.get(event, {}):
             self.filters[event].pop(name)
 
-    # todo can this be made async?
     def run_hooks(self, event: str, *args):
         """
         Run all hooks for a hook type.

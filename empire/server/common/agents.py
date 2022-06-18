@@ -1055,7 +1055,7 @@ class Agents(object):
                         )
                         data = "%s%s" % (nonce, clientSessionKey)
 
-                        data = data.encode("ascii", "ignore")  # TODO: is this needed?
+                        data = data.encode("ascii", "ignore")
 
                         # step 4 of negotiation -> server returns RSA(nonce+AESsession))
                         encryptedMsg = encryption.rsa_encrypt(rsaKey, data)

@@ -9,6 +9,12 @@ from empire.server.database import models
 def agent(db):
     from empire.server.server import main
 
+    hosts = db.query(models.Host).all()
+    if len(hosts) == 0:
+        host = models.Host(name="default_host", internal_ip="127.0.0.1")
+    else:
+        host = hosts[0]
+
     agents = db.query(models.Agent).all()
     if len(agents) == 0:
         agent = models.Agent(
@@ -30,7 +36,7 @@ def agent(db):
             process_name="proc",
             process_id=12345,
             hostname="vinnybod",
-            host_id="1",
+            host=host,
             archived=False,
         )
 
@@ -53,7 +59,7 @@ def agent(db):
             process_name="proc",
             process_id=12345,
             hostname="vinnybod",
-            host_id="1",
+            host=host,
             archived=False,
         )
 
@@ -76,7 +82,7 @@ def agent(db):
             process_name="proc",
             process_id=12345,
             hostname="vinnybod",
-            host_id="1",
+            host=host,
             archived=True,
         )
 
@@ -100,10 +106,11 @@ def agent(db):
             process_name="proc",
             process_id=12345,
             hostname="vinnybod",
-            host_id="1",
+            host=host,
             archived=False,
         )
 
+        db.add(host)
         db.add(agent)
         db.add(agent2)
         db.add(agent3)
@@ -135,6 +142,7 @@ def agent(db):
     db.delete(agents[1])
     db.delete(agents[2])
     db.delete(agents[3])
+    db.delete(host)
     db.commit()
 
 

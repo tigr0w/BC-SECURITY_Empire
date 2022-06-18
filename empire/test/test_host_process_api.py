@@ -20,8 +20,8 @@ def hosts(db):
 
     yield hosts
 
-    db.delete(hosts[0])
-    db.delete(hosts[1])
+    for h in hosts:
+        db.delete(h)
     db.commit()
 
 
@@ -142,7 +142,8 @@ def test_agent_join(client, admin_auth_header, hosts, agent):
         len(
             list(
                 filter(
-                    lambda x: x["agent"] == agent.session_id, response.json()["records"]
+                    lambda x: x["agent_id"] == agent.session_id,
+                    response.json()["records"],
                 )
             )
         )

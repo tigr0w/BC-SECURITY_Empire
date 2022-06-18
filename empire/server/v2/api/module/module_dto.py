@@ -38,7 +38,6 @@ def domain_to_dto_module(module: EmpireModule, uid: str):
         opsec_safe=module.opsec_safe,
         techniques=module.techniques,
         software=module.software,
-        category="module.category",
         comments=module.comments,
         options=options,
     )
@@ -57,7 +56,6 @@ class Module(BaseModel):
     opsec_safe: bool
     techniques: List[str]
     software: Optional[str]
-    category: Optional[str]
     comments: List[str]
     options: Dict[str, CustomOptionSchema]
 

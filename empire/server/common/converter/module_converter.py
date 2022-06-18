@@ -43,7 +43,7 @@ def format_options(options: Dict) -> Dict:
                 "name": key,
                 "description": value["Description"],
                 "required": value["Required"],
-                "value": value["Value"],  # todo should value really be defaultValue?
+                "value": value["Value"],
             }
         )
 

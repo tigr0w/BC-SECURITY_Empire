@@ -1,6 +1,8 @@
 name: ScriptBlockLogBypass
 authors:
-  - '@Cobbr'
+  - name:
+    handle: '@Cobbr'
+    link:
 description: Disables PowerShell ScriptBlock logging through reflection
 comments:
   - 'https://gist.github.com/cobbr/d8072d730b24fbae6ffe3aed8ca9c407'

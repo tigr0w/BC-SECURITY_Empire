@@ -1,6 +1,5 @@
-import typing
 from enum import Enum
-from typing import List
+from typing import Any, List, Optional
 
 from pydantic import BaseModel
 
@@ -46,9 +45,9 @@ class DownloadDescription(BaseModel):
 
 
 class Author(BaseModel):
-    name: str
-    handle: str
-    link: str
+    name: Optional[str]
+    handle: Optional[str]
+    link: Optional[str]
 
 
 def domain_to_dto_download_description(download: models.Download):
@@ -65,7 +64,7 @@ def domain_to_dto_download_description(download: models.Download):
     )
 
 
-def to_value_type(value: typing.Any) -> ValueType:
+def to_value_type(value: Any) -> ValueType:
     if isinstance(value, str):
         return ValueType.string
     elif isinstance(value, bool):

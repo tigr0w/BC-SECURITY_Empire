@@ -1,8 +1,8 @@
 name: Sherlock
 authors:
-  - name: ''
+  - name: 'Daniel Duggan'
     handle: '@_RastaMouse'
-    link: ''
+    link: 'https://twitter.com/_rastamouse'
 description: Find Windows local privilege escalation vulnerabilities.
 software: ''
 techniques:

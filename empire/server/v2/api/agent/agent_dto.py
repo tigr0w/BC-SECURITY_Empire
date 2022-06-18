@@ -3,15 +3,22 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
+from empire.server.database import models
 from empire.server.v2.api.shared_dto import PROXY_ID
 
 
-def domain_to_dto_agent(agent):
+def domain_to_dto_agent(agent: models.Agent):
     return Agent(
         session_id=agent.session_id,
         name=agent.name,
+        # the way agents connect, we only get the name. Ideally we should
+        # be getting the id so we can store it by id on the db.
+        # Future change would be to add id to the dto and change
+        # listener to listener_name
+        # listener_id=agent.listener,
         listener=agent.listener,
-        host=agent.host_id,
+        host_id=agent.host_id,
+        hostname=agent.host.name,
         language=agent.language,
         language_version=agent.language_version,
         delay=agent.delay,
@@ -20,9 +27,8 @@ def domain_to_dto_agent(agent):
         internal_ip=agent.internal_ip,
         username=agent.username,
         high_integrity=agent.high_integrity,
-        process_name=agent.process_name,
         process_id=agent.process_id,
-        hostname=agent.hostname,
+        process_name=agent.process_name,
         os_details=agent.os_details,
         nonce=agent.nonce,
         checkin_time=agent.checkin_time,
@@ -60,8 +66,10 @@ def to_proxy_dto(proxies):
 class Agent(BaseModel):
     session_id: str
     name: str
-    listener: str  # todo expand?
-    host: str  # todo expand?
+    # listener_id: int
+    listener: str
+    host_id: int
+    hostname: str
     language: str
     language_version: str
     delay: int
@@ -70,9 +78,8 @@ class Agent(BaseModel):
     internal_ip: Optional[str]
     username: Optional[str]
     high_integrity: bool
-    process_name: str
     process_id: int
-    hostname: str  # todo dont need if expanding host
+    process_name: str
     os_details: Optional[str]
     nonce: str
     checkin_time: datetime

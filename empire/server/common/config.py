@@ -39,11 +39,6 @@ class DatabaseConfig(BaseModel):
     password: str = ""
 
 
-class ModulesConfig(BaseModel):
-    # todo vr In 5.0 we should pick a single naming convention for config.
-    retain_last_value: bool = Field(alias="retain-last-value")
-
-
 class DirectoriesConfig(BaseModel):
     downloads: str
     module_source: str
@@ -70,7 +65,6 @@ class EmpireConfig(BaseModel):
         alias="supress-self-cert-warning", default=True
     )
     database: DatabaseConfig
-    modules: ModulesConfig
     plugins: Dict[str, Dict[str, str]] = {}
     directories: DirectoriesConfig
     logging: LoggingConfig

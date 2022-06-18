@@ -19,7 +19,7 @@ class TaskOrderOptions(str, Enum):
 
 
 def domain_to_dto_task(
-    task: Union[models.Tasking, Dict],
+    task: models.Tasking,
     include_full_input: bool = True,
     include_original_output: bool = True,
     include_output: bool = True,
@@ -35,7 +35,7 @@ def domain_to_dto_task(
         agent_id=task.agent_id,
         downloads=list(
             map(lambda x: domain_to_dto_download_description(x), task.downloads)
-        ),  # todo tests
+        ),
         module_name=task.module_name,
         task_name=task.task_name,
         status=task.status,
@@ -51,7 +51,7 @@ class Task(BaseModel):
     output: Optional[str]
     original_output: Optional[str]
     user_id: int
-    username: str  # todo embedded object?
+    username: str
     agent_id: str
     downloads: List[DownloadDescription]
     module_name: Optional[str]
@@ -114,7 +114,6 @@ class WorkingHoursPostRequest(BaseModel):
     working_hours: str  # todo validator.
 
 
-# TODO is this still needed since we hook ls and dir?
 class DirectoryListPostRequest(BaseModel):
     path: str
 

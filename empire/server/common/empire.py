@@ -54,8 +54,6 @@ class MainMenu(object):
         time.sleep(1)
 
         # pull out some common configuration information
-        # Todo vr how much of this config do we actually need to store in the db at this point
-        #  vs just the config file?
         (
             self.isroot,
             self.installPath,

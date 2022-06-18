@@ -17,17 +17,17 @@ def domain_to_dto_process(process: models.HostProcess):
         host_id=process.host_id,
         architecture=process.architecture,
         user=process.user,
-        agent=agent_id,
+        agent_id=agent_id,
     )
 
 
 class Process(BaseModel):
-    process_id: int  # todo rename to id?
+    process_id: int
     process_name: str
     host_id: int
     architecture: str
     user: str
-    agent: Optional[str]  # todo agent_id ?
+    agent_id: Optional[str]
 
 
 class Processes(BaseModel):

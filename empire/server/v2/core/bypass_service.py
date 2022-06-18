@@ -52,6 +52,7 @@ class BypassService(object):
                             )
                             my_model = models.Bypass(
                                 name=yaml_bypass["name"],
+                                authors=yaml_bypass["authors"],
                                 code=yaml_bypass["script"],
                                 language=yaml_bypass["language"],
                             )

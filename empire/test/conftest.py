@@ -28,6 +28,8 @@ def default_argv():
 @pytest.fixture(scope="session")
 def client(empire_config):
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
+    if os.path.exists("empire/test/test_empire.db"):
+        os.remove("empire/test/test_empire.db")
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
     shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)
 

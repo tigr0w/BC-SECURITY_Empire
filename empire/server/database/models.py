@@ -215,7 +215,7 @@ class Credential(Base):
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
 
-    # todo doesn't work with mysql
+    # todo vr doesn't work with mysql
     UniqueConstraint(credtype, domain, username, password)
 
     def __repr__(self):
@@ -328,6 +328,7 @@ class Bypass(Base):
     __tablename__ = "bypasses"
     id = Column(Integer, Sequence("bypass_seq"), primary_key=True)
     name = Column(String(255), unique=True)
+    authors = Column(JSON)
     code = Column(Text)
     language = Column(String(255))
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())

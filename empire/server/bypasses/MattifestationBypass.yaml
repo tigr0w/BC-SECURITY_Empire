@@ -1,6 +1,8 @@
 name: mattifestation
 authors:
-  - '@mattifestation'
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
 description: |
   Reflectively disables AMSI for the current PowerShell session.
   Note: This does not disable AMSI in the CLR

@@ -25,6 +25,13 @@ def agent(db):
     name = f'agent_{__name__.split(".")[-1]}'
     from empire.server.server import main
 
+    hosts = db.query(models.Host).all()
+    if len(hosts) == 0:
+        host = models.Host(name="default_host", internal_ip="127.0.0.1")
+        db.add(host)
+    else:
+        host = hosts[0]
+
     agent = db.query(models.Agent).filter(models.Agent.session_id == name).first()
     if not agent:
         agent = models.Agent(
@@ -46,7 +53,7 @@ def agent(db):
             process_name="abc",
             process_id=123,
             hostname="doesntmatter",
-            host_id="1",
+            host=host,
             archived=False,
         )
         db.add(agent)
@@ -64,6 +71,7 @@ def agent(db):
     yield agent
 
     db.delete(agent)
+    db.delete(host)
     db.commit()
 
 

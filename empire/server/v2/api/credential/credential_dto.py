@@ -11,7 +11,7 @@ def domain_to_dto_credential(credential):
         domain=credential.domain,
         username=credential.username,
         password=credential.password,
-        host=credential.host,
+        host=credential.host,  # for now, host is not joined.
         os=credential.os,
         sid=credential.sid,
         notes=credential.notes,
@@ -22,7 +22,7 @@ def domain_to_dto_credential(credential):
 
 class Credential(BaseModel):
     id: int
-    credtype: str  # todo enum?
+    credtype: str
     domain: str
     username: str
     password: str
@@ -39,7 +39,7 @@ class Credentials(BaseModel):
 
 
 class CredentialUpdateRequest(BaseModel):
-    credtype: str  # todo enum?
+    credtype: str
     domain: str
     username: str
     password: str
@@ -53,7 +53,7 @@ class CredentialUpdateRequest(BaseModel):
 
 
 class CredentialPostRequest(BaseModel):
-    credtype: str  # todo enum?
+    credtype: str
     domain: str
     username: str
     password: str
