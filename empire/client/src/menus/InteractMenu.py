@@ -49,10 +49,6 @@ class InteractMenu(Menu):
             )
             for agent in filtered_search_list(word_before_cursor, active_agents):
                 yield Completion(agent, start_position=-len(word_before_cursor))
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
         elif cmd_line[0] in ["display"] and position_util(
             cmd_line, 2, word_before_cursor
         ):
@@ -107,6 +103,10 @@ class InteractMenu(Menu):
                         start_position=-len(word_before_cursor),
                     )
 
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
+
     def on_enter(self, **kwargs) -> bool:
         if "selected" not in kwargs:
             return False
@@ -144,13 +144,18 @@ class InteractMenu(Menu):
             self.agent_language = self.agent_options["language"]
 
     @command
-    def shell(self, shell_cmd: str) -> None:
+    def shell(self, shell_cmd: str, literal: bool = False) -> None:
         """
-        Tasks an the specified agent to execute a shell command.
+        Tasks the specified agent to execute a shell command.
 
-        Usage: shell <shell_cmd>
+        Usage: shell [--literal / -l] <shell_cmd>
+
+        Options:
+            --literal -l    Interpret the shell command literally. This will ensure that aliased
+                            commands such as whoami or ps do not execute the built-in agent aliases.
         """
-        response = state.agent_shell(self.session_id, shell_cmd)
+        literal = bool(literal)  # docopt parses into 0/1
+        response = state.agent_shell(self.session_id, shell_cmd, literal)
         if "status" in response.keys():
             print(
                 print_util.color(

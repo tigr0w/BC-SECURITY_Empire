@@ -366,6 +366,20 @@ class EmpireCli(object):
                 raise CliExitException
             else:
                 pass
+        elif cmd_line[0] == "help" and len(cmd_line) > 1:
+            func = None
+            try:
+                func = getattr(
+                    menu_state.current_menu
+                    if hasattr(menu_state.current_menu, cmd_line[1])
+                    else self,
+                    cmd_line[1],
+                )
+            except:
+                pass
+
+            if func:
+                print(func.__doc__)
         else:
             func = None
             try:

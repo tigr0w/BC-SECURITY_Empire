@@ -71,6 +71,7 @@ class Tasks(BaseModel):
 
 class ShellPostRequest(BaseModel):
     command: str
+    literal: bool = False
 
 
 class ModulePostRequest(BaseModel):

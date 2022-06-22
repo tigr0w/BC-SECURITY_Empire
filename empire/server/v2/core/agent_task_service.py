@@ -105,8 +105,15 @@ class AgentTaskService(object):
         )
 
     def create_task_shell(
-        self, db: Session, agent: models.Agent, command: str, user_id: int
+        self,
+        db: Session,
+        agent: models.Agent,
+        command: str,
+        literal: bool = False,
+        user_id: int = 0,
     ):
+        if literal and not command.startswith("shell"):
+            command = f"shell {command}"
         return self.add_task(db, agent, "TASK_SHELL", command, user_id=user_id)
 
     def create_task_upload(

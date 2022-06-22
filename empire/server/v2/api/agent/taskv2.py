@@ -196,8 +196,12 @@ async def create_task_shell(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    """
+    Executes a command on the agent. If literal is true, it will ignore the built-in aliases
+    such a whoami or ps and execute the command directly.
+    """
     resp, err = agent_task_service.create_task_shell(
-        db, db_agent, shell_request.command, current_user.id
+        db, db_agent, shell_request.command, shell_request.literal, current_user.id
     )
 
     if err:

@@ -29,10 +29,10 @@ class UsePluginMenu(UseMenu):
                 word_before_cursor, state.plugins.keys()
             ):
                 yield Completion(plugin, start_position=-len(word_before_cursor))
-        else:
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self, **kwargs) -> bool:
         if "selected" not in kwargs:

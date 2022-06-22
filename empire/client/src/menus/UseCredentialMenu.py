@@ -51,10 +51,10 @@ class UseCredentialMenu(UseMenu):
                     word_before_cursor, ["plaintext", "hash"]
                 ):
                     yield Completion(option, start_position=-len(word_before_cursor))
-        else:
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self, **kwargs) -> bool:
         self.selected = kwargs["selected"]

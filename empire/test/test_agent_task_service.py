@@ -56,7 +56,7 @@ def test_create_task_no_user_id(db, agent):
 
     main: MainMenu = main
 
-    resp, err = main.agenttasksv2.create_task_shell(db, agent, "echo 'hi'", 0)
+    resp, err = main.agenttasksv2.create_task_shell(db, agent, "echo 'hi'", True, 0)
 
     assert err is None
     assert resp.user_id == 0

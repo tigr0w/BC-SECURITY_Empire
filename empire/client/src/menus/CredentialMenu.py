@@ -35,10 +35,10 @@ class CredentialMenu(Menu):
                     start_position=-len(word_before_cursor),
                 )
             yield Completion("all", start_position=-len(word_before_cursor))
-        if position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self):
         state.get_credentials()

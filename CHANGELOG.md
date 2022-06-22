@@ -35,6 +35,8 @@ It will be cleaned up as we get closer to the official release.
 - keyword_obfuscation config property moved under database defaults. obfuscate and obfuscateCommand defaults moved under `database.defaults.obfuscation`
 - Convert authors to have a name, handle, and link instead of just a string for modules, listeners, stagers, and plugins
 - Add authors to bypass endpoints
+- Add a help command to the client to print the full doc string of a function. such as `help shell` or `help script_import`
+- Add a `--literal` flag that can be used on shell commands that forces the agent to execute the command literally, ignoring any built-in aliases that exist such as for whoami or ps
 
 ## [4.6.0] - 2022-05-24
 

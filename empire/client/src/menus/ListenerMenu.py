@@ -36,10 +36,10 @@ class ListenerMenu(Menu):
                 word_before_cursor, sorted(state.listeners.keys())
             ):
                 yield Completion(listener, start_position=-len(word_before_cursor))
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self):
         self.list()

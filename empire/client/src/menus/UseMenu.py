@@ -112,10 +112,10 @@ class UseMenu(Menu):
                     yield Completion(
                         suggested_value, start_position=-len(word_before_cursor)
                     )
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     @command
     def set(self, key: str, value: str):

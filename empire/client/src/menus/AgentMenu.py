@@ -31,10 +31,10 @@ class AgentMenu(Menu):
         ):
             for agent in filtered_search_list(word_before_cursor, state.agents.keys()):
                 yield Completion(agent, start_position=-len(word_before_cursor))
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self):
         self.list()

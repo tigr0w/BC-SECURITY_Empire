@@ -43,10 +43,10 @@ class MainMenu(Menu):
             elif position_util(cmd_line, 1, word_before_cursor):
                 if "connect".startswith(word_before_cursor):
                     yield Completion("connect", start_position=-len(word_before_cursor))
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def autocomplete(self):
         commands = self._cmd_registry + super().autocomplete()
