@@ -97,14 +97,14 @@ PACKET_NAMES = {
     "TASK_DOWNLOAD": 41,
     "TASK_UPLOAD": 42,
     "TASK_DIR_LIST": 43,
-    "TASK_CSHARP": 44,  # todo: move to 114
+    "TASK_CSHARP": 44,  # todo: move to 116/117
     "TASK_GETJOBS": 50,
     "TASK_STOPJOB": 51,
     # Agent Module Commands
     "TASK_CMD_WAIT": 100,
     "TASK_CMD_WAIT_SAVE": 101,
     "TASK_CMD_JOB": 110,
-    "TASK_JOB_SAVE": 111,
+    "TASK_CMD_JOB_SAVE": 111,
     "TASK_POWERSHELL_CMD_JOB": 112,
     "TASK_POWERSHELL_CMD_JOB_SAVE": 113,
     "TASK_PYTHON_CMD_JOB": 114,
