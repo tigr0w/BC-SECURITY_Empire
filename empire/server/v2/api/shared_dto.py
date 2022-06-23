@@ -37,7 +37,7 @@ class OrderDirection(str, Enum):
 
 class DownloadDescription(BaseModel):
     id: int
-    file_name: str
+    filename: str
     link: str
 
     class Config:
@@ -51,16 +51,15 @@ class Author(BaseModel):
 
 
 def domain_to_dto_download_description(download: models.Download):
-    if download.filename:  # todo can this be made as a @property?
+    if download.filename:
         filename = download.filename
     else:
         filename = download.location.split("/")[-1]
 
-    # todo file_name -> filename
     return DownloadDescription(
         id=download.id,
-        file_name=filename,
-        link=f"/api/v2beta/downloads/{download.id}/download",
+        filename=filename,
+        link=f"/api/v2/downloads/{download.id}/download",
     )
 
 

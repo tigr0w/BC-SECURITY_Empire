@@ -80,8 +80,10 @@ log = logging.getLogger(__name__)
 
 class Agents(object):
     """
-    Main class that contains agent handling functionality, including key
+    Main class that contains agent communication functionality, including key
     negotiation in process_get() and process_post().
+
+    For managing agents use core/agent_service.py.
     """
 
     def __init__(self, MainMenu, args=None):
@@ -1369,7 +1371,6 @@ class Agents(object):
         if update_lastseen:
             self.update_agent_lastseen_db(sessionID)
 
-        # todo db session should probably start as early as possible?
         with SessionLocal.begin() as db:
             # retrieve all agent taskings from the cache
             taskings = self.get_queued_agent_tasks_db(sessionID, db)

@@ -94,7 +94,6 @@ class ListenerService(object):
             listener_req.template, listener_req.options
         )
 
-        # todo vr if we switch to a raise exception model, could we eliminate all the if err checks?
         if err:
             return None, err
 

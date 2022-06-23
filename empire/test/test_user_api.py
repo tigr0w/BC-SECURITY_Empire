@@ -1,6 +1,6 @@
 def test_create_user(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/users/",
+        "/api/v2/users/",
         headers=admin_auth_header,
         json={"username": "another-user", "password": "hunter2", "is_admin": False},
     )
@@ -11,7 +11,7 @@ def test_create_user(client, admin_auth_header):
 
 def test_create_user_name_conflict(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/users/",
+        "/api/v2/users/",
         headers=admin_auth_header,
         json={"username": "empireadmin", "password": "password", "is_admin": False},
     )
@@ -22,7 +22,7 @@ def test_create_user_name_conflict(client, admin_auth_header):
 
 def test_create_user_not_an_admin(client, regular_auth_token):
     response = client.post(
-        "/api/v2beta/users/",
+        "/api/v2/users/",
         headers={"Authorization": f"Bearer {regular_auth_token}"},
         json={"username": "vinnybod2", "password": "hunter2", "admin": False},
     )
@@ -32,14 +32,14 @@ def test_create_user_not_an_admin(client, regular_auth_token):
 
 
 def test_get_user_not_found(client, admin_auth_header):
-    response = client.get("/api/v2beta/users/9999", headers=admin_auth_header)
+    response = client.get("/api/v2/users/9999", headers=admin_auth_header)
 
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found for id 9999"
 
 
 def test_get_user(client, admin_auth_header):
-    response = client.get("/api/v2beta/users/1", headers=admin_auth_header)
+    response = client.get("/api/v2/users/1", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["id"] == 1
@@ -48,7 +48,7 @@ def test_get_user(client, admin_auth_header):
 
 def test_get_me(client, regular_auth_token):
     response = client.get(
-        "/api/v2beta/users/me",
+        "/api/v2/users/me",
         headers={"Authorization": f"Bearer {regular_auth_token}"},
     )
 
@@ -58,7 +58,7 @@ def test_get_me(client, regular_auth_token):
 
 def test_update_user_not_found(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/users/9999",
+        "/api/v2/users/9999",
         headers=admin_auth_header,
         json={"username": "not-gonna-happen", "enabled": False, "is_admin": False},
     )
@@ -71,7 +71,7 @@ def test_update_user_not_found(client, admin_auth_header):
 #  can easily do this by just not allowing self edits?
 def test_update_user_as_admin(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/users/1",
+        "/api/v2/users/1",
         headers=admin_auth_header,
         json={"username": "empireadmin-2.0", "enabled": True, "is_admin": True},
     )
@@ -83,7 +83,7 @@ def test_update_user_as_admin(client, admin_auth_header):
 
 def test_update_user_as_not_admin_not_me(client, regular_auth_token):
     response = client.put(
-        "/api/v2beta/users/1",
+        "/api/v2/users/1",
         headers={"Authorization": f"Bearer {regular_auth_token}"},
         json={"username": "regular-user", "enabled": True, "is_admin": False},
     )
@@ -97,7 +97,7 @@ def test_update_user_as_not_admin_not_me(client, regular_auth_token):
 
 def test_update_user_as_not_admin_me(client, regular_auth_token):
     response = client.put(
-        "/api/v2beta/users/3",
+        "/api/v2/users/3",
         headers={"Authorization": f"Bearer {regular_auth_token}"},
         json={"username": "xyz", "enabled": True, "is_admin": True},
     )
@@ -110,7 +110,7 @@ def test_update_user_as_not_admin_me(client, regular_auth_token):
 
 def test_update_user_password_not_me(client, regular_auth_token):
     response = client.put(
-        "/api/v2beta/users/1/password",
+        "/api/v2/users/1/password",
         headers={"Authorization": f"Bearer {regular_auth_token}"},
         json={"password": "QWERTY"},
     )
@@ -134,7 +134,7 @@ def test_update_user_password(client):
     )
 
     response = client.put(
-        "/api/v2beta/users/2/password",
+        "/api/v2/users/2/password",
         headers={"Authorization": f"Bearer {response.json()['access_token']}"},
         json={"password": "QWERTY"},
     )

@@ -6,7 +6,6 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from empire.server.common import helpers
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 
@@ -34,13 +33,11 @@ class ListenerTemplateService(object):
 
         return instance
 
-    def get_listener_template(
-        self, name: str
-    ) -> Optional[object]:  # would be nice to have a BaseListener object.
+    def get_listener_template(self, name: str) -> Optional[object]:
         return self._loaded_listener_templates.get(name)
 
     def get_listener_templates(self):
-        return self._loaded_listener_templates.items()
+        return self._loaded_listener_templates
 
     def _load_listener_templates(self, db: Session):
         """

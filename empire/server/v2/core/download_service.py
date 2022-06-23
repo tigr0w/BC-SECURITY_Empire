@@ -6,6 +6,7 @@ from fastapi import UploadFile
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.v2.api.download.download_dto import (
     DownloadOrderOptions,
@@ -111,10 +112,9 @@ class DownloadService(object):
         :param file:
         :return:
         """
-        # TODO VR should this should be pulled from empire_config instead of main_menu
         filename = file.filename
         location = (
-            f"{self.main_menu.directory['downloads']}uploads/{user.username}/{filename}"
+            f"{empire_config.directories.downloads}uploads/{user.username}/{filename}"
         )
         os.makedirs(os.path.dirname(location), exist_ok=True)
 

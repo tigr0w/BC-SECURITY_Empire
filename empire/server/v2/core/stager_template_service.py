@@ -39,10 +39,8 @@ class StagerTemplateService(object):
     ) -> Optional[object]:  # would be nice to have a BaseListener object.
         return self._loaded_stager_templates.get(name)
 
-    def get_stager_templates(
-        self,
-    ):  # todo not sure if these should return .items or the raw dict
-        return self._loaded_stager_templates.items()
+    def get_stager_templates(self):
+        return self._loaded_stager_templates
 
     def _load_stagers(self, db: Session):
         """

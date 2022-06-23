@@ -28,7 +28,7 @@ class Module(object):
         module_source = main_menu.installPath + "/data/module_source/..."
         if obfuscate:
             main_menu.obfuscationv2.obfuscate_module(
-                moduleSource=module_source, obfuscationCommand=obfuscation_command
+                module_source=module_source, obfuscation_command=obfuscation_command
             )
             module_source = module_source.replace(
                 "module_source", "obfuscated_module_source"
@@ -65,7 +65,7 @@ function Invoke-Something {
 }
 Invoke-Something"""
 
-        scriptEnd = ""
+        script_end = ""
 
         # Add any arguments to the end execution of the script
         for option, values in params.items():
@@ -73,15 +73,14 @@ Invoke-Something"""
                 if values and values != "":
                     if values.lower() == "true":
                         # if we're just adding a switch
-                        scriptEnd += " -" + str(option)
+                        script_end += " -" + str(option)
                     else:
-                        scriptEnd += " -" + str(option) + " " + str(values)
+                        script_end += " -" + str(option) + " " + str(values)
         if obfuscate:
-            scriptEnd = main_menu.obfuscationv2.obfuscate(
-                psScript=scriptEnd,
-                obfuscationCommand=obfuscation_command,
+            script_end = main_menu.obfuscationv2.obfuscate(
+                script_end, obfuscation_command
             )
-        script += scriptEnd
+        script += script_end
         script = main_menu.obfuscationv2.obfuscate_keywords(script)
 
         return script

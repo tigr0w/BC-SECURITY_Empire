@@ -67,6 +67,9 @@ class MainMenu(object):
         self.socketio: Optional[SocketIO] = None
 
         self.agents = agents.Agents(self, args=args)
+        self.credentials = credentials.Credentials(self, args=args)
+        self.stagers = stagers.Stagers(self, args=args)
+        self.listeners = listeners.Listeners(self, args=args)
 
         self.listenertemplatesv2 = ListenerTemplateService(self)
         self.listenersv2 = ListenerService(self)
@@ -81,13 +84,6 @@ class MainMenu(object):
         self.processesv2 = HostProcessService(self)
         self.modulesv2 = ModuleService(self)
         self.downloadsv2 = DownloadService(self)
-
-        # instantiate the agents, listeners, and stagers objects
-        self.credentials = credentials.Credentials(self, args=args)
-        self.stagers = stagers.Stagers(self, args=args)
-        self.listeners = listeners.Listeners(self, args=args)
-
-        # todo lol i hate this. moving below the other instantiations.
         self.agenttasksv2 = AgentTaskService(self)
         self.agentfilesv2 = AgentFileService(self)
         self.agentsv2 = AgentService(self)

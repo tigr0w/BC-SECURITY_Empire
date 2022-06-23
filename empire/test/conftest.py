@@ -42,7 +42,6 @@ def client(empire_config):
     import empire.server.server
     from empire.server.common.empire import MainMenu
 
-    # todo vr could this weirdness be avoided if we make main menu an injected dependency for fastapi?
     empire.server.server.main = MainMenu(args)
 
     from empire.server.v2.api.agent import agentfilev2, agentv2, taskv2
@@ -100,7 +99,14 @@ def empire_config():
     # random_string = "".join(random.choice(string.ascii_letters) for x in range(5))
     # empire_config.database.location = f"empire/test/test_empire_{random_string}.db"
 
-    return empire_config
+    yield empire_config
+
+
+@pytest.fixture(scope="session")
+def models():
+    from empire.server.database import models
+
+    yield models
 
 
 @pytest.fixture(scope="session")
@@ -126,7 +132,7 @@ def admin_auth_header(admin_auth_token):
 @pytest.fixture(scope="session")
 def regular_auth_token(client, admin_auth_token):
     client.post(
-        "/api/v2beta/users/",
+        "/api/v2/users/",
         headers={"Authorization": f"Bearer {admin_auth_token}"},
         json={"username": "vinnybod", "password": "hunter2", "is_admin": False},
     )
@@ -148,7 +154,7 @@ def db():
 
 
 @pytest.fixture(scope="session")
-def main_menu():
+def main():
     from empire.server.server import main
 
     yield main

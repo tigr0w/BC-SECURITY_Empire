@@ -1,12 +1,12 @@
 def test_get_bypass_not_found(client, admin_auth_header):
-    response = client.get("/api/v2beta/bypasses/9999", headers=admin_auth_header)
+    response = client.get("/api/v2/bypasses/9999", headers=admin_auth_header)
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Bypass not found for id 9999"
 
 
 def test_get_bypass(client, admin_auth_header):
-    response = client.get("/api/v2beta/bypasses/1", headers=admin_auth_header)
+    response = client.get("/api/v2/bypasses/1", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["id"] == 1
@@ -14,7 +14,7 @@ def test_get_bypass(client, admin_auth_header):
 
 
 def test_get_bypasses(client, admin_auth_header):
-    response = client.get("/api/v2beta/bypasses", headers=admin_auth_header)
+    response = client.get("/api/v2/bypasses", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert len(response.json()["records"]) > 0
@@ -22,7 +22,7 @@ def test_get_bypasses(client, admin_auth_header):
 
 def test_create_bypass_name_conflict(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/bypasses/",
+        "/api/v2/bypasses/",
         headers=admin_auth_header,
         json={"name": "mattifestation", "code": "x=0;"},
     )
@@ -35,7 +35,7 @@ def test_create_bypass_name_conflict(client, admin_auth_header):
 
 def test_create_bypass(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/bypasses/",
+        "/api/v2/bypasses/",
         headers=admin_auth_header,
         json={"name": "Test Bypass", "code": "x=0;"},
     )
@@ -47,7 +47,7 @@ def test_create_bypass(client, admin_auth_header):
 
 def test_update_bypass_not_found(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/bypasses/9999",
+        "/api/v2/bypasses/9999",
         headers=admin_auth_header,
         json={"name": "Test Bypass", "code": "x=0;"},
     )
@@ -57,11 +57,11 @@ def test_update_bypass_not_found(client, admin_auth_header):
 
 
 def test_update_bypass_name_conflict(client, admin_auth_header):
-    response = client.get("/api/v2beta/bypasses/1", headers=admin_auth_header)
+    response = client.get("/api/v2/bypasses/1", headers=admin_auth_header)
     bypass_1_name = response.json()["name"]
 
     response = client.put(
-        f"/api/v2beta/bypasses/5",
+        f"/api/v2/bypasses/5",
         headers=admin_auth_header,
         json={"name": bypass_1_name, "code": "x=0;"},
     )
@@ -74,7 +74,7 @@ def test_update_bypass_name_conflict(client, admin_auth_header):
 
 def test_update_bypass(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/bypasses/1",
+        "/api/v2/bypasses/1",
         headers=admin_auth_header,
         json={"name": "Updated Bypass", "code": "x=1;"},
     )
@@ -84,10 +84,10 @@ def test_update_bypass(client, admin_auth_header):
 
 
 def test_delete_bypass(client, admin_auth_header):
-    response = client.delete("/api/v2beta/bypasses/1", headers=admin_auth_header)
+    response = client.delete("/api/v2/bypasses/1", headers=admin_auth_header)
 
     assert response.status_code == 204
 
-    response = client.get("/api/v2beta/bypasses/1", headers=admin_auth_header)
+    response = client.get("/api/v2/bypasses/1", headers=admin_auth_header)
 
     assert response.status_code == 404

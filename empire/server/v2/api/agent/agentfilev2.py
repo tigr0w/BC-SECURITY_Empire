@@ -17,7 +17,7 @@ agent_file_service: AgentFileService = main.agentfilesv2
 agent_service: AgentService = main.agentsv2
 
 router = APIRouter(
-    prefix="/api/v2beta/agents/{agent_id}/files",
+    prefix="/api/v2/agents/{agent_id}/files",
     tags=["agents"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
@@ -79,6 +79,3 @@ async def read_file(
     raise HTTPException(
         404, f'File not found for agent {db_agent.session_id} and file path "/"'
     )
-
-
-# todo list endpoint?

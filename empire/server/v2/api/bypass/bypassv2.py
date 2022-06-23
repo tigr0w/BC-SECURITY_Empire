@@ -20,7 +20,7 @@ from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 bypass_service = main.bypassesv2
 
 router = APIRouter(
-    prefix="/api/v2beta/bypasses",
+    prefix="/api/v2/bypasses",
     tags=["bypasses"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},

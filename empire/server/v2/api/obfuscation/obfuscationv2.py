@@ -24,7 +24,7 @@ from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 obfuscation_service = main.obfuscationv2
 
 router = APIRouter(
-    prefix="/api/v2beta/obfuscation",
+    prefix="/api/v2/obfuscation",
     tags=["keywords"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
@@ -55,7 +55,6 @@ async def read_keywords(db: Session = Depends(get_db)):
     return {"records": keywords}
 
 
-# todo vr make keyword optional and randomly generate one if not provided
 @router.post("/keywords", status_code=201, response_model=Keyword)
 async def create_keyword(
     keyword_req: KeywordPostRequest, db: Session = Depends(get_db)

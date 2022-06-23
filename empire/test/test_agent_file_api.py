@@ -1,12 +1,9 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from empire.server.database import models
-
 
 @pytest.fixture(scope="module", autouse=True)
-def agent(db):
-    from empire.server.server import main
+def agent(db, models, main):
 
     agent = db.query(models.Agent).filter(models.Agent.session_id == "TEST123").first()
     if not agent:
@@ -44,9 +41,7 @@ def agent(db):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def agent_no_files(db):
-    from empire.server.server import main
-
+def agent_no_files(db, models, main):
     agent = db.query(models.Agent).filter(models.Agent.session_id == "EMPTY").first()
     if not agent:
         agent = models.Agent(
@@ -83,7 +78,7 @@ def agent_no_files(db):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def files(db: Session, agent):
+def files(db: Session, models, agent):
     root_file = models.AgentFile(
         session_id=agent.session_id, name="/", path="/", is_file=False, parent_id=None
     )
@@ -139,16 +134,14 @@ def files(db: Session, agent):
 
 
 def test_get_root_agent_not_found(client, admin_auth_header):
-    response = client.get(
-        "/api/v2beta/agents/abc/files/root", headers=admin_auth_header
-    )
+    response = client.get("/api/v2/agents/abc/files/root", headers=admin_auth_header)
     assert response.status_code == 404
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
 def test_get_root_not_found(client, admin_auth_header, agent_no_files):
     response = client.get(
-        f"/api/v2beta/agents/{agent_no_files.session_id}/files/root",
+        f"/api/v2/agents/{agent_no_files.session_id}/files/root",
         headers=admin_auth_header,
     )
     assert response.status_code == 404
@@ -160,7 +153,7 @@ def test_get_root_not_found(client, admin_auth_header, agent_no_files):
 
 def test_get_root(client, admin_auth_header, agent):
     response = client.get(
-        f"/api/v2beta/agents/{agent.session_id}/files/root", headers=admin_auth_header
+        f"/api/v2/agents/{agent.session_id}/files/root", headers=admin_auth_header
     )
     assert response.status_code == 200
     assert response.json()["name"] == "/"
@@ -171,16 +164,14 @@ def test_get_root(client, admin_auth_header, agent):
 
 
 def test_get_file_agent_not_found(client, admin_auth_header):
-    response = client.get(
-        "/api/v2beta/agents/abc/files/root", headers=admin_auth_header
-    )
+    response = client.get("/api/v2/agents/abc/files/root", headers=admin_auth_header)
     assert response.status_code == 404
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
 def test_get_file_not_found(client, admin_auth_header, agent):
     response = client.get(
-        f"/api/v2beta/agents/{agent.session_id}/files/9999", headers=admin_auth_header
+        f"/api/v2/agents/{agent.session_id}/files/9999", headers=admin_auth_header
     )
     assert response.status_code == 404
     assert (
@@ -190,7 +181,7 @@ def test_get_file_not_found(client, admin_auth_header, agent):
 
 def test_get_file_with_children(client, admin_auth_header, agent, files):
     response = client.get(
-        f"/api/v2beta/agents/{agent.session_id}/files/{files[1].id}",
+        f"/api/v2/agents/{agent.session_id}/files/{files[1].id}",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -203,7 +194,7 @@ def test_get_file_with_children(client, admin_auth_header, agent, files):
 
 def test_get_file_no_children(client, admin_auth_header, agent, files):
     response = client.get(
-        f"/api/v2beta/agents/{agent.session_id}/files/{files[3].id}",
+        f"/api/v2/agents/{agent.session_id}/files/{files[3].id}",
         headers=admin_auth_header,
     )
     assert response.status_code == 200

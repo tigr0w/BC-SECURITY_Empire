@@ -36,9 +36,6 @@ else:
         echo=False,
     )
 
-# todo vr Taking away scoped session fixes the segmentation fault errors.
-# but it causes db bootstrapping to not work properly....
-# SessionLocal = scoped_session(sessionmaker(bind=engine))
 SessionLocal = sessionmaker(bind=engine)
 
 Base.metadata.create_all(engine)

@@ -22,7 +22,7 @@ from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 credential_service = main.credentialsv2
 
 router = APIRouter(
-    prefix="/api/v2beta/credentials",
+    prefix="/api/v2/credentials",
     tags=["credentials"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},

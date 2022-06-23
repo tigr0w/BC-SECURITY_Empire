@@ -20,7 +20,7 @@ from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 listener_service = main.listenersv2
 
 router = APIRouter(
-    prefix="/api/v2beta/listeners",
+    prefix="/api/v2/listeners",
     tags=["listeners"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},

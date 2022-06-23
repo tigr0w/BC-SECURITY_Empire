@@ -17,7 +17,7 @@ host_process_service = main.processesv2
 host_service = main.hostsv2
 
 router = APIRouter(
-    prefix="/api/v2beta/hosts/{host_id}/processes",
+    prefix="/api/v2/hosts/{host_id}/processes",
     tags=["hosts"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},

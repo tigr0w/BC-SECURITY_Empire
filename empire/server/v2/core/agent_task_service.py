@@ -167,7 +167,6 @@ class AgentTaskService(object):
                 f"Listener template {listener.module} not eligible for updating comms",
             )
 
-        # todo separate methods for getting db_listeners and instances?
         new_comms = self.listener_service.get_active_listeners()[
             listener.id
         ].generate_comms(listener.options, agent.language)

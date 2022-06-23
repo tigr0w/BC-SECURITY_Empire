@@ -2,7 +2,7 @@ import urllib.parse
 
 
 def test_get_download_not_found(client, admin_auth_header):
-    response = client.get("/api/v2beta/downloads/9999", headers=admin_auth_header)
+    response = client.get("/api/v2/downloads/9999", headers=admin_auth_header)
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Download not found for id 9999"
@@ -10,7 +10,7 @@ def test_get_download_not_found(client, admin_auth_header):
 
 def test_create_download(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/downloads",
+        "/api/v2/downloads",
         headers=admin_auth_header,
         files={
             "file": (
@@ -26,7 +26,7 @@ def test_create_download(client, admin_auth_header):
 
 def test_create_download_appends_number_if_already_exists(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/downloads",
+        "/api/v2/downloads",
         headers=admin_auth_header,
         files={
             "file": (
@@ -40,7 +40,7 @@ def test_create_download_appends_number_if_already_exists(client, admin_auth_hea
     assert response.json()["id"] > 0
 
     response = client.post(
-        "/api/v2beta/downloads",
+        "/api/v2/downloads",
         headers=admin_auth_header,
         files={
             "file": (
@@ -57,7 +57,7 @@ def test_create_download_appends_number_if_already_exists(client, admin_auth_hea
 
 
 def test_get_download(client, admin_auth_header):
-    response = client.get("/api/v2beta/downloads/1", headers=admin_auth_header)
+    response = client.get("/api/v2/downloads/1", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["id"] == 1
@@ -65,7 +65,7 @@ def test_get_download(client, admin_auth_header):
 
 
 def test_download_download(client, admin_auth_header):
-    response = client.get("/api/v2beta/downloads/1/download", headers=admin_auth_header)
+    response = client.get("/api/v2/downloads/1/download", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.headers.get("content-disposition").startswith(
@@ -74,7 +74,7 @@ def test_download_download(client, admin_auth_header):
 
 
 def test_get_downloads(client, admin_auth_header):
-    response = client.get("/api/v2beta/downloads", headers=admin_auth_header)
+    response = client.get("/api/v2/downloads", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["total"] == 3
@@ -83,7 +83,7 @@ def test_get_downloads(client, admin_auth_header):
 
 def test_get_downloads_with_query(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/downloads?query=gobblygook", headers=admin_auth_header
+        "/api/v2/downloads?query=gobblygook", headers=admin_auth_header
     )
 
     assert response.status_code == 200
@@ -91,7 +91,7 @@ def test_get_downloads_with_query(client, admin_auth_header):
     assert response.json()["records"] == []
 
     q = urllib.parse.urlencode({"query": "test-upload"})
-    response = client.get(f"/api/v2beta/downloads?{q}", headers=admin_auth_header)
+    response = client.get(f"/api/v2/downloads?{q}", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["total"] > 1
