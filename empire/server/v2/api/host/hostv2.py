@@ -12,7 +12,7 @@ from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 host_service = main.hostsv2
 
 router = APIRouter(
-    prefix="/api/v2beta/hosts",
+    prefix="/api/v2/hosts",
     tags=["hosts"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
@@ -31,7 +31,6 @@ async def get_host(uid: int, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail=f"Host not found for id {uid}")
 
 
-# todo expand agent join?
 @router.get("/{uid}", response_model=Host)
 async def read_host(uid: int, db_host: models.Host = Depends(get_host)):
     return domain_to_dto_host(db_host)

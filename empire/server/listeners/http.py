@@ -909,7 +909,6 @@ class Listener(object):
             Before every request, check if the IP address is allowed.
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
-                # todo vr still an open question of what should go to the root logger vs. the listener's logger vs both
                 listenerName = self.options["Name"]["Value"]
                 message = f"{listenerName}: {request.remote_addr} on the blacklist/not on the whitelist requested resource"
                 self.instance_log.info(message)

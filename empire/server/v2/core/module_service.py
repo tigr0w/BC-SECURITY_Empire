@@ -195,7 +195,6 @@ class ModuleService(object):
         if module.name == "generate_agent":
             return options, None
 
-        # todo remove the rest of the v1 references
         session_id = params["Agent"]
         agent = self.main_menu.agents.get_agent_db(session_id)
 
@@ -510,8 +509,7 @@ class ModuleService(object):
                     with open(module_path, "r") as f:
                         module_code = f.read()
                     obfuscated_module_code = self.obfuscation_service.obfuscate(
-                        psScript=module_code,
-                        obfuscationCommand=obfuscate_command,
+                        module_code, obfuscate_command
                     )
                     return obfuscated_module_code, None
 
@@ -537,8 +535,7 @@ class ModuleService(object):
         """
         if obfuscate:
             script_end = self.obfuscation_service.obfuscate(
-                psScript=script_end,
-                obfuscationCommand=obfuscation_command,
+                script_end, obfuscation_command
             )
         script += script_end
         script = self.obfuscation_service.obfuscate_keywords(script)

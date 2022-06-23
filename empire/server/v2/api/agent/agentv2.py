@@ -17,7 +17,7 @@ from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 agent_service = main.agentsv2
 
 router = APIRouter(
-    prefix="/api/v2beta/agents",
+    prefix="/api/v2/agents",
     tags=["agents"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},

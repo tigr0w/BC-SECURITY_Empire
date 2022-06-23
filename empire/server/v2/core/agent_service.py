@@ -44,8 +44,6 @@ class AgentService(object):
             else:
                 return None, f"Agent with name {agent_req.name} already exists."
 
-        # todo should notes be a separate entity that can be attached to agents and stuff.
-        #  then you can see each note individually or as a stream of comments in starkiller.
         db_agent.notes = agent_req.notes
 
         return db_agent, None

@@ -13,7 +13,7 @@ from empire.server.v2.api.stager.stager_dto import (
 stager_template_service = main.stagertemplatesv2
 
 router = APIRouter(
-    prefix="/api/v2beta/stager-templates",
+    prefix="/api/v2/stager-templates",
     tags=["stager-templates"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
@@ -28,7 +28,7 @@ async def get_stager_templates():
     templates = list(
         map(
             lambda x: domain_to_dto_template(x[1], x[0]),
-            stager_template_service.get_stager_templates(),
+            stager_template_service.get_stager_templates().items(),
         )
     )
 

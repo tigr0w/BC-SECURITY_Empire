@@ -25,7 +25,7 @@ from empire.server.v2.api.shared_dto import (
 download_service = main.downloadsv2
 
 router = APIRouter(
-    prefix="/api/v2beta/downloads",
+    prefix="/api/v2/downloads",
     tags=["downloads"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
@@ -95,9 +95,7 @@ async def read_downloads(
     return Downloads(
         records=downloads_converted,
         page=page,
-        total_pages=math.ceil(total / limit)
-        if limit > 0
-        else page,  # TODO this probably needs to be fixed on taskv2
+        total_pages=math.ceil(total / limit) if limit > 0 else page,
         limit=limit,
         total=total,
     )

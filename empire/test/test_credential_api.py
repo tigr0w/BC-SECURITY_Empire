@@ -16,7 +16,7 @@ def base_credential():
 
 def test_create_credential(client, admin_auth_header, base_credential):
     response = client.post(
-        "/api/v2beta/credentials/", headers=admin_auth_header, json=base_credential
+        "/api/v2/credentials/", headers=admin_auth_header, json=base_credential
     )
 
     assert response.status_code == 201
@@ -32,7 +32,7 @@ def test_create_credential_unique_constraint_failure(
     client, admin_auth_header, base_credential
 ):
     response = client.post(
-        "/api/v2beta/credentials/", headers=admin_auth_header, json=base_credential
+        "/api/v2/credentials/", headers=admin_auth_header, json=base_credential
     )
 
     assert response.status_code == 400
@@ -41,7 +41,7 @@ def test_create_credential_unique_constraint_failure(
 
 def test_update_credential_not_found(client, admin_auth_header, base_credential):
     response = client.put(
-        "/api/v2beta/credentials/9999", headers=admin_auth_header, json=base_credential
+        "/api/v2/credentials/9999", headers=admin_auth_header, json=base_credential
     )
 
     assert response.status_code == 404
@@ -54,12 +54,12 @@ def test_update_credential_unique_constraint_failure(
     credential_2 = copy.deepcopy(base_credential)
     credential_2["domain"] = "the-domain-2"
     response = client.post(
-        "/api/v2beta/credentials/", headers=admin_auth_header, json=credential_2
+        "/api/v2/credentials/", headers=admin_auth_header, json=credential_2
     )
     assert response.status_code == 201
 
     response = client.put(
-        "/api/v2beta/credentials/2", headers=admin_auth_header, json=base_credential
+        "/api/v2/credentials/2", headers=admin_auth_header, json=base_credential
     )
 
     assert response.status_code == 400
@@ -71,7 +71,7 @@ def test_update_credential(client, admin_auth_header, base_credential):
     updated_credential["domain"] = "new-domain"
     updated_credential["password"] = "password3"
     response = client.put(
-        "/api/v2beta/credentials/1", headers=admin_auth_header, json=updated_credential
+        "/api/v2/credentials/1", headers=admin_auth_header, json=updated_credential
     )
 
     assert response.status_code == 200
@@ -80,37 +80,35 @@ def test_update_credential(client, admin_auth_header, base_credential):
 
 
 def test_get_credential_not_found(client, admin_auth_header):
-    response = client.get("/api/v2beta/credentials/9999", headers=admin_auth_header)
+    response = client.get("/api/v2/credentials/9999", headers=admin_auth_header)
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Credential not found for id 9999"
 
 
 def test_get_credential(client, admin_auth_header):
-    response = client.get("/api/v2beta/credentials/1", headers=admin_auth_header)
+    response = client.get("/api/v2/credentials/1", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["id"] == 1
 
 
 def test_get_credentials(client, admin_auth_header):
-    response = client.get("/api/v2beta/credentials", headers=admin_auth_header)
+    response = client.get("/api/v2/credentials", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert len(response.json()["records"]) > 0
 
 
 def test_get_credentials_search(client, admin_auth_header):
-    response = client.get(
-        "/api/v2beta/credentials?search=hunt", headers=admin_auth_header
-    )
+    response = client.get("/api/v2/credentials?search=hunt", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert len(response.json()["records"]) == 1
     assert response.json()["records"][0]["password"] == "hunter2"
 
     response = client.get(
-        "/api/v2beta/credentials?search=qwerty", headers=admin_auth_header
+        "/api/v2/credentials?search=qwerty", headers=admin_auth_header
     )
 
     assert response.status_code == 200
@@ -118,10 +116,10 @@ def test_get_credentials_search(client, admin_auth_header):
 
 
 def test_delete_credential(client, admin_auth_header):
-    response = client.delete("/api/v2beta/credentials/1", headers=admin_auth_header)
+    response = client.delete("/api/v2/credentials/1", headers=admin_auth_header)
 
     assert response.status_code == 204
 
-    response = client.get("/api/v2beta/credentials/1", headers=admin_auth_header)
+    response = client.get("/api/v2/credentials/1", headers=admin_auth_header)
 
     assert response.status_code == 404

@@ -43,10 +43,7 @@ class Module(object):
             )
 
         if obfuscate and not pathlib.Path(obfuscated_module_source).is_file():
-            script = main_menu.obfuscationv2.obfuscate(
-                psScript=module_code,
-                obfuscationCommand=obfuscation_command,
-            )
+            script = main_menu.obfuscationv2.obfuscate(module_code, obfuscation_command)
         else:
             script = module_code
 
@@ -77,8 +74,7 @@ class Module(object):
 
         if obfuscate:
             script_end = main_menu.obfuscationv2.obfuscate(
-                psScript=script_end,
-                obfuscationCommand=obfuscation_command,
+                script_end, obfuscation_command
             )
         script += script_end
         script = main_menu.obfuscationv2.obfuscate_keywords(script)

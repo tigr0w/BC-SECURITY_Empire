@@ -1,10 +1,9 @@
-# todo refactor this out
 my_globals = {"listener_id": 0}
 
 
 def test_get_listener_templates(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/listener-templates/",
+        "/api/v2/listener-templates/",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -13,7 +12,7 @@ def test_get_listener_templates(client, admin_auth_header):
 
 def test_get_listener_template(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/listener-templates/http",
+        "/api/v2/listener-templates/http",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -27,7 +26,7 @@ def test_create_listener_validation_fails_required_field(
 ):
     base_listener["options"]["Port"] = ""
     response = client.post(
-        "/api/v2beta/listeners/", headers=admin_auth_header, json=base_listener
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "required option missing: Port"
@@ -38,7 +37,7 @@ def test_create_listener_validation_fails_required_field(
 # def test_create_listener_validation_fails_strict_field():
 #     listener = get_base_listener()
 #     listener['options']['Port'] = ''
-#     response = client.post("/api/v2beta/listeners/", json=listener)
+#     response = client.post("/api/v2/listeners/", json=listener)
 #     assert response.status_code == 400
 #     assert response.json()['detail'] == 'required listener option missing: Port'
 
@@ -48,7 +47,7 @@ def test_create_listener_custom_validation_fails(
 ):
     base_listener["options"]["Host"] = "https://securedomain.com"
     response = client.post(
-        "/api/v2beta/listeners/", headers=admin_auth_header, json=base_listener
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "[!] HTTPS selected but no CertPath specified."
@@ -58,7 +57,7 @@ def test_create_listener_template_not_found(client, base_listener, admin_auth_he
     base_listener["template"] = "qwerty"
 
     response = client.post(
-        "/api/v2beta/listeners/", headers=admin_auth_header, json=base_listener
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Listener Template qwerty not found"
@@ -69,7 +68,7 @@ def test_create_listener(client, base_listener, admin_auth_header):
     base_listener["options"]["xyz"] = "xyz"
 
     response = client.post(
-        "/api/v2beta/listeners/", headers=admin_auth_header, json=base_listener
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == 201
     assert response.json()["options"].get("xyz") is None
@@ -90,7 +89,7 @@ def test_create_listener(client, base_listener, admin_auth_header):
 
 def test_create_listener_name_conflict(client, base_listener, admin_auth_header):
     response = client.post(
-        "/api/v2beta/listeners/", headers=admin_auth_header, json=base_listener
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == 400
     assert (
@@ -101,7 +100,7 @@ def test_create_listener_name_conflict(client, base_listener, admin_auth_header)
 
 def test_get_listener(client, admin_auth_header):
     response = client.get(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -110,7 +109,7 @@ def test_get_listener(client, admin_auth_header):
 
 def test_get_listener_not_found(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/listeners/9999",
+        "/api/v2/listeners/9999",
         headers=admin_auth_header,
     )
     assert response.status_code == 404
@@ -120,7 +119,7 @@ def test_get_listener_not_found(client, admin_auth_header):
 def test_update_listener_not_found(client, base_listener, admin_auth_header):
     base_listener["enabled"] = False
     response = client.put(
-        "/api/v2beta/listeners/9999", headers=admin_auth_header, json=base_listener
+        "/api/v2/listeners/9999", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == 404
     assert response.json()["detail"] == "Listener not found for id 9999"
@@ -128,13 +127,13 @@ def test_update_listener_not_found(client, base_listener, admin_auth_header):
 
 def test_update_listener_blocks_while_enabled(client, admin_auth_header):
     response = client.get(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
     )
     assert response.json()["enabled"] is True
 
     response = client.put(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
         json=response.json(),
     )
@@ -144,7 +143,7 @@ def test_update_listener_blocks_while_enabled(client, admin_auth_header):
 
 def test_update_listener_allows_and_disables_while_enabled(client, admin_auth_header):
     response = client.get(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
     )
     assert response.json()["enabled"] is True
@@ -154,7 +153,7 @@ def test_update_listener_allows_and_disables_while_enabled(client, admin_auth_he
     new_port = str(int(listener["options"]["Port"]) + 1)
     listener["options"]["Port"] = new_port
     response = client.put(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
         json=listener,
     )
@@ -165,7 +164,7 @@ def test_update_listener_allows_and_disables_while_enabled(client, admin_auth_he
 
 def test_update_listener_allows_while_disabled(client, admin_auth_header):
     response = client.get(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}", headers=admin_auth_header
+        f"/api/v2/listeners/{my_globals['listener_id']}", headers=admin_auth_header
     )
     assert response.json()["enabled"] is False
 
@@ -176,7 +175,7 @@ def test_update_listener_allows_while_disabled(client, admin_auth_header):
     listener["options"]["xyz"] = "xyz"
 
     response = client.put(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
         json=listener,
     )
@@ -191,14 +190,14 @@ def test_update_listener_name_conflict(client, base_listener, admin_auth_header)
     base_listener["name"] = "new-listener-2"
     base_listener["options"]["Port"] = "1299"
     response = client.post(
-        "/api/v2beta/listeners/", headers=admin_auth_header, json=base_listener
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == 201
 
     created = response.json()
     created["enabled"] = False
     response = client.put(
-        f"/api/v2beta/listeners/{created['id']}",
+        f"/api/v2/listeners/{created['id']}",
         headers=admin_auth_header,
         json=created,
     )
@@ -206,7 +205,7 @@ def test_update_listener_name_conflict(client, base_listener, admin_auth_header)
 
     created["name"] = "new-listener-1"
     response = client.put(
-        f"/api/v2beta/listeners/{created['id']}",
+        f"/api/v2/listeners/{created['id']}",
         headers=admin_auth_header,
         json=created,
     )
@@ -219,7 +218,7 @@ def test_update_listener_name_conflict(client, base_listener, admin_auth_header)
 
 def test_update_listener_reverts_if_validation_fails(client, admin_auth_header):
     response = client.get(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
     )
     assert response.json()["enabled"] is False
@@ -228,7 +227,7 @@ def test_update_listener_reverts_if_validation_fails(client, admin_auth_header):
     del listener["options"]["Host"]
     listener["options"]["BindIP"] = "1.1.1.1"
     response = client.put(
-        f"/api/v2beta/listeners/{listener['id']}",
+        f"/api/v2/listeners/{listener['id']}",
         headers=admin_auth_header,
         json=listener,
     )
@@ -236,14 +235,14 @@ def test_update_listener_reverts_if_validation_fails(client, admin_auth_header):
     assert response.json()["detail"] == "required option missing: Host"
 
     response = client.get(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}", headers=admin_auth_header
+        f"/api/v2/listeners/{my_globals['listener_id']}", headers=admin_auth_header
     )
     assert response.json()["options"]["BindIP"] == "0.0.0.0"
 
 
 def test_update_listener_reverts_if_custom_validation_fails(client, admin_auth_header):
     response = client.get(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
     )
     assert response.json()["enabled"] is False
@@ -252,7 +251,7 @@ def test_update_listener_reverts_if_custom_validation_fails(client, admin_auth_h
     listener["options"]["Host"] = "https://securesite.com"
     listener["options"]["BindIP"] = "1.1.1.1"
     response = client.put(
-        f"/api/v2beta/listeners/{listener['id']}",
+        f"/api/v2/listeners/{listener['id']}",
         headers=admin_auth_header,
         json=listener,
     )
@@ -260,7 +259,7 @@ def test_update_listener_reverts_if_custom_validation_fails(client, admin_auth_h
     assert response.json()["detail"] == "[!] HTTPS selected but no CertPath specified."
 
     response = client.get(
-        f"/api/v2beta/listeners/  {my_globals['listener_id']}",
+        f"/api/v2/listeners/  {my_globals['listener_id']}",
         headers=admin_auth_header,
     )
     assert response.json()["options"]["BindIP"] == "0.0.0.0"
@@ -268,7 +267,7 @@ def test_update_listener_reverts_if_custom_validation_fails(client, admin_auth_h
 
 def test_update_listener_allows_and_enables_while_disabled(client, admin_auth_header):
     response = client.get(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
     )
     assert response.json()["enabled"] is False
@@ -278,7 +277,7 @@ def test_update_listener_allows_and_enables_while_disabled(client, admin_auth_he
     listener["enabled"] = True
     listener["options"]["Port"] = new_port
     response = client.put(
-        f"/api/v2beta/listeners/{my_globals['listener_id']}",
+        f"/api/v2/listeners/{my_globals['listener_id']}",
         headers=admin_auth_header,
         json=listener,
     )
@@ -288,14 +287,14 @@ def test_update_listener_allows_and_enables_while_disabled(client, admin_auth_he
 
 
 def test_get_listeners(client, admin_auth_header):
-    response = client.get(f"/api/v2beta/listeners", headers=admin_auth_header)
+    response = client.get(f"/api/v2/listeners", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert len(response.json()["records"]) == 2
 
 
 def test_delete_listener_while_enabled(client, admin_auth_header):
-    response = client.get(f"/api/v2beta/listeners", headers=admin_auth_header)
+    response = client.get(f"/api/v2/listeners", headers=admin_auth_header)
     assert response.status_code == 200
     assert len(response.json()["records"]) == 2
 
@@ -305,12 +304,12 @@ def test_delete_listener_while_enabled(client, admin_auth_header):
     assert to_delete["enabled"] is True
 
     response = client.delete(
-        f"/api/v2beta/listeners/{to_delete['id']}", headers=admin_auth_header
+        f"/api/v2/listeners/{to_delete['id']}", headers=admin_auth_header
     )
     assert response.status_code == 204
 
     response = client.get(
-        f"/api/v2beta/listeners",
+        f"/api/v2/listeners",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -320,7 +319,7 @@ def test_delete_listener_while_enabled(client, admin_auth_header):
 
 def test_delete_listener_while_disabled(client, admin_auth_header):
     response = client.get(
-        f"/api/v2beta/listeners",
+        f"/api/v2/listeners",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -330,13 +329,13 @@ def test_delete_listener_while_disabled(client, admin_auth_header):
     assert to_delete["enabled"] is False
 
     response = client.delete(
-        f"/api/v2beta/listeners/{to_delete['id']}",
+        f"/api/v2/listeners/{to_delete['id']}",
         headers=admin_auth_header,
     )
     assert response.status_code == 204
 
     response = client.get(
-        f"/api/v2beta/listeners",
+        f"/api/v2/listeners",
         headers=admin_auth_header,
     )
     assert response.status_code == 200

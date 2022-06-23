@@ -20,6 +20,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, relationship
 from sqlalchemy_utc import UtcDateTime, utcnow
 
+from empire.server.common.config import empire_config
 from empire.server.utils.datetime_util import is_stale
 
 Base = declarative_base()
@@ -215,9 +216,6 @@ class Credential(Base):
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
 
-    # todo vr doesn't work with mysql
-    UniqueConstraint(credtype, domain, username, password)
-
     def __repr__(self):
         return "<Credential(id='%s')>" % (self.id)
 
@@ -226,6 +224,14 @@ class Credential(Base):
 
     def __setitem__(self, key, value):
         self.__dict__[key] = value
+
+
+# Mysql doesn't support a unique constraint on TEXT columns.
+# We could change it to STRING, but I'm not sure how long passwords can get.
+if empire_config.database.type == "sqlite":
+    Credential.unique = UniqueConstraint(
+        Credential.credtype, Credential.domain, Credential.username, Credential.password
+    )
 
 
 class Download(Base):

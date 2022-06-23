@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
+from empire.server.common.config import empire_config
 from empire.server.database import models
 from empire.server.utils.option_util import set_options, validate_options
 from empire.server.v2.core.listener_service import ListenerService
@@ -62,7 +63,7 @@ class StagerService(object):
 
         set_options(template_instance, cleaned_options)
 
-        # todo stager instances don't have a validate method. but they could
+        # stager instances don't have a validate method. but they could
 
         return template_instance, None
 
@@ -158,12 +159,11 @@ class StagerService(object):
         out_file = template_instance.options.get("OutFile", {}).get("Value")
         if out_file and len(out_file) > 0:
             file_name = template_instance.options["OutFile"]["Value"].split("/")[-1]
-        else:  # todo use a better default name
+        else:
             file_name = f"{uuid.uuid4()}.txt"
 
-        # TODO VR should this should be pulled from empire_config instead of main_menu
         file_name = (
-            f"{self.main_menu.directory['downloads']}generated-stagers/{file_name}"
+            f"{empire_config.directories.downloads}generated-stagers/{file_name}"
         )
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
         mode = "w" if type(resp) == str else "wb"

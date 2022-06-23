@@ -48,7 +48,7 @@ agent_service: AgentService = main.agentsv2
 download_service: DownloadService = main.downloadsv2
 
 router = APIRouter(
-    prefix="/api/v2beta/agents",
+    prefix="/api/v2/agents",
     tags=["agents", "tasks"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
@@ -170,7 +170,7 @@ async def read_tasks(
     return Tasks(
         records=tasks_converted,
         page=page,
-        total_pages=math.ceil(total / limit),
+        total_pages=math.ceil(total / limit) if limit > 0 else page,
         limit=limit,
         total=total,
     )
@@ -248,7 +248,7 @@ async def create_task_upload(
     file_data = base64.b64encode(file_data).decode("UTF-8")
     raw_data = base64.b64decode(file_data)
 
-    # Todo: We can probably remove this file size limit with updates to the agent code.
+    # We can probably remove this file size limit with updates to the agent code.
     #  At the moment the data is expected as a string of "filename|filedata"
     #  We could instead take a larger file, store it as a file on the server and store a reference to it in the db.
     #  And then change the way the agents pull down the file.
@@ -332,7 +332,7 @@ async def create_task_script_command(
 
 @router.post("/{agent_id}/tasks/sysinfo", status_code=201, response_model=Task)
 async def create_task_sysinfo(
-    sysinfo_request: SysinfoPostRequest,  # todo empty atm
+    sysinfo_request: SysinfoPostRequest,
     db_agent: models.Agent = Depends(get_agent),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),

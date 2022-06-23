@@ -45,7 +45,7 @@ def domain_to_dto_agent(agent: models.Agent):
         architecture=agent.architecture,
         stale=agent.stale,
         archived=agent.archived,
-        # todo could make this a typed class later to match the schema
+        # Could make this a typed class later to match the schema
         proxies=to_proxy_dto(agent.proxies),
     )
 

@@ -103,7 +103,7 @@ class UseStagerMenu(UseMenu):
                 #  This says if the output is empty then something must have gone wrong.
                 print(print_util.color("[!] Error: Stager output empty."))
                 return
-            file_name = response["downloads"][0]["file_name"]
+            file_name = response["downloads"][0]["filename"]
             # output_bytes = base64.b64decode(response[self.selected]["Output"])
             directory = f"{state.directory['generated-stagers']}{file_name}"
             with open(directory, "wb") as f:

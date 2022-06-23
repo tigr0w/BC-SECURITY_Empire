@@ -18,7 +18,7 @@ def patch_config(empire_config):
 
 def test_get_keyword_not_found(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/obfuscation/keywords/9999", headers=admin_auth_header
+        "/api/v2/obfuscation/keywords/9999", headers=admin_auth_header
     )
 
     assert response.status_code == 404
@@ -26,9 +26,7 @@ def test_get_keyword_not_found(client, admin_auth_header):
 
 
 def test_get_keyword(client, admin_auth_header):
-    response = client.get(
-        "/api/v2beta/obfuscation/keywords/1", headers=admin_auth_header
-    )
+    response = client.get("/api/v2/obfuscation/keywords/1", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["id"] == 1
@@ -36,7 +34,7 @@ def test_get_keyword(client, admin_auth_header):
 
 
 def test_get_keywords(client, admin_auth_header):
-    response = client.get("/api/v2beta/obfuscation/keywords", headers=admin_auth_header)
+    response = client.get("/api/v2/obfuscation/keywords", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert len(response.json()["records"]) > 0
@@ -44,7 +42,7 @@ def test_get_keywords(client, admin_auth_header):
 
 def test_create_keyword_name_conflict(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/obfuscation/keywords/",
+        "/api/v2/obfuscation/keywords/",
         headers=admin_auth_header,
         json={"keyword": "Invoke-Mimikatz", "replacement": "Invoke-Hax"},
     )
@@ -57,7 +55,7 @@ def test_create_keyword_name_conflict(client, admin_auth_header):
 
 def test_create_keyword(client, admin_auth_header):
     response = client.post(
-        "/api/v2beta/obfuscation/keywords/",
+        "/api/v2/obfuscation/keywords/",
         headers=admin_auth_header,
         json={"keyword": "Invoke-Things", "replacement": "Invoke-sgnihT;"},
     )
@@ -69,7 +67,7 @@ def test_create_keyword(client, admin_auth_header):
 
 def test_update_keyword_not_found(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/obfuscation/keywords/9999",
+        "/api/v2/obfuscation/keywords/9999",
         headers=admin_auth_header,
         json={"keyword": "thiswontwork", "replacement": "x=0;"},
     )
@@ -80,7 +78,7 @@ def test_update_keyword_not_found(client, admin_auth_header):
 
 def test_update_keyword_name_conflict(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/obfuscation/keywords/1",
+        "/api/v2/obfuscation/keywords/1",
         headers=admin_auth_header,
         json={"keyword": "Invoke-Mimikatz", "replacement": "Invoke-Whatever"},
     )
@@ -93,7 +91,7 @@ def test_update_keyword_name_conflict(client, admin_auth_header):
 
 def test_update_keyword(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/obfuscation/keywords/1",
+        "/api/v2/obfuscation/keywords/1",
         headers=admin_auth_header,
         json={"keyword": "Completely-new_name", "replacement": "qwerefdsgaf"},
     )
@@ -104,20 +102,18 @@ def test_update_keyword(client, admin_auth_header):
 
 def test_delete_keyword(client, admin_auth_header):
     response = client.delete(
-        "/api/v2beta/obfuscation/keywords/1", headers=admin_auth_header
+        "/api/v2/obfuscation/keywords/1", headers=admin_auth_header
     )
 
     assert response.status_code == 204
 
-    response = client.get(
-        "/api/v2beta/obfuscation/keywords/1", headers=admin_auth_header
-    )
+    response = client.get("/api/v2/obfuscation/keywords/1", headers=admin_auth_header)
 
     assert response.status_code == 404
 
 
 def test_get_obfuscation_configs(client, admin_auth_header):
-    response = client.get("/api/v2beta/obfuscation/global", headers=admin_auth_header)
+    response = client.get("/api/v2/obfuscation/global", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert len(response.json()["records"]) > 1
@@ -127,7 +123,7 @@ def test_get_obfuscation_configs(client, admin_auth_header):
 
 def test_get_obfuscation_config_not_found(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/obfuscation/global/python", headers=admin_auth_header
+        "/api/v2/obfuscation/global/python", headers=admin_auth_header
     )
 
     assert response.status_code == 404
@@ -139,7 +135,7 @@ def test_get_obfuscation_config_not_found(client, admin_auth_header):
 
 def test_get_obfuscation_config(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/obfuscation/global/powershell", headers=admin_auth_header
+        "/api/v2/obfuscation/global/powershell", headers=admin_auth_header
     )
 
     assert response.status_code == 200
@@ -151,7 +147,7 @@ def test_get_obfuscation_config(client, admin_auth_header):
 
 def test_update_obfuscation_config_not_found(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/obfuscation/global/python",
+        "/api/v2/obfuscation/global/python",
         headers=admin_auth_header,
         json={
             "language": "powershell",
@@ -170,7 +166,7 @@ def test_update_obfuscation_config_not_found(client, admin_auth_header):
 
 def test_update_obfuscation_config(client, admin_auth_header):
     response = client.put(
-        "/api/v2beta/obfuscation/global/powershell",
+        "/api/v2/obfuscation/global/powershell",
         headers=admin_auth_header,
         json={
             "language": "powershell",
@@ -190,7 +186,7 @@ def test_preobfuscate_post_not_preobfuscatable(
     client, admin_auth_header, empire_config
 ):
     response = client.post(
-        "/api/v2beta/obfuscation/global/csharp/preobfuscate", headers=admin_auth_header
+        "/api/v2/obfuscation/global/csharp/preobfuscate", headers=admin_auth_header
     )
 
     assert response.status_code == 400
@@ -203,7 +199,7 @@ def test_preobfuscate_post_not_preobfuscatable(
 def test_preobfuscate_post(client, admin_auth_header, empire_config):
     with patch_config(empire_config):
         response = client.post(
-            "/api/v2beta/obfuscation/global/powershell/preobfuscate",
+            "/api/v2/obfuscation/global/powershell/preobfuscate",
             headers=admin_auth_header,
         )
 
@@ -227,7 +223,7 @@ def test_preobfuscate_delete_not_preobfuscatable(
     client, admin_auth_header, empire_config
 ):
     response = client.delete(
-        "/api/v2beta/obfuscation/global/csharp/preobfuscate", headers=admin_auth_header
+        "/api/v2/obfuscation/global/csharp/preobfuscate", headers=admin_auth_header
     )
 
     assert response.status_code == 400
@@ -240,7 +236,7 @@ def test_preobfuscate_delete_not_preobfuscatable(
 def test_preobfuscate_delete(client, admin_auth_header, empire_config):
     with patch_config(empire_config):
         response = client.delete(
-            "/api/v2beta/obfuscation/global/powershell/preobfuscate",
+            "/api/v2/obfuscation/global/powershell/preobfuscate",
             headers=admin_auth_header,
         )
 

@@ -4,11 +4,10 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from empire.server.common import helpers
-from empire.server.database import models
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_staging_key(db):
+def setup_staging_key(db, models):
     config = db.query(models.Config).first()
     config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
     db.add(config)

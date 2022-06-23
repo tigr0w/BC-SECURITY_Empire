@@ -68,13 +68,13 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/api/v2beta/users/me", response_model=User)
+@router.get("/api/v2/users/me", response_model=User)
 async def read_user_me(current_user: User = Depends(get_current_active_user)):
     return domain_to_dto_user(current_user)
 
 
 @router.get(
-    "/api/v2beta/users",
+    "/api/v2/users",
     response_model=Users,
     dependencies=[Depends(get_current_active_user)],
 )
@@ -85,7 +85,7 @@ async def read_users(db: Session = Depends(get_db)):
 
 
 @router.get(
-    "/api/v2beta/users/{uid}",
+    "/api/v2/users/{uid}",
     response_model=User,
     dependencies=[Depends(get_current_active_user)],
 )
@@ -94,7 +94,7 @@ async def read_user(uid: int, db_user: models.User = Depends(get_user)):
 
 
 @router.post(
-    "/api/v2beta/users/",
+    "/api/v2/users/",
     status_code=201,
     dependencies=[Depends(get_current_active_admin_user)],
 )
@@ -109,7 +109,7 @@ async def create_user(user: UserPostRequest, db: Session = Depends(get_db)):
     return domain_to_dto_user(resp)
 
 
-@router.put("/api/v2beta/users/{uid}", response_model=User)
+@router.put("/api/v2/users/{uid}", response_model=User)
 async def update_user(
     uid: int,
     user_req: UserUpdateRequest,
@@ -138,7 +138,7 @@ async def update_user(
     return domain_to_dto_user(resp)
 
 
-@router.put("/api/v2beta/users/{uid}/password", response_model=User)
+@router.put("/api/v2/users/{uid}/password", response_model=User)
 async def update_user_password(
     uid: int,
     user_req: UserUpdatePasswordRequest,

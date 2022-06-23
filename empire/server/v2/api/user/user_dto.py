@@ -4,8 +4,6 @@ from typing import List
 from pydantic import BaseModel
 
 
-# todo are notes personal?
-#  should notes be expanded something that can be attached to any object and made private or public?
 def domain_to_dto_user(user):
     return User(
         id=user.id,

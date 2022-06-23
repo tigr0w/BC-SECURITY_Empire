@@ -19,7 +19,7 @@ from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 profile_service = main.profilesv2
 
 router = APIRouter(
-    prefix="/api/v2beta/malleable-profiles",
+    prefix="/api/v2/malleable-profiles",
     tags=["malleable-profiles"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
@@ -66,7 +66,6 @@ async def create_profile(
     return resp
 
 
-# todo should it write to the filesystem too.
 @router.put("/{uid}", response_model=Profile)
 async def update_profile(
     uid: int,

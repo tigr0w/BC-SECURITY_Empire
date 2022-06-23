@@ -94,9 +94,9 @@ class Stagers(object):
                         )
 
             db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
-            active_listener = self.mainMenu.listenersv2.get_active_listeners()[
+            active_listener = self.mainMenu.listenersv2.get_active_listener(
                 db_listener.id
-            ]  # todo vr another function for get 1
+            )
             if not active_listener:
                 log.error(f"Invalid listener: {listenerName}")
                 return ""

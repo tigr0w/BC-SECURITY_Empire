@@ -2,13 +2,10 @@ import os
 
 import pytest
 
-from empire.server.database import models
-
 
 @pytest.fixture(scope="module", autouse=True)
-def agent(db):
+def agent(db, models, main):
     name = f'agent_{__name__.split(".")[-1]}'
-    from empire.server.server import main
 
     agent = db.query(models.Agent).filter(models.Agent.session_id == name).first()
     if not agent:
@@ -58,7 +55,7 @@ def test_agent_logging(client, admin_auth_header, agent, empire_config):
     This is super basic and could be expanded later to test responses.
     """
     response = client.post(
-        f"/api/v2beta/agents/{agent.session_id}/tasks/shell",
+        f"/api/v2/agents/{agent.session_id}/tasks/shell",
         headers=admin_auth_header,
         json={
             "command": 'echo "Hello World!"',

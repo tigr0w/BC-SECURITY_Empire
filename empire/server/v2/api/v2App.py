@@ -35,8 +35,7 @@ class MyJsonEncoder(JSONEncoder):
         if isinstance(o, bytes):
             return o.decode("latin-1")
 
-        # todo TaskingStatus not serializing
-        #  Object of type User is not JSON Serializable
+        # todo Object of type User is not JSON Serializable
         return super(MyJsonEncoder, self).default(o)
 
 
@@ -131,7 +130,7 @@ def initialize():
 
     # todo this gets the cert working, but ajax requests are not working, since browsers
     #  do not like self signed certs.
-    # todo if the server fails to start we should exit.
+    #  if the server fails to start we should exit.
     uvicorn.run(
         v2App,
         host="0.0.0.0",

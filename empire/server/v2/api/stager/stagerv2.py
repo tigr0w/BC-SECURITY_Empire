@@ -20,7 +20,7 @@ from empire.server.v2.api.stager.stager_dto import (
 stager_service = main.stagersv2
 
 router = APIRouter(
-    prefix="/api/v2beta/stagers",
+    prefix="/api/v2/stagers",
     tags=["stagers"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},

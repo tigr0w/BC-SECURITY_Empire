@@ -277,7 +277,7 @@ class EmpireCliState(object):
     # This will do for this iteration.
     def get_listeners(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/listeners",
+            url=f"{self.host}:{self.port}/api/v2/listeners",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -286,7 +286,7 @@ class EmpireCliState(object):
 
     def upload_file(self, filename: str, file_data: bytes):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/downloads",
+            url=f"{self.host}:{self.port}/api/v2/downloads",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
             data={},
@@ -296,7 +296,7 @@ class EmpireCliState(object):
 
     def download_file(self, file_id: str):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/downloads/{file_id}",
+            url=f"{self.host}:{self.port}/api/v2/downloads/{file_id}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -304,7 +304,7 @@ class EmpireCliState(object):
 
     def get_files(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/downloads",
+            url=f"{self.host}:{self.port}/api/v2/downloads",
             verify=False,
             params={"sources": "upload"},
             headers={"Authorization": f"Bearer {self.token}"},
@@ -314,7 +314,7 @@ class EmpireCliState(object):
 
     def get_version(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/meta/version",
+            url=f"{self.host}:{self.port}/api/v2/meta/version",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -322,7 +322,7 @@ class EmpireCliState(object):
 
     def kill_listener(self, listener_id: str):
         response = requests.delete(
-            url=f"{self.host}:{self.port}/api/v2beta/listeners/{listener_id}",
+            url=f"{self.host}:{self.port}/api/v2/listeners/{listener_id}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -331,7 +331,7 @@ class EmpireCliState(object):
 
     def edit_listener(self, listener_id: str, options: Dict):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2beta/listeners/{listener_id}",
+            url=f"{self.host}:{self.port}/api/v2/listeners/{listener_id}",
             json=options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -340,7 +340,7 @@ class EmpireCliState(object):
 
     def get_listener_types(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/listener-templates",
+            url=f"{self.host}:{self.port}/api/v2/listener-templates",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -349,7 +349,7 @@ class EmpireCliState(object):
 
     def get_listener_template(self, listener_id: str):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/listener-templates/{listener_id}",
+            url=f"{self.host}:{self.port}/api/v2/listener-templates/{listener_id}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -357,7 +357,7 @@ class EmpireCliState(object):
 
     def get_listener_options(self, listener_type: str):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/listener-templates/{listener_type}",
+            url=f"{self.host}:{self.port}/api/v2/listener-templates/{listener_type}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -365,7 +365,7 @@ class EmpireCliState(object):
 
     def create_listener(self, options: Dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/listeners",
+            url=f"{self.host}:{self.port}/api/v2/listeners",
             json=options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -376,7 +376,7 @@ class EmpireCliState(object):
     def get_stagers(self):
         # todo need error handling in all api requests
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/stager-templates",
+            url=f"{self.host}:{self.port}/api/v2/stager-templates",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -386,7 +386,7 @@ class EmpireCliState(object):
 
     def create_stager(self, options: Dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/stagers",
+            url=f"{self.host}:{self.port}/api/v2/stagers",
             json=options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -403,7 +403,7 @@ class EmpireCliState(object):
 
     def get_agents(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/agents",
+            url=f"{self.host}:{self.port}/api/v2/agents",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -426,7 +426,7 @@ class EmpireCliState(object):
 
     def get_modules(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/modules",
+            url=f"{self.host}:{self.port}/api/v2/modules",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -436,7 +436,7 @@ class EmpireCliState(object):
 
     def execute_module(self, session_id: str, options: Dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/module",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/module",
             json=options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -445,7 +445,7 @@ class EmpireCliState(object):
 
     def update_agent(self, session_id: str, options: Dict):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}",
             json=options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -454,7 +454,7 @@ class EmpireCliState(object):
 
     def kill_agent(self, agent_name: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{agent_name}/tasks/exit",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/exit",
             json={},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -463,7 +463,7 @@ class EmpireCliState(object):
 
     def update_agent_comms(self, agent_name: str, listener_name: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{agent_name}/tasks/update_comms",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/update_comms",
             json={"listener": listener_name},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -472,7 +472,7 @@ class EmpireCliState(object):
 
     def update_agent_kill_date(self, agent_name: str, kill_date: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{agent_name}/tasks/kill_date",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/kill_date",
             json={"kill_date": kill_date},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -481,7 +481,7 @@ class EmpireCliState(object):
 
     def update_agent_proxy(self, session_id: str, options: list):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/proxy_list",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/proxy_list",
             json={"proxy": options},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -491,7 +491,7 @@ class EmpireCliState(object):
 
     def get_proxy_info(self, session_id: str):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/proxy_list",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/proxy_list",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -500,7 +500,7 @@ class EmpireCliState(object):
 
     def update_agent_working_hours(self, session_id: str, working_hours: str):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/working_hours",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/working_hours",
             json={"working_hours": working_hours},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -518,7 +518,7 @@ class EmpireCliState(object):
 
     def agent_shell(self, session_id: str, shell_cmd: str, literal: bool = False):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/shell",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/shell",
             json={"command": shell_cmd, "literal": literal},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -527,7 +527,7 @@ class EmpireCliState(object):
 
     def agent_script_import(self, session_id: str, script_name: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/script_import",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_import",
             json={"script_name": script_name},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -537,7 +537,7 @@ class EmpireCliState(object):
 
     def agent_script_command(self, session_id: str, script_command: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/script_command",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_command",
             json={"script": script_command},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -547,7 +547,7 @@ class EmpireCliState(object):
 
     def scrape_directory(self, session_id: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{session_id}/tasks/directory",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/directory",
             json={"path": "/"},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -556,7 +556,7 @@ class EmpireCliState(object):
 
     def get_agent_tasks(self, agent_name, num_results):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{agent_name}/tasks",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks",
             verify=False,
             params={"limit": num_results, "order_direction": "desc", "order_by": "id"},
             headers={"Authorization": f"Bearer {self.token}"},
@@ -565,7 +565,7 @@ class EmpireCliState(object):
 
     def get_agent_task(self, agent_name, task_id):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{agent_name}/tasks/{task_id}",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/{task_id}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -573,7 +573,7 @@ class EmpireCliState(object):
 
     def get_credentials(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/credentials",
+            url=f"{self.host}:{self.port}/api/v2/credentials",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -582,7 +582,7 @@ class EmpireCliState(object):
 
     def get_credential(self, cred_id):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/credentials/{cred_id}",
+            url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -610,7 +610,7 @@ class EmpireCliState(object):
 
     def remove_credential(self, cred_id):
         response = requests.delete(
-            url=f"{self.host}:{self.port}/api/v2beta/credentials/{cred_id}",
+            url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -618,7 +618,7 @@ class EmpireCliState(object):
 
     def get_active_plugins(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/plugins",
+            url=f"{self.host}:{self.port}/api/v2/plugins",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -631,7 +631,7 @@ class EmpireCliState(object):
 
     def get_plugin(self, plugin_name):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/plugins/{plugin_name}",
+            url=f"{self.host}:{self.port}/api/v2/plugins/{plugin_name}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -639,7 +639,7 @@ class EmpireCliState(object):
 
     def execute_plugin(self, uid: str, options: Dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/plugins/{uid}/execute",
+            url=f"{self.host}:{self.port}/api/v2/plugins/{uid}/execute",
             json=options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -648,7 +648,7 @@ class EmpireCliState(object):
 
     def agent_upload_file(self, agent_name: str, file_id: int, file_path: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{agent_name}/tasks/upload",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/upload",
             json={"file_id": file_id, "path_to_file": file_path},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -657,7 +657,7 @@ class EmpireCliState(object):
 
     def agent_download_file(self, agent_name: str, file_name: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{agent_name}/tasks/download",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/download",
             json={"path_to_file": file_name},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -666,7 +666,7 @@ class EmpireCliState(object):
 
     def agent_sleep(self, agent_name: str, delay: int, jitter: float):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2beta/agents/{agent_name}/tasks/sleep",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/sleep",
             json={"delay": delay, "jitter": jitter},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -676,7 +676,7 @@ class EmpireCliState(object):
 
     def get_users(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/users",
+            url=f"{self.host}:{self.port}/api/v2/users",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -684,7 +684,7 @@ class EmpireCliState(object):
 
     def create_user(self, new_user):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/users",
+            url=f"{self.host}:{self.port}/api/v2/users",
             json=new_user,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -693,7 +693,7 @@ class EmpireCliState(object):
 
     def edit_user(self, user_id: str, user):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2beta/users/{user_id}",
+            url=f"{self.host}:{self.port}/api/v2/users/{user_id}",
             json=user,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -702,7 +702,7 @@ class EmpireCliState(object):
 
     def get_user(self, user_id: str):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/users/{user_id}",
+            url=f"{self.host}:{self.port}/api/v2/users/{user_id}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -710,7 +710,7 @@ class EmpireCliState(object):
 
     def get_user_me(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/users/me",
+            url=f"{self.host}:{self.port}/api/v2/users/me",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -720,7 +720,7 @@ class EmpireCliState(object):
 
     def get_malleable_profile(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/malleable-profiles",
+            url=f"{self.host}:{self.port}/api/v2/malleable-profiles",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -730,7 +730,7 @@ class EmpireCliState(object):
 
     def get_bypasses(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2beta/bypasses",
+            url=f"{self.host}:{self.port}/api/v2/bypasses",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -740,7 +740,7 @@ class EmpireCliState(object):
 
     def add_malleable_profile(self, data):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/malleable-profiles",
+            url=f"{self.host}:{self.port}/api/v2/malleable-profiles",
             json=data,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
@@ -749,7 +749,7 @@ class EmpireCliState(object):
 
     def delete_malleable_profile(self, profile_id: str):
         response = requests.delete(
-            url=f"{self.host}:{self.port}/api/v2beta/malleable-profiles/{profile_id}",
+            url=f"{self.host}:{self.port}/api/v2/malleable-profiles/{profile_id}",
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -757,7 +757,7 @@ class EmpireCliState(object):
 
     def preobfuscate(self, language: str, options: dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2beta/obfuscation/global/{language}/preobfuscate",
+            url=f"{self.host}:{self.port}/api/v2/obfuscation/global/{language}/preobfuscate",
             json=options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},

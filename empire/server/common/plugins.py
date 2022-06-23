@@ -1,7 +1,8 @@
 """ Utilities and helpers and etc. for plugins """
+import logging
 from builtins import object
 
-import empire.server.common.helpers as helpers
+log = logging.getLogger(__name__)
 
 
 class Plugin(object):
@@ -11,15 +12,15 @@ class Plugin(object):
     def __init__(self, mainMenu):
         # having these multiple messages should be helpful for debugging
         # user-reported errors (can narrow down where they happen)
-        print(helpers.color("[*] Initializing plugin..."))
+        log.info("Initializing plugin...")
         # any future init stuff goes here
 
-        print(helpers.color("[*] Doing custom initialization..."))
+        log.info("Doing custom initialization...")
         # do custom user stuff
         self.onLoad()
 
         # now that everything is loaded, register functions and etc. onto the main menu
-        print(helpers.color("[*] Registering plugin with menu..."))
+        log.info("Registering plugin with menu...")
         self.register(mainMenu)
 
         # Give access to main menu

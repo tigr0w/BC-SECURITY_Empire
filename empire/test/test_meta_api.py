@@ -1,5 +1,5 @@
 def test_version(client, admin_auth_header):
-    response = client.get("/api/v2beta/meta/version", headers=admin_auth_header)
+    response = client.get("/api/v2/meta/version", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert (

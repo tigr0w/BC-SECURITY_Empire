@@ -7,7 +7,7 @@ from pydantic import BaseModel
 class Profile(BaseModel):
     id: int
     name: str
-    file_path: Optional[str]  # todo needed?
+    file_path: Optional[str]  # todo vr needed?
     category: str
     data: str
     created_at: datetime

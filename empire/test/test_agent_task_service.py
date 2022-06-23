@@ -1,12 +1,9 @@
 import pytest
 
-from empire.server.database import models
-
 
 @pytest.fixture(scope="module", autouse=True)
-def agent(client, db):
+def agent(client, db, models, main):
     name = f'agent_{__name__.split(".")[-1]}'
-    from empire.server.server import main
 
     agent = db.query(models.Agent).filter(models.Agent.session_id == name).first()
     if not agent:
@@ -50,9 +47,8 @@ def agent(client, db):
     db.commit()
 
 
-def test_create_task_no_user_id(db, agent):
+def test_create_task_no_user_id(db, agent, main):
     from empire.server.common.empire import MainMenu
-    from empire.server.server import main
 
     main: MainMenu = main
 

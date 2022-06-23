@@ -2,13 +2,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from empire.server.database import models
-
 
 @pytest.fixture(scope="module", autouse=True)
-def agent(db):
-    from empire.server.server import main
-
+def agent(db, models, main):
     hosts = db.query(models.Host).all()
     if len(hosts) == 0:
         host = models.Host(name="default_host", internal_ip="127.0.0.1")
@@ -147,14 +143,14 @@ def agent(db):
 
 
 def test_get_agent_not_found(client, admin_auth_header):
-    response = client.get("/api/v2beta/agents/XYZ123", headers=admin_auth_header)
+    response = client.get("/api/v2/agents/XYZ123", headers=admin_auth_header)
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Agent not found for id XYZ123"
 
 
 def test_get_agent(client, admin_auth_header):
-    response = client.get("/api/v2beta/agents/TEST123", headers=admin_auth_header)
+    response = client.get("/api/v2/agents/TEST123", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["session_id"] == "TEST123"
@@ -163,7 +159,7 @@ def test_get_agent(client, admin_auth_header):
 
 
 def test_get_agents(client, admin_auth_header):
-    response = client.get("/api/v2beta/agents", headers=admin_auth_header)
+    response = client.get("/api/v2/agents", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert len(response.json()["records"]) == 3
@@ -171,7 +167,7 @@ def test_get_agents(client, admin_auth_header):
 
 def test_get_agents_include_stale_false(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/agents?include_stale=false", headers=admin_auth_header
+        "/api/v2/agents?include_stale=false", headers=admin_auth_header
     )
 
     assert response.status_code == 200
@@ -180,7 +176,7 @@ def test_get_agents_include_stale_false(client, admin_auth_header):
 
 def test_get_agents_include_archived_true(client, admin_auth_header):
     response = client.get(
-        "/api/v2beta/agents?include_archived=true", headers=admin_auth_header
+        "/api/v2/agents?include_archived=true", headers=admin_auth_header
     )
 
     assert response.status_code == 200
@@ -188,11 +184,11 @@ def test_get_agents_include_archived_true(client, admin_auth_header):
 
 
 def test_update_agent_not_found(client, admin_auth_header):
-    response = client.get("/api/v2beta/agents/TEST123", headers=admin_auth_header)
+    response = client.get("/api/v2/agents/TEST123", headers=admin_auth_header)
     agent = response.json()
 
     response = client.put(
-        "/api/v2beta/agents/XYZ123", json=agent, headers=admin_auth_header
+        "/api/v2/agents/XYZ123", json=agent, headers=admin_auth_header
     )
 
     assert response.status_code == 404
@@ -200,25 +196,25 @@ def test_update_agent_not_found(client, admin_auth_header):
 
 
 def test_update_agent_name_conflict(client, admin_auth_header):
-    response = client.get("/api/v2beta/agents/TEST123", headers=admin_auth_header)
+    response = client.get("/api/v2/agents/TEST123", headers=admin_auth_header)
     agent = response.json()
     agent["name"] = "SECOND"
 
     response = client.put(
-        "/api/v2beta/agents/TEST123", json=agent, headers=admin_auth_header
+        "/api/v2/agents/TEST123", json=agent, headers=admin_auth_header
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Agent with name SECOND already exists."
 
 
 def test_update_agent(client, admin_auth_header):
-    response = client.get("/api/v2beta/agents/TEST123", headers=admin_auth_header)
+    response = client.get("/api/v2/agents/TEST123", headers=admin_auth_header)
 
     agent = response.json()
     agent["name"] = "My New Agent Name"
     agent["notes"] = "The new notes!"
     response = client.put(
-        "/api/v2beta/agents/TEST123", json=agent, headers=admin_auth_header
+        "/api/v2/agents/TEST123", json=agent, headers=admin_auth_header
     )
 
     assert response.status_code == 200

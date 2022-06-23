@@ -1,10 +1,8 @@
 import pytest
 
-from empire.server.database import models
-
 
 @pytest.fixture(scope="module", autouse=True)
-def hosts(db):
+def hosts(db, models):
     hosts = db.query(models.Host).all()
 
     if not hosts:
@@ -26,7 +24,7 @@ def hosts(db):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def processes(db, hosts):
+def processes(db, hosts, models):
     processes = db.query(models.HostProcess).all()
 
     if not processes:
@@ -60,7 +58,7 @@ def processes(db, hosts):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def agent(db, processes):
+def agent(db, processes, models):
     agent = db.query(models.Agent).first()
 
     if not agent:
@@ -93,7 +91,7 @@ def agent(db, processes):
 
 
 def test_get_process_host_not_found(client, admin_auth_header):
-    response = client.get("/api/v2beta/hosts/9999/processes", headers=admin_auth_header)
+    response = client.get("/api/v2/hosts/9999/processes", headers=admin_auth_header)
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Host not found for id 9999"
@@ -101,7 +99,7 @@ def test_get_process_host_not_found(client, admin_auth_header):
 
 def test_get_process_not_found(client, admin_auth_header, hosts):
     response = client.get(
-        f"/api/v2beta/hosts/{hosts[0].id}/processes/8888", headers=admin_auth_header
+        f"/api/v2/hosts/{hosts[0].id}/processes/8888", headers=admin_auth_header
     )
 
     assert response.status_code == 404
@@ -113,7 +111,7 @@ def test_get_process_not_found(client, admin_auth_header, hosts):
 
 def test_get_process(client, admin_auth_header, hosts, processes):
     response = client.get(
-        f"/api/v2beta/hosts/{hosts[0].id}/processes/{processes[0].process_id}",
+        f"/api/v2/hosts/{hosts[0].id}/processes/{processes[0].process_id}",
         headers=admin_auth_header,
     )
 
@@ -125,7 +123,7 @@ def test_get_process(client, admin_auth_header, hosts, processes):
 
 def test_get_processes(client, admin_auth_header, hosts):
     response = client.get(
-        f"/api/v2beta/hosts/{hosts[0].id}/processes/", headers=admin_auth_header
+        f"/api/v2/hosts/{hosts[0].id}/processes/", headers=admin_auth_header
     )
 
     assert response.status_code == 200
@@ -134,7 +132,7 @@ def test_get_processes(client, admin_auth_header, hosts):
 
 def test_agent_join(client, admin_auth_header, hosts, agent):
     response = client.get(
-        f"/api/v2beta/hosts/{hosts[0].id}/processes/", headers=admin_auth_header
+        f"/api/v2/hosts/{hosts[0].id}/processes/", headers=admin_auth_header
     )
 
     assert response.status_code == 200
