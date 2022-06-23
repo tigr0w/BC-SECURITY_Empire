@@ -38,6 +38,10 @@ It will be cleaned up as we get closer to the official release.
 - Add a help command to the client to print the full doc string of a function. such as `help shell` or `help script_import`
 - Add a `--literal` flag that can be used on shell commands that forces the agent to execute the command literally, ignoring any built-in aliases that exist such as for whoami or ps
 
+## [4.6.1] - 2022-06-10
+-   Use a BC-Security fork of Donut to resolve a python 3.10 issue (@Cx01N)
+-   Update reflective pick dlls (@Hubbl3)
+
 ## [4.6.0] - 2022-05-24
 
 -   Added Certify C# module (@Cx01N)
@@ -292,7 +296,9 @@ It will be cleaned up as we get closer to the official release.
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.1...HEAD
+
+[4.6.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.0...v4.6.1
 
 [4.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.5.5...v4.6.0
 
