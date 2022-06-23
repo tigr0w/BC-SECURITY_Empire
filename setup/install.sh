@@ -131,15 +131,11 @@ fi
 echo -n -e "\x1b[1;33m[>] Do you want to install Nim and MinGW? It is only needed to generate a Nim stager (y/N)? \x1b[0m"
 read answer
 if [ "$answer" != "${answer#[Yy]}" ] ;then
-  if [ $OS_NAME == "DEBIAN" ]; then
-    sudo apt install -y curl git gcc
-    curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
-    echo "export PATH=/root/.nimble/bin:$PATH" >> ~/.bashrc
-    export PATH=/root/.nimble/bin:$PATH
-    SOURCE_MESSAGE=true
-  else
-    sudo apt install -y nim
-  fi
+  sudo apt install -y curl git gcc
+  curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
+  echo "export PATH=/root/.nimble/bin:$PATH" >> ~/.bashrc
+  export PATH=/root/.nimble/bin:$PATH
+  SOURCE_MESSAGE=true
   nimble install -y winim zippy nimcrypto
   sudo apt install -y mingw-w64
 else

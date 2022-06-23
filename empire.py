@@ -15,6 +15,6 @@ if __name__ == "__main__":
     elif args.subparser_name == "client":
         import empire.client.client as client
 
-        client.start()
+        client.start(args)
 
     sys.exit(0)

@@ -254,7 +254,9 @@ class Stagers(object):
                 helpers.color("[!] Original .dll for arch %s does not exist!" % (arch))
             )
 
-    def generate_powershell_exe(self, posh_code, dot_net_version="net40"):
+    def generate_powershell_exe(
+        self, posh_code, dot_net_version="net40", obfuscate=False
+    ):
         """
         Generate powershell launcher embedded in csharp
         """
@@ -268,7 +270,9 @@ class Stagers(object):
         if not compiler.status == "ON":
             print(helpers.color("[!] csharpserver plugin not running"))
         else:
-            file_name = compiler.do_send_stager(stager_yaml, "CSharpPS")
+            file_name = compiler.do_send_stager(
+                stager_yaml, "CSharpPS", confuse=obfuscate
+            )
 
         directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
         return directory
@@ -290,7 +294,7 @@ class Stagers(object):
         shellcode = donut.create(file=directory, arch=arch_type)
         return shellcode
 
-    def generate_python_exe(self, posh_code, dot_net_version="net40"):
+    def generate_python_exe(self, posh_code, dot_net_version="net40", obfuscate=False):
         """
         Generate ironpython launcher embedded in csharp
         """
@@ -304,7 +308,9 @@ class Stagers(object):
         if not compiler.status == "ON":
             print(helpers.color("[!] csharpserver plugin not running"))
         else:
-            file_name = compiler.do_send_stager(stager_yaml, "CSharpPy")
+            file_name = compiler.do_send_stager(
+                stager_yaml, "CSharpPy", confuse=obfuscate
+            )
 
         directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
         return directory

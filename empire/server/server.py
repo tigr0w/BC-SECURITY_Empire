@@ -8,8 +8,9 @@ import hashlib
 import json
 import logging
 import os
-import pkgutil
+import pathlib
 import random
+import shutil
 import signal
 import ssl
 import string
@@ -35,9 +36,9 @@ from empire.server.common import empire, helpers
 from empire.server.common.config import empire_config
 from empire.server.common.empire import MainMenu
 from empire.server.common.module_models import PydanticModule
-from empire.server.database import models
+from empire.server.database import base, models
 from empire.server.database.base import Session
-from empire.server.utils import data_util
+from empire.server.utils import file_util
 
 # Check if running Python 3
 if sys.version[0] == "2":
@@ -432,13 +433,14 @@ def start_restful_api(
         stager_out = copy.deepcopy(stager.options)
 
         if ("OutFile" in stager_out) and (stager_out["OutFile"]["Value"] != ""):
-            if isinstance(stager.generate(), str):
+            generated_stager = stager.generate()
+            if isinstance(generated_stager, str):
                 # if the output was intended for a file, return the base64 encoded text
                 stager_out["Output"] = base64.b64encode(
-                    stager.generate().encode("UTF-8")
+                    generated_stager.encode("UTF-8")
                 )
             else:
-                stager_out["Output"] = base64.b64encode(stager.generate())
+                stager_out["Output"] = base64.b64encode(generated_stager)
 
         else:
             # otherwise return the text of the stager generation
@@ -3195,6 +3197,41 @@ def start_sockets(
     socketio.run(app, host=ip, port=port, ssl_context=context)
 
 
+CSHARP_DIR_BASE = os.path.join(os.path.dirname(__file__), "csharp/Covenant")
+INVOKE_OBFS_SRC_DIR_BASE = os.path.join(
+    os.path.dirname(__file__), "powershell/Invoke-Obfuscation"
+)
+INVOKE_OBFS_DST_DIR_BASE = "/usr/local/share/powershell/Modules/Invoke-Obfuscation"
+
+
+def reset():
+    base.reset_db()
+
+    file_util.remove_dir_contents(empire_config.directories.downloads)
+
+    if os.path.exists(f"{CSHARP_DIR_BASE}/bin"):
+        shutil.rmtree(f"{CSHARP_DIR_BASE}/bin")
+
+    if os.path.exists(f"{CSHARP_DIR_BASE}/obj"):
+        shutil.rmtree(f"{CSHARP_DIR_BASE}/obj")
+
+    file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net35")
+    file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net40")
+    file_util.remove_dir_contents(
+        f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/netcoreapp3.0"
+    )
+
+    # invoke obfuscation
+    if os.path.exists(f"{INVOKE_OBFS_DST_DIR_BASE}"):
+        shutil.rmtree(INVOKE_OBFS_DST_DIR_BASE)
+    pathlib.Path(pathlib.Path(INVOKE_OBFS_SRC_DIR_BASE).parent).mkdir(
+        parents=True, exist_ok=True
+    )
+    shutil.copytree(
+        INVOKE_OBFS_SRC_DIR_BASE, INVOKE_OBFS_DST_DIR_BASE, dirs_exist_ok=True
+    )
+
+
 def run(args):
     def thread_websocket(empire_menu, suppress=False):
         try:
@@ -3302,7 +3339,12 @@ def run(args):
         print(empire.VERSION)
 
     elif args.reset:
-        # Reset called from database/base.py
+        choice = input(
+            "\x1b[1;33m[>] Would you like to reset your Empire Server instance? [y/N]: \x1b[0m"
+        )
+        if choice.lower() == "y":
+            reset()
+
         sys.exit()
 
     else:
