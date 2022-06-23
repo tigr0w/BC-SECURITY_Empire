@@ -1,7 +1,7 @@
 suppress-self-cert-warning: true
 database:
   type: sqlite
-  location: empire/server/data/test_empire.db
+  location: empire/test/test_empire.db
   defaults:
     # staging key will first look at OS environment variables, then here.
     # If empty, will be prompted (like Empire <3.7).
@@ -20,6 +20,6 @@ database:
 modules:
   retain-last-value: false
 directories:
-  downloads: empire/server/downloads/
+  downloads: empire/test/downloads/
   module_source: empire/server/data/module_source/
-  obfuscated_module_source: empire/server/data/obfuscated_module_source/
+  obfuscated_module_source: empire/test/obfuscated_module_source/

