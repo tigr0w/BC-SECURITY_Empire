@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.7.0] - 2022-06-25
+-   Update Python version on Dockerfile (@Vinnybod)
+-   Add Python 3.10 to CI tests  (@Vinnybod)
+-   Add a resource file command to the client (@Vinnybod)
+-   Add PowerShell and C# to IronPython modules (@Cx01N)
+-   Add ChiselServer, SocksProxyServer plugin as a submodule (@Cx01N)
+-   Fixed Sharpire download function (@Cx01N)
+-   Fixed spawnas to work with new bat file format (@Cx01N)
+-   Fixed tasking error for IronPython launcher executable (@Cx01N)
+-   Remove some python dependencies (@Vinnybod)
+-   Make tkinter import failure a warning instead of a fatal error (@Vinnybod)
 
 ## [4.6.1] - 2022-06-10
 
