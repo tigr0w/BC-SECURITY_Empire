@@ -91,9 +91,9 @@ class MyCustomCompleter(Completer):
                 )
             elif cmd_line[0] in ["resource"]:
                 if len(cmd_line) > 1 and cmd_line[1] == "-p":
-                    yield Completion(
-                        state.search_files(), start_position=-len(word_before_cursor)
-                    )
+                    file = state.search_files()
+                    if file:
+                        yield Completion(file, start_position=-len(word_before_cursor))
                 else:
                     for files in filtered_search_list(
                         word_before_cursor, current_files(state.directory["downloads"])
