@@ -36,7 +36,7 @@ docopt = "^0.6.2"
 humanize = "^3.2.0"
 pydantic = "^1.8.1"
 pycryptodome = "^3.10.1"
-cryptography = "^3.4.7"
+cryptography = "^37.0.3"
 fastapi = "0.70"
 uvicorn = "^0.14.0"
 jq = "^1.2.1"
@@ -46,7 +46,6 @@ python-jose = {version = "^3.3.0", extras = ["cryptography"]}
 passlib = {version = "^1.7.4", extras = ["bcrypt"]}
 websockify = "^0.10.0"
 websockets = "^10.1"
-tk = "^0.1.0"
 pyperclip = "^1.8.2"
 pyvnc = {git = "https://github.com/BC-SECURITY/pyVNC.git"}
 python-socketio = "^5.5.1"
