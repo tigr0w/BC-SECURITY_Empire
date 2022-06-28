@@ -242,6 +242,7 @@ class AgentTaskService(object):
         module_req.options["Agent"] = agent.session_id
         resp, err = self.module_service.execute_module(
             db,
+            agent,
             module_req.module_slug,
             module_req.options,
             module_req.ignore_language_version_check,

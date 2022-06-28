@@ -65,6 +65,7 @@ class ModuleService(object):
     def execute_module(
         self,
         db: Session,
+        agent: models.Agent,
         module_id: str,
         params: Dict,
         ignore_language_version_check: bool = False,
@@ -113,10 +114,10 @@ class ModuleService(object):
         if module.language == LanguageEnum.powershell:
             module_data = helpers.strip_powershell_comments(module_data)
 
+        task_command = ""
         if agent.language != "ironpython" or (
             agent.language == "ironpython" and module.language == "python"
         ):
-            task_command = ""
             if module.language == LanguageEnum.csharp:
                 task_command = "TASK_CSHARP"
             # build the appropriate task command and module data blob
@@ -180,29 +181,6 @@ class ModuleService(object):
         elif agent.language == "ironpython" and module.language == "csharp":
             task_command = "TASK_CSHARP"
 
-        # set the agent's tasking in the cache
-        task_id = self.main_menu.agents.add_agent_task_db(
-            session_id, task_command, module_data, module_name=module.name, uid=user_id
-        )
-
-        task = (
-            Session()
-            .query(models.Tasking)
-            .filter(
-                and_(
-                    models.Tasking.id == task_id, models.Tasking.agent_id == session_id
-                )
-            )
-            .first()
-        )
-        hooks.run_hooks(hooks.AFTER_TASKING_HOOK, task)
-
-        # update the agent log
-        msg = f"tasked agent {session_id} to run module {module.name}"
-        self.main_menu.agents.save_agent_log(session_id, msg)
-
-        if empire_config.modules.retain_last_value:
-            self._set_default_values(module, cleaned_options)
         return {"command": task_command, "data": module_data}, None
 
     def _validate_module_params(
