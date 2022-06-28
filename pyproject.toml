@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "4.6.1"
+version = "4.7.0"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -17,9 +17,7 @@ python = "^3.8"
 urllib3 = "*"
 requests = "^2.24.0"
 setuptools = "*"
-iptools = "*"
 pydispatcher = "*"
-flask = "^1.1.2"
 macholib = "*"
 dropbox = "*"
 pyOpenSSL = "*"
@@ -28,7 +26,6 @@ zlib_wrapper = "*"
 netifaces = "*"
 jinja2 = "*"
 xlutils = "*"
-pefile = "*"
 bcrypt = "*"
 pyparsing = "*"
 PyMySQL = "^0.10.1"
@@ -41,12 +38,11 @@ docopt = "^0.6.2"
 humanize = "^3.2.0"
 pydantic = "^1.8.1"
 pycryptodome = "^3.10.1"
-cryptography = "^3.4.7"
+cryptography = "^37.0.3"
 Flask-SocketIO = "^5.0.1"
 python-socketio = "^5.2.1"
 jq = "^1.1.3"
 websockify = "^0.10.0"
-tk = "^0.1.0"
 pyperclip = "^1.8.2"
 pyvnc = {git = "https://github.com/BC-SECURITY/pyVNC.git"}
 # Donut breaks with Python 3.10 and hasn't been updated since 2019.
@@ -54,6 +50,7 @@ pyvnc = {git = "https://github.com/BC-SECURITY/pyVNC.git"}
 # The BC-SECURITY fork brings in the changes from S4ntiagoP's pull request
 # https://github.com/TheWover/donut/pull/101
 donut-shellcode = {git = "https://github.com/BC-SECURITY/donut.git"}
+Flask = ">=2.1.2"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"

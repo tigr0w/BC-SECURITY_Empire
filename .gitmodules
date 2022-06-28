@@ -37,3 +37,9 @@
 [submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Certify"]
 	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Certify
 	url = https://github.com/GhostPack/Certify.git
+[submodule "empire/server/plugins/SocksProxyServer-Plugin"]
+	path = empire/server/plugins/SocksProxyServer-Plugin
+	url = https://github.com/BC-SECURITY/SocksProxyServer-Plugin.git
+[submodule "empire/server/plugins/ChiselServer-Plugin"]
+	path = empire/server/plugins/ChiselServer-Plugin
+	url = https://github.com/BC-SECURITY/ChiselServer-Plugin.git

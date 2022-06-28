@@ -77,9 +77,11 @@ from . import encryption
 # 200-299   -> SMB functionality
 
 PACKET_NAMES = {
+    # Agent Commands
     "ERROR": 0,
     "TASK_SYSINFO": 1,
     "TASK_EXIT": 2,
+    # Comm Channel
     "TASK_SET_DELAY": 10,
     "TASK_GET_DELAY": 12,
     "TASK_SET_SERVERS": 13,
@@ -90,22 +92,34 @@ PACKET_NAMES = {
     "TASK_SET_WORKING_HOURS": 32,
     "TASK_GET_WORKING_HOURS": 33,
     "TASK_SET_PROXY": 34,
+    # Empire Commands
     "TASK_SHELL": 40,
     "TASK_DOWNLOAD": 41,
     "TASK_UPLOAD": 42,
     "TASK_DIR_LIST": 43,
-    "TASK_CSHARP": 44,
+    "TASK_CSHARP": 44,  # todo: move to 116/117
     "TASK_GETJOBS": 50,
     "TASK_STOPJOB": 51,
+    # Agent Module Commands
     "TASK_CMD_WAIT": 100,
     "TASK_CMD_WAIT_SAVE": 101,
     "TASK_CMD_JOB": 110,
     "TASK_CMD_JOB_SAVE": 111,
+    "TASK_POWERSHELL_CMD_JOB": 112,
+    "TASK_POWERSHELL_CMD_JOB_SAVE": 113,
+    "TASK_PYTHON_CMD_JOB": 114,
+    "TASK_PYTHON_CMD_JOB_SAVE": 115,
+    "TASK_CSHARP_CMD_JOB": 116,
+    "TASK_CSHARP_CMD_JOB_SAVE": 117,
+    "TASK_POWERSHELL_CMD_WAIT": 118,
+    "TASK_POWERSHELL_CMD_WAIT_SAVE": 119,
+    # Module/Script Imports
     "TASK_SCRIPT_IMPORT": 120,
     "TASK_SCRIPT_COMMAND": 121,
     "TASK_IMPORT_MODULE": 122,
     "TASK_VIEW_MODULE": 123,
     "TASK_REMOVE_MODULE": 124,
+    # Listener Options
     "TASK_SWITCH_LISTENER": 130,
     "TASK_UPDATE_LISTENERNAME": 131,
 }

@@ -11,11 +11,6 @@ These are the first places URI requests are processed.
 """
 from __future__ import absolute_import
 
-from future import standard_library
-
-from empire.server.utils import data_util
-
-standard_library.install_aliases()
 import http.server
 import json
 import os
@@ -25,6 +20,8 @@ import threading
 from http.server import BaseHTTPRequestHandler
 
 from pydispatch import dispatcher
+
+from empire.server.utils import data_util
 
 # Empire imports
 from . import helpers
