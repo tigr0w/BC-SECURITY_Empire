@@ -1,6 +1,8 @@
 name: ironpython_amsi
 authors:
-  - '@Cx01N'
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
 description: |
     Patches AMSI to always return true. Disables AMSI both within the PowerShell and the CLR
 comments:
