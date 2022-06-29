@@ -178,6 +178,13 @@ class MainMenu(Menu):
             ["interact", "Interact with active agents.", "interact <agent_name>"]
         )
         help_list.append(["sponsors", "List of Empire sponsors.", "sponsors"])
+        help_list.append(
+            [
+                "resource",
+                "Run the Empire commands in the specified resource file. Provide the -p flag for a file selection prompt.",
+                "resource <file>",
+            ]
+        )
 
         help_list.sort()
         help_list.insert(0, ["Name", "Description", "Usage"])

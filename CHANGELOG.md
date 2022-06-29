@@ -38,7 +38,20 @@ It will be cleaned up as we get closer to the official release.
 - Add a help command to the client to print the full doc string of a function. such as `help shell` or `help script_import`
 - Add a `--literal` flag that can be used on shell commands that forces the agent to execute the command literally, ignoring any built-in aliases that exist such as for whoami or ps
 
+## [4.7.0] - 2022-06-25
+-   Update Python version on Dockerfile (@Vinnybod)
+-   Add Python 3.10 to CI tests  (@Vinnybod)
+-   Add a resource file command to the client (@Vinnybod)
+-   Add PowerShell and C# to IronPython modules (@Cx01N)
+-   Add ChiselServer, SocksProxyServer plugin as a submodule (@Cx01N)
+-   Fixed Sharpire download function (@Cx01N)
+-   Fixed spawnas to work with new bat file format (@Cx01N)
+-   Fixed tasking error for IronPython launcher executable (@Cx01N)
+-   Remove some python dependencies (@Vinnybod)
+-   Make tkinter import failure a warning instead of a fatal error (@Vinnybod)
+
 ## [4.6.1] - 2022-06-10
+
 -   Use a BC-Security fork of Donut to resolve a python 3.10 issue (@Cx01N)
 -   Update reflective pick dlls (@Hubbl3)
 
@@ -296,7 +309,9 @@ It will be cleaned up as we get closer to the official release.
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.0...HEAD
+
+[4.7.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.1...v4.7.0
 
 [4.6.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.0...v4.6.1
 

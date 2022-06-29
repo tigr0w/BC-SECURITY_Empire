@@ -4,9 +4,8 @@ Misc. helper functions used in Empire.
 
 Includes:
 
-    validate_ip() - uses iptools to validate an IP
+    validate_ip() - validate an IP
     validate_ntlm() - checks if the passed string is an NTLM hash
-    generate_ip_list() - generates an IP range list from a variety of inputs
     random_string() - returns a random string of the specified number of characters
     chunks() - used to split a string into chunks
     strip_python_comments() - strips Python newlines and comments
@@ -36,13 +35,10 @@ Includes:
     KThread() - a subclass of threading.Thread, with a kill() method
     slackMessage() - send notifications to the Slack API
 """
-from __future__ import division
-
 import base64
 import binascii
 import datetime
-import fnmatch
-import hashlib
+import ipaddress
 import json
 import logging
 import numbers
@@ -59,8 +55,9 @@ import urllib.request
 from builtins import range, str
 from datetime import datetime
 
-import iptools
 import netifaces
+
+from empire.server.utils.math_util import old_div
 
 log = logging.getLogger(__name__)
 
@@ -84,18 +81,13 @@ globDebug = False
 
 def validate_ip(IP):
     """
-    Uses iptools to validate an IP.
+    Validate an IP.
     """
     try:
-        validate_IPv4 = iptools.ipv4.validate_ip(IP)
-        validate_IPv6 = iptools.ipv6.validate_ip(IP)
-
-        if validate_IPv4 is True:
-            return validate_IPv4
-        elif validate_IPv6 is True:
-            return validate_IPv6
-    except Exception as e:
-        return e
+        ip = ipaddress.ip_address(IP)
+        return True
+    except:
+        return False
 
 
 def validate_ntlm(data):
@@ -107,41 +99,6 @@ def validate_ntlm(data):
         return True
     else:
         return False
-
-
-def generate_ip_list(s):
-    """
-    Takes a comma separated list of IP/range/CIDR addresses and
-    generates an IP range list.
-    """
-
-    # strip newlines and make everything comma separated
-    s = ",".join(s.splitlines())
-    # strip out spaces
-    s = ",".join(s.split(" "))
-
-    ranges = ""
-    if s and s != "":
-        parts = s.split(",")
-
-        for part in parts:
-            p = part.split("-")
-            if len(p) == 2:
-                if iptools.ipv4.validate_ip(p[0]) and iptools.ipv4.validate_ip(p[1]):
-                    ranges += "('" + str(p[0]) + "', '" + str(p[1]) + "'),"
-            else:
-                if "/" in part and iptools.ipv4.validate_cidr(part):
-                    ranges += "'" + str(p[0]) + "',"
-                elif iptools.ipv4.validate_ip(part):
-                    ranges += "'" + str(p[0]) + "',"
-
-        if ranges != "":
-            return eval("iptools.IpRangeList(" + ranges + ")")
-        else:
-            return None
-
-    else:
-        return None
 
 
 ####################################################################################

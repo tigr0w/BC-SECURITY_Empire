@@ -65,6 +65,7 @@ class ModuleService(object):
     def execute_module(
         self,
         db: Session,
+        agent: models.Agent,
         module_id: str,
         params: Dict,
         ignore_language_version_check: bool = False,
@@ -114,36 +115,71 @@ class ModuleService(object):
             module_data = helpers.strip_powershell_comments(module_data)
 
         task_command = ""
-        if module.language == LanguageEnum.csharp:
-            task_command = "TASK_CSHARP"
-        # build the appropriate task command and module data blob
-        elif module.background:
-            # if this module should be run in the background
-            extension = module.output_extension
-            if extension and extension != "":
-                # if this module needs to save its file output to the server
-                #   format- [15 chars of prefix][5 chars extension][data]
-                save_file_prefix = module.name.split("/")[-1]
-                module_data = (
-                    save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                )
-                task_command = "TASK_CMD_JOB_SAVE"
-            else:
-                task_command = "TASK_CMD_JOB"
+        if agent.language != "ironpython" or (
+            agent.language == "ironpython" and module.language == "python"
+        ):
+            if module.language == LanguageEnum.csharp:
+                task_command = "TASK_CSHARP"
+            # build the appropriate task command and module data blob
+            elif module.background:
+                # if this module should be run in the background
+                extension = module.output_extension
+                if extension and extension != "":
+                    # if this module needs to save its file output to the server
+                    #   format- [15 chars of prefix][5 chars extension][data]
+                    save_file_prefix = module.name.split("/")[-1]
+                    module_data = (
+                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
+                    )
+                    task_command = "TASK_CMD_JOB_SAVE"
+                else:
+                    task_command = "TASK_CMD_JOB"
 
-        else:
-            # if this module is run in the foreground
-            extension = module.output_extension
-            if module.output_extension and module.output_extension != "":
-                # if this module needs to save its file output to the server
-                #   format- [15 chars of prefix][5 chars extension][data]
-                save_file_prefix = module.name.split("/")[-1][:15]
-                module_data = (
-                    save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                )
-                task_command = "TASK_CMD_WAIT_SAVE"
             else:
-                task_command = "TASK_CMD_WAIT"
+                # if this module is run in the foreground
+                extension = module.output_extension
+                if module.output_extension and module.output_extension != "":
+                    # if this module needs to save its file output to the server
+                    #   format- [15 chars of prefix][5 chars extension][data]
+                    save_file_prefix = module.name.split("/")[-1][:15]
+                    module_data = (
+                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
+                    )
+                    task_command = "TASK_CMD_WAIT_SAVE"
+                else:
+                    task_command = "TASK_CMD_WAIT"
+
+        elif agent.language == "ironpython" and module.language == "powershell":
+            if module.background:
+                # if this module should be run in the background
+                extension = module.output_extension
+                if extension and extension != "":
+                    # if this module needs to save its file output to the server
+                    #   format- [15 chars of prefix][5 chars extension][data]
+                    save_file_prefix = module.name.split("/")[-1]
+                    module_data = (
+                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
+                    )
+                    task_command = "TASK_POWERSHELL_CMD_JOB_SAVE"
+                else:
+                    task_command = "TASK_POWERSHELL_CMD_JOB"
+
+            else:
+                # if this module is run in the foreground
+                extension = module.output_extension
+                if module.output_extension and module.output_extension != "":
+                    # if this module needs to save its file output to the server
+                    #   format- [15 chars of prefix][5 chars extension][data]
+                    save_file_prefix = module.name.split("/")[-1][:15]
+                    module_data = (
+                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
+                    )
+                    task_command = "TASK_POWERSHELL_CMD_WAIT_SAVE"
+                else:
+                    task_command = "TASK_POWERSHELL_CMD_WAIT"
+
+        elif agent.language == "ironpython" and module.language == "csharp":
+            task_command = "TASK_CSHARP"
 
         return {"command": task_command, "data": module_data}, None
 
