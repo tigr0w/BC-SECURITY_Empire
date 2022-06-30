@@ -103,7 +103,6 @@ class MainMenu(object):
         """
         Send socketio message to the socket address
         """
-        # todo vr plugins could get their own loggers in the future.
         log.info(f"{plugin_name}: {msg}")
         if self.socketio:
             try:  # https://stackoverflow.com/a/61331974/

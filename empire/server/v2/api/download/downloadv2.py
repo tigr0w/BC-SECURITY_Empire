@@ -77,7 +77,7 @@ async def read_downloads(
     page: int = 1,
     order_direction: OrderDirection = OrderDirection.desc,
     order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
-    query: str = None,
+    query: Optional[str] = None,
     sources: Optional[List[DownloadSourceFilter]] = Query(None),
 ):
     downloads, total = download_service.get_all(

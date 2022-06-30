@@ -81,7 +81,7 @@ async def get_task(
 
 
 @router.get("/tasks", response_model=Tasks)
-async def get_tasks_all_agents(
+async def read_tasks_all_agents(
     limit: int = -1,
     page: int = 1,
     include_full_input: bool = False,
@@ -93,6 +93,7 @@ async def get_tasks_all_agents(
     status: Optional[TaskingStatus] = None,
     agents: Optional[List[str]] = Query(None),
     users: Optional[List[int]] = Query(None),
+    query: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     tasks, total = agent_task_service.get_tasks(
@@ -108,6 +109,7 @@ async def get_tasks_all_agents(
         order_by=order_by,
         order_direction=order_direction,
         status=status,
+        q=query,
     )
 
     tasks_converted = list(
@@ -142,6 +144,7 @@ async def read_tasks(
     users: Optional[List[int]] = Query(None),
     db: Session = Depends(get_db),
     db_agent: models.Agent = Depends(get_agent),
+    query: Optional[str] = None,
 ):
     tasks, total = agent_task_service.get_tasks(
         db,
@@ -156,6 +159,7 @@ async def read_tasks(
         order_by=order_by,
         order_direction=order_direction,
         status=status,
+        q=query,
     )
 
     tasks_converted = list(

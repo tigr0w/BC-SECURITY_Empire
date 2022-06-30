@@ -4,7 +4,7 @@ import threading
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, undefer
 
 from empire.server.common import helpers
@@ -43,6 +43,7 @@ class AgentTaskService(object):
         order_by: TaskOrderOptions = TaskOrderOptions.id,
         order_direction: OrderDirection = OrderDirection.desc,
         status: Optional[TaskingStatus] = None,
+        q: Optional[str] = None,
     ):
         query = db.query(
             models.Tasking, func.count(models.Tasking.id).over().label("total")
@@ -71,6 +72,14 @@ class AgentTaskService(object):
 
         if status:
             query = query.filter(models.Tasking.status == status)
+
+        if q:
+            query = query.filter(
+                or_(
+                    models.Tasking.input.like(f"%{q}%"),
+                    models.Tasking.output.like(f"%{q}%"),
+                )
+            )
 
         if order_by == TaskOrderOptions.status:
             order_by_prop = models.Tasking.status
