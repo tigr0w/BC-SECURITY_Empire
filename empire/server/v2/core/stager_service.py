@@ -51,7 +51,7 @@ class StagerService(object):
             return None, f'Listener {params["Listener"]} not found'
 
         template_instance = self.stager_template_service.new_instance(template)
-        cleaned_options, err = validate_options(template_instance, params)
+        cleaned_options, err = validate_options(template_instance.options, params)
 
         if err:
             return None, err

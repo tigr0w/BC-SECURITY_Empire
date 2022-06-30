@@ -87,7 +87,7 @@ class PluginService(object):
         self.loaded_plugins[plugin_name] = plugin_obj
 
     def execute_plugin(self, db: Session, plugin, plugin_req):
-        cleaned_options, err = validate_options(plugin, plugin_req.options)
+        cleaned_options, err = validate_options(plugin.options, plugin_req.options)
 
         if err:
             return None, err

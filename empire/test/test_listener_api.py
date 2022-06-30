@@ -224,7 +224,7 @@ def test_update_listener_reverts_if_validation_fails(client, admin_auth_header):
     assert response.json()["enabled"] is False
 
     listener = response.json()
-    del listener["options"]["Host"]
+    del listener["options"]["Port"]
     listener["options"]["BindIP"] = "1.1.1.1"
     response = client.put(
         f"/api/v2/listeners/{listener['id']}",
@@ -232,7 +232,7 @@ def test_update_listener_reverts_if_validation_fails(client, admin_auth_header):
         json=listener,
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "required option missing: Host"
+    assert response.json()["detail"] == "required option missing: Port"
 
     response = client.get(
         f"/api/v2/listeners/{my_globals['listener_id']}", headers=admin_auth_header

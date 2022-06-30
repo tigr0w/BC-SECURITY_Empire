@@ -199,7 +199,7 @@ class ListenerService(object):
             return None, f"Listener Template {template} not found"
 
         template_instance = self.listener_template_service.new_instance(template)
-        cleaned_options, err = validate_options(template_instance, params)
+        cleaned_options, err = validate_options(template_instance.options, params)
 
         if err:
             return None, err

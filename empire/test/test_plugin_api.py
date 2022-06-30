@@ -39,15 +39,15 @@ def test_execute_plugin_validation_failed(client, admin_auth_header):
             "options": {
                 "SourceHost": "0.0.0.0",
                 "SourcePort": "5910",
-                "TargetHost": "0.0.0.0",
                 "TargetPort": "5910",
+                "Status": "stop",
             }
         },
         headers=admin_auth_header,
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "required option missing: Status"
+    assert response.json()["detail"] == "required option missing: TargetHost"
 
 
 def test_execute_plugin_raises_exception(client, admin_auth_header, main):

@@ -1,5 +1,7 @@
 import typing
 
+from empire.server.common.module_models import EmpireModuleOption
+
 
 def safe_cast(
     option: typing.Any, expected_option_type: typing.Type
@@ -12,7 +14,28 @@ def safe_cast(
         return None
 
 
-def validate_options(instance, params: typing.Dict):
+def convert_module_options(options: typing.List[EmpireModuleOption]) -> typing.Dict:
+    """
+    Since modules options are typed classes vs listeners/stagers/etc which are dicts, this function
+    converts the options to dicts so they can use the same validation logic in validate_options.
+    """
+    converted_options = {}
+
+    for option in options:
+        converted_options[option.name] = {
+            "Description": option.description,
+            "Required": option.required,
+            "Value": option.value,
+            "SuggestedValues": option.suggested_values,
+            "Strict": option.strict,
+            "Type": option.type,
+            "NameInCode": option.name_in_code,
+        }
+
+    return converted_options
+
+
+def validate_options(instance_options: typing.Dict, params: typing.Dict):
     """
     Compares the options passed in (params) to the options defined in the
     class (instance). If any options are invalid, returns a Tuple of
@@ -23,35 +46,42 @@ def validate_options(instance, params: typing.Dict):
     """
     options = {}
 
-    for instance_key, option_meta in instance.options.items():
-        if instance_key in params:
-            option_type = type(params[instance_key])
-            expected_option_type = option_meta.get("Type") or type(option_meta["Value"])
-            if option_type != expected_option_type:
-                casted = safe_cast(params[instance_key], expected_option_type)
-                if casted is None:
-                    return (
-                        None,
-                        f"incorrect type for option {instance_key}. Expected {expected_option_type} but got {option_type}",
-                    )
-                else:
-                    params[instance_key] = casted
-            if (
-                option_meta["Strict"]
-                and params[instance_key] not in option_meta["SuggestedValues"]
-            ):
-                return (
-                    None,
-                    f"{instance_key} must be set to one of the suggested values.",
-                )
-            elif option_meta["Required"] and (
-                params[instance_key] is None or params[instance_key] == ""
-            ):
-                return None, f"required option missing: {instance_key}"
-            else:
-                options[instance_key] = params[instance_key]
-        elif option_meta["Required"]:
+    for instance_key, option_meta in instance_options.items():
+        # Attempt to default a unset required option to the default value
+        if (
+            instance_key not in params
+            and option_meta["Required"]
+            and option_meta["Value"]
+        ):
+            params[instance_key] = option_meta["Value"]
+
+        # If the required option still isn't set, return an error
+        if option_meta["Required"] and (
+            instance_key not in params
+            or params[instance_key] == ""
+            or params[instance_key] is None
+        ):
             return None, f"required option missing: {instance_key}"
+
+        # If strict, check that the option is one of the suggested values
+        if (
+            option_meta["Strict"]
+            and params[instance_key] not in option_meta["SuggestedValues"]
+        ):
+            return (
+                None,
+                f"{instance_key} must be set to one of the suggested values.",
+            )
+
+        # If the option is set, attempt to cast it to the correct type
+        casted, err = _safe_cast_option(instance_key, params[instance_key], option_meta)
+        if err:
+            return None, err
+
+        if option_meta.get("NameInCode"):
+            options[option_meta["NameInCode"]] = casted
+        else:
+            options[instance_key] = casted
 
     return options, None
 
@@ -62,3 +92,18 @@ def set_options(instance, options: typing.Dict):
     """
     for option_name, option_value in options.items():
         instance.options[option_name]["Value"] = option_value
+
+
+def _safe_cast_option(
+    param_name, param_value, option_meta
+) -> typing.Tuple[typing.Any, typing.Optional[str]]:
+    option_type = type(param_value)
+    expected_option_type = option_meta.get("Type") or type(option_meta["Value"])
+    casted = safe_cast(param_value, expected_option_type)
+    if casted is None:
+        return (
+            None,
+            f"incorrect type for option {param_name}. Expected {expected_option_type} but got {option_type}",
+        )
+    else:
+        return casted, None

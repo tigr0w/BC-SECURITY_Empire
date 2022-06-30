@@ -25,6 +25,7 @@ class EmpireModuleOption(BaseModel):
     value: str = ""
     suggested_values: List[str] = []
     strict: bool = False
+    type: Optional[str]
 
 
 class EmpireModuleAuthor(BaseModel):

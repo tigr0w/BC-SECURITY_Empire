@@ -13,7 +13,11 @@ from empire.server.common.converter.load_covenant import _convert_covenant_to_em
 from empire.server.common.module_models import EmpireModule, LanguageEnum
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
-from empire.server.utils.option_util import safe_cast
+from empire.server.utils.option_util import (
+    convert_module_options,
+    safe_cast,
+    validate_options,
+)
 from empire.server.v2.api.module.module_dto import (
     ModuleBulkUpdateRequest,
     ModuleUpdateRequest,
@@ -196,36 +200,11 @@ class ModuleService(object):
         :param params: the execution parameters
         :return: tuple with options and the error message (if applicable)
         """
-        options = {}
+        converted_options = convert_module_options(module.options)
+        options, err = validate_options(converted_options, params)
 
-        for option in module.options:
-            if option.name in params:
-                option_type = type(params[option.name])
-                expected_option_type = type(option.value)
-                if option_type != expected_option_type:
-                    casted = safe_cast(params[option.name], expected_option_type)
-                    if casted is None:
-                        return (
-                            None,
-                            f"incorrect type for option {option.name}. Expected {expected_option_type} but got {option_type}",
-                        )
-                    else:
-                        params[option.name] = casted
-                if option.strict and params[option.name] not in option.suggested_values:
-                    return (
-                        None,
-                        f"{option.name} must be set to one of the suggested values.",
-                    )
-                elif option.required and (
-                    params[option.name] is None or params[option.name] == ""
-                ):
-                    return None, f"required listener option missing: {option.name}"
-                if option.name_in_code:
-                    options[option.name_in_code] = params[option.name]
-                else:
-                    options[option.name] = params[option.name]
-            elif option.required:
-                return None, f"required module option missing: {option.name}"
+        if err:
+            return None, err
 
         # todo move generate_agent to a stager.
         if module.name == "generate_agent":

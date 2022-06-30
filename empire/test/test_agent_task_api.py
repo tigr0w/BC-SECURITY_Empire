@@ -290,7 +290,7 @@ def test_create_task_module_validates_required_options(
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "required listener option missing: MsgText"
+    assert response.json()["detail"] == "required option missing: MsgText"
 
 
 def test_create_task_module_validates_options_strict(client, admin_auth_header, agent):

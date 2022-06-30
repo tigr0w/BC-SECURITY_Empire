@@ -50,7 +50,7 @@ def test_create_stager_validation_fails_required_field(
 def test_create_stager_validation_fails_strict_field(
     client, base_stager, admin_auth_header
 ):
-    base_stager["options"]["Language"] = ""
+    base_stager["options"]["Language"] = "ABCDEF"
     response = client.post(
         "/api/v2/stagers/", headers=admin_auth_header, json=base_stager
     )
