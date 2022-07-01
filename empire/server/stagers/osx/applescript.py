@@ -1,8 +1,9 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -84,7 +85,7 @@ class Stager(object):
         )
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("Error in launcher command generation.")
             return ""
 
         else:

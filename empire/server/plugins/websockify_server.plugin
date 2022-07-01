@@ -13,10 +13,7 @@ from empire.server.common.plugins import Plugin
 
 
 class Plugin(Plugin):
-    description = "Empire websockify server plugin."
-
     def onLoad(self):
-        print(helpers.color("[*] Loading websockify server plugin"))
         self.main_menu = None
         self.csharpserver_proc = None
         self.info = {

@@ -91,11 +91,7 @@ class Stagers(object):
                     if bypass.language == language:
                         bypasses_parsed.append(bypass.code)
                     else:
-                        print(
-                            helpers.color(
-                                f"[!] Invalid bypass language: {bypass.language}"
-                            )
-                        )
+                        log.warning(f"Invalid bypass language: {bypass.language}")
 
             db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
             active_listener = self.mainMenu.listenersv2.get_active_listener(

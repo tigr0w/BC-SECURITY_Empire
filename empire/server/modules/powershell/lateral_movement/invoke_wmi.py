@@ -1,13 +1,10 @@
 from __future__ import print_function
 
-import pathlib
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
 from empire.server.common.module_models import EmpireModule
 from empire.server.database.models import Credential
-from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -88,7 +85,6 @@ class Module(object):
         else:
             Cmd = command.replace('"', '`"').replace("$", "`$")
             stagerCode = Cmd
-            print(helpers.color("[*] Running command:  " + command))
 
         # build the WMI execution string
         computer_names = '"' + '","'.join(params["ComputerName"].split(",")) + '"'

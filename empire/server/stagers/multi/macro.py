@@ -1,9 +1,12 @@
 from __future__ import print_function
 
+import logging
 import re
 from builtins import object, range, str
 
 from empire.server.common import helpers
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -165,7 +168,7 @@ class Stager(object):
         )
 
         if pylauncher == "":
-            print(helpers.color("[!] Error in python launcher command generation."))
+            log.error("Error in python launcher command generation.")
             return ""
 
         # render python launcher into python payload
@@ -189,7 +192,7 @@ class Stager(object):
         )
 
         if poshlauncher == "":
-            print(helpers.color("[!] Error in powershell launcher command generation."))
+            log.error("Error in powershell launcher command generation.")
             return ""
 
         # render powershell launcher into powershell payload

@@ -345,12 +345,4 @@ class Listener(object):
         If a server component was started, implement the logic that kills the particular
         named listener here.
         """
-
-        # if name and name != '':
-        #     print helpers.color("[!] Killing listener '%s'" % (name))
-        #     self.threads[name].kill()
-        # else:
-        #     print helpers.color("[!] Killing listener '%s'" % (self.options['Name']['Value']))
-        #     self.threads[self.options['Name']['Value']].kill()
-
         pass

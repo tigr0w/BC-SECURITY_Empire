@@ -1,14 +1,14 @@
 from __future__ import print_function
 
-import pathlib
+import logging
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
 from empire.server.common.module_models import EmpireModule
 from empire.server.database.models import Credential
-from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_error_message
+
+log = logging.getLogger(__name__)
 
 
 class Module(object):
@@ -50,7 +50,7 @@ class Module(object):
                 params["ntlm"] = cred.password
 
         if params["ntlm"] == "":
-            print(helpers.color("[!] ntlm hash not specified"))
+            log.error("ntlm hash not specified")
 
         # build the custom command with whatever options we want
         command = "sekurlsa::pth /user:" + params["user"]

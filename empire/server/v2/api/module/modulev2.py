@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from fastapi import Depends, HTTPException
@@ -18,6 +19,8 @@ from empire.server.v2.api.shared_dependencies import get_db
 from empire.server.v2.api.shared_dto import BadRequestResponse, NotFoundResponse
 
 module_service = main.modulesv2
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/v2/modules",
@@ -46,14 +49,14 @@ async def get_module(uid: str):
     # response_model=Modules,
 )
 async def read_modules():
-    print(f"Request Received {datetime.utcnow()}")
+    log.info(f"Request Received {datetime.utcnow()}")
     modules = list(
         map(
             lambda x: domain_to_dto_module(x[1], x[0]), module_service.get_all().items()
         )
     )
 
-    print(f"Done Converting Objects {datetime.utcnow()}")
+    log.info(f"Done Converting Objects {datetime.utcnow()}")
 
     return {"records": modules}
 

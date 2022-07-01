@@ -1,8 +1,8 @@
 import json
+import logging
 
 from sqlalchemy.orm import Session
 
-from empire.server.common import helpers
 from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
@@ -12,9 +12,12 @@ from empire.server.v2.api.agent.task_dto import domain_to_dto_task
 from empire.server.v2.api.listener.listener_dto import domain_to_dto_listener
 from empire.server.v2.api.user.user_dto import domain_to_dto_user
 
+log = logging.getLogger(__name__)
+
 
 def setup_socket_events(sio, empire_menu):
     empire_menu.socketio = sio
+
     # A socketio user is in the general channel if they join the chat.
     room = "general"
 
@@ -47,7 +50,7 @@ def setup_socket_events(sio, empire_menu):
     async def on_connect(sid, environ, auth):
         user = await get_user_from_token(sid, auth["token"])
         if user:
-            print(helpers.color(f"[+] {user.username} connected to socketio"))
+            log.info(f"{user.username} connected to socketio")
             return
 
         return False
@@ -55,10 +58,8 @@ def setup_socket_events(sio, empire_menu):
     @sio.on("disconnect")
     async def on_disconnect(sid):
         user = get_user_from_sid(sid)
-        print(
-            helpers.color(
-                f"[+] {'Client' if user is None else user.username} disconnected from socketio"
-            )
+        log.info(
+            f"{'Client' if user is None else user.username} disconnected from socketio"
         )
 
     @sio.on("chat/join")

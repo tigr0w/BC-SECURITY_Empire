@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import logging
 import os
 import string
 from builtins import object, str
@@ -8,8 +9,9 @@ from typing import Dict
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.common.module_models import EmpireModule
-from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_error_message
+
+log = logging.getLogger(__name__)
 
 
 class Module(object):
@@ -88,9 +90,7 @@ class Module(object):
             stager_code = stager_code.replace("exec(agent)", "")
             code = f"server='{host}';\n" + stager_code + f"\n{agent_code}"
 
-        print(
-            helpers.color("[+] Pre-generated agent '%s' now registered." % session_id)
-        )
+        log.info(f"Pre-generated agent '{session_id}' now registered.")
 
         # increment the supplied file name appropriately if it already exists
         i = 1
@@ -114,12 +114,9 @@ class Module(object):
         f.write(code)
         f.close()
 
-        print(
-            helpers.color(
-                "[*] %s agent code for listener %s with sessionID '%s' written out to %s"
-                % (language, listener_name, session_id, out_file)
-            )
+        log.info(
+            f"{language} agent code for listener {listener_name} with sessionID '{session_id}' written out to {out_file}"
         )
-        print(helpers.color("[*] Run sysinfo command after agent starts checking in!"))
+        log.info(f"Run sysinfo command after agent starts checking in!")
 
         return code

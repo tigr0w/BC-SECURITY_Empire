@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import base64
+import logging
 import os
 import socket
 import subprocess
@@ -9,12 +10,11 @@ import time
 import empire.server.common.helpers as helpers
 from empire.server.common.plugins import Plugin
 
+log = logging.getLogger(__name__)
+
 
 class Plugin(Plugin):
-    description = "Empire C# server plugin."
-
     def onLoad(self):
-        print(helpers.color("[*] Loading Empire C# server plugin"))
         self.main_menu = None
         self.csharpserver_proc = None
         self.thread = None
@@ -51,7 +51,7 @@ class Plugin(Plugin):
             results = self.do_csharpserver("")
             return results
         except Exception as e:
-            print(e)
+            log.error(e)
             self.main_menu.plugin_socketio_message(self.info["Name"], f"[!] {e}")
             return False
 
@@ -141,7 +141,7 @@ class Plugin(Plugin):
         while True:
             output = self.csharpserver_proc.stdout.readline().rstrip()
             if output:
-                print(helpers.color("[*] " + output.decode("UTF-8")))
+                log.info(output.decode("UTF-8"))
 
     def do_send_message(self, compiler_yaml, task_name, confuse=False):
         bytes_yaml = compiler_yaml.encode("UTF-8")

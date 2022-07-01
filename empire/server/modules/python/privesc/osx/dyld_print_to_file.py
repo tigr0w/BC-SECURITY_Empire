@@ -1,10 +1,12 @@
 from __future__ import print_function
 
+import logging
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
 from empire.server.common.module_models import EmpireModule
+
+log = logging.getLogger(__name__)
 
 
 class Module(object):
@@ -16,7 +18,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # the Python script itself, with the command to invoke
         #   for execution appended to the end. Scripts should output
         #   everything to the pipeline for proper parsing.
@@ -34,7 +35,7 @@ class Module(object):
             safeChecks=safe_checks,
         )
         if launcher == "":
-            print(helpers.color("[!] Error in launcher generation"))
+            log.error("Error in launcher generation")
         launcher = launcher.replace('"', '\\"')
         fullPath = params["WriteablePath"] + params["FileName"]
         fileName = params["FileName"]

@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import logging
 import os
 from builtins import object, str
 
@@ -22,6 +23,8 @@ Install steps...
 @TweekFawkes
 
 """
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -112,12 +115,8 @@ class Stager(object):
 
         output_str = subprocess.check_output(["which", "pyinstaller"])
         if output_str == "":
-            print(helpers.color("[!] Error pyInstaller is not installed"))
-            print(
-                helpers.color(
-                    "[!] Try: apt-get -y install python-pip && pip install pyinstaller"
-                )
-            )
+            log.error("pyInstaller is not installed")
+            log.error("Try: apt-get -y install python-pip && pip install pyinstaller")
             return ""
         else:
             # generate the launcher code
@@ -129,7 +128,7 @@ class Stager(object):
                 safeChecks=safe_checks,
             )
             if launcher == "":
-                print(helpers.color("[!] Error in launcher command generation."))
+                log.error("Error in launcher command generation.")
                 return ""
             else:
                 files_to_extract_imports_from_list = []

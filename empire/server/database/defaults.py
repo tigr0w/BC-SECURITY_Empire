@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import random
 import string
@@ -12,6 +13,8 @@ from empire.server.database import models
 database_config = empire_config.database.defaults
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+log = logging.getLogger(__name__)
 
 
 def get_default_hashed_password():
@@ -92,11 +95,11 @@ def get_staging_key():
             return hashlib.md5(choice.encode("utf-8")).hexdigest()
 
     elif staging_key == "RANDOM":
-        print("\x1b[1;34m[*] Generating random staging key\x1b[0m")
+        log.info("Generating random staging key")
         return "".join(
             random.sample(string.ascii_letters + string.digits + punctuation, 32)
         )
 
     else:
-        print(f"\x1b[1;34m[*] Using configured staging key: {staging_key}\x1b[0m")
+        log.info("Using configured staging key: {staging_key}")
         return staging_key
