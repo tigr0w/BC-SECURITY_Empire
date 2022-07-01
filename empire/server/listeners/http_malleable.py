@@ -154,6 +154,8 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+
         self.instance_log = log
 
     def default_response(self):
@@ -1363,7 +1365,6 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
         log.setLevel(logging.ERROR)
 
         # initialize flask server
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 

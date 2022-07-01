@@ -62,7 +62,7 @@ class ListenerService(object):
         :return: listener object
         """
         for listener in self._active_listeners.values():
-            if listener.options["Name"] == name:
+            if listener.options["Name"]["Value"] == name:
                 return listener
 
     def update_listener(self, db: Session, db_listener: models.Listener, listener_req):

@@ -298,10 +298,9 @@ def test_create_task_module_validates_options_strict(client, admin_auth_header, 
         f"/api/v2/agents/{agent.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "external_generate_agent",
+            "module_slug": "powershell_collection_foxdump",
             "options": {
-                "Listener": "MyListener",
-                "Language": "notValid",
+                "OutputFunction": "not-valid-choice",
             },
         },
     )
@@ -309,7 +308,7 @@ def test_create_task_module_validates_options_strict(client, admin_auth_header, 
     assert response.status_code == 400
     assert (
         response.json()["detail"]
-        == "Language must be set to one of the suggested values."
+        == "OutputFunction must be set to one of the suggested values."
     )
 
 

@@ -106,6 +106,24 @@ def test_validate_options_casts_string_to_int_success():
     assert cleaned_options == {"Port": 123}
 
 
+def test_validate_options_missing_optional_field_no_defauls():
+    instance_options = {
+        "Command": {
+            "Description": "Command to run",
+            "Required": False,
+            "Value": "",
+            "SuggestedValues": [],
+            "Strict": False,
+        }
+    }
+
+    options = {}
+
+    cleaned_options, err = validate_options(instance_options, options)
+
+    assert cleaned_options == {"Command": ""}
+
+
 def test_safe_cast_string():
     assert safe_cast("abc", str) == "abc"
 

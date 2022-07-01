@@ -126,8 +126,10 @@ def ls_filter(db: Session, tasking: models.Tasking):
 
     if the results are from the Python or C# agents, it does nothing.
     """
+    tasking_input = tasking.input.strip().split()
     if (
-        tasking.input.strip().split()[0] not in ["ls", "dir"]
+        len(tasking_input) == 0
+        or tasking_input[0] not in ["ls", "dir"]
         or tasking.agent.language != "powershell"
     ):
         return db, tasking

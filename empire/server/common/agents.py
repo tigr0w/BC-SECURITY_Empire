@@ -58,16 +58,18 @@ import logging
 import os
 import string
 import threading
-
-# -*- encoding: utf-8 -*-
 import warnings
 from builtins import object, str
+
+# -*- encoding: utf-8 -*-
+from time import sleep
 from typing import Dict
 
-from sqlalchemy import and_, func, or_, update
+from sqlalchemy import and_, exc, func, or_, update
 from sqlalchemy.orm import Session, undefer
 from zlib_wrapper import decompress
 
+from empire.server.common.helpers import KThread
 from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
@@ -789,6 +791,7 @@ class Agents(object):
 
     def update_agent_sysinfo_db(
         self,
+        db,
         session_id,
         listener="",
         external_ip="",
@@ -806,64 +809,122 @@ class Agents(object):
         """
         Update an agent's system information.
         """
-        with SessionLocal.begin() as db:
-            # see if we were passed a name instead of an ID
-            nameid = self.get_agent_id_db(session_id)
-            if nameid:
-                session_id = nameid
+        # see if we were passed a name instead of an ID
+        nameid = self.get_agent_id_db(session_id)
+        if nameid:
+            session_id = nameid
 
-            agent = (
-                db.query(models.Agent)
-                .filter(models.Agent.session_id == session_id)
-                .first()
-            )
+        agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
+        )
 
-            host = (
-                db.query(models.Host)
-                .filter(
-                    and_(
-                        models.Host.name == hostname,
-                        models.Host.internal_ip == internal_ip,
-                    )
+        host = (
+            db.query(models.Host)
+            .filter(
+                and_(
+                    models.Host.name == hostname,
+                    models.Host.internal_ip == internal_ip,
                 )
-                .first()
             )
-            if not host:
-                host = models.Host(name=hostname, internal_ip=internal_ip)
-                db.add(host)
-                db.flush()
+            .first()
+        )
+        if not host:
+            host = models.Host(name=hostname, internal_ip=internal_ip)
+            db.add(host)
+            db.flush()
 
-            process = (
-                db.query(models.HostProcess)
-                .filter(
-                    and_(
-                        models.HostProcess.host_id == host.id,
-                        models.HostProcess.process_id == process_id,
-                    )
+        process = (
+            db.query(models.HostProcess)
+            .filter(
+                and_(
+                    models.HostProcess.host_id == host.id,
+                    models.HostProcess.process_id == process_id,
                 )
-                .first()
             )
-            if not process:
-                process = models.HostProcess(
-                    host_id=host.id,
-                    process_id=process_id,
-                    process_name=process_name,
-                    user=agent.username,
-                )
-                db.add(process)
-                db.flush()
+            .first()
+        )
+        if not process:
+            process = models.HostProcess(
+                host_id=host.id,
+                process_id=process_id,
+                process_name=process_name,
+                user=agent.username,
+            )
+            db.add(process)
+            db.flush()
 
-            agent.internal_ip = internal_ip.split(" ")[0]
-            agent.username = username
-            agent.hostname = hostname
-            agent.host_id = host.id
-            agent.os_details = os_details
-            agent.high_integrity = high_integrity
-            agent.process_name = process_name
-            agent.process_id = process_id
-            agent.language_version = language_version
-            agent.language = language
-            agent.architecture = architecture
+        agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
+        )
+        db.execute(
+            update(models.Agent)
+            .where(
+                or_(
+                    models.Agent.session_id == session_id,
+                    models.Agent.name == session_id,
+                )
+            )
+            .values(
+                session_id=session_id,
+                internal_ip=internal_ip.split(" ")[0],
+                username=username,
+                hostname=hostname,
+                host_id=host.id,
+                os_details=os_details,
+                high_integrity=high_integrity,
+                process_name=process_name,
+                process_id=process_id,
+                language_version=language_version,
+                language=language,
+                architecture=architecture,
+            )
+        )
+        host = (
+            db.query(models.Host)
+            .filter(
+                and_(
+                    models.Host.name == hostname,
+                    models.Host.internal_ip == internal_ip,
+                )
+            )
+            .first()
+        )
+        if not host:
+            host = models.Host(name=hostname, internal_ip=internal_ip)
+            db.add(host)
+            db.flush()
+
+        process = (
+            db.query(models.HostProcess)
+            .filter(
+                and_(
+                    models.HostProcess.host_id == host.id,
+                    models.HostProcess.process_id == process_id,
+                )
+            )
+            .first()
+        )
+        if not process:
+            process = models.HostProcess(
+                host_id=host.id,
+                process_id=process_id,
+                process_name=process_name,
+                user=agent.username,
+            )
+            db.add(process)
+        db.flush()
+
+        agent.internal_ip = internal_ip.split(" ")[0]
+        agent.username = username
+        agent.hostname = hostname
+        agent.host_id = host.id
+        agent.os_details = os_details
+        agent.high_integrity = high_integrity
+        agent.process_name = process_name
+        agent.process_id = process_id
+        agent.language_version = language_version
+        agent.language = language
+        agent.architecture = architecture
 
     def update_agent_lastseen_db(self, session_id, current_time=None):
         """
@@ -1191,6 +1252,7 @@ class Agents(object):
 
             # update the agent with this new information
             self.mainMenu.agents.update_agent_sysinfo_db(
+                db,
                 sessionID,
                 listener=listenerName,
                 internal_ip=internal_ip,
@@ -1329,7 +1391,6 @@ class Agents(object):
             elif meta == "TASKING_REQUEST":
                 message = f"handle_agent_data(): sessionID {sessionID} issued a TASKING_REQUEST"
                 log.debug(message)
-
                 dataToReturn.append(
                     (
                         language,
@@ -1567,6 +1628,7 @@ class Agents(object):
 
                 # update the agent with this new information
                 self.mainMenu.agents.update_agent_sysinfo_db(
+                    db,
                     session_id,
                     listener=listener,
                     internal_ip=internal_ip,

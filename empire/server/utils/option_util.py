@@ -74,7 +74,9 @@ def validate_options(instance_options: typing.Dict, params: typing.Dict):
             )
 
         # If the option is set, attempt to cast it to the correct type
-        casted, err = _safe_cast_option(instance_key, params[instance_key], option_meta)
+        casted, err = _safe_cast_option(
+            instance_key, params.get(instance_key, ""), option_meta
+        )
         if err:
             return None, err
 

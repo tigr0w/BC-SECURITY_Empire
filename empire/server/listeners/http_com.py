@@ -154,6 +154,8 @@ class Listener(object):
         # randomize the length of the default_response and index_page headers to evade signature based scans
         self.header_offset = random.randint(0, 64)
 
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+
         self.instance_log = log
 
     def default_response(self):
@@ -550,7 +552,6 @@ class Listener(object):
         port = listenerOptions["Port"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
 
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 

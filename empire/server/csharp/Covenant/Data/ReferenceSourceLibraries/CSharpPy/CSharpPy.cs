@@ -15,14 +15,11 @@ namespace CSharpPy
 {
     class Empire
     {
-        public static void Agent(string B64PyCode)
+        public static void Agent(string PyCode)
         {
             try
             {
                 // setup ironpython engine
-                string PyCode = "";
-                byte[] ScriptBytes = Convert.FromBase64String(B64PyCode);
-                PyCode = Encoding.ASCII.GetString(ScriptBytes);
                 ScriptEngine engine = Python.CreateEngine();
 
                 // Load stdlib to memory

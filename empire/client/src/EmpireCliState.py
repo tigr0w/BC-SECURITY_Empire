@@ -525,6 +525,15 @@ class EmpireCliState(object):
         )
         return response.json()
 
+    def sysinfo(self, session_id: str):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/sysinfo",
+            json={},
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response.json()
+
     def agent_script_import(self, session_id: str, script_name: str):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_import",
