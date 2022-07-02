@@ -254,7 +254,6 @@ class AdminMenu(Menu):
         if "location" in response.keys():
             link = response["location"]
             filename = response["filename"]
-            print("todo: download file gives location not a link")
 
             print(print_util.color(f"[*] Downloading { filename } from server"))
             data = state.download_stager(link)

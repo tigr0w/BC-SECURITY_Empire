@@ -135,15 +135,6 @@ class AgentMenu(Menu):
         # todo: add other hide options and add to config file
 
     @command
-    def clear(self, agent_name: str) -> None:
-        """
-        Clear tasks for selected listener
-
-        Usage: clear <agent_name>
-        """
-        state.clear_agent(agent_name)
-
-    @command
     def rename(self, agent_name: str, new_agent_name: str) -> None:
         """
         Rename selected listener

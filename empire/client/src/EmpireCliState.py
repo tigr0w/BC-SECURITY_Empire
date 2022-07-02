@@ -507,15 +507,6 @@ class EmpireCliState(object):
         )
         return response.json()
 
-    def clear_agent(self, agent_name: str):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/clear",
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        print("todo: fix clear agent")
-        return response.json()
-
     def agent_shell(self, session_id: str, shell_cmd: str, literal: bool = False):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/shell",
@@ -534,24 +525,23 @@ class EmpireCliState(object):
         )
         return response.json()
 
-    def agent_script_import(self, session_id: str, script_name: str):
+    def agent_script_import(self, session_id: str, filename: str, file_data: bytes):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_import",
-            json={"script_name": script_name},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
+            data={},
+            files=[("file", (filename, file_data, "application/octet-stream"))],
         )
-        print("todo: fixagent script import")
         return response.json()
 
     def agent_script_command(self, session_id: str, script_command: str):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_command",
-            json={"script": script_command},
+            json={"command": script_command},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
-        print("todo: fix agent script command")
         return response.json()
 
     def scrape_directory(self, session_id: str):
@@ -599,22 +589,20 @@ class EmpireCliState(object):
 
     def edit_credential(self, cred_id, cred_options: Dict):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/creds/{cred_id}",
+            url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
             verify=False,
             json=cred_options,
             headers={"Authorization": f"Bearer {self.token}"},
         )
-        print("todo: fix edit credentials")
         return response.json()
 
     def add_credential(self, cred_options):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/creds",
+            url=f"{self.host}:{self.port}/api/v2/credentials",
             json=cred_options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
-        print("todo: fix add credentials")
         return response.json()
 
     def remove_credential(self, cred_id):
@@ -674,13 +662,12 @@ class EmpireCliState(object):
         return response
 
     def agent_sleep(self, agent_name: str, delay: int, jitter: float):
-        response = requests.put(
+        response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/sleep",
             json={"delay": delay, "jitter": jitter},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
-        print("todo: fix agent sleep")
         return response.json()
 
     def get_users(self):

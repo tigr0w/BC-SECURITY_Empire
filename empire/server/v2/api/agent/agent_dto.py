@@ -18,7 +18,7 @@ def domain_to_dto_agent(agent: models.Agent):
         # listener_id=agent.listener,
         listener=agent.listener,
         host_id=agent.host_id,
-        hostname=agent.host.name,
+        hostname=agent.hostname,
         language=agent.language,
         language_version=agent.language_version,
         delay=agent.delay,
@@ -68,18 +68,18 @@ class Agent(BaseModel):
     name: str
     # listener_id: int
     listener: str
-    host_id: int
-    hostname: str
-    language: str
-    language_version: str
+    host_id: Optional[int]
+    hostname: Optional[str]
+    language: Optional[str]
+    language_version: Optional[str]
     delay: int
     jitter: float
     external_ip: Optional[str]
     internal_ip: Optional[str]
     username: Optional[str]
-    high_integrity: bool
-    process_id: int
-    process_name: str
+    high_integrity: Optional[bool]
+    process_id: Optional[int]
+    process_name: Optional[str]
     os_details: Optional[str]
     nonce: str
     checkin_time: datetime

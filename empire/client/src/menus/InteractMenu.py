@@ -201,19 +201,7 @@ class InteractMenu(Menu):
             return
 
         if data:
-            response = state.upload_file(filename, data)
-            if "id" in response:
-                print(print_util.color("[+] File uploaded to server successfully"))
-
-                # Save copy off to downloads folder so last value points to the correct file
-                data = base64.b64decode(data.encode("UTF-8"))
-                with open(f"{state.directory['downloads']}{filename}", "wb+") as f:
-                    f.write(data)
-
-            elif "detail" in response:
-                print(print_util.color("[!] Error: " + response["detail"]))
-
-            response = state.agent_script_import(self.session_id, filename)
+            response = state.agent_script_import(self.session_id, filename, data)
             if "id" in response:
                 print(
                     print_util.color(
@@ -237,11 +225,17 @@ class InteractMenu(Menu):
         Usage: shell_command <script_cmd>
         """
         response = state.agent_script_command(self.session_id, script_cmd)
-        print(
-            print_util.color(
-                "[*] Tasked " + self.session_id + " to run Task " + str(response["id"])
+        if "id" in response:
+            print(
+                print_util.color(
+                    "[*] Tasked "
+                    + self.session_id
+                    + " to run Task "
+                    + str(response["id"])
+                )
             )
-        )
+        elif "detail" in response.keys():
+            print(print_util.color("[!] Error: " + response["detail"]))
 
     @command
     def upload(self, local_file_directory: str) -> None:
