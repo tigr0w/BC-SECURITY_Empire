@@ -206,10 +206,6 @@ class ModuleService(object):
         if err:
             return None, err
 
-        # todo move generate_agent to a stager.
-        if module.name == "generate_agent":
-            return options, None
-
         session_id = params["Agent"]
         agent = self.main_menu.agents.get_agent_db(session_id)
 

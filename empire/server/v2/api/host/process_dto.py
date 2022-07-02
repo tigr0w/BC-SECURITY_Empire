@@ -25,8 +25,8 @@ class Process(BaseModel):
     process_id: int
     process_name: str
     host_id: int
-    architecture: str
-    user: str
+    architecture: Optional[str]
+    user: Optional[str]
     agent_id: Optional[str]
 
 
