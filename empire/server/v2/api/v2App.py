@@ -34,9 +34,10 @@ class MyJsonEncoder(JSONEncoder):
             return o.isoformat()
         if isinstance(o, bytes):
             return o.decode("latin-1")
+        if hasattr(o, "json") and callable(o.json):
+            return o.json()
 
-        # todo Object of type User is not JSON Serializable
-        return super(MyJsonEncoder, self).default(o)
+        return JSONEncoder.default(self, o)
 
 
 def initialize():
