@@ -6,6 +6,7 @@ from empire.server.v2.api.EmpireApiRouter import APIRouter
 from empire.server.v2.api.jwt_auth import get_current_active_user
 from empire.server.v2.api.plugin.plugin_dto import (
     PluginExecutePostRequest,
+    PluginExecuteResponse,
     Plugins,
     domain_to_dto_plugin,
 )
@@ -50,7 +51,7 @@ async def read_plugin(uid: str, plugin=Depends(get_plugin)):
     return domain_to_dto_plugin(plugin, uid)
 
 
-@router.post("/{uid}/execute")
+@router.post("/{uid}/execute", response_model=PluginExecuteResponse)
 async def execute_plugin(
     uid: str,
     plugin_req: PluginExecutePostRequest,
@@ -64,4 +65,4 @@ async def execute_plugin(
         raise HTTPException(500, "internal plugin error")
     if err:
         raise HTTPException(status_code=400, detail=err)
-    return {} if results is None else results
+    return {} if results is None else {"detail": results}

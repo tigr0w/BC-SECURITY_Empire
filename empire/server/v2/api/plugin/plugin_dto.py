@@ -65,3 +65,7 @@ class Plugins(BaseModel):
 
 class PluginExecutePostRequest(BaseModel):
     options: Dict[str, str]
+
+
+class PluginExecuteResponse(BaseModel):
+    detail: str
