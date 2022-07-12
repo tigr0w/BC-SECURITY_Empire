@@ -226,14 +226,6 @@ class Credential(Base):
         self.__dict__[key] = value
 
 
-# Mysql doesn't support a unique constraint on TEXT columns.
-# We could change it to STRING, but I'm not sure how long passwords can get.
-if empire_config.database.type == "sqlite":
-    Credential.unique = UniqueConstraint(
-        Credential.credtype, Credential.domain, Credential.username, Credential.password
-    )
-
-
 class Download(Base):
     __tablename__ = "downloads"
     id = Column(Integer, Sequence("download_seq"), primary_key=True)

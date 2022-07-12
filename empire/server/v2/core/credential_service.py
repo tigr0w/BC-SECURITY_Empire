@@ -1,5 +1,4 @@
-from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from empire.server.database import models
@@ -38,22 +37,45 @@ class CredentialService(object):
         db.delete(credential)
 
     @staticmethod
-    def create_credential(db: Session, credential_dto: CredentialPostRequest):
-        credential = models.Credential(**credential_dto.dict())
+    def check_duplicate_credential(db, credential_dto) -> bool:
+        """
+        Using IntegrityError and depending on the db invalidates the whole
+        transaction, so instead we'll check it manually.
+        """
+        found = (
+            db.query(models.Credential)
+            .filter(
+                and_(
+                    models.Credential.credtype == credential_dto.credtype,
+                    models.Credential.domain == credential_dto.domain,
+                    models.Credential.username == credential_dto.username,
+                    models.Credential.password == credential_dto.password,
+                )
+            )
+            .first()
+        )
 
-        try:
-            db.add(credential)
+        return found is not None
 
-            db.flush()
+    def create_credential(self, db: Session, credential_dto: CredentialPostRequest):
+        dupe = self.check_duplicate_credential(db, credential_dto)
 
-            return credential, None
-        except IntegrityError:
+        if dupe:
             return None, "Credential not created. Duplicate detected."
 
-    @staticmethod
+        credential = models.Credential(**credential_dto.dict())
+
+        db.add(credential)
+        db.flush()
+
+        return credential, None
+
     def update_credential(
-        db: Session, db_credential: models.Credential, credential_req
+        self, db: Session, db_credential: models.Credential, credential_req
     ):
+        if self.check_duplicate_credential(db, credential_req):
+            return None, "Credential not updated. Duplicate detected."
+
         db_credential.credtype = credential_req.credtype
         db_credential.domain = credential_req.domain
         db_credential.username = credential_req.username
@@ -63,9 +85,6 @@ class CredentialService(object):
         db_credential.sid = credential_req.sid
         db_credential.notes = credential_req.notes
 
-        try:
-            db.flush()
+        db.flush()
 
-            return db_credential, None
-        except IntegrityError:
-            return None, "Credential not updated. Duplicate detected."
+        return db_credential, None

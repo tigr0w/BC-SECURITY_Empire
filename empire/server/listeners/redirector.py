@@ -860,7 +860,7 @@ class Listener(object):
 
             sessionID = self.mainMenu.agents.get_agent_id_db(name)
             isElevated = self.mainMenu.agents.is_agent_elevated(sessionID)
-            if self.mainMenu.agents.is_agent_present(name) and isElevated:
+            if self.mainMenu.agents.is_agent_present(sessionID) and isElevated:
 
                 if self.mainMenu.agents.get_language_db(sessionID).startswith("po"):
 

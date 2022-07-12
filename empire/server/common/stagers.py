@@ -707,21 +707,21 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         else:
             host = ""
 
-        # add the agent
-        self.mainMenu.agents.add_agent(
-            session_id,
-            "0.0.0.0",
-            delay,
-            jitter,
-            profile,
-            kill_date,
-            working_hours,
-            lost_limit,
-            listener=listener_name,
-            language=language,
-        )
-
         with SessionLocal.begin() as db:
+            agent = self.mainMenu.agents.add_agent(
+                session_id,
+                "0.0.0.0",
+                delay,
+                jitter,
+                profile,
+                kill_date,
+                working_hours,
+                lost_limit,
+                listener=listener_name,
+                language=language,
+                db=db,
+            )
+
             # update the agent with this new information
             self.mainMenu.agents.update_agent_sysinfo_db(
                 db,
@@ -739,20 +739,20 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 architecture="AMD64",
             )
 
-        # get the agent's session key
-        session_key = self.mainMenu.agents.get_agent_session_key_db(session_id)
+            # get the agent's session key
+            session_key = agent.session_key
 
-        agent_code = active_listener.generate_agent(
-            active_listener.options, language=language, version=version
-        )
-        comms_code = active_listener.generate_comms(
-            active_listener.options, language=language
-        )
+            agent_code = active_listener.generate_agent(
+                active_listener.options, language=language, version=version
+            )
+            comms_code = active_listener.generate_comms(
+                active_listener.options, language=language
+            )
 
-        launch_code = (
-            "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s';"
-            % (host, staging_key, session_key, session_id)
-        )
+            launch_code = (
+                "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s';"
+                % (host, staging_key, session_key, session_id)
+            )
 
-        full_agent = comms_code + agent_code + launch_code
-        return full_agent
+            full_agent = comms_code + agent_code + launch_code
+            return full_agent

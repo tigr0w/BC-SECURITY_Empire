@@ -13,11 +13,7 @@ from empire.server.common.converter.load_covenant import _convert_covenant_to_em
 from empire.server.common.module_models import EmpireModule, LanguageEnum
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
-from empire.server.utils.option_util import (
-    convert_module_options,
-    safe_cast,
-    validate_options,
-)
+from empire.server.utils.option_util import convert_module_options, validate_options
 from empire.server.v2.api.module.module_dto import (
     ModuleBulkUpdateRequest,
     ModuleUpdateRequest,
@@ -91,7 +87,7 @@ class ModuleService(object):
             return None, "Cannot execute disabled module"
 
         cleaned_options, err = self._validate_module_params(
-            module, params, ignore_language_version_check, ignore_admin_check
+            module, agent, params, ignore_language_version_check, ignore_admin_check
         )
 
         if err:
@@ -190,6 +186,7 @@ class ModuleService(object):
     def _validate_module_params(
         self,
         module: EmpireModule,
+        agent: models.Agent,
         params: Dict[str, str],
         ignore_language_version_check: bool = False,
         ignore_admin_check: bool = False,
@@ -205,15 +202,6 @@ class ModuleService(object):
 
         if err:
             return None, err
-
-        session_id = params["Agent"]
-        agent = self.main_menu.agents.get_agent_db(session_id)
-
-        if not self.main_menu.agents.is_agent_present(session_id):
-            return None, "invalid agent name"
-
-        if not agent:
-            return None, "invalid agent name"
 
         module_version = float(module.min_language_version or 0)
         agent_version = float(agent.language_version or 0)

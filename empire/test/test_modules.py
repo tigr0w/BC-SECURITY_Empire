@@ -28,17 +28,6 @@ def test_load_modules(monkeypatch, caplog, db):
     main_menu = Mock()
     main_menu.installPath = "empire/server"
 
-    agent_mock = Mock()
-    agent_mock.language_version = "7.0"
-    main_menu.agents.get_agent_db.return_value = agent_mock
-
-    main_menu = Mock()
-    main_menu.installPath = "empire/server"
-
-    agent_mock = Mock()
-    agent_mock.language_version = "7.0"
-    main_menu.agents.get_agent_db.return_value = agent_mock
-
     main_menu.obfuscationv2 = Mock()
     obf_conf_mock = MagicMock()
     main_menu.obfuscationv2.get_obfuscation_config = Mock(

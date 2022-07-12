@@ -4,7 +4,6 @@ Main agent handling functionality for Empire.
 
 The Agents() class in instantiated in ./server.py by the main menu and includes:
 
-    get_db_connection()         - returns the server.py:mainMenu database connection object
     is_agent_present()          - returns True if an agent is present in the self.agents cache
     add_agent()                 - adds an agent to the self.agents cache and the backend database
     remove_agent_db()           - removes an agent from the self.agents cache and the backend database
@@ -14,33 +13,15 @@ The Agents() class in instantiated in ./server.py by the main menu and includes:
     save_agent_log()            - saves the agent console output to the agent's log file
     is_agent_elevated()         - checks whether a specific sessionID is currently elevated
     get_agents_db()             - returns all active agents from the database
-    get_agent_names_db()        - returns all names of active agents from the database
-    get_agent_ids_db()          - returns all IDs of active agents from the database
-    get_agent_db()              - returns complete information for the specified agent from the database
     get_agent_nonce_db()        - returns the nonce for this sessionID
     get_language_db()           - returns the language used by this agent
-    get_language_version_db()   - returns the language version used by this agent
-    get_agent_session_key_db()  - returns the AES session key from the database for a sessionID
-    get_agent_results_db()      - returns agent results from the backend database
     get_agent_id_db()           - returns an agent sessionID based on the name
-    get_agent_name_db()         - returns an agent name based on sessionID
-    get_agent_hostname_db()     - returns an agent's hostname based on sessionID
-    get_agent_os_db()           - returns an agent's operating system details based on sessionID
-    get_agent_functions()       - returns the tab-completable functions for an agent from the cache
-    get_agent_functions_db()    - returns the tab-completable functions for an agent from the database
     get_agents_for_listener()   - returns all agent objects linked to a given listener name
-    get_agent_names_listener_db()-returns all agent names linked to a given listener name
     get_autoruns_db()           - returns any global script autoruns
     update_agent_sysinfo_db()   - updates agent system information in the database
     update_agent_lastseen_db()  - updates the agent's last seen timestamp in the database
-    update_agent_listener_db()  - updates the agent's listener name in the database
-    rename_agent()              - renames an agent
-    set_agent_functions_db()    - sets the tab-completable functions for the agent in the database
     set_autoruns_db()           - sets the global script autorun in the config in the database
     clear_autoruns_db()         - clears the currently set global script autoruns in the config in the database
-    get_agent_tasks_db()        - retrieves tasks for our agent from the database
-    get_agent_tasks_listener_db()- retrieves tasks for our agent from the database keyed by listener name
-    clear_agent_tasks_db()      - clear out one (or all) agent tasks in the database
     handle_agent_staging()      - handles agent staging neogotiation
     handle_agent_data()         - takes raw agent data and processes it appropriately.
     handle_agent_request()      - return any encrypted tasks for the particular agent
@@ -60,20 +41,17 @@ import string
 import threading
 import warnings
 from builtins import object, str
-
-# -*- encoding: utf-8 -*-
-from time import sleep
 from typing import Dict
 
-from sqlalchemy import and_, exc, func, or_, update
-from sqlalchemy.orm import Session, undefer
+from sqlalchemy import and_, or_, update
+from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
-from empire.server.common.helpers import KThread
 from empire.server.common.hooks import hooks
 from empire.server.database import models
 from empire.server.database.base import SessionLocal
 from empire.server.database.models import TaskingStatus
+from empire.server.v2.api.credential.credential_dto import CredentialPostRequest
 
 from . import encryption, helpers, packets
 
@@ -110,11 +88,11 @@ class Agents(object):
         self.agent_log_locks: Dict[str, threading.Lock] = {}
 
         # reinitialize any agents that already exist in the database
-        dbAgents = self.get_agents_db()
-        for agent in dbAgents:
+        db_agents = self.get_agents_db()
+        for agent in db_agents:
             agentInfo = {
-                "sessionKey": agent["session_key"],
-                "functions": agent["functions"],
+                "sessionKey": agent.session_key,
+                "functions": agent.functions,
             }
             self.agents[agent["session_id"]] = agentInfo
 
@@ -129,19 +107,17 @@ class Agents(object):
     ###############################################################
 
     @staticmethod
-    def get_agent_from_name_or_session_id(agent_name):
-        with SessionLocal() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(
-                    or_(
-                        models.Agent.name == agent_name,
-                        models.Agent.session_id == agent_name,
-                    )
+    def get_agent_from_name_or_session_id(agent_name, db: Session):
+        return (
+            db.query(models.Agent)
+            .filter(
+                or_(
+                    models.Agent.name == agent_name,
+                    models.Agent.session_id == agent_name,
                 )
-                .first()
             )
-        return agent
+            .first()
+        )
 
     def is_agent_present(self, sessionID):
         """
@@ -152,11 +128,6 @@ class Agents(object):
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
         )
-        # see if we were passed a name instead of an ID
-        nameid = self.get_agent_id_db(sessionID)
-        if nameid:
-            sessionID = nameid
-
         return sessionID in self.agents
 
     def add_agent(
@@ -173,6 +144,7 @@ class Agents(object):
         nonce="",
         listener="",
         language="",
+        db=None,
     ):
         """
         Add an agent to the internal cache and database.
@@ -202,8 +174,8 @@ class Agents(object):
             archived=False,
         )
 
-        with SessionLocal.begin() as db:
-            db.add(agent)
+        db.add(agent)
+        db.flush()
 
         message = f"New agent {sessionID} checked in"
         log.info(message)
@@ -211,31 +183,21 @@ class Agents(object):
         # initialize the tasking/result buffers along with the client session key
         self.agents[sessionID] = {"sessionKey": sessionKey, "functions": []}
 
-    def remove_agent_db(self, session_id):
+        return agent
+
+    def remove_agent_db(self, session_id, db: Session):
         """
         Remove an agent to the internal cache and database.
         """
-        if session_id == "%" or session_id.lower() == "all":
-            session_id = "%"
-            self.agents = {}
-        else:
-            # see if we were passed a name instead of an ID
-            nameid = self.get_agent_id_db(session_id)
-            if nameid:
-                session_id = nameid
-
-            # remove the agent from the internal cache
-            self.agents.pop(session_id, None)
+        # remove the agent from the internal cache
+        self.agents.pop(session_id, None)
 
         # remove the agent from the database
-        with SessionLocal.begin() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(models.Agent.session_id == session_id)
-                .first()
-            )
-            if agent:
-                db.delete(agent)
+        agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
+        )
+        if agent:
+            db.delete(agent)
 
         message = f"Agent {session_id} deleted"
         log.info(message)
@@ -267,18 +229,13 @@ class Agents(object):
         data,
         filesize,
         tasking: models.Tasking,
+        language: str,
         db: Session,
         append=False,
     ):
         """
         Save a file download for an agent to the appropriately constructed path.
         """
-        nameid = self.get_agent_id_db(sessionID)
-        if nameid:
-            sessionID = nameid
-
-        lang = self.get_language_db(sessionID)
-
         # todo this doesn't work for non-windows. All files are stored flat.
         parts = path.split("\\")
 
@@ -312,7 +269,7 @@ class Agents(object):
                 # otherwise append
                 f = open("%s/%s" % (save_path, filename), "ab")
 
-            if "python" in lang:
+            if "python" in language:
                 log.info(
                     f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
                 )
@@ -323,7 +280,7 @@ class Agents(object):
                 )
                 if not dec_data["crc32_check"]:
                     message = "File agent {} failed crc32 check during decompression!\n[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!".format(
-                        nameid,
+                        sessionID,
                         dec_data["header_crc32"],
                         dec_data["dec_crc32"],
                         dec_data["crc32_check"],
@@ -372,12 +329,10 @@ class Agents(object):
         message = f"Part of file {filename} from {sessionID} saved [{percent}%] to {save_path}"
         log.info(message)
 
-    def save_module_file(self, sessionID, path, data):
+    def save_module_file(self, sessionID, path, data, language: str):
         """
         Save a module output file to the appropriate path.
         """
-        sessionID = self.get_agent_name_db(sessionID)
-        lang = self.get_language_db(sessionID)
         parts = path.split("/")
 
         # construct the appropriate save path
@@ -388,7 +343,7 @@ class Agents(object):
         filename = parts[-1]
 
         # decompress data if coming from a python agent:
-        if "python" in lang:
+        if "python" in language:
             log.info(
                 f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
             )
@@ -474,11 +429,6 @@ class Agents(object):
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
         )
-        # see if we were passed a name instead of an ID
-        nameid = self.get_agent_id_db(session_id)
-        if nameid:
-            session_id = nameid
-
         with SessionLocal() as db:
             elevated = (
                 db.query(models.Agent.high_integrity)
@@ -486,7 +436,7 @@ class Agents(object):
                 .scalar()
             )
 
-        return elevated is True
+            return elevated is True
 
     def get_agents_db(self):
         """
@@ -497,30 +447,7 @@ class Agents(object):
 
         return results
 
-    def get_agent_db(self, session_id):
-        """
-        Return complete information for the specified agent from the database.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-        )
-        with SessionLocal() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(
-                    or_(
-                        models.Agent.session_id == session_id,
-                        models.Agent.name == session_id,
-                    )
-                )
-                .first()
-            )
-
-        return agent
-
-    def get_agent_nonce_db(self, session_id):
+    def get_agent_nonce_db(self, session_id, db: Session):
         """
         Return the nonce for this sessionID.
         """
@@ -529,12 +456,11 @@ class Agents(object):
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
         )
-        with SessionLocal() as db:
-            nonce = (
-                db.query(models.Agent.nonce)
-                .filter(models.Agent.session_id == session_id)
-                .first()
-            )
+        nonce = (
+            db.query(models.Agent.nonce)
+            .filter(models.Agent.session_id == session_id)
+            .first()
+        )
 
         if nonce and nonce is not None:
             if type(nonce) is str:
@@ -551,12 +477,12 @@ class Agents(object):
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
         )
-        # see if we were passed a name instead of an ID
-        name_id = self.get_agent_id_db(session_id)
-        if name_id:
-            session_id = name_id
-
         with SessionLocal() as db:
+            # see if we were passed a name instead of an ID
+            name_id = self.get_agent_id_db(session_id, db)
+            if name_id:
+                session_id = name_id
+
             language = (
                 db.query(models.Agent.language)
                 .filter(models.Agent.session_id == session_id)
@@ -565,122 +491,23 @@ class Agents(object):
 
         return language
 
-    def get_agent_session_key_db(self, session_id):
-        """
-        Return AES session key from the database for this sessionID.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-        )
-        with SessionLocal() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(
-                    or_(
-                        models.Agent.session_id == session_id,
-                        models.Agent.name == session_id,
-                    )
-                )
-                .first()
-            )
-
-        if agent is not None:
-            return agent.session_key
-
-    def get_agent_id_db(self, name):
+    def get_agent_id_db(self, name, db: Session = None):
         """
         Get an agent sessionID based on the name.
+
         """
         warnings.warn(
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
         )
-        with SessionLocal() as db:
+        # db is optional for backwards compatibility until this function is phased out
+        with db or SessionLocal() as db:
             agent = db.query(models.Agent).filter((models.Agent.name == name)).first()
 
         if agent:
             return agent.session_id
 
-        return None
-
-    def get_agent_name_db(self, session_id):
-        """
-        Return an agent name based on sessionID.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-        )
-        with SessionLocal() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(
-                    or_(
-                        models.Agent.session_id == session_id,
-                        models.Agent.name == session_id,
-                    )
-                )
-                .first()
-            )
-
-        if agent:
-            return agent.name
-
-        return None
-
-    def get_agent_hostname_db(self, session_id):
-        """
-        Return an agent's hostname based on sessionID.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-        )
-        with SessionLocal() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(
-                    or_(
-                        models.Agent.session_id == session_id,
-                        models.Agent.name == session_id,
-                    )
-                )
-                .first()
-            )
-
-        if agent:
-            return agent.hostname
-
-        return None
-
-    def get_agent_os_db(self, session_id):
-        """
-        Return an agent's operating system details based on sessionID.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-        )
-        with SessionLocal() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(
-                    or_(
-                        models.Agent.session_id == session_id,
-                        models.Agent.name == session_id,
-                    )
-                )
-                .first()
-            )
-
-        if agent:
-            return agent.os_details
         return None
 
     def get_agents_for_listener(self, listener_name):
@@ -737,10 +564,6 @@ class Agents(object):
         """ "
         Update the directory list
         """
-        name_id = self.get_agent_id_db(session_id)
-        if name_id:
-            session_id = name_id
-
         if session_id in self.agents:
             # get existing files/dir that are in this directory.
             # delete them and their children to keep everything up to date. There's a cascading delete on the table.
@@ -809,11 +632,6 @@ class Agents(object):
         """
         Update an agent's system information.
         """
-        # see if we were passed a name instead of an ID
-        nameid = self.get_agent_id_db(session_id)
-        if nameid:
-            session_id = nameid
-
         agent = (
             db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
         )
@@ -852,67 +670,6 @@ class Agents(object):
             )
             db.add(process)
             db.flush()
-
-        agent = (
-            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
-        )
-        db.execute(
-            update(models.Agent)
-            .where(
-                or_(
-                    models.Agent.session_id == session_id,
-                    models.Agent.name == session_id,
-                )
-            )
-            .values(
-                session_id=session_id,
-                internal_ip=internal_ip.split(" ")[0],
-                username=username,
-                hostname=hostname,
-                host_id=host.id,
-                os_details=os_details,
-                high_integrity=high_integrity,
-                process_name=process_name,
-                process_id=process_id,
-                language_version=language_version,
-                language=language,
-                architecture=architecture,
-            )
-        )
-        host = (
-            db.query(models.Host)
-            .filter(
-                and_(
-                    models.Host.name == hostname,
-                    models.Host.internal_ip == internal_ip,
-                )
-            )
-            .first()
-        )
-        if not host:
-            host = models.Host(name=hostname, internal_ip=internal_ip)
-            db.add(host)
-            db.flush()
-
-        process = (
-            db.query(models.HostProcess)
-            .filter(
-                and_(
-                    models.HostProcess.host_id == host.id,
-                    models.HostProcess.process_id == process_id,
-                )
-            )
-            .first()
-        )
-        if not process:
-            process = models.HostProcess(
-                host_id=host.id,
-                process_id=process_id,
-                process_name=process_name,
-                user=agent.username,
-            )
-            db.add(process)
-        db.flush()
 
         agent.internal_ip = internal_ip.split(" ")[0]
         agent.username = username
@@ -925,8 +682,9 @@ class Agents(object):
         agent.language_version = language_version
         agent.language = language
         agent.architecture = architecture
+        db.flush()
 
-    def update_agent_lastseen_db(self, session_id, current_time=None):
+    def update_agent_lastseen_db(self, session_id, db: Session):
         """
         Update the agent's last seen timestamp in the database.
         """
@@ -935,37 +693,14 @@ class Agents(object):
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
         )
-        with SessionLocal.begin() as db:
-            db.execute(
-                update(models.Agent).where(
-                    or_(
-                        models.Agent.session_id == session_id,
-                        models.Agent.name == session_id,
-                    )
+        db.execute(
+            update(models.Agent).where(
+                or_(
+                    models.Agent.session_id == session_id,
+                    models.Agent.name == session_id,
                 )
             )
-
-    def update_agent_listener_db(self, session_id, listener_name):
-        """
-        Update the specified agent's linked listener name in the database.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
         )
-        with SessionLocal.begin() as db:
-            agent = (
-                db.query(models.Agent)
-                .filter(
-                    or_(
-                        models.Agent.session_id == session_id,
-                        models.Agent.name == session_id,
-                    )
-                )
-                .first()
-            )
-            agent.listener = listener_name
 
     def set_autoruns_db(self, task_command, module_data):
         """
@@ -1006,15 +741,8 @@ class Agents(object):
         Retrieve tasks that have been queued for our agent from the database.
         Set them to 'pulled'.
         """
-        agent_name = session_id
-
-        # see if we were passed a name instead of an ID
-        name_id = self.get_agent_id_db(session_id)
-        if name_id:
-            session_id = name_id
-
         if session_id not in self.agents:
-            log.error(f"Agent {agent_name} not active.")
+            log.error(f"Agent {session_id} not active.")
             return []
         else:
             tasks, total = self.mainMenu.agenttasksv2.get_tasks(
@@ -1085,9 +813,9 @@ class Agents(object):
                     return "ERROR: Invalid PowerShell key post format"
                 else:
                     # convert the RSA key from the stupid PowerShell export format
-                    rsaKey = encryption.rsa_xml_to_key(message)
+                    rsa_key = encryption.rsa_xml_to_key(message)
 
-                    if rsaKey:
+                    if rsa_key:
                         message = f"Agent {sessionID} from {clientIP} posted valid PowerShell RSA key"
                         log.info(message)
 
@@ -1100,7 +828,7 @@ class Agents(object):
                         lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
 
                         # add the agent to the database now that it's "checked in"
-                        self.mainMenu.agents.add_agent(
+                        agent = self.add_agent(
                             sessionID,
                             clientIP,
                             delay,
@@ -1111,20 +839,19 @@ class Agents(object):
                             lostLimit,
                             nonce=nonce,
                             listener=listenerName,
+                            db=db,
                         )
 
-                        clientSessionKey = (
-                            self.mainMenu.agents.get_agent_session_key_db(sessionID)
-                        )
-                        data = "%s%s" % (nonce, clientSessionKey)
+                        client_session_key = agent.session_key
+                        data = "%s%s" % (nonce, client_session_key)
 
                         data = data.encode("ascii", "ignore")
 
                         # step 4 of negotiation -> server returns RSA(nonce+AESsession))
-                        encryptedMsg = encryption.rsa_encrypt(rsaKey, data)
+                        encrypted_msg = encryption.rsa_encrypt(rsa_key, data)
                         # TODO: wrap this in a routing packet!
 
-                        return encryptedMsg
+                        return encrypted_msg
 
                     else:
                         message = f"Agent {sessionID} returned an invalid PowerShell public key!"
@@ -1165,7 +892,7 @@ class Agents(object):
                     lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
 
                     # add the agent to the database now that it's "checked in"
-                    self.mainMenu.agents.add_agent(
+                    self.add_agent(
                         sessionID,
                         clientIP,
                         delay,
@@ -1177,14 +904,15 @@ class Agents(object):
                         sessionKey=serverPub.key,
                         nonce=nonce,
                         listener=listenerName,
+                        db=db,
                     )
 
                     # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
                     data = "%s%s" % (nonce, serverPub.publicKey)
-                    encryptedMsg = encryption.aes_encrypt_then_hmac(stagingKey, data)
+                    encrypted_msg = encryption.aes_encrypt_then_hmac(stagingKey, data)
                     # TODO: wrap this in a routing packet?
 
-                    return encryptedMsg
+                    return encrypted_msg
 
             else:
                 message = f"Agent {sessionID} from {clientIP} using an invalid language specification: {language}"
@@ -1194,28 +922,26 @@ class Agents(object):
         elif meta == "STAGE2":
             # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
 
-            sessionKey = self.agents[sessionID]["sessionKey"]
-            if isinstance(sessionKey, str):
-                sessionKey = (self.agents[sessionID]["sessionKey"]).encode("UTF-8")
+            session_key = self.agents[sessionID]["sessionKey"]
+            if isinstance(session_key, str):
+                session_key = (self.agents[sessionID]["sessionKey"]).encode("UTF-8")
 
             try:
-                message = encryption.aes_decrypt_and_verify(sessionKey, encData)
+                message = encryption.aes_decrypt_and_verify(session_key, encData)
                 parts = message.split(b"|")
 
                 if len(parts) < 12:
                     message = f"Agent {sessionID} posted invalid sysinfo checkin format: {message}"
                     log.info(message)
                     # remove the agent from the cache/database
-                    self.mainMenu.agents.remove_agent_db(sessionID)
+                    self.remove_agent_db(sessionID, db)
                     return message
 
                 # verify the nonce
-                if int(parts[0]) != (
-                    int(self.mainMenu.agents.get_agent_nonce_db(sessionID)) + 1
-                ):
+                if int(parts[0]) != (int(self.get_agent_nonce_db(sessionID, db)) + 1):
                     message = f"Invalid nonce returned from {sessionID}"
                     log.error(message)
-                    self.mainMenu.agents.remove_agent_db(sessionID)
+                    self.remove_agent_db(sessionID, db)
                     return f"ERROR: Invalid nonce returned from {sessionID}"
 
                 message = f"Nonce verified: agent {sessionID} posted valid sysinfo checkin format: {message}"
@@ -1244,14 +970,14 @@ class Agents(object):
                     f"Exception in agents.handle_agent_staging() for {sessionID} : {e}"
                 )
                 log.error(message, exc_info=True)
-                self.mainMenu.agents.remove_agent_db(sessionID)
+                self.remove_agent_db(sessionID, db)
                 return f"Error: Exception in agents.handle_agent_staging() for {sessionID} : {e}"
 
             if domainname and domainname.strip() != "":
                 username = "%s\\%s" % (domainname, username)
 
             # update the agent with this new information
-            self.mainMenu.agents.update_agent_sysinfo_db(
+            self.update_agent_sysinfo_db(
                 db,
                 sessionID,
                 listener=listenerName,
@@ -1291,12 +1017,12 @@ class Agents(object):
             hooks.run_hooks(
                 hooks.AFTER_AGENT_CHECKIN_HOOK,
                 db,
-                self.get_agent_from_name_or_session_id(sessionID),
+                self.get_agent_from_name_or_session_id(sessionID, db),
             )
 
             # save the initial sysinfo information in the agent log
             output = f"Agent {sessionID} now active"
-            self.mainMenu.agents.save_agent_log(sessionID, output)
+            self.save_agent_log(sessionID, output)
 
             # if a script autorun is set, set that as the agent's first tasking
             # TODO VR autoruns haven't really worked in a while anyway...
@@ -1305,25 +1031,25 @@ class Agents(object):
             # autorun = self.get_autoruns_db()
             # if autorun and autorun[0] != "" and autorun[1] != "":
             #     self.add_agent_task_db(sessionID, autorun[0], autorun[1])
+            #
+            # if (
+            #     language.lower() in self.mainMenu.autoRuns
+            #     and len(self.mainMenu.autoRuns[language.lower()]) > 0
+            # ):
+            #     autorunCmds = ["interact %s" % sessionID]
+            #     autorunCmds.extend(self.mainMenu.autoRuns[language.lower()])
+            #     autorunCmds.extend(["lastautoruncmd"])
+            #     self.mainMenu.resourceQueue.extend(autorunCmds)
+            #     try:
+            #         # this will cause the cmdloop() to start processing the autoruns
+            #         self.mainMenu.do_agents("kickit")
+            #     except Exception as e:
+            #         if e == "endautorun":
+            #             pass
+            #         else:
+            #             log.info("End of Autorun Queue")
 
-            if (
-                language.lower() in self.mainMenu.autoRuns
-                and len(self.mainMenu.autoRuns[language.lower()]) > 0
-            ):
-                autorunCmds = ["interact %s" % sessionID]
-                autorunCmds.extend(self.mainMenu.autoRuns[language.lower()])
-                autorunCmds.extend(["lastautoruncmd"])
-                self.mainMenu.resourceQueue.extend(autorunCmds)
-                try:
-                    # this will cause the cmdloop() to start processing the autoruns
-                    self.mainMenu.do_agents("kickit")
-                except Exception as e:
-                    if e == "endautorun":
-                        pass
-                    else:
-                        log.info("End of Autorun Queue")
-
-            return "STAGE2: %s" % (sessionID)
+            return f"STAGE2: {sessionID}"
 
         else:
             message = f"Invalid staging request packet from {sessionID} at {clientIP} : {meta}"
@@ -1428,11 +1154,13 @@ class Agents(object):
             log.error(message)
             return None
 
-        # update the client's last seen time
-        if update_lastseen:
-            self.update_agent_lastseen_db(sessionID)
-
         with SessionLocal.begin() as db:
+            # update the client's last seen time
+            # It's possible updating the last seen time over and over
+            # contributes to write contention
+            if update_lastseen:
+                self.update_agent_lastseen_db(sessionID, db)
+
             # retrieve all agent taskings from the cache
             taskings = self.get_queued_agent_tasks_db(sessionID, db)
 
@@ -1477,7 +1205,6 @@ class Agents(object):
 
         TODO: does this need self.lock?
         """
-
         if sessionID not in self.agents:
             message = f"handle_agent_response(): sessionID {sessionID} not in cache"
             log.error(message)
@@ -1485,10 +1212,6 @@ class Agents(object):
 
         # extract the agent's session key
         sessionKey = self.agents[sessionID]["sessionKey"]
-
-        # update the client's last seen time
-        if update_lastseen:
-            self.update_agent_lastseen_db(sessionID)
 
         try:
             # verify, decrypt and depad the packet
@@ -1508,6 +1231,9 @@ class Agents(object):
             ) in responsePackets:
                 # process the agent's response
                 with SessionLocal.begin() as db:
+                    if update_lastseen:
+                        self.update_agent_lastseen_db(sessionID, db)
+
                     self.process_agent_packet(sessionID, responseName, taskID, data, db)
                 results = True
             if results:
@@ -1531,10 +1257,9 @@ class Agents(object):
         """
         key_log_task_id = None
 
-        # see if we were passed a name instead of an ID
-        name_id = self.get_agent_id_db(session_id)
-        if name_id:
-            session_id = name_id
+        agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
+        )
 
         # report the agent result in the reporting database
         message = f"Agent {session_id} got results"
@@ -1627,7 +1352,7 @@ class Agents(object):
                 username = "%s\\%s" % (domainname, username)
 
                 # update the agent with this new information
-                self.mainMenu.agents.update_agent_sysinfo_db(
+                self.update_agent_sysinfo_db(
                     db,
                     session_id,
                     listener=listener,
@@ -1672,11 +1397,6 @@ class Agents(object):
             self.save_agent_log(session_id, data)
 
             # set agent to archived in the database
-            agent = (
-                db.query(models.Agent)
-                .filter(models.Agent.session_id == session_id)
-                .first()
-            )
             agent.archived = True
 
         elif response_name == "TASK_SHELL":
@@ -1702,13 +1422,27 @@ class Agents(object):
                 index, path, filesize, data = parts
                 # decode the file data and save it off as appropriate
                 file_data = helpers.decode_base64(data.encode("UTF-8"))
-                name = self.get_agent_name_db(session_id)
 
                 if index == "0":
-                    self.save_file(name, path, file_data, filesize, tasking, db)
+                    self.save_file(
+                        session_id,
+                        path,
+                        file_data,
+                        filesize,
+                        tasking,
+                        agent.language,
+                        db,
+                    )
                 else:
                     self.save_file(
-                        name, path, file_data, filesize, tasking, db, append=True
+                        session_id,
+                        path,
+                        file_data,
+                        filesize,
+                        tasking,
+                        agent.language,
+                        db,
+                        append=True,
                     )
                 # update the agent log
                 msg = "file download: %s, part: %s" % (path, index)
@@ -1766,19 +1500,23 @@ class Agents(object):
                     hostname = cred[4]
 
                     if hostname == "":
-                        hostname = self.get_agent_hostname_db(session_id)
+                        hostname = agent.hostname
 
-                    osDetails = self.get_agent_os_db(session_id)
+                    os_details = agent.os_details
 
-                    self.mainMenu.credentials.add_credential(
-                        cred[0],
-                        cred[1],
-                        cred[2],
-                        cred[3],
-                        hostname,
-                        osDetails,
-                        cred[5],
-                        time,
+                    self.mainMenu.credentialsv2.create_credential(
+                        #  idk if i want to import api dtos here, but it's not a big deal for now.
+                        db,
+                        CredentialPostRequest(
+                            credtype=cred[0],
+                            domain=cred[1],
+                            username=cred[2],
+                            password=cred[3],
+                            host=hostname,
+                            os=os_details,
+                            sid=cred[5],
+                            notes=time,
+                        ),
                     )
 
             # update the agent log
@@ -1787,7 +1525,6 @@ class Agents(object):
         elif response_name == "TASK_CMD_WAIT_SAVE":
 
             # dynamic script output -> blocking, save data
-            name = self.get_agent_name_db(session_id)
 
             # extract the file save prefix and extension
             prefix = data[0:15].strip().decode("UTF-8")
@@ -1797,14 +1534,16 @@ class Agents(object):
             # save the file off to the appropriate path
             save_path = "%s/%s_%s.%s" % (
                 prefix,
-                self.get_agent_hostname_db(session_id),
+                agent.hostname,
                 helpers.get_file_datetime(),
                 extension,
             )
-            final_save_path = self.save_module_file(name, save_path, file_data)
+            final_save_path = self.save_module_file(
+                session_id, save_path, file_data, agent.language
+            )
 
             # update the agent log
-            msg = "Output saved to .%s" % (final_save_path)
+            msg = f"Output saved to .{final_save_path}"
             self.save_agent_log(session_id, msg)
 
             # attach file to tasking
@@ -1823,7 +1562,7 @@ class Agents(object):
                 safePath = os.path.abspath(f"{self.mainMenu.directory['downloads']}")
                 savePath = f"{self.mainMenu.directory['downloads']}/{session_id}/keystrokes.txt"
                 if not os.path.abspath(savePath).startswith(safePath):
-                    message = f"agent {self.sessionID} attempted skywalker exploit!"
+                    message = f"agent {session_id} attempted skywalker exploit!"
                     log.warning(message)
                     return
 
@@ -1850,19 +1589,23 @@ class Agents(object):
                         hostname = cred[4]
 
                         if hostname == "":
-                            hostname = self.get_agent_hostname_db(session_id)
+                            hostname = agent.hostname
 
-                        osDetails = self.get_agent_os_db(session_id)
+                        os_details = agent.os_details
 
-                        self.mainMenu.credentials.add_credential(
-                            cred[0],
-                            cred[1],
-                            cred[2],
-                            cred[3],
-                            hostname,
-                            osDetails,
-                            cred[5],
-                            time,
+                        self.mainMenu.credentialsv2.create_credential(
+                            #  idk if i want to import api dtos here, but it's not a big deal for now.
+                            db,
+                            CredentialPostRequest(
+                                credtype=cred[0],
+                                domain=cred[1],
+                                username=cred[2],
+                                password=cred[3],
+                                host=hostname,
+                                os=os_details,
+                                sid=cred[5],
+                                notes=time,
+                            ),
                         )
 
                 # update the agent log
@@ -1886,25 +1629,27 @@ class Agents(object):
                         hostname = cred[4]
 
                         if hostname == "":
-                            hostname = self.get_agent_hostname_db(session_id)
+                            hostname = agent.hostname
 
-                        osDetails = self.get_agent_os_db(session_id)
+                        os_details = agent.os_details
 
-                        self.mainMenu.credentials.add_credential(
-                            cred[0],
-                            cred[1],
-                            cred[2],
-                            cred[3],
-                            hostname,
-                            osDetails,
-                            cred[5],
-                            time,
+                        self.mainMenu.credentialsv2.create_credential(
+                            #  idk if i want to import api dtos here, but it's not a big deal for now.
+                            db,
+                            CredentialPostRequest(
+                                credtype=cred[0],
+                                domain=cred[1],
+                                username=cred[2],
+                                password=cred[3],
+                                host=hostname,
+                                os=os_details,
+                                sid=cred[5],
+                                notes=time,
+                            ),
                         )
 
         elif response_name == "TASK_CMD_JOB_SAVE":
             # dynamic script output -> non-blocking, save data
-            name = self.get_agent_name_db(session_id)
-
             # extract the file save prefix and extension
             prefix = data[0:15].strip()
             extension = data[15:20].strip()
@@ -1913,14 +1658,16 @@ class Agents(object):
             # save the file off to the appropriate path
             save_path = "%s/%s_%s.%s" % (
                 prefix,
-                self.get_agent_hostname_db(session_id),
+                agent.hostname,
                 helpers.get_file_datetime(),
                 extension,
             )
-            final_save_path = self.save_module_file(name, save_path, file_data)
+            final_save_path = self.save_module_file(
+                session_id, save_path, file_data, agent.language
+            )
 
             # update the agent log
-            msg = "Output saved to .%s" % (final_save_path)
+            msg = f"Output saved to .{final_save_path}"
             self.save_agent_log(session_id, msg)
 
         elif response_name == "TASK_SCRIPT_IMPORT":
@@ -1950,7 +1697,8 @@ class Agents(object):
 
             listener_name = data[38:]
 
-            self.update_agent_listener_db(session_id, listener_name)
+            agent.listener = listener_name
+
             # update the agent log
             self.save_agent_log(session_id, data)
             message = f"Updated comms for {session_id} to {listener_name}"
