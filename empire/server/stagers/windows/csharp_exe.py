@@ -133,7 +133,7 @@ class Stager(object):
 
         staged = self.options["Staged"]["Value"].lower() == "true"
 
-        if not staged:
+        if not staged and language != "csharp":
             launcher = strip_powershell_comments(
                 self.mainMenu.stagers.generate_stageless(self.options)
             )
