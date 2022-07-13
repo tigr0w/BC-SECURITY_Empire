@@ -10,7 +10,7 @@ empire/server/data/misc/ToObfuscate.ps1
 empire/server/data/misc/Obfuscated.ps1
 empire/server/data/generated-stagers/*
 empire/server/downloads/*
-empire/server/v2/api/static/*
+empire/server/api/static/*
 
 # client
 empire/client/generated-stagers/*

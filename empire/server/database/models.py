@@ -20,7 +20,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, relationship
 from sqlalchemy_utc import UtcDateTime, utcnow
 
-from empire.server.common.config import empire_config
 from empire.server.utils.datetime_util import is_stale
 
 Base = declarative_base()

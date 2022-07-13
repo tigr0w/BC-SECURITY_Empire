@@ -18,24 +18,24 @@ from typing import Optional
 # Empire imports
 from empire.server.common import hooks_internal
 from empire.server.common.config import empire_config
+from empire.server.core.agent_file_service import AgentFileService
+from empire.server.core.agent_service import AgentService
+from empire.server.core.agent_task_service import AgentTaskService
+from empire.server.core.bypass_service import BypassService
+from empire.server.core.credential_service import CredentialService
+from empire.server.core.download_service import DownloadService
+from empire.server.core.host_process_service import HostProcessService
+from empire.server.core.host_service import HostService
+from empire.server.core.listener_service import ListenerService
+from empire.server.core.listener_template_service import ListenerTemplateService
+from empire.server.core.module_service import ModuleService
+from empire.server.core.obfuscation_service import ObfuscationService
+from empire.server.core.plugin_service import PluginService
+from empire.server.core.profile_service import ProfileService
+from empire.server.core.stager_service import StagerService
+from empire.server.core.stager_template_service import StagerTemplateService
+from empire.server.core.user_service import UserService
 from empire.server.utils import data_util
-from empire.server.v2.core.agent_file_service import AgentFileService
-from empire.server.v2.core.agent_service import AgentService
-from empire.server.v2.core.agent_task_service import AgentTaskService
-from empire.server.v2.core.bypass_service import BypassService
-from empire.server.v2.core.credential_service import CredentialService
-from empire.server.v2.core.download_service import DownloadService
-from empire.server.v2.core.host_process_service import HostProcessService
-from empire.server.v2.core.host_service import HostService
-from empire.server.v2.core.listener_service import ListenerService
-from empire.server.v2.core.listener_template_service import ListenerTemplateService
-from empire.server.v2.core.module_service import ModuleService
-from empire.server.v2.core.obfuscation_service import ObfuscationService
-from empire.server.v2.core.plugin_service import PluginService
-from empire.server.v2.core.profile_service import ProfileService
-from empire.server.v2.core.stager_service import StagerService
-from empire.server.v2.core.stager_template_service import StagerTemplateService
-from empire.server.v2.core.user_service import UserService
 
 from . import agents, credentials, listeners, stagers
 

@@ -11,13 +11,14 @@ from pathlib import Path
 
 import urllib3
 
+from empire.server.api import app
+
 # Empire imports
 from empire.server.common import empire
 from empire.server.common.config import empire_config
 from empire.server.database import base
 from empire.server.utils import file_util
 from empire.server.utils.log_util import LOG_FORMAT, SIMPLE_LOG_FORMAT, ColorFormatter
-from empire.server.v2.api import v2App
 
 log = logging.getLogger(__name__)
 main = None
@@ -99,7 +100,7 @@ def reset():
 def shutdown_handler(signum, frame):
     """
     This is used to gracefully shutdown Empire if uvicorn is not running yet.
-    Otherwise, the "shutdown" event in v2App.py will be used.
+    Otherwise, the "shutdown" event in app.py will be used.
     """
     log.info("Shutting down Empire Server...")
 
@@ -153,6 +154,6 @@ def run(args):
             subprocess.call("./setup/cert.sh")
             time.sleep(3)
 
-        v2App.initialize()
+        app.initialize()
 
     sys.exit()

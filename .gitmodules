@@ -43,6 +43,6 @@
 [submodule "empire/server/plugins/ChiselServer-Plugin"]
 	path = empire/server/plugins/ChiselServer-Plugin
 	url = https://github.com/BC-SECURITY/ChiselServer-Plugin.git
-[submodule "empire/server/v2/api/starkiller"]
-	path = empire/server/v2/api/starkiller
+[submodule "empire/server/api/v2/starkiller"]
+	path = empire/server/api/v2/starkiller
 	url = git@github.com:BC-SECURITY/Starkiller-Sponsors.git

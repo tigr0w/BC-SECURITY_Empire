@@ -1,7 +1,5 @@
 import os
-import random
 import shutil
-import string
 import sys
 from pathlib import Path
 
@@ -44,39 +42,39 @@ def client(empire_config):
 
     empire.server.server.main = MainMenu(args)
 
-    from empire.server.v2.api.agent import agentfilev2, agentv2, taskv2
-    from empire.server.v2.api.bypass import bypassv2
-    from empire.server.v2.api.credential import credentialv2
-    from empire.server.v2.api.download import downloadv2
-    from empire.server.v2.api.host import hostv2, processv2
-    from empire.server.v2.api.listener import listenertemplatev2, listenerv2
-    from empire.server.v2.api.meta import metav2
-    from empire.server.v2.api.module import modulev2
-    from empire.server.v2.api.obfuscation import obfuscationv2
-    from empire.server.v2.api.plugin import pluginv2
-    from empire.server.v2.api.profile import profilev2
-    from empire.server.v2.api.stager import stagertemplatev2, stagerv2
-    from empire.server.v2.api.user import userv2
+    from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
+    from empire.server.api.v2.bypass import bypass_api
+    from empire.server.api.v2.credential import credential_api
+    from empire.server.api.v2.download import download_api
+    from empire.server.api.v2.host import host_api, process_api
+    from empire.server.api.v2.listener import listener_api, listener_template_api
+    from empire.server.api.v2.meta import meta_api
+    from empire.server.api.v2.module import module_api
+    from empire.server.api.v2.obfuscation import obfuscation_api
+    from empire.server.api.v2.plugin import plugin_api
+    from empire.server.api.v2.profile import profile_api
+    from empire.server.api.v2.stager import stager_api, stager_template_api
+    from empire.server.api.v2.user import user_api
 
     v2App = FastAPI()
-    v2App.include_router(listenertemplatev2.router)
-    v2App.include_router(listenerv2.router)
-    v2App.include_router(stagertemplatev2.router)
-    v2App.include_router(stagerv2.router)
-    v2App.include_router(taskv2.router)
-    v2App.include_router(agentfilev2.router)
-    v2App.include_router(agentv2.router)
-    v2App.include_router(modulev2.router)
-    v2App.include_router(bypassv2.router)
-    v2App.include_router(obfuscationv2.router)
-    v2App.include_router(profilev2.router)
-    v2App.include_router(pluginv2.router)
-    v2App.include_router(credentialv2.router)
-    v2App.include_router(hostv2.router)
-    v2App.include_router(userv2.router)
-    v2App.include_router(processv2.router)
-    v2App.include_router(downloadv2.router)
-    v2App.include_router(metav2.router)
+    v2App.include_router(listener_template_api.router)
+    v2App.include_router(listener_api.router)
+    v2App.include_router(stager_template_api.router)
+    v2App.include_router(stager_api.router)
+    v2App.include_router(agent_task_api.router)
+    v2App.include_router(agent_file_api.router)
+    v2App.include_router(agent_api.router)
+    v2App.include_router(module_api.router)
+    v2App.include_router(bypass_api.router)
+    v2App.include_router(obfuscation_api.router)
+    v2App.include_router(profile_api.router)
+    v2App.include_router(plugin_api.router)
+    v2App.include_router(credential_api.router)
+    v2App.include_router(host_api.router)
+    v2App.include_router(user_api.router)
+    v2App.include_router(process_api.router)
+    v2App.include_router(download_api.router)
+    v2App.include_router(meta_api.router)
 
     yield TestClient(v2App)
 

@@ -21,7 +21,7 @@ def test_load_modules(monkeypatch, caplog, db):
     that come with Empire can be loaded properly at startup and a script can
     be generated with the default values.
     """
-    from empire.server.v2.core.module_service import ModuleService
+    from empire.server.core.module_service import ModuleService
 
     caplog.set_level(logging.DEBUG)
 
