@@ -25,7 +25,15 @@ class Plugin(Plugin):
             "Comments": [],
         }
 
-        self.options = {}
+        self.options = {
+            "report": {
+                "Description": "Reports to generate.",
+                "Required": True,
+                "Value": "all",
+                "SuggestedValues": ["session", "credential", "log", "all"],
+                "Strict": True,
+            }
+        }
         self.lock = threading.Lock()
         self.install_path = ""
 
@@ -34,8 +42,19 @@ class Plugin(Plugin):
         Parses commands from the API
         """
         try:
-            results = self.generate_report()
-            return results
+            report = self.options["report"]["Value"]
+
+            if report == "session":
+                self.session_report()
+            elif report == "credential":
+                self.credential_report()
+            elif report == "log":
+                self.generate_report()
+            elif report == "all":
+                self.session_report()
+                self.credential_report()
+                self.generate_report()
+            return True
         except:
             return False
 
@@ -45,34 +64,43 @@ class Plugin(Plugin):
         registering functions to be run by user commands
         """
         self.install_path = mainMenu.installPath
+        self.main_menu = mainMenu
 
-    def substring(self, session, column, delimeter):
-        """
-        https://stackoverflow.com/a/57763081
-        """
-        if session.bind.dialect.name == "sqlite":
-            return func.substr(column, func.instr(column, delimeter) + 1)
-        elif session.bind.dialect.name == "mysql":
-            return func.substring_index(column, delimeter, -1)
-
-    def generate_report(self):
+    def session_report(self):
+        path = self.install_path + "/data/sessions.csv"
         with self.lock:
             with SessionLocal() as db:
-                with open(self.install_path + "/data/sessions.csv", "w") as f:
+                with open(path, "w") as f:
                     out = csv.writer(f)
                     out.writerow(["SessionID", "Hostname", "User Name", "First Check-in"])
 
                     for row in db.query(models.Agent).all():
                         out.writerow([row.session_id, row.hostname, row.username, row.checkin_time])
+        self.main_menu.plugin_socketio_message(
+            self.info["Name"],
+            f"[*] Session report generated to {path}",
+        )
 
-                with open(self.install_path + "/data/credentials.csv", "w") as f:
+    def credential_report(self):
+        path = self.install_path + "/data/credentials.csv"
+        with self.lock:
+            with SessionLocal() as db:
+                with open(path, "w") as f:
                     out = csv.writer(f)
                     out.writerow(["Domain", "Username", "Host", "Cred Type", "Password"])
 
                     for row in db.query(models.Credential).all():
                         out.writerow([row.domain, row.username, row.host, row.credtype, row.password])
+        self.main_menu.plugin_socketio_message(
+            self.info["Name"],
+            f"[*] Credential report generated to {path}",
+        )
 
-                with open(self.install_path + "/data/master.log", "w") as f:
+    def generate_report(self):
+        path = self.install_path + "/data/master.log"
+        with self.lock:
+            with SessionLocal() as db:
+                with open(path, "w") as f:
                     f.write("Empire Master Taskings & Results Log by timestamp\n")
                     f.write("=" * 50 + "\n\n")
                     for row in db.query(models.Tasking).all():
@@ -81,6 +109,10 @@ class Plugin(Plugin):
                             f"\n{xstr(row.created_at)} - {xstr(row.id)} ({xstr(row.agent_id)})> "
                             f"{xstr(row.user.username)}\n {xstr(row.input)}\n {xstr(row.output)}\n"
                         )
+        self.main_menu.plugin_socketio_message(
+            self.info["Name"],
+            f"[*] Master log successfully generated to {path}"
+        )
 
     def shutdown(self):
         """

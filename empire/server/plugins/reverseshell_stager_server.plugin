@@ -134,7 +134,6 @@ class Plugin(Plugin):
         any modifications to the mainMenu go here - e.g.
         registering functions to be run by user commands
         """
-        mainMenu.__class__.do_server = self.do_server
         self.installPath = mainMenu.installPath
         self.main_menu = mainMenu
 

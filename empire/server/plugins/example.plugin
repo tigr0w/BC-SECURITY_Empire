@@ -75,7 +75,8 @@ class Plugin(Plugin):
         Any modifications to the mainMenu go here - e.g.
         registering functions to be run by user commands
         """
-        mainMenu.__class__.do_test = self.do_test
+        self.installPath = mainMenu.installPath
+        self.main_menu = mainMenu
 
     def do_test(self, args):
         """
