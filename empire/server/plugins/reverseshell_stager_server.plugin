@@ -118,8 +118,8 @@ class Plugin(Plugin):
     def execute(self, command):
         try:
             self.reverseshell_proc = None
-            self.status = self.options["Status"]["Value"]
-            results = self.do_server("")
+            self.status = command["Status"]
+            results = self.do_server(command)
             return results
         except Exception as e:
             print(e)
@@ -137,7 +137,7 @@ class Plugin(Plugin):
         self.installPath = mainMenu.installPath
         self.main_menu = mainMenu
 
-    def do_server(self, *args):
+    def do_server(self, command):
         """
         Check if the Empire C# server is already running.
         """
@@ -169,18 +169,18 @@ class Plugin(Plugin):
 
         elif self.status == "start":
             # extract all of our options
-            language = self.options["Language"]["Value"]
-            listener_name = self.options["Listener"]["Value"]
-            base64 = self.options["Base64"]["Value"]
-            obfuscate = self.options["Obfuscate"]["Value"]
-            obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-            user_agent = self.options["UserAgent"]["Value"]
-            proxy = self.options["Proxy"]["Value"]
-            proxy_creds = self.options["ProxyCreds"]["Value"]
-            stager_retries = self.options["StagerRetries"]["Value"]
-            safe_checks = self.options["SafeChecks"]["Value"]
-            lhost = self.options["LocalHost"]["Value"]
-            lport = self.options["LocalPort"]["Value"]
+            language = command["Language"]
+            listener_name = command["Listener"]
+            base64 = command["Base64"]
+            obfuscate = command["Obfuscate"]
+            obfuscate_command = command["ObfuscateCommand"]
+            user_agent = command["UserAgent"]
+            proxy = command["Proxy"]
+            proxy_creds = command["ProxyCreds"]
+            stager_retries = command["StagerRetries"]
+            safe_checks = command["SafeChecks"]
+            lhost = command["LocalHost"]
+            lport = command["LocalPort"]
 
             encode = False
             if base64.lower() == "true":
@@ -202,7 +202,7 @@ class Plugin(Plugin):
                 proxyCreds=proxy_creds,
                 stagerRetries=stager_retries,
                 safeChecks=safe_checks,
-                bypasses=self.options["Bypasses"]["Value"],
+                bypasses=command["Bypasses"],
             )
 
             if self.launcher == "":

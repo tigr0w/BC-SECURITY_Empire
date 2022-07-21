@@ -42,7 +42,7 @@ class Plugin(Plugin):
         Parses commands from the API
         """
         try:
-            report = self.options["report"]["Value"]
+            report = command["report"]
 
             if report == "session":
                 self.session_report()

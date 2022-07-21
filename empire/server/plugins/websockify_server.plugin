@@ -69,8 +69,8 @@ class Plugin(Plugin):
         try:
             self.websockify_proc = None
             # essentially switches to parse the proper command to execute
-            self.status = self.options["Status"]["Value"]
-            results = self.do_websockify("")
+            self.status = command["Status"]
+            results = self.do_websockify(command)
             return results
         except Exception as e:
             print(e)
@@ -88,7 +88,7 @@ class Plugin(Plugin):
         self.installPath = mainMenu.installPath
         self.main_menu = mainMenu
 
-    def do_websockify(self, *args):
+    def do_websockify(self, command):
         """
         Check if the Empire C# server is already running.
         """
@@ -119,10 +119,10 @@ class Plugin(Plugin):
                 )
 
         elif self.status == "start":
-            source_host = self.options["SourceHost"]["Value"]
-            source_port = int(self.options["SourcePort"]["Value"])
-            target_host = self.options["TargetHost"]["Value"]
-            target_port = int(self.options["TargetPort"]["Value"])
+            source_host = command["SourceHost"]
+            source_port = int(command["SourcePort"])
+            target_host = command["TargetHost"]
+            target_port = int(command["TargetPort"])
 
             self.main_menu.plugin_socketio_message(
                 self.info["Name"], "[*] Websockify server is currently starting..."

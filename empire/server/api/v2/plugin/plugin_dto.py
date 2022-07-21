@@ -68,4 +68,4 @@ class PluginExecutePostRequest(BaseModel):
 
 
 class PluginExecuteResponse(BaseModel):
-    detail: str
+    detail: str = ""

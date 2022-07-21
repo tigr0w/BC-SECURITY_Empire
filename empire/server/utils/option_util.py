@@ -45,6 +45,8 @@ def validate_options(instance_options: typing.Dict, params: typing.Dict):
     Will also attempt to cast the options to the correct type using safe_cast.
     """
     options = {}
+    # make a copy so that the original options are not modified
+    params = params.copy()
 
     for instance_key, option_meta in instance_options.items():
         # Attempt to default a unset required option to the default value

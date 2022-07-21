@@ -29,11 +29,19 @@ class PluginService(object):
         plugins = empire_config.yaml.get("plugins")
         if plugins:
             for plugin in plugins:
-                use_plugin = self.loaded_plugins[plugin]
-                for option in plugins[plugin]:
-                    value = plugins[plugin][option]
-                    use_plugin.options[option]["Value"] = value
-                results = use_plugin.execute("")
+                use_plugin = self.loaded_plugins.get(plugin)
+                if not use_plugin:
+                    log.error(f"Plugin {plugin} not found.")
+                    continue
+
+                options = plugins[plugin]
+                cleaned_options, err = validate_options(use_plugin.options, options)
+                if err:
+                    log.error(f"Plugin {plugin} options failed to validate: {err}")
+                    continue
+
+                results = use_plugin.execute(cleaned_options)
+
                 if results is False:
                     log.error(f"Plugin failed to run: {plugin}")
                 else:
@@ -93,7 +101,7 @@ class PluginService(object):
             return None, err
 
         try:
-            return plugin.execute(plugin_req.options), None
+            return plugin.execute(cleaned_options), None
         except Exception as e:
             log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
             return False, str(e)

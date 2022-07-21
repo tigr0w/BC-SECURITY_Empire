@@ -37,6 +37,11 @@ keyword_obfuscation:
   # List of keywords to obfuscate
   - Invoke-Empire
   - Invoke-Mimikatz
+plugins:
+  # Auto-load plugin with defined settings
+  temporary:
+    status: start
+    message: hello there
 logging:
   level: INFO
   directory: empire/server/downloads/logs/

@@ -48,7 +48,7 @@ class Plugin(Plugin):
 
     def execute(self, command):
         try:
-            results = self.do_csharpserver("")
+            results = self.do_csharpserver(command)
             return results
         except Exception as e:
             log.error(e)
@@ -66,30 +66,18 @@ class Plugin(Plugin):
         self.installPath = mainMenu.installPath
         self.main_menu = mainMenu
 
-    def do_csharpserver(self, *args):
+    def do_csharpserver(self, command):
         """
         Check if the Empire C# server is already running.
         """
-        if len(args[0]) > 0:
-            self.start = args[0]
-        else:
-            self.start = self.options["status"]["Value"]
+        self.start = command["status"]
 
         if not self.csharpserver_proc or self.csharpserver_proc.poll():
             self.status = "OFF"
         else:
             self.status = "ON"
 
-        if not args:
-            self.main_menu.plugin_socketio_message(
-                self.info["Name"],
-                "[*] Empire C# server is currently: %s" % self.status,
-            )
-            self.main_menu.plugin_socketio_message(
-                self.info["Name"], "[!] Empire C# <start|stop> <port>"
-            )
-
-        elif self.start == "stop":
+        if self.start == "stop":
             if self.status == "ON":
                 self.csharpserver_proc.kill()
                 self.main_menu.plugin_socketio_message(
