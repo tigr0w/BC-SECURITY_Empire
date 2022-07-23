@@ -2,7 +2,7 @@ import base64
 from builtins import object
 from typing import Dict, Optional, Tuple
 
-from empire.server.common.module_models import EmpireModule
+from empire.server.core.module_models import EmpireModule
 
 
 class Module(object):

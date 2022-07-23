@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets, templating
 from empire.server.common.empire import MainMenu
-from empire.server.database.base import SessionLocal
+from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util
 
 LOG_NAME_PREFIX = __name__

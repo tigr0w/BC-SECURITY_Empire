@@ -3,7 +3,7 @@ from __future__ import print_function
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common.module_models import EmpireModule
+from empire.server.core.module_models import EmpireModule
 
 
 class Module(object):

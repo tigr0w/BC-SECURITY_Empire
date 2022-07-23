@@ -3,7 +3,7 @@ from __future__ import print_function
 from builtins import object
 
 from empire.server.common import helpers
-from empire.server.database.base import SessionLocal
+from empire.server.core.db.base import SessionLocal
 
 
 class Stager(object):

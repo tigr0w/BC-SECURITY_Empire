@@ -18,7 +18,7 @@ class Stager(object):
                     "Link": "https://twitter.com/Cx01N_",
                 },
             ],
-            "Description": "Generates an agent code instance for a specified listener, pre-staged, and register the agent in the database. This allows the agent to begin beconing behavior immediately.",
+            "Description": "Generates an agent code instance for a specified listener, pre-staged, and register the agent in the db. This allows the agent to begin beconing behavior immediately.",
             "Comments": [],
         }
 

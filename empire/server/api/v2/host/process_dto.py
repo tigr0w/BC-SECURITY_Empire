@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 def domain_to_dto_process(process: models.HostProcess):

@@ -15,8 +15,8 @@ from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets, templating
 from empire.server.common.empire import MainMenu
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
 from empire.server.utils.module_util import handle_validate_message
 

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
 
 class LanguageEnum(str, Enum):

@@ -3,7 +3,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 class Keyword(BaseModel):

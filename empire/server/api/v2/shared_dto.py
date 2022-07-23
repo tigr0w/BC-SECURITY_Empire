@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel
 
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 class BadRequestResponse(BaseModel):

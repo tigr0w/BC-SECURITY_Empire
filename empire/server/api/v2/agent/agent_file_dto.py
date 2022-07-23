@@ -10,7 +10,7 @@ from empire.server.api.v2.shared_dto import (
     DownloadDescription,
     domain_to_dto_download_description,
 )
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 def domain_to_dto_file(file: models.AgentFile, children: List[models.AgentFile]):

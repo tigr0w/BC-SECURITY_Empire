@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
-from empire.server.common.module_models import EmpireModule, LanguageEnum
+from empire.server.core.module_models import EmpireModule, LanguageEnum
 
 
 def domain_to_dto_module(module: EmpireModule, uid: str):

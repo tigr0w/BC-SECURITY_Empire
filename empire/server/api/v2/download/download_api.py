@@ -19,7 +19,7 @@ from empire.server.api.v2.shared_dto import (
     NotFoundResponse,
     OrderDirection,
 )
-from empire.server.database import models
+from empire.server.core.db import models
 from empire.server.server import main
 
 download_service = main.downloadsv2

@@ -5,8 +5,8 @@ import os
 import yaml
 from sqlalchemy.orm import Session
 
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
 from empire.server.utils.data_util import ps_convert_to_oneliner
 
 log = logging.getLogger(__name__)

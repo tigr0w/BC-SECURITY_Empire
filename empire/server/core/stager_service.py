@@ -5,10 +5,10 @@ from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
-from empire.server.common.config import empire_config
+from empire.server.core.config import empire_config
+from empire.server.core.db import models
 from empire.server.core.listener_service import ListenerService
 from empire.server.core.stager_template_service import StagerTemplateService
-from empire.server.database import models
 from empire.server.utils.option_util import set_options, validate_options
 
 

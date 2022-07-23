@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 class HostService(object):

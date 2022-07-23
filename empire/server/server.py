@@ -15,8 +15,8 @@ from empire.server.api import app
 
 # Empire imports
 from empire.server.common import empire
-from empire.server.common.config import empire_config
-from empire.server.database import base
+from empire.server.core.config import empire_config
+from empire.server.core.db import base
 from empire.server.utils import file_util
 from empire.server.utils.log_util import LOG_FORMAT, SIMPLE_LOG_FORMAT, ColorFormatter
 
@@ -60,7 +60,7 @@ def setup_logging(args):
 
 CSHARP_DIR_BASE = os.path.join(os.path.dirname(__file__), "csharp/Covenant")
 INVOKE_OBFS_SRC_DIR_BASE = os.path.join(
-    os.path.dirname(__file__), "powershell/Invoke-Obfuscation"
+    os.path.dirname(__file__), "data/Invoke-Obfuscation"
 )
 INVOKE_OBFS_DST_DIR_BASE = "/usr/local/share/powershell/Modules/Invoke-Obfuscation"
 

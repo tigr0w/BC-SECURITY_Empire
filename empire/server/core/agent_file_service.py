@@ -1,9 +1,9 @@
 from typing import List, Optional, Tuple
 
 from sqlalchemy import and_
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import Session
 
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 class AgentFileService(object):

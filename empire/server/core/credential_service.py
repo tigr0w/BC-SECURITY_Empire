@@ -2,7 +2,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 class CredentialService(object):

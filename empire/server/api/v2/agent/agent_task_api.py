@@ -38,9 +38,9 @@ from empire.server.api.v2.shared_dto import (
 )
 from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_task_service import AgentTaskService
+from empire.server.core.db import models
+from empire.server.core.db.models import TaskingStatus
 from empire.server.core.download_service import DownloadService
-from empire.server.database import models
-from empire.server.database.models import TaskingStatus
 from empire.server.server import main
 
 agent_task_service: AgentTaskService = main.agenttasksv2

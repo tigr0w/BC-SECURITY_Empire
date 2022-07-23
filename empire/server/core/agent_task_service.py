@@ -13,12 +13,12 @@ from empire.server.api.v2.agent.agent_task_dto import (
 )
 from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.common import helpers
-from empire.server.common.config import empire_config
-from empire.server.common.hooks import hooks
+from empire.server.core.config import empire_config
+from empire.server.core.db import models
+from empire.server.core.db.models import TaskingStatus
+from empire.server.core.hooks import hooks
 from empire.server.core.listener_service import ListenerService
 from empire.server.core.module_service import ModuleService
-from empire.server.database import models
-from empire.server.database.models import TaskingStatus
 
 log = logging.getLogger(__name__)
 

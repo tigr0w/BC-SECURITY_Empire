@@ -8,9 +8,9 @@ from empire.server.api.v2.agent.agent_dto import domain_to_dto_agent
 from empire.server.api.v2.agent.agent_task_dto import domain_to_dto_task
 from empire.server.api.v2.listener.listener_dto import domain_to_dto_listener
 from empire.server.api.v2.user.user_dto import domain_to_dto_user
-from empire.server.common.hooks import hooks
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.hooks import hooks
 
 log = logging.getLogger(__name__)
 

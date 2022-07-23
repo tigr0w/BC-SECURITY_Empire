@@ -14,7 +14,7 @@ from empire.server.api.v2.module.module_dto import (
 )
 from empire.server.api.v2.shared_dependencies import get_db
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
-from empire.server.common.module_models import EmpireModule
+from empire.server.core.module_models import EmpireModule
 from empire.server.server import main
 
 module_service = main.modulesv2

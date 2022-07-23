@@ -14,7 +14,7 @@ from empire.server.api.v2.stager.stager_dto import (
     StagerUpdateRequest,
     domain_to_dto_stager,
 )
-from empire.server.database import models
+from empire.server.core.db import models
 from empire.server.server import main
 
 stager_service = main.stagersv2

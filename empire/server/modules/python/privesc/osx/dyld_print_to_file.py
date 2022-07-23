@@ -4,7 +4,7 @@ import logging
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common.module_models import EmpireModule
+from empire.server.core.module_models import EmpireModule
 
 log = logging.getLogger(__name__)
 

@@ -5,9 +5,9 @@ import terminaltables
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from empire.server.common.hooks import hooks
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.hooks import hooks
 
 
 def ps_hook(db: Session, tasking: models.Tasking):

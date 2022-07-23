@@ -80,8 +80,8 @@ def client(empire_config):
 
     print("cleanup")
 
-    from empire.server.database.base import engine
-    from empire.server.database.models import Base
+    from empire.server.core.db.base import engine
+    from empire.server.core.db.models import Base
     from empire.server.server import main
 
     main.shutdown()
@@ -90,7 +90,7 @@ def client(empire_config):
 
 @pytest.fixture(scope="session")
 def empire_config():
-    from empire.server.common.config import empire_config
+    from empire.server.core.config import empire_config
 
     # This could be used to dynamically change the db location if we ever try to
     # run multiple tests in parallel.
@@ -102,7 +102,7 @@ def empire_config():
 
 @pytest.fixture(scope="session")
 def models():
-    from empire.server.database import models
+    from empire.server.core.db import models
 
     yield models
 
@@ -146,7 +146,7 @@ def regular_auth_token(client, admin_auth_token):
 
 @pytest.fixture(scope="session")
 def db():
-    from empire.server.database.base import SessionLocal
+    from empire.server.core.db.base import SessionLocal
 
     yield SessionLocal()
 

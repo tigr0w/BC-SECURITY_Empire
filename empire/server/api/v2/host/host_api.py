@@ -6,7 +6,7 @@ from empire.server.api.jwt_auth import get_current_active_user
 from empire.server.api.v2.host.host_dto import Host, Hosts, domain_to_dto_host
 from empire.server.api.v2.shared_dependencies import get_db
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
-from empire.server.database import models
+from empire.server.core.db import models
 from empire.server.server import main
 
 host_service = main.hostsv2

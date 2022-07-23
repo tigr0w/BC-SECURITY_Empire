@@ -1,7 +1,7 @@
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 class HostProcessService(object):

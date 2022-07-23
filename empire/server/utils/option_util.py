@@ -1,6 +1,6 @@
 import typing
 
-from empire.server.common.module_models import EmpireModuleOption
+from empire.server.core.module_models import EmpireModuleOption
 
 
 def safe_cast(

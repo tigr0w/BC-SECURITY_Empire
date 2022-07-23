@@ -12,12 +12,12 @@ from empire.server.api.v2.module.module_dto import (
     ModuleUpdateRequest,
 )
 from empire.server.common import helpers
-from empire.server.common.config import empire_config
 from empire.server.common.converter.load_covenant import _convert_covenant_to_empire
-from empire.server.common.module_models import EmpireModule, LanguageEnum
+from empire.server.core.config import empire_config
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.module_models import EmpireModule, LanguageEnum
 from empire.server.core.obfuscation_service import ObfuscationService
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
 from empire.server.utils.option_util import convert_module_options, validate_options
 
 log = logging.getLogger(__name__)
@@ -230,7 +230,7 @@ class ModuleService(object):
         Generate the script to execute
         :param module: the execution parameters (already validated)
         :param params: the execution parameters
-        :param obfuscation_config: the obfuscation config. If not provided, will look up from the database.
+        :param obfuscation_config: the obfuscation config. If not provided, will look up from the db.
         :return: tuple containing the generated script and an error if it exists
         """
         if not obfuscation_config:

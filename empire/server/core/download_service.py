@@ -11,8 +11,8 @@ from empire.server.api.v2.download.download_dto import (
     DownloadSourceFilter,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.common.config import empire_config
-from empire.server.database import models
+from empire.server.core.config import empire_config
+from empire.server.core.db import models
 
 
 class DownloadService(object):

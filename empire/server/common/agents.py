@@ -48,10 +48,10 @@ from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
-from empire.server.common.hooks import hooks
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
-from empire.server.database.models import TaskingStatus
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.db.models import TaskingStatus
+from empire.server.core.hooks import hooks
 
 from . import encryption, helpers, packets
 

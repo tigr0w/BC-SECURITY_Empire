@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from empire.server.common.config import empire_config
+from empire.server.core.config import empire_config
 
 LOG_FORMAT = "%(asctime)s [%(filename)s:%(lineno)d] [%(levelname)s]: %(message)s "
 SIMPLE_LOG_FORMAT = "[%(levelname)s]: %(message)s "

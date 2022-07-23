@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import PROXY_ID
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 def domain_to_dto_agent(agent: models.Agent):

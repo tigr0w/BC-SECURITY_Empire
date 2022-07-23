@@ -10,7 +10,7 @@ from empire.server.api.v2.shared_dto import (
     domain_to_dto_download_description,
     to_value_type,
 )
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 def domain_to_dto_template(stager, uid: str):

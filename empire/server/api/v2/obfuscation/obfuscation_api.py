@@ -18,7 +18,7 @@ from empire.server.api.v2.obfuscation.obfuscation_dto import (
 )
 from empire.server.api.v2.shared_dependencies import get_db
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
-from empire.server.database import models
+from empire.server.core.db import models
 from empire.server.server import main
 
 obfuscation_service = main.obfuscationv2

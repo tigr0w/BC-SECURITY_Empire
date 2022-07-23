@@ -3,10 +3,10 @@ from importlib import reload
 
 
 def test_load_sqlite():
-    import empire.server.common.config
+    import empire.server.core.config
 
-    reload(empire.server.common.config)
-    from empire.server.common.config import EmpireConfig, empire_config
+    reload(empire.server.core.config)
+    from empire.server.core.config import EmpireConfig, empire_config
 
     config: EmpireConfig = empire_config
 
@@ -16,10 +16,10 @@ def test_load_sqlite():
 
 def test_load_mysql(default_argv):
     sys.argv = ["", "server", "--config", "empire/test/test_server_config_mysql.yaml"]
-    import empire.server.common.config
+    import empire.server.core.config
 
-    reload(empire.server.common.config)
-    from empire.server.common.config import EmpireConfig, empire_config
+    reload(empire.server.core.config)
+    from empire.server.core.config import EmpireConfig, empire_config
 
     config: EmpireConfig = empire_config
 
@@ -28,4 +28,4 @@ def test_load_mysql(default_argv):
 
     # set back to sqlite for subsequent tests
     sys.argv = default_argv
-    reload(empire.server.common.config)
+    reload(empire.server.core.config)

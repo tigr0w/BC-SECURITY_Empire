@@ -16,12 +16,12 @@ from socket import SocketIO
 from typing import Optional
 
 # Empire imports
-from empire.server.common import hooks_internal
-from empire.server.common.config import empire_config
+from empire.server.core import hooks_internal
 from empire.server.core.agent_file_service import AgentFileService
 from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.bypass_service import BypassService
+from empire.server.core.config import empire_config
 from empire.server.core.credential_service import CredentialService
 from empire.server.core.download_service import DownloadService
 from empire.server.core.host_process_service import HostProcessService
@@ -99,6 +99,7 @@ class MainMenu(object):
         self.get_directories()
         log.info("Empire starting up...")
 
+    # todo vr move to plugin_service
     def plugin_socketio_message(self, plugin_name, msg):
         """
         Send socketio message to the socket address
@@ -137,6 +138,7 @@ class MainMenu(object):
         log.info("Shutting down plugins...")
         self.pluginsv2.shutdown()
 
+    # todo vr still needed? use config directly
     def get_directories(self):
         """
         Get download folder path from config file

@@ -6,9 +6,9 @@ from importlib.machinery import SourceFileLoader
 
 from sqlalchemy.orm import Session
 
-from empire.server.common.config import empire_config
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.config import empire_config
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
 from empire.server.utils.option_util import validate_options
 
 log = logging.getLogger(__name__)

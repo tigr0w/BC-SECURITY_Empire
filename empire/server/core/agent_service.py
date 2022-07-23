@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from empire.server.core.agent_task_service import AgentTaskService
-from empire.server.database import models
+from empire.server.core.db import models
 
 
 class AgentService(object):

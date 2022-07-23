@@ -39,7 +39,7 @@ def test_extended_log_format(monkeypatch):
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
     from empire import arguments
-    from empire.server.common.config import EmpireConfig
+    from empire.server.core.config import EmpireConfig
     from empire.server.server import setup_logging
     from empire.server.utils.log_util import LOG_FORMAT, ColorFormatter
 
@@ -67,7 +67,7 @@ def test_log_level_by_config(monkeypatch):
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
     from empire import arguments
-    from empire.server.common.config import EmpireConfig
+    from empire.server.core.config import EmpireConfig
     from empire.server.server import setup_logging
 
     test_config = _load_test_config()

@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from empire.server.api.v2.shared_dependencies import get_db
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
 
 # This all comes from the amazing fastapi docs: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 SECRET_KEY = SessionLocal().query(models.Config).first().jwt_secret_key

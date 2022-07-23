@@ -5,10 +5,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
-from empire.server.common.hooks import hooks
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.hooks import hooks
 from empire.server.core.listener_template_service import ListenerTemplateService
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
 from empire.server.utils.option_util import set_options, validate_options
 
 log = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class ListenerService(object):
     def get_active_listener(self, id: int):
         """
         Get an active listener by id.
-        Note that this is the object instance, NOT the database model.
+        Note that this is the object instance, NOT the db model.
         :param id: listener id
         :return: listener object
         """

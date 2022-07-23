@@ -1,16 +1,15 @@
 import fnmatch
 import logging
 import os
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from empire.server.common.config import empire_config
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.config import empire_config
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util
 
 log = logging.getLogger(__name__)
@@ -169,7 +168,7 @@ class ObfuscationService(object):
             # Obfuscate using Invoke-Obfuscation w/ PowerShell
             install_path = self.main_menu.installPath
             subprocess.call(
-                f'{data_util.get_powershell_name()} -C \'$ErrorActionPreference = "SilentlyContinue";Import-Module {install_path}/powershell/Invoke-Obfuscation/Invoke-Obfuscation.psd1;Invoke-Obfuscation -ScriptPath {toObfuscateFile.name} -Command "{self._convert_obfuscation_command(obfuscation_command)}" -Quiet | Out-File -Encoding ASCII {obfuscatedFile.name}\'',
+                f'{data_util.get_powershell_name()} -C \'$ErrorActionPreference = "SilentlyContinue";Import-Module {install_path}/data/Invoke-Obfuscation/Invoke-Obfuscation.psd1;Invoke-Obfuscation -ScriptPath {toObfuscateFile.name} -Command "{self._convert_obfuscation_command(obfuscation_command)}" -Quiet | Out-File -Encoding ASCII {obfuscatedFile.name}\'',
                 shell=True,
             )
 

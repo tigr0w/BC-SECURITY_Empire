@@ -25,7 +25,7 @@ from empire.server.api.v2.user.user_dto import (
     UserUpdateRequest,
     domain_to_dto_user,
 )
-from empire.server.database import models
+from empire.server.core.db import models
 from empire.server.server import main
 
 user_service = main.usersv2

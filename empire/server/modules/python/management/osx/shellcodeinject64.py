@@ -5,7 +5,7 @@ import os
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common.module_models import EmpireModule
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 

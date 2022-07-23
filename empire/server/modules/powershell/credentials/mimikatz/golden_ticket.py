@@ -4,8 +4,8 @@ import logging
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common.module_models import EmpireModule
-from empire.server.database.models import Credential
+from empire.server.core.db.models import Credential
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 log = logging.getLogger(__name__)

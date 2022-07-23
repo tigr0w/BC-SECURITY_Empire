@@ -4,15 +4,15 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from empire.server.common.config import empire_config
-from empire.server.database import models
-from empire.server.database.defaults import (
+from empire.server.core.config import empire_config
+from empire.server.core.db import models
+from empire.server.core.db.defaults import (
     get_default_config,
     get_default_keyword_obfuscation,
     get_default_obfuscation_config,
     get_default_user,
 )
-from empire.server.database.models import Base
+from empire.server.core.db.models import Base
 
 log = logging.getLogger(__name__)
 

@@ -6,8 +6,8 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
 
 log = logging.getLogger(__name__)
 

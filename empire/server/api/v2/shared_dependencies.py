@@ -1,4 +1,4 @@
-from empire.server.database.base import SessionLocal
+from empire.server.core.db.base import SessionLocal
 
 
 def get_db():

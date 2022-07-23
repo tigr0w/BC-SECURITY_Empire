@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from empire.server.common.hooks import hooks
+from empire.server.core.hooks import hooks
 
 
 def callback_hook(tasking):

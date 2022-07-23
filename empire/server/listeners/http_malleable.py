@@ -2,24 +2,22 @@ from __future__ import print_function
 
 import base64
 import copy
-import json
 import logging
 import os
 import random
 import ssl
-import string
 import sys
 import time
 import urllib.parse
 from builtins import object, str
 from typing import List, Optional, Tuple
 
-from flask import Flask, Response, make_response, render_template, request
+from flask import Flask, Response, make_response, request
 
 from empire.server.common import encryption, helpers, malleable, packets, templating
 from empire.server.common.empire import MainMenu
-from empire.server.database import models
-from empire.server.database.base import SessionLocal
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
 from empire.server.utils.module_util import handle_validate_message
 
