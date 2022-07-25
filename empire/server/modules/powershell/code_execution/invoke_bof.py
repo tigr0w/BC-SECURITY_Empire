@@ -2,8 +2,10 @@ from __future__ import print_function
 
 import base64
 from builtins import object, str
+from pathlib import Path
 from typing import Dict
 
+from empire.server.core.config import empire_config
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -28,7 +30,8 @@ class Module(object):
         if err:
             return handle_error_message(err)
 
-        with open(f"{main_menu.directory['downloads']}{params['File']}", "rb") as data:
+        location = Path(empire_config.directories.downloads) / params["File"]
+        with location.open("rb") as data:
             bof_data = data.read()
         bof_data = base64.b64encode(bof_data).decode("utf-8")
 

@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 from fastapi import UploadFile
@@ -113,25 +114,34 @@ class DownloadService(object):
         :return:
         """
         filename = file.filename
+
         location = (
-            f"{empire_config.directories.downloads}uploads/{user.username}/{filename}"
+            Path(empire_config.directories.downloads)
+            / "uploads"
+            / user.username
+            / filename
         )
-        os.makedirs(os.path.dirname(location), exist_ok=True)
+        location.parent.mkdir(parents=True, exist_ok=True)
 
         # append number to filename if it already exists
         filename, file_extension = os.path.splitext(filename)
         i = 1
         while os.path.isfile(location):
             temp_name = f"{filename}({i}){file_extension}"
-            location = f"{self.main_menu.directory['downloads']}uploads/{user.username}/{temp_name}"
+            location = (
+                Path(empire_config.directories.downloads)
+                / "uploads"
+                / user.username
+                / temp_name
+            )
             i += 1
-        filename = os.path.basename(location)
+        filename = location.name
 
-        with open(location, "wb") as buffer:
+        with location.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
         download = models.Download(
-            location=location, filename=filename, size=os.path.getsize(location)
+            location=str(location), filename=filename, size=os.path.getsize(location)
         )
         db.add(download)
         db.flush()

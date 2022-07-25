@@ -1,6 +1,7 @@
 import copy
 import os
 import uuid
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy.orm import Session
@@ -163,14 +164,14 @@ class StagerService(object):
             file_name = f"{uuid.uuid4()}.txt"
 
         file_name = (
-            f"{empire_config.directories.downloads}generated-stagers/{file_name}"
+            Path(empire_config.directories.downloads) / "generated-stagers" / file_name
         )
-        os.makedirs(os.path.dirname(file_name), exist_ok=True)
+        file_name.parent.mkdir(parents=True, exist_ok=True)
         mode = "w" if type(resp) == str else "wb"
         with open(file_name, mode) as f:
             f.write(resp)
 
-        return file_name, None
+        return str(file_name), None
 
     @staticmethod
     def delete_stager(db: Session, stager: models.Stager):

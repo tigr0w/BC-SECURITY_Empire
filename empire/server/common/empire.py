@@ -89,6 +89,7 @@ class MainMenu(object):
         self.agentsv2 = AgentService(self)
         self.pluginsv2 = PluginService(self)
 
+        self.pluginsv2.startup()
         hooks_internal.initialize()
 
         self.resourceQueue = []
@@ -96,35 +97,7 @@ class MainMenu(object):
         self.autoRuns = {}
         self.directory = {}
 
-        self.get_directories()
         log.info("Empire starting up...")
-
-    # todo vr move to plugin_service
-    def plugin_socketio_message(self, plugin_name, msg):
-        """
-        Send socketio message to the socket address
-        """
-        log.info(f"{plugin_name}: {msg}")
-        if self.socketio:
-            try:  # https://stackoverflow.com/a/61331974/
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = None
-
-            if loop and loop.is_running():
-                loop.create_task(
-                    self.socketio.emit(
-                        f"plugins/{plugin_name}/notifications",
-                        {"message": msg, "plugin_name": plugin_name},
-                    )
-                )
-            else:
-                asyncio.run(
-                    self.socketio.emit(
-                        f"plugins/{plugin_name}/notifications",
-                        {"message": msg, "plugin_name": plugin_name},
-                    )
-                )
 
     def shutdown(self):
         """
@@ -137,14 +110,3 @@ class MainMenu(object):
 
         log.info("Shutting down plugins...")
         self.pluginsv2.shutdown()
-
-    # todo vr still needed? use config directly
-    def get_directories(self):
-        """
-        Get download folder path from config file
-        """
-        directories = empire_config.yaml.get("directories", {})
-        for key, value in directories.items():
-            self.directory[key] = value
-            if self.directory[key][-1] != "/":
-                self.directory[key] += "/"

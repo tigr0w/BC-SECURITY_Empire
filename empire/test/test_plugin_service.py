@@ -32,6 +32,7 @@ def test_autostart_plugins(caplog, monkeypatch, db, models, empire_config):
 
     with temp_copy_plugin(plugin_path):
         main_menu_mock = MagicMock()
-        PluginService(main_menu_mock)
+        plugin_service = PluginService(main_menu_mock)
+        plugin_service.startup()
 
     assert "This function has been called 1 times." in caplog.text

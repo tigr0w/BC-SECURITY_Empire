@@ -1,3 +1,4 @@
+import asyncio
 import fnmatch
 import importlib
 import logging
@@ -18,6 +19,12 @@ class PluginService(object):
     def __init__(self, main_menu):
         self.main_menu = main_menu
         self.loaded_plugins = {}
+
+    def startup(self):
+        """
+        Called after plugin_service is initialized.
+        This way plugin_service is fully initialized on MainMenu before plugins are loaded.
+        """
         with SessionLocal.begin() as db:
             self.startup_plugins(db)
             self.autostart_plugins()
@@ -105,6 +112,32 @@ class PluginService(object):
         except Exception as e:
             log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
             return False, str(e)
+
+    def plugin_socketio_message(self, plugin_name, msg):
+        """
+        Send socketio message to the socket address
+        """
+        log.info(f"{plugin_name}: {msg}")
+        if self.main_menu.socketio:
+            try:  # https://stackoverflow.com/a/61331974/
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                loop.create_task(
+                    self.main_menu.socketio.emit(
+                        f"plugins/{plugin_name}/notifications",
+                        {"message": msg, "plugin_name": plugin_name},
+                    )
+                )
+            else:
+                asyncio.run(
+                    self.main_menu.socketio.emit(
+                        f"plugins/{plugin_name}/notifications",
+                        {"message": msg, "plugin_name": plugin_name},
+                    )
+                )
 
     def get_all(self):
         return self.loaded_plugins

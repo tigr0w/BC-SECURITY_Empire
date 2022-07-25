@@ -2,10 +2,12 @@ from __future__ import print_function
 
 import base64
 from builtins import object, str
+from pathlib import Path
 from typing import Dict
 
 import yaml
 
+from empire.server.core.config import empire_config
 from empire.server.core.module_models import EmpireModule
 
 
@@ -18,9 +20,12 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
+        download_dir = Path(empire_config.directories.downloads)
+        file = download_dir / params["File"]
 
-        with open(f"{main_menu.directory['downloads']}{params['File']}", "rb") as data:
+        with file.open("rb") as data:
             assembly_data = data.read()
+
         base64_assembly = base64.b64encode(assembly_data).decode("utf-8")
 
         compiler = main_menu.loadedPlugins.get("csharpserver")

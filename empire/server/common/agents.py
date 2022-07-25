@@ -41,6 +41,7 @@ import string
 import threading
 import warnings
 from builtins import object, str
+from pathlib import Path
 from typing import Dict
 
 from sqlalchemy import and_, or_, update
@@ -48,6 +49,7 @@ from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
+from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import TaskingStatus
@@ -240,18 +242,16 @@ class Agents(object):
         parts = path.split("\\")
 
         # construct the appropriate save path
-        save_path = (
-            f"{self.mainMenu.directory['downloads']}{sessionID}/{'/'.join(parts[0:-1])}"
-        )
-
+        download_dir = Path(empire_config.directories.downloads)
+        save_path = download_dir / sessionID / "/".join(parts[0:-1])
         filename = os.path.basename(parts[-1])
 
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
-            safePath = os.path.abspath(self.mainMenu.directory["downloads"])
+            safe_path = download_dir.absolute()
 
-            if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
+            if not os.path.abspath(save_path / filename).startswith(safe_path):
                 message = "Agent {} attempted skywalker exploit! Attempted overwrite of {} with data {}".format(
                     sessionID, path, data
                 )
@@ -259,7 +259,7 @@ class Agents(object):
                 return
 
             # make the recursive directory structure if it doesn't already exist
-            if not os.path.exists(save_path):
+            if not save_path.exists():
                 os.makedirs(save_path)
 
             # overwrite an existing file
@@ -292,9 +292,11 @@ class Agents(object):
             f.close()
 
             if not append:
-                location = save_path.rstrip("/") + "/" + filename
+                location = save_path / filename
                 download = models.Download(
-                    location=location, filename=filename, size=os.path.getsize(location)
+                    location=str(location),
+                    filename=filename,
+                    size=os.path.getsize(location),
                 )
                 db.add(download)
                 db.flush()
@@ -321,7 +323,7 @@ class Agents(object):
             self.lock.release()
 
         percent = round(
-            int(os.path.getsize("%s/%s" % (save_path, filename))) / int(filesize) * 100,
+            int(os.path.getsize(str(save_path / filename))) / int(filesize) * 100,
             2,
         )
 
@@ -336,10 +338,8 @@ class Agents(object):
         parts = path.split("/")
 
         # construct the appropriate save path
-        save_path = (
-            f"{self.mainMenu.directory['downloads']}{sessionID}/{'/'.join(parts[0:-1])}"
-        )
-
+        download_dir = Path(empire_config.directories.downloads)
+        save_path = download_dir / sessionID / "/".join(parts[0:-1])
         filename = parts[-1]
 
         # decompress data if coming from a python agent:
@@ -365,9 +365,9 @@ class Agents(object):
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
-            safePath = os.path.abspath(self.mainMenu.directory["downloads"])
+            safe_path = download_dir.absolute()
 
-            if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
+            if not os.path.abspath(save_path / filename).startswith(safe_path):
                 message = "agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
                     sessionID, path, data
                 )
@@ -375,11 +375,13 @@ class Agents(object):
                 return
 
             # make the recursive directory structure if it doesn't already exist
-            if not os.path.exists(save_path):
+            if not save_path.exists():
                 os.makedirs(save_path)
 
             # save the file out
-            with open("%s/%s" % (save_path, filename), "wb") as f:
+
+            file_path = save_path / filename
+            with file_path.open("wb") as f:
                 f.write(data)
         finally:
             self.lock.release()
@@ -388,7 +390,7 @@ class Agents(object):
         message = f"File {path} from {sessionID} saved"
         log.info(message)
 
-        return save_path + "/" + filename
+        return str(file_path)
 
     def save_agent_log(self, session_id, data):
         """
@@ -396,10 +398,11 @@ class Agents(object):
         """
         if isinstance(data, bytes):
             data = data.decode("UTF-8")
-        save_path = f"{self.mainMenu.directory['downloads']}{session_id}/"
+
+        save_path = Path(empire_config.directories.downloads) / session_id
 
         # make the recursive directory structure if it doesn't already exist
-        if not os.path.exists(save_path):
+        if not save_path.exists():
             os.makedirs(save_path)
 
         current_time = helpers.get_datetime()
@@ -1559,14 +1562,15 @@ class Agents(object):
         elif response_name == "TASK_CMD_JOB":
             # check if this is the powershell keylogging task, if so, write output to file instead of screen
             if key_log_task_id and key_log_task_id == task_id:
-                safePath = os.path.abspath(f"{self.mainMenu.directory['downloads']}")
-                savePath = f"{self.mainMenu.directory['downloads']}/{session_id}/keystrokes.txt"
-                if not os.path.abspath(savePath).startswith(safePath):
+                download_dir = Path(empire_config.directories.downloads)
+                safe_path = download_dir.absolute()
+                save_path = download_dir / session_id / "keystrokes.txt"
+                if not os.path.abspath(save_path).startswith(safe_path):
                     message = f"agent {session_id} attempted skywalker exploit!"
                     log.warning(message)
                     return
 
-                with open(savePath, "a+") as f:
+                with open(save_path, "a+") as f:
                     if isinstance(data, bytes):
                         data = data.decode("UTF-8")
                     new_results = (

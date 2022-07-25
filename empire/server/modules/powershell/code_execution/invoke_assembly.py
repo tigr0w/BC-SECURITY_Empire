@@ -1,9 +1,11 @@
 from __future__ import print_function
 
 from builtins import object, str
+from pathlib import Path
 from typing import Dict
 
 from empire.server.common import helpers
+from empire.server.core.config import empire_config
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -57,7 +59,8 @@ class Module(object):
             return handle_error_message(err)
 
         try:
-            with open(f"{main_menu.directory['downloads']}{params['File']}", "rb") as f:
+            location = Path(empire_config.directories.downloads) / params["File"]
+            with location.open("rb") as f:
                 assembly_data = f.read()
         except:
             return handle_error_message(

@@ -1,8 +1,10 @@
 from __future__ import print_function
 
 from builtins import object, str
+from pathlib import Path
 from typing import Dict
 
+from empire.server.core.config import empire_config
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -61,9 +63,8 @@ class Module(object):
                         sc = ",0".join(values.split("\\"))[0:]
                         script_end += " -" + str(option) + " @(" + sc + ")"
                     elif option.lower() == "file":
-                        with open(
-                            f"{main_menu.directory['downloads']}{values}", "rb"
-                        ) as bin_data:
+                        location = Path(empire_config.directories.downloads) / values
+                        with location.open("rb") as bin_data:
                             shellcode_bin_data = bin_data.read()
                         sc = ""
                         for x in range(len(shellcode_bin_data)):
