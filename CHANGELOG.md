@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.7.1] - 2022-07-29
+-   Fix write_dllhijacker.yaml script_path reference (@kevNii)
 
 ## [4.7.0] - 2022-06-25
 
