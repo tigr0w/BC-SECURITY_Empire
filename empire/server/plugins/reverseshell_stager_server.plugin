@@ -4,6 +4,7 @@ import socket
 
 import empire.server.common.helpers as helpers
 from empire.server.common.plugins import Plugin
+from empire.server.core.plugin_service import PluginService
 
 
 class Plugin(Plugin):
@@ -123,7 +124,7 @@ class Plugin(Plugin):
             return results
         except Exception as e:
             print(e)
-            self.main_menu.plugin_socketio_message(self.info[0]["Name"], f"[!] {e}")
+            self.plugin_service.plugin_socketio_message(self.info[0]["Name"], f"[!] {e}")
             return False
 
     def get_commands(self):
@@ -136,6 +137,7 @@ class Plugin(Plugin):
         """
         self.installPath = mainMenu.installPath
         self.main_menu = mainMenu
+        self.plugin_service: PluginService = mainMenu.pluginsv2
 
     def do_server(self, command):
         """
@@ -148,22 +150,22 @@ class Plugin(Plugin):
 
         if self.status == "status":
             if self.enabled:
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[+] Reverseshell server is currently running"
                 )
             else:
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Reverseshell server is currently stopped"
                 )
 
         elif self.status == "stop":
             if self.enabled:
                 self.reverseshell_proc.kill()
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Stopped reverseshell server"
                 )
             else:
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Reverseshell server is already stopped"
                 )
 
@@ -206,7 +208,7 @@ class Plugin(Plugin):
             )
 
             if self.launcher == "":
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Error in launcher command generation."
                 )
                 return ""
@@ -244,7 +246,7 @@ class Plugin(Plugin):
         except:
             return f"[!] Can't bind at {host}:{port}"
 
-        self.main_menu.plugin_socketio_message(
+        self.plugin_service.plugin_socketio_message(
             self.info["Name"], "[*] Listening on %s ..." % port
         )
         server.listen(5)

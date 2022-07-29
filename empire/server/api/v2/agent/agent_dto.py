@@ -11,7 +11,7 @@ def domain_to_dto_agent(agent: models.Agent):
     return Agent(
         session_id=agent.session_id,
         name=agent.name,
-        # the way agents connect, we only get the name. Ideally we should
+        # the way agents connect, we only get the listener name. Ideally we should
         # be getting the id so we can store it by id on the db.
         # Future change would be to add id to the dto and change
         # listener to listener_name

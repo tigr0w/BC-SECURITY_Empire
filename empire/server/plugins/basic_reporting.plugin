@@ -4,6 +4,7 @@ import threading
 from empire.server.common.plugins import Plugin
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.plugin_service import PluginService
 
 
 class Plugin(Plugin):
@@ -63,6 +64,7 @@ class Plugin(Plugin):
         """
         self.install_path = mainMenu.installPath
         self.main_menu = mainMenu
+        self.plugin_service: PluginService = mainMenu.pluginsv2
 
     def session_report(self):
         path = self.install_path + "/data/sessions.csv"
@@ -74,7 +76,7 @@ class Plugin(Plugin):
 
                     for row in db.query(models.Agent).all():
                         out.writerow([row.session_id, row.hostname, row.username, row.checkin_time])
-        self.main_menu.plugin_socketio_message(
+        self.plugin_service.plugin_socketio_message(
             self.info["Name"],
             f"[*] Session report generated to {path}",
         )
@@ -89,7 +91,7 @@ class Plugin(Plugin):
 
                     for row in db.query(models.Credential).all():
                         out.writerow([row.domain, row.username, row.host, row.credtype, row.password])
-        self.main_menu.plugin_socketio_message(
+        self.plugin_service.plugin_socketio_message(
             self.info["Name"],
             f"[*] Credential report generated to {path}",
         )
@@ -107,7 +109,7 @@ class Plugin(Plugin):
                             f"\n{xstr(row.created_at)} - {xstr(row.id)} ({xstr(row.agent_id)})> "
                             f"{xstr(row.user.username)}\n {xstr(row.input)}\n {xstr(row.output)}\n"
                         )
-        self.main_menu.plugin_socketio_message(
+        self.plugin_service.plugin_socketio_message(
             self.info["Name"],
             f"[*] Master log successfully generated to {path}"
         )
