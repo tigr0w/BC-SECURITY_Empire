@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.1] - 2022-07-29
+-   Fix write_dllhijacker.yaml script_path reference (@kevNii)
+
 ## [4.7.0] - 2022-06-25
+
 -   Update Python version on Dockerfile (@Vinnybod)
 -   Add Python 3.10 to CI tests  (@Vinnybod)
 -   Add a resource file command to the client (@Vinnybod)
@@ -278,7 +282,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.1...HEAD
+
+[4.7.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.0...v4.7.1
 
 [4.7.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.1...v4.7.0
 
