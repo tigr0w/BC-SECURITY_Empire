@@ -48,6 +48,9 @@ Once the first workflow runs, it will open two pull requests from the `release/v
 
 Merge the two pull requests. **DO NOT SQUASH**
 
+**Note**: If at this point there are additional changes for the release, merge them into the release branch, not
+the `sponsors-master` or `sponsors-dev` branch. This will ensure the change ends up in the release properly.
+
 ### 4. Tag and Release
 Once the pull requests are merged, run the `Sponsors - Tag Release` workflow on the `sponsors-master` branch.
 The workflow will create a tag and release on the `HEAD` of `sponsors-master`, using the release notes from `CHANGELOG.md` for the body of the release.

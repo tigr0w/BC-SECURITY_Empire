@@ -51,9 +51,6 @@ class Module(object):
 
         launcher = main_menu.stagers.stagers["windows/launcher_bat"]
         launcher.options["Listener"]["Value"] = params["Listener"]
-        launcher.options["UserAgent"]["Value"] = params["UserAgent"]
-        launcher.options["Proxy"]["Value"] = params["Proxy"]
-        launcher.options["ProxyCreds"]["Value"] = params["ProxyCreds"]
         launcher.options["Delete"]["Value"] = "True"
         if (params["Obfuscate"]).lower() == "true":
             launcher.options["Obfuscate"]["Value"] = "True"
