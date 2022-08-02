@@ -3,12 +3,13 @@ import shlex
 import sys
 import threading
 import time
+from pathlib import Path
 from typing import Dict, List, Optional, get_type_hints
 
 import urllib3
 from docopt import docopt
 from prompt_toolkit import HTML, PromptSession
-from prompt_toolkit.completion import Completer
+from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
@@ -37,6 +38,10 @@ from empire.client.src.menus.UseStagerMenu import use_stager_menu
 from empire.client.src.MenuState import menu_state
 from empire.client.src.ShortcutHandler import shortcut_handler
 from empire.client.src.utils import file_util, print_util
+from empire.client.src.utils.autocomplete_util import (
+    current_files,
+    filtered_search_list,
+)
 
 
 class MyCustomCompleter(Completer):
@@ -84,6 +89,20 @@ class MyCustomCompleter(Completer):
                 yield from self.empire_cli.menus["UseCredentialMenu"].get_completions(
                     document, complete_event, cmd_line, word_before_cursor
                 )
+            elif cmd_line[0] in ["resource"]:
+                if len(cmd_line) > 1 and cmd_line[1] == "-p":
+                    file = state.search_files()
+                    if file:
+                        yield Completion(file, start_position=-len(word_before_cursor))
+                else:
+                    for files in filtered_search_list(
+                        word_before_cursor, current_files(state.directory["downloads"])
+                    ):
+                        yield Completion(
+                            files,
+                            display=files.split("/")[-1],
+                            start_position=-len(word_before_cursor),
+                        )
             else:
                 # Menu specific commands
                 yield from menu_state.current_menu.get_completions(
@@ -148,6 +167,32 @@ class EmpireCli(object):
             session.message = HTML(menu_state.current_menu.get_prompt())
             session.app.invalidate()
 
+    def run_resource_file(self, session, resource):
+        file_path = Path(resource)
+        if not file_path.exists():
+            print(print_util.color(f"[!] File {file_path.name} does not exist."))
+            return
+
+        with file_path.open() as resource_file:
+            print(print_util.color(f"[*] Executing Resource File: {file_path.name}"))
+            for cmd in resource_file:
+                with patch_stdout(raw=True):
+                    try:
+                        time.sleep(1)
+                        text = session.prompt(accept_default=True, default=cmd.strip())
+                        cmd_line = list(shlex.split(text))
+                        self.parse_command_line(text, cmd_line, resource_file=True)
+                    except CliExitException:
+                        return
+                    except Exception as e:
+                        print(
+                            print_util.color(
+                                f"[*] Error parsing resource command: ", text
+                            )
+                        )
+
+        print(print_util.color(f"[*] Finished executing resource file: {resource}"))
+
     def main(self):
         if empire_config.yaml.get("suppress-self-cert-warning", True):
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -189,25 +234,7 @@ class EmpireCli(object):
             self.menus["MainMenu"].connect(autoserver, config=True)
 
         if args.resource:
-            with open(args.resource) as resource_file:
-                print(print_util.color(f"[*] Executing Resource File: {args.resource}"))
-                for cmd in resource_file:
-                    with patch_stdout(raw=True):
-                        try:
-                            time.sleep(1)
-                            text = session.prompt(
-                                accept_default=True, default=cmd.strip()
-                            )
-                            cmd_line = list(shlex.split(text))
-                            self.parse_command_line(text, cmd_line, resource_file=True)
-                        except CliExitException:
-                            return
-                        except Exception as e:
-                            print(
-                                print_util.color(
-                                    f"[*] Error parsing resource command: ", text
-                                )
-                            )
+            self.run_resource_file(session, args.resource)
 
         while True:
             try:
@@ -216,9 +243,21 @@ class EmpireCli(object):
                         HTML(menu_state.current_menu.get_prompt()),
                         refresh_interval=None,
                     )
+
+                    cmd_line = list(shlex.split(text))
+
+                    if cmd_line[0] == "resource":
+                        if len(cmd_line) == 1:
+                            print(
+                                print_util.color(
+                                    "[!] You must specify a resource file."
+                                )
+                            )
+                        else:
+                            self.run_resource_file(session, cmd_line[1])
+
                     # cmd_line = list(map(lambda s: s.lower(), shlex.split(text)))
                     # TODO what to do about case sensitivity for parsing options.
-                    cmd_line = list(shlex.split(text))
                     self.parse_command_line(text, cmd_line)
             except KeyboardInterrupt:
                 print(print_util.color("[!] Type exit to quit"))

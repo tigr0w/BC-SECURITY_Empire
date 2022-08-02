@@ -73,5 +73,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
+script_path: 'privesc/PowerUp.ps1'
 advanced:
   custom_generate: true
