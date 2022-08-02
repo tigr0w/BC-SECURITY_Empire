@@ -34,7 +34,7 @@ class Hooks(object):
 
     # This event is triggered after the agent has completed the stage2 of the checkin process,
     # and the sysinfo has been written to the database.
-    # It has one argument (db: Session, agent: models.Agent)
+    # Its arguments are (db: Session, agent: models.Agent)
     AFTER_AGENT_CHECKIN_HOOK = "after_agent_checkin_hook"
 
     def __init__(self):

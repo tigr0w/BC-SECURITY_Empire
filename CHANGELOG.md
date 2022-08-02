@@ -37,7 +37,7 @@ It will be cleaned up as we get closer to the official release.
 - Add authors to bypass endpoints
 - Add a help command to the client to print the full doc string of a function. such as `help shell` or `help script_import`
 - Add a `--literal` flag that can be used on shell commands that forces the agent to execute the command literally, ignoring any built-in aliases that exist such as for whoami or ps
-- Changes to plugins outlined in [5.0 Plugins](./5.0-plugins.md)
+- Changes to plugins outlined in the Plugins section of the wiki
 
 ## [4.7.0] - 2022-06-25
 -   Update Python version on Dockerfile (@Vinnybod)

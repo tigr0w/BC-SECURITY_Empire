@@ -40,7 +40,7 @@ class MyJsonEncoder(JSONEncoder):
         return JSONEncoder.default(self, o)
 
 
-def initialize():
+def initialize(secure: bool = False, port: int = 1337):
     # Not pretty but allows us to use main_menu by delaying the import
     from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
     from empire.server.api.v2.bypass import bypass_api
@@ -124,23 +124,30 @@ def initialize():
             StaticFiles(directory="empire/server/api/v2/starkiller/dist"),
             name="static",
         )
-        log.info("Starkiller served at http://localhost:1337/index.html")
+        log.info(f"Starkiller served at http://localhost:{port}/index.html")
     except Exception as e:
         log.warning("Failed to load Starkiller: %s", e)
         pass
 
     cert_path = os.path.abspath("./empire/server/data/")
 
-    # todo this gets the cert working, but ajax requests are not working, since browsers
-    #  do not like self signed certs.
-    #  if the server fails to start we should exit.
-    uvicorn.run(
-        v2App,
-        host="0.0.0.0",
-        port=1337,
-        log_config=None,
-        lifespan="on",
-        # ssl_keyfile="%s/empire-priv.key" % cert_path,
-        # ssl_certfile="%s/empire-chain.pem" % cert_path,
-        # log_level="info",
-    )
+    if not secure:
+        uvicorn.run(
+            v2App,
+            host="0.0.0.0",
+            port=port,
+            log_config=None,
+            lifespan="on",
+            # log_level="info",
+        )
+    else:
+        uvicorn.run(
+            v2App,
+            host="0.0.0.0",
+            port=port,
+            log_config=None,
+            lifespan="on",
+            ssl_keyfile=f"{cert_path}/empire-priv.key",
+            ssl_certfile=f"{cert_path}/empire-chain.pem",
+            # log_level="info",
+        )

@@ -120,7 +120,7 @@ def run(args):
     if not args.restport:
         args.restport = "1337"
     else:
-        args.restport = args.restport[0]
+        args.restport = int(args.restport[0])
 
     if not args.restip:
         args.restip = "0.0.0.0"
@@ -154,6 +154,6 @@ def run(args):
             subprocess.call("./setup/cert.sh")
             time.sleep(3)
 
-        app.initialize()
+        app.initialize(secure=args.secure_api, port=args.restport)
 
     sys.exit()

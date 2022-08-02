@@ -15,7 +15,7 @@ Keep up-to-date on our blog at [https://www.bc-security.org/blog][1]
 [Documentation](https://bc-security.gitbook.io/empire-wiki/)
 
 # Empire
-Empire 4 is a post-exploitation framework that includes a pure-PowerShell Windows agents, Python 3.x Linux/OS X agents, 
+Empire is a post-exploitation framework that includes a pure-PowerShell Windows agents, Python 3.x Linux/OS X agents, 
 and C# agents. It is the merger of the previous PowerShell Empire and Python EmPyre projects. The framework offers 
 cryptologically-secure communications and flexible architecture.
 
@@ -49,17 +49,11 @@ Thank you to the original team of developers: [@harmj0y](https://twitter.com/har
 Please see our [Releases](https://github.com/BC-SECURITY/Empire/releases) or [Changelog](/changelog) page for detailed release notes.
 
 ###  Quickstart
+When cloning this repository, you will need to recurse submodules.
+```sh
+git clone --recursive https://github.com/BC-SECURITY/Empire.git
+```
 
-#### 5.0-alpha Instructions
-1. Run your poetry install as before
-2. At the moment, the client is not updated for the new API, so you must use starkiller 2.0.0-alpha
-   As long as you cloned the repo with `--recurse-submodules`, you should be good to go. If you didn't,
-   run `git submodule update --init --recursive`
-4. Start Empire with `./ps-empire server`
-5. After you startup the server, navigate to `http://localhost:8000/index.html` for Starkiller
-6. Navigate to `http://localhost:8000/docs#/` for the Swagger documentation
-
-Empire 4 introduces a new server and client architecture which requires running each in separate terminals. 
 Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/quickstart/installation) for install instructions.
 
 #### Server
@@ -83,14 +77,16 @@ Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/qui
 ```
 
 Check out the [Empire Docs](https://bc-security.gitbook.io/empire-wiki/) for more instructions on installing and using with Empire.
-For a complete list of the 4.0 changes, see the [changelog](./changelog).
+For a complete list of changes, see the [changelog](./changelog).
 
 Join us in [our Discord](https://discord.gg/P8PZPyf) to with any comments, questions, concerns, or problems!
 
 ## Starkiller
 <div align="center"><img width="125" src="https://github.com/BC-SECURITY/Starkiller/blob/master/src/assets/icon.png"></div>
 
-[Starkiller](https://github.com/BC-SECURITY/Starkiller) is a GUI for PowerShell Empire that interfaces remotely with Empire via its API. Starkiller can be ran as a replacement for the Empire client or in a mixed environment with Starkiller and Empire clients.
+[Starkiller](https://github.com/BC-SECURITY/Starkiller) is a web application GUI for PowerShell Empire that interfaces remotely with Empire via its API.
+Starkiller can be ran as a replacement for the Empire client or in a mixed environment with Starkiller and Empire clients.
+As of 5.0, Starkiller is packaged in Empire as a git submodule and doesn't require any additional setup.
 
 ## Contribution Rules
 See [Contributing](./.github/CONTRIBUTING.md)

@@ -63,6 +63,12 @@ general_group.add_argument(
     nargs=1,
     help="Specify a config.yaml different from the config.yaml in the empire/server directory.",
 )
+general_group.add_argument(
+    "--secure-api",
+    action="store_true",
+    help="Use https for the API. Uses .key and .pem file from empire/server/data."
+    "Note that Starkiller will not work with self-signed certs due to browsers blocking the requests.",
+)
 
 rest_group = server_parser.add_argument_group("RESTful API Options")
 rest_group.add_argument(
