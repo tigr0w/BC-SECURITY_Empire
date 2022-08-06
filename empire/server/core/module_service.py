@@ -242,7 +242,7 @@ class ModuleService(object):
             # In a future release we could refactor the modules to accept a obuscation_config,
             #  but there's little benefit to doing so at this point. So I'm saving myself the pain.
             try:
-                module.advanced.generate_class.generate(
+                return module.advanced.generate_class.generate(
                     self.main_menu,
                     module,
                     params,

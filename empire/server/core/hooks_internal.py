@@ -6,7 +6,6 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
-from empire.server.core.db.base import SessionLocal
 from empire.server.core.hooks import hooks
 
 
@@ -43,45 +42,44 @@ def ps_hook(db: Session, tasking: models.Tasking):
     else:
         output = json.loads(tasking.output)
 
-    with SessionLocal.begin() as db:
-        existing_processes = (
-            db.query(models.HostProcess.process_id)
-            .filter(models.HostProcess.host_id == tasking.agent.host_id)
-            .all()
-        )
-        existing_processes = list(map(lambda p: p[0], existing_processes))
+    existing_processes = (
+        db.query(models.HostProcess.process_id)
+        .filter(models.HostProcess.host_id == tasking.agent.host_id)
+        .all()
+    )
+    existing_processes = list(map(lambda p: p[0], existing_processes))
 
-        for process in output:
-            process_name = process.get("CMD") or process.get("ProcessName") or ""
-            process_id = process.get("PID")
-            arch = process.get("Arch")
-            user = process.get("UserName")
-            if process_id:
-                # and process_id.isnumeric():
-                if int(process_id) not in existing_processes:
-                    db.add(
-                        models.HostProcess(
-                            host_id=tasking.agent.host_id,
-                            process_id=process_id,
-                            process_name=process_name,
-                            architecture=arch,
-                            user=user,
+    for process in output:
+        process_name = process.get("CMD") or process.get("ProcessName") or ""
+        process_id = process.get("PID")
+        arch = process.get("Arch")
+        user = process.get("UserName")
+        if process_id:
+            # and process_id.isnumeric():
+            if int(process_id) not in existing_processes:
+                db.add(
+                    models.HostProcess(
+                        host_id=tasking.agent.host_id,
+                        process_id=process_id,
+                        process_name=process_name,
+                        architecture=arch,
+                        user=user,
+                    )
+                )
+            elif int(process_id) in existing_processes:
+                db_process: models.HostProcess = (
+                    db.query(models.HostProcess)
+                    .filter(
+                        and_(
+                            models.HostProcess.host_id == tasking.agent.host_id,
+                            models.HostProcess.process_id == process_id,
                         )
                     )
-                elif int(process_id) in existing_processes:
-                    db_process: models.HostProcess = (
-                        db.query(models.HostProcess)
-                        .filter(
-                            and_(
-                                models.HostProcess.host_id == tasking.agent.host_id,
-                                models.HostProcess.process_id == process_id,
-                            )
-                        )
-                        .first()
-                    )
-                    if not db_process.agent:
-                        db_process.architecture = arch
-                        db_process.process_name = process_name
+                    .first()
+                )
+                if not db_process.agent:
+                    db_process.architecture = arch
+                    db_process.process_name = process_name
 
 
 def ps_filter(db: Session, tasking: models.Tasking):
