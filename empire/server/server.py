@@ -118,7 +118,7 @@ def run(args):
     setup_logging(args)
 
     if not args.restport:
-        args.restport = "1337"
+        args.restport = 1337
     else:
         args.restport = int(args.restport[0])
 

@@ -245,13 +245,15 @@ class Agents(object):
         download_dir = Path(empire_config.directories.downloads)
         save_path = download_dir / sessionID / "/".join(parts[0:-1])
         filename = os.path.basename(parts[-1])
+        save_file = save_path / filename
 
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
+            # I'm not really sure if this can actually still be exploited, its gone through
+            # quite a few refactors. But we'll keep it for now.
             safe_path = download_dir.absolute()
-
-            if not os.path.abspath(save_path / filename).startswith(safe_path):
+            if not str(save_file.absolute()).startswith(str(safe_path)):
                 message = "Agent {} attempted skywalker exploit! Attempted overwrite of {} with data {}".format(
                     sessionID, path, data
                 )
@@ -264,10 +266,10 @@ class Agents(object):
 
             # overwrite an existing file
             if not append:
-                f = open("%s/%s" % (save_path, filename), "wb")
+                f = save_file.open("wb")
             else:
                 # otherwise append
-                f = open("%s/%s" % (save_path, filename), "ab")
+                f = save_file.open("ab")
 
             if "python" in language:
                 log.info(
@@ -292,7 +294,7 @@ class Agents(object):
             f.close()
 
             if not append:
-                location = save_path / filename
+                location = save_file
                 download = models.Download(
                     location=str(location),
                     filename=filename,
@@ -323,7 +325,7 @@ class Agents(object):
             self.lock.release()
 
         percent = round(
-            int(os.path.getsize(str(save_path / filename))) / int(filesize) * 100,
+            int(os.path.getsize(str(save_file))) / int(filesize) * 100,
             2,
         )
 
@@ -341,6 +343,7 @@ class Agents(object):
         download_dir = Path(empire_config.directories.downloads)
         save_path = download_dir / sessionID / "/".join(parts[0:-1])
         filename = parts[-1]
+        save_file = save_path / filename
 
         # decompress data if coming from a python agent:
         if "python" in language:
@@ -364,10 +367,12 @@ class Agents(object):
 
         try:
             self.lock.acquire()
-            # fix for 'skywalker' exploit by @zeroSteiner
             safe_path = download_dir.absolute()
 
-            if not os.path.abspath(save_path / filename).startswith(safe_path):
+            # fix for 'skywalker' exploit by @zeroSteiner
+            # I'm not really sure if this can actually still be exploited, its gone through
+            # quite a few refactors. But we'll keep it for now.
+            if not str(save_file.absolute()).startswith(str(safe_path)):
                 message = "agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
                     sessionID, path, data
                 )
@@ -380,8 +385,7 @@ class Agents(object):
 
             # save the file out
 
-            file_path = save_path / filename
-            with file_path.open("wb") as f:
+            with save_file.open("wb") as f:
                 f.write(data)
         finally:
             self.lock.release()
@@ -390,7 +394,7 @@ class Agents(object):
         message = f"File {path} from {sessionID} saved"
         log.info(message)
 
-        return str(file_path)
+        return str(save_file)
 
     def save_agent_log(self, session_id, data):
         """
@@ -1565,7 +1569,11 @@ class Agents(object):
                 download_dir = Path(empire_config.directories.downloads)
                 safe_path = download_dir.absolute()
                 save_path = download_dir / session_id / "keystrokes.txt"
-                if not os.path.abspath(save_path).startswith(safe_path):
+
+                # fix for 'skywalker' exploit by @zeroSteiner
+                # I'm not really sure if this can actually still be exploited, its gone through
+                # quite a few refactors. But we'll keep it for now.
+                if not str(save_path.absolute()).startswith(str(safe_path)):
                     message = f"agent {session_id} attempted skywalker exploit!"
                     log.warning(message)
                     return
