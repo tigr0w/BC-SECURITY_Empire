@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [4.7.3] - 2022-08-20
 
+- Added SANS 565 to README (@Cx01N)
+- Fixed error when entering empty line into client (@Cx01N)
+- Fixed Dropbox listener staging issue (@Cx01N)
+- Fixed OneDrive listener staging issue (@Cx01N)
+
 ## [4.7.2] - 2022-08-20
 
 ## [4.7.1] - 2022-07-29
