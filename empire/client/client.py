@@ -246,7 +246,9 @@ class EmpireCli(object):
 
                     cmd_line = list(shlex.split(text))
 
-                    if cmd_line[0] == "resource":
+                    if not cmd_line:
+                        pass
+                    elif cmd_line[0] == "resource":
                         if len(cmd_line) == 1:
                             print(
                                 print_util.color(
