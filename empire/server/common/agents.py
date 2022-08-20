@@ -1415,12 +1415,11 @@ class Agents(object):
 
         elif meta == "STAGE2":
             # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
-
-            sessionKey = self.agents[sessionID]["sessionKey"]
-            if isinstance(sessionKey, str):
-                sessionKey = (self.agents[sessionID]["sessionKey"]).encode("UTF-8")
-
             try:
+                sessionKey = self.agents[sessionID]["sessionKey"]
+                if isinstance(sessionKey, str):
+                    sessionKey = (self.agents[sessionID]["sessionKey"]).encode("UTF-8")
+
                 message = encryption.aes_decrypt_and_verify(sessionKey, encData)
                 parts = message.split(b"|")
 

