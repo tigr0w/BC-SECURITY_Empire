@@ -46,7 +46,7 @@ from . import (
 )
 from .events import log_event
 
-VERSION = "4.7.2 BC Security Fork"
+VERSION = "4.7.3 BC Security Fork"
 
 
 class MainMenu(cmd.Cmd):
