@@ -1,6 +1,7 @@
-import os
 import textwrap
 import time
+
+from prompt_toolkit import shortcuts
 
 
 def color(string_name, color_name=None):
@@ -54,7 +55,7 @@ def title(version, modules, listeners, agents):
     """
     Print the tool title, with version.
     """
-    os.system("clear")
+    shortcuts.clear()
     print(
         "========================================================================================"
     )
@@ -142,7 +143,7 @@ def loading():
                 Welcome to the Empire"""
     )
     time.sleep(3)
-    os.system("clear")
+    shortcuts.clear()
 
 
 def text_wrap(text, width=35):

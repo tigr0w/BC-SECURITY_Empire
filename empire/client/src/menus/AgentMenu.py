@@ -26,7 +26,7 @@ class AgentMenu(Menu):
                 yield Completion(agent, start_position=-len(word_before_cursor))
             yield Completion("all", start_position=-len(word_before_cursor))
             yield Completion("stale", start_position=-len(word_before_cursor))
-        elif cmd_line[0] in ["clear", "rename"] and position_util(
+        elif cmd_line[0] in ["rename"] and position_util(
             cmd_line, 2, word_before_cursor
         ):
             for agent in filtered_search_list(word_before_cursor, state.agents.keys()):

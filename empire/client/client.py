@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, get_type_hints
 
 import urllib3
 from docopt import docopt
-from prompt_toolkit import HTML, PromptSession
+from prompt_toolkit import HTML, PromptSession, shortcuts
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.patch_stdout import patch_stdout
@@ -292,6 +292,8 @@ class EmpireCli(object):
                 len(state.active_agents),
             )
             menu_state.push(self.menus["MainMenu"])
+        elif text.strip() == "clear":
+            shortcuts.clear()
         elif text.strip() == "listeners":
             menu_state.push(self.menus["ListenerMenu"])
         elif text.strip() == "chat":
