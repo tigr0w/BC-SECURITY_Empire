@@ -115,17 +115,17 @@ if [ $OS_NAME == "DEBIAN" ]; then
   wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
   sudo apt-get update
-  sudo apt-get install -y apt-transport-https dotnet-sdk-3.1
+  sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
 elif [ $OS_NAME == "UBUNTU" ]; then
   wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
   sudo apt-get update
-  sudo apt-get install -y apt-transport-https dotnet-sdk-3.1
+  sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
 elif [ $OS_NAME == "KALI" ]; then
   wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
   sudo apt-get update
-  sudo apt-get install -y apt-transport-https dotnet-sdk-3.1
+  sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
 fi
 
 echo -n -e "\x1b[1;33m[>] Do you want to install Nim and MinGW? It is only needed to generate a Nim stager (y/N)? \x1b[0m"
