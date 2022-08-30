@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.8.0] - 2022-08-30
+-   Updated compiler to .NET SDK 6.0 (@Hubbl3)
 
 ## [4.7.3] - 2022-08-20
 
