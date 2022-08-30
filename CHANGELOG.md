@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.0] - 2022-08-30
+-   Updated compiler to .NET SDK 6.0 (@Hubbl3)
+
 ## [4.7.3] - 2022-08-20
 
-- Added SANS 565 to README (@Cx01N)
-- Fixed error when entering empty line into client (@Cx01N)
-- Fixed Dropbox listener staging issue (@Cx01N)
-- Fixed OneDrive listener staging issue (@Cx01N)
+-   Added SANS 565 to README (@Cx01N)
+-   Fixed error when entering empty line into client (@Cx01N)
+-   Fixed Dropbox listener staging issue (@Cx01N)
+-   Fixed OneDrive listener staging issue (@Cx01N)
 
 ## [4.7.2] - 2022-08-20
 
@@ -292,7 +295,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.0...HEAD
+
+[4.8.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.3...v4.8.0
 
 [4.7.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.2...v4.7.3
 
