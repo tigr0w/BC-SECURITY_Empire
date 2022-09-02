@@ -197,11 +197,7 @@ class Listener(object):
 
             if profile.validate():
                 # store serialized profile for use across sessions
-                self.options["ProfileSerialized"] = {
-                    "Description": "Serialized version of the provided Malleable C2 profile.",
-                    "Required": False,
-                    "Value": profile._serialize(),
-                }
+                self.serialized_profile = profile._serialize()
 
                 # for agent compatibility (use post for staging)
                 self.options["DefaultProfile"] = {
@@ -293,9 +289,7 @@ class Listener(object):
             stagingKey = listenerOptions["StagingKey"]["Value"]
 
             # build profile
-            profile = malleable.Profile._deserialize(
-                listenerOptions["ProfileSerialized"]["Value"]
-            )
+            profile = malleable.Profile._deserialize(self.serialized_profile)
             profile.stager.client.host = host
             profile.stager.client.port = port
             profile.stager.client.path = profile.stager.client.random_uri()
@@ -618,9 +612,7 @@ class Listener(object):
         killDate = listenerOptions["KillDate"]["Value"]
 
         # build profile
-        profile = malleable.Profile._deserialize(
-            listenerOptions["ProfileSerialized"]["Value"]
-        )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
         profile.stager.client.host = host
         profile.stager.client.port = port
 
@@ -757,9 +749,7 @@ class Listener(object):
             return None
 
         # build profile
-        profile = malleable.Profile._deserialize(
-            listenerOptions["ProfileSerialized"]["Value"]
-        )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
 
         language = language.lower()
         delay = listenerOptions["DefaultDelay"]["Value"]
@@ -859,9 +849,7 @@ class Listener(object):
         port = listenerOptions["Port"]["Value"]
 
         # build profile
-        profile = malleable.Profile._deserialize(
-            listenerOptions["ProfileSerialized"]["Value"]
-        )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
         profile.get.client.host = host
         profile.get.client.port = port
         profile.post.client.host = host
@@ -1353,9 +1341,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
         certPath = listenerOptions["CertPath"]["Value"]
 
         # build and validate profile
-        profile = malleable.Profile._deserialize(
-            listenerOptions["ProfileSerialized"]["Value"]
-        )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
         profile.validate()
 
         # suppress the normal Flask output
@@ -1377,9 +1363,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
             url = request.url
             method = request.method
             headers = request.headers
-            profile = malleable.Profile._deserialize(
-                self.options["ProfileSerialized"]["Value"]
-            )
+            profile = malleable.Profile._deserialize(self.serialized_profile)
 
             # log request
             listenerName = self.options["Name"]["Value"]
