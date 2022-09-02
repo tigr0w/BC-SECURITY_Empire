@@ -19,7 +19,7 @@ function install_powershell() {
   fi
 
   mkdir -p /usr/local/share/powershell/Modules
-  cp -r "$PARENT_PATH"/empire/server/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
+  cp -r "$PARENT_PATH"/empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
   rm -f packages-microsoft-prod.deb*
 }
 
