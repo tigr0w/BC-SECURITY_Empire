@@ -1,0 +1,22 @@
+# This is for testing the install script for the supported OS.
+version: '3'
+
+services:
+  ubuntu2004:
+    build:
+      context: ../../
+      dockerfile: .github/install_tests/Ubuntu2004.Dockerfile
+    image: bcsecurity/empire-test-ubuntu2004
+    platform: "linux/amd64"
+  debian10:
+    build:
+      context: ../../
+      dockerfile: .github/install_tests/Debian10.Dockerfile
+    image: bcsecurity/empire-test-debian10
+    platform: "linux/amd64"
+  kalirolling:
+    build:
+      context: ../../
+      dockerfile: .github/install_tests/KaliRolling.Dockerfile
+    image: bcsecurity/empire-test-kalirolling
+    platform: "linux/amd64"
