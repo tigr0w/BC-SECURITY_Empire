@@ -1,5 +1,6 @@
 suppress-self-cert-warning: true
 auto-copy-stagers: true
+mouse-support: true
 servers:
   localhost:
     host: http://localhost

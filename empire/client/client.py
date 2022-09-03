@@ -179,7 +179,13 @@ class EmpireCli(object):
                 with patch_stdout(raw=True):
                     try:
                         time.sleep(1)
-                        text = session.prompt(accept_default=True, default=cmd.strip())
+                        text = session.prompt(
+                            accept_default=True,
+                            default=cmd.strip(),
+                            mouse_support=empire_config.yaml.get(
+                                "mouse-support", False
+                            ),
+                        )
                         cmd_line = list(shlex.split(text))
                         self.parse_command_line(text, cmd_line, resource_file=True)
                     except CliExitException:
@@ -242,6 +248,7 @@ class EmpireCli(object):
                     text = session.prompt(
                         HTML(menu_state.current_menu.get_prompt()),
                         refresh_interval=None,
+                        mouse_support=empire_config.yaml.get("mouse-support", False),
                     )
 
                     cmd_line = list(shlex.split(text))
