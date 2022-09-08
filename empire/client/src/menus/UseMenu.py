@@ -76,9 +76,9 @@ class UseMenu(Menu):
                     yield Completion(agent, start_position=-len(word_before_cursor))
             if len(cmd_line) > 1 and cmd_line[1] == "file":
                 if len(cmd_line) > 2 and cmd_line[2] == "-p":
-                    yield Completion(
-                        state.search_files(), start_position=-len(word_before_cursor)
-                    )
+                    file = state.search_files()
+                    if file:
+                        yield Completion(file, start_position=-len(word_before_cursor))
                 else:
                     for files in filtered_search_list(
                         word_before_cursor, current_files(state.directory["downloads"])

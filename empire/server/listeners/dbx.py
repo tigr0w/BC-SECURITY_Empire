@@ -519,6 +519,7 @@ class Listener(object):
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
+            code = data_util.keyword_obfuscation(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
             code = code.replace("$AgentDelay = 60", "$AgentDelay = " + str(delay))
@@ -538,8 +539,10 @@ class Listener(object):
                 code = code.replace(
                     "$KillDate,", "$KillDate = '" + str(killDate) + "',"
                 )
+            code = code.replace("REPLACE_COMMS", "")
 
             return code
+
         elif language == "python":
             if version == "ironpython":
                 f = open(self.mainMenu.installPath + "/data/agent/ironpython_agent.py")
@@ -572,6 +575,8 @@ class Listener(object):
                 code = code.replace(
                     'workingHours = ""', 'workingHours = "%s"' % (killDate)
                 )
+
+            code = code.replace("REPLACE_COMMS", "")
 
             return code
         else:
@@ -737,7 +742,7 @@ class Listener(object):
 
         stagingKey = listenerOptions["StagingKey"]["Value"]
         pollInterval = listenerOptions["PollInterval"]["Value"]
-        apiToken = listenerOptions["APIToken"]["Value"]
+        api_token = listenerOptions["APIToken"]["Value"]
         listenerName = listenerOptions["Name"]["Value"]
         baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
         stagingFolder = "/%s/%s" % (
@@ -753,7 +758,7 @@ class Listener(object):
             listenerOptions["ResultsFolder"]["Value"].strip("/"),
         )
 
-        dbx = dropbox.Dropbox(apiToken)
+        dbx = dropbox.Dropbox(api_token)
 
         # ensure that the access token supplied is valid
         try:

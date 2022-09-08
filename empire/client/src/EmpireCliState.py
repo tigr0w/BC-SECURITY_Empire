@@ -1,17 +1,30 @@
-import base64
 import os
-from tkinter import *
-from tkinter import filedialog
 from typing import Dict, Optional
 
 import requests
 import socketio
-from prompt_toolkit import ANSI, HTML
 
 from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.menus import Menu
 from empire.client.src.MenuState import menu_state
 from empire.client.src.utils import print_util
+
+try:
+    from tkinter import Tk, filedialog
+except ImportError:
+    Tk = None
+    filedialog = None
+    print(
+        print_util.color(
+            "[!] Failed to load tkinter. Please install tkinter to use the file prompts."
+        )
+    )
+    print(
+        print_util.color(
+            "[!] Check the wiki for more information: https://bc-security.gitbook.io/empire-wiki/quickstart/installation#modulenotfounderror-no-module-named-_tkinter"
+        )
+    )
+    pass
 
 
 class EmpireCliState(object):
@@ -258,10 +271,13 @@ class EmpireCliState(object):
         """
         Find a file and return filename.
         """
-        tk = Tk()
-        tk.withdraw()
-        file_directory = filedialog.askopenfilename(title="Select file")
-        return file_directory
+        if filedialog and Tk:
+            tk = Tk()
+            tk.withdraw()
+            file_directory = filedialog.askopenfilename(title="Select file")
+            return file_directory
+        else:
+            return None
 
     def get_directories(self):
         """

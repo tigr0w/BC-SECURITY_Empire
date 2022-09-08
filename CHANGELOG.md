@@ -39,7 +39,24 @@ It will be cleaned up as we get closer to the official release.
 - Add a `--literal` flag that can be used on shell commands that forces the agent to execute the command literally, ignoring any built-in aliases that exist such as for whoami or ps
 - Changes to plugins outlined in the Plugins section of the wiki
 
+## [4.8.0] - 2022-08-30
+-   Updated compiler to .NET SDK 6.0 (@Hubbl3)
+
+## [4.7.3] - 2022-08-20
+
+-   Added SANS 565 to README (@Cx01N)
+-   Fixed error when entering empty line into client (@Cx01N)
+-   Fixed Dropbox listener staging issue (@Cx01N)
+-   Fixed OneDrive listener staging issue (@Cx01N)
+
+## [4.7.2] - 2022-08-20
+
+## [4.7.1] - 2022-07-29
+
+-   Fix write_dllhijacker.yaml script_path reference (@kevNii)
+
 ## [4.7.0] - 2022-06-25
+
 -   Update Python version on Dockerfile (@Vinnybod)
 -   Add Python 3.10 to CI tests  (@Vinnybod)
 -   Add a resource file command to the client (@Vinnybod)
@@ -310,7 +327,15 @@ It will be cleaned up as we get closer to the official release.
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.0...HEAD
+
+[4.8.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.3...v4.8.0
+
+[4.7.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.2...v4.7.3
+
+[4.7.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.1...v4.7.2
+
+[4.7.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.0...v4.7.1
 
 [4.7.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.6.1...v4.7.0
 

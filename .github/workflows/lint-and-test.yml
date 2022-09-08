@@ -56,7 +56,8 @@ jobs:
         run: |
           poetry run pytest
   test_image:
-    needs: test
+    # To save CI time, only run these tests on the release PRs
+    if: ${{ startsWith(github.head_ref, 'release/') }}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     name: Test Docker Image
@@ -69,5 +70,66 @@ jobs:
         run: docker-compose -f .github/docker-compose.yml build
       - name: Run tests on docker image
         run: docker-compose -f .github/docker-compose.yml run test
-
-
+      - name: run structure tests base
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: bcsecurity/empire-test:latest
+          config: .github/cst-config-base.yaml
+      - name: run structure tests docker
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: bcsecurity/empire-test:latest
+          config: .github/cst-config-docker.yaml
+  test_install_script:
+    needs: test
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    name: Test Install Script
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+          depth: 0
+      # To save CI time, only run these tests when the install script is changed
+      - name: Get changed files using defaults
+        id: changed-files
+        uses: tj-actions/changed-files@v29.0.2
+      - name: Build images
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        run: docker-compose -f .github/install_tests/docker-compose-install-tests.yml build --parallel
+      - name: run structure tests base Ubuntu 20.04
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: docker.io/bcsecurity/empire-test-ubuntu2004:latest
+          config: .github/cst-config-base.yaml
+      - name: run structure tests Ubuntu 20.04
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: docker.io/bcsecurity/empire-test-ubuntu2004:latest
+          config: .github/install_tests/cst-config-ubuntu2004.yaml
+      - name: run structure tests base Debian 10
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: docker.io/bcsecurity/empire-test-debian10:latest
+          config: .github/cst-config-base.yaml
+      - name: run structure tests Debian 10
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: docker.io/bcsecurity/empire-test-debian10:latest
+          config: .github/install_tests/cst-config-debian10.yaml
+      - name: run structure tests Kali base
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: docker.io/bcsecurity/empire-test-kalirolling:latest
+          config: .github/cst-config-base.yaml
+      - name: run structure tests Kali
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: docker.io/bcsecurity/empire-test-kalirolling:latest
+          config: .github/install_tests/cst-config-kalirolling.yaml
