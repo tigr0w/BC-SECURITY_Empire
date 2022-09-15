@@ -74,7 +74,7 @@ class UseMenu(Menu):
                     word_before_cursor, state.agents.keys()
                 ):
                     yield Completion(agent, start_position=-len(word_before_cursor))
-            if len(cmd_line) > 1 and cmd_line[1] == "file":
+            if len(cmd_line) > 1 and cmd_line[1].lower() == "file":
                 if len(cmd_line) > 2 and cmd_line[2] == "-p":
                     file = state.search_files()
                     if file:

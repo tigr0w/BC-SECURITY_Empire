@@ -208,6 +208,29 @@ def download(client, admin_auth_header, db, models):
     )
 
 
+@pytest.fixture(scope="module", autouse=True)
+def bof_download(client, admin_auth_header, db, models):
+    response = client.post(
+        "/api/v2/downloads",
+        headers=admin_auth_header,
+        files={
+            "file": (
+                "whoami.x64.o",
+                open("./empire/test/data/whoami.x64.o", "rb").read(),
+            )
+        },
+    )
+
+    yield response.json()
+
+    # there is no delete endpoint for downloads, so we need to delete the file manually
+    db.delete(
+        db.query(models.Download)
+        .filter(models.Download.id == response.json()["id"])
+        .first()
+    )
+
+
 def test_create_task_shell_agent_not_found(client, admin_auth_header):
     response = client.post(
         "/api/v2/agents/abc/tasks/shell",
@@ -271,6 +294,27 @@ def test_create_task_module(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith("function Invoke-InternalMonologue")
     assert response.json()["agent_id"] == agent.session_id
+
+
+def test_create_task_bof_module_disabled_csharpserver(
+    client, admin_auth_header, agent, bof_download
+):
+    response_module = client.post(
+        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_slug": "csharp_inject_bof_inject_bof",
+            "options": {
+                "File": "whoami.x64.o",
+                "EntryPoint": "",
+                "ArgumentList": "",
+                "Architecture": "x64",
+            },
+        },
+    )
+
+    assert response_module.status_code == 400
+    assert response_module.json()["detail"] == "csharpserver plugin not running"
 
 
 def test_create_task_module_validates_required_options(

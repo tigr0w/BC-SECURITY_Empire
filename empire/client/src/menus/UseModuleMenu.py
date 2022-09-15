@@ -83,7 +83,6 @@ class UseModuleMenu(UseMenu):
                     file_directory = self.record_options["File"]["value"]
                     filename = file_directory.split("/")[-1]
                     self.record_options["File"]["value"] = filename
-
                     data = get_data_from_file(file_directory)
                 except:
                     print(
@@ -104,7 +103,6 @@ class UseModuleMenu(UseMenu):
                     print(print_util.color(msg))
 
                 # Save copy off to downloads folder so last value points to the correct file
-                data = base64.b64decode(data.encode("UTF-8"))
                 with open(f"{state.directory['downloads']}{filename}", "wb+") as f:
                     f.write(data)
 

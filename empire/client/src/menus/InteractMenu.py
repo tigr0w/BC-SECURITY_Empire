@@ -1,5 +1,6 @@
 import base64
 import os
+import pathlib
 import subprocess
 import textwrap
 import time
@@ -73,6 +74,25 @@ class InteractMenu(Menu):
                         word_before_cursor, state.agents.keys()
                     ):
                         yield Completion(agent, start_position=-len(word_before_cursor))
+
+                if params[position - 1].lower() == "file":
+                    if len(cmd_line) > 2 and cmd_line[2] == "-p":
+                        file = state.search_files()
+                        if file:
+                            yield Completion(
+                                file, start_position=-len(word_before_cursor)
+                            )
+                    else:
+                        for files in filtered_search_list(
+                            word_before_cursor,
+                            current_files(state.directory["downloads"]),
+                        ):
+                            yield Completion(
+                                files,
+                                display=files.split("/")[-1],
+                                start_position=-len(word_before_cursor),
+                            )
+
         elif cmd_line[0] in ["view"]:
             tasks = state.get_agent_tasks(self.session_id, 100)
             tasks = {str(x["id"]): x for x in tasks["records"]}
@@ -522,7 +542,43 @@ class InteractMenu(Menu):
         #  Which I think is how it is in the old cli
         for key, value in module_options.items():
             if key in shortcut.get_dynamic_param_names():
-                continue
+                # Grab filename, send to server, and save a copy off in the downloads folder
+                if key in ["File"]:
+                    if pathlib.Path(post_body.get("options")["File"]).is_file():
+                        try:
+                            file_directory = post_body.get("options")["File"]
+                            filename = file_directory.split("/")[-1]
+                            post_body.get("options")["File"] = filename
+                            data = get_data_from_file(file_directory)
+                        except:
+                            print(
+                                print_util.color(
+                                    "[!] Error: Invalid filename or file does not exist"
+                                )
+                            )
+                            return
+                        response = state.upload_file(filename, data)
+                        if "id" in response.keys():
+                            print(
+                                print_util.color(
+                                    "[+] File uploaded to server successfully"
+                                )
+                            )
+
+                        elif "detail" in response.keys():
+                            if response["detail"].startswith("[!]"):
+                                msg = response["detail"]
+                            else:
+                                msg = f"[!] Error: {response['detail']}"
+                            print(print_util.color(msg))
+
+                        # Save copy off to downloads folder so last value points to the correct file
+                        with open(
+                            f"{state.directory['downloads']}{filename}", "wb+"
+                        ) as f:
+                            f.write(data)
+                else:
+                    continue
             elif key in shortcut.get_static_param_names():
                 post_body["options"][key] = str(shortcut.get_param(key).value)
             else:

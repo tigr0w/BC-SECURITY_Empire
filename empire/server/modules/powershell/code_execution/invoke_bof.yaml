@@ -32,7 +32,7 @@ options:
     description: Name of the function exported to execute in the beacon object file.
     required: true
     value: go
-  - name: ArguementList
+  - name: ArgumentList
     description: List of arguments that will be passed to the beacon, available through BeaconParse API.
     required: false
     value: ''

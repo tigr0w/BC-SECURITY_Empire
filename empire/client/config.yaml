@@ -1,6 +1,6 @@
 suppress-self-cert-warning: true
 auto-copy-stagers: true
-mouse-support: true
+mouse-support: false
 servers:
   localhost:
     host: http://localhost
@@ -89,6 +89,13 @@ shortcuts:
       params:
         - name: Listener
           dynamic: true
+    bof:
+      module: csharp_inject_bof_inject_bof
+      params:
+        - name: Architecture
+          value: x64
+        - name: File
+          dynamic: true
   python:
     whoami:
       shell: whoami
@@ -109,11 +116,125 @@ shortcuts:
       shell: whoami
     ps:
       shell: ps
+    sc:
+      module: powershell_collection_screenshot
+      params:
+        - name: Ratio
+          value: 80
+    keylog:
+      module: powershell_collection_keylogger
+      params:
+        - name: Sleep
+          value: 1
+    sherlock:
+      module: powershell_privesc_sherlock
+    mimikatz:
+      module: powershell_credentials_mimikatz_logonpasswords
+    psinject:
+      module: powershell_management_psinject
+      params:
+        - name: Listener
+          dynamic: true
+        - name: ProcId
+          dynamic: true
+    revtoself:
+      module: powershell_credentials_tokens
+      params:
+        - name: RevToSelf
+          value: true
+    shinject:
+      module: powershell_management_shinject
+      params:
+        - name: Listener
+          dynamic: true
+        - name: ProcId
+          dynamic: true
+    spawn:
+      module: powershell_management_spawn
+      params:
+        - name: Listener
+          dynamic: true
+    steal_token:
+      module: powershell_credentials_tokens
+      params:
+        - name: ImpersonateUser
+          value: true
+        - name: ProcessID
+          dynamic: true
+    bypassuac:
+      module: powershell_privesc_bypassuac_eventvwr
+      params:
+        - name: Listener
+          dynamic: true
+    bof:
+      module: csharp_inject_bof_inject_bof
+      params:
+        - name: Architecture
+          value: x64
+        - name: File
+          dynamic: true
   csharp:
     whoami:
       shell: whoami
     ps:
       shell: ps
+    sc:
+      module: powershell_collection_screenshot
+      params:
+        - name: Ratio
+          value: 80
+    keylog:
+      module: powershell_collection_keylogger
+      params:
+        - name: Sleep
+          value: 1
+    sherlock:
+      module: powershell_privesc_sherlock
+    mimikatz:
+      module: powershell_credentials_mimikatz_logonpasswords
+    psinject:
+      module: powershell_management_psinject
+      params:
+        - name: Listener
+          dynamic: true
+        - name: ProcId
+          dynamic: true
+    revtoself:
+      module: powershell_credentials_tokens
+      params:
+        - name: RevToSelf
+          value: true
+    shinject:
+      module: powershell_management_shinject
+      params:
+        - name: Listener
+          dynamic: true
+        - name: ProcId
+          dynamic: true
+    spawn:
+      module: powershell_management_spawn
+      params:
+        - name: Listener
+          dynamic: true
+    steal_token:
+      module: powershell_credentials_tokens
+      params:
+        - name: ImpersonateUser
+          value: true
+        - name: ProcessID
+          dynamic: true
+    bypassuac:
+      module: powershell_privesc_bypassuac_eventvwr
+      params:
+        - name: Listener
+          dynamic: true
+    bof:
+      module: csharp_inject_bof_inject_bof
+      params:
+        - name: Architecture
+          value: x64
+        - name: File
+          dynamic: true
 directories:
   downloads: empire/client/downloads/
   generated-stagers: empire/client/generated-stagers/

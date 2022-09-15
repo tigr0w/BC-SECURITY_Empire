@@ -40,8 +40,8 @@ class Module(object):
             f"\nInvoke-Bof -BOFBytes $bofbytes -EntryPoint { params['EntryPoint'] }"
         )
 
-        if params["ArguementList"] != "":
-            script_end += f" -ArgumentList { params['ArguementList'] }"
+        if params["ArgumentList"] != "":
+            script_end += f" -ArgumentList { params['ArgumentList'] }"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,
