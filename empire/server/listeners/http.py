@@ -842,6 +842,11 @@ class Listener(object):
         proxy = listenerOptions["Proxy"]["Value"]
         proxyCreds = listenerOptions["ProxyCreds"]["Value"]
 
+        if "pytest" in sys.modules:
+            # Let's not start the server if we're running tests.
+            while True:
+                time.sleep(1)
+
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
@@ -1142,6 +1147,10 @@ class Listener(object):
                                     else obf_config.command,
                                     version=version,
                                 )
+
+                                if language.lower() in ["python", "ironpython"]:
+                                    sessionKey = bytes.fromhex(sessionKey)
+
                                 encryptedAgent = encryption.aes_encrypt_then_hmac(
                                     sessionKey, agentCode
                                 )

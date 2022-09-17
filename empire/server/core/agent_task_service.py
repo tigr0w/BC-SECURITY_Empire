@@ -320,7 +320,7 @@ class AgentTaskService(object):
             agent_id=agent.session_id,
             input=task_input[:100],
             input_full=task_input,
-            user_id=user_id,
+            user_id=user_id if user_id else None,
             module_name=module_name,
             task_name=task_name,
             status=TaskingStatus.queued,

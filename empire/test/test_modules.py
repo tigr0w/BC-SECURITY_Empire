@@ -17,17 +17,27 @@ def fake_obfuscate(psScript, obfuscationCommand):
     return psScript
 
 
+@pytest.fixture(scope="module")
+def host(db, models):
+    host = models.Host(name="HOST_1", internal_ip="1.1.1.1")
+
+    db.add(host)
+
+    yield host
+
+
 # todo can probably have a shared default agent. This is copy/pasted
 # in a few test files.
 @pytest.fixture(scope="module", autouse=True)
-def agent(db, models):
+def agent(db, models, host):
     agent = db.query(models.Agent).first()
 
     if not agent:
         agent = models.Agent(
             name="TEST123",
             session_id="TEST123",
-            host_id=1,
+            host_id=host.id,
+            hostname=host.name,
             process_id=1,
             delay=1,
             jitter=0.1,
@@ -44,11 +54,14 @@ def agent(db, models):
         )
         db.add(agent)
         db.flush()
-        db.commit()
 
     yield agent
 
+    db.query(models.Tasking).filter(
+        models.Tasking.agent_id == agent.session_id
+    ).delete()
     db.delete(agent)
+    db.delete(host)
     db.commit()
 
 

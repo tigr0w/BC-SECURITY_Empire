@@ -68,8 +68,12 @@ def agent(db, models, main):
 
     yield agent
 
+    db.query(models.Tasking).filter(
+        models.Tasking.agent_id == agent.session_id
+    ).delete()
     db.delete(agent)
     db.delete(host)
+
     db.commit()
 
 
@@ -106,6 +110,9 @@ def agent_low_version(db, models, main):
 
     yield agent
 
+    db.query(models.Tasking).filter(
+        models.Tasking.agent_id == agent.session_id
+    ).delete()
     db.delete(agent)
     db.commit()
 
@@ -180,6 +187,9 @@ def agent_low_integrity(db, models, main):
 
     yield agent
 
+    db.query(models.Tasking).filter(
+        models.Tasking.agent_id == agent.session_id
+    ).delete()
     db.delete(agent)
     db.commit()
 
@@ -201,11 +211,10 @@ def download(client, admin_auth_header, db, models):
     yield response.json()
 
     # there is no delete endpoint for downloads, so we need to delete the file manually
-    db.delete(
-        db.query(models.Download)
-        .filter(models.Download.id == response.json()["id"])
-        .first()
-    )
+    try:
+        db.query(models.Download).delete()
+    except:
+        pass
 
 
 @pytest.fixture(scope="module", autouse=True)

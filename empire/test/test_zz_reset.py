@@ -7,6 +7,8 @@ import pytest
 
 from empire.test.conftest import CLIENT_CONFIG_LOC
 
+# These tests are run last since they reset the server and can cause other tests to fail.
+
 
 @pytest.fixture(scope="module", autouse=True)
 def wrap_reset(server_config_dict):
@@ -14,17 +16,20 @@ def wrap_reset(server_config_dict):
     This wraps the reset tests by backing up the db and restoring it.
     """
     # Move the db to a temp location
-    db_loc = server_config_dict["database"]["location"]
-    db_loc_backup = db_loc + ".backup"
-    db_loc_path = Path(db_loc)
-    db_loc_backup_path = Path(db_loc_backup)
+    if server_config_dict.get("database", {}).get("type") == "sqlite":
+        db_loc = server_config_dict["database"]["location"]
+        db_loc_backup = db_loc + ".backup"
+        db_loc_path = Path(db_loc)
+        db_loc_backup_path = Path(db_loc_backup)
 
-    shutil.copyfile(db_loc, db_loc_backup)
+        shutil.copyfile(db_loc, db_loc_backup)
 
-    yield
+        yield
 
-    # Restore the db
-    db_loc_backup_path.rename(db_loc_path)
+        # Restore the db
+        db_loc_backup_path.rename(db_loc_path)
+    else:
+        yield
 
 
 def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
@@ -93,7 +98,8 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     from empire.arguments import args
     from empire.server import server
 
-    assert Path(server_config_dict["database"]["location"]).exists()
+    if server_config_dict.get("database", {}).get("type") == "sqlite":
+        assert Path(server_config_dict["database"]["location"]).exists()
 
     server.CSHARP_DIR_BASE = csharp_dir
     server.INVOKE_OBFS_DST_DIR_BASE = invoke_obfs_dir
@@ -118,7 +124,8 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
 
     assert Path(invoke_obfs_dir / "Invoke-Obfuscation.ps1").exists()
 
-    assert not Path(server_config_dict["database"]["location"]).exists()
+    if server_config_dict.get("database", {}).get("type") == "sqlite":
+        assert not Path(server_config_dict["database"]["location"]).exists()
 
     sys.argv = default_argv
 

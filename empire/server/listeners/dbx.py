@@ -922,6 +922,10 @@ class Listener(object):
                                         listenerOptions=listenerOptions,
                                         version=version,
                                     )
+
+                                    if language.lower() in ["python", "ironpython"]:
+                                        sessionKey = bytes.fromhex(sessionKey)
+
                                     returnResults = encryption.aes_encrypt_then_hmac(
                                         sessionKey, agentCode
                                     )

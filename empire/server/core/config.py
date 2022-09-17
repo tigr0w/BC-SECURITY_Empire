@@ -26,17 +26,25 @@ class DatabaseDefaultsConfig(BaseModel):
     ip_blacklist: str = Field("", alias="ip-blacklist")
 
 
-class DatabaseConfig(BaseModel):
-    type: str
-    defaults: DatabaseDefaultsConfig
-
-    # sqlite
+class SQLiteDatabaseConfig(BaseModel):
     location: str = "empire/server/data/empire.db"
 
-    # mysql
+
+class MySQLDatabaseConfig(BaseModel):
     url: str = "localhost:3306"
     username: str = ""
     password: str = ""
+    database_name: str = "empire"
+
+
+class DatabaseConfig(BaseModel):
+    use: str = "sqlite"
+    sqlite: SQLiteDatabaseConfig
+    mysql: MySQLDatabaseConfig
+    defaults: DatabaseDefaultsConfig
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 class DirectoriesConfig(BaseModel):

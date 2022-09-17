@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+from importlib import reload
 from pathlib import Path
 
 import pytest
@@ -26,8 +27,13 @@ def default_argv():
 @pytest.fixture(scope="session")
 def client(empire_config):
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
-    if os.path.exists("empire/test/test_empire.db"):
-        os.remove("empire/test/test_empire.db")
+
+    import empire.server.core.db.base
+    from empire.server.core.db.base import reset_db
+
+    reset_db()
+    reload(empire.server.core.db.base)
+
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
     shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)
 
@@ -88,6 +94,8 @@ def client(empire_config):
     Base.metadata.drop_all(engine)
 
 
+# It would be nice to swap out the db within pytest using params.
+# @pytest.fixture(scope="session", params=["mysql", "sqlite"])
 @pytest.fixture(scope="session")
 def empire_config():
     from empire.server.core.config import empire_config
@@ -144,7 +152,7 @@ def regular_auth_token(client, admin_auth_token):
     yield response.json()["access_token"]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def db():
     from empire.server.core.db.base import SessionLocal
 

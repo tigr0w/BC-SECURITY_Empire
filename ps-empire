@@ -1,2 +1,2 @@
 #! /bin/bash
-sudo poetry run python empire.py ${@}
+sudo -E poetry run python empire.py ${@}

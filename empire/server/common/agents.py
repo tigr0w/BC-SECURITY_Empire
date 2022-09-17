@@ -78,6 +78,7 @@ class Agents(object):
         # internal agent dictionary for the client's session key, funcions, and URI sets
         #   this is done to prevent database reads for extremely common tasks (like checking tasking URI existence)
         #   self.agents[sessionID] = {  'sessionKey' : clientSessionKey,
+        #                               'language' : clientLanguage,
         #                               'functions' : [tab-completable function names for a script-import]
         #                            }
         self.agents = {}
@@ -94,6 +95,7 @@ class Agents(object):
         for agent in db_agents:
             agentInfo = {
                 "sessionKey": agent.session_key,
+                "language": agent.language,
                 "functions": agent.functions,
             }
             self.agents[agent["session_id"]] = agentInfo
@@ -172,7 +174,7 @@ class Agents(object):
             working_hours=workingHours,
             lost_limit=lostLimit,
             listener=listener,
-            language=language,
+            language=language.lower(),
             archived=False,
         )
 
@@ -183,7 +185,11 @@ class Agents(object):
         log.info(message)
 
         # initialize the tasking/result buffers along with the client session key
-        self.agents[sessionID] = {"sessionKey": sessionKey, "functions": []}
+        self.agents[sessionID] = {
+            "sessionKey": sessionKey,
+            "language": agent.language.lower(),
+            "functions": [],
+        }
 
         return agent
 
@@ -908,9 +914,10 @@ class Agents(object):
                         killDate,
                         workingHours,
                         lostLimit,
-                        sessionKey=serverPub.key,
+                        sessionKey=serverPub.key.hex(),
                         nonce=nonce,
                         listener=listenerName,
+                        language=language,
                         db=db,
                     )
 
@@ -931,7 +938,12 @@ class Agents(object):
             try:
                 session_key = self.agents[sessionID]["sessionKey"]
                 if isinstance(session_key, str):
-                    session_key = (self.agents[sessionID]["sessionKey"]).encode("UTF-8")
+                    if language == "PYTHON":
+                        session_key = bytes.fromhex(session_key)
+                    else:
+                        session_key = (self.agents[sessionID]["sessionKey"]).encode(
+                            "UTF-8"
+                        )
 
                 message = encryption.aes_decrypt_and_verify(session_key, encData)
                 parts = message.split(b"|")
@@ -1189,6 +1201,12 @@ class Agents(object):
                 # get the session key for the agent
                 session_key = self.agents[sessionID]["sessionKey"]
 
+                if self.agents[sessionID]["language"].lower() in [
+                    "python",
+                    "ironpython",
+                ]:
+                    session_key = bytes.fromhex(session_key)
+
                 # encrypt the tasking packets with the agent's session key
                 encrypted_data = encryption.aes_encrypt_then_hmac(
                     session_key, all_task_packets
@@ -1218,6 +1236,9 @@ class Agents(object):
 
         # extract the agent's session key
         sessionKey = self.agents[sessionID]["sessionKey"]
+
+        if self.agents[sessionID]["language"].lower() in ["python", "ironpython"]:
+            sessionKey = bytes.fromhex(sessionKey)
 
         try:
             # verify, decrypt and depad the packet

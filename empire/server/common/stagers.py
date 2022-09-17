@@ -738,6 +738,9 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             # get the agent's session key
             session_key = agent.session_key
 
+            if language.lower() in ["python", "ironpython"]:
+                session_key = bytes.fromhex(session_key)
+
             agent_code = active_listener.generate_agent(
                 active_listener.options, language=language, version=version
             )

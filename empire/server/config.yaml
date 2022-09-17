@@ -1,10 +1,13 @@
 suppress-self-cert-warning: true
 database:
-#  type: mysql
-#  username: root
-#  url: "localhost:3306"
-  type: sqlite
-  location: empire/server/data/empire.db
+  use: mysql
+  mysql:
+    url: localhost:3306
+    username: root
+    password: root
+    database_name: empire
+  sqlite:
+    location: empire/server/data/empire.db
   defaults:
     # staging key will first look at OS environment variables, then here.
     # If empty, will be prompted (like Empire <3.7).

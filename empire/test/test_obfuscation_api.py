@@ -117,8 +117,9 @@ def test_get_obfuscation_configs(client, admin_auth_header):
 
     assert response.status_code == 200
     assert len(response.json()["records"]) > 1
-    assert response.json()["records"][0]["language"] == "powershell"
-    assert response.json()["records"][1]["language"] == "csharp"
+
+    assert any(x["language"] == "powershell" for x in response.json()["records"])
+    assert any(x["language"] == "csharp" for x in response.json()["records"])
 
 
 def test_get_obfuscation_config_not_found(client, admin_auth_header):

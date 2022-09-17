@@ -1,5 +1,7 @@
 # server
 *.db
+*.db-wal
+*.db-shm
 empire/server/data/empire-chain.pem
 empire/server/data/empire-priv.key
 empire/server/data/credentials.csv
@@ -41,6 +43,7 @@ packages-microsoft-prod.deb*
 .venv
 .DS_Store
 venv/
+.venv/
 addons/
 __pycache__/
 workspace.xml

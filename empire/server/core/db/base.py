@@ -1,7 +1,9 @@
 import logging
 import os
+import sqlite3
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 from empire.server.core.config import empire_config
@@ -16,14 +18,39 @@ from empire.server.core.db.models import Base
 
 log = logging.getLogger(__name__)
 
-database_config = empire_config.database
 
-if database_config.type == "mysql":
+# https://stackoverflow.com/a/13719230
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if type(dbapi_connection) is sqlite3.Connection:  # play well with other DB backends
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL;")
+        cursor.close()
+
+
+database_config = empire_config.database
+use = os.environ.get("DATABASE_USE", database_config.use)
+database_config = database_config[use.lower()]
+
+if use == "mysql":
     url = database_config.url
     username = database_config.username
     password = database_config.password
+    database_name = database_config.database_name
+    engine = create_engine(f"mysql+pymysql://{username}:{password}@{url}", echo=False)
+    text = (
+        "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
+        "WHERE SCHEMA_NAME = '%s'" % database_name
+    )
+    result = engine.scalar(text)
+
+    if not result:
+        engine.execute(f"CREATE DATABASE {database_name}")
+
+    engine.dispose()
+
     engine = create_engine(
-        f"mysql+pymysql://{username}:{password}@{url}/empire", echo=False
+        f"mysql+pymysql://{username}:{password}@{url}/{database_name}", echo=False
     )
 else:
     location = database_config.location
@@ -43,7 +70,7 @@ Base.metadata.create_all(engine)
 
 def reset_db():
     Base.metadata.drop_all(engine)
-    if database_config.type == "sqlite":
+    if use == "sqlite":
         os.unlink(database_config.location)
 
 

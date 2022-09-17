@@ -128,7 +128,8 @@ def run(args):
         args.restip = args.restip[0]
 
     if args.version:
-        log.info(empire.VERSION)
+        # log to stdout instead of stderr
+        print(empire.VERSION)
         sys.exit()
 
     elif args.reset:

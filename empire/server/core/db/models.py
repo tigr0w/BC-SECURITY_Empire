@@ -1,5 +1,6 @@
 import enum
 
+import sqlalchemy
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -15,6 +16,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects import mysql
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, relationship
@@ -248,12 +250,18 @@ class Tasking(Base):
     agent_id = Column(String(255), ForeignKey("agents.session_id"), primary_key=True)
     agent = relationship(Agent, lazy="joined", innerjoin=True)
     input = Column(Text)
-    input_full = deferred(Column(Text))
-    output = deferred(Column(Text, nullable=True))
+    input_full = deferred(
+        Column(sqlalchemy.Text().with_variant(mysql.LONGTEXT, "mysql"))
+    )
+    output = deferred(
+        Column(sqlalchemy.Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
+    )
     # In most cases, this isn't needed and will match output. However, with the filter feature, we want to store
     # a copy of the original output if it gets modified by a filter.
-    original_output = deferred(Column(Text, nullable=True))
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    original_output = deferred(
+        Column(sqlalchemy.Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
+    )
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     user = relationship(User)
     created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
     updated_at = Column(

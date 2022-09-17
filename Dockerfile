@@ -5,7 +5,7 @@
 # -----BUILD COMMANDS----
 # 1) build command: `docker build -t bcsecurity/empire .`
 # 2) create volume storage: `docker create -v /empire --name data bcsecurity/empire`
-# 3) run out container: `docker run -ti --volumes-from data bcsecurity/empire /bin/bash`
+# 3) run out container: `docker run -it --volumes-from data bcsecurity/empire /bin/bash`
 
 # -----RELEASE COMMANDS----
 # Handled by GitHub Actions
@@ -50,16 +50,17 @@ RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod
 
 WORKDIR /empire
 
-COPY pyproject.toml /empire
+COPY pyproject.toml poetry.lock /empire/
+
+RUN sudo pip install poetry && sudo poetry config virtualenvs.create false && sudo poetry install --no-root
 
 COPY . /empire
+
+RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml
 
 RUN mkdir -p /usr/local/share/powershell/Modules && \
     cp -r ./empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
 
-RUN sudo pip install poetry && sudo poetry config virtualenvs.create false && sudo poetry install
-
-RUN yes | ./ps-empire server --reset
 RUN rm -rf /empire/empire/server/data/empire*
 
 ENTRYPOINT ["./ps-empire"]

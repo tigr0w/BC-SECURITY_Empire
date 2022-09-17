@@ -807,6 +807,10 @@ class Listener(object):
                                     if not obf_config
                                     else obf_config.command,
                                 )
+
+                                if language.lower() in ["python", "ironpython"]:
+                                    sessionKey = bytes.fromhex(sessionKey)
+
                                 encrypted_agent = encryption.aes_encrypt_then_hmac(
                                     sessionKey, agentCode
                                 )

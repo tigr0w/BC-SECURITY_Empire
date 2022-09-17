@@ -1539,6 +1539,10 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                                 else obf_config.command,
                                                 version=version,
                                             )
+
+                                        if language.lower() in ["python", "ironpython"]:
+                                            sessionKey = bytes.fromhex(sessionKey)
+
                                         encryptedAgent = (
                                             encryption.aes_encrypt_then_hmac(
                                                 sessionKey, agentCode

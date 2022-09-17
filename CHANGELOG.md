@@ -38,6 +38,13 @@ It will be cleaned up as we get closer to the official release.
 - Add a help command to the client to print the full doc string of a function. such as `help shell` or `help script_import`
 - Add a `--literal` flag that can be used on shell commands that forces the agent to execute the command literally, ignoring any built-in aliases that exist such as for whoami or ps
 - Changes to plugins outlined in the Plugins section of the wiki
+- MySQL is fully supported and is the new default. We started to hit limitations with our use of SQLite in a multi-user engagement.
+  - Database type can be changed by setting `database.use` in `config.yaml` or environment variable `DATABASE_USE`
+  - SQLite is still supported. We run the test suite against both databases.
+  - The Docker image still defaults to SQLite, but you can change it to MySQL by modifying the `config.yaml` or setting the environment variable `DATABASE_USE=mysql`.
+    - Example `docker run -p 3306:3306 -p 1337:1337 -e DATABASE_USE='mysql' -it bcsecurity/empire:latest`
+- Move around Dockerfile commands for better caching
+- Add MySQL to the install script
 
 ## [4.8.0] - 2022-08-30
 -   Updated compiler to .NET SDK 6.0 (@Hubbl3)
