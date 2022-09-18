@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/xorrior
 description: Remove an Empire Launch Daemon.
 software: ''
+tactics: []
 techniques:
   - T1055
 background: false

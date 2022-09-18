@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Adds a domain user or a local user to the current (or remote) machine, if permissions allow,
 software: ''
+tactics: []
 techniques:
   - T1033
 background: true

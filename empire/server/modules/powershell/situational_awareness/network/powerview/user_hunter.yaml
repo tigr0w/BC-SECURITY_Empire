@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Finds which machines users of a specified group are logged into. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1033
 background: true

@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/mattifestation
 description: Enumerates all loaded security packages (SSPs).
 software: ''
+tactics: []
 techniques:
   - T1101
 background: true

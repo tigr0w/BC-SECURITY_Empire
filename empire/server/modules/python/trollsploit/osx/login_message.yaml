@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: Change the login message for the user.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: false

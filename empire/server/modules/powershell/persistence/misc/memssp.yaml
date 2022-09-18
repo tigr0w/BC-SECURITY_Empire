@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/gentilkiwi
 description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::memssp to log all authentication events to C:\Windows\System32\mimisla.log.
 software: S0194
+tactics: []
 techniques:
   - T1101
 background: true

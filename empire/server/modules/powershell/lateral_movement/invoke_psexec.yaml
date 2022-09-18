@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Executes a stager on remote hosts using PsExec type functionality.
 software: S0029
+tactics: []
 techniques:
   - T1035
   - T1077

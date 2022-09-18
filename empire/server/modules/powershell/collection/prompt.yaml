@@ -12,6 +12,7 @@ authors:
 description: |
   Prompts the current user to enter their credentials in a forms box and returns the results.
 software:
+tactics: []
 techniques:
   - T1141
   - T1514

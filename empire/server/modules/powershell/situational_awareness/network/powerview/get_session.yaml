@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Execute the NetSessionEnum Win32API call to query a given host for active sessions on the host. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1482
 background: true

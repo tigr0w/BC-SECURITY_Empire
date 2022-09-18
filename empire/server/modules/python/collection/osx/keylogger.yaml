@@ -12,6 +12,7 @@ authors:
 description: Logs keystrokes to the specified file. Ruby based and heavily adapted from MSF's osx/capture/keylog_recorder.
   Kill the resulting PID when keylogging is finished and download the specified LogFile.
 software: ''
+tactics: []
 techniques:
   - T1056
 background: false

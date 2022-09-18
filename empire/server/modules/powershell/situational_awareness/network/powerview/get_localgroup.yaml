@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Returns a list of all current users in a specified local group on a local or remote machine. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1482
 background: true

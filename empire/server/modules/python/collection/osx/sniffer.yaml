@@ -8,6 +8,7 @@ authors:
     link: ''
 description: This module will do a full network stack capture.
 software: ''
+tactics: []
 techniques:
   - T1040
 background: false

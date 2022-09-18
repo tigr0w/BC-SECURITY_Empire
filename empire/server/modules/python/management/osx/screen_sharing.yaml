@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/n00py1
 description: Enables ScreenSharing to allow you to connect to the host via VNC.
 software: ''
+tactics: []
 techniques:
   - T1021
 background: false

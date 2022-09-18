@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Runs @SadProcessor's beeping rickroll.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: true

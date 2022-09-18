@@ -14,6 +14,7 @@ authors:
     link: ''
 description: Persist a stager (or script) using a permanent WMI subscription. This has a difficult detection/removal rating.
 software: ''
+tactics: []
 techniques:
   - T1047
 background: false

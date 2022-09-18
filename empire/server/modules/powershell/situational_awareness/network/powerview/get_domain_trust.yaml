@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Return all domain trusts for the current domain or a specified domain. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1482
 background: true

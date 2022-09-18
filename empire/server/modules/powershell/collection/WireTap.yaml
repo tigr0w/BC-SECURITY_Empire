@@ -10,6 +10,7 @@ description: "WireTap is a .NET 4.0 project to consolidate several functions use
   \ Screenshots (Display + WebCam Imaging), Audio (Both line-in and line-out), Keylogging, & Activate voice recording when\
   \ the user says a keyword phrase. Note: Only one method can be ran at a time."
 software: ''
+tactics: []
 techniques:
   - T1123
   - T1125

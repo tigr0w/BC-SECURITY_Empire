@@ -6,6 +6,7 @@ authors:
 description: Searches the given Outlook folder for items (Emails, Contacts, Tasks, Notes, etc. *Depending on the folder*)
   and returns any matches found.
 software: ''
+tactics: []
 techniques:
   - T1114
 background: true

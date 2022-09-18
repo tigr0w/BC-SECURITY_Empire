@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Takes a picture of a person through OSX's webcam with an ImageSnap binary.
 software: ''
+tactics: []
 techniques:
   - T1125
 background: false

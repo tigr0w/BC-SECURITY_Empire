@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Executes a stager on remote hosts using SMBExec.ps1. This module requires a username and NTLM hash
 software: ''
+tactics: []
 techniques:
   - T1187
   - T1135

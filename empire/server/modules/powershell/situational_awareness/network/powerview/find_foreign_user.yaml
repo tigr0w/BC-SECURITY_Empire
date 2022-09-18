@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Enumerates users who are in groups outside of their principal domain. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1482
 background: true

@@ -41,6 +41,7 @@ class EmpireModule(BaseModel):
     description: str = ""
     software: str = ""
     techniques: List[str] = []
+    tactics: List[str] = []
     background: bool = False
     output_extension: Optional[str] = None
     needs_admin: bool = False

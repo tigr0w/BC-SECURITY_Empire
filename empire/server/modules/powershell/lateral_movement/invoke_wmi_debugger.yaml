@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Uses WMI to set the debugger for a target binary on a remote machine to be cmd.exe or a stager.
 software: ''
+tactics: []
 techniques:
   - T1047
 background: false

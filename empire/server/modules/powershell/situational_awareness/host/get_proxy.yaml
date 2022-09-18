@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Enumerates the proxy server and WPAD conents for the current user. Part of PowerView.
 software: ''
+tactics: []
 techniques:
   - T1049
 background: true

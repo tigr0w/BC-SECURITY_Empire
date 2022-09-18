@@ -39,8 +39,11 @@ class Listener(object):
             "Description": (
                 "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach."
             ),
-            "Category": ("client_server"),
+            "Category": "client_server",
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime

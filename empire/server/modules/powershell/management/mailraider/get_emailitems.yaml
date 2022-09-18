@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/xorrior
 description: Returns all of the items for the specified folder.
 software: ''
+tactics: []
 techniques:
   - T1114
 background: true

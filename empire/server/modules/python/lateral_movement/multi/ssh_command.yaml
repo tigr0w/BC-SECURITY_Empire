@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: This module will send a command via ssh.
 software: ''
+tactics: []
 techniques:
   - T1021
 background: true

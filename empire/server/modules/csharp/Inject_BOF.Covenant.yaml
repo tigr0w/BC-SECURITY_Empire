@@ -70,6 +70,8 @@
   ReferenceAssemblies: []
   EmbeddedResources: []
   Empire:
+    tactics:
+    - TA0011
     software: ''
     techniques:
       - T1105

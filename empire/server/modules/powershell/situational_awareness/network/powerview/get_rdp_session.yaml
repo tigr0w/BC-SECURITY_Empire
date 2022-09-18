@@ -6,6 +6,7 @@ authors:
 description: "Query a given RDP remote service for active sessions and originating IPs (replacement for qwinsta). Note: needs\
   \ admin rights on the remote server you're querying"
 software: S0194
+tactics: []
 techniques:
   - T1076
 background: true

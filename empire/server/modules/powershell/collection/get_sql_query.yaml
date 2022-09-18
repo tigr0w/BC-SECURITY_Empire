@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Executes a query on target SQL servers.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true

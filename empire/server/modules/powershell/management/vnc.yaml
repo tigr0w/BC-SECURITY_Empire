@@ -6,6 +6,7 @@ authors:
 description: Invoke-Vnc executes a VNC agent in-memory and initiates a reverse connection, or binds to a specified port. Password
   authentication is supported.
 software: ''
+tactics: []
 techniques:
   - T1021
 background: true

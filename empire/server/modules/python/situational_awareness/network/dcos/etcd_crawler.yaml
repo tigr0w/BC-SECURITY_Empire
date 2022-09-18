@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/TweekFawkes
 description: Pull keys and values from an etcd configuration store
 software: ''
+tactics: []
 techniques:
   - T1426
 background: true

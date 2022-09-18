@@ -13,6 +13,7 @@ description: Injects NetRipper into targeted processes, which uses API hooking i
   related functions from a low privileged user, being able to capture both plain-text traffic and encrypted traffic before
   encryption/after decryption.
 software: ''
+tactics: []
 techniques:
   - T1179
   - T1410

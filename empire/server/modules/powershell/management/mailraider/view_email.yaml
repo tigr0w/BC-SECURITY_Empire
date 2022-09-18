@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/xorrior
 description: Selects the specified folder and then outputs the email item at the specified index.
 software: ''
+tactics: []
 techniques:
   - T1114
 background: true

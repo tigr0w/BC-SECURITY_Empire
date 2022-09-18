@@ -9,6 +9,7 @@ authors:
 description: Abuses default privileges given to Local Service accounts to spawn a process as SYSTEM. Tested on Server 2019
   and Windows 10 1909 (Build 18363.1316). Run a Powershell stager or your own command.
 software: ''
+tactics: []
 techniques:
   - T1068
 background: false

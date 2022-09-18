@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/TweekFawkes
 description: Create and Start a Marathon App using Marathon's REST API
 software: ''
+tactics: []
 techniques:
   - T1106
 background: true

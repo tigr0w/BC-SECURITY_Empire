@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: Search through browser history or bookmarks
 software: ''
+tactics: []
 techniques:
   - T1503
 background: true

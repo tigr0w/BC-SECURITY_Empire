@@ -18,6 +18,7 @@ class Module(object):
             "Description": ("description line 1" "description line 2"),
             "Software": "SXXXX",
             "Techniques": ["TXXXX", "TXXXX"],
+            "Tactics": ["TAXXXX", "TAXXXX"],
             # True if the module needs to run in the background
             "Background": False,
             # File extension to save the file as

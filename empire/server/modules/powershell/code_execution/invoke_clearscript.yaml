@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Executes JScript (or VBScript) using the embedded ClearScript engine.
 software: ''
+tactics: []
 techniques:
   - T1059
 background: true

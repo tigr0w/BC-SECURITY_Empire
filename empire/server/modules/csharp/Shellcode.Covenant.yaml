@@ -92,9 +92,11 @@
   ReferenceAssemblies: []
   EmbeddedResources: []
   Empire:
+    tactics:
+      - TA0002
     software: ''
     techniques:
-      - T1064
+      - T1059
     background: true
     output_extension:
     needs_admin: false

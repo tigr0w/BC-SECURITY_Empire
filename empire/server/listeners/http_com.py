@@ -40,6 +40,9 @@ class Listener(object):
             ),
             "Category": ("client_server"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime

@@ -15,6 +15,7 @@ authors:
 description: Launches a screensaver with a prompt for credentials with osascript. This locks the user out until the password
   can unlock the user keychain. This allows you to prevent Sudo/su failed logon attempts. (credentials till I get them!)
 software: ''
+tactics: []
 techniques:
   - T1113
 background: false

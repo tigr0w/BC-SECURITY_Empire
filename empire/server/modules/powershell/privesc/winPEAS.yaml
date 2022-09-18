@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/ShitSecure
 description: WinPEAS is a script that search for possible paths to escalate privileges on Windows hosts.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: false

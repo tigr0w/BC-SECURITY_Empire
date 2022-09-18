@@ -6,7 +6,9 @@ authors:
 description: This module will retrieve cookies, history, saved logins from Google Chrome, Microsoft Edge, and Microsoft Edge
   Beta.
 software: ''
+tactics: []
 techniques:
+
   - T1503
 background: true
 output_extension:

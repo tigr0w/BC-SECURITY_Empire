@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/mattifestation
 description: Starts a packet capture on a host using netsh.
 software: ''
+tactics: []
 techniques:
   - T1040
 background: false

@@ -11,6 +11,7 @@ info_keys = {
     "Description": "description",
     "Software": "software",
     "Techniques": "techniques",
+    "Tactics": "tactics",
     "Background": "background",
     "OutputExtension": "output_extension",
     "NeedsAdmin": "needs_admin",

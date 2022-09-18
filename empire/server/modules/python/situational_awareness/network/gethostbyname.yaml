@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/TweekFawkes
 description: Uses Python's socket.gethostbyname("example.com") function to resolve host names on a remote agent.
 software: ''
+tactics: []
 techniques:
   - T1018
 background: true

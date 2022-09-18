@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Enumerates the DNS Servers used by a system.
 software: ''
+tactics: []
 techniques:
   - T1482
   - T1018

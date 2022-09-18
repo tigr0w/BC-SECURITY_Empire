@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Finds generic .DLL hijacking opportunities.
 software: S0194
+tactics: []
 techniques:
   - T1087
   - T1038

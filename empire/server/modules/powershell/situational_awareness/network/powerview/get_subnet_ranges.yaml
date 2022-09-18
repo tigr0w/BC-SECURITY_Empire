@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Pulls hostnames from AD, performs a Reverse DNS lookup, and parses the output into ranges.
 software: S0194
+tactics: []
 techniques:
   - T1016
 background: true

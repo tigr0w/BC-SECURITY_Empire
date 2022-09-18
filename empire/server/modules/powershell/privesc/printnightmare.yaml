@@ -6,6 +6,7 @@ authors:
 description: Exploits CVE-2021-1675 (PrintNightmare) locally to add a new local administrator user with a known password.
   Optionally, this can be used to execute your own custom DLL to execute any other code as NT AUTHORITY\SYSTEM.
 software: ''
+tactics: []
 techniques:
   - T1068
 background: false

@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Disables RDP on the remote machine.
 software: ''
+tactics: []
 techniques:
   - T1076
 background: false

@@ -6,6 +6,7 @@ authors:
 description: This module will generate traffic on a provided range of ports and supports both TCP and UDP. Useful to identify
   direct egress channels.
 software: ''
+tactics: []
 techniques:
   - T1041
 background: false

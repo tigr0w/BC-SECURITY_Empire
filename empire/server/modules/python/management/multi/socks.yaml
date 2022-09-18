@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Spawn an AROX relay to extend a SOCKS proxy through your agent.
 software: ''
+tactics: []
 techniques:
   - T1090
 background: true

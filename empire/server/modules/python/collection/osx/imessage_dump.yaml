@@ -8,6 +8,7 @@ authors:
     link: ''
 description: This module will enumerate the entire chat and IMessage SQL Database.
 software: ''
+tactics: []
 techniques:
   - T1081
 background: false

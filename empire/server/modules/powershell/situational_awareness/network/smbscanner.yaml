@@ -11,6 +11,7 @@ authors:
     link: ''
 description: Tests usernames/password combination across a number of machines.
 software: ''
+tactics: []
 techniques:
   - T1135
   - T1187

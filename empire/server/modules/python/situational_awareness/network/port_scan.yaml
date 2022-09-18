@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: Simple Port Scanner.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true

@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/xorrior
 description: Installs an Empire Launch Agent.
 software: ''
+tactics: []
 techniques:
   - T1055
 background: false

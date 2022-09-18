@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Query ADIDNS zones in the specified domain. Part of Powermad.
 software: ''
+tactics: []
 techniques:
   - T1016
 background: true

@@ -6,6 +6,7 @@ authors:
 description: Uses remote registry functionality to query all entries for the Windows Remote Desktop Connection Client" on
   a machine. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1076
 background: true

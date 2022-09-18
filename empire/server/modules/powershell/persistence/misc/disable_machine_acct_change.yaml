@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Disables the machine account for the target system from changing its password automatically.
 software: ''
+tactics: []
 techniques:
   - T1098
 background: false

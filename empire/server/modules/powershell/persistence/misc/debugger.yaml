@@ -6,6 +6,7 @@ authors:
 description: Sets the debugger for a specified target binary to be cmd.exe, another binary of your choice, or a listern stager.
   This can be launched from the ease-of-access center (ctrl+U).
 software: ''
+tactics: []
 techniques:
   - T1044
 background: false

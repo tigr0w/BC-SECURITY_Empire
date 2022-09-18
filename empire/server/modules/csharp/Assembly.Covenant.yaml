@@ -154,6 +154,7 @@
   ReferenceAssemblies: []
   EmbeddedResources: []
   Empire:
+    tactics: []
     software: ''
     techniques:
       - T1059

@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Enumerates UAC level
 software: ''
+tactics: []
 techniques:
   - T1033
 background: false

@@ -8,6 +8,7 @@ description: Runs an SMB brute against a list of usernames/passwords. Will check
   the threshold. Run "shell net accounts" on a valid agent to determine the lockout threshold. VERY noisy! Generates a ton
   of traffic on the DCs.
 software: ''
+tactics: []
 techniques:
   - T1135
   - T1187

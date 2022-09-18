@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Installs an Empire launchAgent.
 software: ''
+tactics: []
 techniques:
   - T1055
 background: false

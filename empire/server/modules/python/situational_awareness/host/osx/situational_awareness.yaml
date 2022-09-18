@@ -8,6 +8,7 @@ authors:
     link: ''
 description: This module will enumerate the basic items needed for OP.
 software: ''
+tactics: []
 techniques:
   - T1082
 background: false

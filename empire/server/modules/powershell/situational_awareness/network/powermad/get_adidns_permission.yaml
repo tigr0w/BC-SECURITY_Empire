@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Query a DACL of an ADIDNS node or zone in the specified domain. Part of Powermad.
 software: ''
+tactics: []
 techniques:
   - T1069
 background: true

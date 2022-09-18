@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: This module will return the user profile specified
 software: ''
+tactics: []
 techniques:
   - T1482
 background: false

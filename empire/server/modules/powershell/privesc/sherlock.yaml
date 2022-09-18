@@ -5,6 +5,7 @@ authors:
     link: 'https://twitter.com/_rastamouse'
 description: Find Windows local privilege escalation vulnerabilities.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true

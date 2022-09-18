@@ -23,6 +23,7 @@ class Module(object):
             ),
             "Software": "",
             "Techniques": [""],
+            "Tactics": [""],
             # True if the module needs to run in the background
             "Background": False,
             # File extension to save the file as

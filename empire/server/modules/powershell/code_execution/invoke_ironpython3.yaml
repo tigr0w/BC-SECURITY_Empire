@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/byt3bl33d3r
 description: Executes IronPython3 code using the embedded IPY engine.
 software: ''
+tactics: []
 techniques:
   - T1059
 background: false

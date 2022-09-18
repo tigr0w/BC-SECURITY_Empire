@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: This module will attempt mount an smb share and execute a command on it.
 software: ''
+tactics: []
 techniques:
   - T1135
 background: false

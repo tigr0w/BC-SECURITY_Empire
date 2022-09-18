@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: This module removes all triggers from all KeePass configs found by Find-KeePassConfig.
 software: ''
+tactics: []
 techniques:
   - T1033
 background: true

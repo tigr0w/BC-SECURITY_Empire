@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/xorrior
 description: This module uses the DirectX.Capture and DShowNET .NET assemblies to capture video from a webcam.
 software: ''
+tactics: []
 techniques:
   - T1125
 background: false

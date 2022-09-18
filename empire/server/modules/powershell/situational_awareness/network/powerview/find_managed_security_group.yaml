@@ -6,6 +6,7 @@ authors:
 description: This function retrieves all security groups in the domain and identifies ones that have a manager set. It also
   determines whether the manager has the ability to add or remove members from the group. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1069
 background: true

@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Extracts found user hashes out of /var/db/dslocal/nodes/Default/users/*.plist
 software: ''
+tactics: []
 techniques:
   - T1003
 background: false

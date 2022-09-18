@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Uploads a .jpg image to the target and sets it as the desktop wallpaper.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: false

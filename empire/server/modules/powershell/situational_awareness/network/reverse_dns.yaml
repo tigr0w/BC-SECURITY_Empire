@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Performs a DNS Reverse Lookup of a given IPv4 IP Range.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true

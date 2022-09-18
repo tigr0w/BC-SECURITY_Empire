@@ -6,6 +6,7 @@ authors:
 description: "Generates a full-memory dump of a process. Note: To dump another user's process, you must be running from an\
   \ elevated prompt (e.g to dump lsass)"
 software: ''
+tactics: []
 techniques:
   - T1033
 background: true

@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Searches for Mail .emlx messages, optionally only returning messages with the specified SearchTerm.
 software: ''
+tactics: []
 techniques:
   - T1114
 background: false

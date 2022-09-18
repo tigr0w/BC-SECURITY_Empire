@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Executes Powershell code from a Python code.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true

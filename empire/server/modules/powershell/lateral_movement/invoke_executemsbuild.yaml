@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/xorrior
 description: This module utilizes WMI and MSBuild to compile and execute an xml file containing an Empire launcher
 software: ''
+tactics: []
 techniques:
   - T1127
   - T1047

@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Executes SSharp from an embedded compiler within PowerShell. Compilation does not call csc.exe
 software: ''
+tactics: []
 techniques:
   - T1059
 background: true

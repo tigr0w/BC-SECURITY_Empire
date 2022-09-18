@@ -6,6 +6,7 @@ authors:
 description: returns any exchange users that match the specified search criteria. Searchable fields are FirstName, LastName,
   JobTitle, Email-Address, and Department.
 software: ''
+tactics: []
 techniques:
   - T1114
 background: true

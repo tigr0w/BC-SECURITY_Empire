@@ -9,6 +9,7 @@ authors:
 description: This script is used to query the current AppLocker policy on the target and check the status of a user-defined
   executable or all executables in a path.
 software: ''
+tactics: []
 techniques:
   - T1012
 background: false

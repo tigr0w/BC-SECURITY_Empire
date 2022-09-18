@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: Tests credentials against Basic Authentication.
 software: ''
+tactics: []
 techniques:
   - T1071
 background: true

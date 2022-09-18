@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: Generates a kerberos keytab and injects it into the current runspace.
 software: ''
+tactics: []
 techniques:
   - T1055
 background: false

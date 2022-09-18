@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Does a simple port scan using regular sockets, based (pretty) loosely on nmap.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true

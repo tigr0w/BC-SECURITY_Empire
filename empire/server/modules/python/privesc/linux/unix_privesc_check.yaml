@@ -9,6 +9,7 @@ authors:
 description: This script is intended to be executed locally ona Linux box to enumerate basic system info, and search for commonprivilege
   escalation vectors with a all in one shell script.
 software: ''
+tactics: []
 techniques:
   - T1166
 background: false

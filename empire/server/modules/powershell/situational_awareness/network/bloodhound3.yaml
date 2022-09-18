@@ -14,6 +14,7 @@ authors:
     link: ''
 description: Execute BloodHound data collection (ingestor for version 3).
 software: ''
+tactics: []
 techniques:
   - T1484
 background: true

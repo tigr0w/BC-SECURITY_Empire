@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Searches for keychain candidates and attempts to decrypt the user's keychain.
 software: ''
+tactics: []
 techniques:
   - T1142
 background: false

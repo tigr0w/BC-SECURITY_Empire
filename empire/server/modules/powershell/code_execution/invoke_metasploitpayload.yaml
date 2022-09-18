@@ -6,6 +6,7 @@ authors:
 description: Spawns a new, hidden PowerShell window that downloadsand executes a Metasploit payload. This relies on theexploit/multi/scripts/web_delivery
   metasploit module.
 software: ''
+tactics: []
 techniques:
   - T1055
 background: false

@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Enumerates the ACL for a given file path.
 software: ''
+tactics: []
 techniques:
   - T1083
 background: true

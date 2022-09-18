@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Kills any process starting with a particular name.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: true

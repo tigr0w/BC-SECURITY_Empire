@@ -11,6 +11,7 @@ authors:
     link: ''
 description: Returns the default domain or DC policy for a given domain or domain controller. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1482
 background: true

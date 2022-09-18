@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Modifies a target service to create a local user and add it to the local administrators.
 software: S0194
+tactics: []
 techniques:
   - T1087
   - T1038

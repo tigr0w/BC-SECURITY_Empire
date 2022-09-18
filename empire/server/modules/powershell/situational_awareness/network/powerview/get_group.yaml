@@ -6,6 +6,7 @@ authors:
 description: Gets a list of all current groups in a domain, or all the groups a given user/group object belongs to. Part of
   PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1482
 background: true

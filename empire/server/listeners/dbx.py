@@ -35,6 +35,9 @@ class Listener(object):
             "Description": ("Starts a Dropbox listener."),
             "Category": ("third_party"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime

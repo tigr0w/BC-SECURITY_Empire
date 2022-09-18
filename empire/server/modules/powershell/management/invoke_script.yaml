@@ -5,8 +5,10 @@ authors:
     link: https://twitter.com/harmj0y
 description: Run a custom script. Useful for mass-taskings or script autoruns.
 software: ''
+tactics:
+  - TA0002
 techniques:
-  - T1064
+  - T1059
 background: true
 output_extension:
 needs_admin: false

@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Based on the instance name, test if SQL Server is configured with default passwords.
 software: ''
+tactics: []
 techniques:
   - T1256
 background: true

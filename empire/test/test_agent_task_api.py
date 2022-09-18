@@ -233,11 +233,10 @@ def bof_download(client, admin_auth_header, db, models):
     yield response.json()
 
     # there is no delete endpoint for downloads, so we need to delete the file manually
-    db.delete(
-        db.query(models.Download)
-        .filter(models.Download.id == response.json()["id"])
-        .first()
-    )
+    try:
+        db.query(models.Download).delete()
+    except:
+        pass
 
 
 def test_create_task_shell_agent_not_found(client, admin_auth_header):

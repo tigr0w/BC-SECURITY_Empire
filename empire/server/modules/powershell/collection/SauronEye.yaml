@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/ShitSecure
 description: SauronEye is a search tool built to aid red teams in finding files containing specific keywords.
 software: ''
+tactics: []
 techniques:
   - T1083
 background: false

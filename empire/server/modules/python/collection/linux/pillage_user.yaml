@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: 'Pillages the current user for their bash_history, ssh known hosts, recent folders, etc. '
 software: ''
+tactics: []
 techniques:
   - T1139
 background: false

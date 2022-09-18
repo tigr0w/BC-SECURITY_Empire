@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Finds sensitive files on the domain.
 software: ''
+tactics: []
 techniques:
   - T1083
 background: true

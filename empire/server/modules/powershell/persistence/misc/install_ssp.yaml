@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/mattifestation
 description: Installs a security support provider (SSP) dll.
 software: ''
+tactics: []
 techniques:
   - T1101
 background: true

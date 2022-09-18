@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Get antivirus product information.
 software: ''
+tactics: []
 techniques:
   - T1063
 background: true

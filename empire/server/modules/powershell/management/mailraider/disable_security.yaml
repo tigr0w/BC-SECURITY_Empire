@@ -6,6 +6,7 @@ authors:
 description: This function checks for the ObjectModelGuard, PromptOOMSend, and AdminSecurityMode registry keys for Outlook
   security. This function must be run in an administrative context in order to set the values for the registry keys.
 software: ''
+tactics: []
 techniques:
   - T1047
 background: true

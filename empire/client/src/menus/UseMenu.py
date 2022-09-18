@@ -188,14 +188,28 @@ class UseMenu(Menu):
                 "opsec_safe",
                 "techniques",
                 "software",
+                "tactics",
                 "category",
             ]:
                 if isinstance(values, list):
                     if len(values) > 0 and values[0] != "":
                         for i, value in enumerate(values):
                             if key == "techniques":
-                                value = "http://attack.mitre.org/techniques/" + value
-                            if key == "authors":
+                                if "." in value:
+                                    value = value.split(".")
+                                    value = (
+                                        "http://attack.mitre.org/techniques/"
+                                        + value[0]
+                                        + "/"
+                                        + value[1]
+                                    )
+                                else:
+                                    value = (
+                                        "http://attack.mitre.org/techniques/" + value
+                                    )
+                            elif key == "tactics":
+                                value = "http://attack.mitre.org/tactics/" + value
+                            elif key == "authors":
                                 value = f"{value['name']}, {value['handle']}, {value['link']}"
 
                             if i == 0:

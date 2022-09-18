@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Interacts with a HTTP REST API and returns the results back to the screen.
 software: ''
+tactics: []
 techniques:
   - T1006
 background: true

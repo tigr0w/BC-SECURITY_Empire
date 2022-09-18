@@ -6,6 +6,7 @@ authors:
 description: Takes a user/group name and optional domain, and determines the computers in the domain the user/group has local
   admin (or RDP) rights to. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1069
 background: true

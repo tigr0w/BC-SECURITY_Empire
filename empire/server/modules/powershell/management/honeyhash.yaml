@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/mattifestation
 description: Inject artificial credentials into LSASS.
 software: ''
+tactics: []
 techniques:
   - T1177
 background: false

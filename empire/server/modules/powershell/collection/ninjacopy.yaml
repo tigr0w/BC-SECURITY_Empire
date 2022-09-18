@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/JosephBialek
 description: Copies a file from an NTFS partitioned volume by reading the raw volume and parsing the NTFS structures.
 software: ''
+tactics: []
 techniques:
   - T1105
 background: true

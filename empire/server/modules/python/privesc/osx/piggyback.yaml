@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/n00py1
 description: Spawns a new Empire agent using an existing sudo session.  This works up until El Capitan.
 software: T1169
+tactics: []
 techniques:
   - T1050
 background: false

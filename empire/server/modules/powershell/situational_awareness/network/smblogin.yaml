@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Validates username & password combination(s) across a host or group of hosts using the SMB protocol.
 software: ''
+tactics: []
 techniques:
   - T1135
   - T1187

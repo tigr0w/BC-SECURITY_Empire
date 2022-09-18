@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Retrieves the plaintext passwords for found McAfee's SiteList.xml files.
 software: ''
+tactics: []
 techniques:
   - T1003
 background: true

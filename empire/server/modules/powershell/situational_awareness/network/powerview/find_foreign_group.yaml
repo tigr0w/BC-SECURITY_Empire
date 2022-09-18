@@ -6,6 +6,7 @@ authors:
 description: Enumerates all the members of a given domain's groups and finds users that are not in the queried domain. Part
   of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1482
 background: true

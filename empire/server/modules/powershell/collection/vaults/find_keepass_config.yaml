@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: This module finds and parses any KeePass.config.xml (2.X) and KeePass.ini (1.X) files.
 software: ''
+tactics: []
 techniques:
   - T1119
 background: true

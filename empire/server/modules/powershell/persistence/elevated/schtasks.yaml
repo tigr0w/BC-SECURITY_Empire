@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Persist a stager (or script) using schtasks running as SYSTEM. This has a moderate detection/removal rating.
 software: S0111
+tactics: []
 techniques:
   - T1053
 background: false

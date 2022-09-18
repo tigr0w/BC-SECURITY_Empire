@@ -5,6 +5,7 @@ authors:
     link: ''
 description: X userland keylogger based on pupy
 software: ''
+tactics: []
 techniques:
   - T1056
 background: true

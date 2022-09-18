@@ -9,6 +9,7 @@ authors:
 description: This module can be used to identify applications vulnerable to dylib hijacking on a target system. This has been
   modified from the original to remove the dependancy for the macholib library.
 software: ''
+tactics: []
 techniques:
   - T1157
 background: false

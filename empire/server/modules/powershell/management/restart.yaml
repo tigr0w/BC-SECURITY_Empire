@@ -5,8 +5,11 @@ authors:
     link: https://twitter.com/harmj0y
 description: Restarts the specified machine.
 software: ''
+tactics:
+  - TA0002
 techniques:
-  - T1064
+  - T1059
+  - T1059.003
 background: false
 output_extension:
 needs_admin: false

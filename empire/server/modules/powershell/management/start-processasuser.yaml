@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/tifkin_
 description: Executes a command using a specified set of credentials.
 software: ''
+tactics: []
 techniques:
   - T1088
 background: false

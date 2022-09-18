@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Spawns a new Empire agent.
 software: ''
+tactics: []
 techniques:
   - T1050
 background: true

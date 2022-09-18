@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Installs an Empire launcher script in ~/.config/autostart on Linux versions with GUI.
 software: ''
+tactics: []
 techniques:
   - T1165
 background: false

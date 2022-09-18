@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/ShitSecure
 description: Watson is a .NET tool designed to enumerate missing KBs and suggest exploits for Privilege Escalation vulnerabilities.
 software: ''
+tactics: []
 techniques:
   - T1068
 background: true

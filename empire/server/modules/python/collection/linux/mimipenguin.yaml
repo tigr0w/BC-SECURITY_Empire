@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Port of huntergregal mimipenguin. Harvest's current user's cleartext credentials.
 software: S0179
+tactics: []
 techniques:
   - T1003
 background: false

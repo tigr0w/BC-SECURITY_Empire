@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Bypasses UAC by performing an registry modification for sdclt (based onhttps://enigma0x3.net/2017/03/17/fileless-uac-bypass-using-sdclt-exe/)
 software: ''
+tactics: []
 techniques:
   - T1088
 background: true

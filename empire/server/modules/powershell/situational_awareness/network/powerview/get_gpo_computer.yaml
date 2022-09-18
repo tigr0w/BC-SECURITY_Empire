@@ -9,6 +9,7 @@ authors:
 description: 'Takes a GPO GUID and returns the computers the GPO is applied to. (Note: This function was removed in PowerView.
   This now uses a combination of two CmdLets to achieve the same functionality)'
 software: S0194
+tactics: []
 techniques:
   - T1484
 background: true

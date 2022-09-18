@@ -477,7 +477,14 @@ class ModuleService(object):
         mod = db.query(models.Module).filter(models.Module.id == my_model.id).first()
 
         if not mod:
-            mod = models.Module(id=my_model.id, name=module_name, enabled=True)
+            mod = models.Module(
+                id=my_model.id,
+                name=module_name,
+                enabled=True,
+                tactic=my_model.tactics,
+                technique=my_model.techniques,
+                software=my_model.software,
+            )
             db.add(mod)
 
         self.modules[self.slugify(module_name)] = my_model

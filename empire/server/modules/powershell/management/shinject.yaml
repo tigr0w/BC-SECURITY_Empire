@@ -11,6 +11,7 @@ authors:
     link: ''
 description: Injects a PIC shellcode payload into a target process, via Invoke-Shellcode
 software: ''
+tactics: []
 techniques:
   - T1055
 background: true

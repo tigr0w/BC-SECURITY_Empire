@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Gets a list of all current subnets in a domain. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1016
 background: true

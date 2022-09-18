@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Play's a hidden version of AC/DC's Thunderstruck video while maxing out a computer's volume.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: true

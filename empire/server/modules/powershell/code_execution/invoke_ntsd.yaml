@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Use NT Symbolic Debugger to execute Empire launcher code
 software: ''
+tactics: []
 techniques:
   - T1127
 background: true

@@ -6,6 +6,7 @@ authors:
 description: Takes a SID, name, or SamAccountName to query for a specified domain object, and then sets a specified "PropertyName"
   to a specified "PropertyValue". Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1487
 background: true

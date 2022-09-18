@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/xorrior
 description: Collects revelant information about a host and the current user context.
 software: ''
+tactics: []
 techniques:
   - T1082
 background: true

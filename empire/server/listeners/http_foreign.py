@@ -30,6 +30,9 @@ class Listener(object):
             "Description": ("Starts a 'foreign' http[s] Empire listener."),
             "Category": ("client_server"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime

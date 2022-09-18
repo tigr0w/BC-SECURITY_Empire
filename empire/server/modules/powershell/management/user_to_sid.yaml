@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Converts a specified domain\user to a domain sid.
 software: ''
+tactics: []
 techniques:
   - T1098
 background: false

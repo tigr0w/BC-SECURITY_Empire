@@ -6,6 +6,7 @@ authors:
 description: Loads the specified assembly into memory and invokes the main method. The Main method and class containing Main
   must both be PUBLIC for Invoke-Assembly to execute it
 software: ''
+tactics: []
 techniques:
   - T1059
 background: true

@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Performs text to speech using "say".
 software: ''
+tactics: []
 techniques:
   - T1491
 background: false

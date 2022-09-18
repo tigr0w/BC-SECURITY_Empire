@@ -28,6 +28,9 @@ class Listener(object):
             # categories - client_server, peer_to_peer, broadcast, third_party
             "Category": ("client_server"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime

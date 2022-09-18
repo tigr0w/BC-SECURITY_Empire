@@ -8,6 +8,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: This module extracts out the trigger specifications from a KeePass 2.X configuration XML file.
 software: ''
+tactics: []
 techniques:
   - T1119
 background: true

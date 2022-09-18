@@ -6,6 +6,7 @@ authors:
 description: Creates an alias in the .bash_profile to cause the sudo command to execute a stager and pass through the origional
   command back to sudo
 software: ''
+tactics: []
 techniques:
   - T1156
 background: true

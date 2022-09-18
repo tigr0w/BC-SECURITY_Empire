@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -42,6 +42,9 @@ def domain_to_dto_template(listener, uid: str):
         description=listener.info.get("Description"),
         category=listener.info.get("Category"),
         comments=listener.info.get("Comments"),
+        software=listener.info.get("Software"),
+        techniques=listener.info.get("Techniques"),
+        tactics=listener.info.get("Tactics"),
         options=options,
     )
 
@@ -66,6 +69,9 @@ class ListenerTemplate(BaseModel):
     description: str
     category: str
     comments: List[str]
+    tactics: List[str]
+    techniques: List[str]
+    software: Optional[str]
     options: Dict[str, CustomOptionSchema]
 
     class Config:
@@ -77,6 +83,9 @@ class ListenerTemplate(BaseModel):
                 "description": "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.",
                 "category": "client_server",
                 "comments": [],
+                "tactics": [],
+                "techniques": [],
+                "software": "",
                 "options": {
                     "Name": {
                         "description": "Name for the listener.",
@@ -250,6 +259,9 @@ class ListenerPostRequest(BaseModel):
             "example": {
                 "name": "MyListener",
                 "template": "http",
+                "tactics": [""],
+                "techniques": [""],
+                "software": "",
                 "options": {
                     "Name": "MyListener",  # TODO VR Name should not be an option
                     "Host": "http://localhost:1336",

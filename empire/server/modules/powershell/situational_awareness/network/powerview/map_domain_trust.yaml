@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Maps all reachable domain trusts with .CSV output. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1482
 background: true

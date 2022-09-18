@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Records audio through the MacOS webcam mic by leveraging the Apple AVFoundation API.
 software: ''
+tactics: []
 techniques:
   - T1512
 background: false

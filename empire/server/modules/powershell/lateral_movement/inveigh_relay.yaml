@@ -9,6 +9,7 @@ description: Inveigh's SMB relay function. This module can be used to relay inco
   with HTTP disabled. Note that this module exposes only a subset of Inveigh Relay's parameters. Inveigh Relay can be used
   through Empire's scriptimport and scriptcmd if additional parameters are needed.
 software: ''
+tactics: []
 techniques:
   - T1171
 background: true

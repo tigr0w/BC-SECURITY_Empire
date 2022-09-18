@@ -314,6 +314,9 @@ class Module(Base):
     id = Column(String(255), primary_key=True)
     name = Column(String(255), nullable=False)
     enabled = Column(Boolean, nullable=False)
+    technique = Column(JSON)
+    tactic = Column(JSON)
+    software = Column(JSON)
 
 
 class Profile(Base):

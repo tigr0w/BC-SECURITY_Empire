@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Spawns a new Empire agent using sudo.
 software: T1169
+tactics: []
 techniques:
   - T1050
 background: true

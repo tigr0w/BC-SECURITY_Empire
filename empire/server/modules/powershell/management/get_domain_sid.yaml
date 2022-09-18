@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Returns the SID for the current or specified domain.
 software: ''
+tactics: []
 techniques:
   - T1178
 background: true

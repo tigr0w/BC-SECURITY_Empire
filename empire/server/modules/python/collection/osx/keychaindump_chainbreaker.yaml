@@ -8,6 +8,7 @@ authors:
     link: ''
 description: A keychain dump module that allows for decryption via known password.
 software: ''
+tactics: []
 techniques:
   - T1142
 background: false

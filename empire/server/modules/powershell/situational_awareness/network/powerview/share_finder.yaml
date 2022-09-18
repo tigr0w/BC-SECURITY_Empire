@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Finds shares on machines in the domain. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1135
 background: true

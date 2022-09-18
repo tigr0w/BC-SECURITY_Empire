@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Backs up a service's binary and replaces the original with a binary that creates/adds a local administrator.
 software: S0194
+tactics: []
 techniques:
   - T1087
   - T1038

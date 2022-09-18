@@ -11,6 +11,7 @@ authors:
     link: https://twitter.com/cptjesus
 description: Execute BloodHound data collection.
 software: ''
+tactics: []
 techniques:
   - T1484
 background: true

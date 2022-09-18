@@ -8,6 +8,7 @@ authors:
     link: ''
 description: 'Upload a file to dropbox '
 software: ''
+tactics: []
 techniques:
   - T1041
 background: false

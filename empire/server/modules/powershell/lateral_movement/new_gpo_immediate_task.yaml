@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Builds an 'Immediate' schtask to push out through a specified GPO.
 software: S0111
+tactics: []
 techniques:
   - T1053
 background: true

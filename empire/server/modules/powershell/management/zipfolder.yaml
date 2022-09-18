@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/harmj0y
 description: Zips up a target folder for later exfiltration.
 software: ''
+tactics: []
 techniques:
   - T1002
 background: false

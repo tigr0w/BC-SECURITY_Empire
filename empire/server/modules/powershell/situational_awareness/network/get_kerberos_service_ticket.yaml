@@ -6,6 +6,7 @@ authors:
 description: Retrieves IP addresses and usernames using event ID 4769 this can allow identification of a users machine. Can
   only run on a domain controller.
 software: ''
+tactics: []
 techniques:
   - T1097
 background: false

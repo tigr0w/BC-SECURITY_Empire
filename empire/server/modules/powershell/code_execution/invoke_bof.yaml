@@ -8,6 +8,7 @@ description: |
   perform relocation, serialize beacon parameters, and jump into the entry point
   selected by the user.
 software: S0154
+tactics: []
 techniques:
   - T1055
 background: true

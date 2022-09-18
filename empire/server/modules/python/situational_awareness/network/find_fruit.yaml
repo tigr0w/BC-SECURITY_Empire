@@ -5,6 +5,7 @@ authors:
     link: https://twitter.com/424f424f
 description: Searches for low-hanging web applications.
 software: ''
+tactics: []
 techniques:
   - T1102
   - T1256

@@ -6,6 +6,7 @@ authors:
 description: Query the process lists of remote machines, searching for processes with a specific name or owned by a specific
   user. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1057
 background: true

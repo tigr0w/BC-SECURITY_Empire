@@ -5,6 +5,7 @@ authors:
     link: ''
 description: Execute a stager or command on remote hosts using DCOM.
 software: ''
+tactics: []
 techniques:
   - T1175
 background: false

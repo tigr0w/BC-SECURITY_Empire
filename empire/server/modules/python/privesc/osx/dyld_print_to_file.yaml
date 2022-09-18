@@ -7,6 +7,7 @@ description: 'This modules takes advantage of the environment variable DYLD_PRIN
   on all versions Mac OS X YosemiteWARNING: In order for this exploit to be performed files will be overwritten and deleted.
   This can set off endpoint protection systems and as of initial development, minimal testing has been performed.'
 software: ''
+tactics: []
 techniques:
   - TA0004
 background: false

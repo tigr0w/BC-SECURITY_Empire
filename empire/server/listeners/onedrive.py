@@ -37,6 +37,9 @@ class Listener(object):
             "Comments": [
                 "Note that deleting STAGE0-PS.txt from the staging folder will break existing launchers"
             ],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         self.options = {

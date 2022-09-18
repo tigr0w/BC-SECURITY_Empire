@@ -8,6 +8,7 @@ authors:
     link: ''
 description: Returns basic server and user information from target SQL Servers.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true
