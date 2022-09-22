@@ -53,6 +53,20 @@ def test_create_keyword_name_conflict(client, admin_auth_header):
     )
 
 
+def test_create_keyword_validate_length(client, admin_auth_header):
+    response = client.post(
+        "/api/v2/obfuscation/keywords/",
+        headers=admin_auth_header,
+        json={"keyword": "a", "replacement": "b"},
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "ensure this value has at least 3 characters"
+    )
+
+
 def test_create_keyword(client, admin_auth_header):
     response = client.post(
         "/api/v2/obfuscation/keywords/",

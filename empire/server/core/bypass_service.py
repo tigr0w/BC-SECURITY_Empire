@@ -80,7 +80,9 @@ class BypassService(object):
         if self.get_by_name(db, bypass_req.name):
             return None, f"Bypass with name {bypass_req.name} already exists."
 
-        bypass = models.Bypass(name=bypass_req.name, code=bypass_req.code)
+        bypass = models.Bypass(
+            name=bypass_req.name, code=bypass_req.code, language=bypass_req.language
+        )
 
         db.add(bypass)
         db.flush()
@@ -95,6 +97,7 @@ class BypassService(object):
                 return None, f"Bypass with name {bypass_req.name} already exists."
 
         db_bypass.code = bypass_req.code
+        db_bypass.language = bypass_req.language
 
         db.flush()
 

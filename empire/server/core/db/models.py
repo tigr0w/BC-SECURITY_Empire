@@ -173,6 +173,7 @@ class HostProcess(Base):
     process_name = Column(Text)
     architecture = Column(String(255))
     user = Column(String(255))
+    stale = Column(Boolean, default=False)
     agent = relationship(
         Agent,
         lazy="joined",

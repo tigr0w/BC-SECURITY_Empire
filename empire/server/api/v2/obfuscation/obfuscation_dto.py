@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from empire.server.core.db import models
 
@@ -22,13 +22,13 @@ class Keywords(BaseModel):
 
 
 class KeywordUpdateRequest(BaseModel):
-    keyword: str
-    replacement: str
+    keyword: str = Field(min_length=3)
+    replacement: str = Field(min_length=3)
 
 
 class KeywordPostRequest(BaseModel):
-    keyword: str
-    replacement: str
+    keyword: str = Field(min_length=3)
+    replacement: str = Field(min_length=3)
 
 
 def domain_to_dto_obfuscation_config(obf_conf: models.ObfuscationConfig):

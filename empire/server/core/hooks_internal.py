@@ -55,7 +55,7 @@ def ps_hook(db: Session, tasking: models.Tasking):
         arch = process.get("Arch")
         user = process.get("UserName")
         if process_id:
-            # and process_id.isnumeric():
+            # new process
             if int(process_id) not in existing_processes:
                 db.add(
                     models.HostProcess(
@@ -66,6 +66,7 @@ def ps_hook(db: Session, tasking: models.Tasking):
                         user=user,
                     )
                 )
+            # update existing process
             elif int(process_id) in existing_processes:
                 db_process: models.HostProcess = (
                     db.query(models.HostProcess)
@@ -80,6 +81,22 @@ def ps_hook(db: Session, tasking: models.Tasking):
                 if not db_process.agent:
                     db_process.architecture = arch
                     db_process.process_name = process_name
+                    db_process.user = user
+
+    for process in existing_processes:
+        # mark processes that are no longer running stale
+        if process not in list(map(lambda p: int(p.get("PID")), output)):
+            db_process: models.HostProcess = (
+                db.query(models.HostProcess)
+                .filter(
+                    and_(
+                        models.HostProcess.host_id == tasking.agent.host_id,
+                        models.HostProcess.process_id == process,
+                    )
+                )
+                .first()
+            )
+            db_process.stale = True
 
 
 def ps_filter(db: Session, tasking: models.Tasking):

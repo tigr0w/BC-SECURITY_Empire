@@ -17,6 +17,7 @@ def domain_to_dto_process(process: models.HostProcess):
         host_id=process.host_id,
         architecture=process.architecture,
         user=process.user,
+        stale=process.stale,
         agent_id=agent_id,
     )
 
@@ -27,6 +28,7 @@ class Process(BaseModel):
     host_id: int
     architecture: Optional[str]
     user: Optional[str]
+    stale: bool
     agent_id: Optional[str]
 
 

@@ -11,6 +11,7 @@ def domain_to_dto_bypass(bypass):
         id=bypass.id,
         name=bypass.name,
         authors=bypass.authors or [],
+        language=bypass.language,
         code=bypass.code,
         created_at=bypass.created_at,
         updated_at=bypass.updated_at,
@@ -21,6 +22,7 @@ class Bypass(BaseModel):
     id: int
     name: str
     authors: List[Author]
+    language: str
     code: str
     created_at: datetime
     updated_at: datetime
@@ -32,9 +34,11 @@ class Bypasses(BaseModel):
 
 class BypassUpdateRequest(BaseModel):
     name: str
+    language: str
     code: str
 
 
 class BypassPostRequest(BaseModel):
     name: str
+    language: str
     code: str

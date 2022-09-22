@@ -24,7 +24,7 @@ def test_create_bypass_name_conflict(client, admin_auth_header):
     response = client.post(
         "/api/v2/bypasses/",
         headers=admin_auth_header,
-        json={"name": "mattifestation", "code": "x=0;"},
+        json={"name": "mattifestation", "code": "x=0;", "language": "powershell"},
     )
 
     assert response.status_code == 400
@@ -37,7 +37,7 @@ def test_create_bypass(client, admin_auth_header):
     response = client.post(
         "/api/v2/bypasses/",
         headers=admin_auth_header,
-        json={"name": "Test Bypass", "code": "x=0;"},
+        json={"name": "Test Bypass", "code": "x=0;", "language": "powershell"},
     )
 
     assert response.status_code == 201
@@ -63,7 +63,7 @@ def test_update_bypass_name_conflict(client, admin_auth_header):
     response = client.put(
         f"/api/v2/bypasses/5",
         headers=admin_auth_header,
-        json={"name": bypass_1_name, "code": "x=0;"},
+        json={"name": bypass_1_name, "code": "x=0;", "language": "powershell"},
     )
 
     assert response.status_code == 400
@@ -76,7 +76,7 @@ def test_update_bypass(client, admin_auth_header):
     response = client.put(
         "/api/v2/bypasses/1",
         headers=admin_auth_header,
-        json={"name": "Updated Bypass", "code": "x=1;"},
+        json={"name": "Updated Bypass", "code": "x=1;", "language": "powershell"},
     )
 
     assert response.json()["name"] == "Updated Bypass"
