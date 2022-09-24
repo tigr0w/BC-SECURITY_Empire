@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import textwrap
 from typing import List
@@ -16,6 +17,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -80,12 +83,12 @@ class ProxyMenu(UseMenu):
                     self.proxy_list = []
                 self.list()
         except:
-            print(print_util.color(f"[!] Error: Proxy menu failed to initialize"))
+            log.error(f"Proxy menu failed to initialize")
 
     @command
     def add(self, position: int) -> None:
         """
-        Tasks an the specified agent to update proxy chain
+        Tasks a specified agent to update proxy chain
 
         Usage: add_proxy [<position>]
         """
@@ -139,9 +142,9 @@ class ProxyMenu(UseMenu):
         """
         if self.proxy_list:
             response = state.update_agent_proxy(self.session_id, self.proxy_list)
-            print(print_util.color(f"[*] Tasked agent to update proxy chain"))
+            log.info(f"Tasked agent to update proxy chain")
         else:
-            print(print_util.color(f"[!] No proxy chain to configure"))
+            log.error(f"No proxy chain to configure")
 
     @command
     def list(self) -> None:

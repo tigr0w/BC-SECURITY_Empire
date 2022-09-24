@@ -170,3 +170,12 @@ def truncate(text, width=50):
     :return: truncated text if necessary else the same text
     """
     return (text[:width] + "..") if len(text) > width else text
+
+
+def connect_message():
+    print("\n")
+    print("Use the 'connect' command to connect to your Empire server.")
+    print(
+        "'connect -c localhost' will connect to a local empire instance with all the defaults"
+    )
+    print("including the default username and password.")

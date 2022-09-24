@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 
 from prompt_toolkit.completion import Completion
@@ -11,6 +12,8 @@ from empire.client.src.utils.autocomplete_util import (
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
 from empire.client.src.utils.data_util import get_random_string
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -50,7 +53,7 @@ class UsePluginMenu(UseMenu):
         """
         plugin_results = state.cached_plugin_results.get(self.selected, {})
         for key, value in plugin_results.items():
-            print(print_util.color(value))
+            log.message(print_util.color(value))
 
         state.cached_plugin_results.get(self.selected, {}).clear()
 
@@ -80,7 +83,7 @@ class UsePluginMenu(UseMenu):
 
         response = state.execute_plugin(self.record["id"], post_body)
         if isinstance(response, Dict) and "detail" in response:
-            print(print_util.color(response["detail"]))
+            log.message(print_util.color(response["detail"]))
 
     @command
     def generate(self):

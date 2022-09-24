@@ -1,3 +1,5 @@
+import logging
+
 from prompt_toolkit.completion import Completion
 
 from empire.client.src.EmpireCliState import state
@@ -8,6 +10,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -76,7 +80,7 @@ class UseListenerMenu(UseMenu):
         if "id" in response.keys():
             return
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
     @command
     def generate(self):

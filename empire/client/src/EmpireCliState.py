@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Dict, Optional
 
@@ -9,20 +10,16 @@ from empire.client.src.menus import Menu
 from empire.client.src.MenuState import menu_state
 from empire.client.src.utils import print_util
 
+log = logging.getLogger(__name__)
+
 try:
     from tkinter import Tk, filedialog
 except ImportError:
     Tk = None
     filedialog = None
-    print(
-        print_util.color(
-            "[!] Failed to load tkinter. Please install tkinter to use the file prompts."
-        )
-    )
-    print(
-        print_util.color(
-            "[!] Check the wiki for more information: https://bc-security.gitbook.io/empire-wiki/quickstart/installation#modulenotfounderror-no-module-named-_tkinter"
-        )
+    log.error("Failed to load tkinter. Please install tkinter to use the file prompts.")
+    log.error(
+        "Check the wiki for more information: https://bc-security.gitbook.io/empire-wiki/quickstart/installation#modulenotfounderror-no-module-named-_tkinter"
     )
     pass
 
@@ -70,7 +67,7 @@ class EmpireCliState(object):
         self.menus.append(menu)
 
     def notify_connected(self):
-        print(print_util.color("[*] Calling connection handlers."))
+        log.debug("Calling connection handlers.")
         for menu in self.menus:
             menu.on_connect()
 
@@ -185,7 +182,7 @@ class EmpireCliState(object):
     def add_to_cached_results(self, data) -> None:
         """
         When tasking results come back, we will display them if the current menu is the InteractMenu.
-        Otherwise, we will ad them to the agent result dictionary and display them when the InteractMenu
+        Otherwise, we will add them to the agent result dictionary and display them when the InteractMenu
         is loaded.
         :param data: the tasking object
         :return:
@@ -502,7 +499,7 @@ class EmpireCliState(object):
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
-        print("todo: fix update agent proxy")
+        log.error("todo: fix update agent proxy")
         return response.json()
 
     def get_proxy_info(self, session_id: str):
@@ -511,7 +508,7 @@ class EmpireCliState(object):
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
-        print("todo: fix get agent proxy")
+        log.error("todo: fix get agent proxy")
         return response.json()
 
     def update_agent_working_hours(self, session_id: str, working_hours: str):

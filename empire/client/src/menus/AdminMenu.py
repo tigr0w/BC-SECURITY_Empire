@@ -1,7 +1,5 @@
-import base64
+import logging
 import os
-import random
-import string
 
 from prompt_toolkit.completion import Completion
 
@@ -16,6 +14,8 @@ from empire.client.src.utils.autocomplete_util import (
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
 from empire.client.src.utils.data_util import get_data_from_file
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -123,9 +123,9 @@ class AdminMenu(Menu):
 
         # Return results and error message
         if "id" in response.keys():
-            print(print_util.color("[*] Added user: %s" % username))
+            log.info(f"Added user: {username}")
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(["detail"])
 
     @command
     def disable_user(self, user_id: str):
@@ -140,9 +140,9 @@ class AdminMenu(Menu):
 
         # Return results and error message
         if "id" in response.keys():
-            print(print_util.color(f"[*] Disabled user: {user['username']}"))
+            log.info(f"Disabled user: {user['username']}")
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
     @command
     def enable_user(self, user_id: str):
@@ -157,9 +157,9 @@ class AdminMenu(Menu):
 
         # Return results and error message
         if "id" in response.keys():
-            print(print_util.color(f"[*] Enabled user: {user['username']}"))
+            log.info(f"Enabled user: {user['username']}")
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(["detail"])
 
     @command
     def malleable_profile(self, profile_name: str):
@@ -197,10 +197,10 @@ class AdminMenu(Menu):
         response = state.add_malleable_profile(post_body)
 
         if "id" in response.keys():
-            print(print_util.color(f"[*] Added {post_body['name']} to database"))
+            log.info(f"Added {post_body['name']} to database")
             state.get_malleable_profile()
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
     @command
     def delete_malleable_profile(
@@ -216,10 +216,10 @@ class AdminMenu(Menu):
         response = state.delete_malleable_profile(profile_id)
 
         if "id" in response.keys():
-            print(print_util.color(f"[*] Deleted {profile_name} from database"))
+            log.info(f"Deleted {profile_name} from database")
             state.get_malleable_profile()
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
     @command
     def upload(self, file_directory: str):
@@ -235,11 +235,11 @@ class AdminMenu(Menu):
             response = state.upload_file(filename, data)
 
             if "id" in response.keys():
-                print(print_util.color(f"[+] Uploaded {filename} to server"))
+                log.info(f"Uploaded {filename} to server")
             elif "detail" in response.keys():
-                print(print_util.color("[!] Error: " + response["detail"]))
+                log.error(["detail"])
         else:
-            print(print_util.color("[!] Error: Invalid file path"))
+            log.error("Invalid file path")
 
     @command
     def download(self, filename: str):
@@ -255,15 +255,15 @@ class AdminMenu(Menu):
             link = response["location"]
             filename = response["filename"]
 
-            print(print_util.color(f"[*] Downloading { filename } from server"))
+            log.info(f"Downloading { filename } from server")
             data = state.download_stager(link)
 
             with open(f"{state.directory['downloads']}{ filename }", "wb+") as f:
                 f.write(data)
-            print(print_util.color(f"[+] Downloaded { filename } from server"))
+            log.info(f"Downloaded {filename} from server")
 
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
     @command
     def preobfuscate(self, reobfuscation: str = False):
@@ -277,12 +277,12 @@ class AdminMenu(Menu):
 
             # Return results and error message
             if response.status_code == 202:
-                print(print_util.color("[+] Preobfuscating modules..."))
+                log.info("Preobfuscating modules...")
             elif "detail" in response.keys():
-                print(print_util.color("[!] Error: " + response["detail"]))
+                log.error(response["detail"])
 
         else:
-            print(print_util.color("[!] Error: Invalid entry"))
+            log.error("[!] Error: Invalid entry")
 
 
 admin_menu = AdminMenu()

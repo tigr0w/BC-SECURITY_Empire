@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import textwrap
 
@@ -15,6 +16,8 @@ from empire.client.src.utils.autocomplete_util import (
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
 from empire.client.src.utils.data_util import get_random_string
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -94,32 +97,28 @@ class UseStagerMenu(UseMenu):
         response = state.create_stager(temp_record)
 
         if "detail" in response:
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
             return
         elif response.get("options").get("OutFile"):
             stager_data = state.download_stager(response["downloads"][0]["link"])
             if stager_data == "":
                 # todo stagers endpoint needs to give modules a way to return errors better.
                 #  This says if the output is empty then something must have gone wrong.
-                print(print_util.color("[!] Error: Stager output empty."))
+                log.error("Stager output empty")
                 return
             file_name = response["downloads"][0]["filename"]
             # output_bytes = base64.b64decode(response[self.selected]["Output"])
             directory = f"{state.directory['generated-stagers']}{file_name}"
             with open(directory, "wb") as f:
                 f.write(stager_data)
-            print(
-                print_util.color(
-                    f"[+] {file_name} written to {os.path.abspath(directory)}"
-                )
-            )
+            log.info(f"{file_name} written to {os.path.abspath(directory)}")
         else:
             stager_data = state.download_stager(
                 response["downloads"][0]["link"]
             ).decode("UTF-8")
-            print(stager_data)
+            log.message(stager_data)
             if empire_config.yaml.get("auto-copy-stagers", {}):
-                print(print_util.color(f"[+] Stager copied to clipboard."))
+                log.info(f"Stager copied to clipboard")
                 pyperclip.copy(stager_data)
 
     @command

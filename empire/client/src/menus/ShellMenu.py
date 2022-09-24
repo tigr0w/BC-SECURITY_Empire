@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 
@@ -6,6 +7,8 @@ from empire.client.src.menus.Menu import Menu
 from empire.client.src.utils import print_util
 from empire.client.src.utils.autocomplete_util import position_util
 from empire.client.src.utils.cli_util import register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -28,7 +31,7 @@ class ShellMenu(Menu):
         else:
             self.use(kwargs["selected"])
             self.stop_threads = False
-            print(print_util.color("[*] Exit Shell Menu with Ctrl+C"))
+            log.info("Exit Shell Menu with Ctrl+C")
             return True
 
     def on_leave(self):

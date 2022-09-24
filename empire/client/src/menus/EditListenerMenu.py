@@ -1,3 +1,4 @@
+import logging
 import textwrap
 
 from prompt_toolkit.completion import Completion
@@ -10,6 +11,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -63,9 +66,9 @@ class EditListenerMenu(UseMenu):
         """
         response = state.kill_listener(state.listeners[self.selected]["id"])
         if response.status_code == 204:
-            print(print_util.color("[*] Listener " + self.selected + " killed"))
+            log.info("Listener " + self.selected + " killed")
         elif "detail" in response:
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
     @command
     def execute(self):
@@ -92,9 +95,9 @@ class EditListenerMenu(UseMenu):
             state.listeners[self.selected]["id"], temp_record
         )
         if "id" in response.keys():
-            print(print_util.color("[*] Listener " + temp_record["name"] + " edited"))
+            log.info("Listener " + temp_record["name"] + " edited")
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
         # re-enable listener
         temp_record["enabled"] = True
@@ -102,9 +105,9 @@ class EditListenerMenu(UseMenu):
             state.listeners[self.selected]["id"], temp_record
         )
         if "id" in response.keys():
-            print(print_util.color("[*] Listener " + temp_record["name"] + " enabled"))
+            log.info("Listener " + temp_record["name"] + " enabled")
         elif "detail" in response.keys():
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error("[!] Error: " + response["detail"])
 
 
 edit_listener_menu = EditListenerMenu()

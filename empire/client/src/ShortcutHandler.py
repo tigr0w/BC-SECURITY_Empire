@@ -1,9 +1,12 @@
 import json
+import logging
 from typing import Dict, List
 
 from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.Shortcut import Shortcut
 from empire.client.src.utils import print_util
+
+log = logging.getLogger(__name__)
 
 
 class ShortcutHandler:
@@ -22,41 +25,25 @@ class ShortcutHandler:
                 value["name"] = key
                 python[key] = Shortcut.from_json(json.loads(json.dumps(value)))
             except TypeError as e:
-                print(
-                    print_util.color(
-                        f"Could not parse shortcut: {key}", color_name="red"
-                    )
-                )
+                log.error(f"Could not parse shortcut: {key}")
         for key, value in shortcuts_raw["ironpython"].items():
             try:
                 value["name"] = key
                 ironpython[key] = Shortcut.from_json(json.loads(json.dumps(value)))
             except TypeError as e:
-                print(
-                    print_util.color(
-                        f"Could not parse shortcut: {key}", color_name="red"
-                    )
-                )
+                log.error(f"Could not parse shortcut: {key}")
         for key, value in shortcuts_raw["powershell"].items():
             try:
                 value["name"] = key
                 powershell[key] = Shortcut.from_json(json.loads(json.dumps(value)))
             except TypeError as e:
-                print(
-                    print_util.color(
-                        f"Could not parse shortcut: {key}", color_name="red"
-                    )
-                )
+                log.error(f"Could not parse shortcut: {key}")
         for key, value in shortcuts_raw["csharp"].items():
             try:
                 value["name"] = key
                 csharp[key] = Shortcut.from_json(json.loads(json.dumps(value)))
             except TypeError as e:
-                print(
-                    print_util.color(
-                        f"Could not parse shortcut: {key}", color_name="red"
-                    )
-                )
+                log.error(f"Could not parse shortcut: {key}")
         self.shortcuts: Dict[str, Dict[str, Shortcut]] = {
             "python": python,
             "powershell": powershell,

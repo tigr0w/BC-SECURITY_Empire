@@ -1,3 +1,5 @@
+import logging
+
 import socketio.exceptions
 
 from empire.client.src.EmpireCliState import state
@@ -6,6 +8,8 @@ from empire.client.src.MenuState import menu_state
 from empire.client.src.utils import print_util
 from empire.client.src.utils.autocomplete_util import position_util
 from empire.client.src.utils.cli_util import register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -38,14 +42,14 @@ class ChatMenu(Menu):
             try:
                 state.sio.emit("chat/leave")
             except socketio.exceptions.BadNamespaceError:
-                print(print_util.color("[!] Unable to reach server"))
+                log.error("[!] Unable to reach server")
 
     def on_enter(self):
-        print(print_util.color("[*] Exit Chat Menu with Ctrl+C"))
+        log.info("Exit Chat Menu with Ctrl+C")
         self.my_username = state.me["username"]
 
         for message in state.chat_cache:
-            print(message)
+            log.message(message)
 
         state.chat_cache = []
 
@@ -58,14 +62,14 @@ class ChatMenu(Menu):
     def on_chat_join(self, data):
         message = print_util.color("[+] " + data["message"])
         if self.is_chat_active() == "ChatMenu":
-            print(message)
+            log.message(message)
         else:
             state.chat_cache.append(message)
 
     def on_chat_leave(self, data):
         message = print_util.color("[+] " + data["message"])
         if self.is_chat_active():
-            print(message)
+            log.message(message)
         else:
             state.chat_cache.append(message)
 
@@ -76,7 +80,7 @@ class ChatMenu(Menu):
                     print_util.color(data["username"], "green") + ": " + data["message"]
                 )
                 if self.is_chat_active():
-                    print(message)
+                    log.message(message)
                 else:
                     state.chat_cache.append(print_util.color(message))
             else:
@@ -84,7 +88,7 @@ class ChatMenu(Menu):
                     print_util.color(data["username"], "red") + ": " + data["message"]
                 )
                 if self.is_chat_active():
-                    print(message)
+                    log.message(message)
                 else:
                     state.chat_cache.append(message)
 

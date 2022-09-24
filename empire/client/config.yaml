@@ -240,3 +240,6 @@ directories:
   generated-stagers: empire/client/generated-stagers/
 tables:
   borders: true
+logging:
+  level: INFO
+  directory: empire/client/downloads/logs/

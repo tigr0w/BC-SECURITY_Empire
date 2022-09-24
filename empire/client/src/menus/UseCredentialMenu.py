@@ -1,3 +1,5 @@
+import logging
+
 from prompt_toolkit import HTML
 from prompt_toolkit.completion import Completion
 
@@ -9,6 +11,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -106,36 +110,20 @@ class UseCredentialMenu(UseMenu):
                 temp[key] = val["Value"]
             response = state.add_credential(temp)
             if "id" in response.keys():
-                print(
-                    print_util.color(
-                        f'[*] Credential {response["id"]} successfully added'
-                    )
-                )
+                log.info(f'Credential {response["id"]} successfully added')
                 state.get_credentials()
             elif "detail" in response.keys():
-                if response["detail"].startswith("[!]"):
-                    msg = response["detail"]
-                else:
-                    msg = f"[!] Error: {response['detail']}"
-                print(print_util.color(msg))
+                log.error(response["detail"])
         else:
             temp = {}
             for key, val in self.record_options.items():
                 temp[key] = val["value"]
             response = state.edit_credential(self.selected, temp)
             if "id" in response:
-                print(
-                    print_util.color(
-                        f'[*] Credential {response["id"]} successfully updated'
-                    )
-                )
+                log.info(f'Credential {response["id"]} successfully updated')
                 state.get_credentials()
             elif "detail" in response:
-                if response["detail"].startswith("[!]"):
-                    msg = response["detail"]
-                else:
-                    msg = f"[!] Error: {response['detail']}"
-                print(print_util.color(msg))
+                log.error(response["detail"])
 
     @command
     def generate(self):

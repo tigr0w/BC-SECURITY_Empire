@@ -1,4 +1,4 @@
-import string
+import logging
 
 from prompt_toolkit.completion import Completion
 
@@ -10,6 +10,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -127,11 +129,7 @@ class AgentMenu(Menu):
         Usage: hide
         """
         state.hide_stale_agents = True
-        print(
-            print_util.color(
-                "[+] Stale agents now hidden",
-            )
-        )
+        log.info("Stale agents now hidden")
         # todo: add other hide options and add to config file
 
     @command
@@ -146,19 +144,17 @@ class AgentMenu(Menu):
 
         response = state.update_agent(options["session_id"], options)
         if "session_id" in response:
-            print(
-                print_util.color("[*] Agent successfully renamed to " + new_agent_name)
-            )
+            log.info("Agent successfully renamed to " + new_agent_name)
         elif "detail" in response:
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
     @staticmethod
     def kill_agent(agent_name: str) -> None:
         response = state.kill_agent(agent_name)
         if response.status_code == 201:
-            print(print_util.color("[*] Kill command sent to agent " + agent_name))
+            log.info("Kill command sent to agent " + agent_name)
         elif "detail" in response:
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
 
 def trunc(value: str = "", limit: int = 1) -> str:

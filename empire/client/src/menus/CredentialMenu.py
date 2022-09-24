@@ -1,3 +1,5 @@
+import logging
+
 from prompt_toolkit import HTML
 from prompt_toolkit.completion import Completion
 
@@ -9,6 +11,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -109,9 +113,9 @@ class CredentialMenu(Menu):
     def remove_credential(cred_id: str):
         response = state.remove_credential(cred_id)
         if response.status_code == 204:
-            print(print_util.color("[*] Credential " + cred_id + " removed"))
+            log.info("Credential " + cred_id + " removed")
         elif "detail" in response:
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
 
 credential_menu = CredentialMenu()

@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from prompt_toolkit import HTML
@@ -13,6 +14,8 @@ from empire.client.src.utils.autocomplete_util import (
     where_am_i,
 )
 from empire.client.src.utils.cli_util import command
+
+log = logging.getLogger(__name__)
 
 
 class UseMenu(Menu):
@@ -131,9 +134,9 @@ class UseMenu(Menu):
             value = value[1:-1]
         if key in self.record_options:
             self.record_options[key]["value"] = value
-            print(print_util.color("[*] Set %s to %s" % (key, value)))
+            log.info("Set %s to %s" % (key, value))
         else:
-            print(print_util.color(f"Could not find field: {key}"))
+            log.error(f"Could not find field: {key}")
 
     @command
     def unset(self, key: str):
@@ -144,9 +147,9 @@ class UseMenu(Menu):
         """
         if key in self.record_options:
             self.record_options[key]["Value"] = ""
-            print(print_util.color("[*] Unset %s" % key))
+            log.info("[*] Unset %s" % key)
         else:
-            print(print_util.color(f"Could not find field: {key}"))
+            log.error(f"Could not find field: {key}")
 
     @command
     def options(self):

@@ -1,9 +1,12 @@
+import logging
 from typing import List
 
 from terminaltables import SingleTable
 
 import empire.client.src.utils.print_util as print_utils
 from empire.client.src.EmpireCliConfig import empire_config
+
+log = logging.getLogger(__name__)
 
 
 def print_table(
@@ -35,11 +38,11 @@ def print_table(
         table.inner_footing_row_border = False
         table.inner_heading_row_border = False
 
-    print("")
-    print(table.table)
+    log.message("")
+    log.message(table.table)
 
     if end_space:
-        print("")
+        log.message("")
 
 
 def print_agent_table(
@@ -84,6 +87,6 @@ def print_agent_table(
         table.inner_footing_row_border = False
         table.inner_heading_row_border = False
 
-    print("")
-    print(table.table)
-    print("")
+    log.message("")
+    log.message(table.table)
+    log.message("")

@@ -13,6 +13,14 @@ client_parser = subparsers.add_parser("client", help="Launch Empire CLI")
 
 # Client Args
 client_parser.add_argument(
+    "-l",
+    "--log-level",
+    dest="log_level",
+    type=str.upper,
+    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    help="Set the logging level",
+)
+client_parser.add_argument(
     "-r",
     "--resource",
     type=str,

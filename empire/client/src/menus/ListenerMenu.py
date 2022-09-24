@@ -1,3 +1,4 @@
+import logging
 import string
 import textwrap
 
@@ -11,6 +12,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -99,9 +102,9 @@ class ListenerMenu(Menu):
         """
         response = state.kill_listener(state.listeners[listener_name]["id"])
         if response.status_code == 204:
-            print(print_util.color("[*] Listener " + listener_name + " killed"))
+            log.info("Listener " + listener_name + " killed")
         elif "detail" in response:
-            print(print_util.color("[!] Error: " + response["detail"]))
+            log.error(response["detail"])
 
     @command
     def editlistener(self, listener_name: str) -> None:
