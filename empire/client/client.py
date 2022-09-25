@@ -458,10 +458,6 @@ class EmpireCli(object):
 
 
 def setup_logging(args):
-    def message(self, msg, *args, **kwargs):
-        if self.isEnabledFor(level_number):
-            self._log(level_number, msg, args, **kwargs)
-
     if args.log_level:
         log_level = logging.getLevelName(args.log_level.upper())
     else:
@@ -472,15 +468,8 @@ def setup_logging(args):
     log_dir.mkdir(parents=True, exist_ok=True)
     root_log_file = log_dir / "empire_client.log"
 
-    level_name = "MESSAGE"
-    level_number = 31
-    logging.addLevelName(level_number, level_name)
-    setattr(logging, level_name, level_number)
-    setattr(logging.getLoggerClass(), level_name.lower(), message)
-
     root_logger = logging.getLogger()
-    # If this isn't set to DEBUG, then we won't see debug messages from the listeners.
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(log_level)
 
     root_logger_stream_handler = logging.StreamHandler()
     root_logger_stream_handler.setFormatter(MyFormatter())

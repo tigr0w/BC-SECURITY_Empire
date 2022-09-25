@@ -149,7 +149,7 @@ class InteractMenu(Menu):
         task_results = state.cached_agent_results.get(self.session_id, {})
         for key, value in task_results.items():
             log.info("Task " + str(key) + " results received")
-            log.message(value)
+            print(value)
 
         state.cached_agent_results.get(self.session_id, {}).clear()
 
