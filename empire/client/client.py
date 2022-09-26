@@ -416,7 +416,7 @@ class EmpireCli(object):
                 pass
 
             if func:
-                log.message(func.__doc__)
+                print(func.__doc__)
         else:
             func = None
             try:

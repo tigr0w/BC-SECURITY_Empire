@@ -49,7 +49,7 @@ class ChatMenu(Menu):
         self.my_username = state.me["username"]
 
         for message in state.chat_cache:
-            log.message(message)
+            print(message)
 
         state.chat_cache = []
 
@@ -62,14 +62,14 @@ class ChatMenu(Menu):
     def on_chat_join(self, data):
         message = print_util.color("[+] " + data["message"])
         if self.is_chat_active() == "ChatMenu":
-            log.message(message)
+            print(message)
         else:
             state.chat_cache.append(message)
 
     def on_chat_leave(self, data):
         message = print_util.color("[+] " + data["message"])
         if self.is_chat_active():
-            log.message(message)
+            print(message)
         else:
             state.chat_cache.append(message)
 
@@ -80,7 +80,7 @@ class ChatMenu(Menu):
                     print_util.color(data["username"], "green") + ": " + data["message"]
                 )
                 if self.is_chat_active():
-                    log.message(message)
+                    print(message)
                 else:
                     state.chat_cache.append(print_util.color(message))
             else:
@@ -88,7 +88,7 @@ class ChatMenu(Menu):
                     print_util.color(data["username"], "red") + ": " + data["message"]
                 )
                 if self.is_chat_active():
-                    log.message(message)
+                    print(message)
                 else:
                     state.chat_cache.append(message)
 

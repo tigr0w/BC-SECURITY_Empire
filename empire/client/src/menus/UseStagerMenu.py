@@ -116,7 +116,7 @@ class UseStagerMenu(UseMenu):
             stager_data = state.download_stager(
                 response["downloads"][0]["link"]
             ).decode("UTF-8")
-            log.message(stager_data)
+            print(stager_data)
             if empire_config.yaml.get("auto-copy-stagers", {}):
                 log.info(f"Stager copied to clipboard")
                 pyperclip.copy(stager_data)

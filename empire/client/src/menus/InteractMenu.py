@@ -405,7 +405,7 @@ class InteractMenu(Menu):
         Usage: display <property_name>
         """
         if property_name in self.agent_options:
-            log.message(f"{property_name} is {self.agent_options[property_name]}")
+            print(f"{property_name} is {self.agent_options[property_name]}")
 
     @command
     def history(self, number_tasks: int):
@@ -425,7 +425,7 @@ class InteractMenu(Menu):
                 if task.get("output"):
                     log.info(f'Task {task["id"]} results received')
                     for line in task.get("output", "").split("\n"):
-                        log.message(print_util.color(line))
+                        print(print_util.color(line))
                 else:
                     log.error(f'Task {task["id"]} No tasking results received')
         elif "detail" in response.keys():
@@ -452,9 +452,9 @@ class InteractMenu(Menu):
             borders=False,
             end_space=False,
         )
-        log.message(print_util.color(" Output", "blue"))
+        print(print_util.color(" Output", "blue"))
         for line in task["output"].split("\n"):
-            log.message(print_util.color(line))
+            print(print_util.color(line))
 
     def execute_shortcut(self, command_name: str, params: List[str]):
         shortcut: Shortcut = shortcut_handler.get(self.agent_language, command_name)
@@ -504,7 +504,7 @@ class InteractMenu(Menu):
                                 msg = response["detail"]
                             else:
                                 msg = f"[!] Error: {response['detail']}"
-                            log.message(print_util.color(msg))
+                            print(print_util.color(msg))
 
                         # Save copy off to downloads folder so last value points to the correct file
                         with open(

@@ -38,11 +38,11 @@ def print_table(
         table.inner_footing_row_border = False
         table.inner_heading_row_border = False
 
-    log.message("")
-    log.message(table.table)
+    print("")
+    print(table.table)
 
     if end_space:
-        log.message("")
+        print("")
 
 
 def print_agent_table(
@@ -87,6 +87,6 @@ def print_agent_table(
         table.inner_footing_row_border = False
         table.inner_heading_row_border = False
 
-    log.message("")
-    log.message(table.table)
-    log.message("")
+    print("")
+    print(table.table)
+    print("")
