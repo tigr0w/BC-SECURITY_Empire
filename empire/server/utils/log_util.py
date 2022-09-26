@@ -41,11 +41,10 @@ def get_listener_logger(log_name_prefix: str, listener_name: str):
 
 class ColorFormatter(logging.Formatter):
     def __init__(self, fmt=None, datefmt=None, style="%", validate=True):
-        grey = "\x1b[38;20m"
-        blue = "\x1b[34;20m"
-        yellow = "\x1b[33;20m"
-        red = "\x1b[31;20m"
-        bold_red = "\x1b[31;1m"
+        grey = "\x1b[38;1m"
+        blue = "\x1b[34;1m"
+        yellow = "\x1b[33;1m"
+        red = "\x1b[31;1m"
         reset = "\x1b[0m"
 
         self.FORMATS = {
@@ -53,7 +52,7 @@ class ColorFormatter(logging.Formatter):
             logging.INFO: blue + fmt + reset,
             logging.WARNING: yellow + fmt + reset,
             logging.ERROR: red + fmt + reset,
-            logging.CRITICAL: bold_red + fmt + reset,
+            logging.CRITICAL: red + fmt + reset,
         }
         super().__init__(fmt, datefmt, style, validate)
 
