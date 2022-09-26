@@ -114,8 +114,26 @@ def shutdown_handler(signum, frame):
 signal.signal(signal.SIGINT, shutdown_handler)
 
 
+def check_submodules():
+    log.info("Checking submodules...")
+    if not os.path.exists(Path(".git")):
+        log.info("No .git directory found. Skipping submodule check.")
+        return
+
+    result = subprocess.run(
+        ["git", "submodule", "status"], stdout=subprocess.PIPE, text=True
+    )
+    for line in result.stdout.splitlines():
+        if line[0] == "-":
+            log.error(
+                "Some git submodules are not initialized. Please run 'git submodule update --init --recursive'"
+            )
+            exit(1)
+
+
 def run(args):
     setup_logging(args)
+    check_submodules()
 
     if not args.restport:
         args.restport = 1337
