@@ -992,103 +992,102 @@ def start_restful_api(
     @app.route("/api/agents", methods=["GET"])
     def get_agents():
         """
-        Returns JSON describing all currently registered agents.
+        Returns JSON describing all currently registered agents, stale and active.
         """
-        active_agents_raw = (
-            Session().query(models.Agent).filter(models.Agent.killed == False).all()
+        return jsonify(
+            {
+                "agents": map(
+                    lambda agent: {
+                        "ID": agent.id,
+                        "session_id": agent.session_id,
+                        "listener": agent.listener,
+                        "name": agent.name,
+                        "language": agent.language,
+                        "language_version": agent.language_version,
+                        "delay": agent.delay,
+                        "jitter": agent.jitter,
+                        "external_ip": agent.external_ip,
+                        "internal_ip": agent.internal_ip,
+                        "username": agent.username,
+                        "high_integrity": int(agent.high_integrity or 0),
+                        "process_name": agent.process_name,
+                        "process_id": agent.process_id,
+                        "hostname": agent.hostname,
+                        "os_details": agent.os_details,
+                        "session_key": str(agent.session_key),
+                        "nonce": agent.nonce,
+                        "checkin_time": agent.checkin_time,
+                        "lastseen_time": agent.lastseen_time,
+                        "parent": agent.parent,
+                        "children": agent.children,
+                        "servers": agent.servers,
+                        "profile": agent.profile,
+                        "functions": agent.functions,
+                        "kill_date": agent.kill_date,
+                        "working_hours": agent.working_hours,
+                        "lost_limit": agent.lost_limit,
+                        "stale": agent.stale,
+                        "notes": agent.notes,
+                        "architecture": agent.architecture,
+                        "proxy": agent.proxy,
+                    },
+                    Session()
+                    .query(models.Agent)
+                    .filter(models.Agent.killed == False)
+                    .all(),
+                )
+            }
         )
-        agents = []
-
-        for active_agent in active_agents_raw:
-            agents.append(
-                {
-                    "ID": active_agent.id,
-                    "session_id": active_agent.session_id,
-                    "listener": active_agent.listener,
-                    "name": active_agent.name,
-                    "language": active_agent.language,
-                    "language_version": active_agent.language_version,
-                    "delay": active_agent.delay,
-                    "jitter": active_agent.jitter,
-                    "external_ip": active_agent.external_ip,
-                    "internal_ip": active_agent.internal_ip,
-                    "username": active_agent.username,
-                    "high_integrity": int(active_agent.high_integrity or 0),
-                    "process_name": active_agent.process_name,
-                    "process_id": active_agent.process_id,
-                    "hostname": active_agent.hostname,
-                    "os_details": active_agent.os_details,
-                    "session_key": str(active_agent.session_key),
-                    "nonce": active_agent.nonce,
-                    "checkin_time": active_agent.checkin_time,
-                    "lastseen_time": active_agent.lastseen_time,
-                    "parent": active_agent.parent,
-                    "children": active_agent.children,
-                    "servers": active_agent.servers,
-                    "profile": active_agent.profile,
-                    "functions": active_agent.functions,
-                    "kill_date": active_agent.kill_date,
-                    "working_hours": active_agent.working_hours,
-                    "lost_limit": active_agent.lost_limit,
-                    "stale": active_agent.stale,
-                    "notes": active_agent.notes,
-                    "architecture": active_agent.architecture,
-                    "proxy": active_agent.proxy,
-                }
-            )
-
-        return jsonify({"agents": agents})
 
     @app.route("/api/agents/active", methods=["GET"])
     def get_active_agents():
         """
         Returns JSON describing all currently registered agents.
         """
-        active_agents_raw = (
-            Session().query(models.Agent).filter(models.Agent.killed == False).all()
-        )
-        agents = []
-
-        for active_agent in active_agents_raw:
-            if active_agent.stale is False:
-                agents.append(
-                    {
-                        "ID": active_agent.id,
-                        "session_id": active_agent.session_id,
-                        "listener": active_agent.listener,
-                        "name": active_agent.name,
-                        "language": active_agent.language,
-                        "language_version": active_agent.language_version,
-                        "delay": active_agent.delay,
-                        "jitter": active_agent.jitter,
-                        "external_ip": active_agent.external_ip,
-                        "internal_ip": active_agent.internal_ip,
-                        "username": active_agent.username,
-                        "high_integrity": int(active_agent.high_integrity or 0),
-                        "process_name": active_agent.process_name,
-                        "process_id": active_agent.process_id,
-                        "hostname": active_agent.hostname,
-                        "os_details": active_agent.os_details,
-                        "session_key": str(active_agent.session_key),
-                        "nonce": active_agent.nonce,
-                        "checkin_time": active_agent.checkin_time,
-                        "lastseen_time": active_agent.lastseen_time,
-                        "parent": active_agent.parent,
-                        "children": active_agent.children,
-                        "servers": active_agent.servers,
-                        "profile": active_agent.profile,
-                        "functions": active_agent.functions,
-                        "kill_date": active_agent.kill_date,
-                        "working_hours": active_agent.working_hours,
-                        "lost_limit": active_agent.lost_limit,
-                        "stale": active_agent.stale,
-                        "notes": active_agent.notes,
-                        "architecture": active_agent.architecture,
-                        "proxy": active_agent.proxy,
-                    }
+        return jsonify(
+            {
+                "agents": map(
+                    lambda agent: {
+                        "ID": agent.id,
+                        "session_id": agent.session_id,
+                        "listener": agent.listener,
+                        "name": agent.name,
+                        "language": agent.language,
+                        "language_version": agent.language_version,
+                        "delay": agent.delay,
+                        "jitter": agent.jitter,
+                        "external_ip": agent.external_ip,
+                        "internal_ip": agent.internal_ip,
+                        "username": agent.username,
+                        "high_integrity": int(agent.high_integrity or 0),
+                        "process_name": agent.process_name,
+                        "process_id": agent.process_id,
+                        "hostname": agent.hostname,
+                        "os_details": agent.os_details,
+                        "session_key": str(agent.session_key),
+                        "nonce": agent.nonce,
+                        "checkin_time": agent.checkin_time,
+                        "lastseen_time": agent.lastseen_time,
+                        "parent": agent.parent,
+                        "children": agent.children,
+                        "servers": agent.servers,
+                        "profile": agent.profile,
+                        "functions": agent.functions,
+                        "kill_date": agent.kill_date,
+                        "working_hours": agent.working_hours,
+                        "lost_limit": agent.lost_limit,
+                        "stale": agent.stale,
+                        "notes": agent.notes,
+                        "architecture": agent.architecture,
+                        "proxy": agent.proxy,
+                    },
+                    Session()
+                    .query(models.Agent)
+                    .filter(models.Agent.killed == False, models.Agent.stale == False)
+                    .all(),
                 )
-
-        return jsonify({"agents": agents})
+            }
+        )
 
     @app.route("/api/agents/stale", methods=["GET"])
     def get_agents_stale():
@@ -1096,13 +1095,10 @@ def start_restful_api(
         Returns JSON describing all stale agents.
         """
 
-        agents_raw = Session().query(models.Agent).all()
-        stale_agents = []
-
-        for agent in agents_raw:
-            if agent.stale:
-                stale_agents.append(
-                    {
+        return jsonify(
+            {
+                "agents": map(
+                    lambda agent: {
                         "ID": agent.id,
                         "session_id": agent.session_id,
                         "listener": agent.listener,
@@ -1133,10 +1129,14 @@ def start_restful_api(
                         "lost_limit": agent.lost_limit,
                         "architecture": agent.architecture,
                         "proxy": agent.proxy,
-                    }
+                    },
+                    Session()
+                    .query(models.Agent)
+                    .filter(models.Agent.killed == False, models.Agent.stale == True)
+                    .all(),
                 )
-
-        return jsonify({"agents": stale_agents})
+            }
+        )
 
     @app.route("/api/agents/stale", methods=["DELETE"])
     def remove_stale_agent():
@@ -1145,11 +1145,14 @@ def start_restful_api(
 
         WARNING: doesn't kill the agent first! Ensure the agent is dead.
         """
-        agents_raw = Session().query(models.Agent).all()
-
+        agents_raw = (
+            Session()
+            .query(models.Agent)
+            .filter(models.Agent.killed == False, models.Agent.stale == True)
+            .all()
+        )
         for agent in agents_raw:
-            if agent.stale:
-                agent.killed = True
+            agent.killed = True
         Session().commit()
 
         return jsonify({"success": True})
