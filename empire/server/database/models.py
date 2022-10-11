@@ -12,6 +12,8 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    case,
+    func,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -24,8 +26,8 @@ Base = declarative_base()
 
 
 class User(Base):
-    __tablename__ = 'users'
-    id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
+    __tablename__ = "users"
+    id = Column(Integer, Sequence("user_id_seq"), primary_key=True)
     username = Column(String(255), nullable=False)
     password = Column(String(255), nullable=False)
     api_token = Column(String(50))
@@ -35,12 +37,11 @@ class User(Base):
     notes = Column(Text)
 
     def __repr__(self):
-        return "<User(username='%s')>" % (
-            self.username)
+        return "<User(username='%s')>" % (self.username)
 
 
 class Listener(Base):
-    __tablename__ = 'listeners'
+    __tablename__ = "listeners"
     id = Column(Integer, Sequence("listener_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False, unique=True)
     module = Column(String(255), nullable=False)
@@ -51,8 +52,7 @@ class Listener(Base):
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
 
     def __repr__(self):
-        return "<Listener(name='%s')>" % (
-            self.name)
+        return "<Listener(name='%s')>" % (self.name)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -62,7 +62,7 @@ class Listener(Base):
 
 
 class Host(Base):
-    __tablename__ = 'hosts'
+    __tablename__ = "hosts"
     id = Column(Integer, Sequence("host_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False)
     internal_ip = Column(String(255))
@@ -71,10 +71,10 @@ class Host(Base):
 
 
 class Agent(Base):
-    __tablename__ = 'agents'
+    __tablename__ = "agents"
     id = Column(Integer, Sequence("agent_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False)
-    host_id = Column(Integer, ForeignKey('hosts.id'))
+    host_id = Column(Integer, ForeignKey("hosts.id"))
     host = relationship(Host, lazy="joined")
     listener = Column(String(255), nullable=False)
     session_id = Column(String(255), nullable=False, unique=True)
@@ -107,13 +107,25 @@ class Agent(Base):
     killed = Column(Boolean, nullable=False)
     proxy = Column(PickleType)
 
-    @hybrid_property # todo @stale.expression
+    @hybrid_property
     def stale(self):
         return is_stale(self.lastseen_time, self.delay, self.jitter)
 
+    @stale.expression
+    def stale(cls):
+        return case(
+            [
+                (
+                    (func.utcnow() - cls.lastseen)
+                    > (30 + cls.delay + cls.delay * cls.jitter),
+                    True,
+                )
+            ],
+            else_=False,
+        ).label("stale")
+
     def __repr__(self):
-        return "<Agent(name='%s')>" % (
-            self.name)
+        return "<Agent(name='%s')>" % (self.name)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -123,29 +135,33 @@ class Agent(Base):
 
 
 class AgentFile(Base):
-    __tablename__ = 'agent_files'
+    __tablename__ = "agent_files"
     id = Column(Integer, primary_key=True)
     session_id = Column(String(50))
     name = Column(Text, nullable=False)
     path = Column(Text, nullable=False)
     is_file = Column(Boolean, nullable=False)
-    parent_id = Column(Integer, ForeignKey('agent_files.id', ondelete='CASCADE'), nullable=True)
+    parent_id = Column(
+        Integer, ForeignKey("agent_files.id", ondelete="CASCADE"), nullable=True
+    )
 
 
 class HostProcess(Base):
-    __tablename__ = 'host_processes'
-    host_id = Column(String(255), ForeignKey('hosts.id'), primary_key=True)
+    __tablename__ = "host_processes"
+    host_id = Column(String(255), ForeignKey("hosts.id"), primary_key=True)
     process_id = Column(Integer, primary_key=True)
     process_name = Column(Text)
     architecture = Column(String(255))
     user = Column(String(255))
-    agent = relationship(Agent,
-                         lazy="joined",
-                         primaryjoin="and_(Agent.process_id==foreign(HostProcess.process_id), Agent.host_id==foreign(HostProcess.host_id), Agent.killed == False)")
+    agent = relationship(
+        Agent,
+        lazy="joined",
+        primaryjoin="and_(Agent.process_id==foreign(HostProcess.process_id), Agent.host_id==foreign(HostProcess.host_id), Agent.killed == False)",
+    )
 
 
 class Config(Base):
-    __tablename__ = 'config'
+    __tablename__ = "config"
     staging_key = Column(String(255), primary_key=True)
     install_path = Column(Text, nullable=False)
     ip_whitelist = Column(Text, nullable=False)
@@ -157,8 +173,7 @@ class Config(Base):
     obfuscate_command = Column(Text, nullable=False)
 
     def __repr__(self):
-        return "<Config(staging_key='%s')>" % (
-            self.staging_key)
+        return "<Config(staging_key='%s')>" % (self.staging_key)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -168,7 +183,7 @@ class Config(Base):
 
 
 class Credential(Base):
-    __tablename__ = 'credentials'
+    __tablename__ = "credentials"
     id = Column(Integer, Sequence("credential_id_seq"), primary_key=True)
     credtype = Column(String(255))
     domain = Column(Text)
@@ -180,8 +195,7 @@ class Credential(Base):
     notes = Column(Text)
 
     def __repr__(self):
-        return "<Credential(id='%s')>" % (
-            self.id)
+        return "<Credential(id='%s')>" % (self.id)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -196,9 +210,9 @@ class TaskingStatus(enum.Enum):
 
 
 class Tasking(Base):
-    __tablename__ = 'taskings'
+    __tablename__ = "taskings"
     id = Column(Integer, primary_key=True)
-    agent_id = Column(String(255), ForeignKey('agents.session_id'), primary_key=True)
+    agent_id = Column(String(255), ForeignKey("agents.session_id"), primary_key=True)
     agent = relationship(Agent, lazy="joined", innerjoin=True)
     input = Column(Text)
     input_full = deferred(Column(Text))
@@ -206,31 +220,31 @@ class Tasking(Base):
     # In most cases, this isn't needed and will match output. However, with the filter feature, we want to store
     # a copy of the original output if it gets modified by a filter.
     original_output = deferred(Column(Text, nullable=True))
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     user = relationship(User)
     created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
     module_name = Column(Text)
     task_name = Column(Text)
     status = Column(Enum(TaskingStatus))
 
     def __repr__(self):
-        return "<Tasking(id='%s')>" % (
-            self.id)
+        return "<Tasking(id='%s')>" % (self.id)
 
 
 class Reporting(Base):
-    __tablename__ = 'reporting'
+    __tablename__ = "reporting"
     id = Column(Integer, Sequence("reporting_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False)
     event_type = Column(String(255))
     message = Column(Text)
     timestamp = Column(UtcDateTime, default=utcnow(), nullable=False)
-    taskID = Column(Integer, ForeignKey('taskings.id'))
+    taskID = Column(Integer, ForeignKey("taskings.id"))
 
     def __repr__(self):
-        return "<Reporting(id='%s')>" % (
-            self.id)
+        return "<Reporting(id='%s')>" % (self.id)
 
 
 class Keyword(Base):
@@ -239,8 +253,7 @@ class Keyword(Base):
     replacement = Column(String(255))
 
     def __repr__(self):
-        return "<Function(id='%s')>" % (
-            self.id)
+        return "<Function(id='%s')>" % (self.id)
 
 
 class Module(Base):
@@ -256,14 +269,18 @@ class Profile(Base):
     category = Column(String(255))
     data = Column(Text, nullable=False)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
 
 
 class Bypass(Base):
-    __tablename__= "bypasses"
+    __tablename__ = "bypasses"
     id = Column(Integer, Sequence("bypass_seq"), primary_key=True)
     name = Column(String(255), unique=True)
     code = Column(Text)
     language = Column(String(255))
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
-    updated_at = Column(UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
