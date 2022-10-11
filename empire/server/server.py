@@ -996,8 +996,8 @@ def start_restful_api(
         """
         return jsonify(
             {
-                "agents": map(
-                    lambda agent: {
+                "agents": [
+                    {
                         "ID": agent.id,
                         "session_id": agent.session_id,
                         "listener": agent.listener,
@@ -1030,12 +1030,12 @@ def start_restful_api(
                         "notes": agent.notes,
                         "architecture": agent.architecture,
                         "proxy": agent.proxy,
-                    },
-                    Session()
+                    }
+                    for agent in Session()
                     .query(models.Agent)
                     .filter(models.Agent.killed == False)
-                    .all(),
-                )
+                    .all()
+                ]
             }
         )
 
@@ -1044,10 +1044,11 @@ def start_restful_api(
         """
         Returns JSON describing all currently registered agents.
         """
+
         return jsonify(
             {
-                "agents": map(
-                    lambda agent: {
+                "agents": [
+                    {
                         "ID": agent.id,
                         "session_id": agent.session_id,
                         "listener": agent.listener,
@@ -1080,12 +1081,12 @@ def start_restful_api(
                         "notes": agent.notes,
                         "architecture": agent.architecture,
                         "proxy": agent.proxy,
-                    },
-                    Session()
+                    }
+                    for agent in Session()
                     .query(models.Agent)
                     .filter(models.Agent.killed == False, models.Agent.stale == False)
-                    .all(),
-                )
+                    .all()
+                ]
             }
         )
 
@@ -1097,8 +1098,8 @@ def start_restful_api(
 
         return jsonify(
             {
-                "agents": map(
-                    lambda agent: {
+                "agents": [
+                    {
                         "ID": agent.id,
                         "session_id": agent.session_id,
                         "listener": agent.listener,
@@ -1129,12 +1130,12 @@ def start_restful_api(
                         "lost_limit": agent.lost_limit,
                         "architecture": agent.architecture,
                         "proxy": agent.proxy,
-                    },
-                    Session()
+                    }
+                    for agent in Session()
                     .query(models.Agent)
                     .filter(models.Agent.killed == False, models.Agent.stale == True)
-                    .all(),
-                )
+                    .all()
+                ]
             }
         )
 

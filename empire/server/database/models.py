@@ -12,7 +12,6 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
-    case,
     func,
 )
 from sqlalchemy.ext.declarative import declarative_base
@@ -113,16 +112,9 @@ class Agent(Base):
 
     @stale.expression
     def stale(cls):
-        return case(
-            [
-                (
-                    (func.utcnow() - cls.lastseen)
-                    > (30 + cls.delay + cls.delay * cls.jitter),
-                    True,
-                )
-            ],
-            else_=False,
-        ).label("stale")
+        return (func.now() - cls.lastseen_time) > (
+            30 + cls.delay + cls.delay * cls.jitter
+        )
 
     def __repr__(self):
         return "<Agent(name='%s')>" % (self.name)
