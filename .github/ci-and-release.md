@@ -1,7 +1,11 @@
 # CI Processes
 
 ## Build and Test
-All pull requests open to `sponsors-master`, `master`, `sponsors-dev`, `dev` will run the `Lint and Test` workflow. The workflow will run `black` and `isort` checks and then run `pytest` on Python 3.8 and Python 3.9.
+All pull requests open to `sponsors-master`, `master`, `sponsors-dev`, `dev` will run the `Lint and Test` workflow.
+
+* The workflow will run `black` and `isort` checks and then run `pytest` on Python 3.8, 3.9, and 3.10.
+* If the pull request is coming from a `release/*` branch, it will build the docker image and run `pytest` on it
+* If the pull request changes the `install.sh` script, it will run the install script on the supported OS and check for errors
 
 ## BC-SECURITY/Empire-Sponsors Release Process
 ### 1. Merge public dev branch into sponsors-dev

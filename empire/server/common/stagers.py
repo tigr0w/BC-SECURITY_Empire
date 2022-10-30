@@ -294,15 +294,23 @@ class Stagers(object):
         shellcode = donut.create(file=directory, arch=arch_type)
         return shellcode
 
-    def generate_python_exe(self, posh_code, dot_net_version="net40", obfuscate=False):
+    def generate_python_exe(
+        self, python_code, dot_net_version="net40", obfuscate=False
+    ):
         """
         Generate ironpython launcher embedded in csharp
         """
         with open(self.mainMenu.installPath + "/stagers/CSharpPy.yaml", "rb") as f:
             stager_yaml = f.read()
         stager_yaml = stager_yaml.decode("UTF-8")
-        posh_code = base64.b64encode(posh_code.encode("UTF-8")).decode("UTF-8")
-        stager_yaml = stager_yaml.replace("{{ REPLACE_LAUNCHER }}", posh_code)
+
+        # Write text file to resources to be embedded
+        with open(
+            self.mainMenu.installPath
+            + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
+            "w",
+        ) as f:
+            f.write(python_code)
 
         compiler = self.mainMenu.loadedPlugins.get("csharpserver")
         if not compiler.status == "ON":

@@ -20,44 +20,40 @@ LABEL maintainer="bc-security"
 LABEL description="Dockerfile for Empire server and client. https://bc-security.gitbook.io/empire-wiki/quickstart/installation#docker"
 
 # env setup
-ENV STAGING_KEY=RANDOM
-ENV DEBIAN_FRONTEND=noninteractive
+ENV STAGING_KEY=RANDOM DEBIAN_FRONTEND=noninteractive DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 # set the def shell for ENV
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && \
-      apt-get -y install \
-        sudo \
-	    python3-dev \
-	    python3-pip \
-	    apt-transport-https \
-	    xclip \
-	    zip \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb && \
-    sudo dpkg -i packages-microsoft-prod.deb && \
-    sudo apt-get update && \
-    sudo apt-get install -y powershell \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
-    sudo dpkg -i packages-microsoft-prod.deb && \
-    sudo apt-get update && \
-    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0 \
+RUN wget -q https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    apt-get update && \
+    apt-get install -qq \
+    --no-install-recommends \
+    apt-transport-https \
+    dotnet-sdk-6.0 \
+    libicu-dev \
+    powershell \
+    python3-dev \
+    python3-pip \
+    sudo \
+    xclip \
+    zip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /empire
 
-COPY pyproject.toml /empire
+COPY pyproject.toml poetry.lock /empire/
+
+RUN pip install poetry \
+    --disable-pip-version-check && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-root
 
 COPY . /empire
 
 RUN mkdir -p /usr/local/share/powershell/Modules && \
     cp -r ./empire/server/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
-
-RUN sudo pip install poetry && sudo poetry config virtualenvs.create false && sudo poetry install
 
 RUN yes | ./ps-empire server --reset
 RUN rm -rf /empire/empire/server/data/empire*
