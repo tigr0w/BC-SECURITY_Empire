@@ -8,11 +8,10 @@ function install_powershell() {
     sudo apt-get install -y powershell
   elif [ $OS_NAME == "UBUNTU" ]; then
     sudo apt-get update
-    sudo apt-get install -y wget apt-transport-https software-properties-common
-    wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
+    sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y wget apt-transport-https software-properties-common
+    wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
     sudo dpkg -i packages-microsoft-prod.deb
     sudo apt-get update
-    sudo add-apt-repository universe
     sudo apt-get install -y powershell
   elif [ $OS_NAME == "KALI" ]; then
     apt update && apt -y install powershell
@@ -51,7 +50,7 @@ function install_bomutils() {
 export DEBIAN_FRONTEND=noninteractive
 set -e
 
-apt-get update && apt-get install -y wget sudo
+apt-get update && apt-get install -y wget sudo git
 
 sudo -v
 
