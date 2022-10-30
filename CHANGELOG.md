@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [4.8.1] - 2022-10-30
 
+-   Added container structure test to CI (@Vinnybod)
+-   Added a fallback checkout that doesn't use a token (@Vinnybod)
+-   Revamped README.md (@Cx01N)
+-   Simplified Dockerfile install process (@lavafroth)
+-   Fixed crashing issue with IronPython agent (@Cx01N)
+-   Fixed infinite loop output stream for csharpserver plugin (@dwilson5)
+-   Fixed querying stale and active agents (@lavafroth)
+
 ## [4.8.0] - 2022-08-30
 
 -   Updated compiler to .NET SDK 6.0 (@Hubbl3)
