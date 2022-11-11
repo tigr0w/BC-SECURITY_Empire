@@ -145,10 +145,16 @@ def strip_python_comments(data):
     """
     *** DECEMBER 2017 - DEPRECATED, PLEASE DO NOT USE ***
 
-    Strip block comments, line comments, empty lines, verbose statements,
+    Strip block comments, line comments, empty lines, verbose statements, docstring,
     and debug statements from a Python source file.
     """
     print(color("[!] strip_python_comments is deprecated and should not be used"))
+
+    # remove docstrings
+    data = re.sub(r'""".*?"""', "", data, flags=re.DOTALL)
+    data = re.sub(r"'''.*?'''", "", data, flags=re.DOTALL)
+
+    # remove comments
     lines = data.split("\n")
     strippedLines = [
         line
