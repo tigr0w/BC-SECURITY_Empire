@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.3] - 2022-11-11
+
 ## [4.8.2] - 2022-11-11
+
 -   Updated crontab method to work with python3 (@Cx01N)
 -   Updated linux_privesc_check to work with python3 (@Cx01N)
 -   Fixed mistakes in README.md (@Cx01N)
@@ -312,7 +315,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.3...HEAD
+
+[4.8.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.2...v4.8.3
 
 [4.8.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.1...v4.8.2
 
