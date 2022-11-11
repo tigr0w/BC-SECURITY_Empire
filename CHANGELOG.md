@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.8.2] - 2022-11-11
+-   Updated crontab method to work with python3 (@Cx01N)
+-   Updated linux_privesc_check to work with python3 (@Cx01N)
+-   Fixed mistakes in README.md (@Cx01N)
+-   Removed unused class in python agents (@Cx01N)
 
 ## [4.8.1] - 2022-10-30
 
