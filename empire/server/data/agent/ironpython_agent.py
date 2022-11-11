@@ -667,13 +667,6 @@ def old_div(a, b):
 _search_order = [('.py', False), ('/__init__.py', True)]
 
 
-class ZipImportError(ImportError):
-    """Exception raised by zipimporter objects."""
-
-
-# _get_info() = takes the fullname, then subpackage name (if applicable),
-# and searches for the respective module or package
-
 class CFinder(object):
     """Import Hook for Empire"""
 

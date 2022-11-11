@@ -87,6 +87,9 @@ class Modules(object):
         if module.language == LanguageEnum.powershell:
             module_data = helpers.strip_powershell_comments(module_data)
 
+        if module.language == LanguageEnum.python:
+            module_data = helpers.strip_python_comments(module_data)
+
         # check if module is external
         if "Agent" not in params.keys():
             msg = f"tasked external module: {module.name}"

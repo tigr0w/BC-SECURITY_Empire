@@ -1,8 +1,8 @@
 ![Empire](https://user-images.githubusercontent.com/20302208/70022749-1ad2b080-154a-11ea-9d8c-1b42632fd9f9.jpg)
 
 [![Docs](https://img.shields.io/badge/Wiki-Docs-green?style=plastic&logo=wikipedia)](https://bc-security.gitbook.io/empire-wiki/)
-![Twitter URL](https://img.shields.io/twitter/follow/BCSecurity1?style=plastic&logo=twitter)
-![YouTube URL](https://img.shields.io/youtube/channel/views/UCIV4xSntF1h1bvFt8SUfzZg?style=plastic&logo=youtube)
+[![Twitter URL](https://img.shields.io/twitter/follow/BCSecurity1?style=plastic&logo=twitter)](https://twitter.com/BCSecurity1)
+[![YouTube URL](https://img.shields.io/youtube/channel/views/UCIV4xSntF1h1bvFt8SUfzZg?style=plastic&logo=youtube)](https://www.youtube.com/channel/UCIV4xSntF1h1bvFt8SUfzZg)
 [![Discord](https://img.shields.io/discord/716165691383873536?style=plastic&logo=discord)](https://discord.gg/P8PZPyf)
 [![Donate](https://img.shields.io/badge/Donate-Sponsor-blue?style=plastic&logo=github)](https://github.com/sponsors/BC-SECURITY)
 [![Blog](https://img.shields.io/badge/Blog-Read%20me-orange?style=plastic&logo=wordpress)](https://www.bc-security.org/blog)
@@ -13,7 +13,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 ### Features
 - Server/Client Architecture for Multiplayer Support
 - Supports GUI & CLI Clients
-- Fully encrpyted communications
+- Fully encrypted communications
 - HTTP/S, Malleable HTTP, OneDrive, Dropbox, and PHP Listeners
 - Massive library (400+) of supported tools in PowerShell, C#, & Python
 - Donut Integration for shellcode generation
@@ -23,8 +23,8 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - In-memory .NET assembly execution
 - Customizable Bypasses
 - JA3/S and JARM Evasion
-- MITRE ATT&CK Integation
-- Integrated Roslyn compiler (Thanks to Covenant)
+- MITRE ATT&CK Integration
+- Integrated Roslyn compiler (Thanks to [Covenant](https://github.com/cobbr/Covenant))
 - Docker, Kali, Ubuntu, and Debian Install Support
 
 ### Agents
@@ -80,8 +80,6 @@ Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/qui
 Check out the [Empire Docs](https://bc-security.gitbook.io/empire-wiki/) for more instructions on installing and using with Empire.
 For a complete list of the 4.0 changes, see the [changelog](./changelog).
 
-Join us in [our Discord](https://discord.gg/P8PZPyf) to with any comments, questions, concerns, or problems!
-
 ## Starkiller
 <div align="center"><img width="125" src="https://github.com/BC-SECURITY/Starkiller/blob/master/src/assets/icon.png"></div>
 
@@ -91,17 +89,21 @@ Join us in [our Discord](https://discord.gg/P8PZPyf) to with any comments, quest
 See [Contributing](./.github/CONTRIBUTING.md)
 
 ## Contributors
-[@Cx01N](https://twitter.com/Cx01N_)
-[@Hubbl3](https://twitter.com/_Hubbl3)
-[@Vinnybod](https://twitter.com/_vinnybod)
+A special thanks to the following contributors for their help with Empire:
+
 [@harmj0y](https://twitter.com/harmj0y)
 [@sixdub](https://twitter.com/sixdub)
 [@enigma0x3](https://twitter.com/enigma0x3)
 [@rvrsh3ll](https://twitter.com/424f424f)
 [@killswitch_gui](https://twitter.com/killswitch_gui)
 [@xorrior](https://twitter.com/xorrior)
+[@Cx01N](https://twitter.com/Cx01N_)
+[@Hubbl3](https://twitter.com/_Hubbl3)
+[@Vinnybod](https://twitter.com/_vinnybod)
 
 ## Official Discord Channel
+Join us in [our Discord](https://discord.gg/P8PZPyf) to with any comments, questions, concerns, or problems!
+
 <p align="center">
 <a href="https://discord.gg/P8PZPyf">
 <img src="https://discordapp.com/api/guilds/716165691383873536/widget.png?style=banner3"/>
