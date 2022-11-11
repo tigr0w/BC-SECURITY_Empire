@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.2] - 2022-11-11
+
 ## [4.8.1] - 2022-10-30
 
 -   Added container structure test to CI (@Vinnybod)
@@ -306,7 +308,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.2...HEAD
+
+[4.8.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.1...v4.8.2
 
 [4.8.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.0...v4.8.1
 
