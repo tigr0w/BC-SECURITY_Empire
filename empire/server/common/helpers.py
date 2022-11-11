@@ -163,7 +163,6 @@ def strip_python_comments(data):
     ]
     return "\n".join(strippedLines)
 
-
 ####################################################################################
 #
 # PowerShell-specific helpers
