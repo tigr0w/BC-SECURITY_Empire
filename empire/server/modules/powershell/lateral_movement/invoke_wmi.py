@@ -69,7 +69,7 @@ class Module(object):
                 encode=True,
                 userAgent=user_agent,
                 obfuscate=launcher_obfuscate,
-                obfuscationCommand=launcher_obfuscate_command,
+                obfuscation_command=launcher_obfuscate_command,
                 proxy=proxy,
                 proxyCreds=proxy_creds,
                 bypasses=params["Bypasses"],

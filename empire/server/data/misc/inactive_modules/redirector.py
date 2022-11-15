@@ -87,7 +87,7 @@ class Module(object):
                 self.options[option]['Value'] = value
 
 
-    def generate(self, obfuscate=False, obfuscationCommand=""):
+    def generate(self, obfuscate=False, obfuscation_command=""):
         
         script = """
 function Invoke-Redirector {
@@ -197,5 +197,5 @@ Invoke-Redirector"""
                 print(helpers.color("[!] Listener not set, pivot listener not added."))
                 return ""
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(psScript=script, obfuscation_command=obfuscation_command)
         return script

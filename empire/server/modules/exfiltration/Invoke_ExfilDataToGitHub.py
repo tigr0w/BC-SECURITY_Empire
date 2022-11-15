@@ -108,7 +108,7 @@ class Module(object):
                 if option in self.options:
                     self.options[option]["Value"] = value
 
-    def generate(self, obfuscate=False, obfuscationCommand=""):
+    def generate(self, obfuscate=False, obfuscation_command=""):
         # if you're reading in a large, external script that might be updates,
         #   use the pattern below
         # read in the common module source code
@@ -118,7 +118,7 @@ class Module(object):
         )
         if obfuscate:
             self.mainMenu.obfuscationv2.obfuscate_module(
-                moduleSource=moduleSource, obfuscationCommand=obfuscationCommand
+                moduleSource=moduleSource, obfuscation_command=obfuscation_command
             )
             moduleSource = moduleSource.replace(
                 "module_source", "obfuscated_module_source"
@@ -153,7 +153,7 @@ class Module(object):
             scriptEnd = helpers.obfuscate(
                 psScript=scriptEnd,
                 installPath=self.mainMenu.installPath,
-                obfuscationCommand=obfuscationCommand,
+                obfuscation_command=obfuscation_command,
             )
         script += scriptEnd
 

@@ -197,7 +197,7 @@ class Listener(object):
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -299,11 +299,11 @@ class Listener(object):
                 if obfuscate:
                     launcher = self.mainMenu.obfuscationv2.obfuscate(
                         launcher,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
 
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(launcher, launcher_cmd)
                 else:

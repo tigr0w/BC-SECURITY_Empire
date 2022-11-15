@@ -217,7 +217,7 @@ class Listener(object):
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -383,11 +383,11 @@ class Listener(object):
                 if obfuscate:
                     stager = self.mainMenu.obfuscationv2.obfuscate(
                         stager,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
                 # base64 encode the stager and return it
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(stager, launcher)
                 else:
@@ -541,7 +541,7 @@ class Listener(object):
         encode=False,
         encrypt=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         language=None,
     ):
         """
@@ -610,7 +610,7 @@ class Listener(object):
 
             if obfuscate:
                 unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
-                    unobfuscated_stager, obfuscationCommand=obfuscationCommand
+                    unobfuscated_stager, obfuscation_command=obfuscation_command
                 )
             # base64 encode the stager and return it
             # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
@@ -670,7 +670,7 @@ class Listener(object):
         listenerOptions,
         language=None,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         version="",
     ):
         """
@@ -721,7 +721,7 @@ class Listener(object):
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.obfuscate(
                     code,
-                    obfuscationCommand=obfuscationCommand,
+                    obfuscation_command=obfuscation_command,
                 )
             return code
 
@@ -883,7 +883,7 @@ class Listener(object):
                         proxy=proxy,
                         proxyCreds=proxyCreds,
                         obfuscate=obfuscate,
-                        obfuscationCommand=obfuscate_command,
+                        obfuscation_command=obfuscate_command,
                         bypasses=bypasses,
                     )
                     return launcher
@@ -1030,7 +1030,7 @@ class Listener(object):
                                         obfuscate=False
                                         if not obf_config
                                         else obf_config.enabled,
-                                        obfuscationCommand=""
+                                        obfuscation_command=""
                                         if not obf_config
                                         else obf_config.command,
                                     )
@@ -1145,7 +1145,7 @@ class Listener(object):
                                     obfuscate=False
                                     if not obf_config
                                     else obf_config.enabled,
-                                    obfuscationCommand=""
+                                    obfuscation_command=""
                                     if not obf_config
                                     else obf_config.command,
                                     version=version,

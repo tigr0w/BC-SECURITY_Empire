@@ -70,7 +70,7 @@ class Stager(object):
                 if option in self.options:
                     self.options[option]["Value"] = value
 
-    def generate(self, obfuscate=False, obfuscationCommand=""):
+    def generate(self, obfuscate=False, obfuscation_command=""):
 
         listener = self.options["Listener"]["Value"]
         output_path = self.options["OutputPath"]["Value"]

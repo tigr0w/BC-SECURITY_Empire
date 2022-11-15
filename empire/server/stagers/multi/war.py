@@ -123,7 +123,7 @@ class Stager(object):
             language=language,
             encode=True,
             obfuscate=obfuscate,
-            obfuscationCommand=obfuscate_command,
+            obfuscation_command=obfuscate_command,
             userAgent=user_agent,
             proxy=proxy,
             proxyCreds=proxy_creds,

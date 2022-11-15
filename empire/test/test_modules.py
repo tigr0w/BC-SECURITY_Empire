@@ -13,7 +13,7 @@ def convert_options_to_params(options):
     return params
 
 
-def fake_obfuscate(psScript, obfuscationCommand):
+def fake_obfuscate(psScript, obfuscation_command):
     return psScript
 
 

@@ -162,17 +162,19 @@ class ObfuscationService(object):
         # When obfuscating large scripts, command line length is too long. Need to save to temp file
         with tempfile.NamedTemporaryFile(
             "r+"
-        ) as toObfuscateFile, tempfile.NamedTemporaryFile("r") as obfuscatedFile:
+        ) as toObfuscateFile, tempfile.NamedTemporaryFile("r+") as obfuscatedFile:
             toObfuscateFile.write(ps_script)
 
             # Obfuscate using Invoke-Obfuscation w/ PowerShell
             install_path = self.main_menu.installPath
+            toObfuscateFile.seek(0)
             subprocess.call(
                 f'{data_util.get_powershell_name()} -C \'$ErrorActionPreference = "SilentlyContinue";Import-Module {install_path}/data/Invoke-Obfuscation/Invoke-Obfuscation.psd1;Invoke-Obfuscation -ScriptPath {toObfuscateFile.name} -Command "{self._convert_obfuscation_command(obfuscation_command)}" -Quiet | Out-File -Encoding ASCII {obfuscatedFile.name}\'',
                 shell=True,
             )
 
             # Obfuscation writes a newline character to the end of the file, ignoring that character
+            obfuscatedFile.seek(0)
             ps_script = obfuscatedFile.read()[0:-1]
 
         return ps_script

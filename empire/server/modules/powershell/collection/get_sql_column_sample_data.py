@@ -39,7 +39,7 @@ class Module(object):
             if obfuscate:
                 main_menu.obfuscationv2.obfuscate_module(
                     moduleSource=aux_module_source,
-                    obfuscationCommand=obfuscation_command,
+                    obfuscation_command=obfuscation_command,
                 )
                 aux_module_source = module_source.replace(
                     "module_source", "obfuscated_module_source"

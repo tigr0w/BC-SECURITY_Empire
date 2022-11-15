@@ -66,7 +66,7 @@ class Stagers(object):
         language=None,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -101,7 +101,7 @@ class Stagers(object):
             launcher_code = active_listener.generate_launcher(
                 encode=encode,
                 obfuscate=obfuscate,
-                obfuscationCommand=obfuscationCommand,
+                obfuscation_command=obfuscation_command,
                 userAgent=userAgent,
                 proxy=proxy,
                 proxyCreds=proxyCreds,

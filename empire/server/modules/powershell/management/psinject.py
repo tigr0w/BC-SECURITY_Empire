@@ -55,7 +55,7 @@ class Module(object):
                 listenerName=listener_name,
                 language="powershell",
                 obfuscate=launcher_obfuscate,
-                obfuscationCommand=launcher_obfuscate_command,
+                obfuscation_command=launcher_obfuscate_command,
                 encode=True,
                 userAgent=user_agent,
                 proxy=proxy,

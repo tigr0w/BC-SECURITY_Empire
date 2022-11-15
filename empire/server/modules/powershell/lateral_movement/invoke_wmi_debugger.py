@@ -76,7 +76,7 @@ class Module(object):
                     language="powershell",
                     encode=True,
                     obfuscate=launcher_obfuscate,
-                    obfuscationCommand=launcher_obfuscate_command,
+                    obfuscation_command=launcher_obfuscate_command,
                     bypasses=params["Bypasses"],
                 )
 

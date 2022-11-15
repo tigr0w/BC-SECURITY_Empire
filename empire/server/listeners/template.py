@@ -174,7 +174,7 @@ class Listener(object):
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -235,7 +235,7 @@ class Listener(object):
         encode=False,
         encrypt=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         language=None,
     ):
         """
@@ -250,7 +250,7 @@ class Listener(object):
         return ""
 
     def generate_agent(
-        self, listenerOptions, language=None, obfuscate=False, obfuscationCommand=""
+        self, listenerOptions, language=None, obfuscate=False, obfuscation_command=""
     ):
         """
         If you want to support staging for the listener module, generate_agent must be

@@ -63,7 +63,7 @@ Invoke-EventLogBackdoor"""
 
         else:
             # set the listener value for the launcher
-            stager = main_menu.stagertemplatesv2.new_instance("multi/launcher")
+            stager = main_menu.stagertemplatesv2.new_instance("multi_launcher")
             stager.options["Listener"] = listener_name
             stager.options["Base64"] = "False"
 

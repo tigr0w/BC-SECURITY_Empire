@@ -43,7 +43,7 @@ class Module(object):
             language=language,
             encode=False,
             obfuscate=launcher_obfuscation,
-            obfuscationCommand=launcher_obfuscation_command,
+            obfuscation_command=launcher_obfuscation_command,
             userAgent=user_agent,
             proxy=proxy,
             proxyCreds=proxy_creds,

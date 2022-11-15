@@ -64,7 +64,7 @@ class Module(object):
             return handle_error_message("[!] Invalid listener: %s" % (listener_name))
         else:
 
-            l = main_menu.stagertemplatesv2.new_instance("multi/launcher")
+            l = main_menu.stagertemplatesv2.new_instance("multi_launcher")
             l.options["Listener"] = params["Listener"]
             l.options["UserAgent"] = params["UserAgent"]
             l.options["Proxy"] = params["Proxy"]
