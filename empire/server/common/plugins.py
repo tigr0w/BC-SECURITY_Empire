@@ -7,24 +7,25 @@ log = logging.getLogger(__name__)
 
 class Plugin(object):
     # to be overwritten by child
-    description = "This is a description of this plugin."
-
     def __init__(self, mainMenu):
         # having these multiple messages should be helpful for debugging
         # user-reported errors (can narrow down where they happen)
-        log.info("Initializing plugin...")
         # any future init stuff goes here
+        try:
+            # do custom user stuff
+            self.onLoad()
+            log.info(f"Initializing plugin: {self.info['Name']}")
 
-        log.info("Doing custom initialization...")
-        # do custom user stuff
-        self.onLoad()
+            # Register functions to the main menu
+            self.register(mainMenu)
 
-        # now that everything is loaded, register functions and etc. onto the main menu
-        log.info("Registering plugin with menu...")
-        self.register(mainMenu)
-
-        # Give access to main menu
-        self.mainMenu = mainMenu
+            # Give access to main menu
+            self.mainMenu = mainMenu
+        except Exception as e:
+            if self.info["Name"]:
+                log.error(f"{self.info['Name']} failed to initialize: {e}")
+            else:
+                log.error(f"Error initializing plugin: {e}")
 
     def onLoad(self):
         """Things to do during init: meant to be overridden by
