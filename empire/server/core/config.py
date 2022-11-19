@@ -8,6 +8,13 @@ from pydantic import BaseModel, Extra, Field
 log = logging.getLogger(__name__)
 
 
+class StarkillerConfig(BaseModel):
+    repo: str = "bc-security/starkiller"
+    ref: str = "main"
+    use_temp_dir: bool = False
+    auto_update: bool = True
+
+
 class DatabaseDefaultObfuscationConfig(BaseModel):
     language: str = "powershell"
     enabled: bool = False
@@ -72,6 +79,7 @@ class EmpireConfig(BaseModel):
     supress_self_cert_warning: bool = Field(
         alias="supress-self-cert-warning", default=True
     )
+    starkiller: StarkillerConfig
     database: DatabaseConfig
     plugins: Dict[str, Dict[str, str]] = {}
     directories: DirectoriesConfig
