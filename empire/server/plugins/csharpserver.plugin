@@ -128,7 +128,11 @@ class Plugin(Plugin):
 
     def thread_csharp_responses(self):
         while True:
-            output = self.csharpserver_proc.stdout.readline().rstrip()
+            output = self.csharpserver_proc.stdout.readline()
+            if not output:
+                print(helpers.color("[!] csharpserver output stream closed"))
+                return
+            output = output.rstrip()
             if output:
                 log.info(output.decode("UTF-8"))
 

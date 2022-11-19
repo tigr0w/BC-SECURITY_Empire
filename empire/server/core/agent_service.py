@@ -21,11 +21,10 @@ class AgentService(object):
         if not include_archived:
             query = query.filter(models.Agent.archived == False)
 
-        agents = query.all()
-
-        # stale can't be filtered in sql because it lacks an expression.
         if not include_stale:
-            return list(filter(lambda x: x.stale is False, agents))
+            query = query.filter(models.Agent.stale == False)
+
+        agents = query.all()
 
         return agents
 

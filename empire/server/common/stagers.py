@@ -215,6 +215,14 @@ class Stagers(object):
         ) as f:
             f.write(python_code)
 
+        # Write text file to resources to be embedded
+        with open(
+            self.mainMenu.installPath
+            + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
+            "w",
+        ) as f:
+            f.write(python_code)
+
         compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
             log.error("csharpserver plugin not running")

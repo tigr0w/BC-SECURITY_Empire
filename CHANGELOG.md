@@ -51,7 +51,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed pydispatcher (@Vinnybod)
 - Removed prompt line from server (@Vinnybod)
 
+## [4.8.3] - 2022-11-11
+
+## [4.8.2] - 2022-11-11
+
+-   Updated crontab method to work with python3 (@Cx01N)
+-   Updated linux_privesc_check to work with python3 (@Cx01N)
+-   Fixed mistakes in README.md (@Cx01N)
+-   Removed unused class in python agents (@Cx01N)
+
+## [4.8.1] - 2022-10-30
+
+-   Added container structure test to CI (@Vinnybod)
+-   Added a fallback checkout that doesn't use a token (@Vinnybod)
+-   Revamped README.md (@Cx01N)
+-   Simplified Dockerfile install process (@lavafroth)
+-   Fixed crashing issue with IronPython agent (@Cx01N)
+-   Fixed infinite loop output stream for csharpserver plugin (@dwilson5)
+-   Fixed querying stale and active agents (@lavafroth)
+
 ## [4.8.0] - 2022-08-30
+
 -   Updated compiler to .NET SDK 6.0 (@Hubbl3)
 
 ## [4.7.3] - 2022-08-20
@@ -339,7 +359,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.3...HEAD
+
+[4.8.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.2...v4.8.3
+
+[4.8.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.1...v4.8.2
+
+[4.8.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.0...v4.8.1
 
 [4.8.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.7.3...v4.8.0
 
