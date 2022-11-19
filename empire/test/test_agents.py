@@ -37,7 +37,7 @@ def agent():
             process_id=12345,
             hostname="vinnybod",
             host=host,
-            killed=False,
+            archived=False,
         )
 
         agent2 = models.Agent(
@@ -60,12 +60,12 @@ def agent():
             process_id=12345,
             hostname="vinnybod",
             host=host,
-            killed=False,
+            archived=False,
         )
 
         agent3 = models.Agent(
-            name="KILLED",
-            session_id="KILLED",
+            name="archived",
+            session_id="archived",
             delay=60,
             jitter=0.1,
             external_ip="1.1.1.1",
@@ -83,7 +83,7 @@ def agent():
             process_id=12345,
             hostname="vinnybod",
             host=host,
-            killed=True,
+            archived=True,
         )
 
         agent4 = models.Agent(
@@ -107,7 +107,7 @@ def agent():
             process_id=12345,
             hostname="vinnybod",
             host=host,
-            killed=False,
+            archived=False,
         )
 
         db.add(host)
