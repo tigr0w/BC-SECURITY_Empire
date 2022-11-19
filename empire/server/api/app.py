@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import subprocess
 from datetime import datetime
 from json import JSONEncoder
 
@@ -10,8 +11,10 @@ from fastapi import FastAPI
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 
+from empire.scripts.sync_starkiller import sync_starkiller
 from empire.server.api.middleware import EmpireCORSMiddleware
 from empire.server.api.v2.websocket.socketio import setup_socket_events
+from empire.server.core.config import empire_config
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +41,25 @@ class MyJsonEncoder(JSONEncoder):
             return o.json()
 
         return JSONEncoder.default(self, o)
+
+
+def load_starkiller(v2App):
+    use_temp = empire_config.starkiller.use_temp_dir
+    starkiller_submodule_dir = "empire/server/api/v2/starkiller"
+    starkiller_temp_dir = "empire/server/api/v2/starkiller-temp"
+
+    if empire_config.starkiller.auto_update:
+        sync_starkiller()
+
+    v2App.mount(
+        "/",
+        StaticFiles(
+            directory=f"{starkiller_temp_dir}/dist"
+            if use_temp
+            else f"{starkiller_submodule_dir}/dist"
+        ),
+        name="static",
+    )
 
 
 def initialize(secure: bool = False, port: int = 1337):
@@ -119,11 +141,7 @@ def initialize(secure: bool = False, port: int = 1337):
     setup_socket_events(sio, main)
 
     try:
-        v2App.mount(
-            "/",
-            StaticFiles(directory="empire/server/api/v2/starkiller/dist"),
-            name="static",
-        )
+        load_starkiller(v2App)
         log.info(f"Starkiller served at http://localhost:{port}/index.html")
     except Exception as e:
         log.warning("Failed to load Starkiller: %s", e)

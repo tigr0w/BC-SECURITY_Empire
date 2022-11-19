@@ -10,6 +10,9 @@ subparsers = parent_parser.add_subparsers(dest="subparser_name")
 
 server_parser = subparsers.add_parser("server", help="Launch Empire Server")
 client_parser = subparsers.add_parser("client", help="Launch Empire CLI")
+sync_starkiller_parser = subparsers.add_parser(
+    "sync-starkiller", help="Sync Starkiller submodule with the config"
+)
 
 # Client Args
 client_parser.add_argument(

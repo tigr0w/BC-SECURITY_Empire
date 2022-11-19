@@ -34,6 +34,15 @@ database:
     # an IP black list to reject accept clients from
     #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
     ip-blacklist: ""
+starkiller:
+  repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+  # Can be a branch, tag, or commit hash
+  ref: 5.0-dev-sponsors
+  # for private-main, instead of updating the submodule, just work out of a local copy.
+  # So devs can work off the latest changes and not worry about accidentally updating the submodule
+  # for the downstream main branches.
+  use_temp_dir: false
+  auto_update: true
 plugins:
   # Auto-load plugin with defined settings
   csharpserver:
