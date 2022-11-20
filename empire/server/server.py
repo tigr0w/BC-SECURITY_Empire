@@ -133,7 +133,6 @@ def check_submodules():
 
 def run(args):
     setup_logging(args)
-    check_submodules()
 
     if not args.restport:
         args.restport = 1337
@@ -160,6 +159,7 @@ def run(args):
         sys.exit()
 
     else:
+        check_submodules()
         global main
 
         # Calling run more than once, such as in the test suite
