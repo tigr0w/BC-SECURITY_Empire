@@ -32,6 +32,7 @@ def wrap_reset(server_config_dict):
         yield
 
 
+@pytest.mark.timeout(30)
 def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     """
     Test for
@@ -133,6 +134,7 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
 # TODO: At the moment, this is the only client test we have.
 #  It probably makes sense to split the tests into server and client directories, but
 #  I'm hesitant to do that just yet because it could cause some merge pain with 5.x
+@pytest.mark.timeout(30)
 def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
     monkeypatch.setattr("builtins.input", lambda _: "y")
     sys.argv = ["", "client", "--config", CLIENT_CONFIG_LOC, "--reset"]

@@ -1,6 +1,5 @@
 import enum
 
-import sqlalchemy
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -15,6 +14,7 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.dialects import mysql
 from sqlalchemy.ext.declarative import declarative_base
@@ -139,9 +139,17 @@ class Agent(Base):
     archived = Column(Boolean, nullable=False)
     proxies = Column(JSON)
 
-    @hybrid_property  # todo @stale.expression
+    @hybrid_property
     def stale(self):
         return is_stale(self.lastseen_time, self.delay, self.jitter)
+
+    @stale.expression  # todo: this only works for sqlite.
+    def stale(cls):
+        threshold = 30 + cls.delay + cls.delay * cls.jitter
+        seconds_elapsed = (
+            func.julianday(utcnow()) - func.julianday(cls.lastseen_time)
+        ) * 86400.0
+        return seconds_elapsed > threshold
 
     def __repr__(self):
         return "<Agent(name='%s')>" % (self.name)
@@ -251,16 +259,14 @@ class Tasking(Base):
     agent_id = Column(String(255), ForeignKey("agents.session_id"), primary_key=True)
     agent = relationship(Agent, lazy="joined", innerjoin=True)
     input = Column(Text)
-    input_full = deferred(
-        Column(sqlalchemy.Text().with_variant(mysql.LONGTEXT, "mysql"))
-    )
+    input_full = deferred(Column(Text().with_variant(mysql.LONGTEXT, "mysql")))
     output = deferred(
-        Column(sqlalchemy.Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
+        Column(Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
     )
     # In most cases, this isn't needed and will match output. However, with the filter feature, we want to store
     # a copy of the original output if it gets modified by a filter.
     original_output = deferred(
-        Column(sqlalchemy.Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
+        Column(Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
     )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     user = relationship(User)

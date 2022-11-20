@@ -1,45 +1,48 @@
 ![Empire](https://user-images.githubusercontent.com/20302208/70022749-1ad2b080-154a-11ea-9d8c-1b42632fd9f9.jpg)
 
-[1]: https://www.bc-security.org/blog
-
-![GitHub Release](https://img.shields.io/github/v/release/BC-SECURITY/Empire)
-![GitHub contributors](https://img.shields.io/github/contributors/BC-SECURITY/Empire)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/BC-SECURITY/Empire)
-![GitHub stars](https://img.shields.io/github/stars/BC-SECURITY/Empire)
-![GitHub](https://img.shields.io/github/license/BC-Security/Empire)
-[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/fold_left.svg?style=flat)](https://twitter.com/BCSecurity1)
-[![Discord](https://img.shields.io/discord/716165691383873536)](https://discord.gg/P8PZPyf)
-
-Keep up-to-date on our blog at [https://www.bc-security.org/blog][1]
-
-[Documentation](https://bc-security.gitbook.io/empire-wiki/)
+[![Docs](https://img.shields.io/badge/Wiki-Docs-green?style=plastic&logo=wikipedia)](https://bc-security.gitbook.io/empire-wiki/)
+[![Twitter URL](https://img.shields.io/twitter/follow/BCSecurity1?style=plastic&logo=twitter)](https://twitter.com/BCSecurity1)
+[![YouTube URL](https://img.shields.io/youtube/channel/views/UCIV4xSntF1h1bvFt8SUfzZg?style=plastic&logo=youtube)](https://www.youtube.com/channel/UCIV4xSntF1h1bvFt8SUfzZg)
+[![Discord](https://img.shields.io/discord/716165691383873536?style=plastic&logo=discord)](https://discord.gg/P8PZPyf)
+[![Donate](https://img.shields.io/badge/Donate-Sponsor-blue?style=plastic&logo=github)](https://github.com/sponsors/BC-SECURITY)
+[![Blog](https://img.shields.io/badge/Blog-Read%20me-orange?style=plastic&logo=wordpress)](https://www.bc-security.org/blog)
 
 # Empire
-Empire is a post-exploitation framework that includes a pure-PowerShell Windows agents, Python 3.x Linux/OS X agents, 
-and C# agents. It is the merger of the previous PowerShell Empire and Python EmPyre projects. The framework offers 
-cryptologically-secure communications and flexible architecture.
+Empire is a post-exploitation and adversary emulation framework that is used to aid Red Teams and Penetration Testers. The Empire server is written in Python 3 and is modular to allow operator flexibility. Empire comes built-in with a client that can be used remotely to access the server. There is also a GUI available for remotely accessing the Empire server, [Starkiller](https://github.com/BC-SECURITY/Starkiller).
 
-On the PowerShell side, Empire implements the ability to run PowerShell agents without needing powershell.exe, rapidly 
-deployable post-exploitation modules ranging from key loggers to Mimikatz, and adaptable communications to evade 
-network detection, all wrapped up in a usability-focused framework. PowerShell Empire premiered at 
-[BSidesLV in 2015](https://www.youtube.com/watch?v=Pq9t59w0mUI) and Python EmPyre premiered at HackMiami 2016. 
-BC Security presented updates to further evade Microsoft Antimalware Scan Interface (AMSI) and JA3/S signatures at 
-[DEF CON 27](https://github.com/BC-SECURITY/DEFCON27).
+### Features
+- Server/Client Architecture for Multiplayer Support
+- Supports GUI & CLI Clients
+- Fully encrypted communications
+- HTTP/S, Malleable HTTP, OneDrive, Dropbox, and PHP Listeners
+- Massive library (400+) of supported tools in PowerShell, C#, & Python
+- Donut Integration for shellcode generation
+- Modular plugin interface for custom server features
+- Flexible module interface for adding new tools
+- Integrated obfuscation using [ConfuserEx 2](https://github.com/mkaring/ConfuserEx) & [Invoke-Obfuscation](https://github.com/danielbohannon/Invoke-Obfuscation)
+- In-memory .NET assembly execution
+- Customizable Bypasses
+- JA3/S and JARM Evasion
+- MITRE ATT&CK Integration
+- Integrated Roslyn compiler (Thanks to [Covenant](https://github.com/cobbr/Covenant))
+- Docker, Kali, Ubuntu, and Debian Install Support
 
-Empire relies heavily on the work from several other projects for its underlying functionality. We have tried to call 
-out a few of those people we've interacted with heavily [here](http://www.powershellempire.com/?page_id=2) and have 
-included author/reference link information in the source of each Empire module as appropriate. If we have failed to 
-properly cite existing or prior work, please let us know at Empire@BC-Security.org.
+### Agents
+- PowerShell
+- Python 3
+- C#
+- IronPython 3
 
-Empire is currently being developed and maintained by [@Cx01N](https://twitter.com/Cx01N_), 
-[@Hubbl3](https://twitter.com/_Hubbl3), & [@Vinnybod](https://twitter.com/_vinnybod). While the original Empire project is
-no longer maintained, this fork is maintained by [@bcsecurity1](https://twitter.com/BCSecurity1). Please reach out to 
-us on our [Discord](https://discord.gg/P8PZPyf) if you have any questions or want to talk about offensive security.
-
-Thank you to the original team of developers: [@harmj0y](https://twitter.com/harmj0y), 
-[@sixdub](https://twitter.com/sixdub), [@enigma0x3](https://twitter.com/enigma0x3), 
-[@rvrsh3ll](https://twitter.com/424f424f), [@killswitch_gui](https://twitter.com/killswitch_gui), & 
-[@xorrior](https://twitter.com/xorrior)
+### Modules
+- [Assembly Execution](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/data/module_source/code_execution/Invoke-Assembly.ps1)
+- [BOF Execution](https://github.com/airbus-cert/Invoke-Bof)
+- [Mimikatz](https://github.com/gentilkiwi/mimikatz)
+- [Seatbelt](https://github.com/GhostPack/Seatbelt)
+- [Rubeus](https://github.com/GhostPack/Rubeus)
+- [SharpSploit](https://github.com/cobbr/SharpSploit)
+- [Certify](https://github.com/GhostPack/Certify)
+- [ProcessInjection](https://github.com/3xpl01tc0d3r/ProcessInjection)
+- And Many More
 
 ## Sponsors
 [<img src="https://user-images.githubusercontent.com/20302208/185247407-46b00d46-0468-4600-9c0d-4efeedc38b3b.png" height="100"/>](https://www.kali.org/) &emsp; &emsp; &emsp;
@@ -81,8 +84,6 @@ Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/qui
 Check out the [Empire Docs](https://bc-security.gitbook.io/empire-wiki/) for more instructions on installing and using with Empire.
 For a complete list of changes, see the [changelog](./changelog).
 
-Join us in [our Discord](https://discord.gg/P8PZPyf) to with any comments, questions, concerns, or problems!
-
 ## Starkiller
 <div align="center"><img width="125" src="https://github.com/BC-SECURITY/Starkiller/blob/master/src/assets/icon.png"></div>
 
@@ -93,7 +94,22 @@ As of 5.0, Starkiller is packaged in Empire as a git submodule and doesn't requi
 ## Contribution Rules
 See [Contributing](./.github/CONTRIBUTING.md)
 
+## Contributors
+A special thanks to the following contributors for their help with Empire:
+
+[@harmj0y](https://twitter.com/harmj0y)
+[@sixdub](https://twitter.com/sixdub)
+[@enigma0x3](https://twitter.com/enigma0x3)
+[@rvrsh3ll](https://twitter.com/424f424f)
+[@killswitch_gui](https://twitter.com/killswitch_gui)
+[@xorrior](https://twitter.com/xorrior)
+[@Cx01N](https://twitter.com/Cx01N_)
+[@Hubbl3](https://twitter.com/_Hubbl3)
+[@Vinnybod](https://twitter.com/_vinnybod)
+
 ## Official Discord Channel
+Join us in [our Discord](https://discord.gg/P8PZPyf) to with any comments, questions, concerns, or problems!
+
 <p align="center">
 <a href="https://discord.gg/P8PZPyf">
 <img src="https://discordapp.com/api/guilds/716165691383873536/widget.png?style=banner3"/>

@@ -23,9 +23,9 @@ class AgentService(object):
 
         agents = query.all()
 
-        # stale can't be filtered in sql because it lacks an expression.
+        # can't use the hybrid expression until the function in models.py is updated to support mysql.
         if not include_stale:
-            return list(filter(lambda x: x.stale is False, agents))
+            agents = [agent for agent in agents if not agent.stale]
 
         return agents
 

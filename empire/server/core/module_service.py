@@ -114,6 +114,9 @@ class ModuleService(object):
         if module.language == LanguageEnum.powershell:
             module_data = helpers.strip_powershell_comments(module_data)
 
+        if module.language == LanguageEnum.python:
+            module_data = helpers.strip_python_comments(module_data)
+
         task_command = ""
         if agent.language != "ironpython" or (
             agent.language == "ironpython" and module.language == "python"
