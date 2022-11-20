@@ -130,7 +130,10 @@ def agent():
     db.commit()
 
 
-def test_stale_expression():
+def test_stale_expression(empire_config):
+    if empire_config.database.use != "sqlite":
+        pytest.skip("Skipping test for non-sqlite database")
+
     from empire.server.core.db import models
     from empire.server.core.db.base import SessionLocal
 
