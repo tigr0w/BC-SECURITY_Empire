@@ -588,20 +588,9 @@ def start_restful_api(
 
         modules = []
 
-        for moduleName, module in main.modules.modules.items():
-            if (
-                (search_term.lower() == "")
-                or (search_term.lower() in moduleName.lower())
-                or (
-                    search_term.lower() in ("".join(module.info["Description"])).lower()
-                )
-                or (search_term.lower() in ("".join(module.info["Comments"])).lower())
-                or (search_term.lower() in ("".join(module.info["Author"])).lower())
-            ):
-                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
-                moduleInfo["options"] = main.modules.modules[moduleName].options
-                moduleInfo["Name"] = moduleName
-                modules.append(moduleInfo)
+        for module in main.modules.modules.values():
+            if search_term == "" or module.matches(search_term):
+                modules.append(module.info)
 
         return jsonify({"modules": modules})
 
@@ -619,14 +608,9 @@ def start_restful_api(
 
         modules = []
 
-        for moduleName, module in main.modules.modules.items():
-            if (search_term.lower() == "") or (
-                search_term.lower() in moduleName.lower()
-            ):
-                module_info = copy.deepcopy(main.modules.modules[moduleName].info)
-                module_info["options"] = main.modules.modules[moduleName].options
-                module_info["Name"] = moduleName
-                modules.append(module_info)
+        for module in main.modules.modules.values():
+            if search_term == "" or module.matches(search_term, parameter="name"):
+                modules.append(module.info)
 
         return jsonify({"modules": modules})
 
@@ -644,14 +628,9 @@ def start_restful_api(
 
         modules = []
 
-        for moduleName, module in main.modules.modules.items():
-            if (search_term.lower() == "") or (
-                search_term.lower() in ("".join(module.info["Description"])).lower()
-            ):
-                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
-                moduleInfo["options"] = main.modules.modules[moduleName].options
-                moduleInfo["Name"] = moduleName
-                modules.append(moduleInfo)
+        for module in main.modules.modules.values():
+            if search_term == "" or module.matches(search_term, "description"):
+                modules.append(module.info)
 
         return jsonify({"modules": modules})
 
@@ -669,14 +648,9 @@ def start_restful_api(
 
         modules = []
 
-        for moduleName, module in main.modules.modules.items():
-            if (search_term.lower() == "") or (
-                search_term.lower() in ("".join(module.info["Comments"])).lower()
-            ):
-                module_info = copy.deepcopy(main.modules.modules[moduleName].info)
-                module_info["options"] = main.modules.modules[moduleName].options
-                module_info["Name"] = moduleName
-                modules.append(module_info)
+        for module in main.modules.modules.values():
+            if search_term == "" or module.matches(search_term, "comments"):
+                modules.append(module.info)
 
         return jsonify({"modules": modules})
 
@@ -694,14 +668,9 @@ def start_restful_api(
 
         modules = []
 
-        for moduleName, module in main.modules.modules.items():
-            if (search_term.lower() == "") or (
-                search_term.lower() in ("".join(module.info["Author"])).lower()
-            ):
-                module_info = copy.deepcopy(main.modules.modules[moduleName].info)
-                module_info["options"] = main.modules.modules[moduleName].options
-                module_info["Name"] = moduleName
-                modules.append(module_info)
+        for module in main.modules.modules.values():
+            if search_term == "" or module.matches(search_term, "authors"):
+                modules.append(module.info)
 
         return jsonify({"modules": modules})
 
