@@ -143,7 +143,7 @@ class Agent(Base):
     def stale(self):
         return is_stale(self.lastseen_time, self.delay, self.jitter)
 
-    @stale.expression
+    @stale.expression  # todo: this only works for sqlite.
     def stale(cls):
         threshold = 30 + cls.delay + cls.delay * cls.jitter
         seconds_elapsed = (

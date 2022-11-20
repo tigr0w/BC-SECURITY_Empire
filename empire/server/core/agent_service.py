@@ -21,10 +21,11 @@ class AgentService(object):
         if not include_archived:
             query = query.filter(models.Agent.archived == False)
 
-        if not include_stale:
-            query = query.filter(models.Agent.stale == False)
-
         agents = query.all()
+
+        # can't use the hybrid expression until the function in models.py is updated to support mysql.
+        if not include_stale:
+            agents = [agent for agent in agents if not agent.stale]
 
         return agents
 
