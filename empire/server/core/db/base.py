@@ -72,6 +72,7 @@ Base.metadata.create_all(engine)
 
 
 def reset_db():
+    SessionLocal.close_all()
     Base.metadata.drop_all(engine)
     if use == "sqlite":
         os.unlink(database_config.location)
