@@ -121,7 +121,7 @@ def agent():
 
     yield agents
 
-    db = Session()
+    db = SessionLocal()
     db.delete(agents[0])
     db.delete(agents[1])
     db.delete(agents[2])
