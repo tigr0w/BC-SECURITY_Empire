@@ -29,7 +29,10 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 
 database_config = empire_config.database
+
 use = os.environ.get("DATABASE_USE", database_config.use)
+database_config.use = use
+
 database_config = database_config[use.lower()]
 
 if use == "mysql":
