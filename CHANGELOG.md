@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.8.4] - 2022-11-26
+-   Fixed #540 PydanticModule object has no attribute 'info' in API module search (@lavafroth)
+-   Fixed agent/server module version check (@Jackrin)
+
 
 ## [4.8.3] - 2022-11-11
 
