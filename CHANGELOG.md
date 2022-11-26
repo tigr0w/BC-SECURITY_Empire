@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.4] - 2022-11-26
+-   Fixed #540 PydanticModule object has no attribute 'info' in API module search (@lavafroth)
+-   Fixed agent/server module version check (@Jackrin)
+
+
 ## [4.8.3] - 2022-11-11
 
 ## [4.8.2] - 2022-11-11
@@ -315,7 +320,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.4...HEAD
+
+[4.8.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.3...v4.8.4
 
 [4.8.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.2...v4.8.3
 
