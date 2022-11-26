@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated hooks to handle sync or async functions (@Vinnybod)
 - Updated authors to have name, handle, and link for modules, listeners, stagers, and plugins (@Vinnybod)
 - Updated Dockerfile for better caching (@Vinnybod)
+- Updated agent.py to extract logic for sleep duration and lazily calculate file sizes (@lavafroth)
 - Moved keyword_obfuscation config property under database defaults (@Vinnybod)
 - Moved obfuscate and obfuscateCommand defaults under `database.defaults.obfuscation` (@Vinnybod)
 - Restructured all the 'common' code (@Vinnybod)

