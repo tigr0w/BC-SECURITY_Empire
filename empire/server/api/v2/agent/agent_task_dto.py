@@ -144,3 +144,11 @@ class ProxyListPostRequest(BaseModel):
 
 class ExitPostRequest(BaseModel):
     pass
+
+
+class SocksPostRequest(BaseModel):
+    port: int
+
+
+class KillJobPostRequest(BaseModel):
+    id: int

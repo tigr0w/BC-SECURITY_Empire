@@ -1,4 +1,5 @@
 import logging
+import socket
 import subprocess
 
 from empire.server.core.db import models
@@ -80,3 +81,8 @@ def ps_convert_to_oneliner(psscript):
     psscript = psscript.replace("    ", "")
 
     return psscript
+
+
+def is_port_in_use(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("localhost", port)) == 0

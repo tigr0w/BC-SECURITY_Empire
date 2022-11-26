@@ -148,10 +148,12 @@ def setup_socket_events(sio, empire_menu):
         await sio.emit("agents/new", domain_to_dto_agent(agent).dict())
 
     async def task_socket_hook(db: Session, task: models.Tasking):
-        if "function Get-Keystrokes" not in task.input:
-            await sio.emit(
-                f"agents/{task.agent_id}/task", domain_to_dto_task(task).dict()
-            )
+        # temporary tasks come back as None and cause an error here
+        if task:
+            if "function Get-Keystrokes" not in task.input:
+                await sio.emit(
+                    f"agents/{task.agent_id}/task", domain_to_dto_task(task).dict()
+                )
 
     async def listener_socket_hook(db: Session, listener: models.Listener):
         await sio.emit("listeners/new", domain_to_dto_listener(listener).dict())

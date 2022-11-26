@@ -504,6 +504,69 @@ def test_create_task_download(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
 
 
+def test_create_socks_agent_not_found(client, admin_auth_header, agent):
+    response = client.post(
+        "/api/v2/agents/abc/tasks/socks",
+        headers=admin_auth_header,
+        json={},
+    )
+
+    assert response.status_code == 404
+
+
+def test_create_task_socks(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent.session_id}/tasks/socks",
+        headers=admin_auth_header,
+        json={"port": 1080},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["id"] > 0
+
+
+def test_create_task_jobs_agent_not_found(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/abc/tasks/jobs",
+        headers=admin_auth_header,
+        json={},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Agent not found for id abc"
+
+
+def test_create_task_jobs(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent.session_id}/tasks/jobs",
+        headers=admin_auth_header,
+        json={},
+    )
+
+    assert response.status_code == 200
+
+
+def test_kill_task_jobs(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent.session_id}/tasks/kill_job",
+        headers=admin_auth_header,
+        json={"id": 0},
+    )
+
+    assert response.status_code == 200
+
+
+def test_kill_task_jobs_agent_not_found(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/abc/tasks/kill_job",
+        headers=admin_auth_header,
+        json={"id": 0},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Agent not found for id abc"
+
+
 def test_create_task_script_import_agent_not_found(client, admin_auth_header, agent):
     response = client.post(
         "/api/v2/agents/abc/tasks/script_import",

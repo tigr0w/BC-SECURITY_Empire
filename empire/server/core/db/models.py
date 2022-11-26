@@ -138,6 +138,8 @@ class Agent(Base):
     architecture = Column(String(255))
     archived = Column(Boolean, nullable=False)
     proxies = Column(JSON)
+    socks = Column(Boolean)
+    socks_port = Column(Integer)
 
     @hybrid_property
     def stale(self):

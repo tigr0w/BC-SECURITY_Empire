@@ -1,9 +1,11 @@
 import json
 import logging
 import threading
+from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+from pydantic import BaseModel
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, undefer
 
@@ -29,6 +31,9 @@ class AgentTaskService(object):
 
         self.module_service: ModuleService = main_menu.modulesv2
         self.listener_service: ListenerService = main_menu.listenersv2
+
+        # { agent_id: [TemporaryTask] }
+        self.temporary_tasks = defaultdict(list)
 
         self.last_task_lock = threading.Lock()
 
@@ -116,6 +121,14 @@ class AgentTaskService(object):
             .first()
         )
 
+    def get_temporary_tasks_for_agent(self, agent_id: str, clear: bool = True):
+        tasks = self.temporary_tasks[agent_id]
+
+        if clear:
+            self.temporary_tasks[agent_id] = []
+
+        return tasks
+
     def create_task_shell(
         self,
         db: Session,
@@ -160,11 +173,30 @@ class AgentTaskService(object):
     def create_task_sysinfo(self, db: Session, agent: models.Agent, user_id: int):
         return self.add_task(db, agent, "TASK_SYSINFO", user_id=user_id)
 
+    def create_task_jobs(self, db: Session, agent: models.Agent, user_id: int):
+        return self.add_task(db, agent, "TASK_GETJOBS", user_id=user_id)
+
+    def create_task_kill_job(
+        self, db: Session, agent: models.Agent, user_id: int, job_id: str
+    ):
+        return self.add_task(db, agent, "TASK_STOPJOB", job_id, user_id=user_id)
+
     def create_task_exit(self, db, agent: models.Agent, current_user_id: int):
         resp, err = self.add_task(db, agent, "TASK_EXIT", user_id=current_user_id)
         agent.archived = True
 
         return resp, err
+
+    def create_task_socks(
+        self, db, agent: models.Agent, socks_port, current_user_id: int
+    ):
+        agent.socks = True
+        agent.socks_port = socks_port
+        resp, err = self.add_task(db, agent, "TASK_SOCKS", user_id=current_user_id)
+        return resp, err
+
+    def create_task_socks_data(self, agent_id: str, data: str):
+        return self.add_temporary_task(agent_id, "TASK_SOCKS_DATA", data)
 
     def create_task_update_comms(
         self, db: Session, agent: models.Agent, new_listener_id: int, user_id: int
@@ -285,6 +317,35 @@ class AgentTaskService(object):
         return self.add_task(
             db, agent, "TASK_SET_PROXY", json.dumps(body), user_id=user_id
         )
+
+    class TemporaryTask(BaseModel):
+        """
+        Fields should match the Task db model, so that we can use the same
+        functions to retrieve tasks.
+        """
+
+        id: int = 0  # We don't need an ID for these, but it is used in agents.py:1206, so we just initialize it to 0
+        agent_id: str
+        task_name: str
+        input_full: str
+        module_name: Optional[str]
+
+    def add_temporary_task(
+        self, agent_id: str, task_name, task_input="", module_name: str = None
+    ) -> Tuple[Optional[TemporaryTask], Optional[str]]:
+        """
+        Add a temporary task for the agent to execute. These tasks are not saved in the database,
+        since they don't provide any value to end users and can be very write-heavy.
+        """
+        task = self.TemporaryTask(
+            agent_id=agent_id,
+            task_name=task_name,
+            input_full=task_input,
+            module_name=module_name,
+        )
+        self.temporary_tasks[agent_id].append(task)
+
+        return task, None
 
     def add_task(
         self,

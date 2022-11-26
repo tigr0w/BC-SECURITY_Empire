@@ -453,8 +453,9 @@ class InteractMenu(Menu):
             end_space=False,
         )
         print(print_util.color(" Output", "blue"))
-        for line in task["output"].split("\n"):
-            print(print_util.color(line))
+        if task["output"]:
+            for line in task["output"].split("\n"):
+                print(print_util.color(line))
 
     def execute_shortcut(self, command_name: str, params: List[str]):
         shortcut: Shortcut = shortcut_handler.get(self.agent_language, command_name)
@@ -582,6 +583,68 @@ class InteractMenu(Menu):
         self.vnc_proc = subprocess.Popen(
             vnc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+
+    @command
+    def socks(self, port: int) -> None:
+        """
+        Create a socks proxy on the agent using in-band comms. (Default port: 1080)
+
+        Usage: socks [<port>]
+        """
+        if not port:
+            port = 1080
+
+        log.info(f"SOCKS server port set to {port}")
+
+        response = state.create_socks(self.session_id, port)
+        if "id" in response:
+            print(
+                print_util.color(
+                    "[*] Tasked " + self.selected + " to start SOCKS server"
+                )
+            )
+
+        elif "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
+            return
+
+    @command
+    def jobs(self) -> None:
+        """
+        View list of active jobs
+
+        Usage: jobs
+        """
+        response = state.view_jobs(self.session_id)
+        if "id" in response:
+            print(
+                print_util.color(
+                    "[*] Tasked " + self.selected + " to retrieve active jobs"
+                )
+            )
+
+        elif "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
+            return
+
+    @command
+    def kill_job(self, task_id: int) -> None:
+        """
+        Kill an active jobs
+
+        Usage: kill_job <task_id>
+        """
+        response = state.kill_job(self.session_id, task_id)
+        if "id" in response:
+            print(
+                print_util.color(
+                    "[*] Tasked " + self.selected + f" to kill task {str(task_id)}"
+                )
+            )
+
+        elif "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
+            return
 
 
 interact_menu = InteractMenu()

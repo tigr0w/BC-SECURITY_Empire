@@ -100,6 +100,8 @@ PACKET_NAMES = {
     "TASK_CSHARP": 44,  # todo: move to 116/117
     "TASK_GETJOBS": 50,
     "TASK_STOPJOB": 51,
+    "TASK_SOCKS": 60,
+    "TASK_SOCKS_DATA": 61,
     # Agent Module Commands
     "TASK_CMD_WAIT": 100,
     "TASK_CMD_WAIT_SAVE": 101,

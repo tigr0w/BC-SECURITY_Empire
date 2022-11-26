@@ -474,6 +474,33 @@ class EmpireCliState(object):
         )
         return response
 
+    def create_socks(self, agent_name: str, port: int):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/socks",
+            json={"port": port},
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response.json()
+
+    def view_jobs(self, agent_name: str):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/jobs",
+            json={},
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response.json()
+
+    def kill_job(self, agent_name: str, task_id: int):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/kill_job",
+            json={"id": task_id},
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response.json()
+
     def update_agent_comms(self, agent_name: str, listener_name: str):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/update_comms",

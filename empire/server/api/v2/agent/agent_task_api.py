@@ -16,11 +16,13 @@ from empire.server.api.v2.agent.agent_task_dto import (
     DownloadPostRequest,
     ExitPostRequest,
     KillDatePostRequest,
+    KillJobPostRequest,
     ModulePostRequest,
     ProxyListPostRequest,
     ScriptCommandPostRequest,
     ShellPostRequest,
     SleepPostRequest,
+    SocksPostRequest,
     SysinfoPostRequest,
     Task,
     TaskOrderOptions,
@@ -42,6 +44,7 @@ from empire.server.core.db import models
 from empire.server.core.db.models import TaskingStatus
 from empire.server.core.download_service import DownloadService
 from empire.server.server import main
+from empire.server.utils.data_util import is_port_in_use
 
 agent_task_service: AgentTaskService = main.agenttasksv2
 agent_service: AgentService = main.agentsv2
@@ -191,6 +194,32 @@ async def read_task(
         raise HTTPException(status_code=404, detail="Task not found")
 
     return domain_to_dto_task(db_task)
+
+
+@router.post("/{agent_id}/tasks/jobs", response_model=Task)
+async def create_task_jobs(
+    db_agent: models.Agent = Depends(get_agent),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    resp, err = agent_task_service.create_task_jobs(db, db_agent, current_user.id)
+
+    return domain_to_dto_task(resp)
+
+
+@router.post("/{agent_id}/tasks/kill_job", response_model=Task)
+async def create_task_kill_job(
+    jobs: KillJobPostRequest,
+    db_agent: models.Agent = Depends(get_agent),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    kill_job = str(jobs.id)
+    resp, err = agent_task_service.create_task_kill_job(
+        db, db_agent, current_user.id, kill_job
+    )
+
+    return domain_to_dto_task(resp)
 
 
 @router.post("/{agent_id}/tasks/shell", status_code=201, response_model=Task)
@@ -484,3 +513,22 @@ async def delete_task(
         )
 
     agent_task_service.delete_task(db, db_task)
+
+
+@router.post("/{agent_id}/tasks/socks", status_code=201, response_model=Task)
+async def create_task_socks(
+    socks: SocksPostRequest,
+    db_agent: models.Agent = Depends(get_agent),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    if is_port_in_use(socks.port):
+        raise HTTPException(status_code=400, detail="Socks port is in use")
+    else:
+        resp, err = agent_task_service.create_task_socks(
+            db, db_agent, socks.port, current_user.id
+        )
+        if err:
+            raise HTTPException(status_code=400, detail=err)
+
+        return domain_to_dto_task(resp)

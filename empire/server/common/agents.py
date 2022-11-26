@@ -37,6 +37,7 @@ import base64
 import json
 import logging
 import os
+import queue
 import string
 import threading
 import warnings
@@ -49,6 +50,8 @@ from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
+from empire.server.common.helpers import KThread
+from empire.server.common.socks import start_client
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
@@ -74,6 +77,8 @@ class Agents(object):
         self.mainMenu = MainMenu
         self.installPath = self.mainMenu.installPath
         self.args = args
+        self.socksthread = {}
+        self.socksqueue = {}
 
         # internal agent dictionary for the client's session key, funcions, and URI sets
         #   this is done to prevent database reads for extremely common tasks (like checking tasking URI existence)
@@ -770,6 +775,17 @@ class Agents(object):
 
             return tasks
 
+    def get_queued_agent_temporary_tasks(self, session_id):
+        """
+        Retrieve temporary tasks that have been queued for our agent from the agenttasksv2.
+        """
+        if session_id not in self.agents:
+            log.error(f"Agent {session_id} not active.")
+            return []
+        else:
+            tasks = self.mainMenu.agenttasksv2.get_temporary_tasks_for_agent(session_id)
+            return tasks
+
     ###############################################################
     #
     # Agent staging/data processing components
@@ -1181,6 +1197,8 @@ class Agents(object):
 
             # retrieve all agent taskings from the cache
             taskings = self.get_queued_agent_tasks_db(sessionID, db)
+            temp_taskings = self.get_queued_agent_temporary_tasks(sessionID)
+            taskings.extend(temp_taskings)
 
             if taskings and taskings != []:
 
@@ -1197,7 +1215,6 @@ class Agents(object):
                     all_task_packets += packets.build_task_packet(
                         tasking.task_name, input_full, tasking.id
                     )
-
                 # get the session key for the agent
                 session_key = self.agents[sessionID]["sessionKey"]
 
@@ -1426,6 +1443,11 @@ class Agents(object):
             # set agent to archived in the database
             agent.archived = True
 
+            # Close socks client
+            if session_id in self.socksthread:
+                agent.socks = False
+                self.socksthread[session_id].kill()
+
         elif response_name == "TASK_SHELL":
             # shell command response
             # update the agent log
@@ -1435,6 +1457,35 @@ class Agents(object):
             # shell command response
             # update the agent log
             self.save_agent_log(session_id, data)
+
+        elif response_name == "TASK_SOCKS":
+            if session_id not in self.socksthread:
+                try:
+                    log.info(f"Starting SOCKS client for {session_id}")
+                    self.socksqueue[session_id] = queue.Queue()
+                    self.socksthread[session_id] = KThread(
+                        target=start_client,
+                        args=(
+                            self.mainMenu.agenttasksv2,
+                            self.socksqueue[session_id],
+                            session_id,
+                            agent.socks_port,
+                        ),
+                    )
+
+                    self.socksthread[session_id].daemon = True
+                    self.socksthread[session_id].start()
+                    log.info(f'SOCKS client for "{agent.name}" successfully started')
+                except Exception as e:
+                    log.error(f'SOCKS client for "{agent.name}" failed to started')
+            else:
+                log.info("SOCKS server already exists")
+
+            self.save_agent_log(session_id, data)
+
+        elif response_name == "TASK_SOCKS_DATA":
+            self.socksqueue[session_id].put(base64.b64decode(data))
+            return
 
         elif response_name == "TASK_DOWNLOAD":
             # file download
@@ -1518,7 +1569,7 @@ class Agents(object):
             # dynamic script output -> blocking
 
             # see if there are any credentials to parse
-            time = helpers.get_datetime()
+            date_time = helpers.get_datetime()
             creds = helpers.parse_credentials(data)
 
             if creds:
@@ -1542,7 +1593,7 @@ class Agents(object):
                             host=hostname,
                             os=os_details,
                             sid=cred[5],
-                            notes=time,
+                            notes=date_time,
                         ),
                     )
 
@@ -1613,7 +1664,7 @@ class Agents(object):
             else:
                 # dynamic script output -> non-blocking
                 # see if there are any credentials to parse
-                time = helpers.get_datetime()
+                date_time = helpers.get_datetime()
                 creds = helpers.parse_credentials(data)
                 if creds:
                     for cred in creds:
@@ -1636,7 +1687,7 @@ class Agents(object):
                                 host=hostname,
                                 os=os_details,
                                 sid=cred[5],
-                                notes=time,
+                                notes=date_time,
                             ),
                         )
 
@@ -1649,7 +1700,7 @@ class Agents(object):
                 data = data.encode("UTF-8")
             parts = data.split(b"\n")
             if len(parts) > 10:
-                time = helpers.get_datetime()
+                date_time = helpers.get_datetime()
                 if parts[0].startswith(b"Hostname:"):
                     # if we get Invoke-Mimikatz output, try to parse it and add
                     #   it to the internal credential store
@@ -1676,7 +1727,7 @@ class Agents(object):
                                 host=hostname,
                                 os=os_details,
                                 sid=cred[5],
-                                notes=time,
+                                notes=date_time,
                             ),
                         )
 

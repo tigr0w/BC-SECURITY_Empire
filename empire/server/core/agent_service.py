@@ -1,7 +1,16 @@
+import logging
+import queue
+
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
+from empire.server.common.helpers import KThread
+from empire.server.common.socks import start_client
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+
+log = logging.getLogger(__name__)
 
 
 class AgentService(object):
@@ -9,6 +18,8 @@ class AgentService(object):
         self.main_menu = main_menu
 
         self.agent_task_service: AgentTaskService = main_menu.agenttasksv2
+
+        self._start_existing_socks()
 
     @staticmethod
     def get_all(
@@ -47,3 +58,35 @@ class AgentService(object):
         db_agent.notes = agent_req.notes
 
         return db_agent, None
+
+    def start_existing_socks(self, db: Session, agent: models.Agent):
+        log.info(f"Starting SOCKS client for {agent.session_id}")
+        try:
+            self.main_menu.agents.socksqueue[agent.session_id] = queue.Queue()
+            self.main_menu.agents.socksthread[agent.session_id] = KThread(
+                target=start_client,
+                args=(
+                    self.main_menu.agenttasksv2,
+                    self.main_menu.agents.socksqueue[agent.session_id],
+                    agent.session_id,
+                    agent.socks_port,
+                ),
+            )
+
+            self.main_menu.agents.socksthread[agent.session_id].daemon = True
+            self.main_menu.agents.socksthread[agent.session_id].start()
+            log.info(f'SOCKS client for "{agent.name}" successfully started')
+        except Exception as e:
+            log.error(f'SOCKS client for "{agent.name}" failed to start')
+
+    def _start_existing_socks(self):
+        with SessionLocal.begin() as db:
+            agents = (
+                db.query(models.Agent)
+                .filter(
+                    and_(models.Agent.socks == True, models.Agent.archived == False)
+                )
+                .all()
+            )
+            for agent in agents:
+                self.start_existing_socks(db, agent)
