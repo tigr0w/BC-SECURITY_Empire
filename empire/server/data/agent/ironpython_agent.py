@@ -459,7 +459,7 @@ def process_packet(packetType, data, resultID):
         # Create a server object in its own thread
         if not _socksthread:
             try:
-                jobs[resultID] = Queue.Queue()
+                _socksqueue = Queue.Queue()
                 jobs[resultID] = KThread(target=Server, args=(_socksqueue, resultID,))
                 jobs[resultID].daemon = True
                 jobs[resultID].start()
