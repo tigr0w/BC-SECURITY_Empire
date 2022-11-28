@@ -27,10 +27,7 @@ class Stager(object):
             "Comments": ["Based on the work of @bneg"],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Language": {
                 "Description": "Language of the stager to generate (powershell, csharp).",
                 "Required": True,
@@ -101,12 +98,9 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -139,7 +133,6 @@ class Stager(object):
             )
             launcher = ps_convert_to_oneliner(strip_powershell_comments(launcher))
         else:
-            # generate the PowerShell one-liner with all of the proper options set
             launcher = self.mainMenu.stagers.generate_launcher(
                 listener_name,
                 language=language,

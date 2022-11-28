@@ -22,7 +22,7 @@ def test_get_stager_templates(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == 200
-    assert len(response.json()["records"]) == 38
+    assert len(response.json()["records"]) == 36
 
 
 def test_get_stager_template(client, admin_auth_header):

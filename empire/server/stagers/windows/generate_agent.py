@@ -1,9 +1,9 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
-from empire.server.common.helpers import strip_powershell_comments
-from empire.server.utils.data_util import ps_convert_to_oneliner
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -135,9 +135,11 @@ class Stager(object):
             )
 
         if launcher == "":
-            return "[!] Error in launcher generation."
+            log.error("[!] Error in launcher generation.")
+            return ""
         else:
             if not launcher or launcher.lower() == "failed":
-                return "[!] Error in launcher command generation."
+                log.error("[!] Error in launcher command generation.")
+                return ""
 
         return launcher

