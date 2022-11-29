@@ -1,41 +1,41 @@
 name: Public - Tag Release
 on:
-  workflow_dispatch:
-    inputs:
-      sponsorTag:
-        description: 'The earliest release notes to include in the release. Example: v4.5.0'
-        type: string
-        required: true
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
 
 jobs:
   tag_release:
-    if: contains(fromJson('["refs/heads/master"]'), github.ref) && github.repository == 'BC-SECURITY/Empire'
+    if: ${{ github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/') && github.repository == 'BC-Security/Empire' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v2
         with:
           submodules: 'recursive'
+          fetch-depth: 0
       - name: Initialize mandatory git config
         run: |
           git config user.name "GitHub Actions"
           git config user.email noreply@github.com
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-      - name: Setup poetry
+      - name: Find last released tag
         run: |
-          curl -sL https://install.python-poetry.org | python - -y
-      - name: Set application version as variable
+          tags=$(git tag --list --sort=-version:refname "v*.*.*")
+          tags=$(echo "$tags" | grep -v -E "beta|alpha|rc|RC")
+          latest_tag=$(echo "$tags" | head -n 1)
+          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
+      - name: Get app version
         run: |
-          echo "APP_VERSION=$(poetry version -s)" >> $GITHUB_ENV
+          # Get the version from pyproject.toml using sed
+          echo "APP_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)" >> $GITHUB_ENV
       - name: Extract release notes
         id: extract_release_notes
         # This is modified to pull multiple versions of the release notes
-        uses: vinnybod/extract-release-notes@main
+        uses: vinnybod/extract-release-notes@v2
         with:
-          earliest_version: ${{ github.event.inputs.sponsorTag }}
+          last_version: ${{ env.LATEST_TAG }}
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1

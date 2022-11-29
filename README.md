@@ -54,8 +54,17 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 Please see our [Releases](https://github.com/BC-SECURITY/Empire/releases) or [Changelog](/changelog) page for detailed release notes.
 
 ###  Quickstart
-Empire 4 introduces a new server and client architecture which requires running each in separate terminals. 
+Empire has server client architecture which requires running each in separate terminals. 
 Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/quickstart/installation) for install instructions.
+
+Note: The `main` branch is a reflection of the latest changes and may not always be stable.
+After cloning the repo, you can checkout the latest stable release by running the `setup/checkout-latest-tag.sh` script.
+```bash
+git clone --recursive https://github.com/BC-SECURITY/Empire.git
+cd Empire
+./setup/checkout-latest-tag.sh
+sudo ./setup/install.sh
+```
 
 #### Server
 
