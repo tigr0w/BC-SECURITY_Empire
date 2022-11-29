@@ -2,11 +2,6 @@ name: Lint and Test
 
 on:
   pull_request:
-    branches:
-      - master
-      - sponsors-master
-      - dev
-      - sponsors-dev
 
 jobs:
   lint:
@@ -17,7 +12,7 @@ jobs:
       - uses: isort/isort-action@master
   test:
     needs: lint
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     name: Test Python ${{ matrix.python-version }}
     strategy:
@@ -64,13 +59,14 @@ jobs:
   test_image:
     # To save CI time, only run these tests on the release PRs
     if: ${{ startsWith(github.head_ref, 'release/') }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     name: Test Docker Image
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
+          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Build docker image
         run: docker-compose -f .github/docker-compose.yml build
       - name: Run tests on docker image
