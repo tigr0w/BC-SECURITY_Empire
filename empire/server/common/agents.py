@@ -40,6 +40,7 @@ import os
 import queue
 import string
 import threading
+import time
 import warnings
 from builtins import object, str
 from pathlib import Path
@@ -51,7 +52,7 @@ from zlib_wrapper import decompress
 
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
 from empire.server.common.helpers import KThread
-from empire.server.common.socks import start_client
+from empire.server.common.socks import create_client, start_client
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
@@ -79,6 +80,7 @@ class Agents(object):
         self.args = args
         self.socksthread = {}
         self.socksqueue = {}
+        self.socksclient = {}
 
         # internal agent dictionary for the client's session key, funcions, and URI sets
         #   this is done to prevent database reads for extremely common tasks (like checking tasking URI existence)
@@ -1446,6 +1448,8 @@ class Agents(object):
             # Close socks client
             if session_id in self.socksthread:
                 agent.socks = False
+                self.socksclient[session_id].shutdown()
+                time.sleep(1)
                 self.socksthread[session_id].kill()
 
         elif response_name == "TASK_SHELL":
@@ -1463,18 +1467,18 @@ class Agents(object):
                 try:
                     log.info(f"Starting SOCKS client for {session_id}")
                     self.socksqueue[session_id] = queue.Queue()
+                    client = create_client(
+                        self.mainMenu, self.socksqueue[session_id], session_id
+                    )
                     self.socksthread[session_id] = KThread(
                         target=start_client,
-                        args=(
-                            self.mainMenu.agenttasksv2,
-                            self.socksqueue[session_id],
-                            session_id,
-                            agent.socks_port,
-                        ),
+                        args=(client, agent.socks_port),
                     )
 
+                    self.socksclient[session_id] = client
                     self.socksthread[session_id].daemon = True
                     self.socksthread[session_id].start()
+
                     log.info(f'SOCKS client for "{agent.name}" successfully started')
                 except Exception as e:
                     log.error(f'SOCKS client for "{agent.name}" failed to started')

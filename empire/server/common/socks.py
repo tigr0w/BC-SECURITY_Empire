@@ -8,11 +8,12 @@ from secretsocks import secretsocks
 log = logging.getLogger(__name__)
 
 
-def start_client(agent_task_service, q, session_id, port):
+def create_client(main_menu, q, session_id):
     log.info("Creating SOCKS client...")
-    client = EmpireSocksClient(agent_task_service, q, session_id)
+    return EmpireSocksClient(main_menu, q, session_id)
 
-    # Start the standard listener with our client
+
+def start_client(client, port):
     log.info("Starting SOCKS server...")
     listener = secretsocks.Listener(client, host="127.0.0.1", port=port)
     listener.wait()
@@ -20,10 +21,11 @@ def start_client(agent_task_service, q, session_id, port):
 
 class EmpireSocksClient(secretsocks.Client):
     # Initialize our data channel
-    def __init__(self, agent_task_service, q, session_id):
+    def __init__(self, main_menu, q, session_id):
         secretsocks.Client.__init__(self)
+        self.main_menu = main_menu
         self.q = q
-        self.agent_task_service = agent_task_service
+        self.agent_task_service = main_menu.agenttasksv2
         self.session_id = session_id
         self.alive = True
         self.start()
@@ -51,3 +53,8 @@ class EmpireSocksClient(secretsocks.Client):
                     )
             except queue.Empty:
                 continue
+            except:
+                self.alive = False
+
+    def shutdown(self):
+        self.alive = False
