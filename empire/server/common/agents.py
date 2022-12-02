@@ -213,43 +213,13 @@ class Agents(object):
         self.agents[sessionID] = {"sessionKey": sessionKey, "functions": []}
 
     def get_agent_for_socket(self, session_id):
-        agent = (
+        return (
             Session()
             .query(models.Agent)
             .filter(models.Agent.session_id == session_id)
             .first()
+            .info
         )
-
-        return {
-            "ID": agent.id,
-            "session_id": agent.session_id,
-            "listener": agent.listener,
-            "name": agent.name,
-            "language": agent.language,
-            "language_version": agent.language_version,
-            "delay": agent.delay,
-            "jitter": agent.jitter,
-            "external_ip": agent.external_ip,
-            "internal_ip": agent.internal_ip,
-            "username": agent.username,
-            "high_integrity": int(agent.high_integrity or 0),
-            "process_name": agent.process_name,
-            "process_id": agent.process_id,
-            "hostname": agent.hostname,
-            "os_details": agent.os_details,
-            "session_key": str(agent.session_key),
-            "nonce": agent.nonce,
-            "checkin_time": agent.checkin_time,
-            "lastseen_time": agent.lastseen_time,
-            "parent": agent.parent,
-            "children": agent.children,
-            "servers": agent.servers,
-            "profile": agent.profile,
-            "functions": agent.functions,
-            "kill_date": agent.kill_date,
-            "working_hours": agent.working_hours,
-            "lost_limit": agent.lost_limit,
-        }
 
     def remove_agent_db(self, session_id):
         """
@@ -339,11 +309,8 @@ class Agents(object):
                 os.makedirs(save_path)
 
             # overwrite an existing file
-            if not append:
-                f = open("%s/%s" % (save_path, filename), "wb")
-            else:
-                # otherwise append
-                f = open("%s/%s" % (save_path, filename), "ab")
+            mode = "ab" if append else "wb"
+            f = open("%s/%s" % (save_path, filename), mode)
 
             if "python" in lang:
                 print(
