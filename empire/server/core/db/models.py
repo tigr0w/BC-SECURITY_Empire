@@ -1,3 +1,4 @@
+import base64
 import enum
 
 from sqlalchemy import (
@@ -248,6 +249,10 @@ class Download(Base):
     updated_at = Column(
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
+
+    def get_base64_file(self):
+        with open(self.location, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
 
 
 class TaskingStatus(str, enum.Enum):

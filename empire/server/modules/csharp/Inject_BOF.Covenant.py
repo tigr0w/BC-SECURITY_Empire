@@ -1,14 +1,10 @@
 from __future__ import print_function
 
-import base64
 from builtins import object, str
-from pathlib import Path
 from typing import Dict
 
 import yaml
 
-from empire.server.core.config import empire_config
-from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 
@@ -22,18 +18,9 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        if params["File"] != "":
-            with SessionLocal() as db:
-                location = (
-                    db.query(models.Download.location)
-                    .filter(models.Download.filename == params["File"])
-                    .scalar()
-                )
-
-            location_path = Path(location)
-            with location_path.open("rb") as data:
-                bof_data = data.read()
-            b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
+        b64_bof_data = main_menu.downloadsv2.get_all(
+            SessionLocal(), None, params["File"]
+        )[0][0].get_base64_file()
 
         compiler = main_menu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":

@@ -391,7 +391,7 @@ class Listener(object):
                     .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
                 )
 
-                compiler = self.mainMenu.loadedPlugins.get("csharpserver")
+                compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
                 if not compiler.status == "ON":
                     self.instance_log.error(
                         f"{listenerName} csharpserver plugin not running"

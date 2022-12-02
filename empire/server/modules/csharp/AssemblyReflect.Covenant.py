@@ -1,13 +1,11 @@
 from __future__ import print_function
 
-import base64
 from builtins import object, str
-from pathlib import Path
 from typing import Dict
 
 import yaml
 
-from empire.server.core.config import empire_config
+from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 
 
@@ -20,15 +18,11 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        download_dir = Path(empire_config.directories.downloads)
-        file = download_dir / params["File"]
+        base64_assembly = main_menu.downloadsv2.get_all(
+            SessionLocal(), None, params["File"]
+        )[0][0].get_base64_file()
 
-        with file.open("rb") as data:
-            assembly_data = data.read()
-
-        base64_assembly = base64.b64encode(assembly_data).decode("utf-8")
-
-        compiler = main_menu.loadedPlugins.get("csharpserver")
+        compiler = main_menu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
             return None, "csharpserver plugin not running"
 

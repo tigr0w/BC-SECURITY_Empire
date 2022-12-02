@@ -1,11 +1,9 @@
 from __future__ import print_function
 
 from builtins import object, str
-from pathlib import Path
 from typing import Dict
 
-from empire.server.common import helpers
-from empire.server.core.config import empire_config
+from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -59,15 +57,13 @@ class Module(object):
             return handle_error_message(err)
 
         try:
-            location = Path(empire_config.directories.downloads) / params["File"]
-            with location.open("rb") as f:
-                assembly_data = f.read()
+            encode_assembly = main_menu.downloadsv2.get_all(
+                SessionLocal(), None, params["File"]
+            )[0][0].get_base64_file()
         except:
             return handle_error_message(
                 "[!] Could not read .NET assembly path at: " + str(params["Arguments"])
             )
-
-        encode_assembly = helpers.encode_base64(assembly_data).decode("UTF-8")
 
         # Do some parsing on the operator's arguments so it can be formatted for Powershell
         if params["Arguments"] != "":

@@ -79,7 +79,7 @@ class Module(object):
 
         base64_shellcode = helpers.encode_base64(shellcode).decode("UTF-8")
 
-        compiler = main_menu.loadedPlugins.get("csharpserver")
+        compiler = main_menu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
             return None, "csharpserver plugin not running"
 
