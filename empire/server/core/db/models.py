@@ -116,7 +116,7 @@ class Agent(Base):
     delay = Column(Integer)
     jitter = Column(Float)
     external_ip = Column(String(255))
-    internal_ip = Column(String(255))
+    internal_ip = Column(Text)
     username = Column(Text)
     high_integrity = Column(Boolean)
     process_name = Column(Text)
