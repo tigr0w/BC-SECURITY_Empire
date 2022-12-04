@@ -3,7 +3,8 @@ import os
 import sqlite3
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
 from empire.server.core.config import empire_config
@@ -28,6 +29,19 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor.close()
 
 
+def try_connect(engine_url: str, *args, **kwargs) -> Connection:
+    try:
+        engine = create_engine(engine_url, *args, **kwargs)
+        connection = engine.connect()
+    except OperationalError:
+        log.error(f"Failed connecting to database using {engine_url}")
+        log.error("Perhaps the MySQL service is not running.")
+        log.error("Try executing: sudo systemctl mysql start")
+        exit(1)
+
+    return connection
+
+
 database_config = empire_config.database
 
 use = os.environ.get("DATABASE_USE", database_config.use)
@@ -40,24 +54,24 @@ if use == "mysql":
     username = database_config.username
     password = database_config.password
     database_name = database_config.database_name
-    engine = create_engine(f"mysql+pymysql://{username}:{password}@{url}", echo=False)
+    connection = try_connect(f"mysql+pymysql://{username}:{password}@{url}", echo=False)
     text = (
         "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
         "WHERE SCHEMA_NAME = '%s'" % database_name
     )
-    result = engine.scalar(text)
 
+    result = connection.scalar(text)
     if not result:
-        engine.execute(f"CREATE DATABASE {database_name}")
+        connection.execute(f"CREATE DATABASE {database_name}")
 
-    engine.dispose()
+    connection.close()
 
-    engine = create_engine(
+    connection = try_connect(
         f"mysql+pymysql://{username}:{password}@{url}/{database_name}", echo=False
     )
 else:
     location = database_config.location
-    engine = create_engine(
+    connection = try_connect(
         f"sqlite:///{location}",
         connect_args={
             "check_same_thread": False,
@@ -66,14 +80,14 @@ else:
         echo=False,
     )
 
-SessionLocal = sessionmaker(bind=engine)
+SessionLocal = sessionmaker(bind=connection)
 
-Base.metadata.create_all(engine)
+Base.metadata.create_all(connection)
 
 
 def reset_db():
     SessionLocal.close_all()
-    Base.metadata.drop_all(engine)
+    Base.metadata.drop_all(connection)
     if use == "sqlite":
         os.unlink(database_config.location)
 
