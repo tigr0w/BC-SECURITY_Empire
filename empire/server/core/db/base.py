@@ -36,7 +36,7 @@ def try_connect(engine_url: str, *args, **kwargs) -> Connection:
     except OperationalError:
         log.error(f"Failed connecting to database using {engine_url}")
         log.error("Perhaps the MySQL service is not running.")
-        log.error("Try executing: sudo systemctl mysql start")
+        log.error("Try executing: sudo systemctl start mysql")
         exit(1)
 
     return connection
