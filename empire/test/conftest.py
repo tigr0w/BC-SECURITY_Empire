@@ -86,12 +86,12 @@ def client(empire_config):
 
     print("cleanup")
 
-    from empire.server.core.db.base import connection
+    from empire.server.core.db.base import engine
     from empire.server.core.db.models import Base
     from empire.server.server import main
 
     main.shutdown()
-    Base.metadata.drop_all(connection)
+    Base.metadata.drop_all(engine)
 
 
 # It would be nice to swap out the db within pytest using params.
