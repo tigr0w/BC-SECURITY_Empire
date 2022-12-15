@@ -48,7 +48,7 @@ shortcuts:
       module: powershell_collection_keylogger
       params:
         - name: Sleep
-          value: 1
+          value: 0
     sherlock:
       module: powershell_privesc_sherlock
     mimikatz:
@@ -125,7 +125,7 @@ shortcuts:
       module: powershell_collection_keylogger
       params:
         - name: Sleep
-          value: 1
+          value: 0
     sherlock:
       module: powershell_privesc_sherlock
     mimikatz:
@@ -187,7 +187,7 @@ shortcuts:
       module: powershell_collection_keylogger
       params:
         - name: Sleep
-          value: 1
+          value: 0
     sherlock:
       module: powershell_privesc_sherlock
     mimikatz:

