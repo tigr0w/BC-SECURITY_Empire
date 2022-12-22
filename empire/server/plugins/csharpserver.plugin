@@ -101,9 +101,7 @@ class Plugin(Plugin):
                 # If dll hasn't been built yet
                 if not os.path.exists(server_dll):
                     csharp_cmd = ["dotnet", "build", self.installPath + "/csharp/"]
-                    self.csharpserverbuild_proc = subprocess.Popen(csharp_cmd)
-                    time.sleep(10)
-                    self.csharpserverbuild_proc.kill()
+                    self.csharpserverbuild_proc = subprocess.call(csharp_cmd)
 
                 self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[*] Starting Empire C# server"
