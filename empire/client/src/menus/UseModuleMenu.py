@@ -114,6 +114,9 @@ class UseModuleMenu(UseMenu):
         post_body["module_slug"] = self.record["id"]
 
         try:
+            if self.record_options["Agent"]["value"] == "":
+                log.error("Agent not set")
+                return
             response = state.execute_module(
                 self.record_options["Agent"]["value"], post_body
             )

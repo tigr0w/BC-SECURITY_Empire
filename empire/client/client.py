@@ -436,8 +436,9 @@ class EmpireCli(object):
                     # after the 3rd word for easier autofilling with suggested values that have spaces
                     # There may be a better way to do this.
                     if cmd_line[0] == "set":
-                        cmd_line[2] = f'"{" ".join(cmd_line[2:])}"'
-                        del cmd_line[3:]
+                        if len(cmd_line) > 3:
+                            cmd_line[2] = f'"{" ".join(cmd_line[2:])}"'
+                            del cmd_line[3:]
                     args = self.strip(docopt(func.__doc__, argv=cmd_line[1:]))
                     new_args = {}
                     # todo casting for type hinted values?
