@@ -98,6 +98,11 @@ Once the first workflow runs, it will open one pull request from the `release/v{
 
 Check the changelog on this branch, this will be the changelog that is used for the release notes.
 
+You can get a list of the new commits that are in this release by using the following command. Replace `v4.9.0-private` with whatever the previous release was.
+```
+git --no-pager log --no-merges --pretty='format:%cs %s' private-main...v4.9.0-private
+```
+
 Merge the pull request. **DO NOT SQUASH**
 
 **Note**: If at this point there are additional changes for the release, merge them into the release branch, not
@@ -126,6 +131,11 @@ Once the workflow runs, it will open two pull requests from the `release/v{versi
 Check the changelog on these branches, this will be the changelog that is used for the release notes.
 
 If there are sponsor/kali specific changelog entries that need to be added, add them to the `CHANGELOG.md` file on the release branch.
+
+You can get a list of the new commits that are in this release by using the following command. Replace `v4.9.0-sponsors` with whatever the previous release was.
+```
+git --no-pager log --no-merges --pretty='format:%cs %s' sponsors-main...v4.9.0-sponsors
+```
 
 Merge the pull requests. **DO NOT SQUASH**
 
