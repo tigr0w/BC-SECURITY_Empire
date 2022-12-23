@@ -43,3 +43,6 @@
 [submodule "empire/server/plugins/ChiselServer-Plugin"]
 	path = empire/server/plugins/ChiselServer-Plugin
 	url = https://github.com/BC-SECURITY/ChiselServer-Plugin.git
+[submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/DotNetStratumMiner"]
+	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/DotNetStratumMiner
+	url = https://github.com/BC-SECURITY/DotNetStratumMiner.git
