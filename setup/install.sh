@@ -1,19 +1,42 @@
 #!/bin/bash
+
+function usage() {
+	echo "Powershell Empire installer"
+	echo "USAGE: ./install.sh"
+	echo "OPTIONS:"
+	echo "  -y    Assume Yes to all questions (install all optional dependencies)"
+	echo "  -h    Displays this help text"
+}
+
+while getopts "hy" option; do
+	case "${option}" in
+	y) ASSUME_YES=1 ;;
+	h)
+		usage
+		exit
+		;;
+	*)
+		;;
+	esac
+done
+
 function install_powershell() {
   echo -e "\x1b[1;34m[*] Installing PowerShell\x1b[0m"
-  if [ $OS_NAME == "DEBIAN" ]; then
-    wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb
+  if [ "$OS_NAME" == "DEBIAN" ]; then
+    wget https://packages.microsoft.com/config/debian/"${VERSION_ID}"/packages-microsoft-prod.deb
     sudo dpkg -i packages-microsoft-prod.deb
+    rm packages-microsoft-prod.deb
     sudo apt-get update
     sudo apt-get install -y powershell
-  elif [ $OS_NAME == "UBUNTU" ]; then
+  elif [ "$OS_NAME" == "UBUNTU" ]; then
     sudo apt-get update
     sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y wget apt-transport-https software-properties-common
-    wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+    wget -q "https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/packages-microsoft-prod.deb"
     sudo dpkg -i packages-microsoft-prod.deb
+    rm packages-microsoft-prod.deb
     sudo apt-get update
     sudo apt-get install -y powershell
-  elif [ $OS_NAME == "KALI" ]; then
+  elif [ "$OS_NAME" == "KALI" ]; then
     apt update && apt -y install powershell
   fi
 
@@ -60,15 +83,20 @@ OS_NAME=
 VERSION_ID=
 if grep "10.*" /etc/debian_version 2>/dev/null; then
   echo -e "\x1b[1;34m[*] Detected Debian 10\x1b[0m"
-  OS_NAME=DEBIAN
-  VERSION_ID=$(cat /etc/debian_version)
+  OS_NAME="DEBIAN"
+  VERSION_ID="10"
+elif grep "11.*" /etc/debian_version 2>/dev/null; then
+  echo -e "\x1b[1;34m[*] Detected Debian 11\x1b[0m"
+  OS_NAME="DEBIAN"
+  VERSION_ID="11"
 elif grep -i "NAME=\"Ubuntu\"" /etc/os-release 2>/dev/null; then
   OS_NAME=UBUNTU
-  VERSION_ID=$(grep -i VERSION_ID /etc/os-release | grep -o -E [[:digit:]]+\\.[[:digit:]]+)
-  if [ $VERSION_ID != "20.04" ]; then
-    echo -e '\x1b[1;31m[!] Ubuntu must be 20.04\x1b[0m' && exit
+  VERSION_ID=$(grep -i VERSION_ID /etc/os-release | grep -o -E "[[:digit:]]+\\.[[:digit:]]+")
+  if [[ "$VERSION_ID" == "20.04" || "$VERSION_ID" == "22.04" ]]; then
+    echo -e "\x1b[1;34m[*] Detected Ubuntu ${VERSION_ID}\x1b[0m"
+  else
+    echo -e '\x1b[1;31m[!] Ubuntu must be 20.04 or 22.04\x1b[0m' && exit
   fi
-  echo -e "\x1b[1;34m[*] Detected Ubuntu 20.04\x1b[0m"
 elif grep -i "Kali" /etc/os-release 2>/dev/null; then
   echo -e "\x1b[1;34m[*] Detected Kali\x1b[0m"
   OS_NAME=KALI
@@ -77,21 +105,25 @@ else
   echo -e '\x1b[1;31m[!] Unsupported OS. Exiting.\x1b[0m' && exit
 fi
 
-if [ $OS_NAME == "DEBIAN" ]; then
+if [ "$OS_NAME" == "DEBIAN" ]; then
   sudo apt-get update
   sudo apt-get install -y python3-dev python3-pip xclip
-elif [ $OS_NAME == "UBUNTU" ] && [ $VERSION_ID == "20.04" ]; then
+elif [ "$OS_NAME" == "UBUNTU" ]; then
   sudo apt-get update
   sudo apt-get install -y python3-dev python3-pip xclip
-elif [ $OS_NAME == "KALI" ]; then
+elif [ "$OS_NAME" == "KALI" ]; then
   sudo apt-get update
   sudo apt-get install -y python3-dev python3-pip xclip
 fi
 
 install_powershell
 
-echo -n -e "\x1b[1;33m[>] Do you want to install xar and bomutils? They are only needed to generate a .dmg stager (y/N)? \x1b[0m"
-read answer
+if [ "$ASSUME_YES" == "1" ] ;then
+  answer="Y"
+else
+  echo -n -e "\x1b[1;33m[>] Do you want to install xar and bomutils? They are only needed to generate a .dmg stager (y/N)? \x1b[0m"
+  read -r answer
+fi
 if [ "$answer" != "${answer#[Yy]}" ] ;then
   sudo apt-get install -y make autoconf g++ git zlib1g-dev libxml2-dev libssl1.1 libssl-dev
   install_xar
@@ -100,8 +132,12 @@ else
     echo -e "\x1b[1;34m[*] Skipping xar and bomutils\x1b[0m"
 fi
 
-echo -n -e "\x1b[1;33m[>] Do you want to install OpenJDK? It is only needed to generate a .jar stager (y/N)? \x1b[0m"
-read answer
+if [ "$ASSUME_YES" == "1" ] ;then
+  answer="Y"
+else
+  echo -n -e "\x1b[1;33m[>] Do you want to install OpenJDK? It is only needed to generate a .jar stager (y/N)? \x1b[0m"
+  read -r answer
+fi
 if [ "$answer" != "${answer#[Yy]}" ] ;then
   echo -e "\x1b[1;34m[*] Installing OpenJDK\x1b[0m"
   sudo apt-get install -y default-jdk
@@ -110,14 +146,28 @@ else
 fi
 
 echo -e "\x1b[1;34m[*] Installing dotnet for C# agents and modules\x1b[0m"
-if [ $OS_NAME == "DEBIAN" ]; then
-  wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+if [ "$OS_NAME" == "DEBIAN" ]; then
+  wget https://packages.microsoft.com/config/debian/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
+  rm packages-microsoft-prod.deb
   sudo apt-get update
   sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
 elif [ $OS_NAME == "UBUNTU" ]; then
-  wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+  wget https://packages.microsoft.com/config/ubuntu/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
+  rm packages-microsoft-prod.deb
+
+  # If version is 22.04, we need to write an /etc/apt/preferences file
+  # https://github.com/dotnet/core/issues/7699
+  if [ "$VERSION_ID" == "22.04" ]; then
+    echo -e "\x1b[1;34m[*] Detected Ubuntu 22.04, writing /etc/apt/preferences file\x1b[0m"
+    sudo tee -a /etc/apt/preferences <<EOT
+Package: *
+Pin: origin "packages.microsoft.com"
+Pin-Priority: 100
+EOT
+  fi
+
   sudo apt-get update
   sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
 elif [ $OS_NAME == "KALI" ]; then
@@ -127,8 +177,12 @@ elif [ $OS_NAME == "KALI" ]; then
   sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
 fi
 
-echo -n -e "\x1b[1;33m[>] Do you want to install Nim and MinGW? It is only needed to generate a Nim stager (y/N)? \x1b[0m"
-read answer
+if [ "$ASSUME_YES" == "1" ] ;then
+  answer="Y"
+else
+  echo -n -e "\x1b[1;33m[>] Do you want to install Nim and MinGW? It is only needed to generate a Nim stager (y/N)? \x1b[0m"
+  read -r answer
+fi
 if [ "$answer" != "${answer#[Yy]}" ] ;then
   sudo apt install -y curl git gcc
   curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
@@ -146,20 +200,24 @@ python_version=($(python3 -c 'import sys; print("{} {}".format(sys.version_info.
 
 if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
   if ! command -v python3.8 &> /dev/null; then
-    if [ $OS_NAME == "UBUNTU" ]; then
+    if [ "$OS_NAME" == "UBUNTU" ]; then
       echo -e "\x1b[1;34m[*] Python3 version less than 3.8, installing 3.8\x1b[0m"
       sudo apt-get install -y python3.8 python3.8-dev python3-pip
-    elif [ $OS_NAME == "DEBIAN" ]; then
+    elif [ "$OS_NAME" == "DEBIAN" ]; then
       echo -e "\x1b[1;34m[*] Python3 version less than 3.8, installing 3.8\x1b[0m"
-      echo -n -e "\x1b[1;33m[>] Python 3.8 must be built from source on Debian. This might take a bit, do you want to continue (y/N)? \x1b[0m"
-      read answer
+      if [ "$ASSUME_YES" == "1" ] ;then
+        answer="Y"
+      else
+        echo -n -e "\x1b[1;33m[>] Python 3.8 must be built from source. This might take a bit, do you want to continue (y/N)? \x1b[0m"
+        read -r answer
+      fi
       if [ "$answer" != "${answer#[Yy]}" ] ;then
         sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev curl libbz2-dev
         curl -O https://www.python.org/ftp/python/3.8.10/Python-3.8.10.tar.xz
         tar -xf Python-3.8.10.tar.xz
         cd Python-3.8.10
         ./configure --enable-optimizations
-        make -j$(nproc)
+        make -j"$(nproc)"
         sudo make altinstall
         cd ..
         rm -rf Python-3.8.10
