@@ -383,7 +383,7 @@ def test_create_task_module_language_version_check(
     assert response.status_code == 400
     assert (
         response.json()["detail"]
-        == "module requires language version 2.0 but agent running language version 1.0"
+        == "module requires language version 2 but agent running language version 1"
     )
 
 
