@@ -151,8 +151,8 @@ def strip_python_comments(data):
     print(color("[!] strip_python_comments is deprecated and should not be used"))
 
     # remove docstrings
-    data = re.sub(r'""".*?"""', "", data, flags=re.DOTALL)
-    data = re.sub(r"'''.*?'''", "", data, flags=re.DOTALL)
+    data = re.sub(r'"(?<!= )""".*?"""', "", data, flags=re.DOTALL)
+    data = re.sub(r"(?<!= )'''.*?'''", "", data, flags=re.DOTALL)
 
     # remove comments
     lines = data.split("\n")
