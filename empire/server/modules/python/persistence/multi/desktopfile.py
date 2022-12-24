@@ -52,7 +52,7 @@ if remove.lower() == "true":
 else:
     if not os.path.exists(filePath):
         os.makedirs(filePath)
-    e = open(writeFile,'wb')
+    e = open(writeFile,'w')
     e.write(dtFile)
     e.close()
 
