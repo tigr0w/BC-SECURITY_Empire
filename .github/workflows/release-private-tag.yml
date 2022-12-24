@@ -1,19 +1,22 @@
-name: Sponsor - On Release
+name: Private - Tag Release
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  pull_request:
+    types:
+      - closed
+    branches:
+      - private-main
 
 jobs:
-  release_kali:
-    if: ${{ !contains(github.ref, '-') && !contains(github.ref, 'kali') && !contains(github.ref, 'rc') && !contains(github.ref, 'alpha') && !contains(github.ref, 'beta') && github.repository == 'BC-SECURITY/Empire-Sponsors' }}
+  tag_release:
+    if: ${{ github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/') && github.repository == 'BC-Security/Empire-Sponsors' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          ref: 'kali-master'
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Initialize mandatory git config
         run: |
           git config user.name "GitHub Actions"
@@ -25,31 +28,21 @@ jobs:
       - name: Setup poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y
-      - name: Merge sponsors-master -> kali-master
-        run: |
-          git merge origin/sponsors-master --no-edit
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push to kali-master
-        run: |
-          git push origin kali-master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set application version as variable
         run: |
           echo "APP_VERSION=$(poetry version -s)" >> $GITHUB_ENV
       - name: Extract release notes
         id: extract_release_notes
-        uses: vinnybod/extract-release-notes@v1
-      - name: Create Release
+        uses: vinnybod/extract-release-notes@v2
+      - name: Create Release Private
         id: create_release
         uses: actions/create-release@v1
         env:
+          # Uses the non-default token in order to trigger other workflows.
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
-          tag_name: v${{ env.APP_VERSION }}-kali
-          release_name: v${{ env.APP_VERSION }}-kali
+          tag_name: v${{ env.APP_VERSION }}-private
+          release_name: v${{ env.APP_VERSION }}-private
           body: ${{ steps.extract_release_notes.outputs.release_notes }}
           draft: false
           prerelease: false
-      

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -56,3 +56,23 @@ class EmpireModule(BaseModel):
     enabled: bool = True
     advanced: EmpireModuleAdvanced = EmpireModuleAdvanced()
     compiler_yaml: Optional[str]
+
+    def matches(self, query: str, parameter: str = "any") -> bool:
+        query = query.lower()
+        match = {
+            "name": query in self.name.lower(),
+            "description": query in self.description.lower(),
+            "comments": any(query in comment.lower() for comment in self.comments),
+            "authors": any(query in author.lower() for author in self.authors),
+        }
+
+        if parameter == "any":
+            return any(match.values())
+
+        return match[parameter]
+
+    @property
+    def info(self) -> Dict:
+        desc = self.dict(include={"name", "authors", "description", "comments"})
+        desc["options"] = [option.dict() for option in self.options]
+        return desc

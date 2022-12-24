@@ -52,6 +52,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed pydispatcher (@Vinnybod)
 - Removed prompt line from server (@Vinnybod)
 
+## [4.9.0] - 2022-11-29
+
+-   New CI/CD Process (@Vinnybod)
+
+## [4.8.4] - 2022-11-26
+
+-   Fixed #540 PydanticModule object has no attribute 'info' in API module search (@lavafroth)
+-   Fixed agent/server module version check (@Jackrin)
+
 ## [4.8.3] - 2022-11-11
 
 ## [4.8.2] - 2022-11-11
@@ -360,7 +369,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.9.0...HEAD
+
+[4.9.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.4...v4.9.0
+
+[4.8.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.3...v4.8.4
 
 [4.8.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.2...v4.8.3
 

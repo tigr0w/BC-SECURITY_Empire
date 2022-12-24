@@ -47,7 +47,9 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 ## Sponsors
 [<img src="https://user-images.githubusercontent.com/20302208/185247407-46b00d46-0468-4600-9c0d-4efeedc38b3b.png" height="100"/>](https://www.kali.org/) &emsp; &emsp; &emsp;
 [<img src="https://user-images.githubusercontent.com/20302208/185246508-56f4f574-5a06-4a2c-ac62-320922588dcf.png" width="100"/>](https://www.sans.org/cyber-security-courses/red-team-operations-adversary-emulation/) &emsp; &emsp; &emsp;
-[<img src="https://user-images.githubusercontent.com/20302208/113086242-219d2200-9196-11eb-8c91-84f19c646873.png" width="100"/>](https://kovert.no/)
+[<img src="https://user-images.githubusercontent.com/20302208/113086242-219d2200-9196-11eb-8c91-84f19c646873.png" width="100"/>](https://kovert.no/) &emsp; &emsp; &emsp;
+[<img src="https://user-images.githubusercontent.com/20302208/204408902-3e6b1172-c945-4b29-94ef-226384d48231.png" width="100"/>](https://www.cybrary.it/)
+
 
 ## Release Notes
 
@@ -60,6 +62,15 @@ git clone --recursive https://github.com/BC-SECURITY/Empire.git
 ```
 
 Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/quickstart/installation) for install instructions.
+
+Note: The `main` branch is a reflection of the latest changes and may not always be stable.
+After cloning the repo, you can checkout the latest stable release by running the `setup/checkout-latest-tag.sh` script.
+```bash
+git clone --recursive https://github.com/BC-SECURITY/Empire.git
+cd Empire
+./setup/checkout-latest-tag.sh
+sudo ./setup/install.sh
+```
 
 #### Server
 

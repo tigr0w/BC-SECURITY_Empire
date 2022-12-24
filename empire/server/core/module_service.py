@@ -206,10 +206,18 @@ class ModuleService(object):
         if err:
             return None, err
 
-        module_version = float(module.min_language_version or 0)
-        agent_version = float(agent.language_version or 0)
+        module_version = module.min_language_version.split(".") or 0
+        agent_version = agent.language_version.split(".") or 0
+        # makes sure the version is the right format: "x.x"
+        if len(agent_version) == 1:
+            agent_version.append(0)
+        if len(module_version) == 1:
+            module_version.append(0)
         # check if the agent/module PowerShell versions are compatible
-        if module_version > agent_version and not ignore_language_version_check:
+        if (int(module_version[0]) > int(agent_version[0])) or (
+            (int(module_version[0])) == int(agent_version[0])
+            and int(module_version[1]) > int(agent_version[1])
+        ):
             return (
                 None,
                 f"module requires language version {module_version} but agent running language version {agent_version}",

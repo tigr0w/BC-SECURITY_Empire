@@ -2,12 +2,6 @@ name: Lint and Test
 
 on:
   pull_request:
-    branches:
-      - master
-      - sponsors-master
-      - dev
-      - sponsors-dev
-      - 5.0-dev
 
 jobs:
   lint:
