@@ -1,3 +1,4 @@
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -8,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 -   Updated agent model for consumer methods to use the info property (@lavafroth)
+-   Debian 11, Ubuntu 2204, and ParrotOS Support (@Vinnybod)
+-   Add a "-y" option to the install script and fixed a bunch of formatting (@ajanvrin)
+-   Fixed issues with stripping comments from Python code and executing certain Python modules (@Jackrin)
+-   Added C# Crypto Miner module (@Cx01N)
+-   Added PSRansom module (@Cx01N)
 
 ## [4.9.0] - 2022-11-29
 
