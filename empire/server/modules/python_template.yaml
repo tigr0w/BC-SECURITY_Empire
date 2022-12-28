@@ -1,6 +1,6 @@
 # Name of the module. The full name in the CLI will still include the path like
 # powershell/lateral_movement/Invoke-Template
-name: Invoke-Template
+name: Active Directory Enumerator
 
 # The authors responsible for the original code and/or writing the Empire module for it.
 authors:
@@ -32,10 +32,10 @@ needs_admin: false
 opsec_safe: false
 
 # The language for this module. Currently, only powershell and python are valid.
-language: powershell
+language: python
 
 # The minimum PowerShell or Python version needed for the module to run
-min_language_version: '2'
+min_language_version: '2.6'
 
 # List of any references/other comments
 comments:
@@ -57,16 +57,7 @@ options:
 # If the code can be used by multiple modules, or it is very large.
 # the script_path field can be used instead. Examples of this are in the wiki.
 script: |
-  function Invoke-Template {
-      [CmdletBinding()]
-      Param (
-          [String] $Command = '',
-      )
-
-      "Hello"
-  }
+  print('Hello World')
+  print('The command is: {{ Command }}')
 # script_path: 'situational_awareness/network/Invoke-Template.ps1'
 
-# This usually just consists of invoking the function. {{ PARAMS }} injects the options into the command.
-# More info on customizing the script_end and option formatter are in the wiki.
-script_end: Invoke-Prompt {{ PARAMS }}

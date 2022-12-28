@@ -11,7 +11,8 @@ from empire.server.utils.module_util import handle_error_message
 class Module(object):
     """
     STOP. In most cases you will not need this file.
-    Take a look at the wiki: https://bc-security.gitbook.io/empire-wiki/module-development
+    Take a look at the wiki to see if you truly need this.
+    https://bc-security.gitbook.io/empire-wiki/module-development/powershell-modules
     """
 
     @staticmethod
@@ -22,49 +23,34 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
+        # Step 1: Get the module source code
+        # The script should be stripped of comments, with a link to any
+        #   original reference script included in the comments.
+        # If your script is more than a few lines, it's probably best to use
+        #   the first method to source it.
+        #
         # First method: Read in the source script from module_source
-        module_source = main_menu.installPath + "/data/module_source/..."
-        if obfuscate:
-            main_menu.obfuscationv2.obfuscate_module(
-                module_source=module_source, obfuscation_command=obfuscation_command
-            )
-            module_source = module_source.replace(
-                "module_source", "obfuscated_module_source"
-            )
-        try:
-            f = open(module_source, "r")
-        except:
-            return handle_error_message(
-                "[!] Could not read module source path at: " + str(module_source)
-            )
+        # get_module_source will return the source code, getting the obfuscated version if necessary.
+        # It will also return an error message if there was an issue reading the source code.
+        script, err = main_menu.modulesv2.get_module_source(
+            module_name=module.script_path,
+            obfuscate=obfuscate,
+            obfuscate_command=obfuscation_command,
+        )
 
-        module_code = f.read()
-        f.close()
+        if err:
+            return handle_error_message(err)
 
         # If you'd just like to import a subset of the functions from the
         #   module source, use the following:
         #   script = helpers.generate_dynamic_powershell_script(module_code, ["Get-Something", "Set-Something"])
-        script = module_code
 
-        # Second method: For calling your imported source, or holding your
-        #   inlined script. If you're importing source using the first method,
-        #   ensure that you append to the script variable rather than set.
-        #
-        # The script should be stripped of comments, with a link to any
-        #   original reference script included in the comments.
-        #
-        # If your script is more than a few lines, it's probably best to use
-        #   the first method to source it.
-        #
-        # script += """
-        script = """
-function Invoke-Something {
+        # Second method: Use the script from the module's yaml.
+        script = module.script
 
-}
-Invoke-Something"""
-
+        # Step 2: Parse the module options
+        # The params dict contains the validated options that were sent.
         script_end = ""
-
         # Add any arguments to the end execution of the script
         for option, values in params.items():
             if option.lower() != "agent":
@@ -74,11 +60,14 @@ Invoke-Something"""
                         script_end += " -" + str(option)
                     else:
                         script_end += " -" + str(option) + " " + str(values)
-        if obfuscate:
-            script_end = main_menu.obfuscationv2.obfuscate(
-                script_end, obfuscation_command
-            )
-        script += script_end
-        script = main_menu.obfuscationv2.obfuscate_keywords(script)
+
+        # Step 3: Return the final script
+        # finalize_module will obfuscate the "script_end" (if needed), then append it to the script.
+        script = main_menu.modulesv2.finalize_module(
+            script=script,
+            script_end=script_end,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )
 
         return script
