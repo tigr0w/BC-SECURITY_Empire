@@ -293,7 +293,13 @@ class InteractMenu(Menu):
         """
         response = state.agent_sleep(self.session_id, delay, jitter)
         log.info(f"Tasked agent to sleep delay/jitter {delay}/{jitter}")
-        log.info("Tasked " + self.selected + " to run Task " + str(response["id"]))
+        if "id" in response:
+            log.info(
+                "[*] Tasked " + self.session_id + " to run Task " + str(response["id"])
+            )
+
+        elif "detail" in response.keys():
+            log.error("[!] Error: " + response["detail"])
 
     @command
     def info(self) -> None:

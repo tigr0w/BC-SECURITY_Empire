@@ -1,6 +1,7 @@
 import json
 import logging
 import threading
+import time
 from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -185,6 +186,12 @@ class AgentTaskService(object):
         resp, err = self.add_task(db, agent, "TASK_EXIT", user_id=current_user_id)
         agent.archived = True
 
+        # Close socks client
+        if (agent.session_id in self.main_menu.agents.socksthread) and agent.stale:
+            agent.socks = False
+            self.main_menu.agents.socksclient[agent.session_id].shutdown()
+            time.sleep(1)
+            self.main_menu.agents.socksthread[agent.session_id].kill()
         return resp, err
 
     def create_task_socks(
@@ -235,7 +242,7 @@ class AgentTaskService(object):
                 f"Set-Delay {str(delay)} {str(jitter)}",
                 user_id=user_id,
             )
-        elif agent.language == "python":
+        elif agent.language in ["python", "ironpython"]:
             return self.add_task(
                 db,
                 agent,

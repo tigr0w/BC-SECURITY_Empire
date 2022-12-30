@@ -33,7 +33,8 @@ def send_message(packets=None):
     requestUri = server + taskURI
 
     try:
-        wrapmodule(urllib.request)
+        if proxy_list:
+            wrapmodule(urllib.request)
         data = (urllib.request.urlopen(urllib.request.Request(requestUri, data, headers))).read()
         return ('200', data)
 
