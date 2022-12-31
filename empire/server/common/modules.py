@@ -308,8 +308,8 @@ class Modules(object):
         if not agent:
             return None, "invalid agent name"
 
-        module_version = module.min_language_version.split(".") or 0
-        agent_version = agent.language_version.split(".") or 0
+        module_version = (module.min_language_version or "0").split(".")
+        agent_version = (agent.language_version or "0").split(".")
         # makes sure the version is the right format: "x.x"
         if len(agent_version) == 1:
             agent_version.append(0)
