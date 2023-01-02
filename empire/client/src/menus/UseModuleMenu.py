@@ -97,7 +97,6 @@ class UseModuleMenu(UseMenu):
                 elif "detail" in response.keys():
                     if response["detail"].startswith("[!]"):
                         log.info(response["detail"])
-                        msg = response["detail"]
                     else:
                         log.error(response["detail"])
 
@@ -105,8 +104,7 @@ class UseModuleMenu(UseMenu):
                 with open(f"{state.directory['downloads']}{filename}", "wb+") as f:
                     f.write(data)
 
-        post_body = {}
-        post_body["options"] = {}
+        post_body = {"options": {}}
 
         for key, value in self.record_options.items():
             post_body["options"][key] = self.record_options[key]["value"]

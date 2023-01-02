@@ -96,6 +96,13 @@ shortcuts:
           value: x64
         - name: File
           dynamic: true
+    assembly:
+      module: powershell_code_execution_invoke_assembly
+      params:
+        - name: File
+          dynamic: true
+        - name: Arguments
+          value: ''
   python:
     whoami:
       shell: whoami
@@ -173,6 +180,13 @@ shortcuts:
           value: x64
         - name: File
           dynamic: true
+    assembly:
+      module: powershell_code_execution_invoke_assembly
+      params:
+        - name: File
+          dynamic: true
+        - name: Arguments
+          value: ''
   csharp:
     whoami:
       shell: whoami
@@ -235,6 +249,13 @@ shortcuts:
           value: x64
         - name: File
           dynamic: true
+    assembly:
+      module: powershell_code_execution_invoke_assembly
+      params:
+        - name: File
+          dynamic: true
+        - name: Arguments
+          value: ''
 directories:
   downloads: empire/client/downloads/
   generated-stagers: empire/client/generated-stagers/
