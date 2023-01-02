@@ -164,3 +164,15 @@ jobs:
         with:
           image: docker.io/bcsecurity/empire-test-kalirolling:latest
           config: .github/install_tests/cst-config-kalirolling.yaml
+      - name: run structure tests Parrot base
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: docker.io/bcsecurity/empire-test-parrotrolling:latest
+          config: .github/cst-config-base.yaml
+      - name: run structure tests Parrot
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        uses: plexsystems/container-structure-test-action@v0.1.0
+        with:
+          image: docker.io/bcsecurity/empire-test-parrotrolling:latest
+          config: .github/install_tests/cst-config-parrotrolling.yaml

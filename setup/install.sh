@@ -38,6 +38,8 @@ function install_powershell() {
     sudo apt-get install -y powershell
   elif [ "$OS_NAME" == "KALI" ]; then
     apt update && apt -y install powershell
+  elif [ $OS_NAME == "PARROT" ]; then
+    apt update && apt -y install powershell
   fi
 
   mkdir -p /usr/local/share/powershell/Modules
@@ -101,20 +103,15 @@ elif grep -i "Kali" /etc/os-release 2>/dev/null; then
   echo -e "\x1b[1;34m[*] Detected Kali\x1b[0m"
   OS_NAME=KALI
   VERSION_ID=KALI_ROLLING
+elif grep -i "Parrot" /etc/os-release 2>/dev/null; then
+  OS_NAME=PARROT
+  VERSION_ID=$(grep -i VERSION_ID /etc/os-release | grep -o -E [[:digit:]]+\\.[[:digit:]]+)
 else
   echo -e '\x1b[1;31m[!] Unsupported OS. Exiting.\x1b[0m' && exit
 fi
 
-if [ "$OS_NAME" == "DEBIAN" ]; then
-  sudo apt-get update
-  sudo apt-get install -y python3-dev python3-pip xclip
-elif [ "$OS_NAME" == "UBUNTU" ]; then
-  sudo apt-get update
-  sudo apt-get install -y python3-dev python3-pip xclip
-elif [ "$OS_NAME" == "KALI" ]; then
-  sudo apt-get update
-  sudo apt-get install -y python3-dev python3-pip xclip
-fi
+sudo apt-get update
+sudo apt-get install -y python3-dev python3-pip xclip
 
 install_powershell
 
@@ -146,13 +143,7 @@ else
 fi
 
 echo -e "\x1b[1;34m[*] Installing dotnet for C# agents and modules\x1b[0m"
-if [ "$OS_NAME" == "DEBIAN" ]; then
-  wget https://packages.microsoft.com/config/debian/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-  sudo dpkg -i packages-microsoft-prod.deb
-  rm packages-microsoft-prod.deb
-  sudo apt-get update
-  sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
-elif [ $OS_NAME == "UBUNTU" ]; then
+if [ $OS_NAME == "UBUNTU" ]; then
   wget https://packages.microsoft.com/config/ubuntu/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
   rm packages-microsoft-prod.deb
@@ -170,7 +161,7 @@ EOT
 
   sudo apt-get update
   sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
-elif [ $OS_NAME == "KALI" ]; then
+else
   wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
   sudo apt-get update
@@ -195,9 +186,12 @@ else
   echo -e "\x1b[1;34m[*] Skipping Nim\x1b[0m"
 fi
 
+if [ "$OS_NAME" == "PARROT" ]; then
+  # https://github.com/python-poetry/poetry/issues/1917#issuecomment-1235998997
+  export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
+fi
 echo -e "\x1b[1;34m[*] Checking Python version\x1b[0m"
 python_version=($(python3 -c 'import sys; print("{} {}".format(sys.version_info.major, sys.version_info.minor))'))
-
 if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
   if ! command -v python3.8 &> /dev/null; then
     if [ "$OS_NAME" == "UBUNTU" ]; then
@@ -234,6 +228,7 @@ else
 fi
 
 echo -e "\x1b[1;34m[*] Installing Poetry\x1b[0m"
+poetry config virtualenvs.in-project true
 poetry install
 
 echo -e '\x1b[1;32m[+] Install Complete!\x1b[0m'
