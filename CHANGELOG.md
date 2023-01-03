@@ -1,4 +1,3 @@
-
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -7,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [4.10.0] - 2023-01-03
 
 -   Updated agent model for consumer methods to use the info property (@lavafroth)
 -   Debian 11, Ubuntu 2204, and ParrotOS Support (@Vinnybod)
@@ -332,7 +333,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.9.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.10.0...HEAD
+
+[4.10.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.9.0...v4.10.0
 
 [4.9.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v4.8.4...v4.9.0
 
