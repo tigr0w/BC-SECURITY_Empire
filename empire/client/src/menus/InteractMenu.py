@@ -79,21 +79,22 @@ class InteractMenu(Menu):
                         yield Completion(agent, start_position=-len(word_before_cursor))
 
                 if params[position - 1].lower() == "file":
-                    if len(cmd_line) > 2 and cmd_line[2] == "-p":
+                    for files in filtered_search_list(
+                        word_before_cursor,
+                        current_files(state.directory["downloads"]),
+                    ):
+                        yield Completion(
+                            files,
+                            display=files.split("/")[-1],
+                            start_position=-len(word_before_cursor),
+                        )
+            elif position - 1 >= len(params) and position > 1:
+                if params[position - 2].lower() == "file":
+                    if len(cmd_line) > 1 and cmd_line[1] == "-p":
                         file = state.search_files()
                         if file:
                             yield Completion(
                                 file, start_position=-len(word_before_cursor)
-                            )
-                    else:
-                        for files in filtered_search_list(
-                            word_before_cursor,
-                            current_files(state.directory["downloads"]),
-                        ):
-                            yield Completion(
-                                files,
-                                display=files.split("/")[-1],
-                                start_position=-len(word_before_cursor),
                             )
 
         elif cmd_line[0] in ["view"]:
@@ -293,7 +294,16 @@ class InteractMenu(Menu):
         """
         response = state.agent_sleep(self.session_id, delay, jitter)
         log.info(f"Tasked agent to sleep delay/jitter {delay}/{jitter}")
-        log.info("Tasked " + self.selected + " to run Task " + str(response["id"]))
+        if "id" in response:
+            log.info(
+                "[*] Tasked " + self.session_id + " to run Task " + str(response["id"])
+            )
+
+        elif "detail" in response:
+            try:
+                log.error(response["detail"][0]["msg"])
+            except:
+                log.error(response["detail"])
 
     @command
     def info(self) -> None:

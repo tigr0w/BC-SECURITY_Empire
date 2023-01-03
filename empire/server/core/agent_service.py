@@ -5,7 +5,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from empire.server.common.helpers import KThread
-from empire.server.common.socks import start_client
+from empire.server.common.socks import create_client, start_client
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
@@ -63,16 +63,17 @@ class AgentService(object):
         log.info(f"Starting SOCKS client for {agent.session_id}")
         try:
             self.main_menu.agents.socksqueue[agent.session_id] = queue.Queue()
+            client = create_client(
+                self.main_menu,
+                self.main_menu.agents.socksqueue[agent.session_id],
+                agent.session_id,
+            )
             self.main_menu.agents.socksthread[agent.session_id] = KThread(
                 target=start_client,
-                args=(
-                    self.main_menu.agenttasksv2,
-                    self.main_menu.agents.socksqueue[agent.session_id],
-                    agent.session_id,
-                    agent.socks_port,
-                ),
+                args=(client, agent.socks_port),
             )
 
+            self.main_menu.agents.socksclient[agent.session_id] = client
             self.main_menu.agents.socksthread[agent.session_id].daemon = True
             self.main_menu.agents.socksthread[agent.session_id].start()
             log.info(f'SOCKS client for "{agent.name}" successfully started')
