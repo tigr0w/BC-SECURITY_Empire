@@ -151,8 +151,6 @@ fi
 sudo systemctl start mysql.service || true # will fail in a docker image
 mysql -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('root');" || true # Set root password to root if its blank
 
-echo -n -e "\x1b[1;33m[>] Do you want to install xar and bomutils? They are only needed to generate a .dmg stager (y/N)? \x1b[0m"
-read answer
 if [ "$ASSUME_YES" == "1" ] ;then
   answer="Y"
 else
