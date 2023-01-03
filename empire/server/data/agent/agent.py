@@ -172,8 +172,8 @@ def parse_task_packet(packet, offset=0):
         packetNum = struct.unpack("=H", packet[4 + offset : 6 + offset])[0]
         resultID = struct.unpack("=H", packet[6 + offset : 8 + offset])[0]
         length = struct.unpack("=L", packet[8 + offset : 12 + offset])[0]
-        packetData = packet[12 + offset : 12 + offset + length].decode("UTF-8")
-        remainingData = packet[12 + offset + length :].decode("UTF-8")
+        packetData = packet.decode("UTF-8")[12 + offset : 12 + offset + length]
+        remainingData = packet.decode("UTF-8")[12 + offset + length :]
 
         return (
             packetType,
