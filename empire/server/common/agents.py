@@ -278,11 +278,8 @@ class Agents(object):
                 os.makedirs(save_path)
 
             # overwrite an existing file
-            if not append:
-                f = save_file.open("wb")
-            else:
-                # otherwise append
-                f = save_file.open("ab")
+            mode = "ab" if append else "wb"
+            f = save_file.open(mode)
 
             if "python" in language:
                 log.info(
