@@ -72,6 +72,9 @@ function install_mysql() {
   elif [ "$OS_NAME" == "KALI" ]; then
     sudo apt update
     sudo DEBIAN_FRONTEND=noninteractive apt install -y default-mysql-server # mariadb
+  elif [ "$OS_NAME" == "PARROT" ]; then
+    sudo apt update
+    sudo DEBIAN_FRONTEND=noninteractive apt install -y mariadb-server
   fi
 
   echo -e "\x1b[1;34m[*] Starting MySQL\x1b[0m"
