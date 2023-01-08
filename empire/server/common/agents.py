@@ -1221,7 +1221,10 @@ class Agents(object):
                     "python",
                     "ironpython",
                 ]:
-                    session_key = bytes.fromhex(session_key)
+                    try:
+                        session_key = bytes.fromhex(session_key)
+                    except:
+                        pass
 
                 # encrypt the tasking packets with the agent's session key
                 encrypted_data = encryption.aes_encrypt_then_hmac(
@@ -1254,7 +1257,10 @@ class Agents(object):
         sessionKey = self.agents[sessionID]["sessionKey"]
 
         if self.agents[sessionID]["language"].lower() in ["python", "ironpython"]:
-            sessionKey = bytes.fromhex(sessionKey)
+            try:
+                sessionKey = bytes.fromhex(sessionKey)
+            except:
+                pass
 
         try:
             # verify, decrypt and depad the packet

