@@ -445,7 +445,7 @@ class ModuleService(object):
                             }
                             self._load_module(db, yaml_module, root_path, file_path)
                 except Exception as e:
-                    log.error(f"Error loading module: {e}")
+                    log.error(f"Error loading module {filename}: {e}")
 
     def _load_module(self, db: Session, yaml_module, root_path, file_path: str):
         # extract just the module name from the full path
