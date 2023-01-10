@@ -67,8 +67,6 @@ def test_update_user_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "User not found for id 9999"
 
 
-# todo ensure there is always 1 admin? Ensure there is always 1 active?
-#  can easily do this by just not allowing self edits?
 def test_update_user_as_admin(client, admin_auth_header):
     response = client.put(
         "/api/v2/users/1",

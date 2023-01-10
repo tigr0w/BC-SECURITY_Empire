@@ -79,7 +79,13 @@ class ListenerTemplate(BaseModel):
             "example": {
                 "id": "http",
                 "name": "HTTP[S]",
-                "authors": ["@harmj0y"],  # TODO VR
+                "authors": [
+                    {
+                        "handle": "@harmj0y",
+                        "link": "",
+                        "name": "",
+                    }
+                ],
                 "description": "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.",
                 "category": "client_server",
                 "comments": [],

@@ -8,6 +8,7 @@ from starlette.responses import FileResponse
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
 from empire.server.api.v2.download.download_dto import (
+    Download,
     DownloadOrderOptions,
     Downloads,
     DownloadSourceFilter,
@@ -70,7 +71,7 @@ async def read_download(
 
 
 # todo basically everything should go to downloads which means the path should start after downloads.
-@router.get("/")
+@router.get("/", response_model=Downloads)
 async def read_downloads(
     db: Session = Depends(get_db),
     limit: int = -1,
@@ -101,7 +102,7 @@ async def read_downloads(
     )
 
 
-@router.post("/", status_code=201)
+@router.post("/", status_code=201, response_model=Download)
 async def create_download(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_active_user),

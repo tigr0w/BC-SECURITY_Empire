@@ -288,12 +288,12 @@ def test_create_task_module(client, admin_auth_header, agent):
         headers=admin_auth_header,
         json={
             "module_slug": "powershell_credentials_invoke_internal_monologue",
-            "options": {  # todo vr if i don't include an optional field, what should be expected?
+            "options": {
                 "Challenge": "1122334455667788",
                 "Downgrade": "",
                 "Impersonate": "",
                 "Restore": "",
-                "Verbose": "",
+                # "Verbose": "",
             },
         },
     )
@@ -684,7 +684,6 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
         json={"delay": -1, "jitter": 5},
     )
 
-    # todo should manual validations throw a 422?
     assert response.status_code == 422
 
     delay_err = list(filter(lambda x: "delay" in x["loc"], response.json()["detail"]))[
