@@ -15,7 +15,6 @@ from sqlalchemy import (
     String,
     Table,
     Text,
-    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects import mysql
@@ -99,10 +98,8 @@ class Listener(Base):
 class Host(Base):
     __tablename__ = "hosts"
     id = Column(Integer, Sequence("host_id_seq"), primary_key=True)
-    name = Column(String(255), nullable=False)
-    internal_ip = Column(String(255))
-
-    UniqueConstraint(name, internal_ip)
+    name = Column(Text, nullable=False)
+    internal_ip = Column(Text)
 
 
 class Agent(Base):

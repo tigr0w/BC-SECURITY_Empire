@@ -2,7 +2,7 @@ import logging
 import os
 import sqlite3
 
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import UniqueConstraint, create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
@@ -43,11 +43,16 @@ def try_create_engine(engine_url: str, *args, **kwargs) -> Engine:
     return engine
 
 
-database_config = empire_config.database
+def reset_db():
+    SessionLocal.close_all()
+    Base.metadata.drop_all(engine)
+    if use == "sqlite":
+        os.unlink(database_config.location)
 
+
+database_config = empire_config.database
 use = os.environ.get("DATABASE_USE", database_config.use)
 database_config.use = use
-
 database_config = database_config[use.lower()]
 
 if use == "mysql":
@@ -66,24 +71,40 @@ else:
         f"sqlite:///{location}",
         connect_args={
             "check_same_thread": False,
-            # "timeout": 3000
         },
         echo=False,
     )
 
-SessionLocal = sessionmaker(bind=engine)
+    models.Host.__table_args__ = (
+        UniqueConstraint(
+            models.Host.name, models.Host.internal_ip, name="host_unique_idx"
+        ),
+    )
 
+SessionLocal = sessionmaker(bind=engine)
 Base.metadata.create_all(engine)
 
-
-def reset_db():
-    SessionLocal.close_all()
-    Base.metadata.drop_all(engine)
-    if use == "sqlite":
-        os.unlink(database_config.location)
-
-
 with SessionLocal.begin() as db:
+    if use == "mysql":
+        database_name = database_config.database_name
+        query = text(
+            """
+            SELECT * FROM information_schema.statistics
+            WHERE table_schema = :schema
+            AND table_name = :table
+            AND index_name = :index
+            """
+        )
+        result = engine.execute(
+            query, schema=database_name, table="hosts", index="host_unique_idx"
+        )
+        if not result.fetchone():
+            db.execute(
+                """
+                CREATE UNIQUE INDEX host_unique_idx ON hosts ((md5(concat(name, internal_ip))))
+                """
+            )
+
     # When Empire starts up for the first time, it will create the database and create
     # these default records.
     if len(db.query(models.User).all()) == 0:

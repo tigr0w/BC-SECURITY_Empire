@@ -1,16 +1,22 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 
 @pytest.fixture(scope="module", autouse=True)
-def agent(db, models):
+def host(db, models):
     hosts = db.query(models.Host).all()
     if len(hosts) == 0:
         host = models.Host(name="default_host", internal_ip="127.0.0.1")
     else:
         host = hosts[0]
 
+    yield host
+
+
+@pytest.fixture(scope="module", autouse=True)
+def agent(db, models, host):
     agents = db.query(models.Agent).all()
     if len(agents) == 0:
         agent = models.Agent(
@@ -18,6 +24,7 @@ def agent(db, models):
             session_id="TEST123",
             delay=60,
             jitter=0.1,
+            internal_ip=host.internal_ip,
             external_ip="1.1.1.1",
             session_key="qwerty",
             nonce="nonce",
@@ -41,6 +48,7 @@ def agent(db, models):
             session_id="SECOND",
             delay=60,
             jitter=0.1,
+            internal_ip=host.internal_ip,
             external_ip="1.1.1.1",
             session_key="qwerty",
             nonce="nonce",
@@ -64,6 +72,7 @@ def agent(db, models):
             session_id="archived",
             delay=60,
             jitter=0.1,
+            internal_ip=host.internal_ip,
             external_ip="1.1.1.1",
             session_key="qwerty",
             nonce="nonce",
@@ -87,6 +96,7 @@ def agent(db, models):
             session_id="STALE",
             delay=1,
             jitter=0.1,
+            internal_ip=host.internal_ip,
             external_ip="1.1.1.1",
             session_key="qwerty",
             nonce="nonce",
@@ -150,9 +160,23 @@ def test_stale_expression(empire_config):
     assert len(not_stale) == 3
 
 
-def test_large_internal_ip_works(db, agent):
+def test_large_internal_ip_works(db, agent, host):
     agent1 = agent[0]
 
     agent1.internal_ip = "192.168.1.75 fe90::51e7:5dc7:be5d:b22e 3600:1900:7bb0:90d0:4d3c:2cd6:3fe:883b 5600:1900:3aa0:80d1:18a4:4431:5023:eef7 6600:1500:1aa0:20d0:fd69:26ff:5c4c:8d27 2900:2700:4aa0:80d0::47 192.168.214.1 fe90::a24c:82de:578b:8626 192.168.245.1 fe00::f321:a1e:18d3:ab9"
 
     db.flush()
+
+    host.internal_ip = agent1.internal_ip
+
+    db.flush()
+
+
+def test_duplicate_host(db, models, host):
+    with pytest.raises(IntegrityError):
+        host2 = models.Host(name=host.name, internal_ip=host.internal_ip)
+
+        db.add(host2)
+        db.flush()
+
+    db.rollback()
