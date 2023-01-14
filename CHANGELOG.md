@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [5.0.0] - 2021-??-??
 - Added Starkiller as an integrated web app (@Vinnybod)
 - Added full MySQL support (@Vinnybod)
     - MySQL is the new default
