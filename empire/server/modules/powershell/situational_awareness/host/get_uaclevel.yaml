@@ -1,8 +1,11 @@
 name: Get-UACLevel
 authors:
-  - Petr Medonos
+  - name: Petr Medonos
+    handle: ''
+    link: ''
 description: Enumerates UAC level
 software: ''
+tactics: []
 techniques:
   - T1033
 background: false
@@ -21,7 +24,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String

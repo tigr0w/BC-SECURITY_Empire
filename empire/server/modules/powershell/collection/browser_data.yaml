@@ -1,8 +1,11 @@
 name: Get-BrowserData
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Search through browser history or bookmarks
 software: ''
+tactics: []
 techniques:
   - T1503
 background: true
@@ -37,7 +40,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: true
     suggested_values:
       - Out-String
@@ -45,5 +48,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'collection/Get-BrowserData.ps1'
+script_path: collection/Get-BrowserData.ps1
 script_end: Get-BrowserInformation {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-BrowserData completed'

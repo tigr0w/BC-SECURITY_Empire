@@ -26,6 +26,9 @@ namespace CSharpPy
                 Assembly asm = Assembly.GetExecutingAssembly();
                 dynamic sysScope = engine.GetSysModule();
                 var importer = new ResourceMetaPathImporter(asm, "Lib.zip");
+
+                // Clear search paths (if they exist) and add our library
+                sysScope.path.clear();
                 sysScope.meta_path.append(importer);
                 sysScope.path.append(importer);
 

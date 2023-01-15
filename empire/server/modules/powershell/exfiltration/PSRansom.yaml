@@ -1,6 +1,8 @@
 name: Invoke-Script
 authors:
-  - '@JoelGMSec'
+  - name: ''
+    handle: '@JoelGMSec'
+    link: ''
 description: PSRansom is a PowerShell Ransomware Simulator with C2 Server capabilities.
 software: ''
 techniques:

@@ -1,12 +1,13 @@
 """ An example of a plugin. """
-from __future__ import print_function
+import logging
 
-import empire.server.common.helpers as helpers
 from empire.server.common.plugins import Plugin
+
+log = logging.getLogger(__name__)
 
 # anything you simply write out (like a script) will run immediately when the
 # module is imported (before the class is instantiated)
-print("Hello from your new plugin!")
+log.info("Hello from your new plugin!")
 
 
 # this class MUST be named Plugin
@@ -16,7 +17,7 @@ class Plugin(Plugin):
         Any custom loading behavior - called by init, so any
         behavior you'd normally put in __init__ goes here
         """
-        print("Custom loading behavior happens now.")
+        log.info("Custom loading behavior happens now.")
 
         # you can store data here that will persist until the plugin
         # is unloaded (i.e. Empire closes)
@@ -26,7 +27,13 @@ class Plugin(Plugin):
             # Plugin Name, at the moment this much match the do_ command
             "Name": "example",
             # List of one or more authors for the plugin
-            "Author": ["@yourname"],
+            "Authors": [
+                {
+                    "Name": "Your Name",
+                    "Handle": "@yourname",
+                    "Link": "https://github.com/yourname",
+                }
+            ],
             # More verbose multi-line description of the plugin
             "Description": ("description line 1 " "description line 2"),
             # Software and tools that from the MITRE ATT&CK framework (https://attack.mitre.org/software/)
@@ -59,7 +66,7 @@ class Plugin(Plugin):
         Parses commands from the API
         """
         try:
-            results = self.do_test("")
+            results = self.do_test(command)
             return results
         except:
             return False
@@ -69,42 +76,25 @@ class Plugin(Plugin):
         Any modifications to the mainMenu go here - e.g.
         registering functions to be run by user commands
         """
-        mainMenu.__class__.do_test = self.do_test
+        self.installPath = mainMenu.installPath
+        self.main_menu = mainMenu
 
-    def do_test(self, args):
+    def do_test(self, command):
         """
         An example of a plugin function.
         Usage: test <start|stop> <message>
         """
-        print("This is executed from a plugin!")
-        print(helpers.color("[*] It can even import Empire functionality!"))
+        log.info("This is executed from a plugin!")
 
-        # Parse arguments from CLI or API
-        if not args:
-            print(helpers.color("[!] Usage: example <start|stop> <message>"))
-            self.status = self.options["Status"]["Value"]
-            self.message = self.options["Message"]["Value"]
-            print(
-                helpers.color(
-                    "[+] Defaults: example " + self.status + " " + self.message
-                )
-            )
-        else:
-            self.status = args.split(" ")[0]
+        self.status = command["Status"]
 
         if self.status == "start":
             self.calledTimes += 1
-            print(
-                helpers.color(
-                    "[*] This function has been called {} times.".format(
-                        self.calledTimes
-                    )
-                )
-            )
-            print(helpers.color("[*] Message: " + self.message))
+            log.info("This function has been called {} times.".format(self.calledTimes))
+            log.info("Message: " + command["Message"])
 
         else:
-            print(helpers.color("[!] Usage: example <start|stop> <message>"))
+            log.info("Usage: example <start|stop> <message>")
 
     def shutdown(self):
         """

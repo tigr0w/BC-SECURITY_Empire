@@ -1,3 +1,5 @@
+import logging
+
 from prompt_toolkit import HTML
 from prompt_toolkit.completion import Completion
 
@@ -9,6 +11,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -35,7 +39,7 @@ class UseCredentialMenu(UseMenu):
                 )
                 yield Completion(
                     cred,
-                    display=HTML(f"{full['ID']} <purple>({help_text})</purple>"),
+                    display=HTML(f"{full['id']} <purple>({help_text})</purple>"),
                     start_position=-len(word_before_cursor),
                 )
             yield Completion("add", start_position=-len(word_before_cursor))
@@ -51,10 +55,10 @@ class UseCredentialMenu(UseMenu):
                     word_before_cursor, ["plaintext", "hash"]
                 ):
                     yield Completion(option, start_position=-len(word_before_cursor))
-        else:
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self, **kwargs) -> bool:
         self.selected = kwargs["selected"]
@@ -71,18 +75,17 @@ class UseCredentialMenu(UseMenu):
                 "password": {"Value": "", "Required": "True"},
                 "sid": {"Value": "", "Required": "False"},
                 "os": {"Value": "", "Required": "False"},
-                "notes": {"Value": "", "Required": "False"},
             }
         else:
             temp = state.get_credential(self.selected)
             self.record_options = {}
             for key, val in temp.items():
                 self.record_options[key] = {
-                    "Value": val,
-                    "Required": "False" if key in ["sid", "os", "notes"] else "True",
-                    "Description": "",
+                    "value": val,
+                    "required": "False" if key in ["sid", "os"] else "True",
+                    "description": "",
                 }
-            del self.record_options["ID"]
+            del self.record_options["id"]
         self.options()
         return True
 
@@ -106,37 +109,21 @@ class UseCredentialMenu(UseMenu):
             for key, val in self.record_options.items():
                 temp[key] = val["Value"]
             response = state.add_credential(temp)
-            if "ID" in response.keys():
-                print(
-                    print_util.color(
-                        f'[*] Credential {response["ID"]} successfully added'
-                    )
-                )
+            if "id" in response.keys():
+                log.info(f'Credential {response["id"]} successfully added')
                 state.get_credentials()
-            elif "error" in response.keys():
-                if response["error"].startswith("[!]"):
-                    msg = response["error"]
-                else:
-                    msg = f"[!] Error: {response['error']}"
-                print(print_util.color(msg))
+            elif "detail" in response.keys():
+                log.error(response["detail"])
         else:
             temp = {}
             for key, val in self.record_options.items():
-                temp[key] = val["Value"]
+                temp[key] = val["value"]
             response = state.edit_credential(self.selected, temp)
-            if "ID" in response.keys():
-                print(
-                    print_util.color(
-                        f'[*] Credential {response["ID"]} successfully updated'
-                    )
-                )
+            if "id" in response:
+                log.info(f'Credential {response["id"]} successfully updated')
                 state.get_credentials()
-            elif "error" in response.keys():
-                if response["error"].startswith("[!]"):
-                    msg = response["error"]
-                else:
-                    msg = f"[!] Error: {response['error']}"
-                print(print_util.color(msg))
+            elif "detail" in response:
+                log.error(response["detail"])
 
     @command
     def generate(self):

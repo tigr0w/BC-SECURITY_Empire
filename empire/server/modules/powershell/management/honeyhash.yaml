@@ -1,8 +1,11 @@
 name: New-HoneyHash
 authors:
-  - '@mattifestation'
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
 description: Inject artificial credentials into LSASS.
 software: ''
+tactics: []
 techniques:
   - T1177
 background: false
@@ -30,5 +33,5 @@ options:
     description: Specifies the fake password.
     required: true
     value: ''
-script_path: 'management/New-HoneyHash.ps1'
+script_path: management/New-HoneyHash.ps1
 script_end: New-HoneyHash {{ PARAMS }}

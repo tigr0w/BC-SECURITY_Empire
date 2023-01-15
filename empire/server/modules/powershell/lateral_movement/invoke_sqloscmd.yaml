@@ -1,9 +1,14 @@
 name: Invoke-SQLOSCMD
 authors:
-  - '@nullbind'
-  - '@0xbadjuju'
+  - name: ''
+    handle: '@nullbind'
+    link: ''
+  - name: ''
+    handle: '@0xbadjuju'
+    link: ''
 description: Executes a command or stager on remote hosts using xp_cmdshell.
 software: ''
+tactics: []
 techniques:
   - T1505
 background: true
@@ -12,7 +17,7 @@ needs_admin: false
 opsec_safe: true
 language: powershell
 min_language_version: '2'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to run module on.
@@ -43,8 +48,7 @@ options:
     required: false
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: Proxy
@@ -52,14 +56,13 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
     required: false
     value: default
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: 'mattifestation etw'
-script_path: 'lateral_movement/Invoke-SQLOSCmd.ps'
+    value: mattifestation etw
+script_path: lateral_movement/Invoke-SQLOSCmd.ps
 advanced:
   custom_generate: true

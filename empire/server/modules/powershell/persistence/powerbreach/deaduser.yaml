@@ -1,8 +1,11 @@
 name: Invoke-DeadUserBackdoor
 authors:
-  - '@sixdub'
+  - name: ''
+    handle: '@sixdub'
+    link: ''
 description: Backup backdoor for a backdoor user.
 software: ''
+tactics: []
 techniques:
   - T1098
 background: false

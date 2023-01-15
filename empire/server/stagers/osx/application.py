@@ -1,8 +1,9 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -10,7 +11,13 @@ class Stager(object):
 
         self.info = {
             "Name": "Application",
-            "Author": ["@xorrior"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                }
+            ],
             "Description": "Generates an Empire Application.",
             "Comments": [""],
         }
@@ -98,7 +105,7 @@ class Stager(object):
         )
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("Error in launcher command generation.")
             return ""
 
         else:

@@ -61,15 +61,15 @@ HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
 from __future__ import absolute_import
 
 import base64
-import json
+import logging
 import os
 import struct
 import sys
 
-from pydispatch import dispatcher
-
-# Empire imports
 from . import encryption
+
+log = logging.getLogger(__name__)
+
 
 # 0         -> error
 # 1-99      -> standard functionality
@@ -100,6 +100,8 @@ PACKET_NAMES = {
     "TASK_CSHARP": 44,  # todo: move to 116/117
     "TASK_GETJOBS": 50,
     "TASK_STOPJOB": 51,
+    "TASK_SOCKS": 60,
+    "TASK_SOCKS_DATA": 61,
     # Agent Module Commands
     "TASK_CMD_WAIT": 100,
     "TASK_CMD_WAIT_SAVE": 101,
@@ -241,10 +243,8 @@ def parse_result_packet(packet, offset=0):
         )
 
     except Exception as e:
-        message = "[!] parse_result_packet(): exception: {}".format(e)
-        signal = json.dumps({"print": True, "message": message})
-        dispatcher.send(signal, sender="empire")
-
+        message = f"parse_result_packet(): exception: {e}"
+        log.error(message, exc_info=True)
         return (None, None, None, None, None, None, None)
 
 
@@ -345,11 +345,8 @@ def parse_routing_packet(stagingKey, data):
                     "=BBHL", routingPacket[8:]
                 )
                 if length < 0:
-                    message = (
-                        "[*] parse_agent_data(): length in decoded rc4 packet is < 0"
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(signal, sender="empire")
+                    message = "parse_agent_data(): length in decoded rc4 packet is < 0"
+                    log.warning(message)
                     encData = None
                 else:
                     encData = data[(20 + offset) : (20 + offset + length)]
@@ -370,17 +367,13 @@ def parse_routing_packet(stagingKey, data):
             return results
 
         else:
-            message = "[*] parse_agent_data() data length incorrect: {}".format(
-                len(data)
-            )
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="empire")
+            message = f"parse_agent_data() data length incorrect: {len(data)}"
+            log.warning(message)
             return None
 
     else:
-        message = "[*] parse_agent_data() data is None"
-        signal = json.dumps({"print": True, "message": message})
-        dispatcher.send(signal, sender="empire")
+        message = "parse_agent_data() data is None"
+        log.warning(message)
         return None
 
 

@@ -5,7 +5,7 @@
 # -----BUILD COMMANDS----
 # 1) build command: `docker build -t bcsecurity/empire .`
 # 2) create volume storage: `docker create -v /empire --name data bcsecurity/empire`
-# 3) run out container: `docker run -ti --volumes-from data bcsecurity/empire /bin/bash`
+# 3) run out container: `docker run -it --volumes-from data bcsecurity/empire /bin/bash`
 
 # -----RELEASE COMMANDS----
 # Handled by GitHub Actions
@@ -52,10 +52,11 @@ RUN pip install poetry \
 
 COPY . /empire
 
-RUN mkdir -p /usr/local/share/powershell/Modules && \
-    cp -r ./empire/server/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
+RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml
 
-RUN yes | ./ps-empire server --reset
+RUN mkdir -p /usr/local/share/powershell/Modules && \
+    cp -r ./empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
+
 RUN rm -rf /empire/empire/server/data/empire*
 
 ENTRYPOINT ["./ps-empire"]

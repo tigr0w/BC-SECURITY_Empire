@@ -1,11 +1,15 @@
 name: Invoke-Seatbelt
 authors:
-  - '@harmj0y'
-  - '@S3cur3Th1sSh1t'
-description: Seatbelt is a C# project that performs a number of security oriented
-  host-survey "safety checks" relevant from both offensive and defensive security
-  perspectives.
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: Seatbelt is a C# project that performs a number of security oriented host-survey "safety checks" relevant from
+  both offensive and defensive security perspectives.
 software: ''
+tactics: []
 techniques:
   - T1082
 background: false
@@ -22,8 +26,7 @@ options:
     required: true
     value: ''
   - name: Command
-    description: 'Use available Seatbelt commands (AntiVirus, PowerShellEvents, UAC,
-    etc). '
+    description: 'Use available Seatbelt commands (AntiVirus, PowerShellEvents, UAC, etc). '
     required: false
     value: ''
     suggested_values:
@@ -126,13 +129,12 @@ options:
       - WMIFilterBinding
       - WSUS
   - name: Group
-    description: Runs a predefined group of commands (All, User, System, Slack, Chrome,
-      Remote, Misc)
+    description: Runs a predefined group of commands (All, User, System, Slack, Chrome, Remote, Misc)
     required: false
     value: all
   - name: Computername
-    description: Remote system to run enumeration against. This is performed over WMI
-      via queriesfor WMI classes and WMI StdRegProv for registry enumeration.
+    description: Remote system to run enumeration against. This is performed over WMI via queriesfor WMI classes and WMI StdRegProv
+      for registry enumeration.
     required: false
     value: ''
   - name: Username
@@ -151,6 +153,6 @@ options:
     description: Runs in Quiet Mode.
     required: false
     value: 'False'
-script_path: 'situational_awareness/host/Invoke-Seatbelt.ps1'
+script_path: situational_awareness/host/Invoke-Seatbelt.ps1
 advanced:
   custom_generate: true

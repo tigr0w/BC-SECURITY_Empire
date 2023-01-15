@@ -1,8 +1,11 @@
 name: Persistence with crontab
 authors:
-  - '@Cx01N'
-description: This module establishes persistence via crontab.
+  - name: ''
+    handle: '@Cx01N'
+    link: ''
+description: This module establishes persistence via crontab
 software: ''
+tactics: []
 techniques:
   - T1168
 background: false
@@ -34,7 +37,7 @@ options:
       - 'True'
       - 'False'
     strict: true
-script: |
+script: |-
   import subprocess
   
   command = "{{Command}}"

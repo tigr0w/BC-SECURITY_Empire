@@ -1,10 +1,14 @@
 name: Invoke-SauronEye
 authors:
-  - '@vivami'
-  - '@S3cur3Th1sSh1t'
-description: SauronEye is a search tool built to aid red teams in finding files containing
-  specific keywords.
+  - name: ''
+    handle: '@vivami'
+    link: ''
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: SauronEye is a search tool built to aid red teams in finding files containing specific keywords.
 software: ''
+tactics: []
 techniques:
   - T1083
 background: false
@@ -56,7 +60,7 @@ options:
     description: Check if 2003 Office files (*.doc and *.xls) contain a VBA macro
     required: false
     value: 'True'
-script_path: 'collection/Invoke-SauronEye.ps1'
+script_path: collection/Invoke-SauronEye.ps1
 script_end: Invoke-SauronEye -Command "{{ PARAMS }}"
 advanced:
   option_format_string: --{{ KEY }} {{ VALUE }}

@@ -21,6 +21,8 @@
 # not as clean as i wished
 # cannibal: @theguly
 
+from __future__ import print_function
+
 import re
 import time
 from builtins import chr, object, range, str

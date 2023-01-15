@@ -1,13 +1,16 @@
 name: Invoke-ShellcodeMSIL
 authors:
-  - '@mattifestation'
-description: 'Execute shellcode within the context of the running PowerShell process
-  without making any Win32 function calls. Warning: This script has no way to validate
-  that your shellcode is 32 vs. 64-bit!Note: Your shellcode must end in a ret (0xC3)
-  and maintain proper stack alignment or PowerShell will crash!'
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+description: 'Execute shellcode within the context of the running PowerShell process without making any Win32 function calls.
+  Warning: This script has no way to validate that your shellcode is 32 vs. 64-bit!Note: Your shellcode must end in a ret
+  (0xC3) and maintain proper stack alignment or PowerShell will crash!'
 software: ''
+tactics:
+  - TA0002
 techniques:
-  - T1064
+  - T1059
 background: false
 output_extension:
 needs_admin: false
@@ -26,6 +29,6 @@ options:
     description: Shellcode to inject, 0x00,0x0a,... format.
     required: true
     value: ''
-script_path: 'code_execution/Invoke-ShellcodeMSIL.ps1'
+script_path: code_execution/Invoke-ShellcodeMSIL.ps1
 advanced:
   custom_generate: true

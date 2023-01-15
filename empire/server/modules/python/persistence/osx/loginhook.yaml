@@ -1,8 +1,11 @@
 name: LoginHook
 authors:
-  - '@Killswitch-GUI'
+  - name: ''
+    handle: '@Killswitch-GUI'
+    link: ''
 description: Installs Empire agent via LoginHook.
 software: ''
+tactics: []
 techniques:
   - T1037
 background: false

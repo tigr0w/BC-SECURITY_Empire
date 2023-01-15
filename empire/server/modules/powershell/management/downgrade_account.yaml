@@ -1,9 +1,11 @@
 name: Invoke-DowngradeAccount
 authors:
-  - '@harmj0y'
-description: Set reversible encryption on a given domain account and then force the
-  password to be set on next user login.
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Set reversible encryption on a given domain account and then force the password to be set on next user login.
 software: ''
+tactics: []
 techniques:
   - T1098
 background: true
@@ -12,7 +14,7 @@ needs_admin: false
 opsec_safe: true
 language: powershell
 min_language_version: '2'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to run module on.
@@ -31,14 +33,13 @@ options:
     required: false
     value: ''
   - name: Repair
-    description: Switch. Unset the reversible encryption flag and force password reset
-      flag.
+    description: Switch. Unset the reversible encryption flag and force password reset flag.
     required: false
     value: ''
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -46,5 +47,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/powerview.ps1'
+script_path: situational_awareness/network/powerview.ps1
 script_end: Invoke-DowngradeAccount {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Invoke-DowngradeAccount completed!"

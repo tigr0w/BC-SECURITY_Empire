@@ -1,11 +1,15 @@
 name: Sweet Potato Local Service to SYSTEM Privilege Escalation
 authors:
-  - '@_EthicalChaos_ (@CCob)'
-  - '@kevin'
-description: Abuses default privileges given to Local Service accounts to spawn a
-  process as SYSTEM. Tested on Server 2019 and Windows 10 1909 (Build 18363.1316).
-  Run a Powershell stager or your own command.
+  - name: ''
+    handle: '@_EthicalChaos_ (@CCob)'
+    link: ''
+  - name: ''
+    handle: '@kevin'
+    link: ''
+description: Abuses default privileges given to Local Service accounts to spawn a process as SYSTEM. Tested on Server 2019
+  and Windows 10 1909 (Build 18363.1316). Run a Powershell stager or your own command.
 software: ''
+tactics: []
 techniques:
   - T1068
 background: false
@@ -37,5 +41,5 @@ options:
     description: 'Exploit mode: [DCOM|WinRM|PrintSpoofer]. Default: PrintSpoofer'
     required: false
     value: ''
-script_path: 'privesc/Invoke-SweetPotato.ps1'
+script_path: privesc/Invoke-SweetPotato.ps1
 script_end: Invoke-SweetPotato {{ PARAMS }}

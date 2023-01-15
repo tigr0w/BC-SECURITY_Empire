@@ -1,3 +1,4 @@
+import logging
 import textwrap
 
 from prompt_toolkit.completion import Completion
@@ -10,6 +11,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -47,50 +50,12 @@ class EditListenerMenu(UseMenu):
 
         self.selected = name
         listener = state.listeners[self.selected]
-        self.record_options = listener["options"]
-        self.record = state.get_listener_options(listener["module"])["listenerinfo"]
+        self.record = state.get_listener_template(listener["template"])
 
-    @command
-    def set(self, key: str, value: str):
-        """
-        Edit a field for the current record
-
-        Usage: set <key> <value>
-        """
-        if not state.listeners[self.selected]["enabled"]:
-            if value.startswith('"') and value.endswith('"'):
-                value = value[1:-1]
-            if key in self.record_options:
-                response = state.edit_listener(self.selected, key, value)
-                if "success" in response.keys():
-                    state.listeners[self.selected]["options"][key]["Value"] = value
-                    print(
-                        print_util.color(
-                            f"[*] Updated listener {self.selected}: {key} to {value}"
-                        )
-                    )
-                elif "error" in response.keys():
-                    print(print_util.color("[!] Error: " + response["error"]))
-            else:
-                print(print_util.color(f"Could not find field: {key}"))
-        else:
-            print(print_util.color(f"[!] Listener must be disabled before edits"))
-
-    @command
-    def unset(self, key: str):
-        """
-        Unset a record option.
-
-        Usage: unset <key>
-        """
-        if key in self.record_options:
-            if self.record_options[key]["Required"]:
-                print(print_util.color(f"[!] Cannot unset required field"))
-                return
-            else:
-                self.set(key, "")
-        else:
-            print(print_util.color(f"Could not find field: {key}"))
+        # Pull template and display current values for listener
+        self.record_options = self.record["options"]
+        for key, value in listener["options"].items():
+            self.record_options[key]["value"] = value
 
     @command
     def kill(self) -> None:
@@ -99,37 +64,50 @@ class EditListenerMenu(UseMenu):
 
         Usage: kill
         """
-        response = state.kill_listener(self.selected)
-        if "success" in response.keys():
-            print(print_util.color("[*] Listener " + self.selected + " killed"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        response = state.kill_listener(state.listeners[self.selected]["id"])
+        if response.status_code == 204:
+            log.info("Listener " + self.selected + " killed")
+        elif "detail" in response:
+            log.error(response["detail"])
 
     @command
-    def enable(self) -> None:
+    def execute(self):
         """
-        Enable the selected listener
+        Create the current listener
 
-        Usage: enable
+        Usage: execute
         """
-        response = state.enable_listener(self.selected)
-        if "success" in response.keys():
-            print(print_util.color("[*] Listener " + self.selected + " enabled"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        # todo validation and error handling
+        # todo alias start to execute and generate
+        # Hopefully this will force us to provide more info in api errors ;)
+        post_body = {}
+        temp_record = {}
+        for key, value in self.record_options.items():
+            post_body[key] = self.record_options[key]["value"]
 
-    @command
-    def disable(self) -> None:
-        """
-        Disable the selected listener
+        temp_record["options"] = post_body
+        temp_record["name"] = post_body["Name"]
+        temp_record["template"] = self.record["id"]
+        temp_record["enabled"] = False
+        temp_record["id"] = state.listeners[self.selected]["id"]
 
-        Usage: disable
-        """
-        response = state.disable_listener(self.selected)
-        if "success" in response.keys():
-            print(print_util.color("[*] Listener " + self.selected + " disabled"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        response = state.edit_listener(
+            state.listeners[self.selected]["id"], temp_record
+        )
+        if "id" in response.keys():
+            log.info("Listener " + temp_record["name"] + " edited")
+        elif "detail" in response.keys():
+            log.error(response["detail"])
+
+        # re-enable listener
+        temp_record["enabled"] = True
+        response = state.edit_listener(
+            state.listeners[self.selected]["id"], temp_record
+        )
+        if "id" in response.keys():
+            log.info("Listener " + temp_record["name"] + " enabled")
+        elif "detail" in response.keys():
+            log.error("[!] Error: " + response["detail"])
 
 
 edit_listener_menu = EditListenerMenu()

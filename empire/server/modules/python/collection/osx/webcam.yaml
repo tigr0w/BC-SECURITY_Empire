@@ -1,8 +1,11 @@
 name: Webcam
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Takes a picture of a person through OSX's webcam with an ImageSnap binary.
 software: ''
+tactics: []
 techniques:
   - T1125
 background: false

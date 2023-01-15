@@ -1,5 +1,7 @@
 # server
 *.db
+*.db-wal
+*.db-shm
 empire/server/data/empire-chain.pem
 empire/server/data/empire-priv.key
 empire/server/data/credentials.csv
@@ -8,8 +10,10 @@ empire/server/data/sessions.csv
 empire/server/data/obfuscated_module_source/*.ps1
 empire/server/data/misc/ToObfuscate.ps1
 empire/server/data/misc/Obfuscated.ps1
+empire/server/data/generated-stagers/*
 empire/server/downloads/*
-**/starkiller-temp/
+empire/server/api/static/*
+empire/server/api/v2/starkiller-temp
 
 # client
 empire/client/generated-stagers/*
@@ -24,8 +28,10 @@ empire/client/downloads/*
 
 # test
 empire/test/downloads
+empire/test/data/obfuscated_module_source
 
 # misc
+*.log
 *.debug
 *.pyc
 .vscode/*
@@ -38,6 +44,8 @@ packages-microsoft-prod.deb*
 .venv
 .DS_Store
 venv/
+.venv/
 addons/
 __pycache__/
 workspace.xml
+starkiller-dist.tar.gz

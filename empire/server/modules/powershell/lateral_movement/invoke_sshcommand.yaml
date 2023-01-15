@@ -1,8 +1,11 @@
 name: Invoke-SSHCommand
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Executes a command on a remote host via SSH.
 software: ''
+tactics: []
 techniques:
   - T1071
 background: true
@@ -38,6 +41,6 @@ options:
     description: The command to run on the remote host.
     required: true
     value: ''
-script_path: 'lateral_movement/Invoke-SSHCommand.ps1'
+script_path: lateral_movement/Invoke-SSHCommand.ps1
 advanced:
   custom_generate: true

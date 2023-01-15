@@ -1,13 +1,19 @@
 name: Invoke-MS16135
 authors:
-  - '@TinySecEx'
-  - '@FuzzySec'
-  - ThePirateWhoSmellsOfSunflowers (github)
-description: 'Spawns a new Listener as SYSTEM by leveraging the MS16-135 local exploit.
-  This exploit is for x64 only and only works on unlocked session. Note: the exploit
-  performs fast windows switching, victim''s desktop may flash. A named pipe is also
-  created. Thus, opsec is not guaranteed'
+  - name: ''
+    handle: '@TinySecEx'
+    link: ''
+  - name: ''
+    handle: '@FuzzySec'
+    link: ''
+  - name: ThePirateWhoSmellsOfSunflowers (github)
+    handle: ''
+    link: ''
+description: "Spawns a new Listener as SYSTEM by leveraging the MS16-135 local exploit. This exploit is for x64 only and only\
+  \ works on unlocked session. Note: the exploit performs fast windows switching, victim's desktop may flash. A named pipe\
+  \ is also created. Thus, opsec is not guaranteed"
 software: ''
+tactics: []
 techniques:
   - T1068
 background: true
@@ -32,8 +38,7 @@ options:
     required: true
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: Proxy
@@ -41,10 +46,9 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
     required: false
     value: default
-script_path: 'privesc/Invoke-MS16135.ps1'
+script_path: privesc/Invoke-MS16135.ps1
 advanced:
   custom_generate: true

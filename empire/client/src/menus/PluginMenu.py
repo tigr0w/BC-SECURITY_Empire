@@ -14,10 +14,9 @@ class PluginMenu(Menu):
         return self._cmd_registry + super().autocomplete()
 
     def get_completions(self, document, complete_event, cmd_line, word_before_cursor):
-        if position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self):
         self.list()

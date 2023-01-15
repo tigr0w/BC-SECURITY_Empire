@@ -1,8 +1,11 @@
 name: Get-DomainComputer
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Queries the domain for current computer objects. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1082
 background: true
@@ -19,8 +22,7 @@ options:
     required: true
     value: ''
   - name: Identity
-    description: A SamAccountName, DistinguishedName, SID, GUID, or a dns host name,
-      wildcards accepted.
+    description: A SamAccountName, DistinguishedName, SID, GUID, or a dns host name, wildcards accepted.
     required: false
     value: ''
   - name: Unconstrained
@@ -28,8 +30,7 @@ options:
     required: false
     value: ''
   - name: TrustedToAuth
-    description: Switch. Return computer objects that are trusted to authenticate for
-      other principals.
+    description: Switch. Return computer objects that are trusted to authenticate for other principals.
     required: false
     value: ''
   - name: Printers
@@ -37,8 +38,7 @@ options:
     required: false
     value: ''
   - name: SPN
-    description: Return computers with a specific service principal name, wildcards
-      accepted.
+    description: Return computers with a specific service principal name, wildcards accepted.
     required: false
     value: ''
   - name: OperatingSystem
@@ -62,18 +62,15 @@ options:
     required: false
     value: ''
   - name: LDAPFilter
-    description: Specifies an LDAP query string that is used to filter Active Directory
-      objects.
+    description: Specifies an LDAP query string that is used to filter Active Directory objects.
     required: false
     value: ''
   - name: Properties
-    description: Specifies the properties of the output object to retrieve from the
-      server.
+    description: Specifies the properties of the output object to retrieve from the server.
     required: false
     value: ''
   - name: SearchBase
-    description: The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"
-      Useful for OU queries.
+    description: The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local" Useful for OU queries.
     required: false
     value: ''
   - name: Server
@@ -81,8 +78,7 @@ options:
     required: false
     value: ''
   - name: SearchScope
-    description: Specifies the scope to search under, Base/OneLevel/Subtree (default
-      of Subtree)
+    description: Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)
     required: false
     value: ''
   - name: ResultPageSize
@@ -90,19 +86,17 @@ options:
     required: false
     value: ''
   - name: ServerTimeLimit
-    description: Specifies the maximum amount of time the server spends searching. Default
-      of 120 seconds.
+    description: Specifies the maximum amount of time the server spends searching. Default of 120 seconds.
     required: false
     value: ''
   - name: Tombstone
-    description: Switch. Specifies that the search should also return deleted/tombstoned
-      objects.
+    description: Switch. Specifies that the search should also return deleted/tombstoned objects.
     required: false
     value: ''
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -110,5 +104,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/powerview.ps1'
+script_path: situational_awareness/network/powerview.ps1
 script_end: Get-DomainComputer {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-DomainComputer completed'

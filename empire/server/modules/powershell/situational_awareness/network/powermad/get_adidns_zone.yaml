@@ -1,9 +1,14 @@
 name: Get-ADIDNSZone
 authors:
-  - '@Kevin-Robertson'
-  - '@snovvcrash'
+  - name: ''
+    handle: '@Kevin-Robertson'
+    link: ''
+  - name: ''
+    handle: '@snovvcrash'
+    link: ''
 description: Query ADIDNS zones in the specified domain. Part of Powermad.
 software: ''
+tactics: []
 techniques:
   - T1016
 background: true
@@ -24,18 +29,17 @@ options:
     required: false
     value: ''
   - name: Domain
-    description: The targeted domain in DNS format. This parameter is required when
-      using an IP address in the DomainController parameter.
+    description: The targeted domain in DNS format. This parameter is required when using an IP address in the DomainController
+      parameter.
     required: false
     value: ''
   - name: DomainController
-    description: Domain controller to target. This parameter is mandatory on a non-domain
-      attached system.
+    description: Domain controller to target. This parameter is mandatory on a non-domain attached system.
     required: false
     value: ''
   - name: Partition
-    description: (DomainDNSZones,ForestDNSZones,System) The AD partition name where
-      the zone is stored. By default, this function will loop through all three partitions.
+    description: (DomainDNSZones,ForestDNSZones,System) The AD partition name where the zone is stored. By default, this function
+      will loop through all three partitions.
     required: false
     value: ''
   - name: Zone
@@ -45,7 +49,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -53,5 +57,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/powermad.ps1'
+script_path: situational_awareness/network/powermad.ps1
 script_end: Get-ADIDNSZone {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-ADIDNSZone completed'

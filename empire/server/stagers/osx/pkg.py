@@ -10,7 +10,13 @@ class Stager(object):
 
         self.info = {
             "Name": "pkg",
-            "Author": ["@xorrior"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                }
+            ],
             "Description": "Generates a pkg installer. The installer will copy a custom (empty) application to the /Applications "
             "folder. The postinstall script will execute an Empire launcher.",
             "Comments": [""],

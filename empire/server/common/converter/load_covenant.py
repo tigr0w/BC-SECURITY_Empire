@@ -6,7 +6,7 @@ import yaml
 def _convert_covenant_to_empire(covenant_dict: Dict, file_path: str):
     empire_yaml = {
         "name": covenant_dict["Name"],
-        "authors": [covenant_dict["Author"]["Handle"]],
+        "authors": _convert_convenant_authors_to_empire([covenant_dict["Author"]]),
         "description": covenant_dict["Description"],
         "language": covenant_dict["Language"].lower(),
         "compatible_dot_net_versions": covenant_dict["CompatibleDotNetVersions"],
@@ -23,6 +23,19 @@ def _convert_covenant_to_empire(covenant_dict: Dict, file_path: str):
         empire_yaml["advanced"] = covenant_dict["Empire"]["advanced"]
 
     return empire_yaml
+
+
+def _convert_convenant_authors_to_empire(covenant_authors: List[Dict]):
+    empire_authors = []
+    for author in covenant_authors:
+        empire_authors.append(
+            {
+                "handle": author["Handle"],
+                "name": author["Name"],
+                "link": author["Link"],
+            }
+        )
+    return empire_authors
 
 
 def _convert_covenant_options_to_empire(

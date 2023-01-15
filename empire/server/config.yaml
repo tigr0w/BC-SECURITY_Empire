@@ -1,24 +1,48 @@
 suppress-self-cert-warning: true
 database:
-  type: sqlite
-  location: empire/server/data/empire.db
+  use: mysql
+  mysql:
+    url: localhost:3306
+    username: root
+    password: root
+    database_name: empire
+  sqlite:
+    location: empire/server/data/empire.db
   defaults:
     # staging key will first look at OS environment variables, then here.
     # If empty, will be prompted (like Empire <3.7).
     staging-key: RANDOM
     username: empireadmin
     password: password123
-    obfuscate: false
-    # Note the escaped backslashes
-    obfuscate-command: "Token\\All\\1"
+    obfuscation:
+      - language: powershell
+        enabled: false
+        command: "Token\\All\\1"
+        module: "invoke-obfuscation"
+        preobfuscatable: true
+      - language: csharp
+        enabled: false
+        command: ""
+        module: "confuser"
+        preobfuscatable: false
+    keyword_obfuscation:
+      - Invoke-Empire
+      - Invoke-Mimikatz
     # an IP white list to ONLY accept clients from
     #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
     ip-whitelist: ""
     # an IP black list to reject accept clients from
     #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
     ip-blacklist: ""
-modules:
-  retain-last-value: false
+starkiller:
+  repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+  # Can be a branch, tag, or commit hash
+  ref: sponsors-main
+  # for private-main, instead of updating the submodule, just work out of a local copy.
+  # So devs can work off the latest changes and not worry about accidentally updating the submodule
+  # for the downstream main branches.
+  use_temp_dir: true
+  auto_update: true
 plugins:
   # Auto-load plugin with defined settings
   csharpserver:
@@ -27,7 +51,11 @@ directories:
   downloads: empire/server/downloads/
   module_source: empire/server/data/module_source/
   obfuscated_module_source: empire/server/data/obfuscated_module_source/
-keyword_obfuscation:
-  # List of keywords to obfuscate
-  - Invoke-Empire
-  - Invoke-Mimikatz
+logging:
+  level: INFO
+  directory: empire/server/downloads/logs/
+  simple_console: true
+debug:
+  last_task:
+    enabled: false
+    file: empire/server/data/last_task.txt

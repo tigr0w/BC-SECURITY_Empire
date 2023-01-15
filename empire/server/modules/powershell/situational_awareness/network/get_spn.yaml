@@ -1,9 +1,12 @@
 name: Get-SPN
 authors:
-  - '@_nullbind'
-description: Displays Service Principal Names (SPN) for domain accounts based on SPN
-  service name, domain account, or domain group via LDAP queries.
+  - name: ''
+    handle: '@_nullbind'
+    link: ''
+description: Displays Service Principal Names (SPN) for domain accounts based on SPN service name, domain account, or domain
+  group via LDAP queries.
 software: ''
+tactics: []
 techniques:
   - T1207
 background: true
@@ -20,7 +23,7 @@ options:
     required: true
     value: ''
   - name: Type
-    description: '''group'', ''user'', or ''service'''
+    description: "'group', 'user', or 'service'"
     required: false
     value: service
   - name: Search
@@ -30,7 +33,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -38,5 +41,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/Get-SPN.ps1'
+script_path: situational_awareness/network/Get-SPN.ps1
 script_end: Get-SPN {{ PARAMS }}  -List yes | Format-Table -Wrap | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SPN completed'

@@ -1,8 +1,11 @@
 name: Port Scanner.
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Simple Port Scanner.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true
@@ -26,7 +29,7 @@ options:
     description: The port to scan for.
     required: true
     value: '8080'
-script: |
+script: |-
   import socket
 
   iplist = []

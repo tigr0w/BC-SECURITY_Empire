@@ -55,7 +55,11 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 Please see our [Releases](https://github.com/BC-SECURITY/Empire/releases) or [Changelog](/changelog) page for detailed release notes.
 
 ###  Quickstart
-Empire has server client architecture which requires running each in separate terminals. 
+When cloning this repository, you will need to recurse submodules.
+```sh
+git clone --recursive https://github.com/BC-SECURITY/Empire.git
+```
+
 Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/quickstart/installation) for install instructions.
 
 Note: The `main` branch is a reflection of the latest changes and may not always be stable.
@@ -88,12 +92,14 @@ sudo ./setup/install.sh
 ```
 
 Check out the [Empire Docs](https://bc-security.gitbook.io/empire-wiki/) for more instructions on installing and using with Empire.
-For a complete list of the 4.0 changes, see the [changelog](./changelog).
+For a complete list of changes, see the [changelog](./changelog).
 
 ## Starkiller
 <div align="center"><img width="125" src="https://user-images.githubusercontent.com/20302208/208271792-91973457-2d6c-4080-8625-0f9eebed0a82.png"></div>
 
-[Starkiller](https://github.com/BC-SECURITY/Starkiller) is a GUI for PowerShell Empire that interfaces remotely with Empire via its API. Starkiller can be ran as a replacement for the Empire client or in a mixed environment with Starkiller and Empire clients.
+[Starkiller](https://github.com/BC-SECURITY/Starkiller) is a web application GUI for PowerShell Empire that interfaces remotely with Empire via its API.
+Starkiller can be ran as a replacement for the Empire client or in a mixed environment with Starkiller and Empire clients.
+As of 5.0, Starkiller is packaged in Empire as a git submodule and doesn't require any additional setup.
 
 ## Contribution Rules
 See [Contributing](./.github/CONTRIBUTING.md)

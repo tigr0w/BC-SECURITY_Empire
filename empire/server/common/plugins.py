@@ -1,50 +1,31 @@
 """ Utilities and helpers and etc. for plugins """
-from __future__ import print_function
-
-import importlib
+import logging
 from builtins import object
-from importlib.machinery import SourceFileLoader
-from importlib.util import module_from_spec, spec_from_loader
 
-import empire.server.common.helpers as helpers
-
-
-def load_plugin(mainMenu, plugin_name, file_path):
-    """Given the name of a plugin and a menu object, load it into the menu"""
-    # note the 'plugins' package so the loader can find our plugin
-    loader = importlib.machinery.SourceFileLoader(plugin_name, file_path)
-    module = loader.load_module()
-    plugin_obj = module.Plugin(mainMenu)
-
-    for key, value in plugin_obj.options.items():
-        if value.get("SuggestedValues") is None:
-            value["SuggestedValues"] = []
-        if value.get("Strict") is None:
-            value["Strict"] = False
-
-    mainMenu.loadedPlugins[plugin_name] = plugin_obj
+log = logging.getLogger(__name__)
 
 
 class Plugin(object):
     # to be overwritten by child
-    description = "This is a description of this plugin."
-
     def __init__(self, mainMenu):
         # having these multiple messages should be helpful for debugging
         # user-reported errors (can narrow down where they happen)
-        print(helpers.color("[*] Initializing plugin..."))
         # any future init stuff goes here
+        try:
+            # do custom user stuff
+            self.onLoad()
+            log.info(f"Initializing plugin: {self.info['Name']}")
 
-        print(helpers.color("[*] Doing custom initialization..."))
-        # do custom user stuff
-        self.onLoad()
+            # Register functions to the main menu
+            self.register(mainMenu)
 
-        # now that everything is loaded, register functions and etc. onto the main menu
-        print(helpers.color("[*] Registering plugin with menu..."))
-        self.register(mainMenu)
-
-        # Give access to main menu
-        self.mainMenu = mainMenu
+            # Give access to main menu
+            self.mainMenu = mainMenu
+        except Exception as e:
+            if self.info["Name"]:
+                log.error(f"{self.info['Name']} failed to initialize: {e}")
+            else:
+                log.error(f"Error initializing plugin: {e}")
 
     def onLoad(self):
         """Things to do during init: meant to be overridden by

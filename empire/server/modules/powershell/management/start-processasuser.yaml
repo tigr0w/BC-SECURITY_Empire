@@ -1,9 +1,14 @@
 name: Start-ProcessAsUser
 authors:
-  - '@mattifestation'
-  - '@tifkin_'
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+  - name: Lee Christensen
+    handle: '@tifkin_'
+    link: https://twitter.com/tifkin_
 description: Executes a command using a specified set of credentials.
 software: ''
+tactics: []
 techniques:
   - T1088
 background: false
@@ -36,9 +41,8 @@ options:
     required: false
     value: ''
   - name: NetOnly
-    description: Start the process using the LOGON_NETCREDENTIALS_ONLY flag (equivalent
-      of running "runas.exe /netonly")
+    description: Start the process using the LOGON_NETCREDENTIALS_ONLY flag (equivalent of running "runas.exe /netonly")
     required: false
     value: ''
-script_path: 'management/Start-ProcessAsUser.ps1'
+script_path: management/Start-ProcessAsUser.ps1
 script_end: Start-ProcessAsUser {{ PARAMS }}

@@ -1,10 +1,12 @@
 name: PowerCat
 authors:
-  - besimorhino
-description: powercat is a powershell function. First you need to load the function
-  before you can execute it.You can put one of the below commands into your powershell
-  profile so powercat is automaticallyloaded when powershell starts..
+  - name: besimorhino
+    handle: ''
+    link: ''
+description: powercat is a powershell function. First you need to load the function before you can execute it.You can put
+  one of the below commands into your powershell profile so powercat is automaticallyloaded when powershell starts..
 software: ''
+tactics: []
 techniques:
   - T1036
 background: true
@@ -88,5 +90,5 @@ options:
     description: Switch. Generate Encoded Payload
     required: false
     value: ''
-script_path: 'management/powercat.ps1'
+script_path: management/powercat.ps1
 script_end: powercat {{ PARAMS }}

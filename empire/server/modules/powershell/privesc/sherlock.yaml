@@ -1,8 +1,11 @@
 name: Sherlock
 authors:
-  - '@_RastaMouse'
+  - name: 'Daniel Duggan'
+    handle: '@_RastaMouse'
+    link: 'https://twitter.com/_rastamouse'
 description: Find Windows local privilege escalation vulnerabilities.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true
@@ -21,7 +24,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -29,5 +32,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'privesc/Sherlock.ps1'
+script_path: privesc/Sherlock.ps1
 script_end: Find-AllVulns | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};

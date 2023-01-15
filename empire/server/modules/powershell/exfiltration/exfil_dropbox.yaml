@@ -1,9 +1,14 @@
 name: Invoke-DropboxUpload
 authors:
-  - kdick@tevora.com
-  - Laurent Kempe
+  - name: kdick@tevora.com
+    handle: ''
+    link: ''
+  - name: Laurent Kempe
+    handle: ''
+    link: ''
 description: 'Upload a file to dropbox '
 software: ''
+tactics: []
 techniques:
   - T1041
 background: false

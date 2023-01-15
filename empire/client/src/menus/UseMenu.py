@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from prompt_toolkit import HTML
@@ -13,6 +14,8 @@ from empire.client.src.utils.autocomplete_util import (
     where_am_i,
 )
 from empire.client.src.utils.cli_util import command
+
+log = logging.getLogger(__name__)
 
 
 class UseMenu(Menu):
@@ -74,7 +77,7 @@ class UseMenu(Menu):
                     word_before_cursor, state.agents.keys()
                 ):
                     yield Completion(agent, start_position=-len(word_before_cursor))
-            if len(cmd_line) > 1 and cmd_line[1] == "file":
+            if len(cmd_line) > 1 and cmd_line[1].lower() == "file":
                 if len(cmd_line) > 2 and cmd_line[2] == "-p":
                     file = state.search_files()
                     if file:
@@ -99,7 +102,7 @@ class UseMenu(Menu):
                     )
                     yield Completion(
                         cred,
-                        display=HTML(f"{full['ID']} <purple>({help_text})</purple>"),
+                        display=HTML(f"{full['id']} <purple>({help_text})</purple>"),
                         start_position=-len(word_before_cursor),
                     )
             if (
@@ -112,10 +115,10 @@ class UseMenu(Menu):
                     yield Completion(
                         suggested_value, start_position=-len(word_before_cursor)
                     )
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     @command
     def set(self, key: str, value: str):
@@ -130,10 +133,10 @@ class UseMenu(Menu):
         if value.startswith('"') and value.endswith('"'):
             value = value[1:-1]
         if key in self.record_options:
-            self.record_options[key]["Value"] = value
-            print(print_util.color("[*] Set %s to %s" % (key, value)))
+            self.record_options[key]["value"] = value
+            log.info("Set %s to %s" % (key, value))
         else:
-            print(print_util.color(f"Could not find field: {key}"))
+            log.error(f"Could not find field: {key}")
 
     @command
     def unset(self, key: str):
@@ -144,9 +147,9 @@ class UseMenu(Menu):
         """
         if key in self.record_options:
             self.record_options[key]["Value"] = ""
-            print(print_util.color("[*] Unset %s" % key))
+            log.info("[*] Unset %s" % key)
         else:
-            print(print_util.color(f"Could not find field: {key}"))
+            log.error(f"Could not find field: {key}")
 
     @command
     def options(self):
@@ -158,9 +161,9 @@ class UseMenu(Menu):
         record_list = []
         for key, value in self.record_options.items():
             name = key
-            record_value = print_util.text_wrap(value.get("Value", ""))
-            required = print_util.text_wrap(value.get("Required", ""))
-            description = print_util.text_wrap(value.get("Description", ""))
+            record_value = print_util.text_wrap(value.get("value", ""))
+            required = print_util.text_wrap(value.get("required", ""))
+            description = print_util.text_wrap(value.get("description", ""))
             record_list.append([name, record_value, required, description])
 
         record_list.insert(0, ["Name", "Value", "Required", "Description"])
@@ -169,7 +172,7 @@ class UseMenu(Menu):
 
     @command
     def info(self):
-        """ "
+        """
         Print default info on the current record.
 
         Usage: info
@@ -178,22 +181,40 @@ class UseMenu(Menu):
 
         for key, values in self.record.items():
             if key in [
-                "Name",
-                "Author",
-                "Comments",
-                "Description",
-                "Language",
-                "Background",
-                "NeedsAdmin",
-                "OpsecSafe",
-                "Techniques",
-                "Software",
+                "id",
+                "authors",
+                "comments",
+                "description",
+                "language",
+                "background",
+                "needs_admin",
+                "opsec_safe",
+                "techniques",
+                "software",
+                "tactics",
+                "category",
             ]:
                 if isinstance(values, list):
                     if len(values) > 0 and values[0] != "":
                         for i, value in enumerate(values):
-                            if key == "Techniques":
-                                value = "http://attack.mitre.org/techniques/" + value
+                            if key == "techniques":
+                                if "." in value:
+                                    value = value.split(".")
+                                    value = (
+                                        "http://attack.mitre.org/techniques/"
+                                        + value[0]
+                                        + "/"
+                                        + value[1]
+                                    )
+                                else:
+                                    value = (
+                                        "http://attack.mitre.org/techniques/" + value
+                                    )
+                            elif key == "tactics":
+                                value = "http://attack.mitre.org/tactics/" + value
+                            elif key == "authors":
+                                value = f"{value['name']}, {value['handle']}, {value['link']}"
+
                             if i == 0:
                                 record_list.append(
                                     [
@@ -206,7 +227,7 @@ class UseMenu(Menu):
                                     ["", print_util.text_wrap(value, width=70)]
                                 )
                 elif values != "":
-                    if key == "Software":
+                    if key == "software":
                         values = "http://attack.mitre.org/software/" + values
 
                     record_list.append(
@@ -223,6 +244,6 @@ class UseMenu(Menu):
     def suggested_values_for_option(self, option: str) -> List[str]:
         try:
             lower = {k.lower(): v for k, v in self.record_options.items()}
-            return lower.get(option, {}).get("SuggestedValues", [])
+            return lower.get(option, {}).get("suggested_values", [])
         except AttributeError:
             return []

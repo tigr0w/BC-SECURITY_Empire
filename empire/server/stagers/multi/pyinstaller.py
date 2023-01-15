@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import logging
 import os
 from builtins import object, str
 
@@ -23,13 +24,21 @@ Install steps...
 
 """
 
+log = logging.getLogger(__name__)
+
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
             "Name": "pyInstaller Launcher",
-            "Author": ["@TweekFawkes"],
+            "Authors": [
+                {
+                    "Name": "Bryce Kunz",
+                    "Handle": "@TweekFawkes",
+                    "Link": "https://twitter.com/TweekFawkes",
+                }
+            ],
             "Description": "Generates an ELF binary payload launcher for Empire using pyInstaller.",
             "Comments": [
                 "Needs to have pyInstaller setup on the system you are creating the stager on. For debian based operatins systems try the following command: apt-get -y install python-pip && pip install pyinstaller"
@@ -106,12 +115,8 @@ class Stager(object):
 
         output_str = subprocess.check_output(["which", "pyinstaller"])
         if output_str == "":
-            print(helpers.color("[!] Error pyInstaller is not installed"))
-            print(
-                helpers.color(
-                    "[!] Try: apt-get -y install python-pip && pip install pyinstaller"
-                )
-            )
+            log.error("pyInstaller is not installed")
+            log.error("Try: apt-get -y install python-pip && pip install pyinstaller")
             return ""
         else:
             # generate the launcher code
@@ -123,7 +128,7 @@ class Stager(object):
                 safeChecks=safe_checks,
             )
             if launcher == "":
-                print(helpers.color("[!] Error in launcher command generation."))
+                log.error("Error in launcher command generation.")
                 return ""
             else:
                 files_to_extract_imports_from_list = []

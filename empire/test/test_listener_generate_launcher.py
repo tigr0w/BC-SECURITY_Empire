@@ -4,27 +4,32 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from empire.server.common import helpers
-from empire.server.database import models
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_staging_key():
-    from empire.server.database.base import Session
-
-    config = Session().query(models.Config).first()
+def setup_staging_key(db, models):
+    config = db.query(models.Config).first()
     config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
-    Session().add(config)
-    Session().commit()
+    db.add(config)
+    db.commit()
     yield
 
 
-def test_dbx_generate_launcher(monkeypatch):
+@pytest.fixture(scope="function")
+def main_menu_mock(db, models):
+    main_menu = Mock()
+    main_menu.installPath = db.query(models.Config).first().install_path
+    main_menu.listeners.activeListeners = {}
+    main_menu.listeners.listeners = {}
+    yield main_menu
+
+
+def test_dbx_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.dbx import Listener
 
-    main_menu = Mock()
-    dbx_listener = Listener(main_menu, [])
+    dbx_listener = Listener(main_menu_mock, [])
 
-    main_menu.listeners.activeListeners = {
+    main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": dbx_listener.options}
     }
 
@@ -43,7 +48,7 @@ def test_dbx_generate_launcher(monkeypatch):
     assert powershell_launcher == _expected_dbx_powershell_launcher()
 
 
-def test_http_generate_launcher(monkeypatch):
+def test_http_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http import Listener
 
     # guarantee the session id.
@@ -56,12 +61,11 @@ def test_http_generate_launcher(monkeypatch):
     random.choice.side_effect = lambda x: x[0]
     monkeypatch.setattr("empire.server.listeners.http.random", random)
 
-    main_menu = Mock()
-    http_listener = Listener(main_menu, [])
+    http_listener = Listener(main_menu_mock, [])
 
     http_listener.options["Cookie"]["Value"] = "l33th4x0r"
     http_listener.options["Host"]["Value"] = "http://localhost"
-    main_menu.listeners.activeListeners = {
+    main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_listener.options}
     }
 
@@ -80,7 +84,7 @@ def test_http_generate_launcher(monkeypatch):
     assert powershell_launcher == _expected_http_powershell_launcher()
 
 
-def test_http_com_generate_launcher(monkeypatch):
+def test_http_com_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http_com import Listener
 
     # guarantee the session id.
@@ -93,11 +97,10 @@ def test_http_com_generate_launcher(monkeypatch):
     random.choice.side_effect = lambda x: x[0]
     monkeypatch.setattr("empire.server.listeners.http_com.random", random)
 
-    main_menu = Mock()
-    http_com_listener = Listener(main_menu, [])
+    http_com_listener = Listener(main_menu_mock, [])
 
     http_com_listener.options["Host"]["Value"] = "http://localhost"
-    main_menu.listeners.activeListeners = {
+    main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_com_listener.options}
     }
 
@@ -116,7 +119,7 @@ def test_http_com_generate_launcher(monkeypatch):
     assert powershell_launcher == _expected_http_com_powershell_launcher()
 
 
-def test_http_foreign_generate_launcher(monkeypatch):
+def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http_foreign import Listener
 
     # guarantee the session id.
@@ -129,11 +132,10 @@ def test_http_foreign_generate_launcher(monkeypatch):
     random.choice.side_effect = lambda x: x[0]
     monkeypatch.setattr("empire.server.listeners.http_foreign.random", random)
 
-    main_menu = Mock()
-    http_foreign_listener = Listener(main_menu, [])
+    http_foreign_listener = Listener(main_menu_mock, [])
 
     http_foreign_listener.options["Host"]["Value"] = "http://localhost"
-    main_menu.listeners.activeListeners = {
+    main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_foreign_listener.options}
     }
 
@@ -152,7 +154,7 @@ def test_http_foreign_generate_launcher(monkeypatch):
     assert powershell_launcher == _expected_http_foreign_powershell_launcher()
 
 
-def test_http_hop_generate_launcher(monkeypatch):
+def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http_hop import Listener
 
     # guarantee the session id.
@@ -165,14 +167,13 @@ def test_http_hop_generate_launcher(monkeypatch):
     random.choice.side_effect = lambda x: x[0]
     monkeypatch.setattr("empire.server.listeners.http_hop.random", random)
 
-    main_menu = Mock()
-    http_hop_listener = Listener(main_menu, [])
+    http_hop_listener = Listener(main_menu_mock, [])
 
     http_hop_listener.options["Host"]["Value"] = "http://localhost"
     http_hop_listener.options["DefaultProfile"][
         "Value"
     ] = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
-    main_menu.listeners.activeListeners = {
+    main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_hop_listener.options}
     }
 
@@ -191,7 +192,7 @@ def test_http_hop_generate_launcher(monkeypatch):
     assert powershell_launcher == _expected_http_hop_powershell_launcher()
 
 
-def test_http_malleable_generate_launcher(monkeypatch):
+def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http_malleable import Listener
 
     # guarantee the session id.
@@ -217,15 +218,16 @@ def test_http_malleable_generate_launcher(monkeypatch):
         profile_mock
     )
     profile_mock.data = _fake_malleable_profile()
-    monkeypatch.setattr("empire.server.listeners.http_malleable.Session", session_mock)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.SessionLocal", session_mock
+    )
 
-    main_menu = Mock()
-    http_malleable_listener = Listener(main_menu, [])
+    http_malleable_listener = Listener(main_menu_mock, [])
     http_malleable_listener.options["Profile"]["Value"] = "amazon.profile"
     http_malleable_listener.validate_options()
 
     http_malleable_listener.options["Host"]["Value"] = "http://localhost"
-    main_menu.listeners.activeListeners = {
+    main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_malleable_listener.options}
     }
 
@@ -280,13 +282,13 @@ def test_http_malleable_generate_launcher(monkeypatch):
     assert powershell_launcher == expected_powershell_launcher
 
 
-def test_onedrive_generate_launcher(monkeypatch):
+def test_onedrive_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.onedrive import Listener
 
-    main_menu = Mock()
-    onedrive_listener = Listener(main_menu, [])
+    onedrive_listener = Listener(main_menu_mock, [])
+    onedrive_listener.stager_url = "http://localhost/stager.php"
 
-    main_menu.listeners.activeListeners = {
+    main_menu_mock.listeners.activeListeners = {
         "fake_listener": {
             "options": onedrive_listener.options,
             "stager_url": "http://localhost/stager.php",
@@ -308,7 +310,7 @@ def test_onedrive_generate_launcher(monkeypatch):
     assert powershell_launcher == _expected_onedrive_powershell_launcher()
 
 
-def test_redirector_generate_launcher(monkeypatch):
+def test_redirector_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http import Listener as HttpListener
     from empire.server.listeners.redirector import Listener
 
@@ -322,13 +324,12 @@ def test_redirector_generate_launcher(monkeypatch):
     random.choice.side_effect = lambda x: x[0]
     monkeypatch.setattr("empire.server.listeners.redirector.random", random)
 
-    main_menu = Mock()
-    redirector_listener = Listener(main_menu, [])
+    redirector_listener = Listener(main_menu_mock, [])
 
     # redirector doesn't get these fields until the listener is started.
-    redirector_listener.options.update(HttpListener(main_menu, []).options)
+    redirector_listener.options.update(HttpListener(main_menu_mock, []).options)
     redirector_listener.options["Host"] = {"Value": "http://localhost"}
-    main_menu.listeners.activeListeners = {
+    main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": redirector_listener.options}
     }
 

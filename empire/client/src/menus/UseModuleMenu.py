@@ -1,4 +1,5 @@
 import base64
+import logging
 import pathlib
 
 from prompt_toolkit.completion import Completion
@@ -13,6 +14,8 @@ from empire.client.src.utils.autocomplete_util import (
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
 from empire.client.src.utils.data_util import get_data_from_file
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -34,10 +37,10 @@ class UseModuleMenu(UseMenu):
                 word_before_cursor, state.modules.keys()
             ):
                 yield Completion(module, start_position=-len(word_before_cursor))
-        else:
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self, **kwargs) -> bool:
         if "selected" not in kwargs:
@@ -78,61 +81,60 @@ class UseModuleMenu(UseMenu):
         # Find file then upload to server
         if "File" in self.record_options:
             # if a full path upload to server, else use file from download directory
-            if pathlib.Path(self.record_options["File"]["Value"]).is_file():
+            if pathlib.Path(self.record_options["File"]["value"]).is_file():
                 try:
-                    file_directory = self.record_options["File"]["Value"]
+                    file_directory = self.record_options["File"]["value"]
                     filename = file_directory.split("/")[-1]
-                    self.record_options["File"]["Value"] = filename
-
+                    self.record_options["File"]["value"] = filename
                     data = get_data_from_file(file_directory)
                 except:
-                    print(
-                        print_util.color(
-                            "[!] Error: Invalid filename or file does not exist"
-                        )
-                    )
+                    log.error("Invalid filename or file does not exist")
                     return
                 response = state.upload_file(filename, data)
-                if "success" in response.keys():
-                    print(print_util.color("[+] File uploaded to server successfully"))
+                if "id" in response.keys():
+                    log.info("File uploaded to server successfully")
 
-                elif "error" in response.keys():
-                    if response["error"].startswith("[!]"):
-                        msg = response["error"]
+                elif "detail" in response.keys():
+                    if response["detail"].startswith("[!]"):
+                        log.info(response["detail"])
                     else:
-                        msg = f"[!] Error: {response['error']}"
-                    print(print_util.color(msg))
+                        log.error(response["detail"])
 
                 # Save copy off to downloads folder so last value points to the correct file
-                data = base64.b64decode(data.encode("UTF-8"))
                 with open(f"{state.directory['downloads']}{filename}", "wb+") as f:
                     f.write(data)
 
-        post_body = {}
+        post_body = {"options": {}}
+
         for key, value in self.record_options.items():
-            post_body[key] = self.record_options[key]["Value"]
+            post_body["options"][key] = self.record_options[key]["value"]
 
-        response = state.execute_module(self.selected, post_body)
-        if "success" in response.keys():
-            if "Agent" in post_body.keys():
-                print(
-                    print_util.color(
-                        "[*] Tasked "
-                        + self.record_options["Agent"]["Value"]
+        post_body["module_slug"] = self.record["id"]
+
+        try:
+            if self.record_options["Agent"]["value"] == "":
+                log.error("Agent not set")
+                return
+            response = state.execute_module(
+                self.record_options["Agent"]["value"], post_body
+            )
+            if "status" in response.keys():
+                if "Agent" in post_body["options"].keys():
+                    log.info(
+                        "Tasked "
+                        + self.record_options["Agent"]["value"]
                         + " to run Task "
-                        + str(response["taskID"])
+                        + str(response["id"])
                     )
-                )
-                menu_state.pop()
-            else:
-                print(print_util.color("[*] " + str(response["msg"])))
+                    menu_state.pop()
 
-        elif "error" in response.keys():
-            if response["error"].startswith("[!]"):
-                msg = response["error"]
-            else:
-                msg = f"[!] Error: {response['error']}"
-            print(print_util.color(msg))
+            elif "detail" in response.keys():
+                if response["detail"].startswith("[!]"):
+                    log.info(response["detail"])
+                else:
+                    log.error(response["detail"])
+        except Exception as e:
+            log.error(e)
 
     @command
     def generate(self):

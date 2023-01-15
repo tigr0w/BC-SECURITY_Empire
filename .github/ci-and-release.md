@@ -189,7 +189,7 @@ Tagged releases will push to the corresponding tag in DockerHub.
 Requires secrets in the repo `DOCKER_USERNAME` and `DOCKER_PASSWORD` as well as `RELEASE_TOKEN` that has `repo` and `workflow` access.
 
 ## More Information
-TODO: Link to CI/CD blog post once it is written.
+https://www.bc-security.org/using-github-actions-to-manage-ci-cd-for-empire/
 
 ## Contributing
 To update the workflows if you don't have access to the `Empire-Sponsors` repo:

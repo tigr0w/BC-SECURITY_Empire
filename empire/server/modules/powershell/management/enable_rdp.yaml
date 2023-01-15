@@ -1,8 +1,11 @@
 name: Enable-RDP
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Enables RDP on the remote machine and adds a firewall exception.
 software: ''
+tactics: []
 techniques:
   - T1076
 background: false
@@ -11,7 +14,7 @@ needs_admin: true
 opsec_safe: false
 language: powershell
 min_language_version: '2'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to run module on.

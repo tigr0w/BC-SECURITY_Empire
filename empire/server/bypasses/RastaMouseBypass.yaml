@@ -1,6 +1,8 @@
 name: RastaMouse
 authors:
-  - '@RastaMouse'
+  - name: Daniel Duggan
+    handle: '@_RastaMouse'
+    link: https://twitter.com/_rastamouse
 description: |
   Patches AMSI to always return true. Disables AMSI both within the PowerShell and the CLR
 comments:

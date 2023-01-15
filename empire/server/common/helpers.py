@@ -38,16 +38,15 @@ Includes:
 import base64
 import binascii
 import datetime
-import fnmatch
-import hashlib
 import ipaddress
 import json
+import logging
+import numbers
 import os
 import random
 import re
 import socket
 import string
-import subprocess
 import sys
 import threading
 import urllib.error
@@ -59,6 +58,9 @@ from datetime import datetime
 import netifaces
 
 from empire.server.utils.math_util import old_div
+
+log = logging.getLogger(__name__)
+
 
 ###############################################################
 #
@@ -148,7 +150,7 @@ def strip_python_comments(data):
     Strip block comments, line comments, empty lines, verbose statements, docstring,
     and debug statements from a Python source file.
     """
-    print(color("[!] strip_python_comments is deprecated and should not be used"))
+    log.warning("strip_python_comments is deprecated and should not be used")
 
     # remove docstrings
     data = re.sub(r'"(?<!= )""".*?"""', "", data, flags=re.DOTALL)
@@ -247,7 +249,7 @@ def get_powerview_psreflect_overhead(script):
     try:
         return strip_powershell_comments(pattern.findall(script)[0])
     except:
-        print(color("[!] Error extracting psreflect overhead from script!"))
+        log.error("Error extracting psreflect overhead from script!")
         return ""
 
 
@@ -300,11 +302,8 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
             )
         except:
             functionDependencies = []
-            print(
-                color(
-                    "[!] Error in retrieving dependencies for function %s !"
-                    % (requiredFunction)
-                )
+            log.error(
+                f"Error in retrieving dependencies for function {requiredFunction} !"
             )
 
         for functionDependency in functionDependencies:
@@ -371,7 +370,7 @@ def generate_dynamic_powershell_script(script, functionNames):
         try:
             newScript += functions[functionDependency] + "\n"
         except:
-            print(color("[!] Key error with function %s !" % (functionDependency)))
+            log.error(f"Key error with function {functionDependency} !")
 
     # if any psreflect methods are needed, add in the overhead at the end
     if any(el in set(psreflect_functions) for el in functionDependencies):
@@ -417,7 +416,7 @@ def parse_credentials(data):
             return [("plaintext", domain, username, password, "", "")]
 
         else:
-            print(color("[!] Error in parsing prompted credential output."))
+            log.error("Error in parsing prompted credential output.")
             return None
 
     # python/collection/prompt (Mac OS)
@@ -597,6 +596,17 @@ def get_file_datetime():
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
+def old_div(a, b):
+    """
+    Equivalent to ``a / b`` on Python 2 without ``from __future__ import
+    division``.
+    """
+    if isinstance(a, numbers.Integral) and isinstance(b, numbers.Integral):
+        return a // b
+    else:
+        return a / b
+
+
 def get_file_size(file):
     """
     Returns a string with the file size and highest rating.
@@ -645,7 +655,7 @@ def lhost():
     except socket.gaierror:
         pass
     except:
-        print("Unexpected error:", sys.exc_info()[0])
+        log.error("Unexpected error:", exc_info=True)
         return ip
 
     if (ip == "" or ip.startswith("127.")) and os.name != "nt":
@@ -657,7 +667,7 @@ def lhost():
                     if ip != "":
                         break
                 except:
-                    print("Unexpected error:", sys.exc_info()[0])
+                    log.error(f"Unexpected error:", exc_info=True)
                     pass
     return ip
 
@@ -764,66 +774,6 @@ def encode_base64(data):
     Encode data as a base64 string.
     """
     return base64.encodebytes(data).strip()
-
-
-def complete_path(text, line, arg=False):
-    """
-    Helper for tab-completion of file paths.
-    """
-
-    # stolen from dataq at
-    #   http://stackoverflow.com/questions/16826172/filename-tab-completion-in-cmd-cmd-of-python
-
-    if arg:
-        # if we have "command something path"
-        argData = line.split()[1:]
-    else:
-        # if we have "command path"
-        argData = line.split()[0:]
-
-    if not argData or len(argData) == 1:
-        completions = os.listdir("./")
-    else:
-        dir, part, base = argData[-1].rpartition("/")
-        if part == "":
-            dir = "./"
-        elif dir == "":
-            dir = "/"
-
-        completions = []
-        for f in os.listdir(dir):
-            if f.startswith(base):
-                if os.path.isfile(os.path.join(dir, f)):
-                    completions.append(f)
-                else:
-                    completions.append(f + "/")
-
-    return completions
-
-
-def dict_factory(cursor, row):
-    """
-    Helper that returns the SQLite query results as a dictionary.
-
-    From Colin Burnett: http://stackoverflow.com/questions/811548/sqlite-and-python-return-a-dictionary-using-fetchone
-    """
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
-
-
-def get_module_source_files():
-    """
-    Get the filepaths of PowerShell module_source files located
-    in the data/module_source directory.
-    """
-    paths = []
-    pattern = "*.ps1"
-    for root, dirs, files in os.walk("empire/server/data/module_source"):
-        for filename in fnmatch.filter(files, pattern):
-            paths.append(os.path.join(root, filename))
-    return paths
 
 
 class KThread(threading.Thread):

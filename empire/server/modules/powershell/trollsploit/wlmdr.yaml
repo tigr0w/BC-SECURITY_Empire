@@ -1,8 +1,11 @@
 name: Invoke-WLMDR
 authors:
-  - '@benichmt1'
+  - name: ''
+    handle: '@benichmt1'
+    link: ''
 description: Displays a balloon reminder in the taskbar.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: true

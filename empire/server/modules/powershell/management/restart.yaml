@@ -1,17 +1,22 @@
 name: Restart-Computer
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Restarts the specified machine.
 software: ''
+tactics:
+  - TA0002
 techniques:
-  - T1064
+  - T1059
+  - T1059.003
 background: false
 output_extension:
 needs_admin: false
 opsec_safe: false
 language: powershell
 min_language_version: '2'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to run module on.

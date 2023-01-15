@@ -1,11 +1,15 @@
 name: CreateDylibHijacker
 authors:
-  - '@patrickwardle,@xorrior'
-description: Configures and Empire dylib for use in a Dylib hijack, given the path
-  to a legitimate dylib of a vulnerable application. The architecture of the dylib
-  must match the target application. The configured dylib will be copied local to
-  the hijackerPath
+  - name: ''
+    handle: '@patrickwardle'
+    link: ''
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+description: Configures and Empire dylib for use in a Dylib hijack, given the path to a legitimate dylib of a vulnerable application.
+  The architecture of the dylib must match the target application. The configured dylib will be copied local to the hijackerPath
 software: ''
+tactics: []
 techniques:
   - T1157
 background: false
@@ -31,13 +35,11 @@ options:
     required: true
     value: x86
   - name: SafeChecks
-    description: Switch. Checks for LittleSnitch or a SandBox, exit the staging process
-      if true. Defaults to True.
+    description: Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.
     required: true
     value: 'True'
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: LegitimateDylibPath
@@ -45,8 +47,7 @@ options:
     required: true
     value: ''
   - name: VulnerableRPATH
-    description: Full path to where the hijacker should be planted. This will be the
-      RPATH in the Hijack Scanner module.
+    description: Full path to where the hijacker should be planted. This will be the RPATH in the Hijack Scanner module.
     required: true
     value: ''
 advanced:

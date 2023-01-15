@@ -1,11 +1,10 @@
 from __future__ import print_function
 
-import socket
+import logging
 import subprocess
-import threading
 from builtins import object
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -13,14 +12,18 @@ class Stager(object):
 
         self.info = {
             "Name": "Stage 0 - Reverse Shell",
-            "Author": ["@Cx01N"],
+            "Authors": [
+                {
+                    "Name": "Anthony Rose",
+                    "Handle": "@Cx01N",
+                    "Link": "https://twitter.com/Cx01N_",
+                }
+            ],
             "Description": "Generates a reverse shell using msfvenom to act as a stage 0.",
             "Comments": [""],
         }
 
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -35,13 +38,6 @@ class Stager(object):
                 "Description": "Port on local host for the reverse shell.",
                 "Required": True,
                 "Value": "9999",
-            },
-            "Language": {
-                "Description": "Language of the stager to generate.",
-                "Required": True,
-                "Value": "powershell",
-                "SuggestedValues": ["powershell"],
-                "Strict": True,
             },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
@@ -63,29 +59,24 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.main_menu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
 
     def generate(self):
-        # extract all of our options
         arch = self.options["Arch"]["Value"]
         lhost = self.options["LocalHost"]["Value"]
         lport = self.options["LocalPort"]["Value"]
         msf_format = self.options["MSF_Format"]["Value"]
-
         shell = self.generate_shellcode(lhost, lport, msf_format, arch)
 
         return shell
 
     def generate_shellcode(self, lhost, lport, msf_format, arch):
-        print(
+        log.info(
             "[*] Generating Shellcode %s with lhost %s and lport %s"
             % (arch, lhost, lport)
         )

@@ -1,8 +1,11 @@
 name: Change Login Message for the user.
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Change the login message for the user.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: false
@@ -30,7 +33,7 @@ options:
     description: True/False to change the login background.
     required: false
     value: 'False'
-script: |
+script: |-
   import subprocess
   desktop = {{ Desktop }}
   login = {{ Login }}

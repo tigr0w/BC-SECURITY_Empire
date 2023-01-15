@@ -1,12 +1,20 @@
 name: Invoke-WMI
 authors:
-  - '@mattifestation'
-  - '@harmj0y'
-  - '@tristandostaler'
-  - '@janit0rjoe'
-description: Persist a stager (or script) using a permanent WMI subscription. This
-  has a difficult detection/removal rating.
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: ''
+    handle: '@tristandostaler'
+    link: ''
+  - name: ''
+    handle: '@janit0rjoe'
+    link: ''
+description: Persist a stager (or script) using a permanent WMI subscription. This has a difficult detection/removal rating.
 software: ''
+tactics: []
 techniques:
   - T1084
 background: false

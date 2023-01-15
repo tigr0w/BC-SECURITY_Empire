@@ -1,12 +1,16 @@
 name: Invoke-SharpLoginPrompt
 authors:
-  - '@shantanu561993'
-  - '@S3cur3Th1sSh1t'
-description: This Program creates a login prompt to gather username and password of
-  the current user. This project allows red team to phish username and password of
-  the current user without touching lsass and having administrator credentials on
-  the system.
+  - name: ''
+    handle: '@shantanu561993'
+    link: ''
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: This Program creates a login prompt to gather username and password of the current user. This project allows
+  red team to phish username and password of the current user without touching lsass and having administrator credentials
+  on the system.
 software: ''
+tactics: []
 techniques:
   - T1056
 background: false
@@ -30,8 +34,8 @@ options:
     description: Customized subheading for prompt.
     required: false
     value: ''
-script_path: 'collection/Invoke-SharpLoginPrompt.ps1'
-script_end: "Invoke-SharpLoginPrompt -Command \"{{ PARAMS }}\""
+script_path: collection/Invoke-SharpLoginPrompt.ps1
+script_end: Invoke-SharpLoginPrompt -Command "{{ PARAMS }}"
 advanced:
-  option_format_string: "{{ VALUE }}"
-  option_format_string_boolean: ""
+  option_format_string: '{{ VALUE }}'
+  option_format_string_boolean: ''

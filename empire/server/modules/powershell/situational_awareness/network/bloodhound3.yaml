@@ -1,11 +1,20 @@
 name: Invoke-BloodHound
 authors:
-  - '@harmj0y'
-  - '@_wald0'
-  - '@cptjesus'
-  - rafff
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: Andy Robbins
+    handle: '@_wald0'
+    link: https://twitter.com/_wald0
+  - name: Rohan Vazarkar
+    handle: '@cptjesus'
+    link: https://twitter.com/cptjesus
+  - name: rafff
+    handle: ''
+    link: ''
 description: Execute BloodHound data collection (ingestor for version 3).
 software: ''
+tactics: []
 techniques:
   - T1484
 background: true
@@ -22,40 +31,34 @@ options:
     required: true
     value: ''
   - name: CollectionMethod
-    description: The method to collect data. Group, LocalGroup, LocalAdmin, RDP, DCOM,
-      PSRemote, Session, SessionLoop, Trusts, ACL, Container, ComputerOnly, GPOLocalGroup,
-      LoggedOn, ObjectProps, SPNTargets, Default, DcOnly, All.
+    description: The method to collect data. Group, LocalGroup, LocalAdmin, RDP, DCOM, PSRemote, Session, SessionLoop, Trusts,
+      ACL, Container, ComputerOnly, GPOLocalGroup, LoggedOn, ObjectProps, SPNTargets, Default, DcOnly, All.
     required: true
     value: Default
   - name: Stealth
-    description: Use stealth collection options, will sacrifice data quality in favor
-      of much reduced network impact.
+    description: Use stealth collection options, will sacrifice data quality in favor of much reduced network impact.
     required: false
     value: ''
   - name: Domain
-    description: Specifies the domain to enumerate. If not specified, will enumerate
-      the current domain your user context specifies.
+    description: Specifies the domain to enumerate. If not specified, will enumerate the current domain your user context
+      specifies.
     required: false
     value: ''
   - name: WindowsOnly
-    description: Limits computer collection to systems that have an operatingssytem
-      attribute that matches *Windows*.
+    description: Limits computer collection to systems that have an operatingssytem attribute that matches *Windows*.
     required: false
     value: ''
   - name: ComputerFile
-    description: 'A file, /!\ ON THE HOST /!\, containing a list of computers to enumerate.
-    This option can only be used with the following Collection Methods: Session, SessionLoop,
-    LocalGroup, ComputerOnly, LoggedOn.'
+    description: 'A file, /!\ ON THE HOST /!\, containing a list of computers to enumerate. This option can only be used with
+      the following Collection Methods: Session, SessionLoop, LocalGroup, ComputerOnly, LoggedOn.'
     required: false
     value: ''
   - name: LdapFilter
-    description: Append this ldap filter to the search filter to further filter the
-      results enumerated.
+    description: Append this ldap filter to the search filter to further filter the results enumerated.
     required: false
     value: ''
   - name: SearchBase
-    description: DistinguishedName to start LDAP searches at. Equivalent to the old
-      --OU option.
+    description: DistinguishedName to start LDAP searches at. Equivalent to the old --OU option.
     required: false
     value: ''
   - name: OutputDirectory
@@ -71,8 +74,7 @@ options:
     required: false
     value: ''
   - name: CacheFilename
-    description: 'Name for the cache file dropped to disk (default: unique hash generated
-    per machine).'
+    description: 'Name for the cache file dropped to disk (default: unique hash generated per machine).'
     required: false
     value: ''
   - name: RandomFilenames
@@ -84,8 +86,7 @@ options:
     required: false
     value: ''
   - name: NoSaveCache
-    description: Don't write the cache file to disk. Caching will still be performed
-      in memory.
+    description: Don't write the cache file to disk. Caching will still be performed in memory.
     required: false
     value: ''
   - name: EncryptZip
@@ -101,8 +102,7 @@ options:
     required: false
     value: ''
   - name: DomainController
-    description: Domain Controller to connect too. Specifiying this can result in data
-      loss.
+    description: Domain Controller to connect too. Specifiying this can result in data loss.
     required: false
     value: ''
   - name: LdapPort
@@ -118,13 +118,11 @@ options:
     required: false
     value: ''
   - name: LdapUsername
-    description: Username for connecting to LDAP. Use this if you're using a non-domain
-      account for connecting to computers.
+    description: Username for connecting to LDAP. Use this if you're using a non-domain account for connecting to computers.
     required: false
     value: ''
   - name: LdapPassword
-    description: Password for connecting to LDAP. Use this if you're using a non-domain
-      account for connecting to computers.
+    description: Password for connecting to LDAP. Use this if you're using a non-domain account for connecting to computers.
     required: false
     value: ''
   - name: SkipPortScan
@@ -136,8 +134,7 @@ options:
     required: false
     value: ''
   - name: ExcludeDomainControllers
-    description: Exclude domain controllers from enumeration (usefult o avoid Microsoft
-      ATP/ATA).
+    description: Exclude domain controllers from enumeration (usefult o avoid Microsoft ATP/ATA).
     required: false
     value: ''
   - name: Throttle
@@ -184,5 +181,5 @@ options:
     description: Interval to sleep between loops (Default 00:05:00).
     required: false
     value: ''
-script_path: 'situational_awareness/network/BloodHound3.ps1'
+script_path: situational_awareness/network/BloodHound3.ps1
 script_end: Invoke-BloodHound {{ PARAMS }} | Out-String | %{$_ + "`n"};"`n Invoke-BloodHound completed!"

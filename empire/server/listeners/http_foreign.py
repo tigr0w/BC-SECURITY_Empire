@@ -1,25 +1,38 @@
-from __future__ import print_function
-
 import base64
+import logging
 import os
 import random
 from builtins import object, str
 from textwrap import dedent
-from typing import List
+from typing import List, Optional, Tuple
 
 from empire.server.common import helpers, packets, templating
+from empire.server.common.empire import MainMenu
 from empire.server.utils import data_util, listener_util
+from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
 
         self.info = {
             "Name": "HTTP[S]",
-            "Author": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": ("Starts a 'foreign' http[s] Empire listener."),
             "Category": ("client_server"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime
@@ -104,6 +117,8 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
+        self.instance_log = log
+
     def default_response(self):
         """
         If there's a default response expected from the server that the client needs to ignore,
@@ -111,7 +126,7 @@ class Listener(object):
         """
         return ""
 
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
@@ -121,20 +136,13 @@ class Listener(object):
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
 
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                print(helpers.color('[!] Option "%s" is required.' % (key)))
-                return False
-
-        return True
+        return True, None
 
     def generate_launcher(
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -150,18 +158,21 @@ class Listener(object):
         bypasses = [] if bypasses is None else bypasses
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_foreign generate_launcher(): no language specified!"
-                )
+            log.error(
+                "listeners/http_foreign generate_launcher(): no language specified!"
             )
+            return None
 
-        if listenerName and (listenerName in self.mainMenu.listeners.activeListeners):
-
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
+        if (
+            True
+        ):  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName][
-                "options"
-            ]
+            listenerOptions = active_listener.options
+
             host = listenerOptions["Host"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
             stagingKey = listenerOptions["StagingKey"]["Value"]
@@ -264,14 +275,13 @@ class Listener(object):
                 stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
-                    stager = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    stager = self.mainMenu.obfuscationv2.obfuscate(
                         stager,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
                 # base64 encode the stager and return it
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(stager, launcher)
                 else:
@@ -290,8 +300,8 @@ class Listener(object):
                     if safeChecks.lower() == "true":
                         launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stagger: " + str(e)
-                    print(helpers.color(p, color="red"))
+                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                    log.error(p, exc_info=True)
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
@@ -380,18 +390,9 @@ class Listener(object):
                     return launcherBase
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http_foreign generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/http_foreign generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_foreign generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -399,30 +400,24 @@ class Listener(object):
         encode=False,
         encrypt=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         language=None,
     ):
         """
         If you want to support staging for the listener module, generate_stager must be
         implemented to return the stage1 key-negotiation stager code.
         """
-        print(
-            helpers.color(
-                "[!] generate_stager() not implemented for listeners/template"
-            )
-        )
+        log.error("generate_stager() not implemented for listeners/template")
         return ""
 
     def generate_agent(
-        self, listenerOptions, language=None, obfuscate=False, obfuscationCommand=""
+        self, listenerOptions, language=None, obfuscate=False, obfuscation_command=""
     ):
         """
         If you want to support staging for the listener module, generate_agent must be
         implemented to return the actual staged agent code.
         """
-        print(
-            helpers.color("[!] generate_agent() not implemented for listeners/template")
-        )
+        log.error("generate_agent() not implemented for listeners/template")
         return ""
 
     def generate_comms(self, listenerOptions, language=None):
@@ -468,17 +463,11 @@ class Listener(object):
                 return comms
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http_foreign generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/http_foreign generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_foreign generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/http_foreign generate_comms(): no language specified!")
 
     def start(self, name=""):
         """

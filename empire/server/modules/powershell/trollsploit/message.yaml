@@ -1,8 +1,11 @@
 name: Invoke-Message
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Displays a specified message to the user.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: true

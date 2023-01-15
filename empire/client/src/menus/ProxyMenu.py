@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import textwrap
 from typing import List
@@ -16,6 +17,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -44,10 +47,10 @@ class ProxyMenu(UseMenu):
                     yield Completion(
                         suggested_value, start_position=-len(word_before_cursor)
                     )
-        else:
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self, **kwargs) -> bool:
         if "selected" not in kwargs:
@@ -80,12 +83,12 @@ class ProxyMenu(UseMenu):
                     self.proxy_list = []
                 self.list()
         except:
-            print(print_util.color(f"[!] Error: Proxy menu failed to initialize"))
+            log.error(f"Proxy menu failed to initialize")
 
     @command
     def add(self, position: int) -> None:
         """
-        Tasks an the specified agent to update proxy chain
+        Tasks a specified agent to update proxy chain
 
         Usage: add_proxy [<position>]
         """
@@ -97,17 +100,17 @@ class ProxyMenu(UseMenu):
             self.proxy_list.insert(
                 int(position),
                 {
-                    "proxytype": self.record_options["Proxy_Type"]["Value"],
-                    "addr": self.record_options["Address"]["Value"],
-                    "port": int(self.record_options["Port"]["Value"]),
+                    "proxytype": self.record_options["proxy_type"]["value"],
+                    "addr": self.record_options["address"]["value"],
+                    "port": int(self.record_options["port"]["value"]),
                 },
             )
         else:
             self.proxy_list.append(
                 {
-                    "proxytype": self.record_options["Proxy_Type"]["Value"],
-                    "addr": self.record_options["Address"]["Value"],
-                    "port": int(self.record_options["Port"]["Value"]),
+                    "proxytype": self.record_options["proxy_type"]["value"],
+                    "addr": self.record_options["address"]["value"],
+                    "port": int(self.record_options["port"]["value"]),
                 }
             )
 
@@ -139,9 +142,9 @@ class ProxyMenu(UseMenu):
         """
         if self.proxy_list:
             response = state.update_agent_proxy(self.session_id, self.proxy_list)
-            print(print_util.color(f"[*] Tasked agent to update proxy chain"))
+            log.info(f"Tasked agent to update proxy chain")
         else:
-            print(print_util.color(f"[!] No proxy chain to configure"))
+            log.error(f"No proxy chain to configure")
 
     @command
     def list(self) -> None:
@@ -165,29 +168,10 @@ class ProxyMenu(UseMenu):
 
         table_util.print_table(proxies, "Active Proxies")
 
-    @command
-    def options(self):
-        """
-        Print the current record options
-
-        Usage: options
-        """
-        record_list = []
-        for key, value in self.record_options.items():
-            name = key
-            record_value = print_util.text_wrap(value.get("Value", ""))
-            required = print_util.text_wrap(value.get("Required", ""))
-            description = print_util.text_wrap(value.get("Description", ""))
-            record_list.append([name, record_value, required, description])
-
-        record_list.insert(0, ["Name", "Value", "Required", "Description"])
-
-        table_util.print_table(record_list, "Record Options")
-
     def suggested_values_for_option(self, option: str) -> List[str]:
         try:
             lower = {k.lower(): v for k, v in self.record_options.items()}
-            return lower.get(option, {}).get("SuggestedValues", [])
+            return lower.get(option, {}).get("suggested_values", [])
         except AttributeError:
             return []
 

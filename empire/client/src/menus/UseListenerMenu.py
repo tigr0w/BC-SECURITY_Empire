@@ -1,3 +1,5 @@
+import logging
+
 from prompt_toolkit.completion import Completion
 
 from empire.client.src.EmpireCliState import state
@@ -8,6 +10,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -28,10 +32,10 @@ class UseListenerMenu(UseMenu):
                 word_before_cursor, sorted(state.listener_types)
             ):
                 yield Completion(listener, start_position=-len(word_before_cursor))
-        else:
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self, **kwargs) -> bool:
         if "selected" not in kwargs:
@@ -50,11 +54,8 @@ class UseListenerMenu(UseMenu):
         """
         if module in state.listener_types:
             self.selected = module
-            # TODO: Add API endpoint for listener info
-            self.record = state.get_listener_options(self.selected)["listenerinfo"]
-            self.record_options = state.get_listener_options(self.selected)[
-                "listeneroptions"
-            ]
+            self.record = state.get_listener_options(self.selected)
+            self.record_options = self.record["options"]
 
     @command
     def execute(self):
@@ -67,20 +68,19 @@ class UseListenerMenu(UseMenu):
         # todo alias start to execute and generate
         # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
+        temp_record = {}
         for key, value in self.record_options.items():
-            post_body[key] = self.record_options[key]["Value"]
+            post_body[key] = self.record_options[key]["value"]
 
-        # Validate options before generating listener, used specifically for onedrive listener AuthCode
-        validate_response = state.validate_listener(self.selected, post_body)
-        if "error" in validate_response.keys():
-            print(print_util.color("[!] Error: " + validate_response["error"]))
-            return
+        temp_record["options"] = post_body
+        temp_record["name"] = post_body["Name"]
+        temp_record["template"] = self.record["id"]
 
-        response = state.create_listener(self.selected, post_body)
-        if "success" in response.keys():
+        response = state.create_listener(temp_record)
+        if "id" in response.keys():
             return
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        elif "detail" in response.keys():
+            log.error(response["detail"])
 
     @command
     def generate(self):

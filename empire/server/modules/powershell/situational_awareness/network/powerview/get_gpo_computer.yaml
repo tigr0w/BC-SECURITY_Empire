@@ -1,11 +1,15 @@
 name: Get-GPOComputer
 authors:
-  - '@harmj0y'
-  - '@byt3bl33d3r'
-description: 'Takes a GPO GUID and returns the computers the GPO is applied to. (Note:
-  This function was removed in PowerView. This now uses a combination of two CmdLets
-  to achieve the same functionality)'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: ''
+    handle: '@byt3bl33d3r'
+    link: https://twitter.com/byt3bl33d3r
+description: 'Takes a GPO GUID and returns the computers the GPO is applied to. (Note: This function was removed in PowerView.
+  This now uses a combination of two CmdLets to achieve the same functionality)'
 software: S0194
+tactics: []
 techniques:
   - T1484
 background: true
@@ -36,7 +40,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String

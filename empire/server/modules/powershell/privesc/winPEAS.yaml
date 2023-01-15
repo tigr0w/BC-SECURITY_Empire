@@ -1,10 +1,14 @@
 name: Invoke-winPEAS
 authors:
-  - '@carlospolop'
-  - '@S3cur3Th1sSh1t'
-description: WinPEAS is a script that search for possible paths to escalate privileges
-  on Windows hosts.
+  - name: ''
+    handle: '@carlospolop'
+    link: ''
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: WinPEAS is a script that search for possible paths to escalate privileges on Windows hosts.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: false
@@ -76,8 +80,8 @@ options:
     description: Disable colored output.
     required: true
     value: 'False'
-script_path: 'privesc/Invoke-winPEAS.ps1'
-script_end: "Invoke-winPEAS -Command \"{{ PARAMS }}\""
+script_path: privesc/Invoke-winPEAS.ps1
+script_end: Invoke-winPEAS -Command "{{ PARAMS }}"
 advanced:
-  option_format_string: "{{ VALUE }}"
-  option_format_string_boolean: ""
+  option_format_string: '{{ VALUE }}'
+  option_format_string_boolean: ''

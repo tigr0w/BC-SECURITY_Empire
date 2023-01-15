@@ -1,6 +1,7 @@
-import os
 import textwrap
 import time
+
+from prompt_toolkit import shortcuts
 
 
 def color(string_name, color_name=None):
@@ -54,7 +55,7 @@ def title(version, modules, listeners, agents):
     """
     Print the tool title, with version.
     """
-    os.system("clear")
+    shortcuts.clear()
     print(
         "========================================================================================"
     )
@@ -148,7 +149,7 @@ def loading():
                 Welcome to the Empire"""
     )
     time.sleep(3)
-    os.system("clear")
+    shortcuts.clear()
 
 
 def text_wrap(text, width=35):
@@ -169,3 +170,12 @@ def truncate(text, width=50):
     :return: truncated text if necessary else the same text
     """
     return (text[:width] + "..") if len(text) > width else text
+
+
+def connect_message():
+    print("\n")
+    print("Use the 'connect' command to connect to your Empire server.")
+    print(
+        "'connect -c localhost' will connect to a local empire instance with all the defaults"
+    )
+    print("including the default username and password.")

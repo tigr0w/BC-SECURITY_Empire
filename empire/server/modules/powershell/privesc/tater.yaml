@@ -1,9 +1,12 @@
 name: Invoke-Tater
 authors:
-  - Kevin Robertson
-description: Tater is a PowerShell implementation of the Hot Potato Windows Privilege
-  Escalation exploit from @breenmachine and @foxglovesec.
+  - name: Kevin Robertson
+    handle: ''
+    link: ''
+description: Tater is a PowerShell implementation of the Hot Potato Windows Privilege Escalation exploit from @breenmachine
+  and @foxglovesec.
 software: ''
+tactics: []
 techniques:
   - T1187
 background: true
@@ -24,13 +27,13 @@ options:
     required: false
     value: ''
   - name: SpooferIP
-    description: IP address included in NBNS response. This is needed when using two
-      hosts to get around an in-use port 80 on the privesc target.
+    description: IP address included in NBNS response. This is needed when using two hosts to get around an in-use port 80
+      on the privesc target.
     required: false
     value: ''
   - name: Command
-    description: Command to execute during privilege escalation. Do not wrap in quotes
-      and use PowerShell character escapes where necessary.
+    description: Command to execute during privilege escalation. Do not wrap in quotes and use PowerShell character escapes
+      where necessary.
     required: true
     value: ''
   - name: NBNS
@@ -38,18 +41,18 @@ options:
     required: false
     value: Y
   - name: NBNSLimit
-    description: Enable/Disable NBNS bruteforce spoofer limiting to stop NBNS spoofing
-      while hostname is resolving correctly (Y/N).
+    description: Enable/Disable NBNS bruteforce spoofer limiting to stop NBNS spoofing while hostname is resolving correctly
+      (Y/N).
     required: false
     value: Y
   - name: Trigger
-    description: Trigger type to use in order to trigger HTTP to SMB relay. 0 = None,
-      1 = Windows Defender Signature Update, 2 = Windows 10 Webclient/Scheduled Task
+    description: Trigger type to use in order to trigger HTTP to SMB relay. 0 = None, 1 = Windows Defender Signature Update,
+      2 = Windows 10 Webclient/Scheduled Task
     required: false
     value: '1'
   - name: ExhaustUDP
-    description: Enable/Disable UDP port exhaustion to force all DNS lookups to fail
-      in order to fallback to NBNS resolution (Y/N).
+    description: Enable/Disable UDP port exhaustion to force all DNS lookups to fail in order to fallback to NBNS resolution
+      (Y/N).
     required: false
     value: N
   - name: HTTPPort
@@ -57,14 +60,12 @@ options:
     required: false
     value: '80'
   - name: Hostname
-    description: Hostname to spoof. WPAD.DOMAIN.TLD may be required by Windows Server
-      2008.
+    description: Hostname to spoof. WPAD.DOMAIN.TLD may be required by Windows Server 2008.
     required: false
     value: WPAD
   - name: WPADDirectHosts
-    description: Comma separated list of hosts to include as direct in the wpad.dat
-      file. Note that localhost is always listed as direct. Add the Empire host to avoid
-      catching Empire HTTP traffic.
+    description: Comma separated list of hosts to include as direct in the wpad.dat file. Note that localhost is always listed
+      as direct. Add the Empire host to avoid catching Empire HTTP traffic.
     required: false
     value: ''
   - name: WPADPort
@@ -72,19 +73,18 @@ options:
     required: false
     value: '80'
   - name: TaskDelete
-    description: Enable/Disable scheduled task deletion for trigger 2. If enabled, a
-      random string will be added to the taskname to avoid failures after multiple trigger
-      2 runs.
+    description: Enable/Disable scheduled task deletion for trigger 2. If enabled, a random string will be added to the taskname
+      to avoid failures after multiple trigger 2 runs.
     required: false
     value: Y
   - name: Taskname
-    description: Scheduled task name to use with trigger 2. If you observe that Tater
-      does not work after multiple trigger 2 runs, try changing the taskname.
+    description: Scheduled task name to use with trigger 2. If you observe that Tater does not work after multiple trigger
+      2 runs, try changing the taskname.
     required: false
     value: Empire
   - name: RunTime
     description: Run time duration in minutes.
     required: false
     value: ''
-script_path: 'privesc/Invoke-Tater.ps1'
+script_path: privesc/Invoke-Tater.ps1
 script_end: Invoke-Tater -Tool "2" {{ PARAMS }}

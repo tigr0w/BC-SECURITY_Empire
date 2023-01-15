@@ -1,11 +1,18 @@
 name: Invoke-FodhelperProgIDs
 authors:
-  - '@V3ded'
-  - '@netbiosX'
-  - '@m1m1k4tz'
+  - name: ''
+    handle: '@V3ded'
+    link: ''
+  - name: ''
+    handle: '@netbiosX'
+    link: ''
+  - name: ''
+    handle: '@m1m1k4tz'
+    link: ''
 description: |
   Bypasses UAC by performing a registry modification for FodHelper but uses ProgIDs to bypass antivirus signatures on the registry key
 software: ''
+tactics: []
 techniques:
   - T1088
 background: true
@@ -15,7 +22,7 @@ opsec_safe: false
 language: powershell
 min_language_version: '2'
 comments:
-  - 'https://v3ded.github.io/redteam/utilizing-programmatic-identifiers-progids-for-uac-bypasses'
+  - https://v3ded.github.io/redteam/utilizing-programmatic-identifiers-progids-for-uac-bypasses
 options:
   - name: Agent
     description: Agent to run module on.

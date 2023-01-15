@@ -1,3 +1,5 @@
+import logging
+
 from prompt_toolkit.completion import Completion
 
 from empire.client.src.EmpireCliConfig import empire_config
@@ -9,6 +11,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 def patch_protocol(host):
@@ -43,10 +47,10 @@ class MainMenu(Menu):
             elif position_util(cmd_line, 1, word_before_cursor):
                 if "connect".startswith(word_before_cursor):
                     yield Completion("connect", start_position=-len(word_before_cursor))
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def autocomplete(self):
         commands = self._cmd_registry + super().autocomplete()
@@ -87,7 +91,7 @@ class MainMenu(Menu):
             # Check for name in yaml
             server: dict = empire_config.yaml.get("servers").get(host)
             if not server:
-                print(f"Could not find server in config.yaml for {host}")
+                log.error(f"Could not find server in config.yaml for {host}")
                 server["host"] = patch_protocol(server["host"])
             response = state.connect(
                 server["host"],
@@ -102,16 +106,16 @@ class MainMenu(Menu):
 
         if hasattr(response, "status_code"):
             if response.status_code == 200:
-                print(print_util.color("[*] Connected to " + host))
+                log.info(f"Connected to {host}")
             elif response.status_code == 401:
-                print(print_util.color("[!] Invalid username and/or password"))
+                log.error("Invalid username and/or password")
 
         else:
             # Print error messages that have reason available
             try:
-                print(print_util.color("[!] Error: " + response.args[0].reason.args[0]))
+                log.error(response.args[0].reason.args[0])
             except:
-                print(print_util.color("[!] Error: " + response.args[0]))
+                log.error(response.args[0])
 
     @command
     def disconnect(self):
@@ -125,7 +129,7 @@ class MainMenu(Menu):
 
         host = state.host
         state.disconnect()
-        print(print_util.color("[*] Disconnected from " + host))
+        log.info(f"[*] Disconnected from {host}")
 
     @command
     def help(self):

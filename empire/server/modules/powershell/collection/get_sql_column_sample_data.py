@@ -1,20 +1,17 @@
 from __future__ import print_function
 
-import pathlib
 from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.module_models import EmpireModule
 
 
 class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
@@ -27,22 +24,22 @@ class Module(object):
         script_end = ""
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(
+        script, err = main_menu.modulesv2.get_module_source(
             module_name="collection/Get-SQLColumnSampleData.ps1",
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
         )
 
         if check_all:
-            aux_module_source = main_menu.modules.get_module_source(
+            aux_module_source = main_menu.modulesv2.get_module_source(
                 module_name="situational_awareness/network/Get-SQLInstanceDomain.ps1",
                 obfuscate=obfuscate,
                 obfuscate_command=obfuscation_command,
             )
             if obfuscate:
-                data_util.obfuscate_module(
+                main_menu.obfuscationv2.obfuscate_module(
                     moduleSource=aux_module_source,
-                    obfuscationCommand=obfuscation_command,
+                    obfuscation_command=obfuscation_command,
                 )
                 aux_module_source = module_source.replace(
                     "module_source", "obfuscated_module_source"
@@ -82,7 +79,7 @@ class Module(object):
             + ' completed!"'
         )
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,

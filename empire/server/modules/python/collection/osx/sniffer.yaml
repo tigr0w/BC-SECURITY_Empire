@@ -1,9 +1,14 @@
 name: PcapSniffer
 authors:
-  - Alex Rymdeko-Harvey
-  - '@Killswitch-GUI'
+  - name: Alex Rymdeko-Harvey
+    handle: ''
+    link: ''
+  - name: ''
+    handle: '@Killswitch-GUI'
+    link: ''
 description: This module will do a full network stack capture.
 software: ''
+tactics: []
 techniques:
   - T1040
 background: false
@@ -40,8 +45,7 @@ options:
     required: true
     value: /usr/lib/libSystem.B.dylib
   - name: Debug
-    description: Enable to get verbose message status (Dont enable OutputExtension for
-      this).
+    description: Enable to get verbose message status (Dont enable OutputExtension for this).
     required: true
     value: 'False'
 advanced:

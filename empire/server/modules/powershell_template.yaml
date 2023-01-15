@@ -4,8 +4,9 @@ name: Invoke-Template
 
 # The authors responsible for the original code and/or writing the Empire module for it.
 authors:
-  - '@author1'
-  - '@auth0r2'
+  - name: Author 1
+    handle: '@author1'
+    link: https://twitter.com/author1
 
 description: |
   A discription of what the module does and how it works.
@@ -64,6 +65,7 @@ script: |
 
       "Hello"
   }
+# script_path: 'situational_awareness/network/Invoke-Template.ps1'
 
 # This usually just consists of invoking the function. {{ PARAMS }} injects the options into the command.
 # More info on customizing the script_end and option formatter are in the wiki.

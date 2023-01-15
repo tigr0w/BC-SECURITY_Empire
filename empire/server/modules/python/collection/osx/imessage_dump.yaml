@@ -1,9 +1,14 @@
 name: iMessageDump
 authors:
-  - Alex Rymdeko-Harvey
-  - '@Killswitch-GUI'
+  - name: Alex Rymdeko-Harvey
+    handle: ''
+    link: ''
+  - name: ''
+    handle: '@Killswitch-GUI'
+    link: ''
 description: This module will enumerate the entire chat and IMessage SQL Database.
 software: ''
+tactics: []
 techniques:
   - T1081
 background: false
@@ -13,8 +18,7 @@ opsec_safe: true
 language: python
 min_language_version: '2.6'
 comments:
-  - Using SQLite3 iMessage has a decent standard to correlate users to messages and
-    isnt encrypted.
+  - Using SQLite3 iMessage has a decent standard to correlate users to messages and isnt encrypted.
 options:
   - name: Agent
     description: Agent to run from.

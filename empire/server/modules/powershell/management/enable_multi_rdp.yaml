@@ -1,11 +1,15 @@
 name: Invoke-Mimikatz Multirdp
 authors:
-  - '@gentilkiwi'
-  - '@JosephBialek'
-description: '[!] WARNING: Experimental! Runs PowerSploit''s Invoke-Mimikatz function
-  to patch the Windows terminal service to allow multiple users to establish simultaneous
-  RDP connections.'
+  - name: Benjamin Delpy
+    handle: '@gentilkiwi'
+    link: https://twitter.com/gentilkiwi
+  - name: Joseph Bialek
+    handle: '@JosephBialek'
+    link: https://twitter.com/JosephBialek
+description: "[!] WARNING: Experimental! Runs PowerSploit's Invoke-Mimikatz function to patch the Windows terminal service\
+  \ to allow multiple users to establish simultaneous RDP connections."
 software: ''
+tactics: []
 techniques:
   - T1076
 background: true
@@ -22,5 +26,5 @@ options:
     description: Agent to run module on.
     required: true
     value: ''
-script_path: 'credentials/Invoke-Mimikatz.ps1'
+script_path: credentials/Invoke-Mimikatz.ps1
 script_end: Invoke-Mimikatz -Command '"ts::multirdp"';

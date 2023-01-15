@@ -1,9 +1,14 @@
 name: Invoke-ClearScript
 authors:
-  - '@byt3bl33d3r'
-  - '@Cx01N'
+  - name: ''
+    handle: '@byt3bl33d3r'
+    link: https://twitter.com/byt3bl33d3r
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
 description: Executes JScript (or VBScript) using the embedded ClearScript engine.
 software: ''
+tactics: []
 techniques:
   - T1059
 background: true
@@ -32,5 +37,5 @@ options:
     description: Set JScript as script code
     required: false
     value: 'True'
-script_path: 'code_execution/Invoke-ClearScript.ps1'
+script_path: code_execution/Invoke-ClearScript.ps1
 script_end: Invoke-ClearScript {{ PARAMS }}

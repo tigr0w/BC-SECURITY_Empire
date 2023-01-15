@@ -1,8 +1,11 @@
 name: ScreenSharing
 authors:
-  - '@n00py'
+  - name: ''
+    handle: '@n00py'
+    link: https://twitter.com/n00py1
 description: Enables ScreenSharing to allow you to connect to the host via VNC.
 software: ''
+tactics: []
 techniques:
   - T1021
 background: false

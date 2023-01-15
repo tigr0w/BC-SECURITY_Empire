@@ -1,9 +1,12 @@
 from __future__ import print_function
 
+import logging
 import re
 from builtins import object, range, str
 
 from empire.server.common import helpers
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
@@ -11,7 +14,28 @@ class Stager(object):
 
         self.info = {
             "Name": "Macro",
-            "Author": ["@enigma0x3", "@harmj0y", "@DisK0nn3cT", "@malcomvetter"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@enigma0x3",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@DisK0nn3cT",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@malcomvetter",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates a Win/Mac cross platform MS Office macro for Empire, compatible with Office 97-2016 including Mac 2011 and 2016 (sandboxed).",
             "Comments": [
                 "http://enigma0x3.wordpress.com/2014/01/11/using-a-powershell-payload-in-a-client-side-attack/",
@@ -144,7 +168,7 @@ class Stager(object):
         )
 
         if pylauncher == "":
-            print(helpers.color("[!] Error in python launcher command generation."))
+            log.error("Error in python launcher command generation.")
             return ""
 
         # render python launcher into python payload
@@ -158,7 +182,7 @@ class Stager(object):
             language=language,
             encode=True,
             obfuscate=invoke_obfuscation,
-            obfuscationCommand=obfuscate_command,
+            obfuscation_command=obfuscate_command,
             userAgent=user_agent,
             proxy=proxy,
             proxyCreds=proxy_creds,
@@ -168,7 +192,7 @@ class Stager(object):
         )
 
         if poshlauncher == "":
-            print(helpers.color("[!] Error in powershell launcher command generation."))
+            log.error("Error in powershell launcher command generation.")
             return ""
 
         # render powershell launcher into powershell payload

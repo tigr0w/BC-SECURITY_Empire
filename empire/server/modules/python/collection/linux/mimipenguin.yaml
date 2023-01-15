@@ -1,9 +1,11 @@
 name: Linux MimiPenguin
 authors:
-  - '@rvrsh3ll'
-description: Port of huntergregal mimipenguin. Harvest's current user's cleartext
-  credentials.
+  - name: ''
+    handle: '@rvrsh3ll'
+    link: ''
+description: Port of huntergregal mimipenguin. Harvest's current user's cleartext credentials.
 software: S0179
+tactics: []
 techniques:
   - T1003
 background: false
@@ -12,10 +14,10 @@ needs_admin: true
 opsec_safe: true
 language: python
 min_language_version: '3'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to execute module on.
     required: true
     value: ''
-script_path: 'python/collection/mimipenguin.py'
+script_path: python/collection/mimipenguin.py

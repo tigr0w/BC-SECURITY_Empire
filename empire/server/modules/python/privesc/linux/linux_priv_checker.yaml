@@ -1,10 +1,15 @@
 name: LinuxPrivChecker
 authors:
-  - '@sleventyeleven'
-  - '@Cx01N'
-description: This script is intended to be executed locally ona Linux box to enumerate
-  basic system info, and search for common privilege escalation vectors with pure python.
+  - name: ''
+    handle: '@sleventyeleven'
+    link: ''
+  - name: ''
+    handle: '@Cx01N'
+    link: ''
+description: This script is intended to be executed locally ona Linux box to enumerate basic system info, and search for commonprivilege
+  escalation vectors with pure python.
 software: ''
+tactics: []
 techniques:
   - T1166
 background: true

@@ -11,7 +11,15 @@ if __name__ == "__main__":
         import empire.server.server as server
 
         server.run(args)
+    elif args.subparser_name == "sync-starkiller":
+        import yaml
 
+        from empire.scripts.sync_starkiller import sync_starkiller
+
+        with open("empire/server/config.yaml") as f:
+            config = yaml.safe_load(f)
+
+        sync_starkiller(config)
     elif args.subparser_name == "client":
         import empire.client.client as client
 

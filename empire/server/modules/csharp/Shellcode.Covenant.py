@@ -1,34 +1,28 @@
 from __future__ import print_function
 
-import base64
-import pathlib
 from builtins import object, str
 from typing import Dict
 
-import donut
 import yaml
 
-from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.module_models import EmpireModule
 
 
 class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
+        base64_shellcode = main_menu.downloadsv2.get_all(
+            SessionLocal(), None, params["File"]
+        )[0][0].get_base64_file()
 
-        with open(f"{main_menu.directory['downloads']}{params['File']}", "rb") as data:
-            shellcode_data = data.read()
-        base64_shellcode = base64.b64encode(shellcode_data).decode("utf-8")
-
-        compiler = main_menu.loadedPlugins.get("csharpserver")
+        compiler = main_menu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
             return None, "csharpserver plugin not running"
 
@@ -40,7 +34,7 @@ class Module(object):
         compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
 
         file_name = compiler.do_send_message(
-            compiler_yaml, module.name, confuse=main_menu.obfuscate
+            compiler_yaml, module.name, confuse=obfuscate
         )
         if file_name == "failed":
             return None, "module compile failed"
