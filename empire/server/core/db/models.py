@@ -101,6 +101,10 @@ class Host(Base):
     name = Column(Text, nullable=False)
     internal_ip = Column(Text)
 
+    # unique check handled differently in mysql and sqlite
+    # In base.py, a unique constraint is added for sqlite
+    # and a generated column is added for mysql
+
 
 class Agent(Base):
     __tablename__ = "agents"

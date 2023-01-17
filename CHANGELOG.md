@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fix the uniqueness check for MariaDB (@Vinnybod)
+
 ## [5.0.0] - 2023-01-15
 
 -   Added Starkiller as an integrated web app (@Vinnybod)

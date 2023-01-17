@@ -87,21 +87,20 @@ Base.metadata.create_all(engine)
 with SessionLocal.begin() as db:
     if use == "mysql":
         database_name = database_config.database_name
-        query = text(
+
+        result = db.execute(
+            f"""
+            SELECT * FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = '{database_name}'
+            AND table_name = 'hosts'
+            AND column_name = 'unique_check'
             """
-            SELECT * FROM information_schema.statistics
-            WHERE table_schema = :schema
-            AND table_name = :table
-            AND index_name = :index
-            """
-        )
-        result = engine.execute(
-            query, schema=database_name, table="hosts", index="host_unique_idx"
-        )
-        if not result.fetchone():
+        ).fetchone()
+        if not result:
             db.execute(
                 """
-                CREATE UNIQUE INDEX host_unique_idx ON hosts ((md5(concat(name, internal_ip))))
+                ALTER TABLE hosts
+                ADD COLUMN unique_check VARCHAR(255) GENERATED ALWAYS AS (MD5(CONCAT(name, internal_ip))) UNIQUE;
                 """
             )
 
