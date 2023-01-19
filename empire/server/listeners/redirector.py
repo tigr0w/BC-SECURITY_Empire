@@ -692,6 +692,15 @@ class Listener(object):
 
         tempOptions = copy.deepcopy(self.options)
         listenerName = self.options["Listener"]["Value"]
+        with SessionLocal() as db:
+            parent_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
+        if parent_listener:
+            self.options = copy.deepcopy(parent_listener.options)
+            self.options["Name"]["Value"] = name
+        else:
+            log.error("Parent listener not found")
+            return False
+
         # validate that the Listener does exist
         if self.mainMenu.listeners.is_listener_valid(listenerName):
             # check if a listener for the agent already exists

@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--   Fix the uniqueness check for MariaDB (@Vinnybod)
+-   Fixed the uniqueness check for MariaDB (@Vinnybod)
+-   Fixed redirector issue with parent listeners (@Cx01N)
 
 ## [5.0.0] - 2023-01-15
 

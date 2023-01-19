@@ -1148,6 +1148,11 @@ class Listener(object):
                                 tempListenerOptions["Host"][
                                     "Value"
                                 ] = hopListener.options["Host"]["Value"]
+                                with SessionLocal.begin() as db:
+                                    db_agent = self.mainMenu.agentsv2.get_by_id(
+                                        sessionID, db
+                                    )
+                                    db_agent.listener = hopListenerName
                             else:
                                 tempListenerOptions = listenerOptions
 
