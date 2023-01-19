@@ -82,12 +82,14 @@ class ListenerMenu(Menu):
             return None
 
         record_list = []
-        for key, value in state.listeners[listener_name]["options"].items():
-            name = key
-            record_value = print_util.text_wrap(value.get("value", ""))
+        template_options = state.get_listener_template("http")["options"]
+        options = state.listeners[listener_name]["options"]
+
+        for key, value in template_options.items():
+            record_value = print_util.text_wrap(options[key])
             required = print_util.text_wrap(value.get("required", ""))
             description = print_util.text_wrap(value.get("description", ""))
-            record_list.append([name, record_value, required, description])
+            record_list.append([key, record_value, required, description])
 
         record_list.insert(0, ["Name", "Value", "Required", "Description"])
 

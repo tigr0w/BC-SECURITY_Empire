@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed the uniqueness check for MariaDB (@Vinnybod)
 -   Fixed redirector issue with parent listeners (@Cx01N)
 -   Added exception for agent task when server is initializing (@Cx01N)
+-   Fixed listener menu displaying error when viewing options (@Cx01N)
 
 ## [5.0.0] - 2023-01-15
 
