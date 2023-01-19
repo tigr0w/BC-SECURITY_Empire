@@ -762,17 +762,21 @@ class Agents(object):
             log.error(f"Agent {session_id} not active.")
             return []
         else:
-            tasks, total = self.mainMenu.agenttasksv2.get_tasks(
-                db=db,
-                agents=[session_id],
-                include_full_input=True,
-                status=TaskingStatus.queued,
-            )
+            try:
+                tasks, total = self.mainMenu.agenttasksv2.get_tasks(
+                    db=db,
+                    agents=[session_id],
+                    include_full_input=True,
+                    status=TaskingStatus.queued,
+                )
 
-            for task in tasks:
-                task.status = TaskingStatus.pulled
+                for task in tasks:
+                    task.status = TaskingStatus.pulled
 
-            return tasks
+                return tasks
+            except AttributeError:
+                log.warning("Agent checkin during initialization.")
+                return []
 
     def get_queued_agent_temporary_tasks(self, session_id):
         """
@@ -782,8 +786,14 @@ class Agents(object):
             log.error(f"Agent {session_id} not active.")
             return []
         else:
-            tasks = self.mainMenu.agenttasksv2.get_temporary_tasks_for_agent(session_id)
-            return tasks
+            try:
+                tasks = self.mainMenu.agenttasksv2.get_temporary_tasks_for_agent(
+                    session_id
+                )
+                return tasks
+            except AttributeError:
+                log.error("Agent checkin during initialization.")
+                return []
 
     ###############################################################
     #
