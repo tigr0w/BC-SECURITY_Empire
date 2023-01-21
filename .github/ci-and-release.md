@@ -1,11 +1,13 @@
 # CI Processes
 
-## Build and Test
+## Pull Requests - Build and Test
 All pull requests will run the `Lint and Test` workflow.
 
 * The workflow will run `black` and `isort` checks and then run `pytest` on Python 3.8, 3.9, and 3.10.
 * If the pull request is coming from a `release/*` branch, it will build the docker image and run `pytest` on it
 * If the pull request changes the `install.sh` script, it will run the install script on the supported OS and check for errors
+
+When submitting a pull request to `private-main`, the label `auto-merge-downstream` can be added. If the label is present, then merging a branch to `private-main` will automatically trigger the prerelease step of merging `private-main` into `sponsors-main` and `kali-main`.
 
 ## BC-SECURITY/Empire-Sponsors Sponsors & Kali Release Process
 *Note: Starting in 2023, the Kali team will be pulling from the public repo.
