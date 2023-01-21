@@ -33,12 +33,7 @@ def sync_starkiller(empire_config):
             ["git", "submodule", "sync", "--", starkiller_submodule_dir], check=True
         )
 
-        subprocess.run(["git", "fetch"], cwd=starkiller_submodule_dir, check=True)
-        subprocess.run(
-            ["git", "checkout", starkiller_config["ref"]],
-            cwd=starkiller_submodule_dir,
-            check=True,
-        )
+        _fetch_checkout_pull(starkiller_config["ref"], starkiller_submodule_dir)
 
     else:
         if not os.path.exists(starkiller_temp_dir):
@@ -56,9 +51,14 @@ def sync_starkiller(empire_config):
                 check=True,
             )
 
-        subprocess.run(["git", "fetch"], cwd=starkiller_temp_dir, check=True)
-        subprocess.run(
-            ["git", "checkout", starkiller_config["ref"]],
-            cwd=starkiller_temp_dir,
-            check=True,
-        )
+        _fetch_checkout_pull(starkiller_config["ref"], starkiller_temp_dir)
+
+
+def _fetch_checkout_pull(ref, cwd):
+    subprocess.run(["git", "fetch"], cwd=cwd, check=True)
+    subprocess.run(
+        ["git", "checkout", ref],
+        cwd=cwd,
+        check=True,
+    )
+    subprocess.run(["git", "pull", "origin", ref], cwd=cwd)
