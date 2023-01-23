@@ -394,7 +394,7 @@ class Listener(object):
                     # otherwise return the case-randomized stager
                     return stager
 
-            if language == "python":
+            if language in ["python", "ironpython"]:
                 # Python
                 launcherBase = "import sys;"
                 if "https" in host:

@@ -2,7 +2,10 @@ from __future__ import print_function
 
 from builtins import object
 
-from empire.server.common.helpers import strip_powershell_comments
+from empire.server.common.helpers import (
+    strip_powershell_comments,
+    strip_python_comments,
+)
 from empire.server.utils.data_util import ps_convert_to_oneliner
 
 
@@ -32,7 +35,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate (powershell, csharp).",
                 "Required": True,
                 "Value": "csharp",
-                "SuggestedValues": ["powershell", "csharp", "python"],
+                "SuggestedValues": ["powershell", "csharp", "ironpython"],
                 "Strict": True,
             },
             "DotNetVersion": {
@@ -128,10 +131,12 @@ class Stager(object):
         staged = self.options["Staged"]["Value"].lower() == "true"
 
         if not staged and language != "csharp":
-            launcher = strip_powershell_comments(
-                self.mainMenu.stagers.generate_stageless(self.options)
-            )
-            launcher = ps_convert_to_oneliner(strip_powershell_comments(launcher))
+            launcher = self.mainMenu.stagers.generate_stageless(self.options)
+
+            if language == "powershell":
+                launcher = ps_convert_to_oneliner(strip_powershell_comments(launcher))
+            elif language == "ironpython":
+                launcher = strip_python_comments(launcher)
         else:
             launcher = self.mainMenu.stagers.generate_launcher(
                 listener_name,
@@ -166,7 +171,7 @@ class Stager(object):
                 code = f.read()
             return code
 
-        elif language.lower() == "python":
+        elif language.lower() == "ironpython":
             directory = self.mainMenu.stagers.generate_python_exe(
                 launcher, dot_net_version=dot_net_version
             )
