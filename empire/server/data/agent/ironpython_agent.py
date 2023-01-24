@@ -683,6 +683,7 @@ def process_packet(packetType, data, resultID):
         pass
 
     elif packetType == 112:
+        import sys
         data = data.lstrip("\x00")
         # todo: make this a job a thread to be trackable
         # powershell task
