@@ -792,7 +792,7 @@ class Agents(object):
                 )
                 return tasks
             except AttributeError:
-                log.error("Agent checkin during initialization.")
+                log.warning("Agent checkin during initialization.")
                 return []
 
     ###############################################################
