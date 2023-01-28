@@ -1150,7 +1150,7 @@ class Listener(object):
                                 ] = hopListener.options["Host"]["Value"]
                                 with SessionLocal.begin() as db:
                                     db_agent = self.mainMenu.agentsv2.get_by_id(
-                                        sessionID, db
+                                        db, sessionID
                                     )
                                     db_agent.listener = hopListenerName
                             else:

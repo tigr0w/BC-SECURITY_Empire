@@ -310,38 +310,38 @@ def test_onedrive_generate_launcher(monkeypatch, main_menu_mock):
     assert powershell_launcher == _expected_onedrive_powershell_launcher()
 
 
-def test_redirector_generate_launcher(monkeypatch, main_menu_mock):
+def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http import Listener as HttpListener
-    from empire.server.listeners.redirector import Listener
+    from empire.server.listeners.port_forward_pivot import Listener
 
     # guarantee the session id.
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.redirector.packets", packets)
+    monkeypatch.setattr("empire.server.listeners.port_forward_pivot.packets", packets)
 
     # guarantee the chosen stage0 url.
     random = MagicMock()
     random.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.redirector.random", random)
+    monkeypatch.setattr("empire.server.listeners.port_forward_pivot.random", random)
 
-    redirector_listener = Listener(main_menu_mock, [])
+    port_forward_pivot = Listener(main_menu_mock, [])
 
     # redirector doesn't get these fields until the listener is started.
-    redirector_listener.options.update(HttpListener(main_menu_mock, []).options)
-    redirector_listener.options["Host"] = {"Value": "http://localhost"}
+    port_forward_pivot.options.update(HttpListener(main_menu_mock, []).options)
+    port_forward_pivot.options["Host"] = {"Value": "http://localhost"}
     main_menu_mock.listeners.activeListeners = {
-        "fake_listener": {"options": redirector_listener.options}
+        "fake_listener": {"options": port_forward_pivot.options}
     }
 
-    redirector_listener.threads = {"fake_listener": {"fake_thread": {}}}
+    port_forward_pivot.threads = {"fake_listener": {"fake_thread": {}}}
 
-    python_launcher = redirector_listener.generate_launcher(
+    python_launcher = port_forward_pivot.generate_launcher(
         listenerName="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_redirector_python_launcher()
 
-    powershell_launcher = redirector_listener.generate_launcher(
+    powershell_launcher = port_forward_pivot.generate_launcher(
         listenerName="fake_listener", language="powershell", encode=False
     )
 

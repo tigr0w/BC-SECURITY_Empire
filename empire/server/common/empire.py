@@ -97,6 +97,7 @@ class MainMenu(object):
         self.autoRuns = {}
         self.directory = {}
 
+        self.listenersv2.start_existing_listeners()
         log.info("Empire starting up...")
 
     def shutdown(self):

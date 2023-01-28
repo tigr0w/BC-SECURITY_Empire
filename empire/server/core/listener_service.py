@@ -28,8 +28,6 @@ class ListenerService(object):
         # In essence, turning a listener off and on always constructs a new object.
         self._active_listeners = {}
 
-        self._start_existing_listeners()
-
     @staticmethod
     def get_all(db: Session) -> List[models.Listener]:
         return db.query(models.Listener).all()
@@ -132,15 +130,17 @@ class ListenerService(object):
         if err:
             return None, err
 
-        template_instance.start(name=listener.name)
+        success = template_instance.start(name=listener.name)
         db.flush()
-        self._active_listeners[listener.id] = template_instance
 
-        log.info(f'Listener "{listener.name}" successfully started')
+        if success:
+            self._active_listeners[listener.id] = template_instance
+            log.info(f'Listener "{listener.name}" successfully started')
+            return listener, None
+        else:
+            return None, f'Listener "{listener.name}" failed to start'
 
-        return listener, None
-
-    def _start_existing_listeners(self):
+    def start_existing_listeners(self):
         with SessionLocal.begin() as db:
             listeners = (
                 db.query(models.Listener).filter(models.Listener.enabled == True).all()

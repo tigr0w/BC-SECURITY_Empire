@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Auto-merge `private-main` to downstream `main` branches using a label (@Vinnybod)
 -   Fixed error in IronPython agent when running PowerShell tasks (@Cx01N)
 -   Fixed issue adding comms twice to stageless python agents (@Cx01N)
+-   Updated Redirector to Port Forward Pivot (@Cx01N)
 
 ## [5.0.0] - 2023-01-15
 
