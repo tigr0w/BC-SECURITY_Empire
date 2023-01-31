@@ -25,7 +25,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - JA3/S and JARM Evasion
 - MITRE ATT&CK Integration
 - Integrated Roslyn compiler (Thanks to [Covenant](https://github.com/cobbr/Covenant))
-- Docker, Kali, Ubuntu, and Debian Install Support
+- Docker, Kali, ParrotOS, Ubuntu 20.04/22.04, and Debian 10/11 Install Support
 
 ### Agents
 - PowerShell
@@ -45,10 +45,9 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - And Many More
 
 ## Sponsors
-[<img src="https://user-images.githubusercontent.com/20302208/185247407-46b00d46-0468-4600-9c0d-4efeedc38b3b.png" height="100"/>](https://www.kali.org/) &emsp; &emsp; &emsp;
 [<img src="https://user-images.githubusercontent.com/20302208/185246508-56f4f574-5a06-4a2c-ac62-320922588dcf.png" width="100"/>](https://www.sans.org/cyber-security-courses/red-team-operations-adversary-emulation/) &emsp; &emsp; &emsp;
 [<img src="https://user-images.githubusercontent.com/20302208/113086242-219d2200-9196-11eb-8c91-84f19c646873.png" width="100"/>](https://kovert.no/) &emsp; &emsp; &emsp;
-[<img src="https://user-images.githubusercontent.com/20302208/204408902-3e6b1172-c945-4b29-94ef-226384d48231.png" width="100"/>](https://www.cybrary.it/)
+[<img src="https://user-images.githubusercontent.com/20302208/208271681-235c914b-5359-426e-8a3d-903bbd018847.png" width="100"/>](https://www.cybrary.it/)
 
 
 ## Release Notes
@@ -92,7 +91,7 @@ Check out the [Empire Docs](https://bc-security.gitbook.io/empire-wiki/) for mor
 For a complete list of the 4.0 changes, see the [changelog](./changelog).
 
 ## Starkiller
-<div align="center"><img width="125" src="https://github.com/BC-SECURITY/Starkiller/blob/master/src/assets/icon.png"></div>
+<div align="center"><img width="125" src="https://user-images.githubusercontent.com/20302208/208271792-91973457-2d6c-4080-8625-0f9eebed0a82.png"></div>
 
 [Starkiller](https://github.com/BC-SECURITY/Starkiller) is a GUI for PowerShell Empire that interfaces remotely with Empire via its API. Starkiller can be ran as a replacement for the Empire client or in a mixed environment with Starkiller and Empire clients.
 

@@ -8,6 +8,11 @@ All pull requests will run the `Lint and Test` workflow.
 * If the pull request changes the `install.sh` script, it will run the install script on the supported OS and check for errors
 
 ## BC-SECURITY/Empire-Sponsors Sponsors & Kali Release Process
+*Note: Starting in 2023, the Kali team will be pulling from the public repo.
+I am keeping the Kali workflows running for now with the exception of the tagging.
+This is mostly out of laziness since I just wrote all of the CI/CD. In the near future,
+we can rework these jobs to be more like "sponsors & other downstream" releases.*
+
 Sponsors and Kali releases go through the same release process. It is easier to manage Empire releases by not allowing them to be released at different times and have the version numbers diverge.
 A side effect of this is its possible for a version bump to be empty (no changes) and still be released.
 
@@ -98,6 +103,11 @@ Once the first workflow runs, it will open one pull request from the `release/v{
 
 Check the changelog on this branch, this will be the changelog that is used for the release notes.
 
+You can get a list of the new commits that are in this release by using the following command. Replace `v4.9.0-private` with whatever the previous release was.
+```
+git --no-pager log --no-merges --pretty='format:%cs %s' private-main...v4.9.0-private
+```
+
 Merge the pull request. **DO NOT SQUASH**
 
 **Note**: If at this point there are additional changes for the release, merge them into the release branch, not
@@ -126,6 +136,11 @@ Once the workflow runs, it will open two pull requests from the `release/v{versi
 Check the changelog on these branches, this will be the changelog that is used for the release notes.
 
 If there are sponsor/kali specific changelog entries that need to be added, add them to the `CHANGELOG.md` file on the release branch.
+
+You can get a list of the new commits that are in this release by using the following command. Replace `v4.9.0-sponsors` with whatever the previous release was.
+```
+git --no-pager log --no-merges --pretty='format:%cs %s' sponsors-main...v4.9.0-sponsors
+```
 
 Merge the pull requests. **DO NOT SQUASH**
 

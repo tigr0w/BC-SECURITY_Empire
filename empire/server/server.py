@@ -966,40 +966,7 @@ def start_restful_api(
         return jsonify(
             {
                 "agents": [
-                    {
-                        "ID": agent.id,
-                        "session_id": agent.session_id,
-                        "listener": agent.listener,
-                        "name": agent.name,
-                        "language": agent.language,
-                        "language_version": agent.language_version,
-                        "delay": agent.delay,
-                        "jitter": agent.jitter,
-                        "external_ip": agent.external_ip,
-                        "internal_ip": agent.internal_ip,
-                        "username": agent.username,
-                        "high_integrity": int(agent.high_integrity or 0),
-                        "process_name": agent.process_name,
-                        "process_id": agent.process_id,
-                        "hostname": agent.hostname,
-                        "os_details": agent.os_details,
-                        "session_key": str(agent.session_key),
-                        "nonce": agent.nonce,
-                        "checkin_time": agent.checkin_time,
-                        "lastseen_time": agent.lastseen_time,
-                        "parent": agent.parent,
-                        "children": agent.children,
-                        "servers": agent.servers,
-                        "profile": agent.profile,
-                        "functions": agent.functions,
-                        "kill_date": agent.kill_date,
-                        "working_hours": agent.working_hours,
-                        "lost_limit": agent.lost_limit,
-                        "stale": agent.stale,
-                        "notes": agent.notes,
-                        "architecture": agent.architecture,
-                        "proxy": agent.proxy,
-                    }
+                    agent.info
                     for agent in Session()
                     .query(models.Agent)
                     .filter(models.Agent.killed == False)
@@ -1017,40 +984,7 @@ def start_restful_api(
         return jsonify(
             {
                 "agents": [
-                    {
-                        "ID": agent.id,
-                        "session_id": agent.session_id,
-                        "listener": agent.listener,
-                        "name": agent.name,
-                        "language": agent.language,
-                        "language_version": agent.language_version,
-                        "delay": agent.delay,
-                        "jitter": agent.jitter,
-                        "external_ip": agent.external_ip,
-                        "internal_ip": agent.internal_ip,
-                        "username": agent.username,
-                        "high_integrity": int(agent.high_integrity or 0),
-                        "process_name": agent.process_name,
-                        "process_id": agent.process_id,
-                        "hostname": agent.hostname,
-                        "os_details": agent.os_details,
-                        "session_key": str(agent.session_key),
-                        "nonce": agent.nonce,
-                        "checkin_time": agent.checkin_time,
-                        "lastseen_time": agent.lastseen_time,
-                        "parent": agent.parent,
-                        "children": agent.children,
-                        "servers": agent.servers,
-                        "profile": agent.profile,
-                        "functions": agent.functions,
-                        "kill_date": agent.kill_date,
-                        "working_hours": agent.working_hours,
-                        "lost_limit": agent.lost_limit,
-                        "stale": agent.stale,
-                        "notes": agent.notes,
-                        "architecture": agent.architecture,
-                        "proxy": agent.proxy,
-                    }
+                    agent.info
                     for agent in Session()
                     .query(models.Agent)
                     .filter(models.Agent.killed == False, models.Agent.stale == False)
@@ -1068,38 +1002,7 @@ def start_restful_api(
         return jsonify(
             {
                 "agents": [
-                    {
-                        "ID": agent.id,
-                        "session_id": agent.session_id,
-                        "listener": agent.listener,
-                        "name": agent.name,
-                        "language": agent.language,
-                        "language_version": agent.language_version,
-                        "delay": agent.delay,
-                        "jitter": agent.jitter,
-                        "external_ip": agent.external_ip,
-                        "internal_ip": agent.internal_ip,
-                        "username": agent.username,
-                        "high_integrity": int(agent.high_integrity or 0),
-                        "process_name": agent.process_name,
-                        "process_id": agent.process_id,
-                        "hostname": agent.hostname,
-                        "os_details": agent.os_details,
-                        "session_key": str(agent.session_key),
-                        "nonce": agent.nonce,
-                        "checkin_time": agent.checkin_time,
-                        "lastseen_time": agent.lastseen_time,
-                        "parent": agent.parent,
-                        "children": agent.children,
-                        "servers": agent.servers,
-                        "profile": agent.profile,
-                        "functions": agent.functions,
-                        "kill_date": agent.kill_date,
-                        "working_hours": agent.working_hours,
-                        "lost_limit": agent.lost_limit,
-                        "architecture": agent.architecture,
-                        "proxy": agent.proxy,
-                    }
+                    agent.info
                     for agent in Session()
                     .query(models.Agent)
                     .filter(models.Agent.killed == False, models.Agent.stale == True)
@@ -1168,43 +1071,7 @@ def start_restful_api(
                 jsonify({"error": "agent %s not found" % agent_name}), 404
             )
 
-        active_agent = []
-        active_agent.append(
-            {
-                "ID": agent.id,
-                "session_id": agent.session_id,
-                "listener": agent.listener,
-                "name": agent.name,
-                "language": agent.language,
-                "language_version": agent.language_version,
-                "delay": agent.delay,
-                "jitter": agent.jitter,
-                "external_ip": agent.external_ip,
-                "internal_ip": agent.internal_ip,
-                "username": agent.username,
-                "high_integrity": int(agent.high_integrity or 0),
-                "process_name": agent.process_name,
-                "process_id": agent.process_id,
-                "hostname": agent.hostname,
-                "os_details": agent.os_details,
-                "session_key": str(agent.session_key),
-                "nonce": agent.nonce,
-                "checkin_time": agent.checkin_time,
-                "lastseen_time": agent.lastseen_time,
-                "parent": agent.parent,
-                "children": agent.children,
-                "servers": agent.servers,
-                "profile": agent.profile,
-                "functions": agent.functions,
-                "kill_date": agent.kill_date,
-                "working_hours": agent.working_hours,
-                "lost_limit": agent.lost_limit,
-                "architecture": agent.architecture,
-                "proxy": agent.proxy,
-            }
-        )
-
-        return jsonify({"agents": active_agent})
+        return jsonify({"agents": [agent.info]})
 
     @app.route("/api/agents/<string:agent_name>/processes", methods=["GET"])
     def get_host_process(agent_name):
@@ -1259,11 +1126,7 @@ def start_restful_api(
     @app.route("/api/agents/<string:agent_name>/directory", methods=["GET"])
     def get_agent_directory(agent_name):
         # Would be cool to add a "depth" param
-        directory = (
-            "/"
-            if request.args.get("directory") is None
-            else request.args.get("directory")
-        )
+        directory = request.args.get("directory") or "/"
 
         found = (
             Session()

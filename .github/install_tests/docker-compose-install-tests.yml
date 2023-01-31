@@ -32,3 +32,9 @@ services:
       dockerfile: .github/install_tests/KaliRolling.Dockerfile
     image: bcsecurity/empire-test-kalirolling
     platform: "linux/amd64"
+  parrotrolling:
+    build:
+      context: ../../
+      dockerfile: .github/install_tests/ParrotRolling.Dockerfile
+    image: bcsecurity/empire-test-parrotrolling
+    platform: "linux/amd64"

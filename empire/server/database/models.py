@@ -1,4 +1,5 @@
 import enum
+from typing import Dict
 
 from sqlalchemy import (
     Boolean,
@@ -117,6 +118,43 @@ class Agent(Base):
             func.julianday(utcnow()) - func.julianday(cls.lastseen_time)
         ) * 86400.0
         return seconds_elapsed > threshold
+
+    @property
+    def info(self) -> Dict:
+        return {
+            "ID": self.id,
+            "session_id": self.session_id,
+            "listener": self.listener,
+            "name": self.name,
+            "language": self.language,
+            "language_version": self.language_version,
+            "delay": self.delay,
+            "jitter": self.jitter,
+            "external_ip": self.external_ip,
+            "internal_ip": self.internal_ip,
+            "username": self.username,
+            "high_integrity": int(self.high_integrity or 0),
+            "process_name": self.process_name,
+            "process_id": self.process_id,
+            "hostname": self.hostname,
+            "os_details": self.os_details,
+            "session_key": str(self.session_key),
+            "nonce": self.nonce,
+            "checkin_time": self.checkin_time,
+            "lastseen_time": self.lastseen_time,
+            "parent": self.parent,
+            "children": self.children,
+            "servers": self.servers,
+            "profile": self.profile,
+            "functions": self.functions,
+            "kill_date": self.kill_date,
+            "working_hours": self.working_hours,
+            "lost_limit": self.lost_limit,
+            "stale": self.stale,
+            "notes": self.notes,
+            "architecture": self.architecture,
+            "proxy": self.proxy,
+        }
 
     def __repr__(self):
         return "<Agent(name='%s')>" % (self.name)
