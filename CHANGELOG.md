@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed error in IronPython agent when running PowerShell tasks (@Cx01N)
 -   Fixed issue adding comms twice to stageless python agents (@Cx01N)
 -   Updated Redirector to Port Forward Pivot (@Cx01N)
+-   Updated to Mimikatz 2.2.0-20220919 (@Cx01N)
 
 ## [5.0.0] - 2023-01-15
 
