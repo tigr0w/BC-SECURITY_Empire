@@ -140,7 +140,7 @@ class InteractMenu(Menu):
             return True
 
     def get_prompt(self) -> str:
-        joined = "/".join([self.display_name, self.selected]).strip("/")
+        joined = "/".join([self.display_name, self.name]).strip("/")
         return f"(Empire: <ansired>{joined}</ansired>) > "
 
     def display_cached_results(self) -> None:
@@ -162,8 +162,9 @@ class InteractMenu(Menu):
         """
         state.get_agents()
         if agent_name in state.agents.keys():
-            self.selected = agent_name
-            self.session_id = state.agents[self.selected]["session_id"]
+            self.name = agent_name
+            self.selected = state.agents[agent_name]["session_id"]
+            self.session_id = state.agents[agent_name]["session_id"]
             self.agent_options = state.agents[agent_name]  # todo rename agent_options
             self.agent_language = self.agent_options["language"]
 

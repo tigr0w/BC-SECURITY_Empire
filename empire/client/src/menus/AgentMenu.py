@@ -135,7 +135,7 @@ class AgentMenu(Menu):
     @command
     def rename(self, agent_name: str, new_agent_name: str) -> None:
         """
-        Rename selected listener
+        Rename selected agent
 
         Usage: rename <agent_name> <new_agent_name>
         """
@@ -150,7 +150,8 @@ class AgentMenu(Menu):
 
     @staticmethod
     def kill_agent(agent_name: str) -> None:
-        response = state.kill_agent(agent_name)
+        session_id = state.agents[agent_name]["session_id"]
+        response = state.kill_agent(session_id)
         if response.status_code == 201:
             log.info("Kill command sent to agent " + agent_name)
         elif "detail" in response:
