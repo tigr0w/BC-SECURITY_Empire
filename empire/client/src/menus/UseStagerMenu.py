@@ -1,4 +1,3 @@
-import base64
 import logging
 import os
 import textwrap
@@ -9,7 +8,6 @@ from prompt_toolkit.completion import Completion
 from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.UseMenu import UseMenu
-from empire.client.src.utils import print_util
 from empire.client.src.utils.autocomplete_util import (
     filtered_search_list,
     position_util,
@@ -118,7 +116,7 @@ class UseStagerMenu(UseMenu):
             ).decode("UTF-8")
             print(stager_data)
             if empire_config.yaml.get("auto-copy-stagers", {}):
-                log.info(f"Stager copied to clipboard")
+                log.info("Stager copied to clipboard")
                 pyperclip.copy(stager_data)
 
     @command

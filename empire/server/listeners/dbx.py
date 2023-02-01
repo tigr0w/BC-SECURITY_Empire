@@ -200,21 +200,11 @@ class Listener(object):
             staging_key = listenerOptions["StagingKey"]["Value"]
             profile = listenerOptions["DefaultProfile"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
-            staging_key = listenerOptions["StagingKey"]["Value"]
-            pollInterval = listenerOptions["PollInterval"]["Value"]
             api_token = listenerOptions["APIToken"]["Value"]
             baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
             staging_folder = "/%s/%s" % (
                 baseFolder,
                 listenerOptions["StagingFolder"]["Value"].strip("/"),
-            )
-            taskingsFolder = "/%s/%s" % (
-                baseFolder,
-                listenerOptions["TaskingsFolder"]["Value"].strip("/"),
-            )
-            resultsFolder = "/%s/%s" % (
-                baseFolder,
-                listenerOptions["ResultsFolder"]["Value"].strip("/"),
             )
 
             if language.startswith("po"):
@@ -435,9 +425,8 @@ class Listener(object):
             }
 
             stager = template.render(template_options)
+            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
             unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             # base64 encode the stager and return it
@@ -522,7 +511,7 @@ class Listener(object):
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
-            code = data_util.keyword_obfuscation(code)
+            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
             code = code.replace("$AgentDelay = 60", "$AgentDelay = " + str(delay))
@@ -594,15 +583,8 @@ class Listener(object):
         This is so agents can easily be dynamically updated for the new listener.
         """
         baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
-        stagingKey = listenerOptions["StagingKey"]["Value"]
-        pollInterval = listenerOptions["PollInterval"]["Value"]
         api_token = listenerOptions["API_TOKEN"]["Value"]
-        profile = listenerOptions["DefaultProfile"]["Value"]
 
-        stagingFolder = "/%s/%s" % (
-            baseFolder,
-            listenerOptions["StagingFolder"]["Value"].strip("/"),
-        )
         taskingsFolder = "/%s/%s" % (
             baseFolder,
             listenerOptions["TaskingsFolder"]["Value"].strip("/"),
@@ -766,7 +748,7 @@ class Listener(object):
         # ensure that the access token supplied is valid
         try:
             dbx.users_get_current_account()
-        except dropbox.exceptions.AuthError as err:
+        except dropbox.exceptions.AuthError:
             log.error(
                 "ERROR: Invalid access token; try re-generating an access token from the app console on the web.",
                 exc_info=True,
@@ -964,7 +946,7 @@ class Listener(object):
                         try:
                             md, res = dbx.files_download(taskingFile)
                             existingData = res.content
-                        except:
+                        except Exception:
                             existingData = None
 
                         if existingData:

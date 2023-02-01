@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import subprocess
 from datetime import datetime
 from json import JSONEncoder
 

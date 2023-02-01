@@ -235,13 +235,13 @@ class EmpireCliState(object):
             agent_tasks = list(self.cached_agent_results.keys())
             plugin_tasks = list(self.cached_plugin_results.keys())
 
-            toolbar_text = [("bold", f"Connected: ")]
+            toolbar_text = [("bold", "Connected: ")]
             toolbar_text.append(("bg:#FF0000 bold", f"{self.host}:{self.port} "))
-            toolbar_text.append(("bold", f"| "))
+            toolbar_text.append(("bold", "| "))
             toolbar_text.append(("bg:#FF0000 bold", f"{len(self.active_agents)} "))
-            toolbar_text.append(("bold", f"agent(s) | "))
+            toolbar_text.append(("bold", "agent(s) | "))
             toolbar_text.append(("bg:#FF0000 bold", f"{len(self.chat_cache)} "))
-            toolbar_text.append(("bold", f"unread message(s) "))
+            toolbar_text.append(("bold", "unread message(s) "))
 
             agent_text = ""
             for agents in agent_tasks:
@@ -256,7 +256,7 @@ class EmpireCliState(object):
                 if self.cached_plugin_results[plugins]:
                     plugin_text += f" {plugins}"
             if plugin_text:
-                toolbar_text.append(("bold", f"| Plugin(s) received task result(s):"))
+                toolbar_text.append(("bold", "| Plugin(s) received task result(s):"))
                 toolbar_text.append(("bg:#FF0000 bold", f"{plugin_text} "))
 
             return toolbar_text

@@ -1,13 +1,12 @@
 from __future__ import print_function
 
-import base64
 import random
 from builtins import object, str
 
 # Empire imports
 from typing import List, Optional, Tuple
 
-from empire.server.common import agents, encryption, helpers, messages, packets
+from empire.server.common import helpers
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_validate_message
 
@@ -208,11 +207,11 @@ class Listener(object):
             listenerOptions = active_listener.options
 
             host = listenerOptions["Host"]["Value"]
-            stagingKey = listenerOptions["StagingKey"]["Value"]
+            _stagingKey = listenerOptions["StagingKey"]["Value"]
             profile = listenerOptions["DefaultProfile"]["Value"]
             uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
             stage0 = random.choice(uris)
-            launchURI = "%s/%s" % (host, stage0)
+            _launchURI = "%s/%s" % (host, stage0)
 
             if language.startswith("po"):
                 # PowerShell

@@ -263,7 +263,7 @@ class ModuleService(object):
                 )
             except Exception as e:
                 log.error(f"Error generating script: {e}", exc_info=True)
-                return None, f"Error generating script."
+                return None, "Error generating script."
         elif module.language == LanguageEnum.powershell:
             return self._generate_script_powershell(module, params, obfuscation_config)
         # We don't have obfuscation for other languages yet, but when we do,
@@ -538,7 +538,7 @@ class ModuleService(object):
                 with open(module_path, "r") as f:
                     module_code = f.read()
                 return module_code, None
-        except:
+        except Exception:
             return None, f"[!] Could not read module source path at: {module_source}"
 
     def finalize_module(

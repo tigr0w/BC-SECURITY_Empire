@@ -53,7 +53,7 @@ def format_options(options: Dict) -> Dict:
 
 if __name__ == "__main__":
     yaml.add_representer(type(None), represent_none)
-    root_path = f"../../modules/python"
+    root_path = "../../modules/python"
     pattern = "*.py"
     count = 0
     for root, dirs, files in os.walk(root_path):

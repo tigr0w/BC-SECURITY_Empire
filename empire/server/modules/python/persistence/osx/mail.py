@@ -60,60 +60,60 @@ class Module(object):
         <plist version="1.0">
         <array>
         <dict>
-        		<key>AllCriteriaMustBeSatisfied</key>
-        		<string>NO</string>
-        		<key>AppleScript</key>
-        		<string>"""
+                <key>AllCriteriaMustBeSatisfied</key>
+                <string>NO</string>
+                <key>AppleScript</key>
+                <string>"""
             + apple_script
             + """</string>
-        		<key>AutoResponseType</key>
-        		<integer>0</integer>
-        		<key>Criteria</key>
-        		<array>
-        			<dict>
-        				<key>CriterionUniqueId</key>
-        				<string>"""
+                <key>AutoResponseType</key>
+                <integer>0</integer>
+                <key>Criteria</key>
+                <array>
+                    <dict>
+                        <key>CriterionUniqueId</key>
+                        <string>"""
             + criterion_unique_id
             + """</string>
-        				<key>Expression</key>
-        				<string>"""
+                        <key>Expression</key>
+                        <string>"""
             + str(trigger)
             + """</string>
-        				<key>Header</key>
-        				<string>Subject</string>
-        			</dict>
-        		</array>
-        		<key>Deletes</key>
-        		<string>YES</string>
-        		<key>HighlightTextUsingColor</key>
-        		<string>NO</string>
-        		<key>MarkFlagged</key>
-        		<string>NO</string>
-        		<key>MarkRead</key>
-        		<string>NO</string>
-        		<key>NotifyUser</key>
-        		<string>NO</string>
-        		<key>RuleId</key>
-        		<string>"""
+                        <key>Header</key>
+                        <string>Subject</string>
+                    </dict>
+                </array>
+                <key>Deletes</key>
+                <string>YES</string>
+                <key>HighlightTextUsingColor</key>
+                <string>NO</string>
+                <key>MarkFlagged</key>
+                <string>NO</string>
+                <key>MarkRead</key>
+                <string>NO</string>
+                <key>NotifyUser</key>
+                <string>NO</string>
+                <key>RuleId</key>
+                <string>"""
             + RuleId
             + """</string>
-        		<key>RuleName</key>
-        		<string>"""
+                <key>RuleName</key>
+                <string>"""
             + str(rule_name)
             + """</string>
-        		<key>SendNotification</key>
-        		<string>NO</string>
-        		<key>ShouldCopyMessage</key>
-        		<string>NO</string>
-        		<key>ShouldTransferMessage</key>
-        		<string>NO</string>
-        		<key>TimeStamp</key>
-        		<integer>"""
+                <key>SendNotification</key>
+                <string>NO</string>
+                <key>ShouldCopyMessage</key>
+                <string>NO</string>
+                <key>ShouldTransferMessage</key>
+                <string>NO</string>
+                <key>TimeStamp</key>
+                <integer>"""
             + time_stamp
             + """</integer>
-        		<key>Version</key>
-        		<integer>1</integer>
-        	</dict>
+                <key>Version</key>
+                <integer>1</integer>
+            </dict>
         </array>
         </plist>"""
         )
@@ -122,13 +122,13 @@ class Module(object):
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
         <dict>
-        	<key>"""
+            <key>"""
             + RuleId
             + """</key>
-        	<true/>
+            <true/>
         </dict>
         </plist>
-        	"""
+            """
         )
         script = """
 import os

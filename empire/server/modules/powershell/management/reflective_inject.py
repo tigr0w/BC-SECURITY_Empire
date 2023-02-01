@@ -33,6 +33,7 @@ class Module(object):
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
+
         if (params["Obfuscate"]).lower() == "true":
             launcher_obfuscate = True
         else:
@@ -62,8 +63,8 @@ class Module(object):
                 listener_name,
                 language="powershell",
                 encode=True,
-                obfuscate=obfuscate,
-                obfuscation_command=obfuscate_command,
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
                 userAgent=user_agent,
                 proxy=proxy,
                 proxyCreds=proxy_creds,

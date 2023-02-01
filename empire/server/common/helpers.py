@@ -37,11 +37,9 @@ Includes:
 """
 import base64
 import binascii
-import datetime
 import ipaddress
 import json
 import logging
-import numbers
 import os
 import random
 import re
@@ -84,9 +82,9 @@ def validate_ip(IP):
     Validate an IP.
     """
     try:
-        ip = ipaddress.ip_address(IP)
+        ipaddress.ip_address(IP)
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -127,13 +125,13 @@ def obfuscate_call_home_address(data):
     return tmp
 
 
-def chunks(l, n):
+def chunks(s, n):
     """
-    Generator to split a string l into chunks of size n.
+    Generator to split a string s into chunks of size n.
     Used by macro modules.
     """
-    for i in range(0, len(l), n):
-        yield l[i : i + n]
+    for i in range(0, len(s), n):
+        yield s[i : i + n]
 
 
 ####################################################################################
@@ -248,7 +246,7 @@ def get_powerview_psreflect_overhead(script):
 
     try:
         return strip_powershell_comments(pattern.findall(script)[0])
-    except:
+    except Exception:
         log.error("Error extracting psreflect overhead from script!")
         return ""
 
@@ -300,7 +298,7 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
             functionDependencies = get_dependent_functions(
                 functions[requiredFunction], list(functions.keys())
             )
-        except:
+        except Exception:
             functionDependencies = []
             log.error(
                 f"Error in retrieving dependencies for function {requiredFunction} !"
@@ -369,7 +367,7 @@ def generate_dynamic_powershell_script(script, functionNames):
     for functionDependency in functionDependencies:
         try:
             newScript += functions[functionDependency] + "\n"
-        except:
+        except Exception:
             log.error(f"Key error with function {functionDependency} !")
 
     # if any psreflect methods are needed, add in the overhead at the end
@@ -465,7 +463,7 @@ def parse_mimikatz(data):
 
                 hostName = temp.split(b".")[0]
                 hostDomain = b".".join(temp.split(".")[1:])
-            except:
+            except Exception:
                 pass
 
     for regex in regexes:
@@ -484,7 +482,7 @@ def parse_mimikatz(data):
                         domain = line.split(":", 1)[1].strip()
                     elif "NTLM" in line or "Password" in line:
                         password = line.split(":", 1)[1].strip()
-                except:
+                except Exception:
                     pass
 
             if username != "" and password != "" and password != "(null)":
@@ -540,7 +538,7 @@ def parse_mimikatz(data):
                                 sid.decode("UTF-8"),
                             )
                         )
-                except Exception as e:
+                except Exception:
                     pass
 
     if len(creds) == 0:
@@ -596,17 +594,6 @@ def get_file_datetime():
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def old_div(a, b):
-    """
-    Equivalent to ``a / b`` on Python 2 without ``from __future__ import
-    division``.
-    """
-    if isinstance(a, numbers.Integral) and isinstance(b, numbers.Integral):
-        return a // b
-    else:
-        return a / b
-
-
 def get_file_size(file):
     """
     Returns a string with the file size and highest rating.
@@ -646,7 +633,7 @@ def lhost():
                         struct.pack("256s", ifname[:15].encode("UTF-8")),
                     )[20:24]
                 )
-            except IOError as e:
+            except IOError:
                 return ""
 
     ip = ""
@@ -654,7 +641,7 @@ def lhost():
         ip = socket.gethostbyname(socket.gethostname())
     except socket.gaierror:
         pass
-    except:
+    except Exception:
         log.error("Unexpected error:", exc_info=True)
         return ip
 
@@ -666,8 +653,8 @@ def lhost():
                     ip = get_interface_ip(ifname)
                     if ip != "":
                         break
-                except:
-                    log.error(f"Unexpected error:", exc_info=True)
+                except Exception:
+                    log.error("Unexpected error:", exc_info=True)
                     pass
     return ip
 
@@ -817,4 +804,4 @@ class KThread(threading.Thread):
 def slackMessage(slack_webhook_url, slack_text):
     message = {"text": slack_text}
     req = urllib.request.Request(slack_webhook_url, json.dumps(message).encode("UTF-8"))
-    resp = urllib.request.urlopen(req)
+    urllib.request.urlopen(req)

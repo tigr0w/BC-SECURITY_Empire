@@ -1,6 +1,4 @@
-import base64
 import logging
-import os
 import pathlib
 import subprocess
 import textwrap
@@ -14,7 +12,7 @@ from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.Menu import Menu
 from empire.client.src.Shortcut import Shortcut
 from empire.client.src.ShortcutHandler import shortcut_handler
-from empire.client.src.utils import print_util, table_util, thread_util, vnc_util
+from empire.client.src.utils import print_util, table_util
 from empire.client.src.utils.autocomplete_util import (
     current_files,
     filtered_search_list,
@@ -209,7 +207,7 @@ class InteractMenu(Menu):
         try:
             filename = local_script_location.split("/")[-1]
             data = get_data_from_file(local_script_location)
-        except:
+        except Exception:
             log.error("Invalid filename or file does not exist")
             return
 
@@ -303,7 +301,7 @@ class InteractMenu(Menu):
         elif "detail" in response:
             try:
                 log.error(response["detail"][0]["msg"])
-            except:
+            except Exception:
                 log.error(response["detail"])
 
     @command
@@ -342,7 +340,7 @@ class InteractMenu(Menu):
                     getattr(self, name).__doc__.split("\n")[3].lstrip()[7:], width=35
                 )
                 help_list.append([name, description, usage])
-            except:
+            except Exception:
                 continue
 
         for name, shortcut in shortcut_handler.shortcuts[self.agent_language].items():
@@ -350,7 +348,7 @@ class InteractMenu(Menu):
                 description = shortcut.get_help_description()
                 usage = shortcut.get_usage_string()
                 help_list.append([name, description, usage])
-            except:
+            except Exception:
                 continue
         help_list.insert(0, ["Name", "Description", "Usage"])
         table_util.print_table(help_list, "Help Options")
@@ -505,7 +503,7 @@ class InteractMenu(Menu):
                             filename = file_directory.split("/")[-1]
                             post_body.get("options")["File"] = filename
                             data = get_data_from_file(file_directory)
-                        except:
+                        except Exception:
                             log.error("Invalid filename or file does not exist")
                             return
                         response = state.upload_file(filename, data)

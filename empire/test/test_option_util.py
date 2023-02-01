@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-from typing import Dict
-
 from empire.server.utils.option_util import safe_cast, validate_options
 
 

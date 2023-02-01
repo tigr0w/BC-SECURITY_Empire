@@ -58,11 +58,11 @@ donut-shellcode = {git = "https://github.com/BC-SECURITY/donut.git"}
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git"}
 
 [tool.poetry.dev-dependencies]
-flake8 = "^3.8.4"
 isort = "^5.10.1"
 black = "^22.1.0"
 pytest = "^6.2.5"
 pytest-timeout = "^2.1.0"
+ruff = "^0.0.233"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -79,4 +79,24 @@ extend-exclude = '''
     | (empire/client/generated-stagers*)
     | (empire/client/downloads*)
 '''
+force-exclude = '''
+    (empire/server/data*)
+    | (empire/server/downloads*)
+    | (empire/client/generated-stagers*)
+    | (empire/client/downloads*)
+'''
+
 #include = '.*\.(plugin)$'
+
+[tool.ruff]
+extend-exclude = [
+    'empire/server/data',
+    'empire/server/downloads',
+    'empire/server/common/malleable',
+    'empire/client/generated-stagers',
+    'empire/client/downloads'
+]
+# Will revisit line lengths later. Black won't format the strings and comments
+# by default. And the experimental flag still has some issues.
+# fixes right now: https://github.com/psf/black/issues/2188
+extend-ignore = ["E501"]

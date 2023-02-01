@@ -31,7 +31,6 @@ class Module(object):
 
         # # get just the code needed for the specified function
         # script = helpers.generate_dynamic_powershell_script(moduleCode, "Write-ServiceEXECMD")
-        script = module_code
 
         # generate the .bat launcher code to write out to the specified location
         launcher = main_menu.stagertemplatesv2.new_instance("windows_launcher_bat")

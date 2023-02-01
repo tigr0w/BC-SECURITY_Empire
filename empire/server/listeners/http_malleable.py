@@ -285,7 +285,6 @@ class Listener(object):
             # extract the set options for this instantiated listener
             listenerOptions = active_listener.options
 
-            bindIP = listenerOptions["BindIP"]["Value"]
             port = listenerOptions["Port"]["Value"]
             host = listenerOptions["Host"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
@@ -1032,7 +1031,7 @@ $vWc.Proxy = $Script:Proxy;
                 # ==== ADD PARAMETERS ====
                 first = True
                 for parameter, value in profile.post.client.parameters.items():
-                    sendMessage += f"$taskURI += '" + ("?" if first else "&") + "';"
+                    sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
                     first = False
                     sendMessage += f"$taskURI += '{ parameter }={ value }';"
                 if (
@@ -1338,9 +1337,6 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
         port = listenerOptions["Port"]["Value"]
         host = listenerOptions["Host"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
-        listenerName = listenerOptions["Name"]["Value"]
-        proxy = listenerOptions["Proxy"]["Value"]
-        proxyCreds = listenerOptions["ProxyCreds"]["Value"]
         certPath = listenerOptions["CertPath"]["Value"]
 
         # build and validate profile

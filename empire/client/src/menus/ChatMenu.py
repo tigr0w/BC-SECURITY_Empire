@@ -6,7 +6,6 @@ from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.Menu import Menu
 from empire.client.src.MenuState import menu_state
 from empire.client.src.utils import print_util
-from empire.client.src.utils.autocomplete_util import position_util
 from empire.client.src.utils.cli_util import register_cli_commands
 
 log = logging.getLogger(__name__)

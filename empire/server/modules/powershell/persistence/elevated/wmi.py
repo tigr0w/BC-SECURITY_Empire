@@ -24,7 +24,6 @@ class Module(object):
         daily_time = params["DailyTime"]
         day = params["Day"]
         day_of_week = params["DayOfWeek"]
-        at_startup = params["AtStartup"]
         sub_name = params["SubName"]
         dummy_sub_name = "_" + sub_name
         failed_logon = params["FailedLogon"]
@@ -45,7 +44,6 @@ class Module(object):
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""
-        location_string = ""
 
         if cleanup.lower() == "true":
             # commands to remove the WMI filter and subscription

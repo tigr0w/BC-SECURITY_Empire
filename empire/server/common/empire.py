@@ -9,7 +9,6 @@ menu loops.
 """
 from __future__ import absolute_import
 
-import asyncio
 import logging
 import time
 from socket import SocketIO
@@ -21,7 +20,6 @@ from empire.server.core.agent_file_service import AgentFileService
 from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.bypass_service import BypassService
-from empire.server.core.config import empire_config
 from empire.server.core.credential_service import CredentialService
 from empire.server.core.download_service import DownloadService
 from empire.server.core.host_process_service import HostProcessService

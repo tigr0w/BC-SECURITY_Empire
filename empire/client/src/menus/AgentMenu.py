@@ -114,7 +114,7 @@ class AgentMenu(Menu):
                     self.kill_agent(agent_name)
             elif agent_name == "stale":
                 for agent_name, agent in state.get_agents().items():
-                    if agent["stale"] == True:
+                    if agent["stale"] is True:
                         self.kill_agent(agent_name)
             else:
                 self.kill_agent(agent_name)

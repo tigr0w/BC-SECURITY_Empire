@@ -152,11 +152,15 @@ def test_stale_expression(empire_config):
     assert any(agent.stale for agent in agents)
 
     # assert we can filter on stale via the hybrid expression
-    stale = db.query(models.Agent).filter(models.Agent.stale == True).all()
+    stale = (
+        db.query(models.Agent).filter(models.Agent.stale == True).all()  # noqa: E712
+    )
     assert len(stale) == 1
 
     # assert we can filter on stale via the hybrid expression
-    not_stale = db.query(models.Agent).filter(models.Agent.stale == False).all()
+    not_stale = (
+        db.query(models.Agent).filter(models.Agent.stale == False).all()  # noqa: E712
+    )
     assert len(not_stale) == 3
 
 

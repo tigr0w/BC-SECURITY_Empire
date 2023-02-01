@@ -22,7 +22,7 @@ def test_bypass_loader(monkeypatch):
     main_menu = Mock()
     main_menu.installPath = "empire/server"
 
-    bypass_service = BypassService(main_menu)
+    BypassService(main_menu)
 
     assert session_mock.begin.return_value.__enter__.return_value.add.call_count > 4
 
@@ -87,6 +87,6 @@ def test_profile_loader(monkeypatch):
     main_menu = Mock()
     main_menu.installPath = "empire/server"
 
-    profile_service = ProfileService(main_menu)
+    ProfileService(main_menu)
 
     assert session_mock.begin.return_value.__enter__.return_value.add.call_count > 20

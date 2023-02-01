@@ -9,7 +9,6 @@ from typing import List, Optional, Tuple
 from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
 from empire.server.utils import data_util, listener_util
-from empire.server.utils.module_util import handle_validate_message
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)

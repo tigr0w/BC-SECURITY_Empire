@@ -153,7 +153,8 @@ class StagerService(object):
     def generate_stager(self, template_instance):
         resp = template_instance.generate()
 
-        # todo generate should return error response much like listener validate options should.
+        # todo generate should return error response much like listener validate
+        #  options should.
         if resp == "" or resp is None:
             return None, "Error generating"
 

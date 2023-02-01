@@ -50,7 +50,7 @@ class Module(object):
                             )
                             script_end += " -PEBytes $PE"
 
-                        except:
+                        except Exception:
                             print(
                                 helpers.color(
                                     "[!] Error in reading/encoding dll: " + str(values)

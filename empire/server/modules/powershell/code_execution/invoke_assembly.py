@@ -60,7 +60,7 @@ class Module(object):
             encode_assembly = main_menu.downloadsv2.get_all(
                 SessionLocal(), None, params["File"]
             )[0][0].get_base64_file()
-        except:
+        except Exception:
             return handle_error_message(
                 "[!] Could not read .NET assembly path at: " + str(params["Arguments"])
             )

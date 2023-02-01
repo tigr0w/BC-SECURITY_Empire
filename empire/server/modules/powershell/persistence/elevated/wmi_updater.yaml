@@ -46,10 +46,6 @@ options:
     description: Day of week to trigger the script (0-6). Sunday = 0. Optional to DailyTime.
     required: false
     value: ''
-  - name: AtStartup
-    description: Switch. Trigger script (within 5 minutes) of system startup.
-    required: false
-    value: 'True'
   - name: SubName
     description: Name to use for the event subscription.
     required: true

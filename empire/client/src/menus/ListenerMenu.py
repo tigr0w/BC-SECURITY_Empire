@@ -1,6 +1,4 @@
 import logging
-import string
-import textwrap
 
 from prompt_toolkit.completion import Completion
 

@@ -287,14 +287,14 @@ def test_update_listener_allows_and_enables_while_disabled(client, admin_auth_he
 
 
 def test_get_listeners(client, admin_auth_header):
-    response = client.get(f"/api/v2/listeners", headers=admin_auth_header)
+    response = client.get("/api/v2/listeners", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert len(response.json()["records"]) == 2
 
 
 def test_delete_listener_while_enabled(client, admin_auth_header):
-    response = client.get(f"/api/v2/listeners", headers=admin_auth_header)
+    response = client.get("/api/v2/listeners", headers=admin_auth_header)
     assert response.status_code == 200
     assert len(response.json()["records"]) == 2
 
@@ -309,7 +309,7 @@ def test_delete_listener_while_enabled(client, admin_auth_header):
     assert response.status_code == 204
 
     response = client.get(
-        f"/api/v2/listeners",
+        "/api/v2/listeners",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -319,7 +319,7 @@ def test_delete_listener_while_enabled(client, admin_auth_header):
 
 def test_delete_listener_while_disabled(client, admin_auth_header):
     response = client.get(
-        f"/api/v2/listeners",
+        "/api/v2/listeners",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -335,7 +335,7 @@ def test_delete_listener_while_disabled(client, admin_auth_header):
     assert response.status_code == 204
 
     response = client.get(
-        f"/api/v2/listeners",
+        "/api/v2/listeners",
         headers=admin_auth_header,
     )
     assert response.status_code == 200

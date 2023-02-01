@@ -50,11 +50,11 @@ def is_powershell_installed():
 
 def get_powershell_name():
     try:
-        powershell_location = subprocess.check_output("which powershell", shell=True)
-    except subprocess.CalledProcessError as e:
+        subprocess.check_output("which powershell", shell=True)
+    except subprocess.CalledProcessError:
         try:
-            powershell_location = subprocess.check_output("which pwsh", shell=True)
-        except subprocess.CalledProcessError as e:
+            subprocess.check_output("which pwsh", shell=True)
+        except subprocess.CalledProcessError:
             return ""
         return "pwsh"
     return "powershell"

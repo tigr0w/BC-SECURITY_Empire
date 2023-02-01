@@ -143,7 +143,9 @@ class ListenerService(object):
     def start_existing_listeners(self):
         with SessionLocal.begin() as db:
             listeners = (
-                db.query(models.Listener).filter(models.Listener.enabled == True).all()
+                db.query(models.Listener)
+                .filter(models.Listener.enabled == True)  # noqa: E712
+                .all()
             )
             for listener in listeners:
                 self.start_existing_listener(db, listener)

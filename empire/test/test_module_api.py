@@ -43,7 +43,7 @@ def test_update_modules_bulk(client, admin_auth_header):
         "powershell_code_execution_invoke_ironpython",
     ]
     response = client.put(
-        f"/api/v2/modules/bulk/enable",
+        "/api/v2/modules/bulk/enable",
         headers=admin_auth_header,
         json={
             "enabled": False,

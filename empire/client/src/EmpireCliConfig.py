@@ -4,8 +4,6 @@ from typing import Dict
 
 import yaml
 
-from empire.client.src.utils import print_util
-
 log = logging.getLogger(__name__)
 
 

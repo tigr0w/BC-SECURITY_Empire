@@ -15,8 +15,6 @@ class Module(object):
     ) -> Tuple[Optional[str], Optional[str]]:
 
         plist_name = params["PLISTName"]
-        programname = "~/Library/LaunchAgents"
-        plistfilename = "%s.plist" % plist_name
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]
         safe_checks = params["SafeChecks"]

@@ -337,7 +337,7 @@ def parse_routing_packet(stagingKey, data):
                 )
                 try:
                     sessionID = routingPacket[0:8].decode("UTF-8")
-                except:
+                except Exception:
                     sessionID = routingPacket[0:8].decode("latin-1")
 
                 # B == 1 byte unsigned char, H == 2 byte unsigned short, L == 4 byte unsigned long
@@ -429,5 +429,5 @@ def resolve_id(PacketID):
     """
     try:
         return PACKET_IDS[int(PacketID)]
-    except:
+    except Exception:
         return PACKET_IDS[0]

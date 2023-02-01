@@ -1,7 +1,4 @@
 import logging
-from pathlib import Path
-
-from empire.server.core.config import empire_config
 
 
 class MyFormatter(logging.Formatter):

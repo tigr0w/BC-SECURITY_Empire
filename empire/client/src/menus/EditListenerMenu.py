@@ -1,15 +1,7 @@
 import logging
-import textwrap
-
-from prompt_toolkit.completion import Completion
 
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.UseMenu import UseMenu
-from empire.client.src.utils import print_util, table_util
-from empire.client.src.utils.autocomplete_util import (
-    filtered_search_list,
-    position_util,
-)
 from empire.client.src.utils.cli_util import command, register_cli_commands
 
 log = logging.getLogger(__name__)

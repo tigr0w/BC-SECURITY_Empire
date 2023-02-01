@@ -66,7 +66,7 @@ def convert_old_author(author):
 
 if __name__ == "__main__":
     # yaml.add_representer(type(None), represent_none)
-    root_path = f"../../modules"
+    root_path = "../../modules"
     pattern = "*.yaml"
     for root, dirs, files in os.walk(root_path):
         for filename in fnmatch.filter(files, pattern):

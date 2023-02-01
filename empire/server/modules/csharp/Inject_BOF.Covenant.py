@@ -64,7 +64,7 @@ class Module(object):
         if params["File"] != "":
             script_end = f",-a:{b64_bof_data}"
         else:
-            script_end = f","
+            script_end = ","
 
         if params["EntryPoint"] != "":
             script_end += f" -e:{params['EntryPoint']}"

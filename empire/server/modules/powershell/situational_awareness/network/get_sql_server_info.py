@@ -3,7 +3,6 @@ from __future__ import print_function
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
 from empire.server.core.module_models import EmpireModule
 
 
@@ -36,17 +35,7 @@ class Module(object):
                 obfuscate=obfuscate,
                 obfuscate_command=obfuscation_command,
             )
-            try:
-                with open(sql_instance_source, "r") as auxSource:
-                    auxScript = auxSource.read()
-                    script += " " + auxScript
-            except:
-                print(
-                    helpers.color(
-                        "[!] Could not read additional module source path at: "
-                        + str(sql_instance_source)
-                    )
-                )
+
             script_end = " Get-SQLInstanceDomain "
             if username != "":
                 script_end += " -Username " + username

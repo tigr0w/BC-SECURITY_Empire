@@ -1,4 +1,3 @@
-import base64
 import logging
 import pathlib
 
@@ -7,7 +6,6 @@ from prompt_toolkit.completion import Completion
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.UseMenu import UseMenu
 from empire.client.src.MenuState import menu_state
-from empire.client.src.utils import print_util
 from empire.client.src.utils.autocomplete_util import (
     filtered_search_list,
     position_util,
@@ -87,7 +85,7 @@ class UseModuleMenu(UseMenu):
                     filename = file_directory.split("/")[-1]
                     self.record_options["File"]["value"] = filename
                     data = get_data_from_file(file_directory)
-                except:
+                except Exception:
                     log.error("Invalid filename or file does not exist")
                     return
                 response = state.upload_file(filename, data)

@@ -1,9 +1,4 @@
-from prompt_toolkit import HTML
-
-from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.Menu import Menu
-from empire.client.src.utils import table_util
-from empire.client.src.utils.autocomplete_util import position_util
 from empire.client.src.utils.cli_util import command, register_cli_commands
 from empire.client.src.utils.print_util import color
 

@@ -88,20 +88,20 @@ Invoke-EventLogBackdoor"""
                     else:
                         script += " -" + str(option) + " " + str(values)
 
-        outFile = params["OutFile"]
-        if outFile != "":
+        out_file = params["OutFile"]
+        if out_file != "":
             # make the base directory if it doesn't exist
             if (
-                not os.path.exists(os.path.dirname(outFile))
-                and os.path.dirname(outFile) != ""
+                not os.path.exists(os.path.dirname(out_file))
+                and os.path.dirname(out_file) != ""
             ):
-                os.makedirs(os.path.dirname(outFile))
+                os.makedirs(os.path.dirname(out_file))
 
             with open(out_file, "w") as f:
                 f.write(script)
 
             return handle_error_message(
-                "[+] PowerBreach deaduser backdoor written to " + outFile
+                "[+] PowerBreach deaduser backdoor written to " + out_file
             )
 
         # transform the backdoor into something launched by powershell.exe

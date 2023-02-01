@@ -30,9 +30,9 @@ import macholib.MachO
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util
+from empire.server.utils.math_util import old_div
 
 from . import helpers
-from .helpers import old_div
 
 log = logging.getLogger(__name__)
 
@@ -217,7 +217,7 @@ class Stagers(object):
         """
 
         if encode:
-            launcher += f"Start-Sleep 5;"
+            launcher += "Start-Sleep 5;"
 
         # Remove comments and make one line
         launcher = helpers.strip_powershell_comments(launcher)
@@ -481,7 +481,7 @@ class Stagers(object):
             tmpdir = "/tmp/application/%s.app/" % AppName
             shutil.copytree(directory, tmpdir)
             f = open(tmpdir + "Contents/MacOS/launcher", "wb")
-            if disarm != True:
+            if disarm is not True:
                 f.write(patchedBinary)
                 f.close()
             else:
@@ -587,7 +587,6 @@ class Stagers(object):
     def generate_pkg(self, launcher, bundleZip, AppName):
 
         # unzip application bundle zip. Copy everything for the installer pkg to a temporary location
-        currDir = os.getcwd()
         os.chdir("/tmp/")
         with open("app.zip", "wb") as f:
             f.write(bundleZip)

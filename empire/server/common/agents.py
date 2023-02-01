@@ -291,12 +291,7 @@ class Agents(object):
                     f"Final size of {filename} wrote: {helpers.get_file_size(dec_data['data'])}"
                 )
                 if not dec_data["crc32_check"]:
-                    message = "File agent {} failed crc32 check during decompression!\n[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!".format(
-                        sessionID,
-                        dec_data["header_crc32"],
-                        dec_data["dec_crc32"],
-                        dec_data["crc32_check"],
-                    )
+                    message = f"File agent {sessionID} failed crc32 check during decompression!\n[!] HEADER: Start crc32: {dec_data['header_crc32']} -- Received crc32: {dec_data['dec_crc32']} -- Crc32 pass: {dec_data['crc32_check']}!"
                     log.warning(message)
                 data = dec_data["data"]
 
@@ -366,12 +361,7 @@ class Agents(object):
                 f"Final size of {filename} wrote: {helpers.get_file_size(dec_data['data'])}"
             )
             if not dec_data["crc32_check"]:
-                message = "File agent {} failed crc32 check during decompression!\n[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!".format(
-                    sessionID,
-                    dec_data["header_crc32"],
-                    dec_data["dec_crc32"],
-                    dec_data["crc32_check"],
-                )
+                message = f"File agent {sessionID} failed crc32 check during decompression!\n[!] HEADER: Start crc32: {dec_data['header_crc32']} -- Received crc32: {dec_data['dec_crc32']} -- Crc32 pass: {dec_data['crc32_check']}!"
                 log.warning(message)
             data = dec_data["data"]
 
@@ -832,7 +822,7 @@ class Agents(object):
             # decrypt the agent's public key
             try:
                 message = encryption.aes_decrypt_and_verify(stagingKey, encData)
-            except Exception as e:
+            except Exception:
                 # if we have an error during decryption
                 message = f"HMAC verification failed from '{sessionID}'"
                 log.error(message, exc_info=True)
@@ -904,7 +894,7 @@ class Agents(object):
                 else:
                     try:
                         int(message)
-                    except:
+                    except Exception:
                         message = f"Invalid Python key post format from {sessionID}"
                         log.error(message)
                         return message
@@ -990,7 +980,7 @@ class Agents(object):
                 message = f"Nonce verified: agent {sessionID} posted valid sysinfo checkin format: {message}"
                 log.debug(message)
 
-                listener = str(parts[1], "utf-8")
+                _listener = str(parts[1], "utf-8")
                 domainname = str(parts[2], "utf-8")
                 username = str(parts[3], "utf-8")
                 hostname = str(parts[4], "utf-8")
@@ -1233,7 +1223,7 @@ class Agents(object):
                 ]:
                     try:
                         session_key = bytes.fromhex(session_key)
-                    except:
+                    except Exception:
                         pass
 
                 # encrypt the tasking packets with the agent's session key
@@ -1269,7 +1259,7 @@ class Agents(object):
         if self.agents[sessionID]["language"].lower() in ["python", "ironpython"]:
             try:
                 sessionKey = bytes.fromhex(sessionKey)
-            except:
+            except Exception:
                 pass
 
         try:
@@ -1493,7 +1483,7 @@ class Agents(object):
                     self.socksthread[session_id].start()
 
                     log.info(f'SOCKS client for "{agent.name}" successfully started')
-                except Exception as e:
+                except Exception:
                     log.error(f'SOCKS client for "{agent.name}" failed to started')
             else:
                 log.info("SOCKS server already exists")
@@ -1547,7 +1537,7 @@ class Agents(object):
             try:
                 result = json.loads(data.decode("utf-8"))
                 self.update_dir_list(session_id, result, db=db)
-            except ValueError as e:
+            except ValueError:
                 pass
 
             self.save_agent_log(session_id, data)

@@ -3,7 +3,6 @@ import fnmatch
 import importlib
 import logging
 import os
-from importlib.machinery import SourceFileLoader
 
 from sqlalchemy.orm import Session
 

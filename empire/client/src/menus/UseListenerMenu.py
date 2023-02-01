@@ -4,7 +4,6 @@ from prompt_toolkit.completion import Completion
 
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.UseMenu import UseMenu
-from empire.client.src.utils import print_util
 from empire.client.src.utils.autocomplete_util import (
     filtered_search_list,
     position_util,

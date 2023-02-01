@@ -3,7 +3,7 @@ from __future__ import print_function
 import logging
 from builtins import object
 
-from empire.server.common import helpers, pylnk
+from empire.server.common import pylnk
 
 log = logging.getLogger(__name__)
 

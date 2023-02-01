@@ -11,7 +11,6 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
-from empire.client.src.utils.data_util import get_random_string
 
 log = logging.getLogger(__name__)
 

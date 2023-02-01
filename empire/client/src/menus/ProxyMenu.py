@@ -1,17 +1,11 @@
-import base64
 import logging
-import os
-import textwrap
 from typing import List
 
-from prompt_toolkit import HTML
 from prompt_toolkit.completion import Completion
 
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.UseMenu import UseMenu
-from empire.client.src.Shortcut import Shortcut
-from empire.client.src.ShortcutHandler import shortcut_handler
-from empire.client.src.utils import print_util, table_util
+from empire.client.src.utils import table_util
 from empire.client.src.utils.autocomplete_util import (
     filtered_search_list,
     position_util,
@@ -82,8 +76,8 @@ class ProxyMenu(UseMenu):
                 if not self.proxy_list:
                     self.proxy_list = []
                 self.list()
-        except:
-            log.error(f"Proxy menu failed to initialize")
+        except Exception:
+            log.error("Proxy menu failed to initialize")
 
     @command
     def add(self, position: int) -> None:
@@ -141,10 +135,10 @@ class ProxyMenu(UseMenu):
         Usage: execute
         """
         if self.proxy_list:
-            response = state.update_agent_proxy(self.session_id, self.proxy_list)
-            log.info(f"Tasked agent to update proxy chain")
+            state.update_agent_proxy(self.session_id, self.proxy_list)
+            log.info("Tasked agent to update proxy chain")
         else:
-            log.error(f"No proxy chain to configure")
+            log.error("No proxy chain to configure")
 
     @command
     def list(self) -> None:

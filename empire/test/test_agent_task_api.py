@@ -213,7 +213,7 @@ def download(client, admin_auth_header, db, models):
     # there is no delete endpoint for downloads, so we need to delete the file manually
     try:
         db.query(models.Download).delete()
-    except:
+    except Exception:
         pass
 
 
@@ -235,7 +235,7 @@ def bof_download(client, admin_auth_header, db, models):
     # there is no delete endpoint for downloads, so we need to delete the file manually
     try:
         db.query(models.Download).delete()
-    except:
+    except Exception:
         pass
 
 
@@ -262,7 +262,7 @@ def test_create_task_shell(client, admin_auth_header, agent):
 
 def test_create_task_module_agent_not_found(client, admin_auth_header):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/module",
+        "/api/v2/agents/abc/tasks/module",
         headers=admin_auth_header,
         json={"module_slug": "some_module", "options": {}},
     )
@@ -527,7 +527,7 @@ def test_create_task_socks(client, admin_auth_header, agent):
 
 def test_create_task_jobs_agent_not_found(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/jobs",
+        "/api/v2/agents/abc/tasks/jobs",
         headers=admin_auth_header,
         json={},
     )
@@ -558,7 +558,7 @@ def test_kill_task_jobs(client, admin_auth_header, agent):
 
 def test_kill_task_jobs_agent_not_found(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/kill_job",
+        "/api/v2/agents/abc/tasks/kill_job",
         headers=admin_auth_header,
         json={"id": 0},
     )
@@ -626,7 +626,7 @@ def test_create_task_script_command(client, admin_auth_header, agent):
 
 def test_create_task_sysinfo_agent_not_found(client, admin_auth_header):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/sysinfo", headers=admin_auth_header
+        "/api/v2/agents/abc/tasks/sysinfo", headers=admin_auth_header
     )
 
     assert response.status_code == 404
@@ -646,7 +646,7 @@ def test_create_task_sysinfo(client, admin_auth_header, agent):
 
 def test_create_task_update_comms_agent_not_found(client, admin_auth_header, listener):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/update_comms",
+        "/api/v2/agents/abc/tasks/update_comms",
         headers=admin_auth_header,
         json={"new_listener_id": listener["id"]},
     )
@@ -668,7 +668,7 @@ def test_create_task_update_comms(client, admin_auth_header, agent, listener):
 
 def test_create_task_update_sleep_agent_not_found(client, admin_auth_header, listener):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/sleep",
+        "/api/v2/agents/abc/tasks/sleep",
         headers=admin_auth_header,
         json={"new_listener_id": listener["id"]},
     )
@@ -711,7 +711,7 @@ def test_create_task_update_sleep(client, admin_auth_header, agent):
 
 def test_create_task_update_kill_date_agent_not_found(client, admin_auth_header):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/kill_date",
+        "/api/v2/agents/abc/tasks/kill_date",
         headers=admin_auth_header,
         json={"kill_date": "2021-05-06T00:00Z"},
     )
@@ -733,7 +733,7 @@ def test_create_task_update_kill_date(client, admin_auth_header, agent):
 
 def test_create_task_update_working_hours_agent_not_found(client, admin_auth_header):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/working_hours",
+        "/api/v2/agents/abc/tasks/working_hours",
         headers=admin_auth_header,
         json={"working_hours": "05:00-12:00"},
     )
@@ -755,7 +755,7 @@ def test_create_task_update_working_hours(client, admin_auth_header, agent):
 
 def test_create_task_directory_list_agent_not_found(client, admin_auth_header):
     response = client.post(
-        f"/api/v2/agents/abc/tasks/directory_list",
+        "/api/v2/agents/abc/tasks/directory_list",
         headers=admin_auth_header,
         json={"path": "/"},
     )
@@ -809,7 +809,7 @@ def test_create_task_proxy_list(client, admin_auth_header, agent):
 
 
 def test_create_task_exit_agent_not_found(client, admin_auth_header):
-    response = client.post(f"/api/v2/agents/abc/tasks/exit", headers=admin_auth_header)
+    response = client.post("/api/v2/agents/abc/tasks/exit", headers=admin_auth_header)
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Agent not found for id abc"
@@ -841,7 +841,7 @@ def test_get_tasks_for_agent(client, admin_auth_header, agent):
 
 
 def test_get_task_for_agent_agent_not_found(client, admin_auth_header, agent):
-    response = client.get(f"/api/v2/agents/abc/tasks/1", headers=admin_auth_header)
+    response = client.get("/api/v2/agents/abc/tasks/1", headers=admin_auth_header)
     assert response.status_code == 404
     assert response.json()["detail"] == "Agent not found for id abc"
 

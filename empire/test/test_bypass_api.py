@@ -61,7 +61,7 @@ def test_update_bypass_name_conflict(client, admin_auth_header):
     bypass_1_name = response.json()["name"]
 
     response = client.put(
-        f"/api/v2/bypasses/5",
+        "/api/v2/bypasses/5",
         headers=admin_auth_header,
         json={"name": bypass_1_name, "code": "x=0;", "language": "powershell"},
     )

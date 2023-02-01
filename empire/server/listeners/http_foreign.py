@@ -9,7 +9,6 @@ from typing import List, Optional, Tuple
 from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
 from empire.server.utils import data_util, listener_util
-from empire.server.utils.module_util import handle_validate_message
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
@@ -230,7 +229,7 @@ class Listener(object):
                             domain = username.split("\\")[0]
                             usr = username.split("\\")[1]
                             stager += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
-                            stager += f"$wc.Proxy.Credentials = $netcred;"
+                            stager += "$wc.Proxy.Credentials = $netcred;"
 
                 # TODO: reimplement stager retries?
 

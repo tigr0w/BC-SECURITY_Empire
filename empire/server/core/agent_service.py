@@ -30,7 +30,7 @@ class AgentService(object):
         )  # don't return agents that haven't fully checked in.
 
         if not include_archived:
-            query = query.filter(models.Agent.archived == False)
+            query = query.filter(models.Agent.archived == False)  # noqa: E712
 
         agents = query.all()
 
@@ -77,7 +77,7 @@ class AgentService(object):
             self.main_menu.agents.socksthread[agent.session_id].daemon = True
             self.main_menu.agents.socksthread[agent.session_id].start()
             log.info(f'SOCKS client for "{agent.name}" successfully started')
-        except Exception as e:
+        except Exception:
             log.error(f'SOCKS client for "{agent.name}" failed to start')
 
     def _start_existing_socks(self):
@@ -85,7 +85,10 @@ class AgentService(object):
             agents = (
                 db.query(models.Agent)
                 .filter(
-                    and_(models.Agent.socks == True, models.Agent.archived == False)
+                    and_(
+                        models.Agent.socks == True,  # noqa: E712
+                        models.Agent.archived == False,  # noqa: E712
+                    )
                 )
                 .all()
             )

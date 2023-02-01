@@ -120,7 +120,7 @@ class ObfuscationService(object):
         try:
             with open(module_source, "r") as f:
                 module_code = f.read()
-        except:
+        except Exception:
             log.error(f"Could not read module source path at: {module_source}")
             return ""
 
@@ -128,7 +128,6 @@ class ObfuscationService(object):
         module_code = self.obfuscate_keywords(module_code)
 
         # obfuscate and write to obfuscated source path
-        path = os.path.abspath("server.py").split("server.py")[0] + "/"
         obfuscated_code = self.obfuscate(module_code, obfuscation_command)
 
         obfuscated_source = module_source.replace(
@@ -140,7 +139,7 @@ class ObfuscationService(object):
             Path(obfuscated_source).parent.mkdir(parents=True, exist_ok=True)
             with open(obfuscated_source, "w") as f:
                 f.write(obfuscated_code)
-        except:
+        except Exception:
             log.error(
                 f"Could not write obfuscated module source path at: {obfuscated_source}"
             )
@@ -187,7 +186,7 @@ class ObfuscationService(object):
         for file in files:
             try:
                 os.remove(file)
-            except:
+            except Exception:
                 pass
 
     def obfuscate_keywords(self, data):

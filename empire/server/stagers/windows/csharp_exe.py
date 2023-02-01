@@ -122,7 +122,6 @@ class Stager(object):
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-        outfile = self.options["OutFile"]["Value"]
 
         obfuscate_script = False
         if obfuscate.lower() == "true":

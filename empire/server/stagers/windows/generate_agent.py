@@ -106,13 +106,11 @@ class Stager(object):
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         stager_retries = self.options["StagerRetries"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-        outfile = self.options["OutFile"]["Value"]
 
         obfuscate_script = obfuscate.lower() == "true"
         staged = self.options["Staged"]["Value"].lower() == "true"

@@ -32,7 +32,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 def try_create_engine(engine_url: str, *args, **kwargs) -> Engine:
     engine = create_engine(engine_url, *args, **kwargs)
     try:
-        with engine.connect() as connection:
+        with engine.connect():
             pass
     except OperationalError:
         log.error(f"Failed connecting to database using {engine_url}")

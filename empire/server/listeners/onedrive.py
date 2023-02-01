@@ -223,15 +223,8 @@ class Listener(object):
             # extract the set options for this instantiated listener
             listener_options = active_listener.options
 
-            staging_key = listener_options["StagingKey"]["Value"]
-            profile = listener_options["DefaultProfile"]["Value"]
             launcher_cmd = listener_options["Launcher"]["Value"]
             staging_key = listener_options["StagingKey"]["Value"]
-            poll_interval = listener_options["PollInterval"]["Value"]
-            base_folder = listener_options["BaseFolder"]["Value"].strip("/")
-            staging_folder = listener_options["StagingFolder"]["Value"]
-            taskings_folder = listener_options["TaskingsFolder"]["Value"]
-            results_folder = listener_options["ResultsFolder"]["Value"]
 
             if language.startswith("power"):
                 launcher = "$ErrorActionPreference = 'SilentlyContinue';"  # Set as empty string for debugging
@@ -358,8 +351,6 @@ class Listener(object):
                 "base_folder": base_folder,
                 "results_folder": results_folder,
                 "poll_interval": str(agent_delay),
-                "redirect_uri": redirect_uri,
-                "base_folder": base_folder,
                 "staging_folder": staging_folder,
                 "taskings_folder": taskings_folder,
             }
@@ -456,7 +447,6 @@ class Listener(object):
         jitter = listener_options["DefaultJitter"]["Value"]
         profile = listener_options["DefaultProfile"]["Value"]
         lost_limit = listener_options["DefaultLostLimit"]["Value"]
-        working_hours = listener_options["WorkingHours"]["Value"]
         kill_date = listener_options["KillDate"]["Value"]
         b64_default_response = base64.b64encode(self.default_response().encode("UTF-8"))
 
@@ -520,7 +510,7 @@ class Listener(object):
                 r_token["expires_at"] = time.time() + (int)(r_token["expires_in"]) - 15
                 r_token["update"] = True
                 return r_token
-            except KeyError as e:
+            except KeyError:
                 log.error(
                     f"{listener_name} Something went wrong, HTTP response {r.status_code:d}, error code {r.json()['error_codes']}: {r.json()['error_description']}",
                     exc_info=True,
@@ -545,7 +535,7 @@ class Listener(object):
                 r_token["expires_at"] = time.time() + (int)(r_token["expires_in"]) - 15
                 r_token["update"] = True
                 return r_token
-            except KeyError as e:
+            except KeyError:
                 log.error(
                     f"{listener_name}: Something went wrong, HTTP response {r.status_code:d}, error code {r.json()['error_codes']}: {r.json()['error_description']}",
                     exc_info=True,
@@ -629,7 +619,7 @@ class Listener(object):
                     json={"scope": "anonymous", "type": "view"},
                     headers={"Content-Type": "application/json"},
                 )
-                launcher_url = (
+                _launcher_url = (
                     "https://api.onedrive.com/v1.0/shares/%s/driveitem/content"
                     % r.json()["shareId"]
                 )
@@ -689,7 +679,7 @@ class Listener(object):
         else:
             try:
                 token = get_token(client_id, client_secret, auth_code)
-            except:
+            except Exception:
                 self.instance_log.error(
                     f"{listener_name}: Unable to retrieve OneDrive Token"
                 )
@@ -817,7 +807,7 @@ class Listener(object):
                             self.instance_log.info(message)
                             s.delete("%s/drive/items/%s" % (base_url, item["id"]))
 
-                    except Exception as e:
+                    except Exception:
                         message = f"{listener_name}: Could not handle agent staging, continuing"
                         self.instance_log.error(message, exc_info=True)
 
@@ -866,7 +856,7 @@ class Listener(object):
                             agent_ids[i] = agent_ids[i].decode("UTF-8")
 
                         if (
-                            not agent_id in agent_ids
+                            agent_id not in agent_ids
                         ):  # If we don't recognize that agent, upload a message to restage
                             self.instance_log.info(
                                 f"{listener_name}: Invalid agent, deleting {results_folder}/{item['name']} and restaging"

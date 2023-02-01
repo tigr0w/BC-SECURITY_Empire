@@ -426,7 +426,7 @@ class Listener(object):
 
         profile = listenerOptions["DefaultProfile"]["Value"]
         uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
-        launcher = listenerOptions["Launcher"]["Value"]
+        listenerOptions["Launcher"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]
@@ -859,7 +859,7 @@ class Listener(object):
                     else:
                         log.error("Agent is not present in the cache")
                         return False
-        except:
+        except Exception:
             log.error(f'Listener "{name}" failed to start')
             return False
 

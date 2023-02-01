@@ -194,8 +194,8 @@ class EmpireCli(object):
                         self.parse_command_line(text, cmd_line, resource_file=True)
                     except CliExitException:
                         return
-                    except Exception as e:
-                        log.error(f"Error parsing resource command: ", text)
+                    except Exception:
+                        log.error("Error parsing resource command: ", text)
 
         log.info(f"Finished executing resource file: {resource}")
 
@@ -412,7 +412,7 @@ class EmpireCli(object):
                     else self,
                     cmd_line[1],
                 )
-            except:
+            except Exception:
                 pass
 
             if func:
@@ -426,7 +426,7 @@ class EmpireCli(object):
                     else self,
                     cmd_line[0],
                 )
-            except:
+            except Exception:
                 pass
 
             if func:
@@ -449,7 +449,7 @@ class EmpireCli(object):
                 except Exception as e:
                     log.error(e)
                     pass
-                except SystemExit as e:
+                except SystemExit:
                     pass
             elif not func and menu_state.current_menu_name == "InteractMenu":
                 if cmd_line[0] in shortcut_handler.get_names(

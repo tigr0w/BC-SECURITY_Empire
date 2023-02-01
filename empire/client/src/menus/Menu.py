@@ -120,7 +120,7 @@ class Menu(object):
                     getattr(self, name).__doc__.split("\n")[3].lstrip()[7:], width=40
                 )
                 help_list.append([name, description, usage])
-            except:
+            except Exception:
                 continue
 
         help_list.insert(0, ["Name", "Description", "Usage"])

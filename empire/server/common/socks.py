@@ -38,7 +38,7 @@ class EmpireSocksClient(secretsocks.Client):
                 self.recvbuf.put(data)
             except socket.timeout:
                 continue
-            except:
+            except Exception:
                 self.alive = False
 
     # Take data from the write queue and send it over our data channel
@@ -53,7 +53,7 @@ class EmpireSocksClient(secretsocks.Client):
                     )
             except queue.Empty:
                 continue
-            except:
+            except Exception:
                 self.alive = False
 
     def shutdown(self):

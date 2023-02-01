@@ -17,7 +17,6 @@ class Module(object):
         obfuscation_command: str = "",
     ):
 
-        module_name = "Disable-SecuritySettings"
         reset = params["Reset"]
 
         # read in the common module source code

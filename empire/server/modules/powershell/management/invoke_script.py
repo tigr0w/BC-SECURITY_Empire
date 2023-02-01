@@ -25,7 +25,7 @@ class Module(object):
             try:
                 with open(f"{script_path}", "r") as data:
                     script = data.read()
-            except:
+            except Exception:
                 return handle_error_message(
                     "[!] Could not read script source path at: " + str(script_path)
                 )

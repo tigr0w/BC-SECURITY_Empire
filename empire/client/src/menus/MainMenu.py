@@ -114,7 +114,7 @@ class MainMenu(Menu):
             # Print error messages that have reason available
             try:
                 log.error(response.args[0].reason.args[0])
-            except:
+            except Exception:
                 log.error(response.args[0])
 
     @command
@@ -148,7 +148,7 @@ class MainMenu(Menu):
                     getattr(self, name).__doc__.split("\n")[3].lstrip()[7:], width=35
                 )
                 help_list.append([name, description, usage])
-            except:
+            except Exception:
                 continue
 
         # Update help menu with other menus

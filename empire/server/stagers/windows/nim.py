@@ -4,8 +4,6 @@ import logging
 import os
 from builtins import object
 
-from empire.server.common import helpers
-
 log = logging.getLogger(__name__)
 
 
@@ -96,13 +94,11 @@ class Stager(object):
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         stager_retries = self.options["StagerRetries"]["Value"]
 
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-        outfile = self.options["OutFile"]["Value"]
 
         if (
             self.main_menu.listenersv2.get_active_listener_by_name(listener_name)

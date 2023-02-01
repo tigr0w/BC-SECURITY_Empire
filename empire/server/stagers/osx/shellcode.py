@@ -80,7 +80,6 @@ class Stager(object):
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         arch = self.options["Architecture"]["Value"]
-        save_path = self.options["OutFile"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
         safe_checks = self.options["SafeChecks"]["Value"]
 

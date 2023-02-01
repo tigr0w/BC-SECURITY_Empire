@@ -648,7 +648,6 @@ class Listener(object):
             Return default server web page if user navigates to index.
             """
 
-            static_dir = self.mainMenu.installPath + "/data/misc/"
             return make_response(self.index_page(), 200)
 
         @app.route("/<path:request_uri>", methods=["GET"])
@@ -682,7 +681,7 @@ class Listener(object):
                     else:
                         tmp = reqHeader.encode("UTF-8")
                     routingPacket = base64.b64decode(tmp)
-                except Exception as e:
+                except Exception:
                     routingPacket = None
                     # pass
 
@@ -770,7 +769,7 @@ class Listener(object):
             #   NOTE: this can also go into a cookie/etc.
             try:
                 requestData = base64.b64decode(request.get_data())
-            except:
+            except Exception:
                 requestData = None
 
             dataResults = self.mainMenu.agents.handle_agent_data(

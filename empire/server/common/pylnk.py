@@ -511,22 +511,22 @@ class PathSegmentEntry(object):
             short_name_is_unicode = self.type.endswith("(UNICODE)")
             self.file_size = read_int(buf)
             self.modified = read_dos_datetime(buf)
-            unknown = read_short(buf)  # should be 0x10
+            _unknown = read_short(buf)  # should be 0x10
             if short_name_is_unicode:
                 self.short_name = read_cunicode(buf)
             else:
                 self.short_name = read_cstring(buf, padding=True)
             indicator_1 = read_short(buf)  # see below
-            only_83 = read_short(buf) < 0x03
-            unknown = read_short(buf)  # 0x04
+            _only_83 = read_short(buf) < 0x03
+            _unknown = read_short(buf)  # 0x04
             self.is_unicode = read_short(buf) == 0xBEEF
             self.created = read_dos_datetime(buf)
             self.accessed = read_dos_datetime(buf)
             offset_unicode = read_short(buf)
-            only_83_2 = offset_unicode >= indicator_1 or offset_unicode < 0x14
-            offset_ansi = read_short(buf)
+            _only_83_2 = offset_unicode >= indicator_1 or offset_unicode < 0x14
+            _offset_ansi = read_short(buf)
             self.full_name = read_cunicode(buf)
-            offset_part2 = read_short(buf)  # offset to byte after short name
+            _offset_part2 = read_short(buf)  # offset to byte after short name
 
     def create_for_path(cls, path):
         entry = cls()
@@ -828,7 +828,7 @@ class Lnk(object):
 
     def _set_shell_item_id_list(self, shell_item_id_list):
         self._shell_item_id_list = shell_item_id_list
-        self.link_flags.has_shell_item_id_list = shell_item_id_list != None
+        self.link_flags.has_shell_item_id_list = shell_item_id_list is not None
 
     shell_item_id_list = property(_get_shell_item_id_list, _set_shell_item_id_list)
 
@@ -837,8 +837,8 @@ class Lnk(object):
 
     def _set_link_info(self, link_info):
         self._link_info = link_info
-        self.link_flags.force_no_link_info = link_info == None
-        self.link_flags.has_link_info = link_info != None
+        self.link_flags.force_no_link_info = link_info is None
+        self.link_flags.has_link_info = link_info is not None
 
     link_info = property(_get_link_info, _set_link_info)
 
@@ -847,7 +847,7 @@ class Lnk(object):
 
     def _set_description(self, description):
         self._description = description
-        self.link_flags.has_description = description != None
+        self.link_flags.has_description = description is not None
 
     description = property(_get_description, _set_description)
 
@@ -856,7 +856,7 @@ class Lnk(object):
 
     def _set_relative_path(self, relative_path):
         self._relative_path = relative_path
-        self.link_flags.has_relative_path = relative_path != None
+        self.link_flags.has_relative_path = relative_path is not None
 
     relative_path = property(_get_relative_path, _set_relative_path)
 
@@ -865,7 +865,7 @@ class Lnk(object):
 
     def _set_work_dir(self, work_dir):
         self._work_dir = work_dir
-        self.link_flags.has_work_directory = work_dir != None
+        self.link_flags.has_work_directory = work_dir is not None
 
     work_dir = working_dir = property(_get_work_dir, _set_work_dir)
 
@@ -874,7 +874,7 @@ class Lnk(object):
 
     def _set_arguments(self, arguments):
         self._arguments = arguments
-        self.link_flags.has_arguments = arguments != None
+        self.link_flags.has_arguments = arguments is not None
 
     arguments = property(_get_arguments, _set_arguments)
 
@@ -883,7 +883,7 @@ class Lnk(object):
 
     def _set_icon(self, icon):
         self._icon = icon
-        self.link_flags.has_icon = icon != None
+        self.link_flags.has_icon = icon is not None
 
     icon = property(_get_icon, _set_icon)
 
@@ -891,7 +891,7 @@ class Lnk(object):
         return self._show_command
 
     def _set_window_mode(self, value):
-        if not value in list(_SHOW_COMMANDS.values()):
+        if value not in list(_SHOW_COMMANDS.values()):
             raise ValueError(
                 "Not a valid window mode: %s. Choose any of pylnk.WINDOW_*" % value
             )

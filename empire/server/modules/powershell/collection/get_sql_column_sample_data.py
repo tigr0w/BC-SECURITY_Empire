@@ -36,19 +36,11 @@ class Module(object):
                 obfuscate=obfuscate,
                 obfuscate_command=obfuscation_command,
             )
-            if obfuscate:
-                main_menu.obfuscationv2.obfuscate_module(
-                    moduleSource=aux_module_source,
-                    obfuscation_command=obfuscation_command,
-                )
-                aux_module_source = module_source.replace(
-                    "module_source", "obfuscated_module_source"
-                )
             try:
                 with open(aux_module_source, "r") as auxSource:
                     aux_script = auxSource.read()
                     script += " " + aux_script
-            except:
+            except Exception:
                 print(
                     helpers.color(
                         "[!] Could not read additional module source path at: "

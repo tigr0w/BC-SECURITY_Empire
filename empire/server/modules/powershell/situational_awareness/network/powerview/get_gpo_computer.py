@@ -33,7 +33,7 @@ class Module(object):
         try:
             with open(module_source, "r") as f:
                 module_code = f.read()
-        except:
+        except Exception:
             return handle_error_message(
                 "[!] Could not read module source path at: " + str(module_source)
             )

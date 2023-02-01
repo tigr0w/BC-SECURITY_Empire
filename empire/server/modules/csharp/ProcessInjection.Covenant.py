@@ -30,7 +30,7 @@ class Module(object):
         launcher_obfuscation_command = params["ObfuscateCommand"]
         language = params["Language"]
         dot_net_version = params["DotNetVersion"].lower()
-        parentproc = params["parentproc"]
+        params["parentproc"]
         arch = params["Architecture"]
         launcher_obfuscation = params["Obfuscate"]
 

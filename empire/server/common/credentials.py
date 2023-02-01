@@ -92,7 +92,7 @@ class Credentials(object):
             elif credtype and credtype != "":
                 results = (
                     db.query(models.Credential)
-                    .filter(models.Credential.credtype.ilike(f"%credtype%"))
+                    .filter(models.Credential.credtype.ilike("%credtype%"))
                     .all()
                 )
 
@@ -101,7 +101,7 @@ class Credentials(object):
                 search = "%{}%".format(note)
                 results = (
                     db.query(models.Credential)
-                    .filter(models.Credential.note.ilike(f"%search%"))
+                    .filter(models.Credential.note.ilike("%search%"))
                     .all()
                 )
 

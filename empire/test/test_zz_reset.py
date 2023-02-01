@@ -105,7 +105,7 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     server.CSHARP_DIR_BASE = csharp_dir
     server.INVOKE_OBFS_DST_DIR_BASE = invoke_obfs_dir
 
-    with pytest.raises(SystemExit) as pytest_wrapped_e:
+    with pytest.raises(SystemExit):
         server.run(args)
 
     for f in download_files:
@@ -173,7 +173,7 @@ def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
     reload(empire.arguments)
     from empire.arguments import args
 
-    with pytest.raises(SystemExit) as pytest_wrapped_e:
+    with pytest.raises(SystemExit):
         client.start(args)
 
     for f in download_files:

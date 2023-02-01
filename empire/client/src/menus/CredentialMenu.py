@@ -97,7 +97,7 @@ class CredentialMenu(Menu):
         if cred_id == "all":
             choice = input(
                 print_util.color(
-                    f"[>] Are you sure you want to remove all credentials? [y/N] ",
+                    "[>] Are you sure you want to remove all credentials? [y/N] ",
                     "red",
                 )
             )

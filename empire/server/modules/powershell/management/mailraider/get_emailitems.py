@@ -17,7 +17,6 @@ class Module(object):
         obfuscation_command: str = "",
     ):
 
-        module_name = "Get-EmailItems"
         folder_name = params["FolderName"]
         max_emails = params["MaxEmails"]
 

@@ -24,7 +24,7 @@ class Module(object):
         user_name = params["Username"]
         ntlm_hash = params["Hash"]
         domain = params["Domain"]
-        service = params["Service"]
+        params["Service"]
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]

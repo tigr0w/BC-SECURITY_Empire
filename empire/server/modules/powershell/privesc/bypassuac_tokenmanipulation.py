@@ -22,7 +22,6 @@ class Module(object):
         # options
         stager = params["Stager"]
         host = params["Host"]
-        user_agent = params["UserAgent"]
         port = params["Port"]
 
         # read in the common module source code
@@ -55,7 +54,7 @@ class Module(object):
 
             encoded_cradle = base64.b64encode(powershell_command)
 
-        except Exception as e:
+        except Exception:
             pass
 
         script_end = 'Invoke-BypassUACTokenManipulation -Arguments "-w 1 -enc %s"' % (
