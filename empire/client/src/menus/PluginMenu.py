@@ -30,7 +30,7 @@ class PluginMenu(Menu):
         """
         plugins_list = list(
             map(
-                lambda x: [x["Name"], x["Description"]],
+                lambda x: [x["name"], x["description"]],
                 state.get_active_plugins().values(),
             )
         )
