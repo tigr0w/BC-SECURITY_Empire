@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 
 @pytest.fixture(scope="module", autouse=True)
 def agent(db, models, main):
-
     agent = db.query(models.Agent).filter(models.Agent.session_id == "TEST123").first()
     if not agent:
         agent = models.Agent(

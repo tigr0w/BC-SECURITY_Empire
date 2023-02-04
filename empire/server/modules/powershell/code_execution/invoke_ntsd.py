@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         listener_name = params["Listener"]
         upload_path = params["UploadPath"].strip()
         bin = params["BinPath"]
@@ -58,7 +57,6 @@ class Module(object):
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: %s" % (listener_name))
         else:
-
             multi_launcher = main_menu.stagertemplatesv2.new_instance("multi_launcher")
             multi_launcher.options["Listener"] = params["Listener"]
             multi_launcher.options["UserAgent"] = params["UserAgent"]

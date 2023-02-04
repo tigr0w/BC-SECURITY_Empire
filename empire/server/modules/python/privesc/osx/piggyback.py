@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # extract all of our options
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]

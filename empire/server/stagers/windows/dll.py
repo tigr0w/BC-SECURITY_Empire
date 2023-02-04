@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "DLL Launcher",
             "Authors": [
@@ -96,7 +95,6 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         listener_name = self.options["Listener"]["Value"]
         arch = self.options["Arch"]["Value"]
 

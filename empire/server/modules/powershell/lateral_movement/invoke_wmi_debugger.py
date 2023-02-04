@@ -18,7 +18,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         script = """$null = Invoke-WmiMethod -Path Win32_process -Name create"""
 
         # staging options
@@ -41,7 +40,6 @@ class Module(object):
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
         if cred_id != "":
-
             if not main_menu.credentials.is_credential_valid(cred_id):
                 return handle_error_message("[!] CredID is invalid!")
 

@@ -18,7 +18,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # trigger options
         daily_time = params["DailyTime"]
         idle_time = params["IdleTime"]

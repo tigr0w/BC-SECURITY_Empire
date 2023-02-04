@@ -18,7 +18,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # read in the common module source code
         script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
@@ -32,7 +31,6 @@ class Module(object):
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
         if cred_id != "":
-
             if not main_menu.credentials.is_credential_valid(cred_id):
                 return handle_error_message("[!] CredID is invalid!")
 

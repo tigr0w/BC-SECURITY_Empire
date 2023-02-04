@@ -73,7 +73,6 @@ class Agents(object):
     """
 
     def __init__(self, MainMenu, args=None):
-
         # pull out the controller objects
         self.mainMenu = MainMenu
         self.installPath = self.mainMenu.installPath
@@ -1200,7 +1199,6 @@ class Agents(object):
             taskings.extend(temp_taskings)
 
             if taskings and taskings != []:
-
                 all_task_packets = b""
 
                 # build tasking packets for everything we have
@@ -1558,7 +1556,6 @@ class Agents(object):
             pass
 
         elif response_name == "TASK_GETJOBS":
-
             if not data or data.strip().strip() == "":
                 data = "[*] No active jobs"
 
@@ -1572,7 +1569,6 @@ class Agents(object):
             self.save_agent_log(session_id, data)
 
         elif response_name == "TASK_CMD_WAIT":
-
             # dynamic script output -> blocking
 
             # see if there are any credentials to parse
@@ -1581,7 +1577,6 @@ class Agents(object):
 
             if creds:
                 for cred in creds:
-
                     hostname = cred[4]
 
                     if hostname == "":
@@ -1608,7 +1603,6 @@ class Agents(object):
             self.save_agent_log(session_id, data)
 
         elif response_name == "TASK_CMD_WAIT_SAVE":
-
             # dynamic script output -> blocking, save data
 
             # extract the file save prefix and extension
@@ -1675,7 +1669,6 @@ class Agents(object):
                 creds = helpers.parse_credentials(data)
                 if creds:
                     for cred in creds:
-
                         hostname = cred[4]
 
                         if hostname == "":

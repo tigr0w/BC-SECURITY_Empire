@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         script_path = params["ScriptPath"]
         script_cmd = params["ScriptCmd"]
         script = ""

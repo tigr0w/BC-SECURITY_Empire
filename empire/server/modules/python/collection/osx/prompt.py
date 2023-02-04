@@ -13,7 +13,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
-
         listApps = params["ListApps"]
         appName = params["AppName"]
         sandboxMode = params["SandboxMode"]

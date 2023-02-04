@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 class Stager(object):
     def __init__(self, main_menu, params=[]):
-
         self.info = {
             "Name": "Nim Powershell Launcher",
             "Authors": [
@@ -88,7 +87,6 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # staging options
         language = self.options["Language"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]

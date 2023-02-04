@@ -11,7 +11,6 @@ from empire.server.utils.data_util import ps_convert_to_oneliner
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "C# PowerShell Launcher",
             "Authors": [

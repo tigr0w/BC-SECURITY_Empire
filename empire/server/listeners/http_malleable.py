@@ -27,7 +27,6 @@ log = logging.getLogger(__name__)
 
 class Listener(object):
     def __init__(self, mainMenu: MainMenu, params=[]):
-
         self.info = {
             "Name": "HTTP[S] MALLEABLE",
             "Authors": [
@@ -1424,7 +1423,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                             stagingKey, agentInfo, listenerOptions, clientIP
                         )
                         if dataResults and len(dataResults) > 0:
-                            for (language, results) in dataResults:
+                            for language, results in dataResults:
                                 if results:
                                     if isinstance(results, str):
                                         results = results.encode("latin-1")

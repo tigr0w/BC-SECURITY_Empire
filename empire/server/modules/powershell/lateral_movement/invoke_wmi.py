@@ -17,7 +17,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # staging options
         listener_name = params["Listener"]
         command = params["Command"]
@@ -43,7 +42,6 @@ class Module(object):
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
         if cred_id != "":
-
             if not main_menu.credentials.is_credential_valid(cred_id):
                 return handle_error_message("[!] CredID is invalid!")
 
@@ -61,7 +59,6 @@ class Module(object):
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
         elif listener_name:
-
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
                 listenerName=listener_name,

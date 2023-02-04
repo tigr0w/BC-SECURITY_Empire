@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 
 class Listener(object):
     def __init__(self, mainMenu: MainMenu, params=[]):
-
         self.info = {
             "Name": "HTTP[S] COM",
             "Authors": [
@@ -459,7 +458,6 @@ class Listener(object):
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
-
             f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
             code = f.read()
             f.close()
@@ -675,7 +673,6 @@ class Listener(object):
             reqHeader = request.headers.get(listenerOptions["RequestHeader"]["Value"])
             if reqHeader and reqHeader != "":
                 try:
-
                     if reqHeader.startswith("b'"):
                         tmp = repr(reqHeader)[2:-1].replace("'", "").encode("UTF-8")
                     else:
@@ -695,7 +692,7 @@ class Listener(object):
                 )
 
                 if dataResults and len(dataResults) > 0:
-                    for (language, results) in dataResults:
+                    for language, results in dataResults:
                         if results:
                             if results == "STAGE0":
                                 # handle_agent_data() signals that the listener should return the stager.ps1 code
@@ -776,7 +773,7 @@ class Listener(object):
                 stagingKey, requestData, listenerOptions, clientIP
             )
             if dataResults and len(dataResults) > 0:
-                for (language, results) in dataResults:
+                for language, results in dataResults:
                     if isinstance(results, str):
                         results = results.encode("UTF-8")
                     if results:

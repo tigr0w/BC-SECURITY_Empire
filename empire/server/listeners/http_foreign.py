@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 class Listener(object):
     def __init__(self, mainMenu: MainMenu, params=[]):
-
         self.info = {
             "Name": "HTTP[S]",
             "Authors": [
@@ -203,7 +202,6 @@ class Listener(object):
                     stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
                 if userAgent.lower() != "none" or proxy.lower() != "none":
-
                     if userAgent.lower() != "none":
                         stager += "$wc.Headers.Add('User-Agent',$u);"
 

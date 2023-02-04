@@ -22,7 +22,6 @@ log = logging.getLogger(__name__)
 
 class Listener(object):
     def __init__(self, mainMenu: MainMenu, params=[]):
-
         self.info = {
             "Name": "Dropbox",
             "Authors": [
@@ -227,7 +226,6 @@ class Listener(object):
                 stager += f"$u='{ userAgent }';"
 
                 if userAgent.lower() != "none" or proxy.lower() != "none":
-
                     if userAgent.lower() != "none":
                         stager += "$wc.Headers.Add('User-Agent',$u);"
 
@@ -798,7 +796,6 @@ class Listener(object):
             return
 
         while True:
-
             time.sleep(int(pollInterval))
 
             # search for anything in /Empire/staging/*
@@ -823,7 +820,7 @@ class Listener(object):
                             stagingKey, stageData, listenerOptions
                         )
                         if dataResults and len(dataResults) > 0:
-                            for (language, results) in dataResults:
+                            for language, results in dataResults:
                                 # TODO: more error checking
                                 try:
                                     dbx.files_delete(fileName)
@@ -862,7 +859,7 @@ class Listener(object):
                         )
                         if dataResults and len(dataResults) > 0:
                             # print "dataResults:",dataResults
-                            for (language, results) in dataResults:
+                            for language, results in dataResults:
                                 if results.startswith("STAGE2"):
                                     sessionKey = self.mainMenu.agents.agents[sessionID][
                                         "sessionKey"

@@ -22,7 +22,6 @@ class Credentials(object):
     """
 
     def __init__(self, MainMenu, args=None):
-
         # pull out the controller objects
         self.mainMenu = MainMenu
         self.installPath = self.mainMenu.installPath

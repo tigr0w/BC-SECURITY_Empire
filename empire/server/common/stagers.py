@@ -39,7 +39,6 @@ log = logging.getLogger(__name__)
 
 class Stagers(object):
     def __init__(self, MainMenu, args):
-
         self.mainMenu = MainMenu
         self.args = args
 
@@ -131,7 +130,6 @@ class Stagers(object):
             )
 
         if os.path.isfile(origPath):
-
             dllRaw = ""
             with open(origPath, "rb") as f:
                 dllRaw = f.read()
@@ -322,7 +320,6 @@ class Stagers(object):
             template = f.read()
 
         if placeHolderSz and offset:
-
             key = "subF"
             launcherCode = "".join(
                 chr(ord(x) ^ ord(y)) for (x, y) in zip(launcherCode, cycle(key))
@@ -398,7 +395,6 @@ class Stagers(object):
         f.close()
 
         if placeHolderSz and offset:
-
             launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
             if isinstance(launcher, str):
                 launcher = launcher.encode("UTF-8")
@@ -411,14 +407,12 @@ class Stagers(object):
             log.error("Unable to patch dylib")
 
     def generate_appbundle(self, launcherCode, Arch, icon, AppName, disarm):
-
         """
         Generates an application. The embedded executable is a macho binary with the python interpreter.
         """
         MH_EXECUTE = 2
 
         if Arch == "x64":
-
             f = open(
                 self.mainMenu.installPath
                 + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher",
@@ -468,7 +462,6 @@ class Stagers(object):
         f.close()
 
         if placeHolderSz and offset:
-
             launcher = launcherCode.encode("utf-8") + b"\x00" * (
                 placeHolderSz - len(launcherCode)
             )
@@ -585,7 +578,6 @@ class Stagers(object):
             log.error("Unable to patch application")
 
     def generate_pkg(self, launcher, bundleZip, AppName):
-
         # unzip application bundle zip. Copy everything for the installer pkg to a temporary location
         os.chdir("/tmp/")
         with open("app.zip", "wb") as f:

@@ -13,7 +13,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
-
         daemon_name = params["DaemonName"]
         program_name = daemon_name.split(".")[-1]
         plist_filename = "%s.plist" % daemon_name

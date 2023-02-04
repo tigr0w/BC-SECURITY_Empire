@@ -59,7 +59,7 @@ pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git"}
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
-black = "^22.1.0"
+black = "^23.1.0"
 pytest = "^6.2.5"
 pytest-timeout = "^2.1.0"
 ruff = "^0.0.233"

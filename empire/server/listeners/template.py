@@ -13,7 +13,6 @@ from empire.server.utils.module_util import handle_validate_message
 
 class Listener(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "Template",
             "Authors": [
@@ -270,7 +269,6 @@ class Listener(object):
 
         if language:
             if language.lower() == "powershell":
-
                 updateServers = """
                     $Script:ControlServers = @("%s");
                     $Script:ServerIndex = 0;

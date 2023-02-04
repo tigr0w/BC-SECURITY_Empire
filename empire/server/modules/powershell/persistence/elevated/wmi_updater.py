@@ -18,7 +18,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # trigger options
         daily_time = params["DailyTime"]
         day = params["Day"]
@@ -117,7 +116,6 @@ class Module(object):
         )
 
         if daily_time != "" or day != "" or day_of_week != "":
-
             # add DailyTime to event filter
             parts = daily_time.split(":")
 

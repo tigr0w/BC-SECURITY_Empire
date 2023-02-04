@@ -17,7 +17,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # Helper function for arguments
         def parse_assembly_args(args):
             stringlist = []

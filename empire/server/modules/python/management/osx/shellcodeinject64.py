@@ -18,7 +18,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         processID = params["PID"]
         shellcodeBinPath = params["Shellcode"]
 

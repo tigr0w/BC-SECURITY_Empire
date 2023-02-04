@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         reset = params["Reset"]
 
         # read in the common module source code

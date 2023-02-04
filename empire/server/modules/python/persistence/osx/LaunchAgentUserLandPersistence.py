@@ -13,7 +13,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
-
         plist_name = params["PLISTName"]
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]

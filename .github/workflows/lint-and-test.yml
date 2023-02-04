@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: psf/black@stable
+      - uses: psf/black@23.1.0
       - uses: isort/isort-action@master
       - name: Run ruff
         run: |

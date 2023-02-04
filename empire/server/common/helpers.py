@@ -286,7 +286,6 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
         functionsToProcess = [functionsToProcess]
 
     while len(functionsToProcess) != 0:
-
         # pop the next function to process off the stack
         requiredFunction = functionsToProcess.pop()
 
@@ -398,10 +397,8 @@ def parse_credentials(data):
 
     # powershell/collection/prompt output
     elif parts[0].startswith(b"[+] Prompted credentials:"):
-
         parts = parts[0].split(b"->")
         if len(parts) == 2:
-
             username = parts[1].split(b":", 1)[0].strip()
             password = parts[1].split(b":", 1)[1].strip()
 
@@ -467,10 +464,8 @@ def parse_mimikatz(data):
                 pass
 
     for regex in regexes:
-
         p = re.compile(regex)
         for match in p.findall(data.decode("UTF-8")):
-
             lines2 = match.split("\n")
             username, domain, password = "", "", ""
 
@@ -486,7 +481,6 @@ def parse_mimikatz(data):
                     pass
 
             if username != "" and password != "" and password != "(null)":
-
                 sid = ""
 
                 # substitute the FQDN in if it matches
@@ -509,7 +503,6 @@ def parse_mimikatz(data):
         #   happens on domain controller hashdumps
         for x in range(8, 13):
             if lines[x].startswith(b"Domain :"):
-
                 domain, sid, krbtgtHash = b"", b"", b""
 
                 try:

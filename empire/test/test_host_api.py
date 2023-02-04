@@ -3,7 +3,6 @@ import pytest
 
 @pytest.fixture(scope="module", autouse=True)
 def host(db, models):
-
     host = models.Host(name="HOST_1", internal_ip="1.1.1.1")
     host2 = models.Host(name="HOST_2", internal_ip="2.2.2.2")
 

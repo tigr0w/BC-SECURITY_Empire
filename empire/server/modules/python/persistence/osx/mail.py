@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
-
         rule_name = params["RuleName"]
         trigger = params["Trigger"]
         listener_name = params["Listener"]

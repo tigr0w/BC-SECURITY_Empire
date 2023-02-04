@@ -17,7 +17,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         cred_id = params["CredID"]
         if cred_id != "":
             if not main_menu.credentials.is_credential_valid(cred_id):

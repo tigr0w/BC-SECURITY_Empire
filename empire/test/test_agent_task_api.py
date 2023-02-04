@@ -196,7 +196,6 @@ def agent_low_integrity(db, models, main):
 
 @pytest.fixture(scope="module", autouse=True)
 def download(client, admin_auth_header, db, models):
-
     response = client.post(
         "/api/v2/downloads",
         headers=admin_auth_header,

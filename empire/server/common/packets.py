@@ -323,9 +323,7 @@ def parse_routing_packet(stagingKey, data):
         offset = 0
         # ensure we have at least the 20 bytes for a routing packet
         if len(data) >= 20:
-
             while True:
-
                 if len(data) - offset < 20:
                     break
 

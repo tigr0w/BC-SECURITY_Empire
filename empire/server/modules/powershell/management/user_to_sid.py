@@ -15,7 +15,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         script = (
             '(New-Object System.Security.Principal.NTAccount("%s","%s")).Translate([System.Security.Principal.SecurityIdentifier]).Value'
             % (params["Domain"], params["User"])

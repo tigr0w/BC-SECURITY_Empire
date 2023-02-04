@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # management options
         cleanup = params["Cleanup"]
         trigger_binary = params["TriggerBinary"]

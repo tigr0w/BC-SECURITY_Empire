@@ -8,7 +8,6 @@ log = logging.getLogger(__name__)
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "Launcher",
             "Authors": [

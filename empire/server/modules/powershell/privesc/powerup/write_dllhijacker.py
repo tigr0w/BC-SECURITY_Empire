@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # staging options
         if (params["Obfuscate"]).lower() == "true":
             launcher_obfuscate = True

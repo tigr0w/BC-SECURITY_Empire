@@ -8,7 +8,6 @@ from empire.server.common import helpers
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "AppleScript",
             "Authors": [

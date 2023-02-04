@@ -160,7 +160,6 @@ class Listener(object):
         return ""
 
     def validate_options(self) -> Tuple[bool, Optional[str]]:
-
         self.uris = [
             a.strip("/")
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")

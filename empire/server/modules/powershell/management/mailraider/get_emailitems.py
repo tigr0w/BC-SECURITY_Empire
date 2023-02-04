@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         folder_name = params["FolderName"]
         max_emails = params["MaxEmails"]
 

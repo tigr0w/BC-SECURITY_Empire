@@ -9,7 +9,6 @@ class Listeners(object):
     """
 
     def __init__(self, main_menu, args):
-
         self.mainMenu = main_menu
         self.args = args
 

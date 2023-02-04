@@ -17,7 +17,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # staging options
         module_name = "New-GPOImmediateTask"
         listener_name = params["Listener"]
@@ -35,7 +34,6 @@ class Module(object):
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
         else:
-
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
                 listenerName=listener_name,

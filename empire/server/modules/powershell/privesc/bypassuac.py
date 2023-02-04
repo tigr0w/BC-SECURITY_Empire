@@ -16,7 +16,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # staging options
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]

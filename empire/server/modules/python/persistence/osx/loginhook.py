@@ -13,7 +13,6 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
-
         loginhook_script_path = params["LoginHookScript"]
         password = params["Password"]
         password = password.replace("$", "\$")

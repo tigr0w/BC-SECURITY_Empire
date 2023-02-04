@@ -26,7 +26,6 @@ log = logging.getLogger(__name__)
 
 class Listener(object):
     def __init__(self, mainMenu: MainMenu, params=[]):
-
         self.info = {
             "Name": "HTTP[S]",
             "Authors": [
@@ -691,7 +690,6 @@ class Listener(object):
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
-
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
 
@@ -1038,7 +1036,7 @@ class Listener(object):
                     stagingKey, routingPacket, listenerOptions, clientIP
                 )
                 if dataResults and len(dataResults) > 0:
-                    for (language, results) in dataResults:
+                    for language, results in dataResults:
                         if results:
                             if isinstance(results, str):
                                 results = results.encode("UTF-8")
@@ -1117,7 +1115,7 @@ class Listener(object):
                 stagingKey, requestData, listenerOptions, clientIP
             )
             if dataResults and len(dataResults) > 0:
-                for (language, results) in dataResults:
+                for language, results in dataResults:
                     if isinstance(results, str):
                         results = results.encode("UTF-8")
 
