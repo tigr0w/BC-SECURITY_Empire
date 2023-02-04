@@ -791,9 +791,17 @@ class EmpireCliState(object):
         )
         return response.json()
 
-    def preobfuscate(self, language: str, options: dict):
+    def preobfuscate(self, language: str, reobfuscate: bool):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/obfuscation/global/{language}/preobfuscate",
+            url=f"{self.host}:{self.port}/api/v2/obfuscation/global/{language}/preobfuscate?reobfuscate={reobfuscate}",
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response
+
+    def keyword_obfuscation(self, options: dict):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/obfuscation/keywords",
             json=options,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},

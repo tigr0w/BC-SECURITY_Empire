@@ -1,5 +1,7 @@
 import logging
 import os
+import random
+import string
 
 from prompt_toolkit.completion import Completion
 
@@ -266,23 +268,47 @@ class AdminMenu(Menu):
             log.error(response["detail"])
 
     @command
-    def preobfuscate(self, reobfuscation: str = False):
+    def preobfuscate(self, reobfuscate: str = None):
         """
         Preobfuscate modules on the server.
-        Usage: preobfuscate [<reobfuscation>]
+        If reobfuscate is false, will not obfuscate modules that have already been obfuscated.
+        Usage: preobfuscate [<reobfuscate>]
         """
-        if reobfuscation.lower() in ["true", "false"]:
-            options = {"reobfuscation": reobfuscation}
-            response = state.preobfuscate(language="powershell", options=options)
-
-            # Return results and error message
-            if response.status_code == 202:
-                log.info("Preobfuscating modules...")
-            elif "detail" in response.keys():
-                log.error(response["detail"])
-
+        if not reobfuscate:
+            log.info("Preobfuscating modules without replacement.")
         else:
-            log.error("[!] Error: Invalid entry")
+            log.info("Preobfuscating modules with replacement")
+        response = state.preobfuscate(language="powershell", reobfuscate=reobfuscate)
+
+        # Return results and error message
+        if response.status_code == 202:
+            log.info("Preobfuscating modules...")
+        elif "detail" in response.keys():
+            log.error(response["detail"])
+
+    @command
+    def keyword_obfuscation(self, keyword: str, replacement: str = None):
+        """
+        Add keywords to be obfuscated from commands. Empire will generate a random word
+        if no replacement word is provided.
+
+        Usage: keyword_obfuscation <keyword> [<replacement>]
+        """
+        if not replacement:
+            log.info(f"Generating random string for keyword {keyword}")
+            replacement = random.choice(string.ascii_uppercase) + "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=4)
+            )
+        else:
+            log.info(f"Replacing keyword {keyword} with {replacement}")
+
+        options = {"keyword": keyword, "replacement": replacement}
+        response = state.keyword_obfuscation(options)
+
+        if "id" in response:
+            log.info(f"Keyword obfuscation set to replace {keyword} with {replacement}")
+        elif "detail" in response:
+            log.error(response["detail"])
 
 
 admin_menu = AdminMenu()
