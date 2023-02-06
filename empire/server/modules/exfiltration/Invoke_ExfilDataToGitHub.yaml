@@ -1,6 +1,8 @@
 name: Invoke-ExfilDataToGitHub
 authors:
-  - Nga Hoang
+  - name: Nga Hoang
+    handle: ''
+    link: ''
 description: Use this module to exfil files and data to GitHub. Requires the pre-generation
   of a GitHub Personal Access Token.
 software: ''

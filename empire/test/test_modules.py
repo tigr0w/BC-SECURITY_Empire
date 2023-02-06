@@ -1,9 +1,11 @@
 import logging
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import MagicMock, Mock
 
 import pytest
 import yaml
+from _pytest.logging import LogCaptureHandler
 
 
 def convert_options_to_params(options):
@@ -15,6 +17,26 @@ def convert_options_to_params(options):
 
 def fake_obfuscate(psScript, obfuscation_command):
     return psScript
+
+
+@contextmanager
+def catch_logs(level: int, logger: logging.Logger) -> LogCaptureHandler:
+    """Context manager that sets the level for capturing of logs.
+
+    After the end of the 'with' statement the level is restored to its original value.
+
+    :param level: The level.
+    :param logger: The logger to update.
+    """
+    handler = LogCaptureHandler()
+    orig_level = logger.level
+    logger.setLevel(level)
+    logger.addHandler(handler)
+    try:
+        yield handler
+    finally:
+        logger.setLevel(orig_level)
+        logger.removeHandler(handler)
 
 
 @pytest.fixture(scope="module")
@@ -66,9 +88,7 @@ def agent(db, models, host):
 
 
 @pytest.fixture(scope="function")
-def module_service():
-    from empire.server.core.module_service import ModuleService
-
+def main_menu_mock():
     main_menu = Mock()
     main_menu.installPath = "empire/server"
 
@@ -80,23 +100,38 @@ def module_service():
     main_menu.obfuscationv2.obfuscate = Mock(side_effect=fake_obfuscate)
     main_menu.obfuscationv2.obfuscate_keywords = Mock(side_effect=lambda x: x)
 
-    yield ModuleService(main_menu)
+    yield main_menu
 
 
-def test_load_modules(module_service, caplog, db):
+@pytest.fixture(scope="function")
+def module_service(main_menu_mock):
+    from empire.server.core.module_service import ModuleService
+
+    yield ModuleService(main_menu_mock)
+
+
+def test_load_modules(main_menu_mock, models, db):
     """
     This is just meant to be a small smoke test to ensure that the modules
     that come with Empire can be loaded properly at startup and a script can
     be generated with the default values.
     """
-    caplog.set_level(logging.DEBUG)
+    # https://github.com/pytest-dev/pytest/issues/3697
+    # caplog not working for some reason.
+    from empire.server.core.module_service import ModuleService
 
-    # Fail if a module fails to load.
-    messages = [x.message for x in caplog.records if x.levelno >= logging.WARNING]
+    with catch_logs(
+        level=logging.INFO, logger=logging.getLogger(ModuleService.__module__)
+    ) as handler:
+        module_service = ModuleService(main_menu_mock)
+
+        messages = [x.message for x in handler.records if x.levelno >= logging.WARNING]
+
     if messages:
         pytest.fail("warning messages encountered during testing: {}".format(messages))
 
-    assert len(module_service.modules) > 0
+    assert len(module_service.modules) > 300
+    assert len(db.query(models.Module).all()) > 300
 
     for key, module in module_service.modules.items():
         if not module.advanced.custom_generate:

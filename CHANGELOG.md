@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fix the test that detects errors loading modules (@Vinnybod)
+
 ## [5.0.1] - 2023-02-04
 
 -   Fixed the uniqueness check for MariaDB (@Vinnybod)
