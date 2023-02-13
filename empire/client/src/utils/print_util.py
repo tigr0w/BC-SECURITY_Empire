@@ -84,20 +84,24 @@ def title(version, modules, listeners, agents):
     )
     print(
         """
-   _______   ___  ___   ______    __   ______        _______
-  |   ____| |   \/   | |   _  \  |  | |   _  \      |   ____|
-  |  |__    |  \  /  | |  |_)  | |  | |  |_)  |     |  |__
-  |   __|   |  |\/|  | |   ___/  |  | |      /      |   __|
-  |  |____  |  |  |  | |  |      |  | |  |\  \----. |  |____
-  |_______| |__|  |__| | _|      |__| | _| `._____| |_______|
+                   ███████╗███╗   ███╗██████╗ ██╗██████╗    ███████╗                                         
+                   ██╔════╝████╗ ████║██╔══██╗██║██╔══██╗   ██╔════╝                                         
+                   █████╗  ██╔████╔██║██████╔╝██║██████╔╝   █████╗                                          
+                   ██╔══╝  ██║╚██╔╝██║██╔═══╝ ██║██╔══██╗   ██╔══╝                                          
+                   ███████╗██║ ╚═╝ ██║██║     ██║██║  █████║███████╗  
+                   ╚══════╝╚═╝     ╚═╝╚═╝     ╚═╝╚═╝  ╚════╝╚══════╝
 
 """
     )
-    print("       " + color(str(modules), "green") + " modules currently loaded")
+    print("              " + color(str(modules), "green") + " modules currently loaded")
     print("")
-    print("       " + color(str(listeners), "green") + " listeners currently active")
+    print(
+        "              "
+        + color(str(listeners), "green")
+        + " listeners currently active"
+    )
     print("")
-    print("       " + color(str(agents), "green") + " agents currently active")
+    print("              " + color(str(agents), "green") + " agents currently active")
     print("")
 
 
@@ -107,47 +111,55 @@ def loading():
     """
 
     print(
-        """
-                              `````````
-                         ``````.--::///+
-                     ````-+sydmmmNNNNNNN
-                   ``./ymmNNNNNNNNNNNNNN
-                 ``-ymmNNNNNNNNNNNNNNNNN
-               ```ommmmNNNNNNNNNNNNNNNNN
-              ``.ydmNNNNNNNNNNNNNNNNNNNN
-             ```odmmNNNNNNNNNNNNNNNNNNNN
-            ```/hmmmNNNNNNNNNNNNNNNNMNNN
-           ````+hmmmNNNNNNNNNNNNNNNNNMMN
-          ````..ymmmNNNNNNNNNNNNNNNNNNNN
-          ````:.+so+//:---.......----::-
-         `````.`````````....----:///++++
-        ``````.-/osy+////:::---...-dNNNN
-        ````:sdyyydy`         ```:mNNNNM
-       ````-hmmdhdmm:`      ``.+hNNNNNNM
-       ```.odNNmdmmNNo````.:+yNNNNNNNNNN
-       ```-sNNNmdh/dNNhhdNNNNNNNNNNNNNNN
-       ```-hNNNmNo::mNNNNNNNNNNNNNNNNNNN
-       ```-hNNmdNo--/dNNNNNNNNNNNNNNNNNN
-      ````:dNmmdmd-:+NNNNNNNNNNNNNNNNNNm
-      ```/hNNmmddmd+mNNNNNNNNNNNNNNds++o
-     ``/dNNNNNmmmmmmmNNNNNNNNNNNmdoosydd
-     `sNNNNdyydNNNNmmmmmmNNNNNmyoymNNNNN
-     :NNmmmdso++dNNNNmmNNNNNdhymNNNNNNNN
-     -NmdmmNNdsyohNNNNmmNNNNNNNNNNNNNNNN
-     `sdhmmNNNNdyhdNNNNNNNNNNNNNNNNNNNNN
-       /yhmNNmmNNNNNNNNNNNNNNNNNNNNNNmhh
-        `+yhmmNNNNNNNNNNNNNNNNNNNNNNmh+:
-          `./dmmmmNNNNNNNNNNNNNNNNmmd.
-            `ommmmmNNNNNNNmNmNNNNmmd:
-             :dmmmmNNNNNmh../oyhhhy:
-             `sdmmmmNNNmmh/++-.+oh.
-              `/dmmmmmmmmdo-:/ossd:
-                `/ohhdmmmmmmdddddmh/
-                   `-/osyhdddddhyo:
-                        ``.----.`
-
-                Welcome to the Empire"""
+        """\x1b[1;1m
+                                      `````````
+                                 ``````.--::///+
+                             ````-+sydmmmNNNNNNN
+                           ``./ymmNNNNNNNNNNNNNN
+                         ``-ymmNNNNNNNNNNNNNNNNN
+                       ```ommmmNNNNNNNNNNNNNNNNN
+                      ``.ydmNNNNNNNNNNNNNNNNNNNN
+                     ```odmmNNNNNNNNNNNNNNNNNNNN
+                    ```/hmmmNNNNNNNNNNNNNNNNMNNN
+                   ````+hmmmNNNNNNNNNNNNNNNNNMMN
+                  ````..ymmmNNNNNNNNNNNNNNNNNNNN
+                  ````:.+so+//:---.......----::-
+                 `````.`````````....----:///++++
+                ``````.-/osy+////:::---...-dNNNN
+                ````:sdyyydy`         ```:mNNNNM
+               ````-hmmdhdmm:`      ``.+hNNNNNNM
+               ```.odNNmdmmNNo````.:+yNNNNNNNNNN
+               ```-sNNNmdh/dNNhhdNNNNNNNNNNNNNNN
+               ```-hNNNmNo::mNNNNNNNNNNNNNNNNNNN
+               ```-hNNmdNo--/dNNNNNNNNNNNNNNNNNN
+              ````:dNmmdmd-:+NNNNNNNNNNNNNNNNNNm
+              ```/hNNmmddmd+mNNNNNNNNNNNNNNds++o
+             ``/dNNNNNmmmmmmmNNNNNNNNNNNmdoosydd
+             `sNNNNdyydNNNNmmmmmmNNNNNmyoymNNNNN
+             :NNmmmdso++dNNNNmmNNNNNdhymNNNNNNNN
+             -NmdmmNNdsyohNNNNmmNNNNNNNNNNNNNNNN
+             `sdhmmNNNNdyhdNNNNNNNNNNNNNNNNNNNNN
+               /yhmNNmmNNNNNNNNNNNNNNNNNNNNNNmhh
+                `+yhmmNNNNNNNNNNNNNNNNNNNNNNmh+:
+                  `./dmmmmNNNNNNNNNNNNNNNNmmd.
+                    `ommmmmNNNNNNNmNmNNNNmmd:
+                     :dmmmmNNNNNmh../oyhhhy:
+                     `sdmmmmNNNmmh/++-.+oh.
+                      `/dmmmmmmmmdo-:/ossd:
+                        `/ohhdmmmmmmdddddmh/
+                           `-/osyhdddddhyo:
+                                ``.----.`
+                        \x1b[0m
+                        
+          ███████╗███╗   ███╗██████╗ ██╗██████╗    ███████╗                                          
+          ██╔════╝████╗ ████║██╔══██╗██║██╔══██╗   ██╔════╝                                          
+          █████╗  ██╔████╔██║██████╔╝██║██████╔╝   █████╗                                          
+          ██╔══╝  ██║╚██╔╝██║██╔═══╝ ██║██╔══██╗   ██╔══╝                                         
+          ███████╗██║ ╚═╝ ██║██║     ██║██║  █████║███████╗    
+          ╚══════╝╚═╝     ╚═╝╚═╝     ╚═╝╚═╝  ╚════╝╚══════╝             
+                        """
     )
+
     time.sleep(3)
     shortcuts.clear()
 
