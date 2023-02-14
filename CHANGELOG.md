@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.2] - 2023-02-14
+
 -   Fix the test that detects errors loading modules (@Vinnybod)
 -   Allow empty user id and username on the task API (@Vinnybod)
 -   Rename module_slug to module_id for tasks for consistent naming on the api (@Vinnybod)
 -   Add a shebang to the checkout-latest-tag.sh script (@xambroz)
-  
+
 ## [5.0.1] - 2023-02-04
 
 -   Fixed the uniqueness check for MariaDB (@Vinnybod)
@@ -398,7 +400,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.2...HEAD
+
+[5.0.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.1...v5.0.2
 
 [5.0.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.0...v5.0.1
 
