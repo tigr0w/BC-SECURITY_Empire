@@ -1,3 +1,4 @@
+#!/bin/bash
 # Get git tags matching semver
 # remove the -beta -alpha -rc suffixes with grep
 tags=$(git tag --list --sort=-version:refname "v*.*.*")
