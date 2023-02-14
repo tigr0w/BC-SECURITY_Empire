@@ -50,8 +50,8 @@ class Task(BaseModel):
     full_input: Optional[str]
     output: Optional[str]
     original_output: Optional[str]
-    user_id: int
-    username: str
+    user_id: Optional[int]
+    username: Optional[str]
     agent_id: str
     downloads: List[DownloadDescription]
     module_name: Optional[str]

@@ -4,6 +4,7 @@ import threading
 import time
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
@@ -399,9 +400,8 @@ class AgentTaskService(object):
         last_task_config = empire_config.debug.last_task
         if last_task_config.enabled:
             with self.last_task_lock:
-                location = last_task_config.file
-                with open(location, "w") as f:
-                    f.write(task_input)
+                location = Path(last_task_config.file)
+                location.write_text(task_input)
 
         hooks.run_hooks(hooks.AFTER_TASKING_HOOK, db, task)
 

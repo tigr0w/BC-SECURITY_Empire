@@ -58,9 +58,9 @@ plugins:
     message: hello there
 logging:
   level: INFO
-  directory: empire/server/downloads/logs/
+  directory: empire/test/downloads/logs/
   simple_console: true
 debug:
   last_task:
     enabled: true
-    file: empire/server/downloads/logs/last_task.txt
+    file: empire/test/downloads/logs/last_task.txt
