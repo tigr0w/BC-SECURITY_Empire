@@ -263,7 +263,7 @@ def test_create_task_module_agent_not_found(client, admin_auth_header):
     response = client.post(
         "/api/v2/agents/abc/tasks/module",
         headers=admin_auth_header,
-        json={"module_slug": "some_module", "options": {}},
+        json={"module_id": "some_module", "options": {}},
     )
 
     assert response.status_code == 404
@@ -274,7 +274,7 @@ def test_create_task_module_not_found(client, admin_auth_header, agent):
     response = client.post(
         f"/api/v2/agents/{agent.session_id}/tasks/module",
         headers=admin_auth_header,
-        json={"module_slug": "some_module", "options": {}},
+        json={"module_id": "some_module", "options": {}},
     )
 
     assert response.status_code == 400
@@ -286,7 +286,7 @@ def test_create_task_module(client, admin_auth_header, agent):
         f"/api/v2/agents/{agent.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "powershell_credentials_invoke_internal_monologue",
+            "module_id": "powershell_credentials_invoke_internal_monologue",
             "options": {
                 "Challenge": "1122334455667788",
                 "Downgrade": "",
@@ -310,7 +310,7 @@ def test_create_task_bof_module_disabled_csharpserver(
         f"/api/v2/agents/{agent.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "csharp_inject_bof_inject_bof",
+            "module_id": "csharp_inject_bof_inject_bof",
             "options": {
                 "File": "whoami.x64.o",
                 "EntryPoint": "",
@@ -331,7 +331,7 @@ def test_create_task_module_validates_required_options(
         f"/api/v2/agents/{agent.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "powershell_trollsploit_message",
+            "module_id": "powershell_trollsploit_message",
             "options": {
                 "MsgText": "",
                 "IconType": "Critical",
@@ -349,7 +349,7 @@ def test_create_task_module_validates_options_strict(client, admin_auth_header, 
         f"/api/v2/agents/{agent.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "powershell_collection_foxdump",
+            "module_id": "powershell_collection_foxdump",
             "options": {
                 "OutputFunction": "not-valid-choice",
             },
@@ -370,7 +370,7 @@ def test_create_task_module_language_version_check(
         f"/api/v2/agents/{agent_low_version.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "powershell_trollsploit_message",
+            "module_id": "powershell_trollsploit_message",
             "options": {
                 "MsgText": "TestTestTest",
                 "IconType": "Critical",
@@ -393,7 +393,7 @@ def test_create_task_module_ignore_language_version_check(
         f"/api/v2/agents/{agent_low_version.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "powershell_trollsploit_message",
+            "module_id": "powershell_trollsploit_message",
             "ignore_language_version_check": True,
             "options": {
                 "MsgText": "TestTestTest",
@@ -412,7 +412,7 @@ def test_create_task_module_admin_check(client, admin_auth_header, agent_low_int
         f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "powershell_credentials_mimikatz_logonpasswords",
+            "module_id": "powershell_credentials_mimikatz_logonpasswords",
             "options": {},
         },
     )
@@ -428,7 +428,7 @@ def test_create_task_module_ignore_admin_check(
         f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_slug": "powershell_credentials_mimikatz_logonpasswords",
+            "module_id": "powershell_credentials_mimikatz_logonpasswords",
             "ignore_admin_check": True,
             "options": {},
         },

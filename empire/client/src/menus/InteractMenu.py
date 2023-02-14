@@ -528,7 +528,7 @@ class InteractMenu(Menu):
             else:
                 post_body["options"][key] = str(module_options[key]["value"])
 
-        post_body["module_slug"] = shortcut.module
+        post_body["module_id"] = shortcut.module
         response = state.execute_module(self.session_id, post_body)
 
         if "id" in response:
@@ -570,7 +570,7 @@ class InteractMenu(Menu):
         for key, value in module_options.items():
             post_body["options"][key] = str(module_options[key]["value"])
 
-        post_body["module_slug"] = "csharp_vnc_vncserver"
+        post_body["module_id"] = "csharp_vnc_vncserver"
         response = state.execute_module(self.session_id, post_body)
 
         if "id" in response:

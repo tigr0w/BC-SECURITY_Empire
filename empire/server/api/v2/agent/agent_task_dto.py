@@ -75,7 +75,7 @@ class ShellPostRequest(BaseModel):
 
 
 class ModulePostRequest(BaseModel):
-    module_slug: str
+    module_id: str
     ignore_language_version_check: bool = False
     ignore_admin_check: bool = False
     options: Dict[str, Union[str, int, float]]

@@ -107,7 +107,7 @@ class UseModuleMenu(UseMenu):
         for key, value in self.record_options.items():
             post_body["options"][key] = self.record_options[key]["value"]
 
-        post_body["module_slug"] = self.record["id"]
+        post_body["module_id"] = self.record["id"]
 
         try:
             if self.record_options["Agent"]["value"] == "":

@@ -295,7 +295,7 @@ class AgentTaskService(object):
         resp, err = self.module_service.execute_module(
             db,
             agent,
-            module_req.module_slug,
+            module_req.module_id,
             module_req.options,
             module_req.ignore_language_version_check,
             module_req.ignore_admin_check,
@@ -309,7 +309,7 @@ class AgentTaskService(object):
             agent,
             task_name=resp["command"],
             task_input=resp["data"],
-            module_name=module_req.module_slug,
+            module_name=module_req.module_id,
             user_id=user_id,
         )
 

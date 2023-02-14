@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fix the test that detects errors loading modules (@Vinnybod)
 -   Allow empty user id and username on the task API (@Vinnybod)
+-   Rename module_slug to module_id for tasks for consistent naming on the api (@Vinnybod)
 
 ## [5.0.1] - 2023-02-04
 
