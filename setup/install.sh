@@ -243,15 +243,15 @@ if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
       fi
       if [ "$answer" != "${answer#[Yy]}" ] ;then
         sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev curl libbz2-dev
-        curl -O https://www.python.org/ftp/python/3.8.10/Python-3.8.10.tar.xz
-        tar -xf Python-3.8.10.tar.xz
-        cd Python-3.8.10
+        curl -O https://www.python.org/ftp/python/3.8.16/Python-3.8.16.tar.xz
+        tar -xf Python-3.8.16.tar.xz
+        cd Python-3.8.16
         ./configure --enable-optimizations
         make -j"$(nproc)"
         sudo make altinstall
         cd ..
-        rm -rf Python-3.8.10
-        rm Python-3.8.10.tar.xz
+        rm -rf Python-3.8.16
+        rm Python-3.8.16.tar.xz
       else
         echo -e "Abort"
         exit

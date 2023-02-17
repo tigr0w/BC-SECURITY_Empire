@@ -27,7 +27,7 @@ jobs:
     name: Test Python ${{ matrix.python-version }}
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10' ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
     steps:
       - uses: actions/checkout@v2
         if: ${{ github.repository == 'BC-SECURITY/Empire' }}

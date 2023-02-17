@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 -   Fix Invoke-Kerberoast with etype 17 or 18 (@AdrianVollmer)
+-   Add 3.11 support, bump Dockerfile to 3.11, bump Debian install to 3.8.16 (@Cx01N)
 
 ## [5.0.2] - 2023-02-14
 

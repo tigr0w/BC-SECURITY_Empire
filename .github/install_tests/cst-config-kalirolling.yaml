@@ -7,7 +7,7 @@ commandTests:
   - name: "python3 version"
     command: "python3"
     args: ["--version"]
-    expectedOutput: ["Python 3.10.*"]
+    expectedOutput: ["Python 3.11.*"]
   - name: "mysql which"
     command: "which"
     args: ["mysql"]
