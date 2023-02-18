@@ -13,7 +13,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: psf/black@23.1.0
       - uses: isort/isort-action@master
       - name: Run ruff
@@ -29,42 +29,33 @@ jobs:
       matrix:
         python-version: [ '3.8', '3.9', '3.10', '3.11' ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         if: ${{ github.repository == 'BC-SECURITY/Empire' }}
         with:
           submodules: 'recursive'
       # token is only needed in sponsors repo because of private submodules
       # don't use token in public repo because prs from forks cannot access secrets
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         if: ${{ github.repository == 'BC-SECURITY/Empire-Sponsors' }}
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
-      # Poetry cache depends on OS, Python version and Poetry version.
-      # https://gist.github.com/gh640/233a6daf68e9e937115371c0ecd39c61
-      - name: Cache Poetry cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-      # virtualenv cache should depends on OS, Python version and `poetry.lock` (and optionally workflow files).
-      - name: Cache Packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.local
-          key: poetry-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.github/workflows/*.yml') }}
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Set up MySQL
-        run: |
-          sudo systemctl start mysql
       - name: Install Poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y
+      # Poetry cache depends on OS, Python version and Poetry version.
+      # https://gist.github.com/gh640/233a6daf68e9e937115371c0ecd39c61
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
+      - name: Set up MySQL
+        run: |
+          sudo systemctl start mysql
       - name: Install dependencies
         run: |
+          poetry env use ${{ matrix.python-version }}
           poetry install
       - name: Run test suite - mysql
         run: |
@@ -80,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Test Docker Image
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
@@ -104,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Test Install Script
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
           depth: 0
