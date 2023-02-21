@@ -1,11 +1,13 @@
+import logging
 import threading
 import time
 
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.Menu import Menu
 from empire.client.src.utils import print_util
-from empire.client.src.utils.autocomplete_util import position_util
 from empire.client.src.utils.cli_util import register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -18,10 +20,9 @@ class ShellMenu(Menu):
         return self._cmd_registry + super().autocomplete()
 
     def get_completions(self, document, complete_event, cmd_line, word_before_cursor):
-        if position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self, **kwargs) -> bool:
         if "selected" not in kwargs:
@@ -29,7 +30,7 @@ class ShellMenu(Menu):
         else:
             self.use(kwargs["selected"])
             self.stop_threads = False
-            print(print_util.color("[*] Exit Shell Menu with Ctrl+C"))
+            log.info("Exit Shell Menu with Ctrl+C")
             return True
 
     def on_leave(self):
@@ -58,17 +59,13 @@ class ShellMenu(Menu):
         Update current directory
         """
         if self.language == "powershell":
-            task_id: int = state.agent_shell(session_id, "(Resolve-Path .\).Path")[
-                "taskID"
-            ]
+            task_id: int = state.agent_shell(session_id, "(Resolve-Path .\).Path")["id"]
         elif self.language == "python":
-            task_id: int = state.agent_shell(session_id, "echo $PWD")["taskID"]
+            task_id: int = state.agent_shell(session_id, "echo $PWD")["id"]
         elif self.language == "ironpython":
-            task_id: int = state.agent_shell(session_id, "cd .")["taskID"]
+            task_id: int = state.agent_shell(session_id, "cd .")["id"]
         elif self.language == "csharp":
-            task_id: int = state.agent_shell(session_id, "(Resolve-Path .\).Path")[
-                "taskID"
-            ]
+            task_id: int = state.agent_shell(session_id, "(Resolve-Path .\).Path")["id"]
             pass
 
         count = 0
@@ -99,7 +96,7 @@ class ShellMenu(Menu):
             shell_return.start()
         else:
             shell_return = threading.Thread(
-                target=self.tasking_id_returns, args=[response["taskID"]]
+                target=self.tasking_id_returns, args=[response["id"]]
             )
             shell_return.daemon = True
             shell_return.start()

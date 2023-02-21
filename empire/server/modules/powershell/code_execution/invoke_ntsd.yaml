@@ -1,8 +1,11 @@
 name: Invoke-Ntsd
 authors:
-  - james fitts
+  - name: james fitts
+    handle: ''
+    link: ''
 description: Use NT Symbolic Debugger to execute Empire launcher code
 software: ''
+tactics: []
 techniques:
   - T1127
 background: true
@@ -27,8 +30,7 @@ options:
     required: true
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: Proxy
@@ -44,24 +46,26 @@ options:
     required: true
     value: x64
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
     required: false
     value: default
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
-      for obfuscation types. For powershell only.
+    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
+      only.
     required: false
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
-      is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
     required: false
     value: Token\All\1
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: 'mattifestation etw'
-script_path: 'code_execution/Invoke-Ntsd.ps1'
+    value: mattifestation etw
+script_path: code_execution/Invoke-Ntsd.ps1
 advanced:
   custom_generate: true

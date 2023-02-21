@@ -1,8 +1,11 @@
 name: Get-DomainSubnet
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Gets a list of all current subnets in a domain. Part of PowerView.
 software: S0194
+tactics: []
 techniques:
   - T1016
 background: true
@@ -19,8 +22,7 @@ options:
     required: true
     value: ''
   - name: Identity
-    description: A SamAccountName, DistinguishedName, SID, GUID, or a dns host name,
-      wildcards accepted.
+    description: A SamAccountName, DistinguishedName, SID, GUID, or a dns host name, wildcards accepted.
     required: false
     value: ''
   - name: SiteName
@@ -32,18 +34,15 @@ options:
     required: false
     value: ''
   - name: LDAPFilter
-    description: Specifies an LDAP query string that is used to filter Active Directory
-      objects.
+    description: Specifies an LDAP query string that is used to filter Active Directory objects.
     required: false
     value: ''
   - name: Properties
-    description: Specifies the properties of the output object to retrieve from the
-      server.
+    description: Specifies the properties of the output object to retrieve from the server.
     required: false
     value: ''
   - name: SearchBase
-    description: The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"
-      Useful for OU queries.
+    description: The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local" Useful for OU queries.
     required: false
     value: ''
   - name: Server
@@ -51,8 +50,7 @@ options:
     required: false
     value: ''
   - name: SearchScope
-    description: Specifies the scope to search under, Base/OneLevel/Subtree (default
-      of Subtree)
+    description: Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)
     required: false
     value: ''
   - name: ResultPageSize
@@ -60,18 +58,16 @@ options:
     required: false
     value: ''
   - name: ServerTimeLimit
-    description: Specifies the maximum amount of time the server spends searching. Default
-      of 120 seconds.
+    description: Specifies the maximum amount of time the server spends searching. Default of 120 seconds.
     required: false
     value: ''
   - name: SecurityMasks
-    description: Specifies an option for examining security information of a directory
-      object. One of "Dacl", "Group", "None", "Owner", "Sacl".
+    description: Specifies an option for examining security information of a directory object. One of "Dacl", "Group", "None",
+      "Owner", "Sacl".
     required: false
     value: ''
   - name: Tombstone
-    description: Switch. Specifies that the search should also return deleted/tombstoned
-      objects.
+    description: Switch. Specifies that the search should also return deleted/tombstoned objects.
     required: false
     value: ''
   - name: FindOne
@@ -81,7 +77,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -89,5 +85,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/network/powerview.ps1'
+script_path: situational_awareness/network/powerview.ps1
 script_end: Get-DomainSubnet {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-DomainSubnet completed'

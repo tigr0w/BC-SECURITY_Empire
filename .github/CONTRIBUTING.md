@@ -31,14 +31,17 @@ The more information you provide in a Github issue the easier it will be for us 
 * For additional guidelines for your PowerShell code itself, check out the [PowerSploit style guide](https://github.com/PowerShellMafia/PowerSploit/blob/master/README.md).
 * For more in-depth docs on developing modules, see the [Module Development docs](https://bc-security.gitbook.io/empire-wiki/module-development)
 
-## Code Formatting
+## Code Formatting and Linting
 * As of Empire 4.4, we are using [psf/black](https://github.com/psf/black) for code formatting.
     * Black is a Python code formatter that helps to keep the codebase uniform and easy to read
 * As of Empire 4.4, we are using [PyCQA/isort](https://github.com/PyCQA/isort)
     * Isort is a Python utility that sorts and formats imports.
+* As of Empire 5.0.1, we are using [charliermarsh/ruff](https://github.com/charliermarsh/ruff) for linting.
+    * Ruff is a python linter that helps identify common bugs and style issues.
 * After implementing your changes:
     1. run `black .` (or `poetry run black .`).
     2. run `isort .` (or `poetry run isort .`).
+    3. run `ruff . --fix` (or `poetry run ruff . --fix`). 
 * The repo is also configured to use [pre-commit](https://pre-commit.com/) to automatically format code.
   * Once you have pre-commit installed, you can run `pre-commit install` to install the pre-commit hooks.
-  * Then pre-commit will execute black and isort automatically before committing.
+  * Then pre-commit will execute black, isort, and ruff automatically before committing.

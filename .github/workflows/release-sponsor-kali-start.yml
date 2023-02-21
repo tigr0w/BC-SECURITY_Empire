@@ -17,7 +17,7 @@ jobs:
           echo "TARGET_BRANCH=sponsors-main" >> $GITHUB_ENV
           echo "STARKILLER_TAG=${{ github.event.inputs.starkillerVersion }}-sponsors" >> $GITHUB_ENV
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: private-main
           submodules: 'recursive'
@@ -69,7 +69,7 @@ jobs:
           echo "TARGET_BRANCH=kali-main" >> $GITHUB_ENV
           echo "STARKILLER_TAG=${{ github.event.inputs.starkillerVersion }}-kali" >> $GITHUB_ENV
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: private-main
           submodules: 'recursive'

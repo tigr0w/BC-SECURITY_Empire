@@ -1,9 +1,14 @@
 name: Get-SQLServerInfo
 authors:
-  - '@_nullbind'
-  - '@0xbadjuju'
+  - name: ''
+    handle: '@_nullbind'
+    link: ''
+  - name: ''
+    handle: '@0xbadjuju'
+    link: ''
 description: Returns basic server and user information from target SQL Servers.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true
@@ -38,7 +43,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String

@@ -7,10 +7,15 @@ from empire.server.common import helpers
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "pkg",
-            "Author": ["@xorrior"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                }
+            ],
             "Description": "Generates a pkg installer. The installer will copy a custom (empty) application to the /Applications "
             "folder. The postinstall script will execute an Empire launcher.",
             "Comments": [""],
@@ -72,7 +77,6 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]

@@ -1,8 +1,11 @@
 name: SSHCommand
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: This module will send a command via ssh.
 software: ''
+tactics: []
 techniques:
   - T1021
 background: true
@@ -30,7 +33,7 @@ options:
     description: Command
     required: true
     value: id
-script: |
+script: |-
   import os
   import pty
 

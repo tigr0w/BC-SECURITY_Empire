@@ -1,109 +1,57 @@
 from __future__ import print_function
 
 from builtins import object, str
+from typing import Dict, Optional, Tuple
 
+from empire.server.common.empire import MainMenu
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
 class Module(object):
-    def __init__(self, mainMenu, params=[]):
+    """
+    STOP. In most cases you will not need this file.
+    Take a look at the wiki to see if you truly need this.
+    https://bc-security.gitbook.io/empire-wiki/module-development/python-modules
+    """
 
-        # metadata info about the module, not modified during runtime
-        self.info = {
-            # name for the module that will appear in module menus
-            "Name": "Active Directory Enumerator",
-            # list of one or more authors for the module
-            "Author": ["@424f424f"],
-            # more verbose multi-line description of the module
-            "Description": ("description line 1" "description line 2"),
-            "Software": "SXXXX",
-            "Techniques": ["TXXXX", "TXXXX"],
-            # True if the module needs to run in the background
-            "Background": False,
-            # File extension to save the file as
-            # no need to base64 return data
-            "OutputExtension": None,
-            # True if the method doesn't touch disk/is reasonably opsec safe
-            "OpsecSafe": True,
-            # the module language
-            "Language": "python",
-            # the minimum language version needed
-            "MinLanguageVersion": "2.6",
-            # list of any references/other comments
-            "Comments": ["comment", "http://link/"],
-        }
-
-        # any options needed by the module, settable during runtime
-        self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
-            "Agent": {
-                # The 'Agent' option is the only one that MUST be in a module
-                "Description": "Agent to grab a screenshot from.",
-                "Required": True,
-                "Value": "",
-            },
-            "ldap Address": {
-                "Description": "Address for LDAP Server",
-                "Required": True,
-                "Value": "",
-            },
-            "Bind DN": {
-                "Description": "BIND DN username@penlab.local",
-                "Required": True,
-                "Value": "",
-            },
-        }
-
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
-        self.mainMenu = mainMenu
-
-        # During instantiation, any settable option parameters
-        #   are passed as an object set to the module and the
-        #   options dictionary is automatically set. This is mostly
-        #   in case options are passed on the command line
-        if params:
-            for param in params:
-                # parameter format is [Name, Value]
-                option, value = param
-                if option in self.options:
-                    self.options[option]["Value"] = value
-
-    def generate(self):
-
-        # the Python script itself, with the command to invoke
-        #   for execution appended to the end. Scripts should output
-        #   everything to the pipeline for proper parsing.
-        #
-        # the script should be stripped of comments, with a link to any
+    @staticmethod
+    def generate(
+        main_menu: MainMenu,
+        module: EmpireModule,
+        params: Dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ) -> Tuple[Optional[str], Optional[str]]:
+        # Step 1: Get the module source code
+        # The script should be stripped of comments, with a link to any
         #   original reference script included in the comments.
-        script = """
-"""
-        # if you're reading in a large, external script that might be updates,
-        #   use the pattern below
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/..."
-        try:
-            f = open(moduleSource, "r")
-        except:
-            return handle_error_message(
-                "[!] Could not read module source path at: " + str(moduleSource)
-            )
+        # If your script is more than a few lines, it's probably best to use
+        #   the first method to source it.
+        #
+        # First method: Read in the source script from module_source
+        # get_module_source will return the source code, getting the obfuscated version if necessary.
+        # (In the case of python, obfuscation is not supported)
+        # It will also return an error message if there was an issue reading the source code.
+        script, err = main_menu.modulesv2.get_module_source(
+            module_name=module.script_path,
+            obfuscate=obfuscate,
+            obfuscate_command=obfuscation_command,
+        )
 
-        moduleCode = f.read()
-        f.close()
+        if err:
+            return handle_error_message(err)
 
-        script = moduleCode
+        # Second method: Use the script from the module's yaml.
+        script = module.script
 
-        # add any arguments to the end execution of the script
-        for option, values in self.options.items():
-            if option.lower() != "agent":
-                if values["Value"] and values["Value"] != "":
-                    if values["Value"].lower() == "true":
-                        # if we're just adding a switch
-                        script += " -" + str(option)
-                    else:
-                        script += " -" + str(option) + " " + str(values["Value"])
+        # Step 2: Parse the module options, and insert them into the script
+        # The params dict contains the validated options that were sent.
+        for key, value in params.items():
+            if key.lower() != "agent" and key.lower() != "computername":
+                script = script.replace("{{ " + key + " }}", value).replace(
+                    "{{" + key + "}}", value
+                )
 
+        # Step 3: Return the final script
         return script

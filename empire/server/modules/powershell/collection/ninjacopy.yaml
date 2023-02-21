@@ -1,9 +1,11 @@
 name: Invoke-NinjaCopy
 authors:
-  - '@JosephBialek'
-description: Copies a file from an NTFS partitioned volume by reading the raw volume
-  and parsing the NTFS structures.
+  - name: Joseph Bialek
+    handle: '@JosephBialek'
+    link: https://twitter.com/JosephBialek
+description: Copies a file from an NTFS partitioned volume by reading the raw volume and parsing the NTFS structures.
 software: ''
+tactics: []
 techniques:
   - T1105
 background: true
@@ -29,13 +31,12 @@ options:
     required: false
     value: ''
   - name: RemoteDestination
-    description: A file path to copy the file to on the remote computer. If this isn't
-      used, LocalDestination must be specified.
+    description: A file path to copy the file to on the remote computer. If this isn't used, LocalDestination must be specified.
     required: false
     value: ''
   - name: ComputerName
     description: An array of computernames to run the script on.
     required: false
     value: ''
-script_path: 'collection/Invoke-NinjaCopy.ps1'
+script_path: collection/Invoke-NinjaCopy.ps1
 script_end: $null = Invoke-NinjaCopy {{ PARAMS }}; Write-Output 'Invoke-NinjaCopy Completed'

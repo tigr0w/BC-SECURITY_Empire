@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 
 from prompt_toolkit.completion import Completion
@@ -10,6 +11,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -28,10 +31,10 @@ class UsePluginMenu(UseMenu):
                 word_before_cursor, state.plugins.keys()
             ):
                 yield Completion(plugin, start_position=-len(word_before_cursor))
-        else:
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self, **kwargs) -> bool:
         if "selected" not in kwargs:
@@ -73,12 +76,13 @@ class UsePluginMenu(UseMenu):
         Usage: execute
         """
         post_body = {}
+        post_body["options"] = {}
         for key, value in self.record_options.items():
-            post_body[key] = self.record_options[key]["Value"]
+            post_body["options"][key] = self.record_options[key]["value"]
 
-        response = state.execute_plugin(self.selected, post_body)
-        if isinstance(response, Dict) and "error" in response:
-            print(print_util.color(response["error"]))
+        response = state.execute_plugin(self.record["id"], post_body)
+        if isinstance(response, Dict) and "detail" in response:
+            print(print_util.color(response["detail"]))
 
     @command
     def generate(self):

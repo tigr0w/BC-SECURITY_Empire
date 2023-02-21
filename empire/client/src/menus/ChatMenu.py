@@ -1,11 +1,14 @@
+import logging
+
 import socketio.exceptions
 
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.Menu import Menu
 from empire.client.src.MenuState import menu_state
 from empire.client.src.utils import print_util
-from empire.client.src.utils.autocomplete_util import position_util
 from empire.client.src.utils.cli_util import register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -19,10 +22,9 @@ class ChatMenu(Menu):
         return self._cmd_registry + super().autocomplete()
 
     def get_completions(self, document, complete_event, cmd_line, word_before_cursor):
-        if position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def get_prompt(self) -> str:
         return f"<b><ansigreen>{state.me['username']}</ansigreen></b>: "
@@ -39,10 +41,10 @@ class ChatMenu(Menu):
             try:
                 state.sio.emit("chat/leave")
             except socketio.exceptions.BadNamespaceError:
-                print(print_util.color("[!] Unable to reach server"))
+                log.error("[!] Unable to reach server")
 
     def on_enter(self):
-        print(print_util.color("[*] Exit Chat Menu with Ctrl+C"))
+        log.info("Exit Chat Menu with Ctrl+C")
         self.my_username = state.me["username"]
 
         for message in state.chat_cache:

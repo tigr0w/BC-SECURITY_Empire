@@ -10,8 +10,19 @@ subparsers = parent_parser.add_subparsers(dest="subparser_name")
 
 server_parser = subparsers.add_parser("server", help="Launch Empire Server")
 client_parser = subparsers.add_parser("client", help="Launch Empire CLI")
+sync_starkiller_parser = subparsers.add_parser(
+    "sync-starkiller", help="Sync Starkiller submodule with the config"
+)
 
 # Client Args
+client_parser.add_argument(
+    "-l",
+    "--log-level",
+    dest="log_level",
+    type=str.upper,
+    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    help="Set the logging level",
+)
 client_parser.add_argument(
     "-r",
     "--resource",
@@ -33,10 +44,21 @@ client_parser.add_argument(
 # Server Args
 general_group = server_parser.add_argument_group("General Options")
 general_group.add_argument(
+    "-l",
+    "--log-level",
+    dest="log_level",
+    type=str.upper,
+    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    help="Set the logging level",
+)
+general_group.add_argument(
+    "-d",
     "--debug",
-    nargs="?",
-    const="1",
-    help="Debug level for output (default of 1, 2 for msg display).",
+    help="Set the logging level to DEBUG",
+    action="store_const",
+    dest="log_level",
+    const="DEBUG",
+    default=None,
 )
 general_group.add_argument(
     "--reset",
@@ -52,6 +74,12 @@ general_group.add_argument(
     nargs=1,
     help="Specify a config.yaml different from the config.yaml in the empire/server directory.",
 )
+general_group.add_argument(
+    "--secure-api",
+    action="store_true",
+    help="Use https for the API. Uses .key and .pem file from empire/server/data."
+    "Note that Starkiller will not work with self-signed certs due to browsers blocking the requests.",
+)
 
 rest_group = server_parser.add_argument_group("RESTful API Options")
 rest_group.add_argument(
@@ -64,19 +92,6 @@ rest_group.add_argument(
     type=int,
     nargs=1,
     help="Port to run the Empire RESTful API on. Defaults to 1337",
-)
-rest_group.add_argument(
-    "--socketport", type=int, nargs=1, help="Port to run socketio on. Defaults to 5000"
-)
-rest_group.add_argument(
-    "--username",
-    nargs=1,
-    help="Start the RESTful API with the specified username instead of pulling from empire.db",
-)
-rest_group.add_argument(
-    "--password",
-    nargs=1,
-    help="Start the RESTful API with the specified password instead of pulling from empire.db",
 )
 
 args = parent_parser.parse_args()

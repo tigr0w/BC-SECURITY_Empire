@@ -1,8 +1,11 @@
 name: Logoff User
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Logs the current user (or all users) off the machine.
 software: ''
+tactics: []
 techniques:
   - T1098
 background: false
@@ -11,7 +14,7 @@ needs_admin: false
 opsec_safe: false
 language: powershell
 min_language_version: '2'
-comments: [ ]
+comments: []
 options:
   - name: Agent
     description: Agent to run module on.

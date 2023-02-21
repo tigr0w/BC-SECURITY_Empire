@@ -1,4 +1,5 @@
-import base64
+import logging
+import os
 import random
 import string
 
@@ -15,6 +16,8 @@ from empire.client.src.utils.autocomplete_util import (
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
 from empire.client.src.utils.data_util import get_data_from_file
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -44,7 +47,9 @@ class AdminMenu(Menu):
         elif cmd_line[0] == "download" and position_util(
             cmd_line, 2, word_before_cursor
         ):
-            for files in filtered_search_list(word_before_cursor, state.server_files):
+            for files in filtered_search_list(
+                word_before_cursor, state.server_files.keys()
+            ):
                 yield Completion(files, start_position=-len(word_before_cursor))
         elif cmd_line[0] in ["upload"] and position_util(
             cmd_line, 2, word_before_cursor
@@ -62,110 +67,15 @@ class AdminMenu(Menu):
                         display=files.split("/")[-1],
                         start_position=-len(word_before_cursor),
                     )
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self):
         state.get_files()
         self.user_id = state.get_user_me()["id"]
         return True
-
-    @command
-    def obfuscate(self, obfucate_bool: str):
-        """
-        Turn on obfuscate all future powershell commands run on all agents.
-
-        Usage: obfuscate <obfucate_bool>
-        """
-        # todo: should it be set <key> <value> to be consistent?
-        if obfucate_bool.lower() in ["true", "false"]:
-            options = {"obfuscate": obfucate_bool}
-            response = state.set_admin_options(options)
-        else:
-            print(print_util.color("[!] Error: Invalid entry"))
-
-        # Return results and error message
-        if "success" in response.keys():
-            print(
-                print_util.color("[*] Global obfuscation set to %s" % (obfucate_bool))
-            )
-        elif "error" in response.keys():
-            print(
-                print_util.color(
-                    "[!] Error: " + response["error"] + "obfuscate <True/False>"
-                )
-            )
-
-    @command
-    def obfuscate_command(self, obfucation_type: str):
-        """
-        Set obfuscation technique to run for all future powershell commands run on all agents.
-
-        Usage: obfuscate_command <obfucation_type>
-        """
-        options = {"obfuscate_command": obfucation_type}
-        response = state.set_admin_options(options)
-
-        # Return results and error message
-        if "success" in response.keys():
-            print(
-                print_util.color(
-                    "[*] Global obfuscation command set to %s" % (obfucation_type)
-                )
-            )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def preobfuscate(self, force_reobfuscation: str, obfuscation_command: str):
-        """
-        Preobfuscate modules on the server.
-
-        Usage: preobfuscate <force_reobfuscation> <obfuscation_command>
-        """
-        options = {
-            "preobfuscation": obfuscation_command,
-            "force_reobfuscation": force_reobfuscation,
-        }
-        response = state.set_admin_options(options)
-
-        # Return results and error message
-        if "success" in response.keys():
-            print(print_util.color("[+] Preobfuscating modules..."))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def keyword_obfuscation(self, keyword: str, replacement: str = None):
-        """
-        Add key words to to be obfuscated from commands. Empire will generate a random word if no replacement word is provided.
-
-        Usage: keyword_obfuscation <keyword> [replacement]
-        """
-        if not replacement:
-            replacement = random.choice(string.ascii_uppercase) + "".join(
-                random.choice(string.ascii_uppercase + string.digits) for _ in range(4)
-            )
-            print(
-                print_util.color(
-                    f"[*] No keyword obfuscation replacement given, generating random string"
-                )
-            )
-
-        options = {"keyword_obfuscation": keyword, "keyword_replacement": replacement}
-        response = state.set_admin_options(options)
-
-        # Return results and error message
-        if "success" in response.keys():
-            print(
-                print_util.color(
-                    f"[*] Keyword obfuscation set to replace {keyword} with {replacement}"
-                )
-            )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
 
     @command
     def user_list(self) -> None:
@@ -176,14 +86,14 @@ class AdminMenu(Menu):
         """
         users_list = []
 
-        for user in state.get_users()["users"]:
+        for user in state.get_users()["records"]:
             users_list.append(
                 [
-                    str(user["ID"]),
+                    str(user["id"]),
                     user["username"],
-                    str(user["admin"]),
+                    str(user["is_admin"]),
                     str(user["enabled"]),
-                    date_util.humanize_datetime(user["last_logon_time"]),
+                    date_util.humanize_datetime(user["updated_at"]),
                 ]
             )
 
@@ -192,20 +102,32 @@ class AdminMenu(Menu):
         table_util.print_table(users_list, "Users")
 
     @command
-    def create_user(self, username: str, password: str):
+    def create_user(
+        self, username: str, password: str, confirm_password: str, admin: str
+    ) -> None:
         """
         Create user account for Empire
 
-        Usage: create_user <username> <password>
+        Usage: create_user <username> <password> <confirm_password> <admin>
         """
-        options = {"username": username, "password": password}
+        if admin == "True":
+            admin = True
+        else:
+            admin = False
+
+        options = {
+            "username": username,
+            "password": password,
+            "confirm_password": confirm_password,
+            "is_admin": admin,
+        }
         response = state.create_user(options)
 
         # Return results and error message
-        if "success" in response.keys():
-            print(print_util.color("[*] Added user: %s" % username))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        if "id" in response.keys():
+            log.info(f"Added user: {username}")
+        elif "detail" in response.keys():
+            log.error(["detail"])
 
     @command
     def disable_user(self, user_id: str):
@@ -214,15 +136,15 @@ class AdminMenu(Menu):
 
         Usage: disable_user <user_id>
         """
-        options = {"disable": "True"}
-        username = state.get_user(user_id)["username"]
-        response = state.disable_user(user_id, options)
+        user = state.get_user(user_id)
+        user["enabled"] = False
+        response = state.edit_user(user_id, user)
 
         # Return results and error message
-        if "success" in response.keys():
-            print(print_util.color("[*] Disabled user: %s" % username))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        if "id" in response.keys():
+            log.info(f"Disabled user: {user['username']}")
+        elif "detail" in response.keys():
+            log.error(response["detail"])
 
     @command
     def enable_user(self, user_id: str):
@@ -231,80 +153,15 @@ class AdminMenu(Menu):
 
         Usage: enable_user <user_id>
         """
-        options = {"disable": ""}
-        username = state.get_user(user_id)["username"]
-        response = state.disable_user(user_id, options)
+        user = state.get_user(user_id)
+        user["enabled"] = True
+        response = state.edit_user(user_id, user)
 
         # Return results and error message
-        if "success" in response.keys():
-            print(print_util.color("[*] Enabled user: %s" % username))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def notes(self) -> None:
-        """
-        Display your notes
-
-        Usage: notes
-        """
-        self.user_notes = state.get_user_me()["notes"]
-
-        if not self.user_notes:
-            print(print_util.color("[*] Notes are empty"))
-        else:
-            print(self.user_notes)
-
-    @command
-    def add_notes(self, notes: str):
-        """
-        Add user notes (use quotes)
-
-        Usage: add_notes <notes>
-        """
-        self.user_notes = state.get_user_me()["notes"]
-
-        if self.user_notes is None:
-            self.user_notes = ""
-
-        options = {
-            "notes": self.user_notes + "\n" + date_util.get_utc_now() + " - " + notes
-        }
-        response = state.update_user_notes(self.user_id, options)
-
-        if "success" in response.keys():
-            print(print_util.color("[*] Updated notes"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def clear_notes(self):
-        """
-        Clear user notes
-
-        Usage: clear_notes
-        """
-        options = {"notes": ""}
-        response = state.update_user_notes(self.user_id, options)
-
-        if "success" in response.keys():
-            print(print_util.color("[*] Cleared notes"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def report(self):
-        """
-        Produce report CSV and log files: sessions.csv, credentials.csv, master.log
-
-        Usage: report
-        """
-        response = state.generate_report()
-
-        if "report" in response.keys():
-            print(print_util.color("[*] Reports saved to " + response["report"]))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        if "id" in response.keys():
+            log.info(f"Enabled user: {user['username']}")
+        elif "detail" in response.keys():
+            log.error(["detail"])
 
     @command
     def malleable_profile(self, profile_name: str):
@@ -333,15 +190,19 @@ class AdminMenu(Menu):
         with open(profile_directory, "r") as stream:
             profile_data = stream.read()
 
-        response = state.add_malleable_profile(
-            profile_directory, profile_category, profile_data
-        )
+        post_body = {
+            "categeory": profile_category,
+            "data": profile_data,
+            "name": os.path.basename(profile_directory),
+        }
 
-        if "success" in response.keys():
-            print(print_util.color(f"[*] Added { profile_directory } to database"))
+        response = state.add_malleable_profile(post_body)
+
+        if "id" in response.keys():
+            log.info(f"Added {post_body['name']} to database")
             state.get_malleable_profile()
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        elif "detail" in response.keys():
+            log.error(response["detail"])
 
     @command
     def delete_malleable_profile(
@@ -353,13 +214,14 @@ class AdminMenu(Menu):
 
         Usage: delete_malleable_profile <profile_name>
         """
-        response = state.delete_malleable_profile(profile_name)
+        profile_id = state.get_malleable_profile()[profile_name]["id"]
+        response = state.delete_malleable_profile(profile_id)
 
-        if "success" in response.keys():
-            print(print_util.color(f"[*] Deleted { profile_name } from database"))
+        if "id" in response.keys():
+            log.info(f"Deleted {profile_name} from database")
             state.get_malleable_profile()
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        elif "detail" in response.keys():
+            log.error(response["detail"])
 
     @command
     def upload(self, file_directory: str):
@@ -374,12 +236,12 @@ class AdminMenu(Menu):
         if data:
             response = state.upload_file(filename, data)
 
-            if "success" in response.keys():
-                print(print_util.color(f"[+] Uploaded { filename } to server"))
-            elif "error" in response.keys():
-                print(print_util.color("[!] Error: " + response["error"]))
+            if "id" in response.keys():
+                log.info(f"Uploaded {filename} to server")
+            elif "detail" in response.keys():
+                log.error(["detail"])
         else:
-            print(print_util.color("[!] Error: Invalid file path"))
+            log.error("Invalid file path")
 
     @command
     def download(self, filename: str):
@@ -388,18 +250,65 @@ class AdminMenu(Menu):
 
         Usage: download <filename>
         """
-        response = state.download_file(filename)
+        file_id = state.server_files[filename]["id"]
+        response = state.download_file(file_id)
 
-        if "success" in response.keys():
-            print(print_util.color(f"[*] Downloading { filename } from server"))
-            file_data = base64.b64decode(response["data"].encode("UTF-8"))
+        if "location" in response.keys():
+            link = response["location"]
+            filename = response["filename"]
+
+            log.info(f"Downloading { filename } from server")
+            data = state.download_stager(link)
 
             with open(f"{state.directory['downloads']}{ filename }", "wb+") as f:
-                f.write(file_data)
-            print(print_util.color(f"[+] Downloaded { filename } from server"))
+                f.write(data)
+            log.info(f"Downloaded {filename} from server")
 
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        elif "detail" in response.keys():
+            log.error(response["detail"])
+
+    @command
+    def preobfuscate(self, reobfuscate: str = None):
+        """
+        Preobfuscate modules on the server.
+        If reobfuscate is false, will not obfuscate modules that have already been obfuscated.
+        Usage: preobfuscate [<reobfuscate>]
+        """
+        if not reobfuscate:
+            log.info("Preobfuscating modules without replacement.")
+        else:
+            log.info("Preobfuscating modules with replacement")
+        response = state.preobfuscate(language="powershell", reobfuscate=reobfuscate)
+
+        # Return results and error message
+        if response.status_code == 202:
+            log.info("Preobfuscating modules...")
+        elif "detail" in response.keys():
+            log.error(response["detail"])
+
+    @command
+    def keyword_obfuscation(self, keyword: str, replacement: str = None):
+        """
+        Add keywords to be obfuscated from commands. Empire will generate a random word
+        if no replacement word is provided.
+
+        Usage: keyword_obfuscation <keyword> [<replacement>]
+        """
+        if not replacement:
+            log.info(f"Generating random string for keyword {keyword}")
+            replacement = random.choice(string.ascii_uppercase) + "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=4)
+            )
+        else:
+            log.info(f"Replacing keyword {keyword} with {replacement}")
+
+        options = {"keyword": keyword, "replacement": replacement}
+        response = state.keyword_obfuscation(options)
+
+        if "id" in response:
+            log.info(f"Keyword obfuscation set to replace {keyword} with {replacement}")
+        elif "detail" in response:
+            log.error(response["detail"])
 
 
 admin_menu = AdminMenu()

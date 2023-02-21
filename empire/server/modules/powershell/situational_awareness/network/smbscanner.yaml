@@ -1,10 +1,17 @@
 name: Invoke-SMBScanner
 authors:
-  - '@obscuresec'
-  - '@harmj0y'
-  - '@kevin'
+  - name: ''
+    handle: '@obscuresec'
+    link: ''
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: ''
+    handle: '@kevin'
+    link: ''
 description: Tests usernames/password combination across a number of machines.
 software: ''
+tactics: []
 techniques:
   - T1135
   - T1187
@@ -26,8 +33,8 @@ options:
     required: false
     value: ''
   - name: ComputerName
-    description: Comma-separated hostnames to try username/password combinations against.
-      Otherwise enumerate the domain for machines.
+    description: Comma-separated hostnames to try username/password combinations against. Otherwise enumerate the domain for
+      machines.
     required: false
     value: ''
   - name: Password
@@ -46,5 +53,5 @@ options:
     description: Switch. Don't ping hosts before enumeration.
     required: false
     value: ''
-script_path: 'situational_awareness/network/Invoke-SmbScanner.ps1'
+script_path: situational_awareness/network/Invoke-SmbScanner.ps1
 script_end: Invoke-SMBScanner {{ PARAMS }}

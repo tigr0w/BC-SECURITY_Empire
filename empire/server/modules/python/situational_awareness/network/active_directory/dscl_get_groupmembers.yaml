@@ -1,9 +1,11 @@
 name: dscl Get-GroupMembers
 authors:
-  - '@424f424f'
-description: This module will use the current user context to query active directory
-  for a list of users in a group.
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
+description: This module will use the current user context to query active directory for a list of users in a group.
 software: ''
+tactics: []
 techniques:
   - T1482
 background: false
@@ -23,7 +25,7 @@ options:
     description: Group
     required: true
     value: ''
-script: |
+script: |-
   import subprocess
   cmd = \"""dscl /Search read "/Groups/{{ Group }}" GroupMembership\"""
   print(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.read())

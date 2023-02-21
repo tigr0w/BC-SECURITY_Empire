@@ -1,6 +1,9 @@
+import logging
 from typing import List, Optional
 
 from empire.client.src.utils import print_util
+
+log = logging.getLogger(__name__)
 
 
 # https://yzhong-cs.medium.com/serialize-and-deserialize-complex-json-in-python-205ecc636caa
@@ -24,12 +27,7 @@ class Shortcut(object):
         params: List[ShortcutParam] = None,
     ):
         if not module and not shell:
-            print(
-                print_util.color(
-                    "Must provide either module name or shell command to a shortcut",
-                    color_name="red",
-                )
-            )
+            log.error("Shortcut must have either a module or shell command")
             raise TypeError
 
         self.name = name

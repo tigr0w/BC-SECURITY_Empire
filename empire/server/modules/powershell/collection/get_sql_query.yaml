@@ -1,9 +1,14 @@
 name: Get-SQLQuery
 authors:
-  - '@_nullbind'
-  - '@0xbadjuju'
+  - name: ''
+    handle: '@_nullbind'
+    link: ''
+  - name: ''
+    handle: '@0xbadjuju'
+    link: ''
 description: Executes a query on target SQL servers.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true
@@ -38,7 +43,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: true
     suggested_values:
       - Out-String
@@ -46,5 +51,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'collection/Get-SQLQuery.ps1'
+script_path: collection/Get-SQLQuery.ps1
 script_end: Get-SQLQuery {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SQLQuery completed'

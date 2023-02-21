@@ -37,17 +37,14 @@ Includes:
 """
 import base64
 import binascii
-import datetime
-import fnmatch
-import hashlib
 import ipaddress
 import json
+import logging
 import os
 import random
 import re
 import socket
 import string
-import subprocess
 import sys
 import threading
 import urllib.error
@@ -59,6 +56,9 @@ from datetime import datetime
 import netifaces
 
 from empire.server.utils.math_util import old_div
+
+log = logging.getLogger(__name__)
+
 
 ###############################################################
 #
@@ -82,9 +82,9 @@ def validate_ip(IP):
     Validate an IP.
     """
     try:
-        ip = ipaddress.ip_address(IP)
+        ipaddress.ip_address(IP)
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -125,13 +125,13 @@ def obfuscate_call_home_address(data):
     return tmp
 
 
-def chunks(l, n):
+def chunks(s, n):
     """
-    Generator to split a string l into chunks of size n.
+    Generator to split a string s into chunks of size n.
     Used by macro modules.
     """
-    for i in range(0, len(l), n):
-        yield l[i : i + n]
+    for i in range(0, len(s), n):
+        yield s[i : i + n]
 
 
 ####################################################################################
@@ -148,7 +148,7 @@ def strip_python_comments(data):
     Strip block comments, line comments, empty lines, verbose statements, docstring,
     and debug statements from a Python source file.
     """
-    print(color("[!] strip_python_comments is deprecated and should not be used"))
+    log.warning("strip_python_comments is deprecated and should not be used")
 
     # remove docstrings
     data = re.sub(r'"(?<!= )""".*?"""', "", data, flags=re.DOTALL)
@@ -246,8 +246,8 @@ def get_powerview_psreflect_overhead(script):
 
     try:
         return strip_powershell_comments(pattern.findall(script)[0])
-    except:
-        print(color("[!] Error extracting psreflect overhead from script!"))
+    except Exception:
+        log.error("Error extracting psreflect overhead from script!")
         return ""
 
 
@@ -286,7 +286,6 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
         functionsToProcess = [functionsToProcess]
 
     while len(functionsToProcess) != 0:
-
         # pop the next function to process off the stack
         requiredFunction = functionsToProcess.pop()
 
@@ -298,13 +297,10 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
             functionDependencies = get_dependent_functions(
                 functions[requiredFunction], list(functions.keys())
             )
-        except:
+        except Exception:
             functionDependencies = []
-            print(
-                color(
-                    "[!] Error in retrieving dependencies for function %s !"
-                    % (requiredFunction)
-                )
+            log.error(
+                f"Error in retrieving dependencies for function {requiredFunction} !"
             )
 
         for functionDependency in functionDependencies:
@@ -370,8 +366,8 @@ def generate_dynamic_powershell_script(script, functionNames):
     for functionDependency in functionDependencies:
         try:
             newScript += functions[functionDependency] + "\n"
-        except:
-            print(color("[!] Key error with function %s !" % (functionDependency)))
+        except Exception:
+            log.error(f"Key error with function {functionDependency} !")
 
     # if any psreflect methods are needed, add in the overhead at the end
     if any(el in set(psreflect_functions) for el in functionDependencies):
@@ -401,10 +397,8 @@ def parse_credentials(data):
 
     # powershell/collection/prompt output
     elif parts[0].startswith(b"[+] Prompted credentials:"):
-
         parts = parts[0].split(b"->")
         if len(parts) == 2:
-
             username = parts[1].split(b":", 1)[0].strip()
             password = parts[1].split(b":", 1)[1].strip()
 
@@ -417,7 +411,7 @@ def parse_credentials(data):
             return [("plaintext", domain, username, password, "", "")]
 
         else:
-            print(color("[!] Error in parsing prompted credential output."))
+            log.error("Error in parsing prompted credential output.")
             return None
 
     # python/collection/prompt (Mac OS)
@@ -466,14 +460,12 @@ def parse_mimikatz(data):
 
                 hostName = temp.split(b".")[0]
                 hostDomain = b".".join(temp.split(".")[1:])
-            except:
+            except Exception:
                 pass
 
     for regex in regexes:
-
         p = re.compile(regex)
         for match in p.findall(data.decode("UTF-8")):
-
             lines2 = match.split("\n")
             username, domain, password = "", "", ""
 
@@ -485,11 +477,10 @@ def parse_mimikatz(data):
                         domain = line.split(":", 1)[1].strip()
                     elif "NTLM" in line or "Password" in line:
                         password = line.split(":", 1)[1].strip()
-                except:
+                except Exception:
                     pass
 
             if username != "" and password != "" and password != "(null)":
-
                 sid = ""
 
                 # substitute the FQDN in if it matches
@@ -512,7 +503,6 @@ def parse_mimikatz(data):
         #   happens on domain controller hashdumps
         for x in range(8, 13):
             if lines[x].startswith(b"Domain :"):
-
                 domain, sid, krbtgtHash = b"", b"", b""
 
                 try:
@@ -541,7 +531,7 @@ def parse_mimikatz(data):
                                 sid.decode("UTF-8"),
                             )
                         )
-                except Exception as e:
+                except Exception:
                     pass
 
     if len(creds) == 0:
@@ -636,7 +626,7 @@ def lhost():
                         struct.pack("256s", ifname[:15].encode("UTF-8")),
                     )[20:24]
                 )
-            except IOError as e:
+            except IOError:
                 return ""
 
     ip = ""
@@ -644,8 +634,8 @@ def lhost():
         ip = socket.gethostbyname(socket.gethostname())
     except socket.gaierror:
         pass
-    except:
-        print("Unexpected error:", sys.exc_info()[0])
+    except Exception:
+        log.error("Unexpected error:", exc_info=True)
         return ip
 
     if (ip == "" or ip.startswith("127.")) and os.name != "nt":
@@ -656,8 +646,8 @@ def lhost():
                     ip = get_interface_ip(ifname)
                     if ip != "":
                         break
-                except:
-                    print("Unexpected error:", sys.exc_info()[0])
+                except Exception:
+                    log.error("Unexpected error:", exc_info=True)
                     pass
     return ip
 
@@ -766,66 +756,6 @@ def encode_base64(data):
     return base64.encodebytes(data).strip()
 
 
-def complete_path(text, line, arg=False):
-    """
-    Helper for tab-completion of file paths.
-    """
-
-    # stolen from dataq at
-    #   http://stackoverflow.com/questions/16826172/filename-tab-completion-in-cmd-cmd-of-python
-
-    if arg:
-        # if we have "command something path"
-        argData = line.split()[1:]
-    else:
-        # if we have "command path"
-        argData = line.split()[0:]
-
-    if not argData or len(argData) == 1:
-        completions = os.listdir("./")
-    else:
-        dir, part, base = argData[-1].rpartition("/")
-        if part == "":
-            dir = "./"
-        elif dir == "":
-            dir = "/"
-
-        completions = []
-        for f in os.listdir(dir):
-            if f.startswith(base):
-                if os.path.isfile(os.path.join(dir, f)):
-                    completions.append(f)
-                else:
-                    completions.append(f + "/")
-
-    return completions
-
-
-def dict_factory(cursor, row):
-    """
-    Helper that returns the SQLite query results as a dictionary.
-
-    From Colin Burnett: http://stackoverflow.com/questions/811548/sqlite-and-python-return-a-dictionary-using-fetchone
-    """
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
-
-
-def get_module_source_files():
-    """
-    Get the filepaths of PowerShell module_source files located
-    in the data/module_source directory.
-    """
-    paths = []
-    pattern = "*.ps1"
-    for root, dirs, files in os.walk("empire/server/data/module_source"):
-        for filename in fnmatch.filter(files, pattern):
-            paths.append(os.path.join(root, filename))
-    return paths
-
-
 class KThread(threading.Thread):
     """
     A subclass of threading.Thread, with a kill() method.
@@ -867,4 +797,4 @@ class KThread(threading.Thread):
 def slackMessage(slack_webhook_url, slack_text):
     message = {"text": slack_text}
     req = urllib.request.Request(slack_webhook_url, json.dumps(message).encode("UTF-8"))
-    resp = urllib.request.urlopen(req)
+    urllib.request.urlopen(req)

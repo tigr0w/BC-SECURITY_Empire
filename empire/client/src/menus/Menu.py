@@ -1,7 +1,10 @@
 from prompt_toolkit.completion import Completion
 
 from empire.client.src.utils import print_util, table_util
-from empire.client.src.utils.autocomplete_util import filtered_search_list
+from empire.client.src.utils.autocomplete_util import (
+    filtered_search_list,
+    position_util,
+)
 from empire.client.src.utils.cli_util import command
 
 
@@ -52,10 +55,14 @@ class Menu(object):
         The default completion method. A menu should implement its own get_completion method
         for autocompleting its own commands and then use this as a fallback for autocompleting the globals.
         """
-        word_before_cursor = document.get_word_before_cursor()
-        for word in filtered_search_list(word_before_cursor, self.autocomplete()):
-            if word.startswith(word_before_cursor):
-                yield Completion(word, start_position=-len(word_before_cursor))
+        if cmd_line[0] in ["help"] and position_util(cmd_line, 2, word_before_cursor):
+            for option in filtered_search_list(word_before_cursor, self._cmd_registry):
+                yield Completion(option, start_position=-len(word_before_cursor))
+
+        elif position_util(cmd_line, 1, word_before_cursor):
+            for word in filtered_search_list(word_before_cursor, self.autocomplete()):
+                if word.startswith(word_before_cursor):
+                    yield Completion(word, start_position=-len(word_before_cursor))
 
     def on_enter(self, **kwargs) -> bool:
         """
@@ -113,7 +120,7 @@ class Menu(object):
                     getattr(self, name).__doc__.split("\n")[3].lstrip()[7:], width=40
                 )
                 help_list.append([name, description, usage])
-            except:
+            except Exception:
                 continue
 
         help_list.insert(0, ["Name", "Description", "Usage"])

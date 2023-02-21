@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import base64
+import logging
 import os
 import socket
 import subprocess
@@ -8,18 +9,25 @@ import time
 
 import empire.server.common.helpers as helpers
 from empire.server.common.plugins import Plugin
+from empire.server.core.plugin_service import PluginService
+
+log = logging.getLogger(__name__)
 
 
 class Plugin(Plugin):
-    description = "Empire C# server plugin."
-
     def onLoad(self):
-        print(helpers.color("[*] Loading Empire C# server plugin"))
         self.main_menu = None
         self.csharpserver_proc = None
+        self.thread = None
         self.info = {
             "Name": "csharpserver",
-            "Author": ["@Cx01N"],
+            "Authors": [
+                {
+                    "Name": "Anthony Rose",
+                    "Handle": "@Cx01N",
+                    "Link": "https://twitter.com/Cx01N_",
+                }
+            ],
             "Description": ("Empire C# server for agents."),
             "Software": "",
             "Techniques": [""],
@@ -41,11 +49,11 @@ class Plugin(Plugin):
 
     def execute(self, command):
         try:
-            results = self.do_csharpserver("")
+            results = self.do_csharpserver(command)
             return results
         except Exception as e:
-            print(e)
-            self.main_menu.plugin_socketio_message(self.info["Name"], f"[!] {e}")
+            log.error(e)
+            self.plugin_service.plugin_socketio_message(self.info["Name"], f"[!] {e}")
             return False
 
     def get_commands(self):
@@ -56,42 +64,30 @@ class Plugin(Plugin):
         any modifications to the mainMenu go here - e.g.
         registering functions to be run by user commands
         """
-        mainMenu.__class__.do_csharpserver = self.do_csharpserver
         self.installPath = mainMenu.installPath
         self.main_menu = mainMenu
+        self.plugin_service: PluginService = mainMenu.pluginsv2
 
-    def do_csharpserver(self, *args):
+    def do_csharpserver(self, command):
         """
         Check if the Empire C# server is already running.
         """
-        if len(args[0]) > 0:
-            self.start = args[0]
-        else:
-            self.start = self.options["status"]["Value"]
+        self.start = command["status"]
 
         if not self.csharpserver_proc or self.csharpserver_proc.poll():
             self.status = "OFF"
         else:
             self.status = "ON"
 
-        if not args:
-            self.main_menu.plugin_socketio_message(
-                self.info["Name"],
-                "[*] Empire C# server is currently: %s" % self.status,
-            )
-            self.main_menu.plugin_socketio_message(
-                self.info["Name"], "[!] Empire C# <start|stop> <port>"
-            )
-
-        elif self.start == "stop":
+        if self.start == "stop":
             if self.status == "ON":
                 self.csharpserver_proc.kill()
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[*] Stopping Empire C# server"
                 )
                 self.status = "OFF"
             else:
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Empire C# server is already stopped"
                 )
 
@@ -105,11 +101,9 @@ class Plugin(Plugin):
                 # If dll hasn't been built yet
                 if not os.path.exists(server_dll):
                     csharp_cmd = ["dotnet", "build", self.installPath + "/csharp/"]
-                    self.csharpserverbuild_proc = subprocess.Popen(csharp_cmd)
-                    time.sleep(10)
-                    self.csharpserverbuild_proc.kill()
+                    self.csharpserverbuild_proc = subprocess.call(csharp_cmd)
 
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[*] Starting Empire C# server"
                 )
                 csharp_cmd = [
@@ -122,13 +116,13 @@ class Plugin(Plugin):
                 )
                 self.status = "ON"
             else:
-                self.main_menu.plugin_socketio_message(
+                self.plugin_service.plugin_socketio_message(
                     self.info["Name"], "[!] Empire C# server is already started"
                 )
 
-            thread = helpers.KThread(target=self.thread_csharp_responses, args=())
-            thread.daemon = True
-            thread.start()
+            self.thread = helpers.KThread(target=self.thread_csharp_responses, args=())
+            self.thread.daemon = True
+            self.thread.start()
 
     def thread_csharp_responses(self):
         while True:
@@ -138,7 +132,7 @@ class Plugin(Plugin):
                 return
             output = output.rstrip()
             if output:
-                print(helpers.color("[*] " + output.decode("UTF-8")))
+                log.info(output.decode("UTF-8"))
 
     def do_send_message(self, compiler_yaml, task_name, confuse=False):
         bytes_yaml = compiler_yaml.encode("UTF-8")
@@ -164,7 +158,7 @@ class Plugin(Plugin):
         if recv_message.startswith("FileName:"):
             file_name = recv_message.split(":")[1]
         else:
-            self.main_menu.plugin_socketio_message(
+            self.plugin_service.plugin_socketio_message(
                 self.info["Name"], ("[*] " + recv_message)
             )
             file_name = "failed"
@@ -197,7 +191,7 @@ class Plugin(Plugin):
         if recv_message.startswith("FileName:"):
             file_name = recv_message.split(":")[1]
         else:
-            self.main_menu.plugin_socketio_message(
+            self.plugin_service.plugin_socketio_message(
                 self.info["Name"], ("[*] " + recv_message)
             )
             file_name = "failed"

@@ -1,9 +1,14 @@
 name: Chainbreaker
 authors:
-  - '@n0fate'
-  - '@Killswitch-GUI'
+  - name: ''
+    handle: '@n0fate'
+    link: ''
+  - name: ''
+    handle: '@Killswitch-GUI'
+    link: ''
 description: A keychain dump module that allows for decryption via known password.
 software: ''
+tactics: []
 techniques:
   - T1142
 background: false
@@ -27,7 +32,7 @@ options:
     description: Known user password to attempt to decrypt the Keychain.
     required: true
     value: ''
-script: |
+script: |-
   # http://web.mit.edu/darwin/src/modules/Security/cdsa/cdsa/cssmtype.h
   KEY_TYPE = {
       0x00+0x0F : 'CSSM_KEYCLASS_PUBLIC_KEY',

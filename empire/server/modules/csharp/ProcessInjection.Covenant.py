@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-import base64
-import pathlib
 from builtins import object, str
 from typing import Dict
 
@@ -9,8 +7,7 @@ import donut
 import yaml
 
 from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -18,12 +15,11 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # staging options
         listener_name = params["Listener"]
         pid = params["pid"]
@@ -33,7 +29,7 @@ class Module(object):
         launcher_obfuscation_command = params["ObfuscateCommand"]
         language = params["Language"]
         dot_net_version = params["DotNetVersion"].lower()
-        parentproc = params["parentproc"]
+        params["parentproc"]
         arch = params["Architecture"]
         launcher_obfuscation = params["Obfuscate"]
 
@@ -46,7 +42,7 @@ class Module(object):
             language=language,
             encode=False,
             obfuscate=launcher_obfuscation,
-            obfuscationCommand=launcher_obfuscation_command,
+            obfuscation_command=launcher_obfuscation_command,
             userAgent=user_agent,
             proxy=proxy,
             proxyCreds=proxy_creds,
@@ -82,7 +78,7 @@ class Module(object):
 
         base64_shellcode = helpers.encode_base64(shellcode).decode("UTF-8")
 
-        compiler = main_menu.loadedPlugins.get("csharpserver")
+        compiler = main_menu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":
             return None, "csharpserver plugin not running"
 
@@ -94,7 +90,7 @@ class Module(object):
         compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
 
         file_name = compiler.do_send_message(
-            compiler_yaml, module.name, confuse=main_menu.obfuscate
+            compiler_yaml, module.name, confuse=obfuscate
         )
         if file_name == "failed":
             return None, "module compile failed"

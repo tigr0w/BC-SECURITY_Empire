@@ -1,9 +1,12 @@
 name: Invoke-Vnc
 authors:
-  - '@n00py'
-description: Invoke-Vnc executes a VNC agent in-memory and initiates a reverse connection,
-  or binds to a specified port. Password authentication is supported.
+  - name: ''
+    handle: '@n00py'
+    link: https://twitter.com/n00py1
+description: Invoke-Vnc executes a VNC agent in-memory and initiates a reverse connection, or binds to a specified port. Password
+  authentication is supported.
 software: ''
+tactics: []
 techniques:
   - T1021
 background: true
@@ -35,5 +38,5 @@ options:
     description: IP Address to use for reverse connection.
     required: false
     value: ''
-script_path: 'management/Invoke-Vnc.ps1'
+script_path: management/Invoke-Vnc.ps1
 script_end: Invoke-Vnc {{ PARAMS }}

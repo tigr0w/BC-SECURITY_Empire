@@ -1,6 +1,8 @@
 name: Liberman
 authors:
-  - '@Hubbl3'
+  - name: Jake Krasnov
+    handle: '@Hubbl3'
+    link: https://twitter.com/_hubbl3
 description: |
   Modified version of the AMSIscan buffer pathcing method presetned by Tal Liberman at BlackHat 2018. Includes influence
   from Turla powershell implmentation to better model their TTPs. This disables AMSI both within the powershell and

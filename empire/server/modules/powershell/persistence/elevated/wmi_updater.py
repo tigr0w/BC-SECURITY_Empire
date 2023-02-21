@@ -1,13 +1,11 @@
 from __future__ import print_function
 
 import os
-import pathlib
 from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -15,17 +13,15 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # trigger options
         daily_time = params["DailyTime"]
         day = params["Day"]
         day_of_week = params["DayOfWeek"]
-        at_startup = params["AtStartup"]
         sub_name = params["SubName"]
         dummy_sub_name = "_" + sub_name
 
@@ -36,7 +32,6 @@ class Module(object):
         web_file = params["WebFile"]
 
         status_msg = ""
-        location_string = ""
 
         if cleanup.lower() == "true":
             # commands to remove the WMI filter and subscription
@@ -74,7 +69,7 @@ class Module(object):
                 "'WMI persistence with subscription named " + sub_name + " removed.'"
             )
 
-            script = main_menu.modules.finalize_module(
+            script = main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
@@ -121,7 +116,6 @@ class Module(object):
         )
 
         if daily_time != "" or day != "" or day_of_week != "":
-
             # add DailyTime to event filter
             parts = daily_time.split(":")
 
@@ -221,7 +215,7 @@ class Module(object):
 
         script += "'WMI persistence established " + status_msg + "'"
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,

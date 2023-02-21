@@ -1,9 +1,12 @@
+import logging
 from typing import List
 
 from terminaltables import SingleTable
 
 import empire.client.src.utils.print_util as print_utils
 from empire.client.src.EmpireCliConfig import empire_config
+
+log = logging.getLogger(__name__)
 
 
 def print_table(

@@ -7,10 +7,15 @@ from empire.server.common import helpers
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "macho",
-            "Author": ["@xorrior"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                }
+            ],
             "Description": "Generates a macho executable.",
             "Comments": [""],
         }
@@ -61,11 +66,9 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
-        save_path = self.options["OutFile"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
         safe_checks = self.options["SafeChecks"]["Value"]
 

@@ -1,4 +1,4 @@
-import string
+import logging
 
 from prompt_toolkit.completion import Completion
 
@@ -10,6 +10,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -26,15 +28,15 @@ class AgentMenu(Menu):
                 yield Completion(agent, start_position=-len(word_before_cursor))
             yield Completion("all", start_position=-len(word_before_cursor))
             yield Completion("stale", start_position=-len(word_before_cursor))
-        elif cmd_line[0] in ["clear", "rename"] and position_util(
+        elif cmd_line[0] in ["rename"] and position_util(
             cmd_line, 2, word_before_cursor
         ):
             for agent in filtered_search_list(word_before_cursor, state.agents.keys()):
                 yield Completion(agent, start_position=-len(word_before_cursor))
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self):
         self.list()
@@ -50,23 +52,27 @@ class AgentMenu(Menu):
         agent_list = []
         agent_formatting = []
         for agent in state.get_agents().values():
-            agent_list.append(
-                [
-                    str(agent["ID"]),
-                    agent["name"],
-                    agent["language"],
-                    agent["internal_ip"],
-                    print_util.text_wrap(agent["username"]),
-                    print_util.text_wrap(agent["process_name"], width=20),
-                    agent["process_id"],
-                    str(agent["delay"]) + "/" + str(agent["jitter"]),
-                    print_util.text_wrap(
-                        date_util.humanize_datetime(agent["lastseen_time"]), width=25
-                    ),
-                    agent["listener"],
-                ]
-            )
-            agent_formatting.append([agent["stale"], agent["high_integrity"]])
+            if (
+                state.hide_stale_agents and not agent["stale"]
+            ) or not state.hide_stale_agents:
+                agent_list.append(
+                    [
+                        agent["session_id"],
+                        agent["name"],
+                        agent["language"],
+                        agent["internal_ip"],
+                        print_util.text_wrap(agent["username"]),
+                        print_util.text_wrap(agent["process_name"], width=20),
+                        agent["process_id"],
+                        str(agent["delay"]) + "/" + str(agent["jitter"]),
+                        print_util.text_wrap(
+                            date_util.humanize_datetime(agent["lastseen_time"]),
+                            width=25,
+                        ),
+                        agent["listener"],
+                    ]
+                )
+                agent_formatting.append([agent["stale"], agent["high_integrity"]])
 
         agent_formatting.insert(0, ["Stale", "High Integrity"])
         agent_list.insert(
@@ -108,7 +114,7 @@ class AgentMenu(Menu):
                     self.kill_agent(agent_name)
             elif agent_name == "stale":
                 for agent_name, agent in state.get_agents().items():
-                    if agent["stale"] == True:
+                    if agent["stale"] is True:
                         self.kill_agent(agent_name)
             else:
                 self.kill_agent(agent_name)
@@ -116,37 +122,40 @@ class AgentMenu(Menu):
             return
 
     @command
-    def clear(self, agent_name: str) -> None:
+    def hide(self) -> None:
         """
-        Clear tasks for selected listener
+        Hide stale agents from list
 
-        Usage: clear <agent_name>
+        Usage: hide
         """
-        state.clear_agent(agent_name)
+        state.hide_stale_agents = True
+        log.info("Stale agents now hidden")
+        # todo: add other hide options and add to config file
 
     @command
     def rename(self, agent_name: str, new_agent_name: str) -> None:
         """
-        Rename selected listener
+        Rename selected agent
 
         Usage: rename <agent_name> <new_agent_name>
         """
-        state.rename_agent(agent_name, new_agent_name)
+        options = state.agents[agent_name]
+        options["name"] = new_agent_name
+
+        response = state.update_agent(options["session_id"], options)
+        if "session_id" in response:
+            log.info("Agent successfully renamed to " + new_agent_name)
+        elif "detail" in response:
+            log.error(response["detail"])
 
     @staticmethod
     def kill_agent(agent_name: str) -> None:
-        kill_response = state.kill_agent(agent_name)
-        if "success" in kill_response.keys():
-            print(print_util.color("[*] Kill command sent to agent " + agent_name))
-            remove_response = state.remove_agent(agent_name)
-            if "success" in remove_response.keys():
-                print(
-                    print_util.color("[*] Removed agent " + agent_name + " from list")
-                )
-            elif "error" in remove_response.keys():
-                print(print_util.color("[!] Error: " + remove_response["error"]))
-        elif "error" in kill_response.keys():
-            print(print_util.color("[!] Error: " + kill_response["error"]))
+        session_id = state.agents[agent_name]["session_id"]
+        response = state.kill_agent(session_id)
+        if response.status_code == 201:
+            log.info("Kill command sent to agent " + agent_name)
+        elif "detail" in response:
+            log.error(response["detail"])
 
 
 def trunc(value: str = "", limit: int = 1) -> str:

@@ -18,11 +18,10 @@ Includes:
     DiffieHellman()             -   Mark Loiseau's DiffieHellman implementation, see ./data/licenses/ for license info
 
 """
-from __future__ import print_function
-
 import base64
 import hashlib
 import hmac
+import logging
 import os
 import random
 import string
@@ -36,28 +35,17 @@ from Crypto.Util import number
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+log = logging.getLogger(__name__)
+
 
 def to_bufferable(binary):
-    return binary
+    if isinstance(binary, bytes):
+        return binary
+    return bytes(ord(b) for b in binary)
 
 
 def _get_byte(c):
-    return ord(c)
-
-
-# Python 3 compatibility stuffz
-try:
-    xrange
-except Exception:
-    xrange = range
-
-    def to_bufferable(binary):
-        if isinstance(binary, bytes):
-            return binary
-        return bytes(ord(b) for b in binary)
-
-    def _get_byte(c):
-        return c
+    return c
 
 
 # If a secure random number generator is unavailable, exit with an error.
@@ -66,7 +54,7 @@ try:
 
     random_function = ssl.RAND_bytes
     random_provider = "Python SSL"
-except:
+except Exception:
     random_function = os.urandom
     random_provider = "os.urandom"
 
@@ -117,7 +105,7 @@ def rsa_xml_to_key(xml):
 
         return key
     # if there's an XML parsing error, return None
-    except:
+    except Exception:
         return None
 
 
@@ -220,7 +208,6 @@ def generate_aes_key():
     """
     Generate a random new 128-bit AES key using OS' secure Random functions.
     """
-    punctuation = "!#$%&()*+,-./:;<=>?@[\]^_`{|}~"
     rng = random.SystemRandom()
     return "".join(
         rng.sample(
@@ -284,13 +271,13 @@ class DiffieHellman(object):
 
         # Sanity check fors generator and keyLength
         if generator not in valid_generators:
-            print("Error: Invalid generator. Using default.")
+            log.error("Error: Invalid generator. Using default.")
             self.generator = default_generator
         else:
             self.generator = generator
 
         if keyLength < min_keyLength:
-            print("Error: keyLength is too small. Setting to minimum.")
+            log.error("Error: keyLength is too small. Setting to minimum.")
             self.keyLength = min_keyLength
         else:
             self.keyLength = keyLength
@@ -318,7 +305,7 @@ class DiffieHellman(object):
         if group in list(primes.keys()):
             return primes[group]
         else:
-            print("Error: No prime with group %i. Using default." % group)
+            log.error(f"Error: No prime with group {group:d}. Using default.")
             return primes[default_group]
 
     def genRandom(self, bits):
@@ -332,7 +319,7 @@ class DiffieHellman(object):
             try:
                 # Python 3
                 _rand = int.from_bytes(random_function(_bytes), byteorder="big")
-            except:
+            except Exception:
                 # Python 2
                 _rand = int(random_function(_bytes).encode("hex"), 16)
 

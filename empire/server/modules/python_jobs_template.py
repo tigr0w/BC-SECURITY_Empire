@@ -3,15 +3,15 @@ from builtins import object
 
 class Module(object):
     def __init__(self, mainMenu, params=[]):
-
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
             "Name": "Background Example",
             # list of one or more authors for the module
-            "Author": ["@Killswitch-GUI"],
+            "Authors": ["@Killswitch-GUI"],
             "Software": "SXXXX",
             "Techniques": ["TXXXX", "TXXXX"],
+            "Tactics": ["TAXXXX", "TAXXXX"],
             # more verbose multi-line description of the module
             "Description": (
                 "A quick example how to feed your data to a background job."
@@ -60,7 +60,6 @@ class Module(object):
                     self.options[option]["Value"] = value
 
     def generate(self):
-
         script = """
 x = 0
 while True:

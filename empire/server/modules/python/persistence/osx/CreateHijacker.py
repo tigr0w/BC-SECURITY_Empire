@@ -2,19 +2,18 @@ import base64
 from builtins import object
 from typing import Dict, Optional, Tuple
 
-from empire.server.common.module_models import PydanticModule
+from empire.server.core.module_models import EmpireModule
 
 
 class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
-
         # the Python script itself, with the command to invoke
         #   for execution appended to the end. Scripts should output
         #   everything to the pipeline for proper parsing.

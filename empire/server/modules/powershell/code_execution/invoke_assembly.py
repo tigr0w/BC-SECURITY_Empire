@@ -1,13 +1,10 @@
 from __future__ import print_function
 
-import base64
-import pathlib
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -15,12 +12,11 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         # Helper function for arguments
         def parse_assembly_args(args):
             stringlist = []
@@ -50,7 +46,7 @@ class Module(object):
             return f'"{argument_string}"'
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(
+        script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
@@ -60,14 +56,13 @@ class Module(object):
             return handle_error_message(err)
 
         try:
-            with open(f"{main_menu.directory['downloads']}{params['File']}", "rb") as f:
-                assembly_data = f.read()
-        except:
+            encode_assembly = main_menu.downloadsv2.get_all(
+                SessionLocal(), None, params["File"]
+            )[0][0].get_base64_file()
+        except Exception:
             return handle_error_message(
                 "[!] Could not read .NET assembly path at: " + str(params["Arguments"])
             )
-
-        encode_assembly = helpers.encode_base64(assembly_data).decode("UTF-8")
 
         # Do some parsing on the operator's arguments so it can be formatted for Powershell
         if params["Arguments"] != "":
@@ -78,7 +73,7 @@ class Module(object):
         if params["Arguments"] != "":
             script_end += " -" + "Arguments" + " " + assembly_args
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,

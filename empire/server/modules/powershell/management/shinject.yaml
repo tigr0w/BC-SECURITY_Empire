@@ -1,10 +1,17 @@
 name: Shinject
 authors:
-  - '@xorrior'
-  - '@mattefistation'
-  - '@monogas'
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+  - name: ''
+    handle: '@mattefistation'
+    link: ''
+  - name: ''
+    handle: '@monogas'
+    link: ''
 description: Injects a PIC shellcode payload into a target process, via Invoke-Shellcode
 software: ''
+tactics: []
 techniques:
   - T1055
 background: true
@@ -34,8 +41,7 @@ options:
     required: true
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: Proxy
@@ -43,10 +49,9 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
     required: false
     value: default
-script_path: 'code_execution/Invoke-Shellcode.ps1'
+script_path: code_execution/Invoke-Shellcode.ps1
 advanced:
   custom_generate: true

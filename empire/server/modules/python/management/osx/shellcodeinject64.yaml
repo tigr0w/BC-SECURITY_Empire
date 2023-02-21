@@ -1,11 +1,21 @@
 name: Shellcode Inject x64
 authors:
-  - '@xorrior'
-  - '@midnite_runr'
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+  - name: ''
+    handle: '@midnite_runr'
+    link: ''
 description: Inject shellcode into a x64 bit process
 software: ''
+tactics:
+  - TA0002
+  - TA0005
+  - TA0004
 techniques:
-  - T1064
+  - T1059
+  - T1055
+  - T1055.001
 background: false
 output_extension:
 needs_admin: true

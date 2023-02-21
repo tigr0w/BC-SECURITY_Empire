@@ -1,22 +1,19 @@
 from builtins import object
 from typing import Dict, Optional, Tuple
 
-from empire.server.common.module_models import PydanticModule
+from empire.server.core.module_models import EmpireModule
 
 
 class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
-
         plist_name = params["PLISTName"]
-        programname = "~/Library/LaunchAgents"
-        plistfilename = "%s.plist" % plist_name
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]
         safe_checks = params["SafeChecks"]

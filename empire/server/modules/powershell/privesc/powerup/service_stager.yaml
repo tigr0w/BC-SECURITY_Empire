@@ -1,8 +1,11 @@
 name: Invoke-ServiceAbuse
 authors:
-  - '@harmj0y'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
 description: Modifies a target service to execute an Empire stager.
 software: S0194
+tactics: []
 techniques:
   - T1087
   - T1038
@@ -32,8 +35,7 @@ options:
     required: true
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: Proxy
@@ -41,10 +43,9 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
     required: false
     value: default
-script_path: 'privesc/PowerUp.ps1'    
+script_path: privesc/PowerUp.ps1
 advanced:
   custom_generate: true

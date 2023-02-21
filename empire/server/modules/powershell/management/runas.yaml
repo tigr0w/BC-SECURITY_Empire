@@ -1,8 +1,11 @@
 name: Invoke-RunAs
 authors:
-  - rvrsh3ll (@424f424f)
+  - name: rvrsh3ll (@424f424f)
+    handle: ''
+    link: ''
 description: Runas knockoff. Will bypass GPO path restrictions.
 software: ''
+tactics: []
 techniques:
   - T1088
 background: false
@@ -46,6 +49,6 @@ options:
     description: Switch. Show the window for the created process instead of hiding it.
     required: false
     value: ''
-script_path: 'management/Invoke-RunAs.ps1'
+script_path: management/Invoke-RunAs.ps1
 advanced:
   custom_generate: true

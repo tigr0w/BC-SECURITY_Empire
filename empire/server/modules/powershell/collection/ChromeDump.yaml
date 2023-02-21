@@ -1,9 +1,11 @@
 name: Get-ChromeDump
 authors:
-  - '@xorrior'
-description: This module will decrypt passwords saved in chrome and display them in
-  the console.
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+description: This module will decrypt passwords saved in chrome and display them in the console.
 software: ''
+tactics: []
 techniques:
   - T1503
 background: true
@@ -26,7 +28,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: true
     suggested_values:
       - Out-String
@@ -34,5 +36,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'collection/Get-ChromeDump.ps1'
+script_path: collection/Get-ChromeDump.ps1
 script_end: Get-ChromeDump {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-ChromeDump completed'

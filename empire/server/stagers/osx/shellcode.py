@@ -7,10 +7,15 @@ from empire.server.common import helpers
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "Shellcode launcher",
-            "Author": ["@johneiser"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@johneiser",
+                    "Link": "",
+                },
+            ],
             "Description": "Generate an osx shellcode launcher",
             "Comments": ["Shellcode contains NULL bytes, may need to be encoded."],
         }
@@ -69,12 +74,10 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         arch = self.options["Architecture"]["Value"]
-        save_path = self.options["OutFile"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
         safe_checks = self.options["SafeChecks"]["Value"]
 

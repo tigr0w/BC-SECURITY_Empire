@@ -1,9 +1,14 @@
 name: Get-SiteListPassword
 authors:
-  - '@harmj0y'
-  - '@funoverip'
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: ''
+    handle: '@funoverip'
+    link: ''
 description: Retrieves the plaintext passwords for found McAfee's SiteList.xml files.
 software: ''
+tactics: []
 techniques:
   - T1003
 background: true
@@ -22,7 +27,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String
@@ -30,5 +35,5 @@ options:
       - ConvertTo-Csv
       - ConvertTo-Html
       - ConvertTo-Xml
-script_path: 'privesc/Get-SiteListPassword.ps1'
+script_path: privesc/Get-SiteListPassword.ps1
 script_end: Get-SiteListPassword {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SiteListPassword completed'

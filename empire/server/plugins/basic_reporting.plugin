@@ -1,0 +1,133 @@
+import csv
+import threading
+
+from empire.server.common.plugins import Plugin
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.plugin_service import PluginService
+
+
+class Plugin(Plugin):
+    def onLoad(self):
+        self.info = {
+            "Name": "basic_reporting",
+            "Authors": [
+                {
+                    "Name": "Vincent Rose",
+                    "Handle": "@vinnybod",
+                    "Link": "https://github.com/vinnybod",
+                }
+            ],
+            "Description": "Generates credentials.csv, sessions.csv, and master.log. Writes to server/data directory.",
+            "Software": "",
+            "Techniques": [],
+            "Comments": [],
+        }
+
+        self.options = {
+            "report": {
+                "Description": "Reports to generate.",
+                "Required": True,
+                "Value": "all",
+                "SuggestedValues": ["session", "credential", "log", "all"],
+                "Strict": True,
+            }
+        }
+        self.lock = threading.Lock()
+        self.install_path = ""
+
+    def execute(self, command):
+        """
+        Parses commands from the API
+        """
+        try:
+            report = command["report"]
+
+            if report == "session":
+                self.session_report()
+            elif report == "credential":
+                self.credential_report()
+            elif report == "log":
+                self.generate_report()
+            elif report == "all":
+                self.session_report()
+                self.credential_report()
+                self.generate_report()
+            return True
+        except:
+            return False
+
+    def register(self, mainMenu):
+        """
+        Any modifications to the mainMenu go here - e.g.
+        registering functions to be run by user commands
+        """
+        self.install_path = mainMenu.installPath
+        self.main_menu = mainMenu
+        self.plugin_service: PluginService = mainMenu.pluginsv2
+
+    def session_report(self):
+        path = self.install_path + "/data/sessions.csv"
+        with self.lock:
+            with SessionLocal() as db:
+                with open(path, "w") as f:
+                    out = csv.writer(f)
+                    out.writerow(["SessionID", "Hostname", "User Name", "First Check-in"])
+
+                    for row in db.query(models.Agent).all():
+                        out.writerow([row.session_id, row.hostname, row.username, row.checkin_time])
+        self.plugin_service.plugin_socketio_message(
+            self.info["Name"],
+            f"[*] Session report generated to {path}",
+        )
+
+    def credential_report(self):
+        path = self.install_path + "/data/credentials.csv"
+        with self.lock:
+            with SessionLocal() as db:
+                with open(path, "w") as f:
+                    out = csv.writer(f)
+                    out.writerow(["Domain", "Username", "Host", "Cred Type", "Password"])
+
+                    for row in db.query(models.Credential).all():
+                        out.writerow([row.domain, row.username, row.host, row.credtype, row.password])
+        self.plugin_service.plugin_socketio_message(
+            self.info["Name"],
+            f"[*] Credential report generated to {path}",
+        )
+
+    def generate_report(self):
+        path = self.install_path + "/data/master.log"
+        with self.lock:
+            with SessionLocal() as db:
+                with open(path, "w") as f:
+                    f.write("Empire Master Taskings & Results Log by timestamp\n")
+                    f.write("=" * 50 + "\n\n")
+                    for row in db.query(models.Tasking).all():
+                        row: models.Tasking
+                        f.write(
+                            f"\n{xstr(row.created_at)} - {xstr(row.id)} ({xstr(row.agent_id)})> "
+                            f"{xstr(row.user.username)}\n {xstr(row.input)}\n {xstr(row.output)}\n"
+                        )
+        self.plugin_service.plugin_socketio_message(
+            self.info["Name"],
+            f"[*] Master log successfully generated to {path}"
+        )
+
+    def shutdown(self):
+        """
+        Kills additional processes that were spawned
+        """
+        # If the plugin spawns a process provide a shutdown method for when Empire exits else leave it as pass
+        pass
+
+
+def xstr(s):
+    """
+    Safely cast to a string with a handler for None
+    """
+    if s is None:
+        return ""
+    if isinstance(s, bytes):
+        return s.decode("utf-8")
+    return str(s)

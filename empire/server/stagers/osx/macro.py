@@ -8,10 +8,30 @@ from empire.server.common import helpers
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "AppleScript",
-            "Author": ["@harmj0y", "@dchrastil", "@import-au"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@dchrastil",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@DisK0nn3cT",
+                    "Link": "",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@import-au",
+                    "Link": "",
+                },
+            ],
             "Description": "An OSX office macro that supports newer versions of Office.",
             "Comments": [
                 "http://stackoverflow.com/questions/6136798/vba-shell-function-in-office-2011-for-mac"
@@ -86,7 +106,6 @@ class Stager(object):
             return str1
 
         # extract all of our options
-        language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
         safe_checks = self.options["SafeChecks"]["Value"]

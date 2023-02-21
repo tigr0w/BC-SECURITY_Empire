@@ -1,8 +1,11 @@
 name: Invoke-DownloadFile
 authors:
-  - Cx01N
+  - name: Cx01N
+    handle: ''
+    link: ''
 description: Download files from the internet through PowerShell.
 software: ''
+tactics: []
 techniques:
   - T1544
 background: true
@@ -22,5 +25,5 @@ options:
     description: Remote directory to download file from.
     required: true
     value: ''
-script_path: 'management/Invoke-DownloadFile.ps1'
+script_path: management/Invoke-DownloadFile.ps1
 script_end: Invoke-DownloadFile {{ PARAMS }}

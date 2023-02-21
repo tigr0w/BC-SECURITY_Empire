@@ -7,10 +7,15 @@ from empire.server.common import helpers
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "TeensyLauncher",
-            "Author": ["Matt @matterpreter Hand"],
+            "Authors": [
+                {
+                    "Name": "Matt Hand",
+                    "Handle": "@matterpreter",
+                    "Link": "https://twitter.com/matterpreter",
+                },
+            ],
             "Description": "Generates a Teensy script that runs a one-liner stage0 launcher for Empire.",
             "Comments": [""],
         }
@@ -62,7 +67,6 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]

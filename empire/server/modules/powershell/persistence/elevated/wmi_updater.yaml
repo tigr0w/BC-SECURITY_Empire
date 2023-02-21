@@ -1,12 +1,20 @@
 name: Invoke-WMI
 authors:
-  - '@mattifestation'
-  - '@harmj0y'
-  - '@tristandostaler'
-  - '@janit0rjoe'
-description: Persist a stager (or script) using a permanent WMI subscription. This
-  has a difficult detection/removal rating.
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: ''
+    handle: '@tristandostaler'
+    link: ''
+  - name: ''
+    handle: '@janit0rjoe'
+    link: ''
+description: Persist a stager (or script) using a permanent WMI subscription. This has a difficult detection/removal rating.
 software: ''
+tactics: []
 techniques:
   - T1084
 background: false
@@ -38,10 +46,6 @@ options:
     description: Day of week to trigger the script (0-6). Sunday = 0. Optional to DailyTime.
     required: false
     value: ''
-  - name: AtStartup
-    description: Switch. Trigger script (within 5 minutes) of system startup.
-    required: false
-    value: 'True'
   - name: SubName
     description: Name to use for the event subscription.
     required: true

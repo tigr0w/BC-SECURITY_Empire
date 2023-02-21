@@ -1,8 +1,11 @@
 name: Invoke-VoiceTroll
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Reads text aloud via synthesized voice on target.
 software: ''
+tactics: []
 techniques:
   - T1491
 background: true

@@ -7,10 +7,11 @@ import yaml
 
 info_keys = {
     "Name": "name",
-    "Author": "authors",
+    "Authors": "authors",
     "Description": "description",
     "Software": "software",
     "Techniques": "techniques",
+    "Tactics": "tactics",
     "Background": "background",
     "OutputExtension": "output_extension",
     "NeedsAdmin": "needs_admin",
@@ -43,7 +44,7 @@ def format_options(options: Dict) -> Dict:
                 "name": key,
                 "description": value["Description"],
                 "required": value["Required"],
-                "value": value["Value"],  # todo should value really be defaultValue?
+                "value": value["Value"],
             }
         )
 
@@ -52,13 +53,12 @@ def format_options(options: Dict) -> Dict:
 
 if __name__ == "__main__":
     yaml.add_representer(type(None), represent_none)
-    root_path = f"../../modules/python"
+    root_path = "../../modules/python"
     pattern = "*.py"
     count = 0
     for root, dirs, files in os.walk(root_path):
         for filename in fnmatch.filter(files, pattern):
             file_path = os.path.join(root, filename)
-            print(file_path)
 
             # if 'eventvwr' not in file_path and 'seatbelt' not in file_path and 'logonpasswords' not in file_path \
             #         and 'invoke_assembly' not in file_path.lower() and 'sherlock' not in file_path and 'kerberoast' not in file_path \

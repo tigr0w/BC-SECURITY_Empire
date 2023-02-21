@@ -1,8 +1,11 @@
 name: Kerberos inject
 authors:
-  - '@424f424f'
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
 description: Generates a kerberos keytab and injects it into the current runspace.
 software: ''
+tactics: []
 techniques:
   - T1055
 background: false
@@ -30,7 +33,7 @@ options:
     description: NTLM Hash for the principal.
     required: true
     value: ''
-script: |
+script: |-
   import subprocess
   try:
       print("Creating Keytab..")

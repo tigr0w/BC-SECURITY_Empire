@@ -1,9 +1,11 @@
 name: Translate a host name to IPv4 address format using a remote agent.
 authors:
-  - '@TweekFawkes'
-description: Uses Python's socket.gethostbyname("example.com") function to resolve
-  host names on a remote agent.
+  - name: Bryce Kunz
+    handle: '@TweekFawkes'
+    link: https://twitter.com/TweekFawkes
+description: Uses Python's socket.gethostbyname("example.com") function to resolve host names on a remote agent.
 software: ''
+tactics: []
 techniques:
   - T1018
 background: true
@@ -23,7 +25,7 @@ options:
     description: FQDN, domain name, or hostname to lookup using the remote target.
     required: true
     value: ''
-script: |
+script: |-
   import socket
 
   def main(target):

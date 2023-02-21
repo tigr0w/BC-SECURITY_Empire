@@ -1,13 +1,21 @@
 name: ScreensaverAlleyOop
 authors:
-  - '@FuzzyNop'
-  - '@harmj0y'
-  - '@enigma0x3'
-  - '@Killswitch-GUI'
-description: Launches a screensaver with a prompt for credentials with osascript.
-  This locks the user out until the password can unlock the user keychain. This allows
-  you to prevent Sudo/su failed logon attempts. (credentials till I get them!)
+  - name: ''
+    handle: '@FuzzyNop'
+    link: ''
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: ''
+    handle: '@enigma0x3'
+    link: ''
+  - name: ''
+    handle: '@Killswitch-GUI'
+    link: ''
+description: Launches a screensaver with a prompt for credentials with osascript. This locks the user out until the password
+  can unlock the user keychain. This allows you to prevent Sudo/su failed logon attempts. (credentials till I get them!)
 software: ''
+tactics: []
 techniques:
   - T1113
 background: false
@@ -32,7 +40,7 @@ options:
     description: Agent to execute module on.
     required: true
     value: 'False'
-script: |
+script: |-
   import subprocess
   import time
   import sys

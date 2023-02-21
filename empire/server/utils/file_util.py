@@ -14,3 +14,11 @@ def remove_dir_contents(path: str) -> None:
             os.unlink(os.path.join(root, f))
         for d in dirs:
             shutil.rmtree(os.path.join(root, d))
+
+
+def remove_file(path: str) -> None:
+    """
+    Removes a file. If the file doesn't exist, nothing happens.
+    """
+    if os.path.exists(path):
+        os.remove(path)

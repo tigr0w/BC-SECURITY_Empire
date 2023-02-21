@@ -1,8 +1,11 @@
 name: Get-SystemDNSServer
 authors:
-  - DarkOperator
+  - name: DarkOperator
+    handle: ''
+    link: ''
 description: Enumerates the DNS Servers used by a system.
 software: ''
+tactics: []
 techniques:
   - T1482
   - T1018
@@ -22,7 +25,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String

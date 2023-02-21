@@ -1,19 +1,18 @@
 import base64
 from typing import Dict, Optional, Tuple
 
-from empire.server.common.module_models import PydanticModule
+from empire.server.core.module_models import EmpireModule
 
 
 class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ) -> Tuple[Optional[str], Optional[str]]:
-
         daemon_name = params["DaemonName"]
         program_name = daemon_name.split(".")[-1]
         plist_filename = "%s.plist" % daemon_name

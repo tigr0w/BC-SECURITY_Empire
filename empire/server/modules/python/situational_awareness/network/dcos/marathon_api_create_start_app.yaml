@@ -1,8 +1,11 @@
 name: Marathon API Create and Start App
 authors:
-  - '@TweekFawkes'
+  - name: Bryce Kunz
+    handle: '@TweekFawkes'
+    link: https://twitter.com/TweekFawkes
 description: Create and Start a Marathon App using Marathon's REST API
 software: ''
+tactics: []
 techniques:
   - T1106
 background: true
@@ -52,7 +55,7 @@ options:
     description: The number of instances to assign to the app.
     required: true
     value: '1'
-script: |
+script: |-
   import urllib2
 
   target = "{{ Target }}"

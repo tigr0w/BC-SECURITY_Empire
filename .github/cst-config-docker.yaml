@@ -7,4 +7,4 @@ commandTests:
   - name: "python3 version"
     command: "python3"
     args: ["--version"]
-    expectedOutput: ["Python 3.9.*"]
+    expectedOutput: ["Python 3.11.*"]

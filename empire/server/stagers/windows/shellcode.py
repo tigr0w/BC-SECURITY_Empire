@@ -1,19 +1,29 @@
 from __future__ import print_function
 
-import base64
+import logging
 from builtins import object
 
 import donut
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "Shellcode Launcher",
-            "Author": ["@xorrior", "@monogas"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@monogas",
+                    "Link": "",
+                },
+            ],
             "Description": "Generate a windows shellcode stager",
             "Comments": [""],
         }
@@ -89,12 +99,9 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -106,14 +113,12 @@ class Stager(object):
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         stager_retries = self.options["StagerRetries"]["Value"]
         dot_net_version = self.options["DotNetVersion"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-        outfile = self.options["OutFile"]["Value"]
         arch = self.options["Architecture"]["Value"]
 
         if not self.mainMenu.listeners.is_listener_valid(listener_name):
@@ -131,7 +136,7 @@ class Stager(object):
             language=language,
             encode=False,
             obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command,
+            obfuscation_command=obfuscate_command,
             userAgent=user_agent,
             proxy=proxy,
             proxyCreds=proxy_creds,

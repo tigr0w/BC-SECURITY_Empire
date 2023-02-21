@@ -7,10 +7,15 @@ from empire.server.common import helpers
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "Launcher",
-            "Author": ["@424f424f"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@424f424f",
+                    "Link": "https://twitter.com/424f424f",
+                }
+            ],
             "Description": "Generates an HTML payload launcher for Empire.",
             "Comments": ["https://www.exploit-db.com/exploits/38535/"],
         }
@@ -68,7 +73,6 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]

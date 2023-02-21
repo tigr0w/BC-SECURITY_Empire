@@ -1,13 +1,19 @@
 name: Invoke-NetRipper
 authors:
-  - Ionut Popescu (@NytroRST)
-  - '@mattifestation'
-  - '@harmj0y'
-description: Injects NetRipper into targeted processes, which uses API hooking in
-  order to intercept network traffic and encryption related functions from a low privileged
-  user, being able to capture both plain-text traffic and encrypted traffic before
+  - name: Ionut Popescu (@NytroRST)
+    handle: ''
+    link: ''
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Injects NetRipper into targeted processes, which uses API hooking in order to intercept network traffic and encryption
+  related functions from a low privileged user, being able to capture both plain-text traffic and encrypted traffic before
   encryption/after decryption.
 software: ''
+tactics: []
 techniques:
   - T1179
   - T1410
@@ -29,8 +35,7 @@ options:
     required: false
     value: ''
   - name: ProcessName
-    description: Inject the NetRipper dll into all processes with the given name (i.e.
-      putty).
+    description: Inject the NetRipper dll into all processes with the given name (i.e. putty).
     required: false
     value: ''
   - name: LogLocation
@@ -49,5 +54,5 @@ options:
     description: Strings to search for in traffic.
     required: true
     value: user,login,pass,database,config
-script_path: 'collection/Invoke-NetRipper.ps1'
+script_path: collection/Invoke-NetRipper.ps1
 script_end: Invoke-NetRipper {{ PARAMS }}

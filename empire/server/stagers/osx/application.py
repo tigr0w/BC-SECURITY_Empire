@@ -1,16 +1,22 @@
 from __future__ import print_function
 
+import logging
 from builtins import object
 
-from empire.server.common import helpers
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "Application",
-            "Author": ["@xorrior"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                }
+            ],
             "Description": "Generates an Empire Application.",
             "Comments": [""],
         }
@@ -78,11 +84,9 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
-        save_path = self.options["OutFile"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
         safe_checks = self.options["SafeChecks"]["Value"]
         arch = self.options["Architecture"]["Value"]
@@ -98,7 +102,7 @@ class Stager(object):
         )
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("Error in launcher command generation.")
             return ""
 
         else:

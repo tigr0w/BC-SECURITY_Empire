@@ -1,5 +1,4 @@
-import string
-import textwrap
+import logging
 
 from prompt_toolkit.completion import Completion
 
@@ -11,6 +10,8 @@ from empire.client.src.utils.autocomplete_util import (
     position_util,
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -36,10 +37,10 @@ class ListenerMenu(Menu):
                 word_before_cursor, sorted(state.listeners.keys())
             ):
                 yield Completion(listener, start_position=-len(word_before_cursor))
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
+
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
 
     def on_enter(self):
         self.list()
@@ -55,19 +56,16 @@ class ListenerMenu(Menu):
         listener_list = list(
             map(
                 lambda x: [
-                    x["ID"],
+                    x["id"],
                     x["name"],
-                    x["module"],
-                    x["listener_category"],
+                    x["template"],
                     date_util.humanize_datetime(x["created_at"]),
                     x["enabled"],
                 ],
                 state.listeners.values(),
             )
         )
-        listener_list.insert(
-            0, ["ID", "Name", "Module", "Listener Category", "Created At", "Enabled"]
-        )
+        listener_list.insert(0, ["ID", "Name", "Template", "Created At", "Enabled"])
 
         table_util.print_table(listener_list, "Listeners List")
 
@@ -82,12 +80,14 @@ class ListenerMenu(Menu):
             return None
 
         record_list = []
-        for key, value in state.listeners[listener_name]["options"].items():
-            name = key
-            record_value = print_util.text_wrap(value.get("Value", ""))
-            required = print_util.text_wrap(value.get("Required", ""))
-            description = print_util.text_wrap(value.get("Description", ""))
-            record_list.append([name, record_value, required, description])
+        template_options = state.get_listener_template("http")["options"]
+        options = state.listeners[listener_name]["options"]
+
+        for key, value in template_options.items():
+            record_value = print_util.text_wrap(options[key])
+            required = print_util.text_wrap(value.get("required", ""))
+            description = print_util.text_wrap(value.get("description", ""))
+            record_list.append([key, record_value, required, description])
 
         record_list.insert(0, ["Name", "Value", "Required", "Description"])
 
@@ -100,37 +100,11 @@ class ListenerMenu(Menu):
 
         Usage: kill <listener_name>
         """
-        response = state.kill_listener(listener_name)
-        if "success" in response.keys():
-            print(print_util.color("[*] Listener " + listener_name + " killed"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def enable(self, listener_name: str) -> None:
-        """
-        Enable the selected listener
-
-        Usage: enable <listener_name>
-        """
-        response = state.enable_listener(listener_name)
-        if "success" in response.keys():
-            print(print_util.color("[*] Listener " + listener_name + " enabled"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
-
-    @command
-    def disable(self, listener_name: str) -> None:
-        """
-        Disable the selected listener
-
-        Usage: disable <listener_name>
-        """
-        response = state.disable_listener(listener_name)
-        if "success" in response.keys():
-            print(print_util.color("[*] Listener " + listener_name + " disabled"))
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        response = state.kill_listener(state.listeners[listener_name]["id"])
+        if response.status_code == 204:
+            log.info("Listener " + listener_name + " killed")
+        elif "detail" in response:
+            log.error(response["detail"])
 
     @command
     def editlistener(self, listener_name: str) -> None:

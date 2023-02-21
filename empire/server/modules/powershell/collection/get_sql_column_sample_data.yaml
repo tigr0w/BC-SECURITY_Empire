@@ -1,10 +1,15 @@
 name: Get-SQLColumnSampleData
 authors:
-  - '@_nullbind'
-  - '@0xbadjuju'
-description: Returns column information from target SQL Servers. Supports search by
-  keywords, sampling data, and validating credit card numbers.
+  - name: ''
+    handle: '@_nullbind'
+    link: ''
+  - name: ''
+    handle: '@0xbadjuju'
+    link: ''
+description: Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating
+  credit card numbers.
 software: ''
+tactics: []
 techniques:
   - T1046
 background: true
@@ -43,7 +48,7 @@ options:
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
-    value: 'Out-String'
+    value: Out-String
     strict: false
     suggested_values:
       - Out-String

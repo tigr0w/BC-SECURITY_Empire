@@ -7,10 +7,15 @@ from empire.server.common import helpers
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "DuckyLauncher",
-            "Author": ["@xorrior"],
+            "Authors": [
+                {
+                    "Name": "Chris Ross",
+                    "Handle": "@xorrior",
+                    "Link": "https://twitter.com/xorrior",
+                }
+            ],
             "Description": "Generates a ducky script that runs a one-liner stage0 launcher for Empire.",
             "Comments": [""],
         }
@@ -61,7 +66,6 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
@@ -81,7 +85,6 @@ class Stager(object):
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
         else:
-
             ducky_code = "DELAY 1000\n"
             ducky_code += "COMMAND SPACE\n"
             ducky_code += "DELAY 1000\n"

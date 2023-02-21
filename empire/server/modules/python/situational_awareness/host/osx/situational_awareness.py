@@ -3,14 +3,14 @@ from __future__ import print_function
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common.module_models import PydanticModule
+from empire.server.core.module_models import EmpireModule
 
 
 class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",

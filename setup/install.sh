@@ -20,6 +20,9 @@ while getopts "hy" option; do
 	esac
 done
 
+function command_exists() {
+  command -v "$1" >/dev/null 2>&1;
+}
 function install_powershell() {
   echo -e "\x1b[1;34m[*] Installing PowerShell\x1b[0m"
   if [ "$OS_NAME" == "DEBIAN" ]; then
@@ -43,8 +46,35 @@ function install_powershell() {
   fi
 
   mkdir -p /usr/local/share/powershell/Modules
-  cp -r "$PARENT_PATH"/empire/server/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
+  cp -r "$PARENT_PATH"/empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
   rm -f packages-microsoft-prod.deb*
+}
+
+function install_mysql() {
+  echo -e "\x1b[1;34m[*] Installing MySQL\x1b[0m"
+  # https://imsavva.com/silent-installation-mysql-5-7-on-ubuntu/
+  # http://www.microhowto.info/howto/perform_an_unattended_installation_of_a_debian_package.html
+  echo mysql-apt-config mysql-apt-config/enable-repo select mysql-8.0 | sudo debconf-set-selections
+  echo mysql-community-server mysql-community-server/root-pass password "root" | sudo debconf-set-selections
+  echo mysql-community-server mysql-community-server/re-root-pass password "root" | sudo debconf-set-selections
+  echo mysql-community-server mysql-server/default-auth-override select "Use Strong Password Encryption (RECOMMENDED)" | sudo debconf-set-selections
+
+  if [ "$OS_NAME" == "DEBIAN" ]; then
+    sudo apt update
+    sudo apt install -y gnupg
+    wget https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
+    sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config*
+    sudo apt update
+    sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
+    rm -f mysql-apt-config*
+  elif [ "$OS_NAME" == "UBUNTU" ]; then
+    sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
+  elif [[ "$OS_NAME" == "KALI" || "$OS_NAME" == "PARROT" ]]; then
+    sudo apt update
+    sudo DEBIAN_FRONTEND=noninteractive apt install -y default-mysql-server # mariadb
+  fi
+
+  echo -e "\x1b[1;34m[*] Starting MySQL\x1b[0m"
 }
 
 function install_xar() {
@@ -75,7 +105,7 @@ function install_bomutils() {
 export DEBIAN_FRONTEND=noninteractive
 set -e
 
-apt-get update && apt-get install -y wget sudo git
+apt-get update && apt-get install -y wget sudo git lsb-release
 
 sudo -v
 
@@ -114,6 +144,12 @@ sudo apt-get update
 sudo apt-get install -y python3-dev python3-pip xclip
 
 install_powershell
+
+if ! command_exists mysql; then
+  install_mysql
+fi
+sudo systemctl start mysql.service || true # will fail in a docker image
+mysql -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('root');" || true # Set root password to root if its blank
 
 if [ "$ASSUME_YES" == "1" ] ;then
   answer="Y"
@@ -193,7 +229,7 @@ fi
 echo -e "\x1b[1;34m[*] Checking Python version\x1b[0m"
 python_version=($(python3 -c 'import sys; print("{} {}".format(sys.version_info.major, sys.version_info.minor))'))
 if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
-  if ! command -v python3.8 &> /dev/null; then
+  if ! command_exists python3.8; then
     if [ "$OS_NAME" == "UBUNTU" ]; then
       echo -e "\x1b[1;34m[*] Python3 version less than 3.8, installing 3.8\x1b[0m"
       sudo apt-get install -y python3.8 python3.8-dev python3-pip
@@ -207,15 +243,15 @@ if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
       fi
       if [ "$answer" != "${answer#[Yy]}" ] ;then
         sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev curl libbz2-dev
-        curl -O https://www.python.org/ftp/python/3.8.10/Python-3.8.10.tar.xz
-        tar -xf Python-3.8.10.tar.xz
-        cd Python-3.8.10
+        curl -O https://www.python.org/ftp/python/3.8.16/Python-3.8.16.tar.xz
+        tar -xf Python-3.8.16.tar.xz
+        cd Python-3.8.16
         ./configure --enable-optimizations
         make -j"$(nproc)"
         sudo make altinstall
         cd ..
-        rm -rf Python-3.8.10
-        rm Python-3.8.10.tar.xz
+        rm -rf Python-3.8.16
+        rm Python-3.8.16.tar.xz
       else
         echo -e "Abort"
         exit

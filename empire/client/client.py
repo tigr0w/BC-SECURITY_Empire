@@ -1,3 +1,4 @@
+import logging
 import re
 import shlex
 import sys
@@ -8,7 +9,7 @@ from typing import Dict, List, Optional, get_type_hints
 
 import urllib3
 from docopt import docopt
-from prompt_toolkit import HTML, PromptSession
+from prompt_toolkit import HTML, PromptSession, shortcuts
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.patch_stdout import patch_stdout
@@ -42,6 +43,9 @@ from empire.client.src.utils.autocomplete_util import (
     current_files,
     filtered_search_list,
 )
+from empire.client.src.utils.log_util import FileFormatter, MyFormatter
+
+log = logging.getLogger(__name__)
 
 
 class MyCustomCompleter(Completer):
@@ -170,30 +174,34 @@ class EmpireCli(object):
     def run_resource_file(self, session, resource):
         file_path = Path(resource)
         if not file_path.exists():
-            print(print_util.color(f"[!] File {file_path.name} does not exist."))
+            log.error(f"File {file_path.name} does not exist.")
             return
 
         with file_path.open() as resource_file:
-            print(print_util.color(f"[*] Executing Resource File: {file_path.name}"))
+            log.info(f"Executing Resource File: {file_path.name}")
             for cmd in resource_file:
                 with patch_stdout(raw=True):
                     try:
                         time.sleep(1)
-                        text = session.prompt(accept_default=True, default=cmd.strip())
+                        text = session.prompt(
+                            accept_default=True,
+                            default=cmd.strip(),
+                            mouse_support=empire_config.yaml.get(
+                                "mouse-support", False
+                            ),
+                        )
                         cmd_line = list(shlex.split(text))
                         self.parse_command_line(text, cmd_line, resource_file=True)
                     except CliExitException:
                         return
-                    except Exception as e:
-                        print(
-                            print_util.color(
-                                f"[*] Error parsing resource command: ", text
-                            )
-                        )
+                    except Exception:
+                        log.error("Error parsing resource command: ", text)
 
-        print(print_util.color(f"[*] Finished executing resource file: {resource}"))
+        log.info(f"Finished executing resource file: {resource}")
 
     def main(self):
+        setup_logging(args)
+
         if empire_config.yaml.get("suppress-self-cert-warning", True):
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -206,12 +214,7 @@ class EmpireCli(object):
         history.append_string("connect -c localhost")
 
         print_util.loading()
-        print("\n")
-        print("Use the 'connect' command to connect to your Empire server.")
-        print(
-            "'connect -c localhost' will connect to a local empire instance with all the defaults"
-        )
-        print("including the default username and password.")
+        print_util.connect_message()
 
         session = PromptSession(
             key_bindings=bindings,
@@ -228,9 +231,7 @@ class EmpireCli(object):
 
         autoserver = self.get_autoconnect_server()
         if autoserver:
-            print(
-                print_util.color(f"[*] Attempting to connect to server: {autoserver}")
-            )
+            log.info(f"Attempting to connect to server: {autoserver}")
             self.menus["MainMenu"].connect(autoserver, config=True)
 
         if args.resource:
@@ -242,6 +243,7 @@ class EmpireCli(object):
                     text = session.prompt(
                         HTML(menu_state.current_menu.get_prompt()),
                         refresh_interval=None,
+                        mouse_support=empire_config.yaml.get("mouse-support", False),
                     )
 
                     cmd_line = list(shlex.split(text))
@@ -250,11 +252,7 @@ class EmpireCli(object):
                         pass
                     elif cmd_line[0] == "resource":
                         if len(cmd_line) == 1:
-                            print(
-                                print_util.color(
-                                    "[!] You must specify a resource file."
-                                )
-                            )
+                            log.error("[!] You must specify a resource file.")
                         else:
                             self.run_resource_file(session, cmd_line[1])
 
@@ -262,9 +260,9 @@ class EmpireCli(object):
                     # TODO what to do about case sensitivity for parsing options.
                     self.parse_command_line(text, cmd_line)
             except KeyboardInterrupt:
-                print(print_util.color("[!] Type exit to quit"))
+                log.error("Type exit to quit")
             except ValueError as e:
-                print(print_util.color(f"[!] Error processing command: {e}"))
+                log.error(f"Error processing command: {e}")
             except EOFError:
                 break  # Control-D pressed.
             except CliExitException:
@@ -291,9 +289,11 @@ class EmpireCli(object):
                 state.empire_version,
                 len(state.modules),
                 len(state.listeners),
-                len(state.get_active_agents()),
+                len(state.active_agents),
             )
             menu_state.push(self.menus["MainMenu"])
+        elif text.strip() == "clear":
+            shortcuts.clear()
         elif text.strip() == "listeners":
             menu_state.push(self.menus["ListenerMenu"])
         elif text.strip() == "chat":
@@ -314,27 +314,27 @@ class EmpireCli(object):
             if cmd_line[1] in state.listener_types:
                 menu_state.push(self.menus["UseListenerMenu"], selected=cmd_line[1])
             else:
-                print(print_util.color(f"[!] Listener not found: {cmd_line[1]}"))
+                log.error(f"Listener not found: {cmd_line[1]}")
         elif cmd_line[0] == "usestager" and len(cmd_line) > 1:
             if cmd_line[1] in state.stagers:
                 menu_state.push(self.menus["UseStagerMenu"], selected=cmd_line[1])
             else:
-                print(print_util.color(f"[!] Stager not found: {cmd_line[1]}"))
+                log.error(f"Stager not found: {cmd_line[1]}")
         elif cmd_line[0] == "interact" and len(cmd_line) > 1:
             if cmd_line[1] in state.agents:
                 menu_state.push(self.menus["InteractMenu"], selected=cmd_line[1])
             else:
-                print(print_util.color(f"[!] Agent not found: {cmd_line[1]}"))
+                log.error(f"Agent not found: {cmd_line[1]}")
         elif cmd_line[0] == "useplugin" and len(cmd_line) > 1:
             if cmd_line[1] in state.plugins:
                 menu_state.push(self.menus["UsePluginMenu"], selected=cmd_line[1])
             else:
-                print(print_util.color(f"[!] Plugin not found: {cmd_line[1]}"))
+                log.error(f"Plugin not found: {cmd_line[1]}")
         elif cmd_line[0] == "usecredential" and len(cmd_line) > 1:
             if cmd_line[1] in state.credentials or cmd_line[1] == "add":
                 menu_state.push(self.menus["UseCredentialMenu"], selected=cmd_line[1])
             else:
-                print(print_util.color(f"[!] Credential not found: {cmd_line[1]}"))
+                log.error(f"Credential not found: {cmd_line[1]}")
         elif cmd_line[0] == "usemodule" and len(cmd_line) > 1:
             if cmd_line[1] in state.modules:
                 if menu_state.current_menu_name == "InteractMenu":
@@ -346,7 +346,7 @@ class EmpireCli(object):
                 else:
                     menu_state.push(self.menus["UseModuleMenu"], selected=cmd_line[1])
             else:
-                print(print_util.color(f"[!] Module not found: {cmd_line[1]}"))
+                log.error(f"Module not found: {cmd_line[1]}")
         elif cmd_line[0] == "editlistener" and len(cmd_line) > 1:
             if menu_state.current_menu_name == "ListenerMenu":
                 if cmd_line[1] in state.listeners:
@@ -354,7 +354,7 @@ class EmpireCli(object):
                         self.menus["EditListenerMenu"], selected=cmd_line[1]
                     )
             else:
-                print(print_util.color(f"[!] Listener not found: {cmd_line[1]}"))
+                log.error(f"Listener not found: {cmd_line[1]}")
         elif text.strip() == "shell":
             if menu_state.current_menu_name == "InteractMenu":
                 menu_state.push(
@@ -376,19 +376,15 @@ class EmpireCli(object):
                     "python",
                     "ironpython",
                 ]:
-                    print(
-                        print_util.color(
-                            f'[!] Agent proxies are not available in {menu_state.current_menu.agent_options["language"]} agents'
-                        )
+                    log.error(
+                        f'Agent proxies are not available in {menu_state.current_menu.agent_options["language"]} agents'
                     )
                     pass
                 elif state.listeners[menu_state.current_menu.agent_options["listener"]][
-                    "module"
+                    "template"
                 ] not in ["http", "http_hop", "redirector"]:
-                    print(
-                        print_util.color(
-                            f"[!] Agent proxies are not available in {state.listeners[menu_state.current_menu.agent_options['listener']]['module']} listeners"
-                        )
+                    log.error(
+                        f"Agent proxies are not available in {state.listeners[menu_state.current_menu.agent_options['listener']]['module']} listeners"
                     )
                 else:
                     menu_state.push(
@@ -407,6 +403,20 @@ class EmpireCli(object):
                 raise CliExitException
             else:
                 pass
+        elif cmd_line[0] == "help" and len(cmd_line) > 1:
+            func = None
+            try:
+                func = getattr(
+                    menu_state.current_menu
+                    if hasattr(menu_state.current_menu, cmd_line[1])
+                    else self,
+                    cmd_line[1],
+                )
+            except Exception:
+                pass
+
+            if func:
+                print(func.__doc__)
         else:
             func = None
             try:
@@ -416,7 +426,7 @@ class EmpireCli(object):
                     else self,
                     cmd_line[0],
                 )
-            except:
+            except Exception:
                 pass
 
             if func:
@@ -426,27 +436,50 @@ class EmpireCli(object):
                     # after the 3rd word for easier autofilling with suggested values that have spaces
                     # There may be a better way to do this.
                     if cmd_line[0] == "set":
-                        cmd_line[2] = f'"{" ".join(cmd_line[2:])}"'
-                        del cmd_line[3:]
+                        if len(cmd_line) > 3:
+                            cmd_line[2] = f'"{" ".join(cmd_line[2:])}"'
+                            del cmd_line[3:]
                     args = self.strip(docopt(func.__doc__, argv=cmd_line[1:]))
                     new_args = {}
                     # todo casting for type hinted values?
                     for key, hint in get_type_hints(func).items():
-                        # if args.get(key) is not None:
                         if key != "return":
                             new_args[key] = args[key]
-                    # print(new_args)
                     func(**new_args)
                 except Exception as e:
-                    print(e)
+                    log.error(e)
                     pass
-                except SystemExit as e:
+                except SystemExit:
                     pass
             elif not func and menu_state.current_menu_name == "InteractMenu":
                 if cmd_line[0] in shortcut_handler.get_names(
                     self.menus["InteractMenu"].agent_language
                 ):
                     menu_state.current_menu.execute_shortcut(cmd_line[0], cmd_line[1:])
+
+
+def setup_logging(args):
+    if args.log_level:
+        log_level = logging.getLevelName(args.log_level.upper())
+    else:
+        log_level = logging.getLevelName(empire_config.yaml["logging"]["level"].upper())
+
+    logging_dir = empire_config.yaml["logging"]["directory"]
+    log_dir = Path(logging_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    root_log_file = log_dir / "empire_client.log"
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+
+    root_logger_stream_handler = logging.StreamHandler()
+    root_logger_stream_handler.setFormatter(MyFormatter())
+    root_logger_stream_handler.setLevel(log_level)
+    root_logger.addHandler(root_logger_stream_handler)
+
+    root_logger_file_handler = logging.FileHandler(root_log_file)
+    root_logger_file_handler.setFormatter(FileFormatter())
+    root_logger.addHandler(root_logger_file_handler)
 
 
 def reset():

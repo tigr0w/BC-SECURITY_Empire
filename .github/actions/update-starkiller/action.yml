@@ -34,9 +34,19 @@ runs:
       # but would lose the comments.
       run: |
         sed -i "s/ref: .*/ref: ${{ inputs.starkiller-version }}/" empire/server/config.yaml
+    # If use_temp_dir is true, Starkiller is cloned into a temp directory, the CI will fail,
+    # and the submodule will not be updated. So set it to false, make the changes, then set it back.
+    - name: Update config.yaml use_temp_dir
+      shell: bash
+      run: |
+        sed -i'.bak' "s/use_temp_dir: .*/use_temp_dir: false/" empire/server/config.yaml
     - name: Run starkiller update script
       shell: bash
       run: python empire.py sync-starkiller
+    - name: Reset use_tmp_dir
+      shell: bash
+      run: |
+        mv empire/server/config.yaml.bak empire/server/config.yaml
     - name: Update changelog
       shell: bash
       run: |

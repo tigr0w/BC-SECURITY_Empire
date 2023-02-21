@@ -1,14 +1,11 @@
 from __future__ import print_function
 
-import pathlib
 import random
 import string
 from builtins import object, str
 from typing import Dict
 
-from empire.server.common import helpers
-from empire.server.common.module_models import PydanticModule
-from empire.server.utils import data_util
+from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
@@ -16,7 +13,7 @@ class Module(object):
     @staticmethod
     def generate(
         main_menu,
-        module: PydanticModule,
+        module: EmpireModule,
         params: Dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
@@ -36,6 +33,7 @@ class Module(object):
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
+
         if (params["Obfuscate"]).lower() == "true":
             launcher_obfuscate = True
         else:
@@ -46,7 +44,7 @@ class Module(object):
             return handle_error_message("[!] ProcName must be specified.")
 
         # read in the common module source code
-        script, err = main_menu.modules.get_module_source(
+        script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
@@ -65,8 +63,8 @@ class Module(object):
                 listener_name,
                 language="powershell",
                 encode=True,
-                obfuscate=obfuscate,
-                obfuscationCommand=obfuscate_command,
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
                 userAgent=user_agent,
                 proxy=proxy,
                 proxyCreds=proxy_creds,
@@ -92,7 +90,7 @@ class Module(object):
                 script_end += "\r\n"
                 script_end += "Remove-Item -Path %s" % full_upload_path
 
-                script = main_menu.modules.finalize_module(
+                script = main_menu.modulesv2.finalize_module(
                     script=script,
                     script_end=script_end,
                     obfuscate=obfuscate,

@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Dict, Optional
 
@@ -9,20 +10,16 @@ from empire.client.src.menus import Menu
 from empire.client.src.MenuState import menu_state
 from empire.client.src.utils import print_util
 
+log = logging.getLogger(__name__)
+
 try:
     from tkinter import Tk, filedialog
 except ImportError:
     Tk = None
     filedialog = None
-    print(
-        print_util.color(
-            "[!] Failed to load tkinter. Please install tkinter to use the file prompts."
-        )
-    )
-    print(
-        print_util.color(
-            "[!] Check the wiki for more information: https://bc-security.gitbook.io/empire-wiki/quickstart/installation#modulenotfounderror-no-module-named-_tkinter"
-        )
+    log.error("Failed to load tkinter. Please install tkinter to use the file prompts.")
+    log.error(
+        "Check the wiki for more information: https://bc-security.gitbook.io/empire-wiki/quickstart/installation#modulenotfounderror-no-module-named-_tkinter"
     )
     pass
 
@@ -42,7 +39,9 @@ class EmpireCliState(object):
         self.listeners = {}
         self.listener_types = []
         self.stagers = {}
+        self.stager_types = []
         self.modules = {}
+        self.active_agents = []
         self.agents = {}
         self.plugins = {}
         self.me = {}
@@ -52,7 +51,8 @@ class EmpireCliState(object):
         self.empire_version = ""
         self.cached_plugin_results = {}
         self.chat_cache = []
-        self.server_files = []
+        self.server_files = {}
+        self.hide_stale_agents = False
 
         # { session_id: { task_id: 'output' }}
         self.cached_agent_results = {}
@@ -67,7 +67,7 @@ class EmpireCliState(object):
         self.menus.append(menu)
 
     def notify_connected(self):
-        print(print_util.color("[*] Calling connection handlers."))
+        log.debug("Calling connection handlers.")
         for menu in self.menus:
             menu.on_connect()
 
@@ -80,19 +80,19 @@ class EmpireCliState(object):
         self.port = port
         try:
             response = requests.post(
-                url=f"{host}:{port}/api/admin/login",
-                json={"username": username, "password": password},
+                url=f"{host}:{port}/token",
+                data={"username": username, "password": password},
                 verify=False,
             )
         except Exception as e:
             return e
 
         if response.status_code == 200:
-            self.token = response.json()["token"]
+            self.token = response.json()["access_token"]
             self.connected = True
 
             self.sio = socketio.Client(ssl_verify=False, reconnection_attempts=3)
-            self.sio.connect(f"{host}:{socketport}?token={self.token}")
+            self.sio.connect(f"{host}:{port}/socket.io/", auth={"token": self.token})
 
             # Wait for version to be returned
             self.empire_version = self.get_version()["version"]
@@ -117,7 +117,6 @@ class EmpireCliState(object):
         self.get_stagers()
         self.get_modules()
         self.get_agents()
-        self.get_active_agents()
         self.get_active_plugins()
         self.get_user_me()
         self.get_malleable_profile()
@@ -183,29 +182,32 @@ class EmpireCliState(object):
     def add_to_cached_results(self, data) -> None:
         """
         When tasking results come back, we will display them if the current menu is the InteractMenu.
-        Otherwise, we will ad them to the agent result dictionary and display them when the InteractMenu
+        Otherwise, we will add them to the agent result dictionary and display them when the InteractMenu
         is loaded.
         :param data: the tasking object
         :return:
         """
-        session_id = data["agent"]
+        session_id = data["agent_id"]
         if not self.cached_agent_results.get(session_id):
             self.cached_agent_results[session_id] = {}
+
+        if isinstance(data["output"], bytes):
+            data["output"] = data["output"].decode("UTF-8")
 
         if (
             menu_state.current_menu_name == "InteractMenu"
             and menu_state.current_menu.selected == session_id
         ):
-            if data["results"] is not None:
+            if data["output"] is not None:
                 print(
                     print_util.color(
-                        "[*] Task " + str(data["taskID"]) + " results received"
+                        "[*] Task " + str(data["id"]) + " results received"
                     )
                 )
-                for line in data["results"].split("\n"):
+                for line in data["output"].split("\n"):
                     print(print_util.color(line))
         else:
-            self.cached_agent_results[session_id][data["taskID"]] = data["results"]
+            self.cached_agent_results[session_id][data["id"]] = data["output"]
 
     def add_plugin_cache(self, data) -> None:
         """
@@ -233,13 +235,13 @@ class EmpireCliState(object):
             agent_tasks = list(self.cached_agent_results.keys())
             plugin_tasks = list(self.cached_plugin_results.keys())
 
-            toolbar_text = [("bold", f"Connected: ")]
+            toolbar_text = [("bold", "Connected: ")]
             toolbar_text.append(("bg:#FF0000 bold", f"{self.host}:{self.port} "))
-            toolbar_text.append(("bold", f"| "))
-            toolbar_text.append(("bg:#FF0000 bold", f"{len(state.agents)} "))
-            toolbar_text.append(("bold", f"agent(s) | "))
-            toolbar_text.append(("bg:#FF0000 bold", f"{len(state.chat_cache)} "))
-            toolbar_text.append(("bold", f"unread message(s) "))
+            toolbar_text.append(("bold", "| "))
+            toolbar_text.append(("bg:#FF0000 bold", f"{len(self.active_agents)} "))
+            toolbar_text.append(("bold", "agent(s) | "))
+            toolbar_text.append(("bg:#FF0000 bold", f"{len(self.chat_cache)} "))
+            toolbar_text.append(("bold", "unread message(s) "))
 
             agent_text = ""
             for agents in agent_tasks:
@@ -254,7 +256,7 @@ class EmpireCliState(object):
                 if self.cached_plugin_results[plugins]:
                     plugin_text += f" {plugins}"
             if plugin_text:
-                toolbar_text.append(("bold", f"| Plugin(s) received task result(s):"))
+                toolbar_text.append(("bold", "| Plugin(s) received task result(s):"))
                 toolbar_text.append(("bg:#FF0000 bold", f"{plugin_text} "))
 
             return toolbar_text
@@ -288,588 +290,465 @@ class EmpireCliState(object):
     # This will do for this iteration.
     def get_listeners(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/listeners",
+            url=f"{self.host}:{self.port}/api/v2/listeners",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        self.listeners = {x["name"]: x for x in response.json()["listeners"]}
-
+        self.listeners = {x["name"]: x for x in response.json()["records"]}
         return self.listeners
 
-    def validate_listener(self, listener_type: str, options: Dict):
+    def upload_file(self, filename: str, file_data: bytes):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/listeners/{listener_type}/validate",
-            json=options,
+            url=f"{self.host}:{self.port}/api/v2/downloads",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
+            data={},
+            files=[("file", (filename, file_data, "application/octet-stream"))],
         )
-
         return response.json()
 
-    def upload_file(self, filename: str, data: bytes):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/files/upload",
-            json={"filename": filename, "data": data},
+    def download_file(self, file_id: str):
+        response = requests.get(
+            url=f"{self.host}:{self.port}/api/v2/downloads/{file_id}",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
-
-    def download_file(self, filename: str):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/files/download",
-            json={"filename": filename},
-            verify=False,
-            params={"token": self.token},
-        )
-
         return response.json()
 
     def get_files(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/files",
+            url=f"{self.host}:{self.port}/api/v2/downloads",
             verify=False,
-            params={"token": self.token},
+            params={"sources": "upload"},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        self.server_files = response.json()["files"]
-
-        return response.json()
+        self.server_files = {x["filename"]: x for x in response.json()["records"]}
+        return self.server_files
 
     def get_version(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/version",
+            url=f"{self.host}:{self.port}/api/v2/meta/version",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def set_admin_options(self, options: Dict):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/admin/options",
+    def kill_listener(self, listener_id: str):
+        response = requests.delete(
+            url=f"{self.host}:{self.port}/api/v2/listeners/{listener_id}",
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        self.get_listeners()
+        return response
+
+    def edit_listener(self, listener_id: str, options: Dict):
+        response = requests.put(
+            url=f"{self.host}:{self.port}/api/v2/listeners/{listener_id}",
             json=options,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
-
-    def kill_listener(self, listener_name: str):
-        response = requests.delete(
-            url=f"{self.host}:{self.port}/api/listeners/{listener_name}",
-            verify=False,
-            params={"token": self.token},
-        )
-        self.get_listeners()
-        return response.json()
-
-    def disable_listener(self, listener_name: str):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/listeners/{listener_name}/disable",
-            verify=False,
-            params={"token": self.token},
-        )
-        self.get_listeners()
-        return response.json()
-
-    def enable_listener(self, listener_name: str):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/listeners/{listener_name}/enable",
-            verify=False,
-            params={"token": self.token},
-        )
-        self.get_listeners()
-        return response.json()
-
-    def edit_listener(self, listener_name: str, option_name, option_value):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/listeners/{listener_name}/edit",
-            json={"option_name": option_name, "option_value": option_value},
-            verify=False,
-            params={"token": self.token},
-        )
-
         return response.json()
 
     def get_listener_types(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/listeners/types",
+            url=f"{self.host}:{self.port}/api/v2/listener-templates",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        self.listener_types = response.json()["types"]
-
+        self.listener_types = [x["id"] for x in response.json()["records"]]
         return self.listener_types
+
+    def get_listener_template(self, listener_id: str):
+        response = requests.get(
+            url=f"{self.host}:{self.port}/api/v2/listener-templates/{listener_id}",
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response.json()
 
     def get_listener_options(self, listener_type: str):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/listeners/options/{listener_type}",
+            url=f"{self.host}:{self.port}/api/v2/listener-templates/{listener_type}",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def create_listener(self, listener_type: str, options: Dict):
+    def create_listener(self, options: Dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/listeners/{listener_type}",
+            url=f"{self.host}:{self.port}/api/v2/listeners",
             json=options,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         # todo push to state array or just call get_listeners() to refresh cache??
-
         return response.json()
 
     def get_stagers(self):
         # todo need error handling in all api requests
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/stagers",
+            url=f"{self.host}:{self.port}/api/v2/stager-templates",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
 
-        self.stagers = {x["Name"]: x for x in response.json()["stagers"]}
-
+        self.stagers = {x["id"]: x for x in response.json()["records"]}
         return self.stagers
 
-    def create_stager(self, stager_name: str, options: Dict):
-        options["StagerName"] = stager_name
+    def create_stager(self, options: Dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/stagers",
+            url=f"{self.host}:{self.port}/api/v2/stagers",
             json=options,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
+
+    def download_stager(self, link: str):
+        response = requests.get(
+            url=f"{self.host}:{self.port}{link}",
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response.content
 
     def get_agents(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents",
+            url=f"{self.host}:{self.port}/api/v2/agents",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
 
-        self.agents = {x["name"]: x for x in response.json()["agents"]}
+        self.agents = {x["name"]: x for x in response.json()["records"]}
 
         # Whenever agents are refreshed, add socketio listeners for taskings.
         for name, agent in self.agents.items():
             session_id = agent["session_id"]
             self.sio.on(f"agents/{session_id}/task", self.add_to_cached_results)
 
-        return self.agents
-
-    def get_active_agents(self):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents/active",
-            verify=False,
-            params={"token": self.token},
+        # Get active agents
+        self.active_agents = list(
+            map(
+                lambda a: a["name"],
+                filter(lambda a: a["stale"] is not True, state.agents.values()),
+            )
         )
-
-        self.active_agents = {x["name"]: x for x in response.json()["agents"]}
-        return self.active_agents
+        return self.agents
 
     def get_modules(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/modules",
+            url=f"{self.host}:{self.port}/api/v2/modules",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
 
-        self.modules = {
-            x["Name"]: x for x in response.json()["modules"] if x["Enabled"]
-        }
-
+        self.modules = {x["id"]: x for x in response.json()["records"] if x["enabled"]}
         return self.modules
 
-    def execute_module(self, module_name: str, options: Dict):
+    def execute_module(self, session_id: str, options: Dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/modules/{module_name}",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/module",
             json=options,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
+        return response.json()
 
+    def update_agent(self, session_id: str, options: Dict):
+        response = requests.put(
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}",
+            json=options,
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
         return response.json()
 
     def kill_agent(self, agent_name: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/kill",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/exit",
+            json={},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
+        return response
 
+    def create_socks(self, agent_name: str, port: int):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/socks",
+            json={"port": port},
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
         return response.json()
 
-    def remove_agent(self, agent_name: str):
-        response = requests.delete(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}",
+    def view_jobs(self, agent_name: str):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/jobs",
+            json={},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def remove_stale_agents(self):
-        response = requests.delete(
-            url=f"{self.host}:{self.port}/api/agents/stale",
+    def kill_job(self, agent_name: str, task_id: int):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/kill_job",
+            json={"id": task_id},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
     def update_agent_comms(self, agent_name: str, listener_name: str):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/update_comms",
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/update_comms",
             json={"listener": listener_name},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def update_agent_killdate(self, agent_name: str, kill_date: str):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/killdate",
+    def update_agent_kill_date(self, agent_name: str, kill_date: str):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/kill_date",
             json={"kill_date": kill_date},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def update_agent_proxy(self, agent_name: str, options: list):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/proxy",
+    def update_agent_proxy(self, session_id: str, options: list):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/proxy_list",
             json={"proxy": options},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
+        log.error("todo: fix update agent proxy")
         return response.json()
 
-    def get_proxy_info(self, agent_name: str):
+    def get_proxy_info(self, session_id: str):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/proxy",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/proxy_list",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
+        log.error("todo: fix get agent proxy")
         return response.json()
 
-    def update_agent_working_hours(self, agent_name: str, working_hours: str):
+    def update_agent_working_hours(self, session_id: str, working_hours: str):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/workinghours",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/working_hours",
             json={"working_hours": working_hours},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def clear_agent(self, agent_name: str):
+    def agent_shell(self, session_id: str, shell_cmd: str, literal: bool = False):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/clear",
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/shell",
+            json={"command": shell_cmd, "literal": literal},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def rename_agent(self, agent_name: str, new_agent_name: str):
+    def sysinfo(self, session_id: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/rename",
-            json={"newname": new_agent_name},
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/sysinfo",
+            json={},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def agent_shell(self, agent_name, shell_cmd: str):
+    def agent_script_import(self, session_id: str, filename: str, file_data: bytes):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/shell",
-            json={"command": shell_cmd},
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_import",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
+            data={},
+            files=[("file", (filename, file_data, "application/octet-stream"))],
         )
-
         return response.json()
 
-    def agent_script_import(self, agent_name, script_name: str):
+    def agent_script_command(self, session_id: str, script_command: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/script_import",
-            json={"script_name": script_name},
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_command",
+            json={"command": script_command},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def agent_script_command(self, agent_name, script_command: str):
+    def scrape_directory(self, session_id: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/script_command",
-            json={"script": script_command},
+            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/directory",
+            json={"path": "/"},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
-
-    def scrape_directory(self, agent_name):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/directory",
-            verify=False,
-            params={"token": self.token},
-        )
-
-        return response.json()
-
-    def get_directory(self, agent_name):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/directory",
-            verify=False,
-            params={"token": self.token},
-        )
-
-        return response.json()
-
-    def get_task_result(self, agent_name, task_id):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/task/{task_id}",
-            verify=False,
-            params={"token": self.token},
-        )
-
         return response.json()
 
     def get_agent_tasks(self, agent_name, num_results):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/task",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks",
             verify=False,
-            params={"token": self.token, "num_results": num_results},
+            params={"limit": num_results, "order_direction": "desc", "order_by": "id"},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
-
-    def get_agent_tasks_slim(self, agent_name):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/task/slim",
-            verify=False,
-            params={"token": self.token},
-        )
-
         return response.json()
 
     def get_agent_task(self, agent_name, task_id):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/task/{task_id}",
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/{task_id}",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
-
-    def get_agent_result(self, agent_name):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/results",
-            verify=False,
-            params={"token": self.token},
-        )
-
         return response.json()
 
     def get_credentials(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/creds",
+            url=f"{self.host}:{self.port}/api/v2/credentials",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        self.credentials = {str(x["ID"]): x for x in response.json()["creds"]}
-
-        return response.json()["creds"]
+        self.credentials = {str(x["id"]): x for x in response.json()["records"]}
+        return self.credentials
 
     def get_credential(self, cred_id):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/creds/{cred_id}",
+            url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
     def edit_credential(self, cred_id, cred_options: Dict):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/creds/{cred_id}",
+            url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
             verify=False,
             json=cred_options,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
     def add_credential(self, cred_options):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/creds",
+            url=f"{self.host}:{self.port}/api/v2/credentials",
             json=cred_options,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
     def remove_credential(self, cred_id):
         response = requests.delete(
-            url=f"{self.host}:{self.port}/api/creds/{cred_id}",
+            url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
-
-    def generate_report(self):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/reporting/generate",
-            verify=False,
-            params={"token": self.token},
-        )
-
-        return response.json()
+        return response
 
     def get_active_plugins(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/plugins/active",
+            url=f"{self.host}:{self.port}/api/v2/plugins",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
 
-        self.plugins = {x["Name"]: x for x in response.json()["plugins"]}
+        self.plugins = {x["name"]: x for x in response.json()["records"]}
         for name, plugin in self.plugins.items():
-            plugin_name = plugin["Name"]
+            plugin_name = plugin["name"]
             self.sio.on(f"plugins/{plugin_name}/notifications", self.add_plugin_cache)
-
         return self.plugins
 
     def get_plugin(self, plugin_name):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/plugins/{plugin_name}",
+            url=f"{self.host}:{self.port}/api/v2/plugins/{plugin_name}",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def execute_plugin(self, plugin_name, options: Dict):
+    def execute_plugin(self, uid: str, options: Dict):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/plugins/{plugin_name}",
+            url=f"{self.host}:{self.port}/api/v2/plugins/{uid}/execute",
             json=options,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def update_agent_notes(self, agent_name: str, notes: str):
+    def agent_upload_file(self, agent_name: str, file_id: int, file_path: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/notes",
-            json=notes,
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/upload",
+            json={"file_id": file_id, "path_to_file": file_path},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
-
-    def agent_upload_file(self, agent_name: str, file_name: str, file_data: bytes):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/upload",
-            json={"filename": file_name, "data": file_data},
-            verify=False,
-            params={"token": self.token},
-        )
-
         return response.json()
 
     def agent_download_file(self, agent_name: str, file_name: str):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/download",
-            json={"filename": file_name},
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/download",
+            json={"path_to_file": file_name},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
+        return response
 
     def agent_sleep(self, agent_name: str, delay: int, jitter: float):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/agents/{agent_name}/sleep",
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/sleep",
             json={"delay": delay, "jitter": jitter},
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
-        return response.json()
-
-    def update_user_notes(self, username: str, notes: str):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/users/{username}/notes",
-            json=notes,
-            verify=False,
-            params={"token": self.token},
-        )
-
         return response.json()
 
     def get_users(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/users",
+            url=f"{self.host}:{self.port}/api/v2/users",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
     def create_user(self, new_user):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/users",
+            url=f"{self.host}:{self.port}/api/v2/users",
             json=new_user,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def disable_user(self, user_id: str, account_status: str):
+    def edit_user(self, user_id: str, user):
         response = requests.put(
-            url=f"{self.host}:{self.port}/api/users/{user_id}/disable",
-            json=account_status,
+            url=f"{self.host}:{self.port}/api/v2/users/{user_id}",
+            json=user,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
     def get_user(self, user_id: str):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/users/{user_id}",
+            url=f"{self.host}:{self.port}/api/v2/users/{user_id}",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
     def get_user_me(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/users/me",
+            url=f"{self.host}:{self.port}/api/v2/users/me",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
 
         self.me = response.json()
@@ -877,50 +756,57 @@ class EmpireCliState(object):
 
     def get_malleable_profile(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/malleable-profiles",
+            url=f"{self.host}:{self.port}/api/v2/malleable-profiles",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
 
-        self.profiles = {x["name"]: x for x in response.json()["profiles"]}
-
+        self.profiles = {x["name"]: x for x in response.json()["records"]}
         return self.profiles
 
     def get_bypasses(self):
         response = requests.get(
-            url=f"{self.host}:{self.port}/api/bypasses",
+            url=f"{self.host}:{self.port}/api/v2/bypasses",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
 
-        self.bypasses = {x["name"]: x for x in response.json()["bypasses"]}
-
+        self.bypasses = {x["name"]: x for x in response.json()["records"]}
         return self.bypasses
 
-    def add_malleable_profile(
-        self, profile_name: str, profile_category: str, profile_data: str
-    ):
+    def add_malleable_profile(self, data):
         response = requests.post(
-            url=f"{self.host}:{self.port}/api/malleable-profiles",
-            json={
-                "profile_name": profile_name,
-                "profile_category": profile_category,
-                "data": profile_data,
-            },
+            url=f"{self.host}:{self.port}/api/v2/malleable-profiles",
+            json=data,
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
 
-    def delete_malleable_profile(self, profile_name: str):
+    def delete_malleable_profile(self, profile_id: str):
         response = requests.delete(
-            url=f"{self.host}:{self.port}/api/malleable-profiles/{profile_name}",
+            url=f"{self.host}:{self.port}/api/v2/malleable-profiles/{profile_id}",
             verify=False,
-            params={"token": self.token},
+            headers={"Authorization": f"Bearer {self.token}"},
         )
-
         return response.json()
+
+    def preobfuscate(self, language: str, reobfuscate: bool):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/obfuscation/global/{language}/preobfuscate?reobfuscate={reobfuscate}",
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response
+
+    def keyword_obfuscation(self, options: dict):
+        response = requests.post(
+            url=f"{self.host}:{self.port}/api/v2/obfuscation/keywords",
+            json=options,
+            verify=False,
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        return response
 
 
 state = EmpireCliState()

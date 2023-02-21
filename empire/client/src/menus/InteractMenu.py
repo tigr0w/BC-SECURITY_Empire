@@ -1,5 +1,5 @@
-import base64
-import os
+import logging
+import pathlib
 import subprocess
 import textwrap
 import time
@@ -12,7 +12,7 @@ from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.Menu import Menu
 from empire.client.src.Shortcut import Shortcut
 from empire.client.src.ShortcutHandler import shortcut_handler
-from empire.client.src.utils import print_util, table_util, thread_util, vnc_util
+from empire.client.src.utils import print_util, table_util
 from empire.client.src.utils.autocomplete_util import (
     current_files,
     filtered_search_list,
@@ -20,6 +20,8 @@ from empire.client.src.utils.autocomplete_util import (
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
 from empire.client.src.utils.data_util import get_data_from_file
+
+log = logging.getLogger(__name__)
 
 
 @register_cli_commands
@@ -49,10 +51,6 @@ class InteractMenu(Menu):
             )
             for agent in filtered_search_list(word_before_cursor, active_agents):
                 yield Completion(agent, start_position=-len(word_before_cursor))
-        elif position_util(cmd_line, 1, word_before_cursor):
-            yield from super().get_completions(
-                document, complete_event, cmd_line, word_before_cursor
-            )
         elif cmd_line[0] in ["display"] and position_util(
             cmd_line, 2, word_before_cursor
         ):
@@ -77,19 +75,39 @@ class InteractMenu(Menu):
                         word_before_cursor, state.agents.keys()
                     ):
                         yield Completion(agent, start_position=-len(word_before_cursor))
+
+                if params[position - 1].lower() == "file":
+                    for files in filtered_search_list(
+                        word_before_cursor,
+                        current_files(state.directory["downloads"]),
+                    ):
+                        yield Completion(
+                            files,
+                            display=files.split("/")[-1],
+                            start_position=-len(word_before_cursor),
+                        )
+            elif position - 1 >= len(params) and position > 1:
+                if params[position - 2].lower() == "file":
+                    if len(cmd_line) > 1 and cmd_line[1] == "-p":
+                        file = state.search_files()
+                        if file:
+                            yield Completion(
+                                file, start_position=-len(word_before_cursor)
+                            )
+
         elif cmd_line[0] in ["view"]:
-            tasks = state.get_agent_tasks_slim(self.session_id)
-            tasks = {str(x["taskID"]): x for x in tasks["tasks"]}
+            tasks = state.get_agent_tasks(self.session_id, 100)
+            tasks = {str(x["id"]): x for x in tasks["records"]}
 
             for task_id in filtered_search_list(word_before_cursor, tasks.keys()):
                 full = tasks[task_id]
                 help_text = print_util.truncate(
-                    f"{full.get('command', '')[:30]}, {full.get('username', '')}",
+                    f"{full.get('input', '')[:30]}, {full.get('username', '')}",
                     width=75,
                 )
                 yield Completion(
                     task_id,
-                    display=HTML(f"{full['taskID']} <purple>({help_text})</purple>"),
+                    display=HTML(f"{full['id']} <purple>({help_text})</purple>"),
                     start_position=-len(word_before_cursor),
                 )
         elif cmd_line[0] in ["upload", "script_import"]:
@@ -107,6 +125,10 @@ class InteractMenu(Menu):
                         start_position=-len(word_before_cursor),
                     )
 
+        yield from super().get_completions(
+            document, complete_event, cmd_line, word_before_cursor
+        )
+
     def on_enter(self, **kwargs) -> bool:
         if "selected" not in kwargs:
             return False
@@ -116,7 +138,7 @@ class InteractMenu(Menu):
             return True
 
     def get_prompt(self) -> str:
-        joined = "/".join([self.display_name, self.selected]).strip("/")
+        joined = "/".join([self.display_name, self.name]).strip("/")
         return f"(Empire: <ansired>{joined}</ansired>) > "
 
     def display_cached_results(self) -> None:
@@ -125,7 +147,7 @@ class InteractMenu(Menu):
         """
         task_results = state.cached_agent_results.get(self.session_id, {})
         for key, value in task_results.items():
-            print(print_util.color("[*] Task " + str(key) + " results received"))
+            log.info("Task " + str(key) + " results received")
             print(value)
 
         state.cached_agent_results.get(self.session_id, {}).clear()
@@ -138,27 +160,42 @@ class InteractMenu(Menu):
         """
         state.get_agents()
         if agent_name in state.agents.keys():
-            self.selected = agent_name
-            self.session_id = state.agents[self.selected]["session_id"]
+            self.name = agent_name
+            self.selected = state.agents[agent_name]["session_id"]
+            self.session_id = state.agents[agent_name]["session_id"]
             self.agent_options = state.agents[agent_name]  # todo rename agent_options
             self.agent_language = self.agent_options["language"]
 
     @command
-    def shell(self, shell_cmd: str) -> None:
+    def shell(self, shell_cmd: str, literal: bool = False) -> None:
         """
-        Tasks an the specified agent to execute a shell command.
+        Tasks the specified agent to execute a shell command.
 
-        Usage: shell <shell_cmd>
+        Usage: shell [--literal / -l] <shell_cmd>
+
+        Options:
+            --literal -l    Interpret the shell command literally. This will ensure that aliased
+                            commands such as whoami or ps do not execute the built-in agent aliases.
         """
-        response = state.agent_shell(self.session_id, shell_cmd)
-        print(
-            print_util.color(
-                "[*] Tasked "
-                + self.session_id
-                + " to run Task "
-                + str(response["taskID"])
+        literal = bool(literal)  # docopt parses into 0/1
+        response = state.agent_shell(self.session_id, shell_cmd, literal)
+        if "status" in response.keys():
+            log.info(
+                "Tasked " + self.session_id + " to run Task " + str(response["id"])
             )
-        )
+
+    @command
+    def sysinfo(self) -> None:
+        """
+        Tasks the specified agent update sysinfo.
+
+        Usage: sysinfo
+        """
+        response = state.sysinfo(self.session_id)
+        if "status" in response.keys():
+            log.info(
+                "Tasked " + self.session_id + " to run Task " + str(response["id"])
+            )
 
     @command
     def script_import(self, local_script_location: str) -> None:
@@ -170,121 +207,102 @@ class InteractMenu(Menu):
         try:
             filename = local_script_location.split("/")[-1]
             data = get_data_from_file(local_script_location)
-        except:
-            print(
-                print_util.color("[!] Error: Invalid filename or file does not exist")
-            )
+        except Exception:
+            log.error("Invalid filename or file does not exist")
             return
 
         if data:
-            response = state.upload_file(filename, data)
-            if "success" in response.keys():
-                print(print_util.color("[+] File uploaded to server successfully"))
-
-                # Save copy off to downloads folder so last value points to the correct file
-                data = base64.b64decode(data.encode("UTF-8"))
-                with open(f"{state.directory['downloads']}{filename}", "wb+") as f:
-                    f.write(data)
-
-            elif "error" in response.keys():
-                print(print_util.color("[!] Error: " + response["error"]))
-
-            response = state.agent_script_import(self.session_id, filename)
-            if "success" in response.keys():
-                print(
-                    print_util.color(
-                        "[*] Tasked "
-                        + self.selected
-                        + " to run Task "
-                        + str(response["taskID"])
-                    )
+            response = state.agent_script_import(self.session_id, filename, data)
+            if "id" in response:
+                log.info(
+                    "Tasked " + self.selected + " to run Task " + str(response["id"])
                 )
-            elif "error" in response.keys():
-                print(print_util.color("[!] Error: " + response["error"]))
+            elif "detail" in response.keys():
+                log.error(response["detail"])
 
         else:
-            print(print_util.color("[!] Error: Invalid file path"))
+            log.error("Invalid file path")
 
     @command
     def script_command(self, script_cmd: str) -> None:
         """
-        "Execute a function in the currently imported PowerShell script."
+        Execute a function in the currently imported PowerShell script.
 
         Usage: shell_command <script_cmd>
         """
         response = state.agent_script_command(self.session_id, script_cmd)
-        print(
-            print_util.color(
-                "[*] Tasked "
-                + self.session_id
-                + " to run Task "
-                + str(response["taskID"])
+        if "id" in response:
+            log.info(
+                "[*] Tasked " + self.session_id + " to run Task " + str(response["id"])
             )
-        )
+
+        elif "detail" in response.keys():
+            log.error("[!] Error: " + response["detail"])
 
     @command
     def upload(self, local_file_directory: str) -> None:
         """
-        Tasks an the specified agent to upload a file. Use '-p' for a file selection dialog.
+        Tasks specified agent to upload a file. Use '-p' for a file selection dialog.
 
         Usage: upload <local_file_directory>
         """
+        # Get file and upload to server
         filename = local_file_directory.split("/")[-1]
         data = get_data_from_file(local_file_directory)
 
         if data:
-            response = state.agent_upload_file(self.session_id, filename, data)
-            if "success" in response.keys():
-                print(
-                    print_util.color(
-                        "[*] Tasked " + self.selected + " to upload file " + filename
-                    )
+            response = state.upload_file(filename, data)
+
+            if "id" in response.keys():
+                log.info(f"Uploaded {filename} to server")
+
+                # If successful upload then pass to agent
+                response = state.agent_upload_file(
+                    self.session_id, response["id"], file_path="C:\\Temp\\" + filename
                 )
-            elif "error" in response.keys():
-                print(print_util.color("[!] Error: " + response["error"]))
+                # TODO: Allow upload to a specific directory
+                if "id" in response.keys():
+                    log.info("Tasked " + self.selected + " to upload file " + filename)
+                elif "detail" in response.keys():
+                    log.error(response["detail"])
+
+            elif "detail" in response.keys():
+                log.error(response["detail"])
         else:
-            print(print_util.color("[!] Error: Invalid file path"))
+            log.error("Invalid file path")
 
     @command
     def download(self, file_name: str) -> None:
         """
-        Tasks an the specified agent to download a file.
+        Tasks specified agent to download a file,
 
         Usage: download <file_name>
         """
         response = state.agent_download_file(self.session_id, file_name)
-        if "success" in response.keys():
-            print(
-                print_util.color(
-                    "[*] Tasked "
-                    + self.selected
-                    + " to run Task "
-                    + str(response["taskID"])
-                )
-            )
-
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        if response.status_code == 201:
+            log.info("[*] Tasked " + self.selected + " to run Download " + file_name)
+        elif "detail" in response:
+            log.error(response["detail"])
 
     @command
     def sleep(self, delay: int, jitter: int) -> None:
         """
-        Tasks an the specified agent to update delay (s) and jitter (0.0 - 1.0)
+        Tasks specified agent to update delay (s) and jitter (0.0 - 1.0),
 
         Usage: sleep <delay> <jitter>
         """
         response = state.agent_sleep(self.session_id, delay, jitter)
-        print(
-            print_util.color(f"[*] Tasked agent to sleep delay/jitter {delay}/{jitter}")
-        )
-        print(
-            print_util.color(
-                "[*] Tasked "
-                + self.selected
-                + " to run Task "
-                + str(response["taskID"])
+        log.info(f"Tasked agent to sleep delay/jitter {delay}/{jitter}")
+        if "id" in response:
+            log.info(
+                "[*] Tasked " + self.session_id + " to run Task " + str(response["id"])
             )
-        )
+
+        elif "detail" in response:
+            try:
+                log.error(response["detail"][0]["msg"])
+            except Exception:
+                log.error(response["detail"])
 
     @command
     def info(self) -> None:
@@ -322,7 +340,7 @@ class InteractMenu(Menu):
                     getattr(self, name).__doc__.split("\n")[3].lstrip()[7:], width=35
                 )
                 help_list.append([name, description, usage])
-            except:
+            except Exception:
                 continue
 
         for name, shortcut in shortcut_handler.shortcuts[self.agent_language].items():
@@ -330,7 +348,7 @@ class InteractMenu(Menu):
                 description = shortcut.get_help_description()
                 usage = shortcut.get_usage_string()
                 help_list.append([name, description, usage])
-            except:
+            except Exception:
                 continue
         help_list.insert(0, ["Name", "Description", "Usage"])
         table_util.print_table(help_list, "Help Options")
@@ -344,53 +362,40 @@ class InteractMenu(Menu):
         """
         response = state.update_agent_comms(self.session_id, listener_name)
 
-        if "success" in response.keys():
-            print(
-                print_util.color(
-                    "[*] Updated agent " + self.selected + " listener " + listener_name
-                )
-            )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        if "id" in response:
+            log.info("Updated agent " + self.selected + " listener " + listener_name)
+        elif "detail" in response.keys():
+            log.error(response["detail"])
 
     @command
-    def killdate(self, kill_date: str) -> None:
+    def kill_date(self, kill_date: str) -> None:
         """
-        Set an agent's killdate (01/01/2020)
+        Set an agent's kill_date (01/01/2020)
 
-        Usage: killdate <kill_date>
+        Usage: kill_date <kill_date>
         """
-        response = state.update_agent_killdate(self.session_id, kill_date)
+        response = state.update_agent_kill_date(self.session_id, kill_date)
 
-        if "success" in response.keys():
-            print(
-                print_util.color(
-                    "[*] Updated agent " + self.selected + " killdate to " + kill_date
-                )
-            )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        if "id" in response:
+            log.info("Updated agent " + self.selected + " kill_date to " + kill_date)
+        elif "detail" in response.keys():
+            log.error(response["detail"])
 
     @command
-    def workinghours(self, working_hours: str) -> None:
+    def working_hours(self, working_hours: str) -> None:
         """
         Set an agent's working hours (9:00-17:00)
 
-        Usage: workinghours <working_hours>
+        Usage: working_hours <working_hours>
         """
         response = state.update_agent_working_hours(self.session_id, working_hours)
 
-        if "success" in response.keys():
-            print(
-                print_util.color(
-                    "[*] Updated agent "
-                    + self.selected
-                    + " workinghours to "
-                    + working_hours
-                )
+        if "id" in response:
+            log.info(
+                "Updated agent " + self.selected + " working_hours to " + working_hours
             )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        elif "detail" in response:
+            log.error(response["detail"])
 
     @command
     def proxy(self, agent_name: str) -> None:
@@ -423,23 +428,17 @@ class InteractMenu(Menu):
 
         response = state.get_agent_tasks(self.session_id, str(number_tasks))
 
-        if "agent" in response.keys():
-            tasks = response["agent"]
+        if "records" in response.keys():
+            tasks = response["records"]
             for task in tasks:
-                if task.get("results"):
-                    print(
-                        print_util.color(f'[*] Task {task["taskID"]} results received')
-                    )
-                    for line in task.get("results", "").split("\n"):
+                if task.get("output"):
+                    log.info(f'Task {task["id"]} results received')
+                    for line in task.get("output", "").split("\n"):
                         print(print_util.color(line))
                 else:
-                    print(
-                        print_util.color(
-                            f'[!] Task {task["taskID"]} No tasking results received'
-                        )
-                    )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+                    log.error(f'Task {task["id"]} No tasking results received')
+        elif "detail" in response.keys():
+            log.error(response["detail"])
 
     @command
     def view(self, task_id: str):
@@ -450,10 +449,11 @@ class InteractMenu(Menu):
         """
         task = state.get_agent_task(self.session_id, task_id)
         record_list = []
-        for key, value in task.items():
-            # If results exceed a certain length they break the table function
-            if key != "results":
-                record_list.append([print_util.color(key, "blue"), value])
+        record_list.append([print_util.color("ID", "blue"), task["id"]])
+        record_list.append([print_util.color("Module", "blue"), task["module_name"]])
+        record_list.append([print_util.color("Status", "blue"), task["status"]])
+        record_list.append([print_util.color("Input", "blue"), task["input"]])
+
         table_util.print_table(
             record_list,
             "View Task",
@@ -461,9 +461,10 @@ class InteractMenu(Menu):
             borders=False,
             end_space=False,
         )
-        print(print_util.color(" results", "blue"))
-        for line in task["results"].split("\n"):
-            print(print_util.color(line))
+        print(print_util.color(" Output", "blue"))
+        if task["output"]:
+            for line in task["output"].split("\n"):
+                print(print_util.color(line))
 
     def execute_shortcut(self, command_name: str, params: List[str]):
         shortcut: Shortcut = shortcut_handler.get(self.agent_language, command_name)
@@ -479,42 +480,63 @@ class InteractMenu(Menu):
             return None  # todo log message
 
         if shortcut.module not in state.modules:
-            print(
-                print_util.color(
-                    f"No module named {shortcut.name} found on the server."
-                )
-            )
+            log.error(f"No module named {shortcut.name} found on the server.")
             return None
 
         module_options = dict.copy(state.modules[shortcut.module]["options"])
         post_body = {}
+        post_body["options"] = {}
 
         for i, shortcut_param in enumerate(shortcut.get_dynamic_params()):
             if shortcut_param.name in module_options:
-                post_body[shortcut_param.name] = params[i]
+                post_body["options"][shortcut_param.name] = params[i]
 
         # TODO Still haven't figured out other data types. Right now everything is a string.
         #  Which I think is how it is in the old cli
         for key, value in module_options.items():
             if key in shortcut.get_dynamic_param_names():
-                continue
+                # Grab filename, send to server, and save a copy off in the downloads folder
+                if key in ["File"]:
+                    if pathlib.Path(post_body.get("options")["File"]).is_file():
+                        try:
+                            file_directory = post_body.get("options")["File"]
+                            filename = file_directory.split("/")[-1]
+                            post_body.get("options")["File"] = filename
+                            data = get_data_from_file(file_directory)
+                        except Exception:
+                            log.error("Invalid filename or file does not exist")
+                            return
+                        response = state.upload_file(filename, data)
+                        if "id" in response.keys():
+                            log.info("File uploaded to server successfully")
+                        elif "detail" in response.keys():
+                            if response["detail"].startswith("[!]"):
+                                msg = response["detail"]
+                            else:
+                                msg = f"[!] Error: {response['detail']}"
+                            print(print_util.color(msg))
+
+                        # Save copy off to downloads folder so last value points to the correct file
+                        with open(
+                            f"{state.directory['downloads']}{filename}", "wb+"
+                        ) as f:
+                            f.write(data)
+                else:
+                    continue
             elif key in shortcut.get_static_param_names():
-                post_body[key] = str(shortcut.get_param(key).value)
+                post_body["options"][key] = str(shortcut.get_param(key).value)
             else:
-                post_body[key] = str(module_options[key]["Value"])
-        post_body["Agent"] = self.session_id
-        response = state.execute_module(shortcut.module, post_body)
-        if "success" in response.keys():
-            print(
-                print_util.color(
-                    "[*] Tasked "
-                    + self.selected
-                    + " to run Task "
-                    + str(response["taskID"])
-                )
+                post_body["options"][key] = str(module_options[key]["value"])
+
+        post_body["module_id"] = shortcut.module
+        response = state.execute_module(self.session_id, post_body)
+
+        if "id" in response:
+            log.info(
+                "[*] Tasked " + self.selected + " to run Task " + str(response["id"])
             )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        elif "detail" in response.keys():
+            log.error(response["detail"])
 
     @command
     def vnc_client(self, address: str, port: str, password: str) -> None:
@@ -541,41 +563,97 @@ class InteractMenu(Menu):
 
         Usage: vnc
         """
-        module_options = dict.copy(state.modules["csharp/VNC/VNCServer"]["options"])
+        module_options = dict.copy(state.modules["csharp_vnc_vncserver"]["options"])
         post_body = {}
+        post_body["options"] = {}
 
         for key, value in module_options.items():
-            post_body[key] = str(module_options[key]["Value"])
+            post_body["options"][key] = str(module_options[key]["value"])
 
-        post_body["Agent"] = self.session_id
+        post_body["module_id"] = "csharp_vnc_vncserver"
+        response = state.execute_module(self.session_id, post_body)
 
-        response = state.execute_module("csharp/VNC/VNCServer", post_body)
-        if "success" in response.keys():
-            print(
-                print_util.color(
-                    "[*] Tasked "
-                    + self.selected
-                    + " to run Task "
-                    + str(response["taskID"])
-                )
-            )
-        elif "error" in response.keys():
-            print(print_util.color("[!] Error: " + response["error"]))
+        if "id" in response:
+            log.info("Tasked " + self.selected + " to run Task " + str(response["id"]))
+        elif "detail" in response:
+            log.error(response["detail"])
             return
 
-        print(print_util.color("[*] Starting VNC server..."))
+        log.info("Starting VNC server...")
         time.sleep(5)
 
         vnc_cmd = [
             "python3",
             state.install_path + "/src/utils/vnc_util.py",
             self.agent_options["internal_ip"],
-            module_options["Port"]["Value"],
-            module_options["Password"]["Value"],
+            module_options["Port"]["value"],
+            module_options["Password"]["value"],
         ]
         self.vnc_proc = subprocess.Popen(
             vnc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+
+    @command
+    def socks(self, port: int) -> None:
+        """
+        Create a socks proxy on the agent using in-band comms. (Default port: 1080)
+
+        Usage: socks [<port>]
+        """
+        if not port:
+            port = 1080
+
+        log.info(f"SOCKS server port set to {port}")
+
+        response = state.create_socks(self.session_id, port)
+        if "id" in response:
+            print(
+                print_util.color(
+                    "[*] Tasked " + self.selected + " to start SOCKS server"
+                )
+            )
+
+        elif "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
+            return
+
+    @command
+    def jobs(self) -> None:
+        """
+        View list of active jobs
+
+        Usage: jobs
+        """
+        response = state.view_jobs(self.session_id)
+        if "id" in response:
+            print(
+                print_util.color(
+                    "[*] Tasked " + self.selected + " to retrieve active jobs"
+                )
+            )
+
+        elif "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
+            return
+
+    @command
+    def kill_job(self, task_id: int) -> None:
+        """
+        Kill an active jobs
+
+        Usage: kill_job <task_id>
+        """
+        response = state.kill_job(self.session_id, task_id)
+        if "id" in response:
+            print(
+                print_util.color(
+                    "[*] Tasked " + self.selected + f" to kill task {str(task_id)}"
+                )
+            )
+
+        elif "detail" in response:
+            print(print_util.color("[!] Error: " + response["detail"]))
+            return
 
 
 interact_menu = InteractMenu()

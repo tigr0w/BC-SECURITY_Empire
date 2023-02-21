@@ -1,10 +1,15 @@
 name: Invoke-Registry
 authors:
-  - '@mattifestation'
-  - '@harmj0y'
-description: Persist a stager (or script) via the HKLM:SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-  registry key. This has an easy detection/removal rating.
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Persist a stager (or script) via the HKLM:SOFTWARE\Microsoft\Windows\CurrentVersion\Run registry key. This has
+  an easy detection/removal rating.
 software: ''
+tactics: []
 techniques:
   - T1060
 background: false
@@ -25,26 +30,28 @@ options:
     required: false
     value: ''
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
-      for obfuscation types. For powershell only.
+    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
+      only.
     required: false
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
-      is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
     required: false
     value: Token\All\1
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: 'mattifestation etw'
+    value: mattifestation etw
   - name: KeyName
     description: Key name for the run trigger.
     required: true
     value: Updater
   - name: RegPath
-    description: Registry location to store the script code. Last element is the key
-      name.
+    description: Registry location to store the script code. Last element is the key name.
     required: false
     value: HKLM:SOFTWARE\Microsoft\Windows\CurrentVersion\Debug
   - name: ADSPath
@@ -60,8 +67,7 @@ options:
     required: false
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
   - name: Proxy
@@ -69,8 +75,7 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
     required: false
     value: default
 advanced:

