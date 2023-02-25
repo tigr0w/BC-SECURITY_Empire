@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 -   Fix module error in PSRansom (@Cx01N)
+-   Fix install of Poetry for Debian based systems (@Vinnybod)
 
 ## [5.0.3] - 2023-02-20
 

@@ -258,12 +258,20 @@ if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
       fi
     fi
   fi
+  # TODO: We should really use the official poetry installer, but since right now we
+  #  recommend running this script as sudo, it installs poetry in a way that you can't
+  #  run it without sudo su. We should probably update the script to not be run as sudo,
+  #  and only use sudo when needed within the script itself.
   python3.8 -m pip install poetry
 else
-  python3 -m pip install poetry
+  if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -ge 11 ]; then
+    python3 -m pip install poetry --break-system-packages
+  else
+    python3 -m pip install poetry
+  fi
 fi
 
-echo -e "\x1b[1;34m[*] Installing Poetry\x1b[0m"
+echo -e "\x1b[1;34m[*] Installing Packages\x1b[0m"
 poetry config virtualenvs.in-project true
 poetry install
 
