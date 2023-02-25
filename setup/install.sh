@@ -55,8 +55,6 @@ function install_mysql() {
   # https://imsavva.com/silent-installation-mysql-5-7-on-ubuntu/
   # http://www.microhowto.info/howto/perform_an_unattended_installation_of_a_debian_package.html
   echo mysql-apt-config mysql-apt-config/enable-repo select mysql-8.0 | sudo debconf-set-selections
-  echo mysql-community-server mysql-community-server/root-pass password "root" | sudo debconf-set-selections
-  echo mysql-community-server mysql-community-server/re-root-pass password "root" | sudo debconf-set-selections
   echo mysql-community-server mysql-server/default-auth-override select "Use Strong Password Encryption (RECOMMENDED)" | sudo debconf-set-selections
 
   if [ "$OS_NAME" == "DEBIAN" ]; then
@@ -75,6 +73,21 @@ function install_mysql() {
   fi
 
   echo -e "\x1b[1;34m[*] Starting MySQL\x1b[0m"
+}
+
+function start_mysql() {
+  sudo systemctl start mysql.service || true # will fail in a docker image
+
+  # Add the default empire user to the mysql database
+  mysql -u root -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
+  mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
+  mysql -u root -e "FLUSH PRIVILEGES;" || true
+
+  # Some OS have a root password set by default. We could probably
+  # be more smart about this, but we just try both.
+  mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
+  mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
+  mysql -u root -proot -e "FLUSH PRIVILEGES;" || true
 }
 
 function install_xar() {
@@ -148,8 +161,8 @@ install_powershell
 if ! command_exists mysql; then
   install_mysql
 fi
-sudo systemctl start mysql.service || true # will fail in a docker image
-mysql -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('root');" || true # Set root password to root if its blank
+
+start_mysql
 
 if [ "$ASSUME_YES" == "1" ] ;then
   answer="Y"

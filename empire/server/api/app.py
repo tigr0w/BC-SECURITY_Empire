@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime
 from json import JSONEncoder
+from pathlib import Path
 
 import socketio
 import uvicorn
@@ -47,7 +48,9 @@ def load_starkiller(v2App):
     starkiller_submodule_dir = "empire/server/api/v2/starkiller"
     starkiller_temp_dir = "empire/server/api/v2/starkiller-temp"
 
-    if empire_config.starkiller.auto_update:
+    if (
+        Path(starkiller_submodule_dir) / ".git"
+    ).exists() and empire_config.starkiller.auto_update:
         sync_starkiller(empire_config.dict())
 
     v2App.mount(

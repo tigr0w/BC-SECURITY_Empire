@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 -   Fix module error in PSRansom (@Cx01N)
+-   Update the install script to set up a new db user instead of overwriting the root user (@Vinnybod)
+-   Update the Starkiller syncer to skip updating if not in a git repo (@Vinnybod)
+-   Update the Docker CI action to publish latest on 'main' branch (@Vinnybod)
 -   Fix install of Poetry for Debian based systems (@Vinnybod)
 
 ## [5.0.3] - 2023-02-20
