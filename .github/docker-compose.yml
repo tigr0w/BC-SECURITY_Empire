@@ -21,6 +21,8 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_USER: 'empire_user'
+      MYSQL_PASSWORD: 'empire_password'
       MYSQL_DATABASE: test_empire
     volumes:
      - db:/var/lib/mysql
