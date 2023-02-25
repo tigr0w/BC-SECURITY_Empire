@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [5.0.4] - 2023-02-25
+
 -   Fix module error in PSRansom (@Cx01N)
 -   Update the install script to set up a new db user instead of overwriting the root user (@Vinnybod)
 -   Update the Starkiller syncer to skip updating if not in a git repo (@Vinnybod)
@@ -412,7 +415,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.4...HEAD
+
+[5.0.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.3...v5.0.4
 
 [5.0.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.2...v5.0.3
 
