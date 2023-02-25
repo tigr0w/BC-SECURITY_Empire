@@ -20,6 +20,7 @@ services:
     image: mysql:8.0
     restart: always
     environment:
+      MYSQL_ROOT_PASSWORD: 'root'
       MYSQL_USER: 'empire_user'
       MYSQL_PASSWORD: 'empire_password'
       MYSQL_DATABASE: test_empire
