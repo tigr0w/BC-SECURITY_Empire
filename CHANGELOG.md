@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [5.1.0] - 2023-03-01
+
 -   Added a 'modified_input' field to the 'execute module' task (@Vinnybod)
 -   Added an endpoint to get the script for a module (@Vinnybod)
 
@@ -417,7 +420,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.0...HEAD
+
+[5.1.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.4...v5.1.0
 
 [5.0.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.3...v5.0.4
 
