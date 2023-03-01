@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 import pytest
 
 from empire.test.conftest import base_listener_non_fixture
@@ -300,6 +302,36 @@ def test_create_task_module(client, admin_auth_header, agent):
     assert response.status_code == 201
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith("function Invoke-InternalMonologue")
+    assert response.json()["agent_id"] == agent.session_id
+
+
+def test_create_task_module_modified_input(client, admin_auth_header, agent):
+    modified_input = dedent(
+        """
+                function Invoke-InternalMonologue {
+                    This is a modified input
+                }
+            """
+    ).lstrip("\n")
+
+    response = client.post(
+        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_credentials_invoke_internal_monologue",
+            "options": {
+                "Challenge": "1122334455667788",
+                "Downgrade": "",
+                "Impersonate": "",
+                "Restore": "",
+            },
+            "modified_input": modified_input,
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["id"] > 0
+    assert response.json()["input"].startswith(modified_input)
     assert response.json()["agent_id"] == agent.session_id
 
 

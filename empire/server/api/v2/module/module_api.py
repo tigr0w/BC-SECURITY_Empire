@@ -9,6 +9,7 @@ from empire.server.api.jwt_auth import get_current_active_user
 from empire.server.api.v2.module.module_dto import (
     Module,
     ModuleBulkUpdateRequest,
+    ModuleScript,
     ModuleUpdateRequest,
     domain_to_dto_module,
 )
@@ -63,6 +64,16 @@ async def read_modules():
 @router.get("/{uid}", response_model=Module)
 async def read_module(uid: str, module: EmpireModule = Depends(get_module)):
     return domain_to_dto_module(module, uid)
+
+
+@router.get("/{uid}/script", response_model=ModuleScript)
+async def read_module_script(uid: str, module: EmpireModule = Depends(get_module)):
+    script = module_service.get_module_script(module.id)
+
+    if script:
+        return ModuleScript(module_id=uid, script=script)
+
+    raise HTTPException(status_code=404, detail=f"Module script not found for id {uid}")
 
 
 @router.put("/{uid}", response_model=Module)

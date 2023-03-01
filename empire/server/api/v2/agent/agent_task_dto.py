@@ -79,6 +79,7 @@ class ModulePostRequest(BaseModel):
     ignore_language_version_check: bool = False
     ignore_admin_check: bool = False
     options: Dict[str, Union[str, int, float]]
+    modified_input: Optional[str] = None
 
 
 class DownloadPostRequest(BaseModel):

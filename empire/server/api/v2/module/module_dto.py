@@ -66,6 +66,11 @@ class Modules(BaseModel):
     records: List[Module]
 
 
+class ModuleScript(BaseModel):
+    module_id: str
+    script: str
+
+
 class ModuleUpdateRequest(BaseModel):
     enabled: bool
 

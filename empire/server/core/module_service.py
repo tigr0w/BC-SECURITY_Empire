@@ -2,6 +2,7 @@ import fnmatch
 import importlib.util
 import logging
 import os
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import yaml
@@ -70,6 +71,7 @@ class ModuleService(object):
         params: Dict,
         ignore_language_version_check: bool = False,
         ignore_admin_check: bool = False,
+        modified_input: Optional[str] = None,
     ) -> Tuple[Optional[Dict], Optional[str]]:
         """
         Execute the module. Note this doesn't actually add the task to the queue,
@@ -85,6 +87,9 @@ class ModuleService(object):
             return None, f"Module not found for id {module_id}"
         if not module.enabled:
             return None, "Cannot execute disabled module"
+
+        if modified_input:
+            module = self._create_modified_module(module, modified_input)
 
         cleaned_options, err = self._validate_module_params(
             module, agent, params, ignore_language_version_check, ignore_admin_check
@@ -249,6 +254,12 @@ class ModuleService(object):
             obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                 db, module.language
             )
+        if not obfuscation_config:
+            obfuscation_enabled = False
+            obfuscation_command = None
+        else:
+            obfuscation_enabled = obfuscation_config.enabled
+            obfuscation_command = obfuscation_config.command
 
         if module.advanced.custom_generate:
             # In a future release we could refactor the modules to accept a obuscation_config,
@@ -258,8 +269,8 @@ class ModuleService(object):
                     self.main_menu,
                     module,
                     params,
-                    obfuscation_config.enabled,
-                    obfuscation_config.command,
+                    obfuscation_enabled,
+                    obfuscation_command,
                 )
             except Exception as e:
                 log.error(f"Error generating script: {e}", exc_info=True)
@@ -404,6 +415,21 @@ class ModuleService(object):
             log.error(f"dotnet compile error: {e}")
             return None, "dotnet compile error"
 
+    def _create_modified_module(self, module: EmpireModule, modified_input: str):
+        """
+        Return a copy of the original module with the input modified.
+        """
+        modified_module = module.copy(deep=True)
+        modified_module.script = modified_input
+        modified_module.script_path = None
+
+        if modified_module.language == LanguageEnum.csharp:
+            compiler_dict = yaml.safe_load(modified_module.compiler_yaml)
+            compiler_dict[0]["Code"] = modified_input
+            modified_module.compiler_yaml = yaml.safe_dump(compiler_dict)
+
+        return modified_module
+
     def _load_modules(self, db: Session):
         """
         Load Empire modules.
@@ -501,6 +527,22 @@ class ModuleService(object):
 
         self.modules[self.slugify(module_name)] = my_model
         self.modules[self.slugify(module_name)].enabled = mod.enabled
+
+    def get_module_script(self, module_id: str):
+        mod: EmpireModule = self.modules.get(module_id)
+
+        if not mod:
+            return None
+
+        if mod.script_path:
+            script_path = (
+                Path(empire_config.directories.module_source) / mod.script_path
+            )
+            script = script_path.read_text()
+        else:
+            script = mod.script
+
+        return script
 
     def get_module_source(
         self, module_name: str, obfuscate: bool = False, obfuscate_command: str = ""
