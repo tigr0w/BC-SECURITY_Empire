@@ -41,7 +41,7 @@ starkiller:
   # for private-main, instead of updating the submodule, just work out of a local copy.
   # So devs can work off the latest changes and not worry about accidentally updating the submodule
   # for the downstream main branches.
-  use_temp_dir: true
+  use_temp_dir: false
   auto_update: true
 plugins:
   # Auto-load plugin with defined settings
