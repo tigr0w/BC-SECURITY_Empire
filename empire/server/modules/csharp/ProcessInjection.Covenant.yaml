@@ -113,7 +113,7 @@
         suggested_values:
           - powershell
           - csharp
-          - python
+          - ironpython
       - name: Obfuscate
         description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
           for obfuscation types. For powershell only.
@@ -150,10 +150,6 @@
         description: Specify the process id.
         required: false
         value: ''
-      - name: parentproc
-        description: Specify the parent process name.
-        required: false
-        value: ''
       - name: Architecture
         description: Architecture of the .dll to generate (x64 or x86).
         required: true
@@ -163,5 +159,13 @@
           - x64
           - x86
           - both
+      - name: Technique
+        description: Technique to use for process injection.
+        required: true
+        value: Vanilla Process Injection
+        strict: true
+        suggested_values:
+          - Vanilla Process Injection
+          - Dynamic Invoke
     advanced:
       custom_generate: true

@@ -21,7 +21,7 @@
     using System.Threading;
     using CSharpPy;
 
-    class Program
+    public static class Program
     {
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool AllocConsole();

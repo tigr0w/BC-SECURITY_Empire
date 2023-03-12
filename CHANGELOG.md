@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Added D/Invoke option to Process Injection (@Cx01N)
+-   Added IronPython and csharp to windows/launcher_bat (@Cx01N)
+-   Added language option to spawn and spawnas modules (@Cx01N)
+-   Fixed issue with powershell and ironpython agents not using public classes (@Cx01N)
+-   Fixed issue where large shellcode files lock up server in Invoke_Shellcode (@Cx01N)
+-   Increased the default time for base64 encoded ironpython payloads (@Cx01N)
+
 ## [5.1.0] - 2023-03-01
 
 -   Added a 'modified_input' field to the 'execute module' task (@Vinnybod)

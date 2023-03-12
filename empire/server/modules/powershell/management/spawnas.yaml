@@ -61,6 +61,15 @@ options:
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
     value: mattifestation etw
+  - name: Language
+    description: Language of the stager to generate.
+    required: true
+    value: powershell
+    strict: true
+    suggested_values:
+      - powershell
+      - csharp
+      - ironpython
 script_path: management/Invoke-RunAs.ps1
 advanced:
   custom_generate: true

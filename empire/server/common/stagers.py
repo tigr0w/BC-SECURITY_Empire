@@ -215,7 +215,7 @@ class Stagers(object):
         """
 
         if encode:
-            launcher += "Start-Sleep 5;"
+            launcher += "Start-Sleep 10;"
 
         # Remove comments and make one line
         launcher = helpers.strip_powershell_comments(launcher)

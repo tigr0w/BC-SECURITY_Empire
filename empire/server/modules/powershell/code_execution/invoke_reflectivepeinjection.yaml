@@ -26,7 +26,7 @@ options:
     description: Process ID of the process you want to inject a Dll into.
     required: false
     value: ''
-  - name: DllPath
+  - name: File
     description: (Attacker) local path for the PE/DLL to load.
     required: false
     value: ''
@@ -42,6 +42,10 @@ options:
     description: Optional, will force the use of ASLR on the PE being loaded even if the PE indicates it doesn't support ASLR.
     required: true
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: ComputerName
     description: Optional an array of computernames to run the script on.
     required: false
