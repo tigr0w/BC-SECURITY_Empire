@@ -43,7 +43,7 @@ jobs:
           poetry version ${{ github.event.inputs.bumpType }}
           APP_VERSION=$(poetry version -s)
           echo "APP_VERSION=$(poetry version -s)" >> $GITHUB_ENV
-          sed -i "s/${{ OLD_VERSION }}\ BC\ Security/${{ $APP_VERSION }}\ BC\ Security/" empire/server/common/empire.py
+          sed -i "s/$OLD_VERSION\ BC\ Security/$APP_VERSION\ BC\ Security/" empire/server/common/empire.py
       - name: Get release branch name
         run: |
             echo "RELEASE_BRANCH=release/$APP_VERSION-private" >> $GITHUB_ENV
