@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.1] - 2023-03-17
+
 -   Added D/Invoke option to Process Injection (@Cx01N)
 -   Added IronPython and csharp to windows/launcher_bat (@Cx01N)
 -   Added language option to spawn and spawnas modules (@Cx01N)
@@ -427,7 +429,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.1...HEAD
+
+[5.1.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.0...v5.1.1
 
 [5.1.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.4...v5.1.0
 
