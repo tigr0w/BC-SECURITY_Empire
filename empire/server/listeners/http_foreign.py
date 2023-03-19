@@ -62,6 +62,11 @@ class Listener(object):
                 "Required": True,
                 "Value": "2c103f2c4ed1e59c0b4e2e01821770fa",
             },
+            "Cookie": {
+                "Description": "Custom Cookie Name",
+                "Required": False,
+                "Value": "",
+            },
             "DefaultDelay": {
                 "Description": "Agent delay/reach back interval (in seconds).",
                 "Required": True,
@@ -114,6 +119,13 @@ class Listener(object):
         self.options["StagingKey"]["Value"] = str(
             data_util.get_config("staging_key")[0]
         )
+
+        self.session_cookie = ""
+        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+
+        # check if the current session cookie not empty and then generate random cookie
+        if self.session_cookie == "":
+            self.options["Cookie"]["Value"] = listener_util.generate_cookie()
 
         self.instance_log = log
 
