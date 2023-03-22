@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed foreign listener issue with cookies (@Hubbl3)
 -   Fixed error message handling for port forward pivot (@Cx01N)
+-   Fixed persistence/powerbreach/eventlog launcher generation (@Cx01N)
 
 ## [5.1.1] - 2023-03-17
 
