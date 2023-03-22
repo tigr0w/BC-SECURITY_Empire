@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 -   Removed thread from IronPython agent (@Hubbl3)
-
 -   Fixed foreign listener issue with cookies (@Hubbl3)
 -   Fixed error message handling for port forward pivot (@Cx01N)
+-   Fixed upload not reporting error in PowerShell agent (@Cx01N)
+-   Fixed client not giving option to select upload directory (@Cx01N)
 -   Fixed persistence/powerbreach/eventlog launcher generation (@Cx01N)
 
 ## [5.1.1] - 2023-03-17

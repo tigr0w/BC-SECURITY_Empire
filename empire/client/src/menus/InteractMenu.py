@@ -240,15 +240,18 @@ class InteractMenu(Menu):
             log.error("[!] Error: " + response["detail"])
 
     @command
-    def upload(self, local_file_directory: str) -> None:
+    def upload(self, local_file_directory: str, remote_file_directory: str) -> None:
         """
         Tasks specified agent to upload a file. Use '-p' for a file selection dialog.
 
-        Usage: upload <local_file_directory>
+        Usage: upload <local_file_directory> [<remote_file_directory>]
         """
         # Get file and upload to server
         filename = local_file_directory.split("/")[-1]
         data = get_data_from_file(local_file_directory)
+
+        if not remote_file_directory:
+            remote_file_directory = filename
 
         if data:
             response = state.upload_file(filename, data)
@@ -258,9 +261,8 @@ class InteractMenu(Menu):
 
                 # If successful upload then pass to agent
                 response = state.agent_upload_file(
-                    self.session_id, response["id"], file_path="C:\\Temp\\" + filename
+                    self.session_id, response["id"], file_path=remote_file_directory
                 )
-                # TODO: Allow upload to a specific directory
                 if "id" in response.keys():
                     log.info("Tasked " + self.selected + " to upload file " + filename)
                 elif "detail" in response.keys():
