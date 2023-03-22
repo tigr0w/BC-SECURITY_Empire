@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed issue with powershell and ironpython agents not using public classes (@Cx01N)
 -   Fixed issue where large shellcode files lock up server in Invoke_Shellcode (@Cx01N)
 -   Increased the default time for base64 encoded ironpython payloads (@Cx01N)
+-   Fix issue with large stacktrace on stale socketio connection (@Vinnybod)
 
 ## [5.1.0] - 2023-03-01
 
