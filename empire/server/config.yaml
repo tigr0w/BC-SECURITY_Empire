@@ -35,9 +35,9 @@ database:
     #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
     ip-blacklist: ""
 starkiller:
-  repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+  repo: https://github.com/BC-SECURITY/Starkiller.git
   # Can be a branch, tag, or commit hash
-  ref: sponsors-main
+  ref: v2.1.1
   # for private-main, instead of updating the submodule, just work out of a local copy.
   # So devs can work off the latest changes and not worry about accidentally updating the submodule
   # for the downstream main branches.
