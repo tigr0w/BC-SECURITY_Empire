@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fix Starkiller error in Docker (@0x4xel)
+
 ## [5.1.2] - 2023-03-29
 
 -   Removed thread from IronPython agent (@Hubbl3)
