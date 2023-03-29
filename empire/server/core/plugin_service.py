@@ -3,12 +3,19 @@ import fnmatch
 import importlib
 import logging
 import os
+from datetime import datetime
+from typing import List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy import func, or_
+from sqlalchemy.orm import Session, joinedload, undefer
 
+from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
+from empire.server.api.v2.plugin.plugin_task_dto import PluginTaskOrderOptions
+from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.db.models import AgentTaskStatus
 from empire.server.utils.option_util import validate_options
 
 log = logging.getLogger(__name__)
@@ -41,12 +48,10 @@ class PluginService(object):
                     continue
 
                 options = plugins[plugin]
-                cleaned_options, err = validate_options(use_plugin.options, options)
-                if err:
-                    log.error(f"Plugin {plugin} options failed to validate: {err}")
-                    continue
+                req = PluginExecutePostRequest(options=options)
 
-                results = use_plugin.execute(cleaned_options)
+                with SessionLocal.begin() as db:
+                    results, err = self.execute_plugin(db, use_plugin, req, None)
 
                 if results is False:
                     log.error(f"Plugin failed to run: {plugin}")
@@ -100,11 +105,25 @@ class PluginService(object):
 
         self.loaded_plugins[plugin_name] = plugin_obj
 
-    def execute_plugin(self, db: Session, plugin, plugin_req):
+    def execute_plugin(
+        self,
+        db: Session,
+        plugin,
+        plugin_req: PluginExecutePostRequest,
+        user: Optional[models.User] = None,
+    ):
         cleaned_options, err = validate_options(plugin.options, plugin_req.options)
 
         if err:
             return None, err
+
+        try:
+            # As of 5.2, plugins can now be executed with a user_id and db session
+            return plugin.execute(cleaned_options, db=db, user=user), None
+        except TypeError:
+            log.warning(
+                "Plugin does not support db session or user_id, falling back to old method"
+            )
 
         try:
             return plugin.execute(cleaned_options), None
@@ -143,6 +162,91 @@ class PluginService(object):
 
     def get_by_id(self, uid: str):
         return self.loaded_plugins.get(uid)
+
+    def get_task(self, db: SessionLocal, plugin_id: str, task_id: int):
+        plugin = self.get_by_id(plugin_id)
+        if plugin:
+            task = (
+                db.query(models.PluginTask)
+                .filter(models.PluginTask.id == task_id)
+                .first()
+            )
+            if task:
+                return task
+
+        return None
+
+    @staticmethod
+    def get_tasks(
+        db: Session,
+        plugins: List[str] = None,
+        users: List[int] = None,
+        limit: int = -1,
+        offset: int = 0,
+        include_full_input: bool = False,
+        include_output: bool = True,
+        since: Optional[datetime] = None,
+        order_by: PluginTaskOrderOptions = PluginTaskOrderOptions.id,
+        order_direction: OrderDirection = OrderDirection.desc,
+        status: Optional[AgentTaskStatus] = None,
+        q: Optional[str] = None,
+    ):
+        query = db.query(
+            models.PluginTask, func.count(models.PluginTask.id).over().label("total")
+        )
+
+        if plugins:
+            query = query.filter(models.PluginTask.plugin_id.in_(plugins))
+
+        if users:
+            query = query.filter(models.PluginTask.user_id.in_(users))
+
+        query_options = [
+            joinedload(models.PluginTask.user),
+        ]
+        if include_full_input:
+            query_options.append(undefer("input_full"))
+        if include_output:
+            query_options.append(undefer("output"))
+        query = query.options(*query_options)
+
+        if since:
+            query = query.filter(models.PluginTask.updated_at > since)
+
+        if status:
+            query = query.filter(models.AgentTask.status == status)
+
+        if q:
+            query = query.filter(
+                or_(
+                    models.PluginTask.input.like(f"%{q}%"),
+                    models.PluginTask.output.like(f"%{q}%"),
+                )
+            )
+
+        if order_by == PluginTaskOrderOptions.status:
+            order_by_prop = models.PluginTask.status
+        elif order_by == PluginTaskOrderOptions.updated_at:
+            order_by_prop = models.PluginTask.updated_at
+        elif order_by == PluginTaskOrderOptions.plugin:
+            order_by_prop = models.PluginTask.plugin_id
+        else:
+            order_by_prop = models.PluginTask.id
+
+        if order_direction == OrderDirection.asc:
+            query = query.order_by(order_by_prop.asc())
+        else:
+            query = query.order_by(order_by_prop.desc())
+
+        if limit > 0:
+            query = query.limit(limit).offset(offset)
+
+        results = query.all()
+
+        total = 0 if len(results) == 0 else results[0].total
+        results = list(map(lambda x: x[0], results))
+
+        return results, total
 
     def shutdown(self):
         for plugin in self.loaded_plugins.values():

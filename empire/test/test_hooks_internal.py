@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from empire.server.core.db.models import TaskingStatus
+from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
 
 
@@ -98,16 +98,16 @@ def test_ps_hook(client, db, models, agent):
             {"CMD": "should_be_new", "PID": 4, "Arch": "x86", "UserName": "test_user"},
         ]
     )
-    tasking = models.Tasking(
+    task = models.AgentTask(
         id=1,
         agent_id=agent.session_id,
         agent=agent,
         input="ps",
-        status=TaskingStatus.pulled,
+        status=AgentTaskStatus.pulled,
         output=output,
         original_output=output,
     )
-    hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, db, tasking)
+    hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, db, task)
     db.flush()
     processes = db.query(models.HostProcess).all()
 

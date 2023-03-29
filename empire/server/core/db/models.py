@@ -28,15 +28,23 @@ from empire.server.utils.datetime_util import is_stale
 Base = declarative_base()
 
 
-tasking_download_assc = Table(
-    "tasking_download_assc",
+agent_task_download_assc = Table(
+    "agent_task_download_assc",
     Base.metadata,
-    Column("tasking_id", Integer),
+    Column("agent_task_id", Integer),
     Column("agent_id", String(255)),
     Column("download_id", Integer, ForeignKey("downloads.id")),
     ForeignKeyConstraint(
-        ("tasking_id", "agent_id"), ("taskings.id", "taskings.agent_id")
+        ("agent_task_id", "agent_id"), ("agent_tasks.id", "agent_tasks.agent_id")
     ),
+)
+
+plugin_task_download_assc = Table(
+    "plugin_task_download_assc",
+    Base.metadata,
+    Column("plugin_task_id", Integer),
+    Column("download_id", Integer, ForeignKey("downloads.id")),
+    ForeignKeyConstraint(("plugin_task_id",), ("plugin_tasks.id",)),
 )
 
 agent_file_download_assc = Table(
@@ -294,13 +302,13 @@ class Download(Base):
             return base64.b64encode(f.read()).decode("utf-8")
 
 
-class TaskingStatus(str, enum.Enum):
+class AgentTaskStatus(str, enum.Enum):
     queued = "queued"
     pulled = "pulled"
 
 
-class Tasking(Base):
-    __tablename__ = "taskings"
+class AgentTask(Base):
+    __tablename__ = "agent_tasks"
     id = Column(Integer, primary_key=True)
     agent_id = Column(String(255), ForeignKey("agents.session_id"), primary_key=True)
     agent = relationship(Agent, lazy="joined", innerjoin=True)
@@ -309,7 +317,8 @@ class Tasking(Base):
     output = deferred(
         Column(Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
     )
-    # In most cases, this isn't needed and will match output. However, with the filter feature, we want to store
+    # In most cases, this isn't needed and will match output.
+    #  However, with the filter feature, we want to store
     # a copy of the original output if it gets modified by a filter.
     original_output = deferred(
         Column(Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
@@ -322,17 +331,46 @@ class Tasking(Base):
     )
     module_name = Column(Text)
     task_name = Column(Text)
-    status = Column(Enum(TaskingStatus), index=True)
-    downloads = relationship("Download", secondary=tasking_download_assc)
+    status = Column(Enum(AgentTaskStatus), index=True)
+    downloads = relationship("Download", secondary=agent_task_download_assc)
 
     def __repr__(self):
-        return "<Tasking(id='%s')>" % (self.id)
+        return "<AgentTask(id='%s')>" % (self.id)
 
     def __getitem__(self, key):
         return self.__dict__[key]
 
     def __setitem__(self, key, value):
         self.__dict__[key] = value
+
+
+class PluginTaskStatus(str, enum.Enum):
+    queued = "queued"
+    started = "started"
+    completed = "completed"
+
+
+class PluginTask(Base):
+    __tablename__ = "plugin_tasks"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    plugin_id = Column(String(255))
+    input = Column(Text)
+    input_full = deferred(Column(Text().with_variant(mysql.LONGTEXT, "mysql")))
+    output = deferred(
+        Column(Text().with_variant(mysql.LONGTEXT, "mysql"), nullable=True)
+    )
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user = relationship(User)
+    created_at = Column(UtcDateTime, default=utcnow(), nullable=False)
+    updated_at = Column(
+        UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
+    )
+    task_name = Column(Text)
+    status = Column(Enum(PluginTaskStatus), index=True)
+    downloads = relationship("Download", secondary=plugin_task_download_assc)
+
+    def __repr__(self):
+        return "<PluginTask(id='%s')>" % (self.id)
 
 
 class Reporting(Base):
@@ -342,7 +380,7 @@ class Reporting(Base):
     event_type = Column(String(255))
     message = Column(Text)
     timestamp = Column(UtcDateTime, default=utcnow(), nullable=False)
-    taskID = Column(Integer, ForeignKey("taskings.id"))
+    taskID = Column(Integer, ForeignKey("agent_tasks.id"))
 
     def __repr__(self):
         return "<Reporting(id='%s')>" % (self.id)

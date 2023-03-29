@@ -70,8 +70,8 @@ def agent(db, models, main):
 
     yield agent
 
-    db.query(models.Tasking).filter(
-        models.Tasking.agent_id == agent.session_id
+    db.query(models.AgentTask).filter(
+        models.AgentTask.agent_id == agent.session_id
     ).delete()
     db.delete(agent)
     db.delete(host)
@@ -112,8 +112,8 @@ def agent_low_version(db, models, main):
 
     yield agent
 
-    db.query(models.Tasking).filter(
-        models.Tasking.agent_id == agent.session_id
+    db.query(models.AgentTask).filter(
+        models.AgentTask.agent_id == agent.session_id
     ).delete()
     db.delete(agent)
     db.commit()
@@ -189,8 +189,8 @@ def agent_low_integrity(db, models, main):
 
     yield agent
 
-    db.query(models.Tasking).filter(
-        models.Tasking.agent_id == agent.session_id
+    db.query(models.AgentTask).filter(
+        models.AgentTask.agent_id == agent.session_id
     ).delete()
     db.delete(agent)
     db.commit()

@@ -56,7 +56,7 @@ from empire.server.common.socks import create_client, start_client
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.db.models import TaskingStatus
+from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
 
 from . import encryption, helpers, packets
@@ -242,7 +242,7 @@ class Agents(object):
         path,
         data,
         filesize,
-        tasking: models.Tasking,
+        tasking: models.AgentTask,
         language: str,
         db: Session,
         append=False,
@@ -756,11 +756,11 @@ class Agents(object):
                     db=db,
                     agents=[session_id],
                     include_full_input=True,
-                    status=TaskingStatus.queued,
+                    status=AgentTaskStatus.queued,
                 )
 
                 for task in tasks:
-                    task.status = TaskingStatus.pulled
+                    task.status = AgentTaskStatus.pulled
 
                 return tasks
             except AttributeError:
@@ -1313,11 +1313,11 @@ class Agents(object):
         log.info(message)
 
         tasking = (
-            db.query(models.Tasking)
+            db.query(models.AgentTask)
             .filter(
                 and_(
-                    models.Tasking.id == task_id,
-                    models.Tasking.agent_id == session_id,
+                    models.AgentTask.id == task_id,
+                    models.AgentTask.agent_id == session_id,
                 )
             )
             .first()

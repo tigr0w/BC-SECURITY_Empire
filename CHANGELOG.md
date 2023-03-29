@@ -6,7 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
+-   Added new plugin functionality (@Vinnybod)
+    -   Added plugin tasks
+    -   Added plugin task endpoints
+    -   Gave plugins kwargs to allow for more flexibility. Plugins are now receiving a database session and user object.
+-   Tasks renamed to AgentTasks to avoid confusion with PluginTasks
+-   Rename tasking to task in most places to standardize the naming. The hook names have not been changed yet.
 -   Fix Starkiller error in Docker (@0x4xel)
 
 ## [5.1.2] - 2023-03-29

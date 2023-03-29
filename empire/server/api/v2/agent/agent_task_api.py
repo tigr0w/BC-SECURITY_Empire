@@ -11,6 +11,9 @@ from starlette.status import HTTP_204_NO_CONTENT
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user, get_current_user
 from empire.server.api.v2.agent.agent_task_dto import (
+    AgentTask,
+    AgentTaskOrderOptions,
+    AgentTasks,
     CommsPostRequest,
     DirectoryListPostRequest,
     DownloadPostRequest,
@@ -24,9 +27,6 @@ from empire.server.api.v2.agent.agent_task_dto import (
     SleepPostRequest,
     SocksPostRequest,
     SysinfoPostRequest,
-    Task,
-    TaskOrderOptions,
-    Tasks,
     UploadPostRequest,
     WorkingHoursPostRequest,
     domain_to_dto_task,
@@ -41,7 +41,7 @@ from empire.server.api.v2.shared_dto import (
 from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.db import models
-from empire.server.core.db.models import TaskingStatus
+from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.download_service import DownloadService
 from empire.server.server import main
 from empire.server.utils.data_util import is_port_in_use
@@ -83,7 +83,7 @@ async def get_task(
     )
 
 
-@router.get("/tasks", response_model=Tasks)
+@router.get("/tasks", response_model=AgentTasks)
 async def read_tasks_all_agents(
     limit: int = -1,
     page: int = 1,
@@ -91,9 +91,9 @@ async def read_tasks_all_agents(
     include_original_output: bool = False,
     include_output: bool = True,
     since: Optional[datetime] = None,
-    order_by: TaskOrderOptions = TaskOrderOptions.id,
+    order_by: AgentTaskOrderOptions = AgentTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[TaskingStatus] = None,
+    status: Optional[AgentTaskStatus] = None,
     agents: Optional[List[str]] = Query(None),
     users: Optional[List[int]] = Query(None),
     query: Optional[str] = None,
@@ -124,7 +124,7 @@ async def read_tasks_all_agents(
         )
     )
 
-    return Tasks(
+    return AgentTasks(
         records=tasks_converted,
         page=page,
         total_pages=math.ceil(total / limit),
@@ -133,7 +133,7 @@ async def read_tasks_all_agents(
     )
 
 
-@router.get("/{agent_id}/tasks", response_model=Tasks)
+@router.get("/{agent_id}/tasks", response_model=AgentTasks)
 async def read_tasks(
     limit: int = -1,
     page: int = 1,
@@ -141,9 +141,9 @@ async def read_tasks(
     include_original_output: bool = False,
     include_output: bool = True,
     since: Optional[datetime] = None,
-    order_by: TaskOrderOptions = TaskOrderOptions.id,
+    order_by: AgentTaskOrderOptions = AgentTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[TaskingStatus] = None,
+    status: Optional[AgentTaskStatus] = None,
     users: Optional[List[int]] = Query(None),
     db: Session = Depends(get_db),
     db_agent: models.Agent = Depends(get_agent),
@@ -174,7 +174,7 @@ async def read_tasks(
         )
     )
 
-    return Tasks(
+    return AgentTasks(
         records=tasks_converted,
         page=page,
         total_pages=math.ceil(total / limit) if limit > 0 else page,
@@ -183,12 +183,12 @@ async def read_tasks(
     )
 
 
-@router.get("/{agent_id}/tasks/{uid}", response_model=Task)
+@router.get("/{agent_id}/tasks/{uid}", response_model=AgentTask)
 async def read_task(
     uid: int,
     db: Session = Depends(get_db),
     db_agent: models.Agent = Depends(get_agent),
-    db_task: models.Tasking = Depends(get_task),
+    db_task: models.AgentTask = Depends(get_task),
 ):
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -196,7 +196,7 @@ async def read_task(
     return domain_to_dto_task(db_task)
 
 
-@router.post("/{agent_id}/tasks/jobs", response_model=Task)
+@router.post("/{agent_id}/tasks/jobs", response_model=AgentTask)
 async def create_task_jobs(
     db_agent: models.Agent = Depends(get_agent),
     db: Session = Depends(get_db),
@@ -207,7 +207,7 @@ async def create_task_jobs(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/kill_job", response_model=Task)
+@router.post("/{agent_id}/tasks/kill_job", response_model=AgentTask)
 async def create_task_kill_job(
     jobs: KillJobPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -222,7 +222,7 @@ async def create_task_kill_job(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/shell", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/shell", status_code=201, response_model=AgentTask)
 async def create_task_shell(
     shell_request: ShellPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -243,7 +243,7 @@ async def create_task_shell(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/module", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/module", status_code=201, response_model=AgentTask)
 async def create_task_module(
     module_request: ModulePostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -260,7 +260,7 @@ async def create_task_module(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/upload", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/upload", status_code=201, response_model=AgentTask)
 async def create_task_upload(
     upload_request: UploadPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -300,7 +300,7 @@ async def create_task_upload(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/download", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/download", status_code=201, response_model=AgentTask)
 async def create_task_download(
     download_request: DownloadPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -317,7 +317,9 @@ async def create_task_download(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/script_import", status_code=201, response_model=Task)
+@router.post(
+    "/{agent_id}/tasks/script_import", status_code=201, response_model=AgentTask
+)
 async def create_task_script_import(
     file: UploadFile = File(...),
     db_agent: models.Agent = Depends(get_agent),
@@ -336,7 +338,9 @@ async def create_task_script_import(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/script_command", status_code=201, response_model=Task)
+@router.post(
+    "/{agent_id}/tasks/script_command", status_code=201, response_model=AgentTask
+)
 async def create_task_script_command(
     script_command_request: ScriptCommandPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -363,7 +367,7 @@ async def create_task_script_command(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/sysinfo", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/sysinfo", status_code=201, response_model=AgentTask)
 async def create_task_sysinfo(
     sysinfo_request: SysinfoPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -378,7 +382,9 @@ async def create_task_sysinfo(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/update_comms", status_code=201, response_model=Task)
+@router.post(
+    "/{agent_id}/tasks/update_comms", status_code=201, response_model=AgentTask
+)
 async def create_task_update_comms(
     comms_request: CommsPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -395,7 +401,7 @@ async def create_task_update_comms(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/sleep", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/sleep", status_code=201, response_model=AgentTask)
 async def create_task_update_sleep(
     sleep_request: SleepPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -412,7 +418,7 @@ async def create_task_update_sleep(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/kill_date", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/kill_date", status_code=201, response_model=AgentTask)
 async def create_task_update_kill_date(
     kill_date_request: KillDatePostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -429,7 +435,9 @@ async def create_task_update_kill_date(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/working_hours", status_code=201, response_model=Task)
+@router.post(
+    "/{agent_id}/tasks/working_hours", status_code=201, response_model=AgentTask
+)
 async def create_task_update_working_hours(
     working_hours_request: WorkingHoursPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -446,7 +454,9 @@ async def create_task_update_working_hours(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/directory_list", status_code=201, response_model=Task)
+@router.post(
+    "/{agent_id}/tasks/directory_list", status_code=201, response_model=AgentTask
+)
 async def create_task_update_directory_list(
     directory_list_request: DirectoryListPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -463,7 +473,7 @@ async def create_task_update_directory_list(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/proxy_list", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/proxy_list", status_code=201, response_model=AgentTask)
 async def create_task_update_proxy_list(
     proxy_list_request: ProxyListPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -486,7 +496,7 @@ async def create_task_update_proxy_list(
     return domain_to_dto_task(resp)
 
 
-@router.post("/{agent_id}/tasks/exit", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/exit", status_code=201, response_model=AgentTask)
 async def create_task_exit(
     exit_request: ExitPostRequest,
     db_agent: models.Agent = Depends(get_agent),
@@ -505,9 +515,11 @@ async def create_task_exit(
     "/{agent_id}/tasks/{uid}", status_code=HTTP_204_NO_CONTENT, response_class=Response
 )
 async def delete_task(
-    uid: int, db: Session = Depends(get_db), db_task: models.Tasking = Depends(get_task)
+    uid: int,
+    db: Session = Depends(get_db),
+    db_task: models.AgentTask = Depends(get_task),
 ):
-    if db_task.status != TaskingStatus.queued:
+    if db_task.status != AgentTaskStatus.queued:
         raise HTTPException(
             status_code=400, detail="Task must be in a queued state to be deleted"
         )
@@ -515,7 +527,7 @@ async def delete_task(
     agent_task_service.delete_task(db, db_task)
 
 
-@router.post("/{agent_id}/tasks/socks", status_code=201, response_model=Task)
+@router.post("/{agent_id}/tasks/socks", status_code=201, response_model=AgentTask)
 async def create_task_socks(
     socks: SocksPostRequest,
     db_agent: models.Agent = Depends(get_agent),

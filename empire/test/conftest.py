@@ -57,7 +57,7 @@ def client(empire_config):
     from empire.server.api.v2.meta import meta_api
     from empire.server.api.v2.module import module_api
     from empire.server.api.v2.obfuscation import obfuscation_api
-    from empire.server.api.v2.plugin import plugin_api
+    from empire.server.api.v2.plugin import plugin_api, plugin_task_api
     from empire.server.api.v2.profile import profile_api
     from empire.server.api.v2.stager import stager_api, stager_template_api
     from empire.server.api.v2.user import user_api
@@ -75,6 +75,7 @@ def client(empire_config):
     v2App.include_router(obfuscation_api.router)
     v2App.include_router(profile_api.router)
     v2App.include_router(plugin_api.router)
+    v2App.include_router(plugin_task_api.router)
     v2App.include_router(credential_api.router)
     v2App.include_router(host_api.router)
     v2App.include_router(user_api.router)

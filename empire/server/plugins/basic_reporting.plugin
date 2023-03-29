@@ -1,9 +1,10 @@
 import csv
-import threading
+import io
 
+from empire.server.common.empire import MainMenu
 from empire.server.common.plugins import Plugin
 from empire.server.core.db import models
-from empire.server.core.db.base import SessionLocal
+from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.plugin_service import PluginService
 
 
@@ -33,31 +34,46 @@ class Plugin(Plugin):
                 "Strict": True,
             }
         }
-        self.lock = threading.Lock()
         self.install_path = ""
 
-    def execute(self, command):
+    def execute(self, command, **kwargs):
         """
         Parses commands from the API
         """
-        try:
-            report = command["report"]
+        user = kwargs["user"]
+        db = kwargs["db"]
+        input = f'Generating reports for: {command["report"]}'
+        plugin_task = models.PluginTask(
+            plugin_id=self.info["Name"],
+            input=input,
+            input_full=input,
+            user_id=user.id,
+            status=PluginTaskStatus.completed,
+        )
+        output = ""
+        db_downloads = []
 
-            if report == "session":
-                self.session_report()
-            elif report == "credential":
-                self.credential_report()
-            elif report == "log":
-                self.generate_report()
-            elif report == "all":
-                self.session_report()
-                self.credential_report()
-                self.generate_report()
-            return True
-        except:
-            return False
+        report = command["report"]
+        if report in ["session", "all"]:
+            db_download = self.session_report(db, user)
+            db_downloads.append(db_download)
+            output += f"[*] Session report generated to {db_download.location}\n"
+        if report in ["credential", "all"]:
+            db_download = self.credential_report(db, user)
+            db_downloads.append(db_download)
+            output += f"[*] Credential report generated to {db_download.location}\n"
+        if report in ["log", "all"]:
+            db_download = self.generate_report(db, user)
+            db_downloads.append(db_download)
+            output += f"[*] Log report generated to {db_download.location}\n"
 
-    def register(self, mainMenu):
+        output += "[*] Execution complete.\n"
+        plugin_task.output = output
+        plugin_task.downloads = db_downloads
+        db.add(plugin_task)
+        db.flush()
+
+    def register(self, mainMenu: MainMenu):
         """
         Any modifications to the mainMenu go here - e.g.
         registering functions to be run by user commands
@@ -66,53 +82,56 @@ class Plugin(Plugin):
         self.main_menu = mainMenu
         self.plugin_service: PluginService = mainMenu.pluginsv2
 
-    def session_report(self):
-        path = self.install_path + "/data/sessions.csv"
-        with self.lock:
-            with SessionLocal() as db:
-                with open(path, "w") as f:
-                    out = csv.writer(f)
-                    out.writerow(["SessionID", "Hostname", "User Name", "First Check-in"])
+    def session_report(self, db, user):
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(["SessionID", "Hostname", "User Name", "First Check-in"])
+        for row in db.query(models.Agent).all():
+            writer.writerow(
+                [row.session_id, row.hostname, row.username, row.checkin_time]
+            )
 
-                    for row in db.query(models.Agent).all():
-                        out.writerow([row.session_id, row.hostname, row.username, row.checkin_time])
-        self.plugin_service.plugin_socketio_message(
-            self.info["Name"],
-            f"[*] Session report generated to {path}",
+        output_str = out.getvalue()
+        db_download = self.main_menu.downloadsv2.create_download_from_text(
+            db, user, output_str, "sessions.csv", "basic_reporting"
         )
 
-    def credential_report(self):
-        path = self.install_path + "/data/credentials.csv"
-        with self.lock:
-            with SessionLocal() as db:
-                with open(path, "w") as f:
-                    out = csv.writer(f)
-                    out.writerow(["Domain", "Username", "Host", "Cred Type", "Password"])
+        return db_download
 
-                    for row in db.query(models.Credential).all():
-                        out.writerow([row.domain, row.username, row.host, row.credtype, row.password])
-        self.plugin_service.plugin_socketio_message(
-            self.info["Name"],
-            f"[*] Credential report generated to {path}",
+    def credential_report(self, db, user):
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(["Domain", "Username", "Host", "Cred Type", "Password"])
+        for row in db.query(models.Credential).all():
+            writer.writerow(
+                [row.domain, row.username, row.host, row.credtype, row.password]
+            )
+
+        output_str = out.getvalue()
+        db_download = self.main_menu.downloadsv2.create_download_from_text(
+            db, user, output_str, "credentials.csv", "basic_reporting"
         )
 
-    def generate_report(self):
-        path = self.install_path + "/data/master.log"
-        with self.lock:
-            with SessionLocal() as db:
-                with open(path, "w") as f:
-                    f.write("Empire Master Taskings & Results Log by timestamp\n")
-                    f.write("=" * 50 + "\n\n")
-                    for row in db.query(models.Tasking).all():
-                        row: models.Tasking
-                        f.write(
-                            f"\n{xstr(row.created_at)} - {xstr(row.id)} ({xstr(row.agent_id)})> "
-                            f"{xstr(row.user.username)}\n {xstr(row.input)}\n {xstr(row.output)}\n"
-                        )
-        self.plugin_service.plugin_socketio_message(
-            self.info["Name"],
-            f"[*] Master log successfully generated to {path}"
+        return db_download
+
+    def generate_report(self, db, user):
+        out = io.StringIO()
+        out.write("Empire Master Taskings & Results Log by timestamp\n")
+        out.write("=" * 50 + "\n\n")
+        for row in db.query(models.AgentTask).all():
+            row: models.AgentTask
+            username = row.user.username if row.user else "None"
+            out.write(
+                f"\n{xstr(row.created_at)} - {xstr(row.id)} ({xstr(row.agent_id)})> "
+                f"{xstr(username)}\n {xstr(row.input)}\n {xstr(row.output)}\n"
+            )
+
+        output_str = out.getvalue()
+        db_download = self.main_menu.downloadsv2.create_download_from_text(
+            db, user, output_str, "master.log", "basic_reporting"
         )
+
+        return db_download
 
     def shutdown(self):
         """
