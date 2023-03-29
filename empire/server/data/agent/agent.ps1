@@ -909,11 +909,11 @@ function Invoke-Empire {
                 # get the raw file contents and save it to the specified location
                 $Content = [System.Convert]::FromBase64String($base64part);
                 try{
-                    Set-Content -Path $filename -Value $Content -Encoding Byte
+                    Set-Content -Path $filename -Value $Content -Encoding Byte -ErrorAction Stop -ErrorVariable error
                     Encode-Packet -type $type -data "[*] Upload of $fileName successful" -ResultID $ResultID;
                 }
                 catch {
-                    Encode-Packet -type 0 -data '[!] Error in writing file during upload' -ResultID $ResultID;
+                    Encode-Packet -type 0 -data $error -ResultID $ResultID;
                 }
             }
             # directory list

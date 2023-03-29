@@ -18,9 +18,12 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        base64_shellcode = main_menu.downloadsv2.get_all(
-            SessionLocal(), None, params["File"]
-        )[0][0].get_base64_file()
+        try:
+            base64_shellcode = main_menu.downloadsv2.get_all(
+                SessionLocal(), None, params["File"]
+            )[0][0].get_base64_file()
+        except Exception as e:
+            return None, f"Failed to get base64 encoded shellcode: {e}"
 
         compiler = main_menu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":

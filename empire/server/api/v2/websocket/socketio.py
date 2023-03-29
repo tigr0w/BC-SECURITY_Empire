@@ -1,6 +1,7 @@
 import json
 import logging
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from empire.server.api import jwt_auth
@@ -48,10 +49,16 @@ def setup_socket_events(sio, empire_menu):
 
     @sio.on("connect")
     async def on_connect(sid, environ, auth):
-        user = await get_user_from_token(sid, auth["token"])
-        if user:
-            log.info(f"{user.username} connected to socketio")
-            return
+        try:
+            user = await get_user_from_token(sid, auth["token"])
+            if user:
+                log.info(f"{user.username} connected to socketio")
+                return
+        except HTTPException:
+            # If a server is restarted and clients are still connected, there are
+            #  sometimes token handling errors. We want to reject these since they fail
+            #  to auth, but we don't need to print the whole stacktrace.
+            return False
 
         return False
 

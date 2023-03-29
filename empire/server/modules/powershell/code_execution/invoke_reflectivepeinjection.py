@@ -27,12 +27,12 @@ class Module(object):
 
         script_end = "\nInvoke-ReflectivePEInjection"
 
-        # check if dllpath or PEUrl is set. Both are required params in their respective parameter sets.
-        if params["DllPath"] == "" and params["PEUrl"] == "":
-            return handle_error_message("[!] Please provide a PEUrl or DllPath")
+        # check if file or PEUrl is set. Both are required params in their respective parameter sets.
+        if params["File"] == "" and params["PEUrl"] == "":
+            return handle_error_message("[!] Please provide a PEUrl or File")
         for option, values in params.items():
             if option.lower() != "agent":
-                if option.lower() == "dllpath":
+                if option.lower() == "file":
                     if values != "":
                         try:
                             f = open(values, "rb")

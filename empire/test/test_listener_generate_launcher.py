@@ -122,11 +122,6 @@ def test_http_com_generate_launcher(monkeypatch, main_menu_mock):
 def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http_foreign import Listener
 
-    # guarantee the session id.
-    packets = Mock()
-    packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http_foreign.packets", packets)
-
     # guarantee the chosen stage0 url.
     random = MagicMock()
     random.choice.side_effect = lambda x: x[0]
@@ -135,6 +130,7 @@ def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
     http_foreign_listener = Listener(main_menu_mock, [])
 
     http_foreign_listener.options["Host"]["Value"] = "http://localhost"
+    http_foreign_listener.options["RoutingPacket"]["Value"] = "cm91dGluZyBwYWNrZXQ="
     main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_foreign_listener.options}
     }

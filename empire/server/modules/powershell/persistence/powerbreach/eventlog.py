@@ -61,13 +61,12 @@ Invoke-EventLogBackdoor"""
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
         else:
-            # set the listener value for the launcher
-            stager = main_menu.stagertemplatesv2.new_instance("multi_launcher")
-            stager.options["Listener"] = listener_name
-            stager.options["Base64"] = "False"
-
-            # and generate the code
-            stager_code = stager.generate()
+            stager_code = main_menu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                obfuscate=False,
+                encode=False,
+            )
 
             if stager_code == "":
                 return handle_error_message("[!] Error in launcher generation.")

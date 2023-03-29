@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.2] - 2023-03-29
+
+-   Updated Starkiller to v2.1.1
+-   Removed thread from IronPython agent (@Hubbl3)
+-   Fixed foreign listener issue with cookies (@Hubbl3)
+-   Fixed error message handling for port forward pivot (@Cx01N)
+-   Fixed upload not reporting error in PowerShell agent (@Cx01N)
+-   Fixed client not giving option to select upload directory (@Cx01N)
+-   Fixed persistence/powerbreach/eventlog launcher generation (@Cx01N)
+
+## [5.1.1] - 2023-03-17
+
+-   Added D/Invoke option to Process Injection (@Cx01N)
+-   Added IronPython and csharp to windows/launcher_bat (@Cx01N)
+-   Added language option to spawn and spawnas modules (@Cx01N)
+-   Fixed issue with powershell and ironpython agents not using public classes (@Cx01N)
+-   Fixed issue where large shellcode files lock up server in Invoke_Shellcode (@Cx01N)
+-   Increased the default time for base64 encoded ironpython payloads (@Cx01N)
+-   Fix issue with large stacktrace on stale socketio connection (@Vinnybod)
+
+## [5.1.0] - 2023-03-01
+
+-   Added a 'modified_input' field to the 'execute module' task (@Vinnybod)
+-   Added an endpoint to get the script for a module (@Vinnybod)
+
 ## [5.0.4] - 2023-02-25
 
 -   Fix module error in PSRansom (@Cx01N)
@@ -416,7 +441,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.2...HEAD
+
+[5.1.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.1...v5.1.2
+
+[5.1.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.0...v5.1.1
+
+[5.1.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.4...v5.1.0
 
 [5.0.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.0.3...v5.0.4
 
