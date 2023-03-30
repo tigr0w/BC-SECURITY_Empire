@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 -   Added new plugin functionality (@Vinnybod)
     -   Added plugin tasks
     -   Added plugin task endpoints
@@ -13,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Tasks renamed to AgentTasks to avoid confusion with PluginTasks
 -   Rename tasking to task in most places to standardize the naming. The hook names have not been changed yet.
 -   Fix Starkiller error in Docker (@0x4xel)
+-   Fixed launcher_bat to work with all listeners (@Cx01N)
+-   Fixed issue with duplicate Server Header being added by Flask (@Cx01N)
 -   Fixed malleable c2 not generating IronPython agents correctly (@Cx01N)
 
 ## [5.1.2] - 2023-03-29
@@ -23,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed upload not reporting error in PowerShell agent (@Cx01N)
 -   Fixed client not giving option to select upload directory (@Cx01N)
 -   Fixed persistence/powerbreach/eventlog launcher generation (@Cx01N)
--   Fixed issue with duplicate Server Header being added by Flask (@Cx01N)
 
 ## [5.1.1] - 2023-03-17
 

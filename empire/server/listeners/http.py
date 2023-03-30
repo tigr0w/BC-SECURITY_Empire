@@ -854,53 +854,34 @@ class Listener(object):
         WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
         @app.route("/download/<stager>/")
-        @app.route("/download/<stager>/<options>")
-        def send_stager(stager, options=None):
+        def send_stager(stager):
+            with SessionLocal.begin() as db:
+                obfuscation_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                    db, stager
+                )
+                obfuscation = obfuscation_config.enabled
+                obfuscation_command = obfuscation_config.command
+
             if "powershell" == stager:
-                if options:
-                    options = base64.b64decode(options).decode("UTF-8")
-                    options = options.split(":")
-
-                    obfuscate_command = options[0]
-                    bypasses = options[1]
-
-                    if obfuscate_command:
-                        obfuscate = True
-                    else:
-                        obfuscate = False
-
-                    if not bypasses:
-                        bypasses = ""
-
-                    launcher = self.mainMenu.stagers.generate_launcher(
-                        listenerName=listenerName,
-                        language="powershell",
-                        encode=False,
-                        userAgent=userAgent,
-                        proxy=proxy,
-                        proxyCreds=proxyCreds,
-                        obfuscate=obfuscate,
-                        obfuscation_command=obfuscate_command,
-                        bypasses=bypasses,
-                    )
-                    return launcher
-
-                else:
-                    launcher = self.mainMenu.stagers.generate_launcher(
-                        listenerName=listenerName,
-                        language="powershell",
-                        encode=False,
-                        userAgent=userAgent,
-                        proxy=proxy,
-                        proxyCreds=proxyCreds,
-                    )
-                    return launcher
+                launcher = self.mainMenu.stagers.generate_launcher(
+                    listenerName=listenerName,
+                    language="powershell",
+                    encode=False,
+                    obfuscate=obfuscation,
+                    obfuscation_command=obfuscation_command,
+                    userAgent=userAgent,
+                    proxy=proxy,
+                    proxyCreds=proxyCreds,
+                )
+                return launcher
 
             elif "python" == stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
                     listenerName,
                     language="python",
                     encode=False,
+                    obfuscate=obfuscation,
+                    obfuscation_command=obfuscation_command,
                     userAgent=userAgent,
                     proxy=proxy,
                     proxyCreds=proxyCreds,
@@ -912,13 +893,14 @@ class Listener(object):
                     listenerName,
                     language="python",
                     encode=False,
+                    obfuscate=obfuscation,
                     userAgent=userAgent,
                     proxy=proxy,
                     proxyCreds=proxyCreds,
                 )
 
                 directory = self.mainMenu.stagers.generate_python_exe(
-                    launcher, dot_net_version="net40"
+                    launcher, dot_net_version="net40", obfuscate=obfuscation
                 )
                 with open(directory, "rb") as f:
                     code = f.read()
@@ -929,6 +911,7 @@ class Listener(object):
                     listenerName,
                     language="csharp",
                     encode=False,
+                    obfuscate=obfuscation,
                     userAgent=userAgent,
                     proxy=proxy,
                     proxyCreds=proxyCreds,

