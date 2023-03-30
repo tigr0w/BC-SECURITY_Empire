@@ -958,8 +958,12 @@ class Listener(object):
             """
             headers = listenerOptions["Headers"]["Value"]
             for key in headers.split("|"):
-                value = key.split(":")
-                response.headers[value[0]] = value[1]
+                if key.split(":")[0].lower() == "server":
+                    WSGIRequestHandler.server_version = key.split(":")[1]
+                    WSGIRequestHandler.sys_version = ""
+                else:
+                    value = key.split(":")
+                    response.headers[value[0]] = value[1]
             return response
 
         @app.after_request
