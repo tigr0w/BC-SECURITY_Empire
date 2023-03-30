@@ -305,8 +305,7 @@ class Listener(object):
                 else:
                     profile.stager.client.headers["User-Agent"] = userAgent
 
-            if language.lower().startswith("po"):
-                # PowerShell
+            if language == "powershell":
                 launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
                 if safeChecks.lower() == "true":
@@ -458,9 +457,7 @@ class Listener(object):
                 else:
                     return launcherBase
 
-            elif language.lower().startswith("py"):
-                # Python
-
+            elif language in ["python", "ironpython"]:
                 # ==== HANDLE IMPORTS ====
                 launcherBase = "import sys,base64\n"
                 launcherBase += "import urllib.request,urllib.parse\n"
@@ -584,7 +581,7 @@ class Listener(object):
 
             else:
                 log.error(
-                    "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
+                    "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
                 )
 
     def generate_stager(

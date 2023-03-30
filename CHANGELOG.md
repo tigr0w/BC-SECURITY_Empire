@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Tasks renamed to AgentTasks to avoid confusion with PluginTasks
 -   Rename tasking to task in most places to standardize the naming. The hook names have not been changed yet.
 -   Fix Starkiller error in Docker (@0x4xel)
+-   Fixed malleable c2 not generating IronPython agents correctly (@Cx01N)
 
 ## [5.1.2] - 2023-03-29
 
