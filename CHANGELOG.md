@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.0] - 2023-03-31
+
 -   Added new plugin functionality (@Vinnybod)
     -   Added plugin tasks
     -   Added plugin task endpoints
@@ -450,7 +452,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.2.0...HEAD
+
+[5.2.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.2...v5.2.0
 
 [5.1.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.1...v5.1.2
 
