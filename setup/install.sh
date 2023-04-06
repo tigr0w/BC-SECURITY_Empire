@@ -225,6 +225,7 @@ else
 fi
 if [ "$answer" != "${answer#[Yy]}" ] ;then
   sudo apt install -y curl git gcc
+  export CHOOSENIM_CHOOSE_VERSION=1.6.12
   curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
   echo "export PATH=/root/.nimble/bin:$PATH" >> ~/.bashrc
   export PATH=/root/.nimble/bin:$PATH

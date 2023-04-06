@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Lock nim version in the install script (@Vinnybod)
+
 ## [5.2.0] - 2023-03-31
 
 -   Added new plugin functionality (@Vinnybod)
