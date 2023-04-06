@@ -434,7 +434,7 @@ class ModuleService(object):
         """
         Load Empire modules.
         """
-        root_path = f"{db.query(models.Config).first().install_path}/modules/"
+        root_path = f"{self.main_menu.installPath}/modules/"
 
         log.info(f"v2: Loading modules from: {root_path}")
 

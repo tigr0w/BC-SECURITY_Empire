@@ -4,9 +4,9 @@ import pytest
 
 
 @pytest.fixture(scope="module")
-def main_menu_mock(db, models):
+def main_menu_mock(db, models, install_path):
     main_menu = Mock()
-    main_menu.installPath = db.query(models.Config).first().install_path
+    main_menu.installPath = install_path
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}
     main_menu.obfuscationv2 = Mock()

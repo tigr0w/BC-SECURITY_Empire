@@ -15,16 +15,13 @@ class ProfileService(object):
         self.main_menu = main_menu
 
         with SessionLocal.begin() as db:
-            self.load_malleable_profiles(db)
+            self._load_malleable_profiles(db)
 
-    @staticmethod
-    def load_malleable_profiles(db: Session):
+    def _load_malleable_profiles(self, db: Session):
         """
         Load Malleable C2 Profiles to the database
         """
-        malleable_path = (
-            f"{db.query(models.Config).first().install_path}/data/profiles/"
-        )
+        malleable_path = f"{self.main_menu.installPath}/data/profiles/"
         log.info(f"v2: Loading malleable profiles from: {malleable_path}")
 
         malleable_directories = os.listdir(malleable_path)

@@ -242,7 +242,6 @@ class HostProcess(Base):
 class Config(Base):
     __tablename__ = "config"
     staging_key = Column(String(255), primary_key=True)
-    install_path = Column(Text, nullable=False)
     ip_whitelist = Column(Text, nullable=False)
     ip_blacklist = Column(Text, nullable=False)
     autorun_command = Column(Text, nullable=False)

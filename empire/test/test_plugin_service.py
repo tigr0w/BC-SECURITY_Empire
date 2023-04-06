@@ -21,11 +21,11 @@ def temp_copy_plugin(plugin_path):
     Copy the example plugin to a temporary location. Since plugin_service
     won't load a plugin called "example".
     """
-    example_plugin_path = os.path.join(plugin_path, "example.plugin")
-    example_plugin_copy_path = os.path.join(plugin_path, "temporary.plugin")
+    example_plugin_path = plugin_path / "example.plugin"
+    example_plugin_copy_path = plugin_path / "temporary.plugin"
 
     # copy example plugin to a new location
-    shutil.copyfile(example_plugin_path, example_plugin_copy_path)
+    shutil.copyfile(str(example_plugin_path), str(example_plugin_copy_path))
 
     yield
 
@@ -33,15 +33,18 @@ def temp_copy_plugin(plugin_path):
     os.remove(example_plugin_copy_path)
 
 
-def test_autostart_plugins(caplog, monkeypatch, db, models, empire_config):
+def test_autostart_plugins(
+    caplog, monkeypatch, db, models, empire_config, install_path
+):
     caplog.set_level(logging.DEBUG)
 
     from empire.server.core.plugin_service import PluginService
 
-    plugin_path = db.query(models.Config).first().install_path + "/plugins"
+    plugin_path = install_path / "plugins"
 
     with temp_copy_plugin(plugin_path):
         main_menu_mock = MagicMock()
+        main_menu_mock.installPath = str(install_path)
         plugin_service = PluginService(main_menu_mock)
         plugin_service.startup()
 
@@ -49,13 +52,14 @@ def test_autostart_plugins(caplog, monkeypatch, db, models, empire_config):
 
 
 # No kwargs pre 5.2
-def test_plugin_execute_without_kwargs():
+def test_plugin_execute_without_kwargs(install_path):
     from empire.server.core.plugin_service import PluginService
 
     def execute(options):
         return f"This function was called with options: {options}"
 
     main_menu_mock = MagicMock()
+    main_menu_mock.installPath = install_path
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
 
@@ -67,13 +71,14 @@ def test_plugin_execute_without_kwargs():
     assert res == execute(req.options)
 
 
-def test_plugin_execute_with_kwargs():
+def test_plugin_execute_with_kwargs(install_path):
     from empire.server.core.plugin_service import PluginService
 
     def execute(options, **kwargs):
         return f"This function was called with options: {options} and kwargs: {kwargs}"
 
     main_menu_mock = MagicMock()
+    main_menu_mock.installPath = install_path
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
 

@@ -62,7 +62,7 @@ class PluginService(object):
         """
         Load plugins at the start of Empire
         """
-        plugin_path = db.query(models.Config).first().install_path + "/plugins"
+        plugin_path = f"{self.main_menu.installPath}/plugins"
         log.info(f"Searching for plugins at {plugin_path}")
 
         # Import old v1 plugins (remove in 5.0)

@@ -10,7 +10,9 @@ menu loops.
 from __future__ import absolute_import
 
 import logging
+import os
 import time
+from pathlib import Path
 from socket import SocketIO
 from typing import Optional
 
@@ -54,10 +56,11 @@ class MainMenu(object):
         # pull out some common configuration information
         (
             self.isroot,
-            self.installPath,
             self.ipWhiteList,
             self.ipBlackList,
-        ) = data_util.get_config("rootuser, install_path,ip_whitelist,ip_blacklist")
+        ) = data_util.get_config("rootuser,ip_whitelist,ip_blacklist")
+
+        self.installPath = str(Path(os.path.realpath(__file__)).parent.parent)
 
         # parse/handle any passed command line arguments
         self.args = args

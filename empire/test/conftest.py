@@ -25,6 +25,11 @@ def default_argv():
 
 
 @pytest.fixture(scope="session")
+def install_path():
+    return Path(os.path.realpath(__file__)).parent.parent / "server"
+
+
+@pytest.fixture(scope="session")
 def client(empire_config):
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
 
