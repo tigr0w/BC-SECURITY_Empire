@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed issue with install path not being used properly when switching empire location (@Vinnybod)
 -   Lock nim version in the install script (@Vinnybod)
+-   Fixes for the onedrive listener that broke with 5.0 (@Vinnybod)
 
 ## [5.2.0] - 2023-03-31
 

@@ -532,13 +532,7 @@ class Agents(object):
                 .all()
             )
 
-        if agents:
-            # make sure names all ascii encoded
-            results = [r[0].encode("ascii", "ignore") for r in agents]
-        else:
-            results = []
-
-        return results
+            return [a[0] for a in agents]
 
     def get_autoruns_db(self):
         """

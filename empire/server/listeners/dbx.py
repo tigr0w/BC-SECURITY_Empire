@@ -926,9 +926,6 @@ class Listener(object):
 
             # get any taskings applicable for agents linked to this listener
             sessionIDs = self.mainMenu.agents.get_agents_for_listener(listenerName)
-            for x in range(len(sessionIDs)):
-                if isinstance(sessionIDs[x], bytes):
-                    sessionIDs[x] = sessionIDs[x].decode("UTF-8")
 
             for sessionID in sessionIDs:
                 taskingData = self.mainMenu.agents.handle_agent_request(
