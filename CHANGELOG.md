@@ -10,13 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.2.1] - 2023-04-30
 
 -   Updated Donut to v1.0.2 (@Cx01N)
-
 -   Fixed issue with install path not being used properly when switching empire location (@Vinnybod)
-
 -   Lock nim version in the install script (@Vinnybod)
-
 -   Fixed issue with Powerview modules not performing dynamic detect on overhead functions (@Cx01N)
-
 -   Fixes for the onedrive listener that broke with 5.0 (@Vinnybod)
 
 ## [5.2.0] - 2023-03-31
