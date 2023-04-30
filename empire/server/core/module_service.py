@@ -593,6 +593,10 @@ class ModuleService(object):
         """
         Combine script and script end with obfuscation if needed.
         """
+        if "PowerSploit File: PowerView.ps1" in script:
+            module_name = script_end.lstrip().split(" ")[0]
+            script = helpers.generate_dynamic_powershell_script(script, module_name)
+
         if obfuscate:
             script_end = self.obfuscation_service.obfuscate(
                 script_end, obfuscation_command
