@@ -3,15 +3,15 @@ from unittest.mock import Mock
 from empire.server.core.hooks import hooks
 
 
-def callback_hook(tasking):
+def callback_hook(task):
     pass
 
 
-def callback_filter(tasking):
+def callback_filter(task):
     return {"test": "test"}
 
 
-def callback_filter_multi(db, tasking):
+def callback_filter_multi(db, task):
     return {"fake_db": True}, {"test": "updated"}
 
 
@@ -67,9 +67,9 @@ def test_run_filter_multi_param():
         hooks.BEFORE_TASKING_RESULT_FILTER, "test_filter", callback_filter_multi
     )
 
-    db, tasking = hooks.run_filters(
+    db, task = hooks.run_filters(
         hooks.BEFORE_TASKING_RESULT_FILTER, {"fake_db": True}, {"test": "test"}
     )
 
     assert db.get("fake_db") is True
-    assert tasking.get("test") == "updated"
+    assert task.get("test") == "updated"

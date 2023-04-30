@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.2] - 2023-04-30
+
+-   Updated Starkiller to v2.2.0
+-   Dependency upgrades (@Vinnybod)
+
+## [5.2.1] - 2023-04-30
+
+-   Updated Donut to v1.0.2 (@Cx01N)
+-   Fixed issue with install path not being used properly when switching empire location (@Vinnybod)
+-   Lock nim version in the install script (@Vinnybod)
+-   Fixed issue with Powerview modules not performing dynamic detect on overhead functions (@Cx01N)
+-   Fixes for the onedrive listener that broke with 5.0 (@Vinnybod)
+
+## [5.2.0] - 2023-03-31
+
+-   Added new plugin functionality (@Vinnybod)
+    -   Added plugin tasks
+    -   Added plugin task endpoints
+    -   Gave plugins kwargs to allow for more flexibility. Plugins are now receiving a database session and user object.
+-   Tasks renamed to AgentTasks to avoid confusion with PluginTasks
+-   Rename tasking to task in most places to standardize the naming. The hook names have not been changed yet.
+-   Fix Starkiller error in Docker (@0x4xel)
+-   Fixed launcher_bat to work with all listeners (@Cx01N)
+-   Fixed issue with duplicate Server Header being added by Flask (@Cx01N)
+-   Fixed malleable c2 not generating IronPython agents correctly (@Cx01N)
+
 ## [5.1.2] - 2023-03-29
 
 -   Updated Starkiller to v2.1.1
@@ -441,7 +467,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.2.2...HEAD
+
+[5.2.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.2.1...v5.2.2
+
+[5.2.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.2.0...v5.2.1
+
+[5.2.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.2...v5.2.0
 
 [5.1.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.1.1...v5.1.2
 

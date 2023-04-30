@@ -11,7 +11,7 @@ from empire.server.api.v2.shared_dto import (
 from empire.server.core.db import models
 
 
-class TaskOrderOptions(str, Enum):
+class AgentTaskOrderOptions(str, Enum):
     id = "id"
     updated_at = "updated_at"
     status = "status"
@@ -19,12 +19,12 @@ class TaskOrderOptions(str, Enum):
 
 
 def domain_to_dto_task(
-    task: models.Tasking,
+    task: models.AgentTask,
     include_full_input: bool = True,
     include_original_output: bool = True,
     include_output: bool = True,
 ):
-    return Task.construct(  # .construct doesn't do any validation and speeds up the request a bit
+    return AgentTask.construct(  # .construct doesn't do any validation and speeds up the request a bit
         id=task.id,
         input=task.input,
         full_input=None if not include_full_input else task.input_full,
@@ -44,7 +44,7 @@ def domain_to_dto_task(
     )
 
 
-class Task(BaseModel):
+class AgentTask(BaseModel):
     id: int
     input: str
     full_input: Optional[str]
@@ -56,13 +56,13 @@ class Task(BaseModel):
     downloads: List[DownloadDescription]
     module_name: Optional[str]
     task_name: Optional[str]
-    status: models.TaskingStatus
+    status: models.AgentTaskStatus
     created_at: datetime
     updated_at: datetime
 
 
-class Tasks(BaseModel):
-    records: List[Task]
+class AgentTasks(BaseModel):
+    records: List[AgentTask]
     limit: int
     page: int
     total_pages: int

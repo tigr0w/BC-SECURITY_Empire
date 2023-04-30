@@ -851,9 +851,6 @@ class Listener(object):
                     try:
                         agent_id = item["name"].split(".")[0]
 
-                        for i in range(len(agent_ids)):
-                            agent_ids[i] = agent_ids[i].decode("UTF-8")
-
                         if (
                             agent_id not in agent_ids
                         ):  # If we don't recognize that agent, upload a message to restage
@@ -868,7 +865,8 @@ class Listener(object):
                             s.delete("%s/drive/items/%s" % (base_url, item["id"]))
                             continue
 
-                        self.mainMenu.agents.update_agent_lastseen_db(agent_id)
+                        with SessionLocal() as db:
+                            self.mainMenu.agents.update_agent_lastseen_db(agent_id, db)
 
                         # If the agent is just checking in, the file will only be 1 byte, so no results to fetch
                         if item["size"] > 1:

@@ -320,7 +320,7 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
     return resultFunctions
 
 
-def generate_dynamic_powershell_script(script, functionNames):
+def generate_dynamic_powershell_script(script, function_names):
     """
     Takes a PowerShell script and a function name (or array of function names,
     generates a dictionary of "[functionNames] -> functionCode", and recursively
@@ -333,7 +333,7 @@ def generate_dynamic_powershell_script(script, functionNames):
     overhead is needed and add it to the result script.
     """
 
-    newScript = ""
+    new_script = ""
     psreflect_functions = [
         "New-InMemoryModule",
         "func",
@@ -342,8 +342,8 @@ def generate_dynamic_powershell_script(script, functionNames):
         "struct",
     ]
 
-    if type(functionNames) is not list:
-        functionNames = [functionNames]
+    if type(function_names) is not list:
+        function_names = [function_names]
 
     # build a mapping of functionNames -> stripped function code
     functions = {}
@@ -355,25 +355,25 @@ def generate_dynamic_powershell_script(script, functionNames):
 
     # recursively enumerate all possible function dependencies and
     #   start building the new result script
-    functionDependencies = []
+    function_dependencies = []
 
-    for functionName in functionNames:
-        functionDependencies += find_all_dependent_functions(
+    for functionName in function_names:
+        function_dependencies += find_all_dependent_functions(
             functions, functionName, []
         )
-        functionDependencies = unique(functionDependencies)
+        function_dependencies = unique(function_dependencies)
 
-    for functionDependency in functionDependencies:
+    for function_dependency in function_dependencies:
         try:
-            newScript += functions[functionDependency] + "\n"
+            new_script += functions[function_dependency] + "\n"
         except Exception:
-            log.error(f"Key error with function {functionDependency} !")
+            log.error(f"Key error with function {function_dependency} !")
 
     # if any psreflect methods are needed, add in the overhead at the end
-    if any(el in set(psreflect_functions) for el in functionDependencies):
-        newScript += get_powerview_psreflect_overhead(script)
+    if any(el in set(psreflect_functions) for el in function_dependencies):
+        new_script += get_powerview_psreflect_overhead(script)
 
-    return newScript + "\n"
+    return new_script + "\n"
 
 
 ###############################################################

@@ -19,8 +19,8 @@ class BypassService(object):
         with SessionLocal.begin() as db:
             self._load_bypasses(db)
 
-    def _load_bypasses(self, db):
-        root_path = f"{db.query(models.Config).first().install_path}/bypasses/"
+    def _load_bypasses(self, db: Session):
+        root_path = f"{self.main_menu.installPath}/bypasses/"
         log.info(f"v2: Loading bypasses from: {root_path}")
 
         for root, dirs, files in os.walk(root_path):

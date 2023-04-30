@@ -51,8 +51,8 @@ def agent(client, db, models, main, host):
 
     yield agent
 
-    db.query(models.Tasking).filter(
-        models.Tasking.agent_id == agent.session_id
+    db.query(models.AgentTask).filter(
+        models.AgentTask.agent_id == agent.session_id
     ).delete()
     db.delete(host)
     db.delete(agent)

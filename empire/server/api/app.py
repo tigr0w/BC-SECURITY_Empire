@@ -75,7 +75,7 @@ def initialize(secure: bool = False, port: int = 1337):
     from empire.server.api.v2.meta import meta_api
     from empire.server.api.v2.module import module_api
     from empire.server.api.v2.obfuscation import obfuscation_api
-    from empire.server.api.v2.plugin import plugin_api
+    from empire.server.api.v2.plugin import plugin_api, plugin_task_api
     from empire.server.api.v2.profile import profile_api
     from empire.server.api.v2.stager import stager_api, stager_template_api
     from empire.server.api.v2.user import user_api
@@ -107,6 +107,7 @@ def initialize(secure: bool = False, port: int = 1337):
     v2App.include_router(host_api.router)
     v2App.include_router(download_api.router)
     v2App.include_router(meta_api.router)
+    v2App.include_router(plugin_task_api.router)
     v2App.include_router(plugin_api.router)
 
     v2App.add_middleware(

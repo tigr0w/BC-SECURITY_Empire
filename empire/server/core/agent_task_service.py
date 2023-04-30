@@ -12,14 +12,14 @@ from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, undefer
 
 from empire.server.api.v2.agent.agent_task_dto import (
+    AgentTaskOrderOptions,
     ModulePostRequest,
-    TaskOrderOptions,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.common import helpers
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
-from empire.server.core.db.models import TaskingStatus
+from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
 from empire.server.core.listener_service import ListenerService
 from empire.server.core.module_service import ModuleService
@@ -50,24 +50,24 @@ class AgentTaskService(object):
         include_original_output: bool = False,
         include_output: bool = True,
         since: Optional[datetime] = None,
-        order_by: TaskOrderOptions = TaskOrderOptions.id,
+        order_by: AgentTaskOrderOptions = AgentTaskOrderOptions.id,
         order_direction: OrderDirection = OrderDirection.desc,
-        status: Optional[TaskingStatus] = None,
+        status: Optional[AgentTaskStatus] = None,
         q: Optional[str] = None,
     ):
         query = db.query(
-            models.Tasking, func.count(models.Tasking.id).over().label("total")
+            models.AgentTask, func.count(models.AgentTask.id).over().label("total")
         )
 
         if agents:
-            query = query.filter(models.Tasking.agent_id.in_(agents))
+            query = query.filter(models.AgentTask.agent_id.in_(agents))
 
         if users:
-            query = query.filter(models.Tasking.user_id.in_(users))
+            query = query.filter(models.AgentTask.user_id.in_(users))
 
         query_options = [
-            joinedload(models.Tasking.user),
-            joinedload(models.Tasking.agent).joinedload(models.Agent.host),
+            joinedload(models.AgentTask.user),
+            joinedload(models.AgentTask.agent).joinedload(models.Agent.host),
         ]
         if include_full_input:
             query_options.append(undefer("input_full"))
@@ -78,27 +78,27 @@ class AgentTaskService(object):
         query = query.options(*query_options)
 
         if since:
-            query = query.filter(models.Tasking.updated_at > since)
+            query = query.filter(models.AgentTask.updated_at > since)
 
         if status:
-            query = query.filter(models.Tasking.status == status)
+            query = query.filter(models.AgentTask.status == status)
 
         if q:
             query = query.filter(
                 or_(
-                    models.Tasking.input.like(f"%{q}%"),
-                    models.Tasking.output.like(f"%{q}%"),
+                    models.AgentTask.input.like(f"%{q}%"),
+                    models.AgentTask.output.like(f"%{q}%"),
                 )
             )
 
-        if order_by == TaskOrderOptions.status:
-            order_by_prop = models.Tasking.status
-        elif order_by == TaskOrderOptions.updated_at:
-            order_by_prop = models.Tasking.updated_at
-        elif order_by == TaskOrderOptions.agent:
-            order_by_prop = models.Tasking.agent_id
+        if order_by == AgentTaskOrderOptions.status:
+            order_by_prop = models.AgentTask.status
+        elif order_by == AgentTaskOrderOptions.updated_at:
+            order_by_prop = models.AgentTask.updated_at
+        elif order_by == AgentTaskOrderOptions.agent:
+            order_by_prop = models.AgentTask.agent_id
         else:
-            order_by_prop = models.Tasking.id
+            order_by_prop = models.AgentTask.id
 
         if order_direction == OrderDirection.asc:
             query = query.order_by(order_by_prop.asc())
@@ -118,8 +118,10 @@ class AgentTaskService(object):
     @staticmethod
     def get_task_for_agent(db: Session, agent_id: str, uid: int):
         return (
-            db.query(models.Tasking)
-            .filter(and_(models.Tasking.agent_id == agent_id, models.Tasking.id == uid))
+            db.query(models.AgentTask)
+            .filter(
+                and_(models.AgentTask.agent_id == agent_id, models.AgentTask.id == uid)
+            )
             .first()
         )
 
@@ -364,7 +366,7 @@ class AgentTaskService(object):
         task_input="",
         module_name: str = None,
         user_id: int = 0,
-    ) -> Tuple[Optional[models.Tasking], Optional[str]]:
+    ) -> Tuple[Optional[models.AgentTask], Optional[str]]:
         """
         Task an agent. Adapted from agents.py
         """
@@ -376,8 +378,8 @@ class AgentTaskService(object):
         self.main_menu.agents.save_agent_log(agent.session_id, message)
 
         pk = (
-            db.query(func.max(models.Tasking.id))
-            .filter(models.Tasking.agent_id == agent.session_id)
+            db.query(func.max(models.AgentTask.id))
+            .filter(models.AgentTask.agent_id == agent.session_id)
             .first()[0]
         )
 
@@ -385,7 +387,7 @@ class AgentTaskService(object):
             pk = 0
         pk = (pk + 1) % 65536
 
-        task = models.Tasking(
+        task = models.AgentTask(
             id=pk,
             agent_id=agent.session_id,
             input=task_input[:100],
@@ -393,7 +395,7 @@ class AgentTaskService(object):
             user_id=user_id if user_id else None,
             module_name=module_name,
             task_name=task_name,
-            status=TaskingStatus.queued,
+            status=AgentTaskStatus.queued,
         )
         db.add(task)
         db.flush()
@@ -412,5 +414,5 @@ class AgentTaskService(object):
         return task, None
 
     @staticmethod
-    def delete_task(db: Session, task: models.Tasking):
+    def delete_task(db: Session, task: models.AgentTask):
         db.delete(task)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "5.1.2"
+version = "5.2.2"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -50,12 +50,8 @@ pyperclip = "^1.8.2"
 pyvnc = {git = "https://github.com/BC-SECURITY/pyVNC.git"}
 python-socketio = {extras = ["client"], version = "^5.7.1"}
 Flask = "^2.1.2"
-# Donut breaks with Python 3.10 and hasn't been updated since 2019.
-# See https://github.com/TheWover/donut/issues/107 for more detail
-# The BC-SECURITY fork brings in the changes from S4ntiagoP's pull request
-# https://github.com/TheWover/donut/pull/101
-donut-shellcode = {git = "https://github.com/BC-SECURITY/donut.git"}
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git"}
+donut-shellcode = "^1.0.2"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"

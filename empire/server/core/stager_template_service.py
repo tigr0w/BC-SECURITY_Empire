@@ -6,7 +6,6 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
 log = logging.getLogger(__name__)
@@ -45,7 +44,7 @@ class StagerTemplateService(object):
         """
         Load stagers from the install + "/stagers/*" path
         """
-        root_path = "%s/stagers/" % db.query(models.Config).first().install_path
+        root_path = f"{self.main_menu.installPath}/stagers/"
         pattern = "*.py"
 
         log.info(f"v2: Loading stager templates from: {root_path}")

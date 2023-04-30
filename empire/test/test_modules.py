@@ -79,8 +79,8 @@ def agent(db, models, host):
 
     yield agent
 
-    db.query(models.Tasking).filter(
-        models.Tasking.agent_id == agent.session_id
+    db.query(models.AgentTask).filter(
+        models.AgentTask.agent_id == agent.session_id
     ).delete()
     db.delete(agent)
     db.delete(host)
@@ -147,9 +147,9 @@ def test_load_modules(main_menu_mock, models, db):
                 ), f"No generated script for module {key}"
 
 
-def test_execute_custom_generate(module_service, agent, db, models):
+def test_execute_custom_generate(module_service, agent, db, models, install_path):
     file_path = "empire/test/data/modules/test_custom_module.yaml"
-    root_path = f"{db.query(models.Config).first().install_path}/modules/"
+    root_path = f"{install_path}/modules/"
     path = Path(file_path)
     module_service._load_module(
         db, yaml.safe_load(path.read_text()), root_path, file_path

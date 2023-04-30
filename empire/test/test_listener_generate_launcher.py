@@ -18,7 +18,7 @@ def setup_staging_key(db, models):
 @pytest.fixture(scope="function")
 def main_menu_mock(db, models):
     main_menu = Mock()
-    main_menu.installPath = db.query(models.Config).first().install_path
+    main_menu.installPath = ""
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}
     yield main_menu

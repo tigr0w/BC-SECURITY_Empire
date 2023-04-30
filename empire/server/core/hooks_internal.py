@@ -9,7 +9,7 @@ from empire.server.core.db import models
 from empire.server.core.hooks import hooks
 
 
-def ps_hook(db: Session, tasking: models.Tasking):
+def ps_hook(db: Session, task: models.AgentTask):
     """
     This hook watches for the 'ps' command and writes the processes into the processes table.
 
@@ -21,30 +21,27 @@ def ps_hook(db: Session, tasking: models.Tasking):
     on StackOverflow, so that's what we'll stick with for now for the python results, even though it is imperfect.
     https://unix.stackexchange.com/a/243485
     """
-    if (
-        tasking.input.strip() not in ["ps", "tasklist"]
-        or tasking.agent.language == "csharp"
-    ):
+    if task.input.strip() not in ["ps", "tasklist"] or task.agent.language == "csharp":
         return
 
-    if tasking.agent.language == "python":
+    if task.agent.language == "python":
         output = (
             jq.compile(
                 """[sub("\n$";"") | splits("\n") | sub("^ +";"") | [splits(" +")]] | .[0] as $header | .[1:] | [.[] | [. as $x | range($header | length) | {"key": $header[.], "value": $x[.]}] | from_entries]"""
             )
             .input(
-                tasking.output.decode("utf-8").split(
+                task.output.decode("utf-8").split(
                     "\r\n ..Command execution completed."
                 )[0]
             )
             .first()
         )
     else:
-        output = json.loads(tasking.output)
+        output = json.loads(task.output)
 
     existing_processes = (
         db.query(models.HostProcess.process_id)
-        .filter(models.HostProcess.host_id == tasking.agent.host_id)
+        .filter(models.HostProcess.host_id == task.agent.host_id)
         .all()
     )
     existing_processes = list(map(lambda p: p[0], existing_processes))
@@ -59,7 +56,7 @@ def ps_hook(db: Session, tasking: models.Tasking):
             if int(process_id) not in existing_processes:
                 db.add(
                     models.HostProcess(
-                        host_id=tasking.agent.host_id,
+                        host_id=task.agent.host_id,
                         process_id=process_id,
                         process_name=process_name,
                         architecture=arch,
@@ -72,7 +69,7 @@ def ps_hook(db: Session, tasking: models.Tasking):
                     db.query(models.HostProcess)
                     .filter(
                         and_(
-                            models.HostProcess.host_id == tasking.agent.host_id,
+                            models.HostProcess.host_id == task.agent.host_id,
                             models.HostProcess.process_id == process_id,
                         )
                     )
@@ -90,7 +87,7 @@ def ps_hook(db: Session, tasking: models.Tasking):
                 db.query(models.HostProcess)
                 .filter(
                     and_(
-                        models.HostProcess.host_id == tasking.agent.host_id,
+                        models.HostProcess.host_id == task.agent.host_id,
                         models.HostProcess.process_id == process,
                     )
                 )
@@ -99,19 +96,19 @@ def ps_hook(db: Session, tasking: models.Tasking):
             db_process.stale = True
 
 
-def ps_filter(db: Session, tasking: models.Tasking):
+def ps_filter(db: Session, task: models.AgentTask):
     """
     This filter converts the JSON results of the ps command and converts it to a PowerShell-ish table.
 
     if the results are from the Python or C# agents, it does nothing.
     """
-    if tasking.input.strip() not in [
+    if task.input.strip() not in [
         "ps",
         "tasklist",
-    ] or tasking.agent.language not in ["powershell", "ironpython"]:
-        return db, tasking
+    ] or task.agent.language not in ["powershell", "ironpython"]:
+        return db, task
 
-    output = json.loads(tasking.output.decode("utf-8"))
+    output = json.loads(task.output.decode("utf-8"))
     output_list = []
     for rec in output:
         output_list.append(
@@ -130,26 +127,26 @@ def ps_filter(db: Session, tasking: models.Tasking):
     table.inner_row_border = False
     table.outer_border = False
     table.inner_column_border = False
-    tasking.output = table.table
+    task.output = table.table
 
-    return db, tasking
+    return db, task
 
 
-def ls_filter(db: Session, tasking: models.Tasking):
+def ls_filter(db: Session, task: models.AgentTask):
     """
     This filter converts the JSON results of the ls command and converts it to a PowerShell-ish table.
 
     if the results are from the Python or C# agents, it does nothing.
     """
-    tasking_input = tasking.input.strip().split()
+    task_input = task.input.strip().split()
     if (
-        len(tasking_input) == 0
-        or tasking_input[0] not in ["ls", "dir"]
-        or tasking.agent.language != "powershell"
+        len(task_input) == 0
+        or task_input[0] not in ["ls", "dir"]
+        or task.agent.language != "powershell"
     ):
-        return db, tasking
+        return db, task
 
-    output = json.loads(tasking.output.decode("utf-8"))
+    output = json.loads(task.output.decode("utf-8"))
     output_list = []
     for rec in output:
         output_list.append(
@@ -168,24 +165,24 @@ def ls_filter(db: Session, tasking: models.Tasking):
     table.inner_row_border = False
     table.outer_border = False
     table.inner_column_border = False
-    tasking.output = table.table
+    task.output = table.table
 
-    return db, tasking
+    return db, task
 
 
-def ipconfig_filter(db: Session, tasking: models.Tasking):
+def ipconfig_filter(db: Session, task: models.AgentTask):
     """
     This filter converts the JSON results of the ifconfig/ipconfig command and converts it to a PowerShell-ish table.
 
     if the results are from the Python or C# agents, it does nothing.
     """
     if (
-        tasking.input.strip() not in ["ipconfig", "ifconfig"]
-        or tasking.agent.language != "powershell"
+        task.input.strip() not in ["ipconfig", "ifconfig"]
+        or task.agent.language != "powershell"
     ):
-        return db, tasking
+        return db, task
 
-    output = json.loads(tasking.output.decode("utf-8"))
+    output = json.loads(task.output.decode("utf-8"))
     if isinstance(output, dict):  # if there's only one adapter, it won't be a list.
         output = [output]
 
@@ -200,21 +197,21 @@ def ipconfig_filter(db: Session, tasking: models.Tasking):
     table.inner_row_border = False
     table.outer_border = False
     table.inner_column_border = False
-    tasking.output = table.table
+    task.output = table.table
 
-    return db, tasking
+    return db, task
 
 
-def route_filter(db: Session, tasking: models.Tasking):
+def route_filter(db: Session, task: models.AgentTask):
     """
     This filter converts the JSON results of the route command and converts it to a PowerShell-ish table.
 
     if the results are from the Python or C# agents, it does nothing.
     """
-    if tasking.input.strip() not in ["route"] or tasking.agent.language != "powershell":
-        return db, tasking
+    if task.input.strip() not in ["route"] or task.agent.language != "powershell":
+        return db, task
 
-    output = json.loads(tasking.output.decode("utf-8"))
+    output = json.loads(task.output.decode("utf-8"))
 
     output_list = []
     for rec in output:
@@ -234,9 +231,9 @@ def route_filter(db: Session, tasking: models.Tasking):
     table.inner_row_border = False
     table.outer_border = False
     table.inner_column_border = False
-    tasking.output = table.table
+    task.output = table.table
 
-    return db, tasking
+    return db, task
 
 
 def initialize():

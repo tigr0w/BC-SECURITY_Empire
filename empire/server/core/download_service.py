@@ -43,7 +43,7 @@ class DownloadService(object):
         if DownloadSourceFilter.agent_task in download_types:
             sub.append(
                 db.query(
-                    models.tasking_download_assc.c.download_id.label("download_id")
+                    models.agent_task_download_assc.c.download_id.label("download_id")
                 )
             )
         if DownloadSourceFilter.agent_file in download_types:
@@ -105,6 +105,34 @@ class DownloadService(object):
 
         return results, total
 
+    def create_download_from_text(
+        self,
+        db: Session,
+        user: models.User,
+        file: str,
+        filename: str,
+        subdirectory: Optional[str] = None,
+    ):
+        """
+        Upload the file to the downloads directory and save a reference to the db.
+        If a subdirectory is supplied, it will use that, otherwise it will use the user
+        """
+        subdirectory = subdirectory or f"user/{user.username}"
+        location = (
+            Path(empire_config.directories.downloads)
+            / "uploads"
+            / subdirectory
+            / filename
+        )
+        location.parent.mkdir(parents=True, exist_ok=True)
+
+        filename, location = self._increment_filename(filename, location)
+
+        with location.open("w") as buffer:
+            buffer.write(file)
+
+        return self._save_download(db, filename, location)
+
     def create_download(self, db: Session, user: models.User, file: UploadFile):
         """
         Upload the file to the downloads directory and save a reference to the db.
@@ -123,23 +151,27 @@ class DownloadService(object):
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 
-        # append number to filename if it already exists
-        filename, file_extension = os.path.splitext(filename)
-        i = 1
-        while os.path.isfile(location):
-            temp_name = f"{filename}({i}){file_extension}"
-            location = (
-                Path(empire_config.directories.downloads)
-                / "uploads"
-                / user.username
-                / temp_name
-            )
-            i += 1
-        filename = location.name
+        filename, location = self._increment_filename(filename, location)
 
         with location.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
+        return self._save_download(db, filename, location)
+
+    @staticmethod
+    def _increment_filename(filename, location):
+        filename, file_extension = os.path.splitext(filename)
+        i = 1
+        while os.path.isfile(location):
+            temp_name = f"{filename}({i}){file_extension}"
+            location = location.parent / temp_name
+            i += 1
+        filename = location.name
+
+        return filename, location
+
+    @staticmethod
+    def _save_download(db, filename, location):
         download = models.Download(
             location=str(location), filename=filename, size=os.path.getsize(location)
         )

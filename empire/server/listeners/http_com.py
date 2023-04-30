@@ -560,40 +560,23 @@ class Listener(object):
         WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
         @app.route("/download/<stager>/")
-        @app.route("/download/<stager>/<options>")
-        def send_stager(stager, options=None):
-            if "po" in stager:
-                if options:
-                    options = base64.b64decode(options).decode("UTF-8")
-                    options = options.split(":")
+        def send_stager(stager):
+            with SessionLocal.begin() as db:
+                obfuscation_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                    db, stager
+                )
+                obfuscation = obfuscation_config.enabled
+                obfuscation_command = obfuscation_config.command
 
-                    obfuscate_command = options[0]
-                    bypasses = options[1]
-
-                    if obfuscate_command:
-                        obfuscate = True
-                    else:
-                        obfuscate = False
-
-                    if not bypasses:
-                        bypasses = ""
-
-                    launcher = self.mainMenu.stagers.generate_launcher(
-                        listenerName=listenerName,
-                        language="powershell",
-                        encode=False,
-                        obfuscate=obfuscate,
-                        obfuscation_command=obfuscate_command,
-                        bypasses=bypasses,
-                    )
-                    return launcher
-                else:
-                    launcher = self.mainMenu.stagers.generate_launcher(
-                        listenerName=listenerName,
-                        language="powershell",
-                        encode=False,
-                    )
-                    return launcher
+            if "powershell" == stager:
+                launcher = self.mainMenu.stagers.generate_launcher(
+                    listenerName=listenerName,
+                    language="powershell",
+                    encode=False,
+                    obfuscate=obfuscation,
+                    obfuscation_command=obfuscation_command,
+                )
+                return launcher
 
             else:
                 return make_response(self.default_response(), 404)
@@ -618,8 +601,12 @@ class Listener(object):
             """
             headers = listenerOptions["Headers"]["Value"]
             for key in headers.split("|"):
-                value = key.split(":")
-                response.headers[value[0]] = value[1]
+                if key.split(":")[0].lower() == "server":
+                    WSGIRequestHandler.server_version = key.split(":")[1]
+                    WSGIRequestHandler.sys_version = ""
+                else:
+                    value = key.split(":")
+                    response.headers[value[0]] = value[1]
             return response
 
         @app.after_request

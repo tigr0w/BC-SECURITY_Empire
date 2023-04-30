@@ -6,7 +6,6 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
 log = logging.getLogger(__name__)
@@ -44,7 +43,7 @@ class ListenerTemplateService(object):
         Load listeners from the install + "/listeners/*" path
         """
 
-        root_path = f"{db.query(models.Config).first().install_path}/listeners/"
+        root_path = f"{self.main_menu.installPath}/listeners/"
         pattern = "*.py"
         log.info(f"v2: Loading listener templates from: {root_path}")
 

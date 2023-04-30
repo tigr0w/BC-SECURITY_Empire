@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import string
-from pathlib import Path
 
 from passlib import pwd
 from passlib.context import CryptContext
@@ -33,12 +32,8 @@ def get_default_user():
 
 
 def get_default_config():
-    # Calculate the install path. We know the project directory will always be two levels up of the current directory.
-    # Any modifications of the folder structure will need to be applied here.
-    install_path = str(Path(os.path.dirname(os.path.realpath(__file__))).parent.parent)
     return models.Config(
         staging_key=get_staging_key(),
-        install_path=install_path,
         ip_whitelist=database_config.ip_whitelist,
         ip_blacklist=database_config.ip_blacklist,
         autorun_command="",
