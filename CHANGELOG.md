@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Dependency upgrades (@Vinnybod)
+
 ## [5.2.1] - 2023-04-30
 
 -   Updated Donut to v1.0.2 (@Cx01N)
