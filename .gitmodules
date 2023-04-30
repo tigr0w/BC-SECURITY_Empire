@@ -48,7 +48,7 @@
 	url = https://github.com/BC-SECURITY/DotNetStratumMiner.git
 [submodule "empire/server/api/v2/starkiller"]
 	path = empire/server/api/v2/starkiller
-	url = git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+	url = https://github.com/BC-SECURITY/Starkiller.git
 [submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/RunOF"]
 	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/RunOF
 	url = https://github.com/BC-SECURITY/RunOF.git
