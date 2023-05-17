@@ -83,7 +83,6 @@ class UseModuleMenu(UseMenu):
                 try:
                     file_directory = self.record_options["File"]["value"]
                     filename = file_directory.split("/")[-1]
-                    self.record_options["File"]["value"] = filename
                     data = get_data_from_file(file_directory)
                 except Exception:
                     log.error("Invalid filename or file does not exist")
@@ -91,6 +90,7 @@ class UseModuleMenu(UseMenu):
                 response = state.upload_file(filename, data)
                 if "id" in response.keys():
                     log.info("File uploaded to server successfully")
+                    self.record_options["File"]["value"] = response["id"]
 
                 elif "detail" in response.keys():
                     if response["detail"].startswith("[!]"):
