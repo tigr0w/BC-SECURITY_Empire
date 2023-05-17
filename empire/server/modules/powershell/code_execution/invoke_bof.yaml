@@ -28,7 +28,7 @@ options:
   - name: File
     description: Beacon object file to load and execute.
     required: true
-    value: ''
+    type: file
   - name: EntryPoint
     description: Name of the function exported to execute in the beacon object file.
     required: true

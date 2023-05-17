@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import yaml
+from packaging.version import parse
 from sqlalchemy.orm import Session
 
 from empire.server.api.v2.module.module_dto import (
@@ -17,6 +18,7 @@ from empire.server.common.converter.load_covenant import _convert_covenant_to_em
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.download_service import DownloadService
 from empire.server.core.module_models import EmpireModule, LanguageEnum
 from empire.server.core.obfuscation_service import ObfuscationService
 from empire.server.utils.option_util import convert_module_options, validate_options
@@ -28,6 +30,7 @@ class ModuleService(object):
     def __init__(self, main_menu):
         self.main_menu = main_menu
         self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
+        self.download_service: DownloadService = main_menu.downloadsv2
 
         self.modules = {}
 
@@ -92,7 +95,7 @@ class ModuleService(object):
             module = self._create_modified_module(module, modified_input)
 
         cleaned_options, err = self._validate_module_params(
-            module, agent, params, ignore_language_version_check, ignore_admin_check
+            db, module, agent, params, ignore_language_version_check, ignore_admin_check
         )
 
         if err:
@@ -193,6 +196,7 @@ class ModuleService(object):
 
     def _validate_module_params(
         self,
+        db: Session,
         module: EmpireModule,
         agent: models.Agent,
         params: Dict[str, str],
@@ -202,7 +206,7 @@ class ModuleService(object):
         """
         Given a module and execution params, validate the input and return back a clean Dict for execution.
         :param module: EmpireModule
-        :param params: the execution parameters
+        :param params: the execution parameters set by the user
         :return: tuple with options and the error message (if applicable)
         """
         converted_options = convert_module_options(module.options)
@@ -211,19 +215,17 @@ class ModuleService(object):
         if err:
             return None, err
 
+        files, err = self._get_file_options(db, converted_options, params)
+        if err:
+            return None, err
+
+        options.update(files)
+
         if not ignore_language_version_check:
-            module_version = (module.min_language_version or "0").split(".")
-            agent_version = (agent.language_version or "0").split(".")
-            # makes sure the version is the right format: "x.x"
-            if len(agent_version) == 1:
-                agent_version.append(0)
-            if len(module_version) == 1:
-                module_version.append(0)
+            module_version = parse(module.min_language_version or "0")
+            agent_version = parse(agent.language_version or "0")
             # check if the agent/module PowerShell versions are compatible
-            if (int(module_version[0]) > int(agent_version[0])) or (
-                (int(module_version[0])) == int(agent_version[0])
-                and int(module_version[1]) > int(agent_version[1])
-            ):
+            if module_version > agent_version:
                 return (
                     None,
                     f"module requires language version {module.min_language_version} but agent running language version {agent.language_version}",
@@ -235,6 +237,26 @@ class ModuleService(object):
                 return None, "module needs to run in an elevated context"
 
         return options, None
+
+    def _get_file_options(self, db, options, params):
+        def lower_default(x):
+            return "" if x is None else x.lower()
+
+        files = {}
+
+        for option_name, option_meta in filter(
+            lambda x: lower_default(x[1].get("Type")) == "file", options.items()
+        ):
+            db_download = self.download_service.get_by_id(db, params[option_name])
+            if not db_download:
+                return (
+                    None,
+                    f"File not found for '{option_name}' id {params[option_name]}",
+                )
+
+            files[option_name] = db_download
+
+        return files, None
 
     def _generate_script(
         self,

@@ -3,7 +3,6 @@ from __future__ import print_function
 from builtins import object, str
 from typing import Dict
 
-from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -27,9 +26,7 @@ class Module(object):
         if err:
             return handle_error_message(err)
 
-        bof_data = main_menu.downloadsv2.get_all(SessionLocal(), None, params["File"])[
-            0
-        ][0].get_base64_file()
+        bof_data = params["File"].get_base64_file()
 
         script_end = f"$bofbytes = [System.Convert]::FromBase64String('{ bof_data }');"
         script_end += (

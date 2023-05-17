@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Add the ability to specify a module option as a file (@Vinnybod)
+
 ## [5.2.2] - 2023-04-30
 
 -   Dependency upgrades (@Vinnybod)

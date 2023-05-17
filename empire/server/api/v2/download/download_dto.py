@@ -5,10 +5,18 @@ from typing import List
 from pydantic import BaseModel
 
 
+def removeprefix(value: str, prefix: str) -> str:
+    if value.startswith(prefix):
+        return value[len(prefix) :]
+    else:
+        return value[:]
+
+
 def domain_to_dto_download(download):
+    location = removeprefix(download.location, "empire/server/downloads/")
     return Download(
         id=download.id,
-        location=download.location,
+        location=location,
         filename=download.filename,
         size=download.size,
         created_at=download.created_at,

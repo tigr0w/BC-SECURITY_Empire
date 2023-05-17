@@ -70,7 +70,6 @@ async def read_download(
     return domain_to_dto_download(db_download)
 
 
-# todo basically everything should go to downloads which means the path should start after downloads.
 @router.get("/", response_model=Downloads)
 async def read_downloads(
     db: Session = Depends(get_db),

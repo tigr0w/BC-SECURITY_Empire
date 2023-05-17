@@ -5,7 +5,6 @@ from typing import Dict
 
 import yaml
 
-from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 
 
@@ -19,9 +18,7 @@ class Module(object):
         obfuscation_command: str = "",
     ):
         try:
-            base64_shellcode = main_menu.downloadsv2.get_all(
-                SessionLocal(), None, params["File"]
-            )[0][0].get_base64_file()
+            base64_shellcode = params["File"].get_base64_file()
         except Exception as e:
             return None, f"Failed to get base64 encoded shellcode: {e}"
 

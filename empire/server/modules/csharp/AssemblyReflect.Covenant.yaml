@@ -128,7 +128,7 @@
       - name: File
         description: Assembly file to execute.
         required: true
-        value: ''
+        type: file
       - name: Parameters
         description: The command-line parameters to pass to the assembly's EntryPoint.
         required: false
