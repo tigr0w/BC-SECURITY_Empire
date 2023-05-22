@@ -121,23 +121,24 @@ the `private-main` branch.
 Once the `release/` pull request is merged, the `Private - Tag Release` workflow will automatically run.
 The workflow will create a tag and release on the `HEAD` of `private-main` using the release notes from `CHANGELOG.md` for the body of the release.
 
-### 6. Start Sponsor/Kali Release
+### 6. Repeat Step 2 - Prerelease Merge
+Repeat step 2 to merge `private-main` into `sponsors-main` and `kali-main`.
+
+### 7. Start Sponsor/Kali Release
 Start the release by running the `Sponsors & Kali - Create Release` manual workflow.
 If starkiller needs to be updated, provide a `starkillerVersion` input. The value provided should be a git tag minus the `-kali` or `-sponsors` suffix.
 
-This will first attempt to merge the `private-main` branch into `sponsors-main` and `kali-main` with the new release changes. Most likely, if there is a merge conflict here it is caused by `CHANGELOG.md` and should be minor. If that occurs, the merge conflict can be resolved in the pull request via the GitHub editor, or locally. 
-
-If a Starkiller tag was provided, it will update the Starkiller submodule and the changelog accordingly. It does this on the `sponsors-main` and `kali-main` release branches separately.
+If a Starkiller tag was provided, it will update the Starkiller config and the changelog accordingly.
 
 A release PR will then be opened for each branch and the test suite will run.
 
 
-#### 7. Manual Step - Merge sponsor/kali release PRs
+#### 8. Manual Step - Merge sponsor/kali release PRs
 Once the workflow runs, it will open two pull requests from the `release/v{version}-sponsors` and `release/v{version}-kali` branches to `sponsors-main` and `kali-main` respectively.
 
 Check the changelog on these branches, this will be the changelog that is used for the release notes.
 
-If there are sponsor/kali specific changelog entries that need to be added, add them to the `CHANGELOG.md` file on the release branch.
+If there are sponsor specific changelog entries that need to be added, add them to the `CHANGELOG-SPONSORS.md` file on the release branch.
 
 You can get a list of the new commits that are in this release by using the following command. Replace `v4.9.0-sponsors` with whatever the previous release was.
 ```
@@ -151,7 +152,7 @@ the `sponsors-main` branch or `kali-main` branch.
 
 **Potential Enhancement** We could add automation that copies the `unreleased` section from the target branch to the version section in the `head` branch.
 
-### 7. Tag and Release
+### 9. Tag and Release
 Once the pull requests are merged, the `Sponsors - Tag Release` and `Kali - Tag Release` workflows will automatically run.
 The workflows will create a tag and release on the `HEAD` of `sponsors-main` and `kali-main`, using the release notes from `CHANGELOG.md` for the body of the release.
 

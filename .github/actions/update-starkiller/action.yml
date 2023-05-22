@@ -1,8 +1,8 @@
 name: 'Update Starkiller'
-description: 'Updates the config.yaml and starkiller submodule to the specified version and commits the change.'
+description: 'Updates the config.yaml to the specified version and commits the change.'
 inputs:
   starkiller-version:
-    description: 'The branch to merge from'
+    description: 'The starkiller ref to use'
     required: true
   app-version:
     description: 'The changelog section to update'
@@ -10,16 +10,12 @@ inputs:
   repo:
     description: "The starkiller repo to use. If not set, doesn't update the field."
     required: false
+  changelog-path:
+    description: "The changelog path"
+    default: CHANGELOG.md
 runs:
   using: "composite"
   steps:
-    - name: Install Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
-    - name: Install minimal python packages
-      shell: bash
-      run: python -m pip install pyyaml
     # This is technically only needed for the first time we update the public repo, as a bootstrap.
     # After that, the submodule is already initialized to the right repo.
     - name: Update config.yaml repo
@@ -29,28 +25,15 @@ runs:
         sed -i "s|repo:.*|repo: ${{ inputs.repo }}|" empire/server/config.yaml
     - name: Update config.yaml ref
       shell: bash
-      # this depends on there not being any other keys in teh config named ref
+      # this depends on there not being any other keys in the config named ref
       # if there are, this will break. We could be safer to load/dump the yaml,
       # but would lose the comments.
       run: |
         sed -i "s/ref: .*/ref: ${{ inputs.starkiller-version }}/" empire/server/config.yaml
-    # If use_temp_dir is true, Starkiller is cloned into a temp directory, the CI will fail,
-    # and the submodule will not be updated. So set it to false, make the changes, then set it back.
-    - name: Update config.yaml use_temp_dir
-      shell: bash
-      run: |
-        sed -i'.bak' "s/use_temp_dir: .*/use_temp_dir: false/" empire/server/config.yaml
-    - name: Run starkiller update script
-      shell: bash
-      run: python empire.py sync-starkiller
-    - name: Reset use_tmp_dir
-      shell: bash
-      run: |
-        mv empire/server/config.yaml.bak empire/server/config.yaml
     - name: Update changelog
       shell: bash
       run: |
-        sed -i '/## \[${{ inputs.app-version }}\]/a -   Updated Starkiller to ${{ inputs.starkiller-version }}' CHANGELOG.md
+        sed -i '/## \[${{ inputs.app-version }}\]/a -   Updated Starkiller to ${{ inputs.starkiller-version }}' ${{ inputs.changelog-path }}
     - name: Commit changes
       shell: bash
       run: |
