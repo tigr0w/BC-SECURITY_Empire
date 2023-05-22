@@ -122,7 +122,7 @@ class PluginService(object):
             return plugin.execute(cleaned_options, db=db, user=user), None
         except TypeError:
             log.warning(
-                "Plugin does not support db session or user_id, falling back to old method"
+                f"Plugin {plugin.info.get('Name')} does not support db session or user_id, falling back to old method"
             )
 
         try:

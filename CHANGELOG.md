@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Remove Starkiller as a submodule, treat it as a normal directory (@Vinnybod)
+    - Everything should 'just work', but if you have issues after pulling these latest changes, try deleting the Starkiller directory before running the server `rm -r empire/server/api/v2/starkiller`. 
+
 ## [5.3.0] - 2023-05-17
 
 -   Add the ability to specify a module option as a file (@Vinnybod)

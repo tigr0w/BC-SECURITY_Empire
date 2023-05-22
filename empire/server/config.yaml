@@ -36,12 +36,9 @@ database:
     ip-blacklist: ""
 starkiller:
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+  directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
   ref: sponsors-main
-  # for private-main, instead of updating the submodule, just work out of a local copy.
-  # So devs can work off the latest changes and not worry about accidentally updating the submodule
-  # for the downstream main branches.
-  use_temp_dir: false
   auto_update: true
 plugins:
   # Auto-load plugin with defined settings

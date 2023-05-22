@@ -14,6 +14,7 @@ empire/server/data/generated-stagers/*
 empire/server/downloads/*
 empire/server/api/static/*
 empire/server/api/v2/starkiller-temp
+empire/server/api/v2/starkiller
 
 # client
 empire/client/generated-stagers/*
