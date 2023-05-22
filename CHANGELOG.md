@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.4.0] - 2023-05-22
+
 -   Remove Starkiller as a submodule, treat it as a normal directory (@Vinnybod)
-    - Everything should 'just work', but if you have issues after pulling these latest changes, try deleting the Starkiller directory before running the server `rm -r empire/server/api/v2/starkiller`. 
+    -   Everything should 'just work', but if you have issues after pulling these latest changes, try deleting the Starkiller directory before running the server `rm -r empire/server/api/v2/starkiller`. 
 -   Some improvements to the release flow after starkiller submodule removal (@Vinnybod)
--   
+
 ## [5.3.0] - 2023-05-17
 
 -   Add the ability to specify a module option as a file (@Vinnybod)
@@ -472,7 +474,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.3.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.0...HEAD
+
+[5.4.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.3.0...v5.4.0
 
 [5.3.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.2.2...v5.3.0
 
