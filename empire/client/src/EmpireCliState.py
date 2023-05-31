@@ -78,9 +78,11 @@ class EmpireCliState(object):
     def connect(self, host, port, socketport, username, password):
         self.host = host
         self.port = port
+        server = f"{host}:{port}"
+
         try:
             response = requests.post(
-                url=f"{host}:{port}/token",
+                url=f"{server}/token",
                 data={"username": username, "password": password},
                 verify=False,
             )
@@ -92,7 +94,7 @@ class EmpireCliState(object):
             self.connected = True
 
             self.sio = socketio.Client(ssl_verify=False, reconnection_attempts=3)
-            self.sio.connect(f"{host}:{port}/socket.io/", auth={"token": self.token})
+            self.sio.connect(f"{server}/socket.io/", auth={"token": self.token})
 
             # Wait for version to be returned
             self.empire_version = self.get_version()["version"]
@@ -102,6 +104,7 @@ class EmpireCliState(object):
             self.notify_connected()
             print_util.title(
                 self.empire_version,
+                server,
                 len(self.modules),
                 len(self.listeners),
                 len(self.active_agents),
