@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fix database reset issue with MySQL (@Vinnybod)
 -   Add a message to the client recommending the use of the Starkiller (@Vinnybod)
+-   Fixed issue with Invoke-wmi not returning a success message (@Cx01N)
 -   Fixed dynamic function issue with Powerview (@Cx01N)
 -   Pair down the amount of minutes needed to run pull request builds (@Vinnybod)
 
