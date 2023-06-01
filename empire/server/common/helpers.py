@@ -349,9 +349,10 @@ def generate_dynamic_powershell_script(script, function_names):
     functions = {}
     pattern = re.compile(r"\n(?:function|filter).*?{.*?\n}\n", re.DOTALL)
 
-    for match in pattern.findall(script):
-        name = match[:40].split()[1]
-        functions[name] = strip_powershell_comments(match)
+    script = re.sub(re.compile("<#.*?#>", re.DOTALL), "", script)
+    for func_match in pattern.findall(script):
+        name = func_match[:40].split()[1]
+        functions[name] = func_match
 
     # recursively enumerate all possible function dependencies and
     #   start building the new result script
@@ -372,6 +373,8 @@ def generate_dynamic_powershell_script(script, function_names):
     # if any psreflect methods are needed, add in the overhead at the end
     if any(el in set(psreflect_functions) for el in function_dependencies):
         new_script += get_powerview_psreflect_overhead(script)
+
+    new_script = strip_powershell_comments(new_script)
 
     return new_script + "\n"
 
