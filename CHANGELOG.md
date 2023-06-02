@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.4.1] - 2023-06-02
+
 -   Fix database reset issue with MySQL (@Vinnybod)
 -   Add a message to the client recommending the use of the Starkiller (@Vinnybod)
 -   Fixed issue with Invoke-wmi not returning a success message (@Cx01N)
@@ -480,7 +482,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.1...HEAD
+
+[5.4.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.0...v5.4.1
 
 [5.4.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.3.0...v5.4.0
 
