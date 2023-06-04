@@ -983,7 +983,7 @@ def start_job(code, resultID):
     global jobs
 
     # create a new code block with a defined method name
-    codeBlock = "def method():\n" + indent(code[1:])
+    codeBlock = "def method():\n" + indent(code)
 
     # register the code block
     code_obj = compile(codeBlock, "<string>", "exec")

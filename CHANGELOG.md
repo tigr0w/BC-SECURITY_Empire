@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-  Fixed python modules not running properly (Cx01N)
+
 ## [5.4.1] - 2023-06-02
 
 -   Fix database reset issue with MySQL (@Vinnybod)
