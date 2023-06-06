@@ -16,7 +16,7 @@ MTYPE_DATA = 0x10  # Data messages
 
 
 def recvall(s, size):
-    data = ""
+    data = b""
     while len(data) < size:
         d = s.recv(size - len(data))
         if not d:
@@ -102,9 +102,11 @@ class Tunnel(object):
         self.transport_socket = transport_socket  # type: socket.socket
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def send_message(self, msg, data=""):
+    def send_message(self, msg, data=b""):
         self.logger.debug("Sending {}".format(msg))
         try:
+            if isinstance(data, str):
+                data = data.encode("utf-8")
             self.transport_socket.sendall(msg.pack(data))
         except (socket.error, TypeError) as e:
             self.logger.critical(
@@ -168,7 +170,8 @@ class SocksHandler(object):
     def handle(self, channel, data):
         # SOCKSv5 Auth message
         if not self.auth_handled:
-            data = [ord(x) for x in data]
+            data = [x for x in data]
+
 
             # Expecting [VERSION | NMETHODS | METHODS] (VERSION must be 0x05)
             if len(data) < 2 or data[0] != 0x05 or len(data[2:]) != data[1]:
@@ -183,13 +186,13 @@ class SocksHandler(object):
             return struct.pack("BB", 0x05, 0x00)  # No Auth Required
 
         elif not self.request_handled:
-            if len(data) < 4 or ord(data[0]) != 0x05:
+            if len(data) < 4 or data[0] != 0x05:
                 return struct.pack(
                     "!BBBBIH", 0x05, 0x01, 0x00, 0x01, 0, 0
                 )  # General SOCKS failure
-            cmd = ord(data[1])
-            rsv = ord(data[2])
-            atyp = ord(data[3])
+            cmd = data[1]
+            rsv = data[2]
+            atyp = data[3]
             if cmd not in [0x01, 0x02, 0x03]:
                 return struct.pack(
                     "!BBBBIH", 0x05, 0x07, 0x00, 0x01, 0, 0
@@ -443,6 +446,8 @@ class SocksRelay(SocksBase):
             return False
 
     def run(self):
+        # log_level = logging.DEBUG
+        # logging.basicConfig(format='[%(asctime)s] %(levelname)8s %(name)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=log_level)
         s = socket.socket()
         s = ssl.wrap_socket(s)
         self.logger.debug("Connecting to {}:{}".format(*self.transport_addr))

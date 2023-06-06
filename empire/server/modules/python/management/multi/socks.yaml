@@ -17,7 +17,7 @@ min_language_version: '3'
 comments:
   - You must set up a standalone AlmondRocks server for this to connect to! Refer to the AlmondRocks Github project for more
     details.
-  - 'Repo: https://github.com/klustic/AlmondRocks'
+  - 'Repo: https://github.com/Cx01N/AlmondRocks/'
 options:
   - name: Agent
     description: Agent to run the AROX relay on
