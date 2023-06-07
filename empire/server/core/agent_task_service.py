@@ -208,6 +208,14 @@ class AgentTaskService(object):
     def create_task_socks_data(self, agent_id: str, data: str):
         return self.add_temporary_task(agent_id, "TASK_SOCKS_DATA", data)
 
+    def create_task_smb(
+        self, db, agent: models.Agent, pipe_name, current_user_id: int = 0
+    ):
+        resp, err = self.add_task(
+            db, agent, "TASK_SMB_SERVER", pipe_name, user_id=current_user_id
+        )
+        return resp, err
+
     def create_task_update_comms(
         self, db: Session, agent: models.Agent, new_listener_id: int, user_id: int
     ):

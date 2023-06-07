@@ -130,6 +130,7 @@ class ListenerService(object):
         )
 
         if err:
+            log.error(err)
             return None, err
 
         success = template_instance.start(name=listener.name)

