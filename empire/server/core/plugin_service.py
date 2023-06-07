@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 class PluginService(object):
     def __init__(self, main_menu):
         self.main_menu = main_menu
+        self.download_service = main_menu.downloadsv2
         self.loaded_plugins = {}
 
     def startup(self):
@@ -112,7 +113,9 @@ class PluginService(object):
         plugin_req: PluginExecutePostRequest,
         user: Optional[models.User] = None,
     ):
-        cleaned_options, err = validate_options(plugin.options, plugin_req.options)
+        cleaned_options, err = validate_options(
+            plugin.options, plugin_req.options, db, self.download_service
+        )
 
         if err:
             return None, err

@@ -219,8 +219,6 @@ def test_preobfuscate_post(client, admin_auth_header, empire_config):
         )
 
         # It is run as a background task, but in tests it runs synchronously.
-        # For some reason on my M1 macbook, this test fails because it does not run
-        # synchronously.
         assert response.status_code == 202
 
         module_dir = empire_config.directories.module_source

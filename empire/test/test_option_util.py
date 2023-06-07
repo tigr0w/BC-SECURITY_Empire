@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 from empire.server.utils.option_util import safe_cast, validate_options
 
 
@@ -16,7 +18,7 @@ def test_validate_options_required_strict_success():
         "enabled": "True",
     }
 
-    cleaned_options, err = validate_options(instance_options, options)
+    cleaned_options, err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == options
 
@@ -36,7 +38,7 @@ def test_validate_options_required_strict_failure():
         "enabled": "Wrong",
     }
 
-    cleaned_options, err = validate_options(instance_options, options)
+    cleaned_options, err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options is None
     assert err == "enabled must be set to one of the suggested values."
@@ -57,7 +59,7 @@ def test_validate_options_required_empty_failure_doesnt_use_default():
         "Command": "",
     }
 
-    cleaned_options, err = validate_options(instance_options, options)
+    cleaned_options, err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options is None
     assert err == "required option missing: Command"
@@ -76,7 +78,7 @@ def test_validate_options_required_missing_uses_default():
 
     options = {}
 
-    cleaned_options, err = validate_options(instance_options, options)
+    cleaned_options, err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Command": "DEFAULT_VALUE"}
 
@@ -90,7 +92,7 @@ def test_validate_options_casts_string_to_int_success():
             "Value": "DEFAULT_VALUE",
             "SuggestedValues": [],
             "Strict": False,
-            "Type": int,
+            "Type": "int",
         }
     }
 
@@ -98,7 +100,7 @@ def test_validate_options_casts_string_to_int_success():
         "Port": "123",
     }
 
-    cleaned_options, err = validate_options(instance_options, options)
+    cleaned_options, err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Port": 123}
 
@@ -116,9 +118,59 @@ def test_validate_options_missing_optional_field_no_defauls():
 
     options = {}
 
-    cleaned_options, err = validate_options(instance_options, options)
+    cleaned_options, err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Command": ""}
+
+
+def test_validate_options_with_file_not_found(db):
+    instance_options = {
+        "File": {
+            "Description": "A File",
+            "Required": True,
+            "Strict": False,
+            "Type": "file",
+        }
+    }
+
+    options = {
+        "File": "9999",
+    }
+
+    download_service_mock = MagicMock()
+    download_service_mock.get_by_id.return_value = None
+
+    cleaned_options, err = validate_options(
+        instance_options, options, db, download_service_mock
+    )
+
+    assert cleaned_options is None
+    assert err == "File not found for 'File' id 9999"
+
+
+def test_validate_options_with_file(db, models):
+    instance_options = {
+        "File": {
+            "Description": "A File",
+            "Required": True,
+            "Strict": False,
+            "Type": "file",
+        }
+    }
+
+    options = {
+        "File": "9999",
+    }
+
+    download = models.Download(id=9999, filename="test_file", location="/tmp/test_file")
+    download_service_mock = MagicMock()
+    download_service_mock.get_by_id.return_value = download
+
+    cleaned_options, err = validate_options(
+        instance_options, options, db, download_service_mock
+    )
+
+    assert cleaned_options["File"] == download
 
 
 def test_safe_cast_string():
