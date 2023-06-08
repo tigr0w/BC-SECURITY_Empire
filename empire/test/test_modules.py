@@ -88,7 +88,7 @@ def agent(db, models, host):
 
 
 @pytest.fixture(scope="function")
-def main_menu_mock():
+def main_menu_mock(models):
     main_menu = Mock()
     main_menu.installPath = "empire/server"
 
@@ -96,6 +96,11 @@ def main_menu_mock():
     obf_conf_mock = MagicMock()
     main_menu.obfuscationv2.get_obfuscation_config = Mock(
         side_effect=lambda x, y: obf_conf_mock
+    )
+    main_menu.obfuscationv2.get_obfuscation_config = Mock(
+        return_value=models.ObfuscationConfig(
+            language="python", command="", enabled=False
+        )
     )
     main_menu.obfuscationv2.obfuscate = Mock(side_effect=fake_obfuscate)
     main_menu.obfuscationv2.obfuscate_keywords = Mock(side_effect=lambda x: x)

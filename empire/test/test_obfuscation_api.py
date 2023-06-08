@@ -134,17 +134,18 @@ def test_get_obfuscation_configs(client, admin_auth_header):
 
     assert any(x["language"] == "powershell" for x in response.json()["records"])
     assert any(x["language"] == "csharp" for x in response.json()["records"])
+    assert any(x["language"] == "python" for x in response.json()["records"])
 
 
 def test_get_obfuscation_config_not_found(client, admin_auth_header):
     response = client.get(
-        "/api/v2/obfuscation/global/python", headers=admin_auth_header
+        "/api/v2/obfuscation/global/madeup", headers=admin_auth_header
     )
 
     assert response.status_code == 404
     assert (
         response.json()["detail"]
-        == "Obfuscation config not found for language python. Only powershell is supported."
+        == "Obfuscation config not found for language madeup. Only powershell is supported."
     )
 
 
@@ -162,7 +163,7 @@ def test_get_obfuscation_config(client, admin_auth_header):
 
 def test_update_obfuscation_config_not_found(client, admin_auth_header):
     response = client.put(
-        "/api/v2/obfuscation/global/python",
+        "/api/v2/obfuscation/global/madeup",
         headers=admin_auth_header,
         json={
             "language": "powershell",
@@ -175,7 +176,7 @@ def test_update_obfuscation_config_not_found(client, admin_auth_header):
     assert response.status_code == 404
     assert (
         response.json()["detail"]
-        == "Obfuscation config not found for language python. Only powershell is supported."
+        == "Obfuscation config not found for language madeup. Only powershell is supported."
     )
 
 

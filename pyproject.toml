@@ -52,6 +52,7 @@ python-socketio = {extras = ["client"], version = "^5.7.1"}
 Flask = "^2.1.2"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git"}
 donut-shellcode = "^1.0.2"
+python-obfuscator = "^0.0.2"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"

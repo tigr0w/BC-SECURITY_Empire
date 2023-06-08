@@ -260,7 +260,7 @@ class ModuleService(object):
             obfuscation_command = obfuscation_config.command
 
         if module.advanced.custom_generate:
-            # In a future release we could refactor the modules to accept a obuscation_config,
+            # In a future release we could refactor the modules to accept an obuscation_config,
             #  but there's little benefit to doing so at this point. So I'm saving myself the pain.
             try:
                 return module.advanced.generate_class.generate(
@@ -278,14 +278,18 @@ class ModuleService(object):
         # We don't have obfuscation for other languages yet, but when we do,
         # we can pass it in here.
         elif module.language == LanguageEnum.python:
-            return self._generate_script_python(module, params)
+            return self._generate_script_python(module, params, obfuscation_config)
         elif module.language == LanguageEnum.csharp:
             return self._generate_script_csharp(module, params, obfuscation_config)
 
-    @staticmethod
     def _generate_script_python(
-        module: EmpireModule, params: Dict
+        self,
+        module: EmpireModule,
+        params: Dict,
+        obfuscaton_config: models.ObfuscationConfig,
     ) -> Tuple[Optional[str], Optional[str]]:
+        obfuscate = obfuscaton_config.enabled
+
         if module.script_path:
             script_path = os.path.join(
                 empire_config.directories.module_source,
@@ -301,6 +305,9 @@ class ModuleService(object):
                 script = script.replace("{{ " + key + " }}", value).replace(
                     "{{" + key + "}}", value
                 )
+
+        if obfuscate:
+            script = self.obfuscation_service.python_obfuscate(script)
 
         return script, None
 
