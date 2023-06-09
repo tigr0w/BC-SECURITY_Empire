@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added python obfusscation using python-obfuscator (@Cx01N)
 -   Added IronPython SMB Agents/Listener (@Cx01N)
 -   Expand file options to plugins, stagers, and listeners (@Vinnybod)
+-   Added Python agent support to hop listener (@Cx01N)
+-   Added staging to hop listener (@Cx01N)
 
 ## [5.4.2] - 2023-06-07
 
