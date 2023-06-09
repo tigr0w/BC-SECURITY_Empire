@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
@@ -31,7 +32,7 @@ def domain_to_dto_agent(agent: models.Agent):
         process_name=agent.process_name,
         os_details=agent.os_details,
         nonce=agent.nonce,
-        checkin_time=agent.checkin_time,
+        checkin_time=agent.firstseen_time,
         lastseen_time=agent.lastseen_time,
         parent=agent.parent,
         children=agent.children,
@@ -61,6 +62,19 @@ def to_proxy_dto(proxies):
         return {"proxies": converted}
 
     return {}
+
+
+def domain_to_dto_agent_checkin(agent_checkin: models.AgentCheckIn):
+    return AgentCheckIn(
+        agent_id=agent_checkin.agent_id,
+        checkin_time=agent_checkin.checkin_time,
+    )
+
+
+def domain_to_dto_agent_checkin_agg(agent_checkin_agg):
+    return AgentCheckInAggregate(
+        count=agent_checkin_agg["count"], checkin_time=agent_checkin_agg["checkin_time"]
+    )
 
 
 class Agent(BaseModel):
@@ -101,6 +115,38 @@ class Agent(BaseModel):
 
 class Agents(BaseModel):
     records: List[Agent]
+
+
+class AgentCheckIn(BaseModel):
+    agent_id: str
+    checkin_time: datetime
+
+
+class AgentCheckIns(BaseModel):
+    records: List[AgentCheckIn]
+    limit: int
+    page: int
+    total_pages: int
+    total: int
+
+
+class AgentCheckInAggregate(BaseModel):
+    count: int
+    checkin_time: datetime  # will be truncated depending on the group_by
+
+
+class AgentCheckInsAggregate(BaseModel):
+    records: List[AgentCheckInAggregate]
+    start_date: Optional[datetime]
+    end_date: Optional[datetime]
+    bucket_size: str
+
+
+class AggregateBucket(str, Enum):
+    second = "second"
+    minute = "minute"
+    hour = "hour"
+    day = "day"
 
 
 class AgentUpdateRequest(BaseModel):

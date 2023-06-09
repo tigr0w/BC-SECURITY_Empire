@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Break out agent checkins to a new table (@Vinnybod)
+    -   New checkins endpoint to get them as a list
+    -   New checkins aggregate endpoint to get aggregated checkin data
+    -   Aggregate endpoint not supported with SQLite
+-   Add a warning message about using SQLite
 -   Added LinPEAS to Python modules (@Cx01N)
 -   Added python obfusscation using python-obfuscator (@Cx01N)
 -   Added IronPython SMB Agents/Listener (@Cx01N)

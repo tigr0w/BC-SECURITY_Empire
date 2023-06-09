@@ -208,9 +208,9 @@ class PluginService(object):
             joinedload(models.PluginTask.user),
         ]
         if include_full_input:
-            query_options.append(undefer("input_full"))
+            query_options.append(undefer(models.PluginTask.input_full))
         if include_output:
-            query_options.append(undefer("output"))
+            query_options.append(undefer(models.PluginTask.output))
         query = query.options(*query_options)
 
         if since:

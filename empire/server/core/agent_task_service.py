@@ -70,11 +70,11 @@ class AgentTaskService(object):
             joinedload(models.AgentTask.agent).joinedload(models.Agent.host),
         ]
         if include_full_input:
-            query_options.append(undefer("input_full"))
+            query_options.append(undefer(models.AgentTask.input_full))
         if include_original_output:
-            query_options.append(undefer("original_output"))
+            query_options.append(undefer(models.AgentTask.output_original))
         if include_output:
-            query_options.append(undefer("output"))
+            query_options.append(undefer(models.AgentTask.output))
         query = query.options(*query_options)
 
         if since:

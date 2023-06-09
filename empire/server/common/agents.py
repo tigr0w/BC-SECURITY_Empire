@@ -46,7 +46,7 @@ from builtins import object, str
 from pathlib import Path
 from typing import Dict
 
-from sqlalchemy import and_, or_, update
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
@@ -185,6 +185,7 @@ class Agents(object):
         )
 
         db.add(agent)
+        db.add(models.AgentCheckIn(agent_id=sessionID))
         db.flush()
 
         message = f"New agent {sessionID} checked in"
@@ -688,19 +689,7 @@ class Agents(object):
         """
         Update the agent's last seen timestamp in the database.
         """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-        )
-        db.execute(
-            update(models.Agent).where(
-                or_(
-                    models.Agent.session_id == session_id,
-                    models.Agent.name == session_id,
-                )
-            )
-        )
+        db.add(models.AgentCheckIn(agent_id=session_id))
 
     def set_autoruns_db(self, task_command, module_data):
         """

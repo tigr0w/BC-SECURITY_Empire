@@ -1,6 +1,8 @@
 import os
 from contextlib import contextmanager
 
+import pytest
+
 
 @contextmanager
 def patch_config(empire_config):
@@ -212,6 +214,7 @@ def test_preobfuscate_post_not_preobfuscatable(
     )
 
 
+@pytest.mark.slow
 def test_preobfuscate_post(client, admin_auth_header, empire_config):
     with patch_config(empire_config):
         response = client.post(

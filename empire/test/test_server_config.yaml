@@ -1,6 +1,6 @@
 suppress-self-cert-warning: true
 database:
-  use: sqlite
+  use: mysql
   mysql:
     url: localhost:3306
     username: empire_user

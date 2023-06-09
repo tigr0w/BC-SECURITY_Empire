@@ -37,7 +37,7 @@ jobs:
     needs:
       - matrix-prep-config
       - lint
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     name: Test Python ${{ matrix.python-version }}
     strategy:
@@ -76,11 +76,11 @@ jobs:
           poetry install
       - name: Run test suite - mysql
         run: |
-          DATABASE_USE=mysql poetry run pytest . -v
+          DATABASE_USE=mysql poetry run pytest . -v --runslow
       - name: Run test suite - sqlite
         if: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name, 'test-sqlite') }}
         run: |
-          DATABASE_USE=sqlite poetry run pytest . -v
+          DATABASE_USE=sqlite poetry run pytest . -v --runslow
 
   test_image:
     # To save CI time, only run these tests on the release PRs
