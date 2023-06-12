@@ -58,6 +58,7 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
+from empire.server.utils import datetime_util
 
 from . import encryption, helpers, packets
 
@@ -185,7 +186,7 @@ class Agents(object):
         )
 
         db.add(agent)
-        db.add(models.AgentCheckIn(agent_id=sessionID))
+        self.update_agent_lastseen_db(sessionID, db)
         db.flush()
 
         message = f"New agent {sessionID} checked in"
@@ -688,8 +689,25 @@ class Agents(object):
     def update_agent_lastseen_db(self, session_id, db: Session):
         """
         Update the agent's last seen timestamp in the database.
+
+        This checks to see if a timestamp already exists for the agent and ignores
+        it if it does. It is not super efficient to check the database on every checkin.
+        A better alternative would be to find a way to configure sqlalchemy to ignore
+        duplicate inserts or do upserts.
         """
-        db.add(models.AgentCheckIn(agent_id=session_id))
+        checkin_time = datetime_util.getutcnow().replace(microsecond=0)
+        exists = (
+            db.query(models.AgentCheckIn)
+            .filter(
+                and_(
+                    models.AgentCheckIn.agent_id == session_id,
+                    models.AgentCheckIn.checkin_time == checkin_time,
+                )
+            )
+            .first()
+        )
+        if not exists:
+            db.add(models.AgentCheckIn(agent_id=session_id, checkin_time=checkin_time))
 
     def set_autoruns_db(self, task_command, module_data):
         """

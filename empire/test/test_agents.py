@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -179,3 +180,43 @@ def test_duplicate_host(session_local, models, host):
 
         db.add(host2)
         db.flush()
+
+
+def test_duplicate_checkin_raises_exception(session_local, models, agent):
+    with pytest.raises(IntegrityError), session_local.begin() as db:
+        db_agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == agent).first()
+        )
+        timestamp = datetime.now(timezone.utc)
+        checkin = models.AgentCheckIn(
+            agent_id=db_agent.session_id, checkin_time=timestamp
+        )
+        checkin2 = models.AgentCheckIn(
+            agent_id=db_agent.session_id, checkin_time=timestamp
+        )
+
+        db.add(checkin)
+        db.add(checkin2)
+        db.flush()
+
+
+def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
+    with session_local.begin() as db:
+        db_agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == agent).first()
+        )
+        prev_checkin_count = len(db_agent.checkins.all())
+        # Need to ensure that these two checkins are not the same second
+        # as the original checkin
+        time.sleep(2)
+
+        main.agents.update_agent_lastseen_db(db_agent.session_id, db)
+        main.agents.update_agent_lastseen_db(db_agent.session_id, db)
+
+    with session_local.begin() as db:
+        db_agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == agent).first()
+        )
+        checkin_count = len(db_agent.checkins.all())
+
+        assert checkin_count == prev_checkin_count + 1
