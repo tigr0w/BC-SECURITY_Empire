@@ -27,7 +27,7 @@ options:
   - name: File
     description: Filename in '/empire/server/downloads' to load and execute. supported.
     required: true
-    value: ''
+    type: file
   - name: Arguments
     description: Any arguments to be passed to the assembly
     required: false

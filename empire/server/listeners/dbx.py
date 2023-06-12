@@ -581,7 +581,7 @@ class Listener(object):
         This is so agents can easily be dynamically updated for the new listener.
         """
         baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
-        api_token = listenerOptions["API_TOKEN"]["Value"]
+        api_token = listenerOptions["APIToken"]["Value"]
 
         taskingsFolder = "/%s/%s" % (
             baseFolder,

@@ -5,7 +5,6 @@ from typing import Dict
 
 import yaml
 
-from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 
 
@@ -18,9 +17,7 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        b64_bof_data = main_menu.downloadsv2.get_all(
-            SessionLocal(), None, params["File"]
-        )[0][0].get_base64_file()
+        b64_bof_data = params["File"].get_base64_file()
 
         compiler = main_menu.pluginsv2.get_by_id("csharpserver")
         if not compiler.status == "ON":

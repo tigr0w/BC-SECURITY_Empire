@@ -503,7 +503,6 @@ class InteractMenu(Menu):
                         try:
                             file_directory = post_body.get("options")["File"]
                             filename = file_directory.split("/")[-1]
-                            post_body.get("options")["File"] = filename
                             data = get_data_from_file(file_directory)
                         except Exception:
                             log.error("Invalid filename or file does not exist")
@@ -511,6 +510,7 @@ class InteractMenu(Menu):
                         response = state.upload_file(filename, data)
                         if "id" in response.keys():
                             log.info("File uploaded to server successfully")
+                            post_body.get("options")["File"] = response["id"]
                         elif "detail" in response.keys():
                             if response["detail"].startswith("[!]"):
                                 msg = response["detail"]

@@ -51,7 +51,7 @@ def color(string_name, color_name=None):
             return string_name
 
 
-def title(version, modules, listeners, agents):
+def title(version, server, modules, listeners, agents):
     """
     Print the tool title, with version.
     """
@@ -71,7 +71,7 @@ def title(version, modules, listeners, agents):
         "========================================================================================"
     )
     print(
-        " [\x1b[1;32mStarkiller\x1b[0m] Multi-User GUI | [Web] https://github.com/BC-SECURITY/Starkiller"
+        " [\x1b[1;32mStarkiller\x1b[0m] Web UI | [Web] https://github.com/BC-SECURITY/Starkiller"
     )
     print(
         "========================================================================================"
@@ -103,6 +103,8 @@ def title(version, modules, listeners, agents):
     print("")
     print("              " + color(str(agents), "green") + " agents currently active")
     print("")
+    print(color("Starkiller is now the recommended way to use Empire.", "green"))
+    print(color(f"Try it out at {server}/index.html", "green"))
 
 
 def loading():

@@ -1,28 +1,3 @@
-"""
-###############################################################################################################
-## [Title]: linuxprivchecker.py -- a Linux Privilege Escalation Check Script
-## [Original Author]: Mike Czumak (T_v3rn1x) -- @SecuritySift
-##  [Maintainer]: Michael Contino -- @Sleventyeleven
-##-------------------------------------------------------------------------------------------------------------
-## [Details]:
-## This script is intended to be executed locally on a Linux box to enumerate basic system info and
-## search for common privilege escalation vectors such as world writable files, misconfigurations, clear-text
-## passwords and applicable exploits.
-##-------------------------------------------------------------------------------------------------------------
-## [Modification, Distribution, and Attribution]:
-## You are free to modify and/or distribute this script as you wish.  I only ask that you maintain original
-## author attribution and not attempt to sell it or incorporate it into any commercial offering (as if it's
-## worth anything anyway :)
-###############################################################################################################
-TODO:
-Add search for writable and/or missing library files
-Add detection and enumeratation for systemd
-Add search for accessiable ssh sockets
-Add search for ssh keys
-Add search for know access tokens
-Expand Sudo support to include rules in sudoers.d
-Add more high profile exploit checks (ie shellshock)
-"""
 import sys
 
 # conditional import for older versions of python not compatible with subprocess

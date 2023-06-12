@@ -39,7 +39,7 @@ from empire.server.utils import data_util
 
 from . import agents, credentials, listeners, stagers
 
-VERSION = "5.2.2 BC Security Fork"
+VERSION = "5.4.2 BC Security Fork"
 
 log = logging.getLogger(__name__)
 
@@ -83,8 +83,8 @@ class MainMenu(object):
         self.credentialsv2 = CredentialService(self)
         self.hostsv2 = HostService(self)
         self.processesv2 = HostProcessService(self)
-        self.modulesv2 = ModuleService(self)
         self.downloadsv2 = DownloadService(self)
+        self.modulesv2 = ModuleService(self)
         self.agenttasksv2 = AgentTaskService(self)
         self.agentfilesv2 = AgentFileService(self)
         self.agentsv2 = AgentService(self)

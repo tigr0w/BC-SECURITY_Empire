@@ -3,7 +3,6 @@ import logging
 import os
 from datetime import datetime
 from json import JSONEncoder
-from pathlib import Path
 
 import socketio
 import uvicorn
@@ -44,22 +43,11 @@ class MyJsonEncoder(JSONEncoder):
 
 
 def load_starkiller(v2App):
-    use_temp = empire_config.starkiller.use_temp_dir
-    starkiller_submodule_dir = "empire/server/api/v2/starkiller"
-    starkiller_temp_dir = "empire/server/api/v2/starkiller-temp"
-
-    if (
-        Path(starkiller_submodule_dir) / ".git"
-    ).exists() and empire_config.starkiller.auto_update:
-        sync_starkiller(empire_config.dict())
+    sync_starkiller(empire_config.dict())
 
     v2App.mount(
         "/",
-        StaticFiles(
-            directory=f"{starkiller_temp_dir}/dist"
-            if use_temp
-            else f"{starkiller_submodule_dir}/dist"
-        ),
+        StaticFiles(directory=f"{empire_config.starkiller.directory}/dist"),
         name="static",
     )
 
@@ -147,7 +135,7 @@ def initialize(secure: bool = False, port: int = 1337):
         load_starkiller(v2App)
         log.info(f"Starkiller served at http://localhost:{port}/index.html")
     except Exception as e:
-        log.warning("Failed to load Starkiller: %s", e)
+        log.warning("Failed to load Starkiller: %s", e, exc_info=True)
         pass
 
     cert_path = os.path.abspath("./empire/server/data/")

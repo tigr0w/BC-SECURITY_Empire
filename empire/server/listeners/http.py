@@ -856,9 +856,14 @@ class Listener(object):
         @app.route("/download/<stager>/")
         def send_stager(stager):
             with SessionLocal.begin() as db:
-                obfuscation_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
-                    db, stager
-                )
+                if stager == "ironpython":
+                    obfuscation_config = (
+                        self.mainMenu.obfuscationv2.get_obfuscation_config(db, "csharp")
+                    )
+                else:
+                    obfuscation_config = (
+                        self.mainMenu.obfuscationv2.get_obfuscation_config(db, stager)
+                    )
                 obfuscation = obfuscation_config.enabled
                 obfuscation_command = obfuscation_config.command
 

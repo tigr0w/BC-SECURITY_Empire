@@ -338,13 +338,13 @@ def test_create_task_module_modified_input(client, admin_auth_header, agent):
 def test_create_task_bof_module_disabled_csharpserver(
     client, admin_auth_header, agent, bof_download
 ):
-    response_module = client.post(
+    response = client.post(
         f"/api/v2/agents/{agent.session_id}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "csharp_inject_bof_inject_bof",
             "options": {
-                "File": "whoami.x64.o",
+                "File": bof_download["id"],
                 "EntryPoint": "",
                 "ArgumentList": "",
                 "Architecture": "x64",
@@ -352,8 +352,50 @@ def test_create_task_bof_module_disabled_csharpserver(
         },
     )
 
-    assert response_module.status_code == 400
-    assert response_module.json()["detail"] == "csharpserver plugin not running"
+    assert response.status_code == 400
+    assert response.json()["detail"] == "csharpserver plugin not running"
+
+
+def test_create_task_module_with_file_option_not_found(
+    client, admin_auth_header, agent, bof_download
+):
+    response = client.post(
+        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_code_execution_invoke_bof",
+            "options": {
+                "File": "999",
+                "EntryPoint": "go",
+                "ArgumentList": "",
+                "UnicodeStringParameter": "False",
+            },
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "File not found for 'File' id 999"
+
+
+def test_create_task_module_with_file_option(
+    client, admin_auth_header, agent, bof_download
+):
+    response = client.post(
+        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_code_execution_invoke_bof",
+            "options": {
+                "File": bof_download["id"],
+                "EntryPoint": "go",
+                "ArgumentList": "",
+                "UnicodeStringParameter": "False",
+            },
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["id"] > 0
 
 
 def test_create_task_module_validates_required_options(

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.4.2] - 2023-06-07
+
+-   Updated Starkiller to v2.3.2
+-   Fixed python modules not running properly (Cx01N)
+-   Updated python multi_socks to run with Python 3 (Cx01N)
+
+## [5.4.1] - 2023-06-02
+
+-   Fix database reset issue with MySQL (@Vinnybod)
+-   Add a message to the client recommending the use of the Starkiller (@Vinnybod)
+-   Fixed issue with Invoke-wmi not returning a success message (@Cx01N)
+-   Fixed dynamic function issue with Powerview (@Cx01N)
+-   Pair down the amount of minutes needed to run pull request builds (@Vinnybod)
+
+## [5.4.0] - 2023-05-22
+
+-   Remove Starkiller as a submodule, treat it as a normal directory (@Vinnybod)
+    -   Everything should 'just work', but if you have issues after pulling these latest changes, try deleting the Starkiller directory before running the server `rm -r empire/server/api/v2/starkiller`. 
+-   Some improvements to the release flow after starkiller submodule removal (@Vinnybod)
+
+## [5.3.0] - 2023-05-17
+
+-   Add the ability to specify a module option as a file (@Vinnybod)
+
 ## [5.2.2] - 2023-04-30
 
 -   Updated Starkiller to v2.2.0
@@ -467,7 +491,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.2.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.2...HEAD
+
+[5.4.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.1...v5.4.2
+
+[5.4.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.0...v5.4.1
+
+[5.4.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.3.0...v5.4.0
+
+[5.3.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.2.2...v5.3.0
 
 [5.2.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.2.1...v5.2.2
 

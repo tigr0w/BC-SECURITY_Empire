@@ -43,12 +43,17 @@ def validate_options(instance_options: typing.Dict, params: typing.Dict):
     (options, None).
 
     Will also attempt to cast the options to the correct type using safe_cast.
+
+    Options of type "file" are not validated.
     """
     options = {}
     # make a copy so that the original options are not modified
     params = params.copy()
 
     for instance_key, option_meta in instance_options.items():
+        if option_meta.get("Type") == "file":
+            continue
+
         # Attempt to default a unset required option to the default value
         if (
             instance_key not in params

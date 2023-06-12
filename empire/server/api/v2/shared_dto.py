@@ -19,6 +19,7 @@ class ValueType(str, Enum):
     float = "FLOAT"
     integer = "INTEGER"
     boolean = "BOOLEAN"
+    file = "FILE"
 
 
 class CustomOptionSchema(BaseModel):
@@ -63,14 +64,17 @@ def domain_to_dto_download_description(download: models.Download):
     )
 
 
-def to_value_type(value: Any) -> ValueType:
-    if isinstance(value, str):
+def to_value_type(value: Any, type: str = "") -> ValueType:
+    type = type or ""
+    if type.lower() == "file":
+        return ValueType.file
+    elif type.lower() in ["string", "str"] or isinstance(value, str):
         return ValueType.string
-    elif isinstance(value, bool):
+    elif type.lower() in ["boolean", "bool"] or isinstance(value, bool):
         return ValueType.boolean
-    elif isinstance(value, float):
+    elif type.lower() == "float" or isinstance(value, float):
         return ValueType.float
-    elif isinstance(value, int):
+    elif type.lower() in ["integer", "int"] or isinstance(value, int):
         return ValueType.integer
     else:
         return ValueType.string

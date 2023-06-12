@@ -45,8 +45,15 @@ def try_create_engine(engine_url: str, *args, **kwargs) -> Engine:
 
 
 def reset_db():
+    if use == "mysql":
+        cmd = f"DROP DATABASE IF EXISTS {database_config.database_name}"
+        reset_engine = try_create_engine(mysql_url, echo=False)
+        with reset_engine.connect() as connection:
+            connection.execute(text(cmd))
+
     SessionLocal.close_all()
     Base.metadata.drop_all(engine)
+
     if use == "sqlite":
         os.unlink(database_config.location)
 

@@ -233,6 +233,7 @@ def main():
         for valid_passwords in password_finder.dump_passwords():
             print('{}\t{}:{}'.format(password_finder._source_name,
                                      valid_passwords[0], valid_passwords[1]))
+    print("Mimipenguin successfuly ran!")
 
 
 if __name__ == '__main__':

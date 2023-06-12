@@ -101,7 +101,7 @@ class Module(object):
                 + " -Credential $Credential"
             )
 
-            script += ";'Invoke-Wmi executed on " + computer_names + "'"
+        script += ";'Invoke-Wmi executed on " + computer_names + "'"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

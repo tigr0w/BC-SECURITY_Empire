@@ -10,8 +10,8 @@ log = logging.getLogger(__name__)
 
 class StarkillerConfig(BaseModel):
     repo: str = "bc-security/starkiller"
+    directory: str = "empire/server/api/v2/starkiller"
     ref: str = "main"
-    use_temp_dir: bool = False
     auto_update: bool = True
 
 
