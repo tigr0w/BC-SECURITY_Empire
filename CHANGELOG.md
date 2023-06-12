@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [5.4.2] - 2023-06-07
+-   Updated Starkiller to v2.3.2
 
 -   Fixed python modules not running properly (Cx01N)
 -   Updated python multi_socks to run with Python 3 (Cx01N)
