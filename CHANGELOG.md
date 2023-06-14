@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Expand file options to plugins, stagers, and listeners (@Vinnybod)
 -   Added Python agent support to hop listener (@Cx01N)
 -   Added staging to hop listener (@Cx01N)
+-   Added python module for Pwnkit (CVE-2021-4034) (@Cx01N)
+-   Added python module for Polkit (CVE-2021-3560) (@Cx01N)
+-   Fixed safecheck error for python module sudo spawn (@Cx01N)
+
 
 ## [5.4.2] - 2023-06-07
 
