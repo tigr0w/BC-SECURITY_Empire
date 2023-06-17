@@ -217,7 +217,10 @@ class Transform(MalleableObject):
 
         def append_transform(string, data):
             if isinstance(string, str):
-                string = string.encode("latin-1")
+                try:
+                    string = string.encode("latin-1")
+                except UnicodeEncodeError:
+                    string = string.encode("utf-8")
             if isinstance(data, str):
                 data = data.encode("latin-1")
             r = data + string
@@ -225,7 +228,10 @@ class Transform(MalleableObject):
 
         def append_transform_r(string, data):
             if isinstance(string, str):
-                string = string.encode("latin-1")
+                try:
+                    string = string.encode("latin-1")
+                except UnicodeEncodeError:
+                    string = string.encode("utf-8")
             if isinstance(data, str):
                 data = data.encode("latin-1")
             return data[: -len(string)]
@@ -288,11 +294,11 @@ class Transform(MalleableObject):
             return r
 
         self.generate_python = (
-            lambda var: "%(var)s=urllib.quote(base64.b64encode(%(var)s))\n"
+            lambda var: "%(var)s=urllib.parse.quote(base64.b64encode(%(var)s)).encode('UTF-8')\n"
             % {"var": var}
         )
         self.generate_python_r = (
-            lambda var: "%(var)s=base64.b64decode(urllib.unquote(%(var)s))\n"
+            lambda var: "%(var)s=base64.b64decode(urllib.parse.unquote(%(var)s))\n"
             % {"var": var}
         )
         self.generate_powershell = (
@@ -332,7 +338,7 @@ class Transform(MalleableObject):
 
         self.transform_r = self.transform
         self.generate_python = (
-            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(f_ord(_)^%(key)s) for _ in %(var)s])\n"
+            lambda var: "f_ord=int;%(var)s=''.join([chr(f_ord(_)^%(key)s) for _ in %(var)s])\n"
             % {"key": ord(key[0]), "var": var}
         )
         self.generate_python_r = self.generate_python
@@ -348,11 +354,11 @@ class Transform(MalleableObject):
         self.transform = lambda data: netbios_transform(data)
         self.transform_r = lambda data: netbios_transform_r(data)
         self.generate_python = (
-            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr((f_ord(_)>>4)+0x61)+chr((f_ord(_)&0xF)+0x61) for _ in %(var)s])\n"
+            lambda var: "%(var)s = ''.join([chr((c >> 4) + 0x61)+chr((c & 0xF) + 0x61) for c in %(var)s])\n"
             % {"var": var}
         )
         self.generate_python_r = (
-            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(((f_ord(%(var)s[_])-0x61)<<4)|((f_ord(%(var)s[_+1])-0x61)&0xF)) for _ in range(0,len(%(var)s),2)])\n"
+            lambda var: "%(var)s = ''.join([chr(((%(var)s[c] - 0x61) << 4) | ((%(var)s[c+1] - 0x61 ) & 0xF)) for c in range(0, len(%(var)s), 2)])\n"
             % {"var": var}
         )
         self.generate_powershell = lambda var: netbios_powershell(var)
@@ -367,13 +373,16 @@ class Transform(MalleableObject):
         def netbios_transform_r(data):
             if isinstance(data, str):
                 data = data.encode("latin-1")
-            r = "".join(
-                [
-                    chr(((data[i] - 0x61) << 4) | ((data[i + 1] - 0x61) & 0xF))
-                    for i in range(0, len(data), 2)
-                ]
-            )
-            return r.encode("latin-1")
+            try:
+                r = "".join(
+                    [
+                        chr(((data[i] - 0x61) << 4) | ((data[i + 1] - 0x61) & 0xF))
+                        for i in range(0, len(data), 2)
+                    ]
+                )
+                return r.encode("latin-1")
+            except ValueError:
+                return b""
 
         def netbios_powershell(var):
             return (
@@ -393,11 +402,11 @@ class Transform(MalleableObject):
         self.transform = lambda data: netbiosu_transform(data)
         self.transform_r = lambda data: netbiosu_transform_r(data)
         self.generate_python = (
-            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr((f_ord(_)>>4)+0x41)+chr((f_ord(_)&0xF)+0x41) for _ in %(var)s])\n"
+            lambda var: "f_ord=int;%(var)s=''.join([chr((f_ord(_)>>4)+0x41)+chr((f_ord(_)&0xF)+0x41) for _ in %(var)s])\n"
             % {"var": var}
         )
         self.generate_python_r = (
-            lambda var: "f_ord=ord if __import__('sys').version_info[0]<3 else int;%(var)s=''.join([chr(((f_ord(%(var)s[_])-0x41)<<4)|((f_ord(%(var)s[_+1])-0x41)&0xF)) for _ in range(0,len(%(var)s),2)])\n"
+            lambda var: "f_ord=int;%(var)s=''.join([chr(((f_ord(%(var)s[_])-0x41)<<4)|((f_ord(%(var)s[_+1])-0x41)&0xF)) for _ in range(0,len(%(var)s),2)])\n"
             % {"var": var}
         )
         self.generate_powershell = lambda var: netbiosu_powershell(var)
@@ -451,7 +460,10 @@ class Transform(MalleableObject):
 
         def prepend_transform(string, data):
             if isinstance(string, str):
-                string = string.encode("latin-1")
+                try:
+                    string = string.encode("latin-1")
+                except UnicodeError:
+                    string = string.encode("utf-8")
             if isinstance(data, str):
                 data = data.encode("latin-1")
             r = string + data
@@ -459,7 +471,10 @@ class Transform(MalleableObject):
 
         def prepend_transform_r(string, data):
             if isinstance(string, str):
-                string = string.encode("latin-1")
+                try:
+                    string = string.encode("latin-1")
+                except UnicodeError:
+                    string = string.encode("utf-8")
             if isinstance(data, str):
                 data = data.encode("latin-1")
             return data[len(string) :]

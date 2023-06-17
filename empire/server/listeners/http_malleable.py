@@ -910,7 +910,7 @@ $script:GetTask = {{
                 ):
                     getTask += "$taskURI += '" + ("?" if first else "&") + "';"
                     first = False
-                    getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.name }=' + $RoutingPacket;"
+                    getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.arg }=' + $RoutingPacket;"
 
                 if (
                     profile.get.client.metadata.terminator.type
@@ -1104,8 +1104,10 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 sendMessage += "    if packets:\n"
 
                 # ==== BUILD ROUTING PACKET ====
-                sendMessage += "        encData = aes_encrypt_then_hmac(key, packets)\n"
-                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)\n"
+                sendMessage += (
+                    "        encData = aes_encrypt_then_hmac(key, packets);\n"
+                )
+                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData);\n"
                 sendMessage += (
                     "\n".join(
                         [
@@ -1139,7 +1141,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     sendMessage += (
                         "        parameters['"
                         + profile.post.client.output.terminator.arg
-                        + "'] = routingPacket\n"
+                        + "'] = routingPacket;\n"
                     )
                 sendMessage += "        if parameters:\n"
                 sendMessage += "            requestUri += '?' + urllib.parse.urlencode(parameters)\n"
@@ -1183,7 +1185,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 sendMessage += "    else:\n"
 
                 # ==== BUILD ROUTING PACKET
-                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)\n"
+                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4);\n"
                 sendMessage += (
                     "\n".join(
                         [
@@ -1202,7 +1204,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     + str(profile.get.client.uris)
                     + ", 1)[0]\n"
                 )
-                sendMessage += "        requestUri = server + taskUri\n"
+                sendMessage += "        requestUri = server + taskUri;\n"
 
                 # ==== ADD PARAMETERS ====
                 sendMessage += "        parameters = {}\n"
@@ -1226,7 +1228,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.URIAPPEND
                 ):
-                    sendMessage += "        requestUri += routingPacket\n"
+                    sendMessage += "        requestUri += routingPacket;\n"
 
                 # ==== ADD BODY ====
                 if (
@@ -1259,7 +1261,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                 # ==== SEND REQUEST ====
                 sendMessage += "    try:\n"
-                sendMessage += "        res = urllib.request.urlopen(req)\n"
+                sendMessage += "        res = urllib.request.urlopen(req);\n"
 
                 # ==== EXTRACT RESPONSE ====
                 if (
@@ -1295,7 +1297,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 )
                 # before return we encode to bytes, since in some transformations "join" produces str
                 sendMessage += (
-                    "        if isinstance(data,str): data = data.encode('latin-1')\n"
+                    "        if isinstance(data,str): data = data.encode('latin-1');\n"
                 )
                 sendMessage += "        return ('200', data)\n"
 

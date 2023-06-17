@@ -176,7 +176,7 @@ class Agent(Base):
     parent = Column(String(255))
     children = Column(String(255))
     servers = Column(String(255))
-    profile = Column(String(255))
+    profile = Column(Text)
     functions = Column(String(255))
     kill_date = Column(String(255))
     working_hours = Column(String(255))

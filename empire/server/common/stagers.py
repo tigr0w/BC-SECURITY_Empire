@@ -803,5 +803,10 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 stager_code = stager_code + f"\nkey = b'{session_key}'"
                 launch_code = ""
 
-                full_agent = "\n".join([stager_code, agent_code, launch_code])
+                if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
+                    full_agent = "\n".join(
+                        [stager_code, agent_code, comms_code, launch_code]
+                    )
+                else:
+                    full_agent = "\n".join([stager_code, agent_code, launch_code])
                 return full_agent
