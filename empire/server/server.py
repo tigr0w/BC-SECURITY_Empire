@@ -183,6 +183,6 @@ def run(args):
             subprocess.call("./setup/cert.sh")
             time.sleep(3)
 
-        app.initialize(secure=args.secure_api, port=args.restport)
+        app.initialize(secure=args.secure_api, ip=args.restip, port=args.restport)
 
     sys.exit()

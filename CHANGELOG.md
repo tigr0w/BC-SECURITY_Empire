@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	-   Removed Invoke-Seatbelt in favor of Covenant's Seatbelt
 	-   Removed Bloodhound v1 module
 -   Revamped malleable profiles and increased their generation reliability (@Cx01N)
-
+-   Fix the restip argument which wasn't being used (@Vinnybod)
 
 ## [5.4.2] - 2023-06-07
 
