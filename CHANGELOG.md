@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fix the restip argument which wasn't being used (@Vinnybod)
+
 ## [5.4.2] - 2023-06-07
 
 -   Updated Starkiller to v2.3.2

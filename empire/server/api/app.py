@@ -52,7 +52,7 @@ def load_starkiller(v2App):
     )
 
 
-def initialize(secure: bool = False, port: int = 1337):
+def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
     # Not pretty but allows us to use main_menu by delaying the import
     from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
     from empire.server.api.v2.bypass import bypass_api
@@ -143,7 +143,7 @@ def initialize(secure: bool = False, port: int = 1337):
     if not secure:
         uvicorn.run(
             v2App,
-            host="0.0.0.0",
+            host=ip,
             port=port,
             log_config=None,
             lifespan="on",
