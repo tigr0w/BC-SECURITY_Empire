@@ -39,56 +39,8 @@ def catch_logs(level: int, logger: logging.Logger) -> LogCaptureHandler:
         logger.removeHandler(handler)
 
 
-@pytest.fixture(scope="module")
-def host(db, models):
-    host = models.Host(name="HOST_1", internal_ip="1.1.1.1")
-
-    db.add(host)
-
-    yield host
-
-
-# todo can probably have a shared default agent. This is copy/pasted
-# in a few test files.
-@pytest.fixture(scope="module", autouse=True)
-def agent(db, models, host):
-    agent = db.query(models.Agent).first()
-
-    if not agent:
-        agent = models.Agent(
-            name="TEST123",
-            session_id="TEST123",
-            host_id=host.id,
-            hostname=host.name,
-            process_id=1,
-            delay=1,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            archived=False,
-        )
-        db.add(agent)
-        db.flush()
-
-    yield agent
-
-    db.query(models.AgentTask).filter(
-        models.AgentTask.agent_id == agent.session_id
-    ).delete()
-    db.delete(agent)
-    db.delete(host)
-    db.commit()
-
-
 @pytest.fixture(scope="function")
-def main_menu_mock():
+def main_menu_mock(models):
     main_menu = Mock()
     main_menu.installPath = "empire/server"
 
@@ -96,6 +48,11 @@ def main_menu_mock():
     obf_conf_mock = MagicMock()
     main_menu.obfuscationv2.get_obfuscation_config = Mock(
         side_effect=lambda x, y: obf_conf_mock
+    )
+    main_menu.obfuscationv2.get_obfuscation_config = Mock(
+        return_value=models.ObfuscationConfig(
+            language="python", command="", enabled=False
+        )
     )
     main_menu.obfuscationv2.obfuscate = Mock(side_effect=fake_obfuscate)
     main_menu.obfuscationv2.obfuscate_keywords = Mock(side_effect=lambda x: x)
@@ -110,6 +67,7 @@ def module_service(main_menu_mock):
     yield ModuleService(main_menu_mock)
 
 
+@pytest.mark.slow
 def test_load_modules(main_menu_mock, models, db):
     """
     This is just meant to be a small smoke test to ensure that the modules
@@ -147,22 +105,28 @@ def test_load_modules(main_menu_mock, models, db):
                 ), f"No generated script for module {key}"
 
 
-def test_execute_custom_generate(module_service, agent, db, models, install_path):
-    file_path = "empire/test/data/modules/test_custom_module.yaml"
-    root_path = f"{install_path}/modules/"
-    path = Path(file_path)
-    module_service._load_module(
-        db, yaml.safe_load(path.read_text()), root_path, file_path
-    )
+def test_execute_custom_generate(
+    module_service, session_local, agent, models, install_path
+):
+    with session_local.begin() as db:
+        file_path = "empire/test/data/modules/test_custom_module.yaml"
+        root_path = f"{install_path}/modules/"
+        path = Path(file_path)
+        module_service._load_module(
+            db, yaml.safe_load(path.read_text()), root_path, file_path
+        )
 
-    execute = module_service.execute_module(
-        db,
-        agent,
-        "empire_test_data_modules_test_custom_module",
-        {"Agent": agent.session_id},
-        ignore_admin_check=True,
-        ignore_language_version_check=True,
-    )
+        db_agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == agent).first()
+        )
+        execute = module_service.execute_module(
+            db,
+            db_agent,
+            "empire_test_data_modules_test_custom_module",
+            {"Agent": agent},
+            ignore_admin_check=True,
+            ignore_language_version_check=True,
+        )
 
-    assert execute is not None
-    assert execute[0]["data"] == "This is the module code."
+        assert execute is not None
+        assert execute[0]["data"] == "This is the module code."

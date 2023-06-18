@@ -1,0 +1,24 @@
+name: LinPEAS
+authors:
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
+description: LinPEAS is a script that search for possible paths to escalate privileges on Linux/Unix*/MacOS hosts.
+software: ''
+tactics: []
+techniques:
+  - T1046
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: python
+min_language_version: '3'
+comments:
+  - https://github.com/carlospolop/PEASS-ng/tree/master/linPEAS
+options:
+  - name: Agent
+    description: Agent to run on.
+    required: true
+    value: ''
+script_path: python/situational_awareness/LinPEAS.py

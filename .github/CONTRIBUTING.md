@@ -45,3 +45,9 @@ The more information you provide in a Github issue the easier it will be for us 
 * The repo is also configured to use [pre-commit](https://pre-commit.com/) to automatically format code.
   * Once you have pre-commit installed, you can run `pre-commit install` to install the pre-commit hooks.
   * Then pre-commit will execute black, isort, and ruff automatically before committing.
+
+## Tests
+
+Please write tests for your code! We use [pytest](https://docs.pytest.org/en/latest/) for testing. Tests are located in the `tests/` directory. To run the tests, run `pytest` from the root directory of the project.
+
+For tests that take >20-30 seconds, please add the `@pytest.mark.slow` decorator to the test function. This will allow us to skip the slow tests when running the tests, unless we explicitly want to run them with `pytest --runslow`.

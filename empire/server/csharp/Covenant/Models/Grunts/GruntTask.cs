@@ -282,6 +282,8 @@ namespace Covenant.Models.Grunts
                         References = references35,
                         EmbeddedResources = resources,
                         UnsafeCompile = this.UnsafeCompile,
+                        // TODO: Add debug option
+                        // OutputKind = OutputKind.ConsoleApplication,
                         OutputKind = OutputKind.WindowsApplication,
                         Confuse = this.Confuse,
                         // TODO: Fix optimization to work with GhostPack
@@ -366,6 +368,8 @@ namespace Covenant.Models.Grunts
                         References = references40,
                         EmbeddedResources = resources,
                         UnsafeCompile = this.UnsafeCompile,
+                        // TODO: Add debug option
+                        // OutputKind = OutputKind.ConsoleApplication,
                         OutputKind = OutputKind.WindowsApplication,
                         Confuse = this.Confuse,
                         // TODO: Fix optimization to work with GhostPack. It also doesn't work with Sharpire. Not sure if this actuall works with anything...

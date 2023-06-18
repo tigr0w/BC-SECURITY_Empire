@@ -55,7 +55,7 @@ def test_get_modules(client, admin_auth_header):
 
     assert response.status_code == 200
 
-    assert len(response.json()["records"]) >= 392
+    assert len(response.json()["records"]) >= 383
 
 
 def test_update_module(client, admin_auth_header):

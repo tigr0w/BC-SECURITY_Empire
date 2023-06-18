@@ -25,6 +25,11 @@ database:
         command: ""
         module: "confuser"
         preobfuscatable: false
+      - language: python
+        enabled: false
+        command: ""
+        module: "python-obfuscator"
+        preobfuscatable: false
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz

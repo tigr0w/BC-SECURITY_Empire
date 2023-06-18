@@ -22,64 +22,6 @@ def listener(client, admin_auth_header):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def agent(db, models, main):
-    name = f'agent_{__name__.split(".")[-1]}'
-
-    hosts = db.query(models.Host).all()
-    if len(hosts) == 0:
-        host = models.Host(name="default_host", internal_ip="127.0.0.1")
-        db.add(host)
-    else:
-        host = hosts[0]
-
-    agent = db.query(models.Agent).filter(models.Agent.session_id == name).first()
-    if not agent:
-        agent = models.Agent(
-            name=name,
-            session_id=name,
-            delay=1,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=True,
-            process_name="abc",
-            process_id=123,
-            hostname="doesntmatter",
-            host=host,
-            archived=False,
-        )
-        db.add(agent)
-    else:
-        agent.archived = False
-
-    db.flush()
-    db.commit()
-
-    main.agents.agents[name] = {
-        "sessionKey": agent.session_key,
-        "functions": agent.functions,
-    }
-
-    yield agent
-
-    db.query(models.AgentTask).filter(
-        models.AgentTask.agent_id == agent.session_id
-    ).delete()
-    db.delete(agent)
-    db.delete(host)
-
-    db.commit()
-
-
-@pytest.fixture(scope="module", autouse=True)
 def agent_low_version(db, models, main):
     agent = db.query(models.Agent).filter(models.Agent.session_id == "WEAK").first()
     if not agent:
@@ -240,6 +182,20 @@ def bof_download(client, admin_auth_header, db, models):
         pass
 
 
+@pytest.fixture(scope="function")
+def agent_task(client, admin_auth_header, agent):
+    resp = client.post(
+        f"/api/v2/agents/{agent}/tasks/shell",
+        headers=admin_auth_header,
+        json={"command": 'echo "HELLO WORLD"'},
+    )
+
+    yield resp.json()
+
+    # No need to delete the task, it will be deleted when the agent is deleted
+    # After the test.
+
+
 def test_create_task_shell_agent_not_found(client, admin_auth_header):
     response = client.post(
         "/api/v2/agents/abc/tasks/shell",
@@ -252,7 +208,7 @@ def test_create_task_shell_agent_not_found(client, admin_auth_header):
 
 def test_create_task_shell(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/shell",
+        f"/api/v2/agents/{agent}/tasks/shell",
         headers=admin_auth_header,
         json={"command": 'echo "HELLO WORLD"'},
     )
@@ -274,7 +230,7 @@ def test_create_task_module_agent_not_found(client, admin_auth_header):
 
 def test_create_task_module_not_found(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={"module_id": "some_module", "options": {}},
     )
@@ -285,7 +241,7 @@ def test_create_task_module_not_found(client, admin_auth_header, agent):
 
 def test_create_task_module(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "powershell_credentials_invoke_internal_monologue",
@@ -302,7 +258,7 @@ def test_create_task_module(client, admin_auth_header, agent):
     assert response.status_code == 201
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith("function Invoke-InternalMonologue")
-    assert response.json()["agent_id"] == agent.session_id
+    assert response.json()["agent_id"] == agent
 
 
 def test_create_task_module_modified_input(client, admin_auth_header, agent):
@@ -315,7 +271,7 @@ def test_create_task_module_modified_input(client, admin_auth_header, agent):
     ).lstrip("\n")
 
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "powershell_credentials_invoke_internal_monologue",
@@ -332,14 +288,14 @@ def test_create_task_module_modified_input(client, admin_auth_header, agent):
     assert response.status_code == 201
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith(modified_input)
-    assert response.json()["agent_id"] == agent.session_id
+    assert response.json()["agent_id"] == agent
 
 
 def test_create_task_bof_module_disabled_csharpserver(
     client, admin_auth_header, agent, bof_download
 ):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "csharp_inject_bof_inject_bof",
@@ -360,15 +316,12 @@ def test_create_task_module_with_file_option_not_found(
     client, admin_auth_header, agent, bof_download
 ):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "powershell_code_execution_invoke_bof",
+            "module_id": "powershell_code_execution_invoke_shellcode",
             "options": {
                 "File": "999",
-                "EntryPoint": "go",
-                "ArgumentList": "",
-                "UnicodeStringParameter": "False",
             },
         },
     )
@@ -381,15 +334,12 @@ def test_create_task_module_with_file_option(
     client, admin_auth_header, agent, bof_download
 ):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "powershell_code_execution_invoke_bof",
+            "module_id": "powershell_code_execution_invoke_shellcode",
             "options": {
                 "File": bof_download["id"],
-                "EntryPoint": "go",
-                "ArgumentList": "",
-                "UnicodeStringParameter": "False",
             },
         },
     )
@@ -402,7 +352,7 @@ def test_create_task_module_validates_required_options(
     client, admin_auth_header, agent
 ):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "powershell_trollsploit_message",
@@ -420,7 +370,7 @@ def test_create_task_module_validates_required_options(
 
 def test_create_task_module_validates_options_strict(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/module",
+        f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "powershell_collection_foxdump",
@@ -514,7 +464,7 @@ def test_create_task_module_ignore_admin_check(
 
 def test_create_task_upload_file_not_found(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/upload",
+        f"/api/v2/agents/{agent}/tasks/upload",
         headers=admin_auth_header,
         json={
             "path_to_file": "/tmp",
@@ -542,7 +492,7 @@ def test_create_task_upload_agent_not_found(client, admin_auth_header, agent):
 
 def test_create_task_upload(client, admin_auth_header, agent, download):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/upload",
+        f"/api/v2/agents/{agent}/tasks/upload",
         headers=admin_auth_header,
         json={
             "path_to_file": "/tmp",
@@ -568,7 +518,7 @@ def test_create_task_download_agent_not_found(client, admin_auth_header):
 
 def test_create_task_download(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/download",
+        f"/api/v2/agents/{agent}/tasks/download",
         headers=admin_auth_header,
         json={"path_to_file": "/tmp/downloadme.zip"},
     )
@@ -589,7 +539,7 @@ def test_create_socks_agent_not_found(client, admin_auth_header, agent):
 
 def test_create_task_socks(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/socks",
+        f"/api/v2/agents/{agent}/tasks/socks",
         headers=admin_auth_header,
         json={"port": 1080},
     )
@@ -611,7 +561,7 @@ def test_create_task_jobs_agent_not_found(client, admin_auth_header, agent):
 
 def test_create_task_jobs(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/jobs",
+        f"/api/v2/agents/{agent}/tasks/jobs",
         headers=admin_auth_header,
         json={},
     )
@@ -621,7 +571,7 @@ def test_create_task_jobs(client, admin_auth_header, agent):
 
 def test_kill_task_jobs(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/kill_job",
+        f"/api/v2/agents/{agent}/tasks/kill_job",
         headers=admin_auth_header,
         json={"id": 0},
     )
@@ -659,7 +609,7 @@ def test_create_task_script_import_agent_not_found(client, admin_auth_header, ag
 
 def test_create_task_script_import(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/script_import",
+        f"/api/v2/agents/{agent}/tasks/script_import",
         headers=admin_auth_header,
         files={
             "file": (
@@ -687,7 +637,7 @@ def test_create_task_script_command_agent_not_found(client, admin_auth_header):
 
 def test_create_task_script_command(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/script_command",
+        f"/api/v2/agents/{agent}/tasks/script_command",
         headers=admin_auth_header,
         json={"command": "run command"},
     )
@@ -708,7 +658,7 @@ def test_create_task_sysinfo_agent_not_found(client, admin_auth_header):
 
 def test_create_task_sysinfo(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/sysinfo",
+        f"/api/v2/agents/{agent}/tasks/sysinfo",
         headers=admin_auth_header,
         json={},
     )
@@ -730,7 +680,7 @@ def test_create_task_update_comms_agent_not_found(client, admin_auth_header, lis
 
 def test_create_task_update_comms(client, admin_auth_header, agent, listener):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/update_comms",
+        f"/api/v2/agents/{agent}/tasks/update_comms",
         headers=admin_auth_header,
         json={"new_listener_id": listener["id"]},
     )
@@ -752,7 +702,7 @@ def test_create_task_update_sleep_agent_not_found(client, admin_auth_header, lis
 
 def test_create_task_update_sleep_validates_fields(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/sleep",
+        f"/api/v2/agents/{agent}/tasks/sleep",
         headers=admin_auth_header,
         json={"delay": -1, "jitter": 5},
     )
@@ -773,7 +723,7 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
 
 def test_create_task_update_sleep(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/sleep",
+        f"/api/v2/agents/{agent}/tasks/sleep",
         headers=admin_auth_header,
         json={"delay": 30, "jitter": 0.5},
     )
@@ -795,7 +745,7 @@ def test_create_task_update_kill_date_agent_not_found(client, admin_auth_header)
 
 def test_create_task_update_kill_date(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/kill_date",
+        f"/api/v2/agents/{agent}/tasks/kill_date",
         headers=admin_auth_header,
         json={"kill_date": "2021-05-06T00:00Z"},
     )
@@ -817,7 +767,7 @@ def test_create_task_update_working_hours_agent_not_found(client, admin_auth_hea
 
 def test_create_task_update_working_hours(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/working_hours",
+        f"/api/v2/agents/{agent}/tasks/working_hours",
         headers=admin_auth_header,
         json={"working_hours": "05:00-12:00"},
     )
@@ -839,7 +789,7 @@ def test_create_task_directory_list_agent_not_found(client, admin_auth_header):
 
 def test_create_task_directory_list(client, admin_auth_header, agent):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/directory_list",
+        f"/api/v2/agents/{agent}/tasks/directory_list",
         headers=admin_auth_header,
         json={"path": "/"},
     )
@@ -865,7 +815,7 @@ def test_create_task_proxy_list(client, admin_auth_header, agent):
     }
 
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/proxy_list",
+        f"/api/v2/agents/{agent}/tasks/proxy_list",
         headers=admin_auth_header,
         json=proxy_body,
     )
@@ -873,9 +823,7 @@ def test_create_task_proxy_list(client, admin_auth_header, agent):
     assert response.status_code == 201
     assert response.json()["id"] > 0
 
-    response = client.get(
-        f"/api/v2/agents/{agent.session_id}", headers=admin_auth_header
-    )
+    response = client.get(f"/api/v2/agents/{agent}", headers=admin_auth_header)
 
     assert response.status_code == 200
     assert response.json()["proxies"] == proxy_body
@@ -894,17 +842,15 @@ def test_get_tasks_for_agent_agent_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
-def test_get_tasks_for_agent(client, admin_auth_header, agent):
-    response = client.get(
-        f"/api/v2/agents/{agent.session_id}/tasks", headers=admin_auth_header
-    )
+def test_get_tasks_for_agent(client, admin_auth_header, agent, agent_task):
+    response = client.get(f"/api/v2/agents/{agent}/tasks", headers=admin_auth_header)
     assert response.status_code == 200
     assert len(response.json()["records"]) > 0
     assert (
         len(
             list(
                 filter(
-                    lambda x: x["agent_id"] != agent.session_id,
+                    lambda x: x["agent_id"] != agent,
                     response.json()["records"],
                 )
             )
@@ -921,22 +867,20 @@ def test_get_task_for_agent_agent_not_found(client, admin_auth_header, agent):
 
 def test_get_task_for_agent_not_found(client, admin_auth_header, agent):
     response = client.get(
-        f"/api/v2/agents/{agent.session_id}/tasks/9999", headers=admin_auth_header
+        f"/api/v2/agents/{agent}/tasks/9999", headers=admin_auth_header
     )
     assert response.status_code == 404
     assert (
         response.json()["detail"]
-        == f"Task not found for agent {agent.session_id} and task id 9999"
+        == f"Task not found for agent {agent} and task id 9999"
     )
 
 
-def test_get_task_for_agent(client, admin_auth_header, agent):
-    response = client.get(
-        f"/api/v2/agents/{agent.session_id}/tasks/1", headers=admin_auth_header
-    )
+def test_get_task_for_agent(client, admin_auth_header, agent, agent_task):
+    response = client.get(f"/api/v2/agents/{agent}/tasks/1", headers=admin_auth_header)
     assert response.status_code == 200
     assert response.json()["id"] == 1
-    assert response.json()["agent_id"] == agent.session_id
+    assert response.json()["agent_id"] == agent
 
 
 def test_create_task_archived_agent(client, admin_auth_header, agent_archived):
@@ -952,9 +896,9 @@ def test_create_task_archived_agent(client, admin_auth_header, agent_archived):
     )
 
 
-def test_delete_task(client, admin_auth_header, agent):
+def test_delete_task(client, admin_auth_header, agent, agent_task):
     response = client.delete(
-        f"/api/v2/agents/{agent.session_id}/tasks/1", headers=admin_auth_header
+        f"/api/v2/agents/{agent}/tasks/1", headers=admin_auth_header
     )
 
     assert response.status_code == 204
@@ -962,7 +906,7 @@ def test_delete_task(client, admin_auth_header, agent):
 
 def test_last_task(client, admin_auth_header, agent, empire_config):
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/shell",
+        f"/api/v2/agents/{agent}/tasks/shell",
         headers=admin_auth_header,
         json={"command": 'echo "HELLO WORLD"'},
     )
@@ -981,7 +925,7 @@ def test_create_task_exit(client, admin_auth_header, agent):
     This is at the end so it doesn't interfere with other tests
     """
     response = client.post(
-        f"/api/v2/agents/{agent.session_id}/tasks/exit",
+        f"/api/v2/agents/{agent}/tasks/exit",
         headers=admin_auth_header,
         json={},
     )

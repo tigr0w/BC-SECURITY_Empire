@@ -1,6 +1,7 @@
 import base64
 import enum
-from typing import Dict
+import os
+from typing import List
 
 from sqlalchemy import (
     JSON,
@@ -16,16 +17,28 @@ from sqlalchemy import (
     Table,
     Text,
     func,
+    select,
+    text,
 )
 from sqlalchemy.dialects import mysql
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import deferred, relationship
+from sqlalchemy.orm import Mapped, deferred, relationship
 from sqlalchemy_utc import UtcDateTime, utcnow
 
+from empire.server.core.config import empire_config
 from empire.server.utils.datetime_util import is_stale
 
 Base = declarative_base()
+
+database_config = empire_config.database
+use = os.environ.get("DATABASE_USE", database_config.use)
+database_config.use = use
+database_config = database_config[use.lower()]
+
+
+def get_database_config():
+    return use, database_config
 
 
 agent_task_download_assc = Table(
@@ -114,11 +127,29 @@ class Host(Base):
     # and a generated column is added for mysql
 
 
+class AgentCheckIn(Base):
+    """
+    Agents check in periodically. Every time they do, a new AgentCheckIn is created.
+    This is used to calculate the stale status of an agent and is used to
+    """
+
+    __tablename__ = "agent_checkins"
+    agent_id = Column(
+        String(255),
+        ForeignKey("agents.session_id", ondelete="CASCADE"),
+        nullable=False,
+        primary_key=True,
+    )
+    checkin_time = Column(
+        UtcDateTime, nullable=False, default=utcnow(), index=True, primary_key=True
+    )
+
+
 class Agent(Base):
     __tablename__ = "agents"
     session_id = Column(String(255), primary_key=True, nullable=False)
     name = Column(String(255), nullable=False)
-    host_id = Column(Integer, ForeignKey("hosts.id"))
+    host_id = Column(Integer, ForeignKey("hosts.id"), nullable=True)
     host = relationship(Host, lazy="joined")
     listener = Column(String(255), nullable=False)
     language = Column(String(255))
@@ -135,12 +166,17 @@ class Agent(Base):
     os_details = Column(String(255))
     session_key = Column(String(255))
     nonce = Column(String(255))
-    checkin_time = Column(UtcDateTime, default=utcnow())
-    lastseen_time = Column(UtcDateTime, default=utcnow(), onupdate=utcnow())
+    firstseen_time = Column(UtcDateTime, default=utcnow())
+    checkins: Mapped[List[AgentCheckIn]] = relationship(
+        "AgentCheckIn",
+        order_by="desc(AgentCheckIn.checkin_time)",
+        lazy="dynamic",
+        cascade="all, delete",
+    )
     parent = Column(String(255))
     children = Column(String(255))
     servers = Column(String(255))
-    profile = Column(String(255))
+    profile = Column(Text)
     functions = Column(String(255))
     kill_date = Column(String(255))
     working_hours = Column(String(255))
@@ -153,56 +189,43 @@ class Agent(Base):
     socks_port = Column(Integer)
 
     @hybrid_property
+    def lastseen_time(self):
+        return self.checkins[0].checkin_time
+
+    #  https://stackoverflow.com/questions/72096054/sqlalchemy-limit-the-joinedloaded-results
+    @lastseen_time.inplace.expression
+    @classmethod
+    def _lastseen_time_expression(cls):
+        return (
+            select(AgentCheckIn.checkin_time)
+            .filter(AgentCheckIn.agent_id == cls.session_id)
+            .order_by(AgentCheckIn.checkin_time.desc())
+            .limit(1)
+            .label("lastseen_time")
+        )
+
+    @hybrid_property
     def stale(self):
         return is_stale(self.lastseen_time, self.delay, self.jitter)
 
-    @stale.expression  # todo: this only works for sqlite.
-    def stale(cls):
-        threshold = 30 + cls.delay + cls.delay * cls.jitter
-        seconds_elapsed = (
-            func.julianday(utcnow()) - func.julianday(cls.lastseen_time)
-        ) * 86400.0
-        return seconds_elapsed > threshold
-
-    @property
-    def info(self) -> Dict:
-        return {
-            "ID": self.id,
-            "session_id": self.session_id,
-            "listener": self.listener,
-            "name": self.name,
-            "language": self.language,
-            "language_version": self.language_version,
-            "delay": self.delay,
-            "jitter": self.jitter,
-            "external_ip": self.external_ip,
-            "internal_ip": self.internal_ip,
-            "username": self.username,
-            "high_integrity": int(self.high_integrity or 0),
-            "process_name": self.process_name,
-            "process_id": self.process_id,
-            "hostname": self.hostname,
-            "os_details": self.os_details,
-            "session_key": str(self.session_key),
-            "nonce": self.nonce,
-            "checkin_time": self.checkin_time,
-            "lastseen_time": self.lastseen_time,
-            "parent": self.parent,
-            "children": self.children,
-            "servers": self.servers,
-            "profile": self.profile,
-            "functions": self.functions,
-            "kill_date": self.kill_date,
-            "working_hours": self.working_hours,
-            "lost_limit": self.lost_limit,
-            "stale": self.stale,
-            "notes": self.notes,
-            "architecture": self.architecture,
-            "proxy": self.proxy,
-        }
+    @stale.inplace.expression
+    @classmethod
+    def _stale_expression(cls):
+        if get_database_config()[0] == "sqlite":
+            threshold = 30 + cls.delay + cls.delay * cls.jitter
+            seconds_elapsed = (
+                func.julianday(utcnow()) - func.julianday(cls.lastseen_time)
+            ) * 86400.0
+            return seconds_elapsed > threshold
+        else:
+            diff = func.timestampdiff(
+                text("SECOND"), cls.lastseen_time, func.utc_timestamp()
+            )
+            threshold = 30 + cls.delay + cls.delay * cls.jitter
+            return diff > threshold
 
     def __repr__(self):
-        return "<Agent(name='%s')>" % (self.name)
+        return f"<Agent(name='{self.name}')>"
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -309,7 +332,11 @@ class AgentTaskStatus(str, enum.Enum):
 class AgentTask(Base):
     __tablename__ = "agent_tasks"
     id = Column(Integer, primary_key=True)
-    agent_id = Column(String(255), ForeignKey("agents.session_id"), primary_key=True)
+    agent_id = Column(
+        String(255),
+        ForeignKey("agents.session_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
     agent = relationship(Agent, lazy="joined", innerjoin=True)
     input = Column(Text)
     input_full = deferred(Column(Text().with_variant(mysql.LONGTEXT, "mysql")))

@@ -93,7 +93,6 @@ def agent(db, models, main):
             profile="profile",
             kill_date="killDate",
             working_hours="workingHours",
-            lastseen_time=datetime.now(timezone.utc) - timedelta(days=2),
             lost_limit=60,
             listener="http",
             language="powershell",
@@ -111,6 +110,15 @@ def agent(db, models, main):
         db.add(agent2)
         db.add(agent3)
         db.add(agent4)
+        db.add(models.AgentCheckIn(agent_id=agent.session_id))
+        db.add(models.AgentCheckIn(agent_id=agent2.session_id))
+        db.add(models.AgentCheckIn(agent_id=agent3.session_id))
+        db.add(
+            models.AgentCheckIn(
+                agent_id=agent4.session_id,
+                checkin_time=datetime.now(timezone.utc) - timedelta(days=2),
+            )
+        )
         db.flush()
         db.commit()
         agents = [agent, agent2, agent3, agent4]

@@ -210,16 +210,12 @@ class ModuleService(object):
         :return: tuple with options and the error message (if applicable)
         """
         converted_options = convert_module_options(module.options)
-        options, err = validate_options(converted_options, params)
+        options, err = validate_options(
+            converted_options, params, db, self.download_service
+        )
 
         if err:
             return None, err
-
-        files, err = self._get_file_options(db, converted_options, params)
-        if err:
-            return None, err
-
-        options.update(files)
 
         if not ignore_language_version_check:
             module_version = parse(module.min_language_version or "0")
@@ -237,26 +233,6 @@ class ModuleService(object):
                 return None, "module needs to run in an elevated context"
 
         return options, None
-
-    def _get_file_options(self, db, options, params):
-        def lower_default(x):
-            return "" if x is None else x.lower()
-
-        files = {}
-
-        for option_name, option_meta in filter(
-            lambda x: lower_default(x[1].get("Type")) == "file", options.items()
-        ):
-            db_download = self.download_service.get_by_id(db, params[option_name])
-            if not db_download:
-                return (
-                    None,
-                    f"File not found for '{option_name}' id {params[option_name]}",
-                )
-
-            files[option_name] = db_download
-
-        return files, None
 
     def _generate_script(
         self,
@@ -284,7 +260,7 @@ class ModuleService(object):
             obfuscation_command = obfuscation_config.command
 
         if module.advanced.custom_generate:
-            # In a future release we could refactor the modules to accept a obuscation_config,
+            # In a future release we could refactor the modules to accept an obuscation_config,
             #  but there's little benefit to doing so at this point. So I'm saving myself the pain.
             try:
                 return module.advanced.generate_class.generate(
@@ -302,14 +278,18 @@ class ModuleService(object):
         # We don't have obfuscation for other languages yet, but when we do,
         # we can pass it in here.
         elif module.language == LanguageEnum.python:
-            return self._generate_script_python(module, params)
+            return self._generate_script_python(module, params, obfuscation_config)
         elif module.language == LanguageEnum.csharp:
             return self._generate_script_csharp(module, params, obfuscation_config)
 
-    @staticmethod
     def _generate_script_python(
-        module: EmpireModule, params: Dict
+        self,
+        module: EmpireModule,
+        params: Dict,
+        obfuscaton_config: models.ObfuscationConfig,
     ) -> Tuple[Optional[str], Optional[str]]:
+        obfuscate = obfuscaton_config.enabled
+
         if module.script_path:
             script_path = os.path.join(
                 empire_config.directories.module_source,
@@ -325,6 +305,9 @@ class ModuleService(object):
                 script = script.replace("{{ " + key + " }}", value).replace(
                     "{{" + key + "}}", value
                 )
+
+        if obfuscate:
+            script = self.obfuscation_service.python_obfuscate(script)
 
         return script, None
 

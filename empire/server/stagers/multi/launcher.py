@@ -121,14 +121,11 @@ class Stager(object):
             invoke_obfuscation = True
 
         if language in ["csharp", "ironpython"]:
-            if (
-                self.mainMenu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"]
-                != "HTTP[S]"
-            ):
+            if self.mainMenu.listenersv2.get_active_listener_by_name(
+                listener_name
+            ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
                 log.error(
-                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                    "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
                 )
                 return ""
 

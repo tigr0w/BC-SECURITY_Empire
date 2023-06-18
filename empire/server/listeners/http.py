@@ -854,7 +854,8 @@ class Listener(object):
         WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
         @app.route("/download/<stager>/")
-        def send_stager(stager):
+        @app.route("/download/<stager>/<hop>")
+        def send_stager(stager, hop=None):
             with SessionLocal.begin() as db:
                 if stager == "ironpython":
                     obfuscation_config = (
@@ -869,7 +870,7 @@ class Listener(object):
 
             if "powershell" == stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName=listenerName,
+                    listenerName=hop or listenerName,
                     language="powershell",
                     encode=False,
                     obfuscate=obfuscation,
@@ -882,7 +883,7 @@ class Listener(object):
 
             elif "python" == stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName,
+                    listenerName=hop or listenerName,
                     language="python",
                     encode=False,
                     obfuscate=obfuscation,
@@ -894,15 +895,23 @@ class Listener(object):
                 return launcher
 
             elif "ironpython" == stager:
-                launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName,
-                    language="python",
-                    encode=False,
-                    obfuscate=obfuscation,
-                    userAgent=userAgent,
-                    proxy=proxy,
-                    proxyCreds=proxyCreds,
-                )
+                if hop:
+                    options = copy.deepcopy(self.options)
+                    options["Listener"] = {}
+                    options["Listener"]["Value"] = hop
+                    options["Language"] = {}
+                    options["Language"]["Value"] = stager
+                    launcher = self.mainMenu.stagers.generate_stageless(options)
+                else:
+                    launcher = self.mainMenu.stagers.generate_launcher(
+                        listenerName=hop or listenerName,
+                        language="python",
+                        encode=False,
+                        obfuscate=obfuscation,
+                        userAgent=userAgent,
+                        proxy=proxy,
+                        proxyCreds=proxyCreds,
+                    )
 
                 directory = self.mainMenu.stagers.generate_python_exe(
                     launcher, dot_net_version="net40", obfuscate=obfuscation
@@ -913,7 +922,7 @@ class Listener(object):
 
             elif "csharp" == stager:
                 filename = self.mainMenu.stagers.generate_launcher(
-                    listenerName,
+                    listenerName=hop or listenerName,
                     language="csharp",
                     encode=False,
                     obfuscate=obfuscation,
@@ -1039,20 +1048,40 @@ class Listener(object):
                                 self.instance_log.info(message)
                                 log.info(message)
 
+                                # Check for hop listener
+                                hopListenerName = request.headers.get("Hop-Name")
+                                hopListener = self.mainMenu.listenersv2.get_active_listener_by_name(
+                                    hopListenerName
+                                )
+
                                 with SessionLocal() as db:
                                     obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
                                         db, language
                                     )
-                                    stage = self.generate_stager(
-                                        language=language,
-                                        listenerOptions=listenerOptions,
-                                        obfuscate=False
-                                        if not obf_config
-                                        else obf_config.enabled,
-                                        obfuscation_command=""
-                                        if not obf_config
-                                        else obf_config.command,
-                                    )
+
+                                    if hopListener:
+                                        stage = hopListener.generate_stager(
+                                            language=language,
+                                            listenerOptions=hopListener.options,
+                                            obfuscate=False
+                                            if not obf_config
+                                            else obf_config.enabled,
+                                            obfuscation_command=""
+                                            if not obf_config
+                                            else obf_config.command,
+                                        )
+
+                                    else:
+                                        stage = self.generate_stager(
+                                            language=language,
+                                            listenerOptions=listenerOptions,
+                                            obfuscate=False
+                                            if not obf_config
+                                            else obf_config.enabled,
+                                            obfuscation_command=""
+                                            if not obf_config
+                                            else obf_config.command,
+                                        )
                                 return make_response(stage, 200)
 
                             elif results.startswith(b"ERROR:"):

