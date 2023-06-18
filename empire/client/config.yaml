@@ -97,11 +97,11 @@ shortcuts:
         - name: File
           dynamic: true
     assembly:
-      module: powershell_code_execution_invoke_assembly
+      module: csharp_assembly.Assembly
       params:
         - name: File
           dynamic: true
-        - name: Arguments
+        - name: Parameters
           value: ''
   python:
     whoami:
@@ -181,11 +181,11 @@ shortcuts:
         - name: File
           dynamic: true
     assembly:
-      module: powershell_code_execution_invoke_assembly
+      module: csharp_assembly.Assembly
       params:
         - name: File
           dynamic: true
-        - name: Arguments
+        - name: Parameters
           value: ''
   csharp:
     whoami:
@@ -250,11 +250,11 @@ shortcuts:
         - name: File
           dynamic: true
     assembly:
-      module: powershell_code_execution_invoke_assembly
+      module: csharp_assembly.Assembly
       params:
         - name: File
           dynamic: true
-        - name: Arguments
+        - name: Parameters
           value: ''
 directories:
   downloads: empire/client/downloads/

@@ -319,12 +319,9 @@ def test_create_task_module_with_file_option_not_found(
         f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "powershell_code_execution_invoke_bof",
+            "module_id": "powershell_code_execution_invoke_shellcode",
             "options": {
                 "File": "999",
-                "EntryPoint": "go",
-                "ArgumentList": "",
-                "UnicodeStringParameter": "False",
             },
         },
     )
@@ -340,12 +337,9 @@ def test_create_task_module_with_file_option(
         f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "powershell_code_execution_invoke_bof",
+            "module_id": "powershell_code_execution_invoke_shellcode",
             "options": {
                 "File": bof_download["id"],
-                "EntryPoint": "go",
-                "ArgumentList": "",
-                "UnicodeStringParameter": "False",
             },
         },
     )
