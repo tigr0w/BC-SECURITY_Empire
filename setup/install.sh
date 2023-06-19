@@ -171,7 +171,7 @@ else
   read -r answer
 fi
 if [ "$answer" != "${answer#[Yy]}" ] ;then
-  sudo apt-get install -y make autoconf g++ git zlib1g-dev libxml2-dev libssl1.1 libssl-dev
+  sudo apt-get install -y make autoconf g++ git zlib1g-dev libxml2-dev libssl-dev
   install_xar
   install_bomutils
 else
