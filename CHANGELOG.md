@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	-   Removed Invoke-Seatbelt in favor of Covenant's Seatbelt
 	-   Removed Bloodhound v1 module
 -   Revamped malleable profiles and increased their generation reliability (@Cx01N)
+-   Allow the server to start even when starkiller sync fails (@Vinnybod)
 -   Remove libssl1.1 from the install script since it doesn't appear to be needed and causes install failures on some OS (@Vinnybod)
 -   Fix the restip argument which wasn't being used (@Vinnybod)
 
