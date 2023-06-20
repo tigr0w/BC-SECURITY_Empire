@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Allow the server to start even when starkiller sync fails (@Vinnybod)
 -   Remove libssl1.1 from the install script since it doesn't appear to be needed and causes install failures on some OS (@Vinnybod)
 -   Fix the restip argument which wasn't being used (@Vinnybod)
+-   Updated and fixed pyinstaller stager (@Cx01N)
+
 
 ## [5.4.2] - 2023-06-07
 

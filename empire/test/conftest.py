@@ -266,6 +266,21 @@ def base_stager_2():
     }
 
 
+@pytest.fixture(scope="function")
+def pyinstaller_stager():
+    return {
+        "name": "MyStager3",
+        "template": "multi_pyinstaller",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "python",
+            "OutFile": "empire",
+            "SafeChecks": "True",
+            "UserAgent": "default",
+        },
+    }
+
+
 @pytest.fixture(scope="session")
 def session_local(client):
     from empire.server.core.db.base import SessionLocal

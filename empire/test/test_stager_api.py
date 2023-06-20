@@ -276,3 +276,37 @@ def test_delete_stager(client, admin_auth_header):
     assert response.status_code == 200
     assert len(response.json()["records"]) == 1
     assert response.json()["records"][0]["id"] != to_delete["id"]
+
+
+def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_header):
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=pyinstaller_stager
+    )
+
+    # Check if the stager is successfully created
+    assert response.status_code == 201
+    assert response.json()["id"] != 0
+
+    stager_id = response.json()["id"]
+
+    response = client.get(
+        f"/api/v2/stagers/{stager_id}",
+        headers=admin_auth_header,
+    )
+
+    # Check if we can successfully retrieve the stager
+    assert response.status_code == 200
+    assert response.json()["id"] == stager_id
+
+    response = client.get(
+        response.json()["downloads"][0]["link"],
+        headers=admin_auth_header,
+    )
+
+    # Check if the file is downloaded successfully
+    assert response.status_code == 200
+    assert response.headers.get("content-type").split(";")[0] == "text/plain"
+    assert type(response.content) == bytes
+
+    # Check if the downloaded file is not empty
+    assert len(response.content) > 0
