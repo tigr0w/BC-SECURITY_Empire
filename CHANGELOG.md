@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.0] - 2023-06-21
+
 -   Break out agent checkins to a new table (@Vinnybod)
     -   New checkins endpoint to get them as a list
     -   New checkins aggregate endpoint to get aggregated checkin data
@@ -23,14 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed safecheck error for python module sudo spawn (@Cx01N)
 -   Fixed file error in Invoke-Shellcode (@Cx01N)
 -   Removed duplicate modules between languages (@Cx01N) 
-	-   Removed .NET Core modules due to errors
-	-   Removed redundant C# lateral movement modules
-	-   Removed Covenant Mimikatz in favor of Invoke-Mimikatz
-	-   Removed Invoke-Assembly in favor of Covenant's execute assembly
-	-   Removed Invoke-BOF in favor of RunOF
-	-   Removed Invoke-Rubeus in favor of Covenant's Rubeus
-	-   Removed Invoke-Seatbelt in favor of Covenant's Seatbelt
-	-   Removed Bloodhound v1 module
+    -   Removed .NET Core modules due to errors
+    -   Removed redundant C# lateral movement modules
+    -   Removed Covenant Mimikatz in favor of Invoke-Mimikatz
+    -   Removed Invoke-Assembly in favor of Covenant's execute assembly
+    -   Removed Invoke-BOF in favor of RunOF
+    -   Removed Invoke-Rubeus in favor of Covenant's Rubeus
+    -   Removed Invoke-Seatbelt in favor of Covenant's Seatbelt
+    -   Removed Bloodhound v1 module
 -   Revamped malleable profiles and increased their generation reliability (@Cx01N)
 -   Allow the server to start even when starkiller sync fails (@Vinnybod)
 -   Remove libssl1.1 from the install script since it doesn't appear to be needed and causes install failures on some OS (@Vinnybod)
@@ -518,7 +520,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.0...HEAD
+
+[5.5.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.2...v5.5.0
 
 [5.4.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.1...v5.4.2
 
