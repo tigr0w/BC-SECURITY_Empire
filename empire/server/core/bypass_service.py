@@ -17,9 +17,9 @@ class BypassService(object):
         self.main_menu = main_menu
 
         with SessionLocal.begin() as db:
-            self._load_bypasses(db)
+            self.load_bypasses(db)
 
-    def _load_bypasses(self, db: Session):
+    def load_bypasses(self, db: Session):
         root_path = f"{self.main_menu.installPath}/bypasses/"
         log.info(f"v2: Loading bypasses from: {root_path}")
 
@@ -102,3 +102,7 @@ class BypassService(object):
         db.flush()
 
         return db_bypass, None
+
+    def delete_all_bypasses(self, db: Session):
+        db.query(models.Bypass).delete()
+        db.flush()

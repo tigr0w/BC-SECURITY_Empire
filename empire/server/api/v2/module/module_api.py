@@ -89,3 +89,18 @@ async def update_bulk_enable(
     module_req: ModuleBulkUpdateRequest, db: Session = Depends(get_db)
 ):
     module_service.update_modules(db, module_req)
+
+
+@router.post("/reload", status_code=204, response_class=Response)
+async def reload_modules(
+    db: Session = Depends(get_db),
+):
+    module_service.load_modules(db)
+
+
+@router.post("/reset", status_code=204, response_class=Response)
+async def reset_modules(
+    db: Session = Depends(get_db),
+):
+    module_service.delete_all_modules(db)
+    module_service.load_modules(db)

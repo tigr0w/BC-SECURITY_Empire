@@ -91,3 +91,48 @@ def test_delete_bypass(client, admin_auth_header):
     response = client.get("/api/v2/bypasses/1", headers=admin_auth_header)
 
     assert response.status_code == 404
+
+
+def test_reset_bypasses(client, admin_auth_header):
+    response = client.post("/api/v2/bypasses/reset", headers=admin_auth_header)
+    assert response.status_code == 204
+
+    initial_response = client.get("/api/v2/bypasses", headers=admin_auth_header)
+    initial_bypasses = initial_response.json()["records"]
+
+    response = client.post(
+        "/api/v2/bypasses",
+        headers=admin_auth_header,
+        json={"name": "Test Bypass", "code": "x=0;", "language": "powershell"},
+    )
+    assert response.status_code == 201
+
+    response = client.post("/api/v2/bypasses/reset", headers=admin_auth_header)
+    assert response.status_code == 204
+
+    final_response = client.get("/api/v2/bypasses", headers=admin_auth_header)
+    final_bypasses = final_response.json()["records"]
+
+    assert len(initial_bypasses) == len(final_bypasses)
+
+
+def test_reload_bypasses(client, admin_auth_header):
+    response = client.post(
+        "/api/v2/bypasses",
+        headers=admin_auth_header,
+        json={"name": "Test Bypass", "code": "x=0;", "language": "powershell"},
+    )
+    assert response.status_code == 201
+    new_bypass_id = response.json()["id"]
+
+    initial_response = client.get("/api/v2/bypasses", headers=admin_auth_header)
+    initial_bypasses = initial_response.json()["records"]
+
+    response = client.post("/api/v2/bypasses/reload", headers=admin_auth_header)
+    assert response.status_code == 204
+
+    final_response = client.get("/api/v2/bypasses", headers=admin_auth_header)
+    final_bypasses = final_response.json()["records"]
+
+    assert len(initial_bypasses) == len(final_bypasses)
+    assert any(bypass["id"] == new_bypass_id for bypass in final_bypasses)

@@ -97,3 +97,20 @@ def test_execute_plugin(client, admin_auth_header, main):
 
     assert response.status_code == 200
     assert response.json() == {"detail": "Successful Execution"}
+
+
+def test_reload_plugins(client, admin_auth_header):
+    # Get initial list of plugins
+    initial_response = client.get("/api/v2/plugins", headers=admin_auth_header)
+    initial_plugins = initial_response.json()["records"]
+
+    # Call the reload plugins endpoint
+    response = client.post("/api/v2/plugins/reload", headers=admin_auth_header)
+    assert response.status_code == 204
+
+    # Get the list of plugins after reloading
+    final_response = client.get("/api/v2/plugins", headers=admin_auth_header)
+    final_plugins = final_response.json()["records"]
+
+    # The initial and final list of plugins should be the same after reload
+    assert len(initial_plugins) == len(final_plugins)

@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
+from starlette.responses import Response
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user, get_current_user
@@ -69,3 +70,9 @@ async def execute_plugin(
     if err:
         raise HTTPException(status_code=400, detail=err)
     return {} if results is None else {"detail": results}
+
+
+@router.post("/reload", status_code=204, response_class=Response)
+async def reload_plugins(db: Session = Depends(get_db)):
+    plugin_service.shutdown()
+    plugin_service.startup_plugins(db)

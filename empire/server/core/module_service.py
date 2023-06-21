@@ -35,7 +35,7 @@ class ModuleService(object):
         self.modules = {}
 
         with SessionLocal.begin() as db:
-            self._load_modules(db)
+            self.load_modules(db)
 
     def get_all(self):
         return self.modules
@@ -435,7 +435,7 @@ class ModuleService(object):
 
         return modified_module
 
-    def _load_modules(self, db: Session):
+    def load_modules(self, db: Session):
         """
         Load Empire modules.
         """
@@ -613,3 +613,13 @@ class ModuleService(object):
     @staticmethod
     def slugify(module_name: str):
         return module_name.lower().replace("/", "_")
+
+    def delete_all_modules(self, db: Session):
+        for module in list(self.modules.values()):
+            db_module: models.Module = (
+                db.query(models.Module).filter(models.Module.id == module.id).first()
+            )
+            if db_module:
+                db.delete(db_module)
+            del self.modules[module.id]
+        db.flush()

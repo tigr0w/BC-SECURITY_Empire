@@ -15,9 +15,9 @@ class ProfileService(object):
         self.main_menu = main_menu
 
         with SessionLocal.begin() as db:
-            self._load_malleable_profiles(db)
+            self.load_malleable_profiles(db)
 
-    def _load_malleable_profiles(self, db: Session):
+    def load_malleable_profiles(self, db: Session):
         """
         Load Malleable C2 Profiles to the database
         """
@@ -102,3 +102,8 @@ class ProfileService(object):
         db.flush()
 
         return db_profile, None
+
+    @staticmethod
+    def delete_all_profiles(db: Session):
+        db.query(models.Profile).delete()
+        db.flush()

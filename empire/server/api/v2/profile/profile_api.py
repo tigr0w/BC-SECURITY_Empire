@@ -92,3 +92,26 @@ async def delete_profile(
     db_profile: models.Profile = Depends(get_profile),
 ):
     profile_service.delete_profile(db, db_profile)
+
+
+@router.post(
+    "/reload",
+    status_code=HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+async def reload_profiles(
+    db: Session = Depends(get_db),
+):
+    profile_service.load_malleable_profiles(db)
+
+
+@router.post(
+    "/reset",
+    status_code=HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+async def reset_profiles(
+    db: Session = Depends(get_db),
+):
+    profile_service.delete_all_profiles(db)
+    profile_service.load_malleable_profiles(db)
