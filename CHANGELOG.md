@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fix basic_reporting plugin using the wrong agent checkin column
+
 ## [5.5.0] - 2023-06-21
 
 -   Break out agent checkins to a new table (@Vinnybod)
