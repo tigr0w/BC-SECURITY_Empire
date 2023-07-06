@@ -384,6 +384,8 @@ class Listener(object):
                         stager,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 # base64 encode the stager and return it
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -481,6 +483,15 @@ class Listener(object):
 
                 # download the stager and extract the IV
                 launcherBase += listener_util.python_extract_stager(staging_key)
+
+                if obfuscate:
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
+                        launcherBase,
+                        obfuscation_command=obfuscation_command,
+                    )
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                        launcherBase
+                    )
 
                 if encode:
                     launchEncoded = base64.b64encode(
@@ -583,10 +594,6 @@ class Listener(object):
             }
             stager = template.render(template_options)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            if obfuscate:
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
@@ -605,24 +612,26 @@ class Listener(object):
                 )
 
             stagingKey = stagingKey.encode("UTF-8")
-            unobfuscated_stager = listener_util.remove_lines_comments(stager)
+            stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
-                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
-                    unobfuscated_stager, obfuscation_command=obfuscation_command
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager, obfuscation_command=obfuscation_command
                 )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
             # base64 encode the stager and return it
             # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
             # if/else statements are irrelevant
             if encode:
-                return helpers.enc_powershell(unobfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, unobfuscated_stager.encode("UTF-8")
+                    RC4IV + stagingKey, stager.encode("UTF-8")
                 )
             else:
-                return unobfuscated_stager
+                return stager
 
         elif language.lower() == "python":
             template_path = [
@@ -644,6 +653,10 @@ class Listener(object):
                 "stage_2": stage2,
             }
             stager = template.render(template_options)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode:
@@ -693,10 +706,6 @@ class Listener(object):
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
 
-            if obfuscate:
-                # Get the random function name generated at install and patch the stager with the proper function name
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
-
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
 
@@ -721,6 +730,7 @@ class Listener(object):
                     code,
                     obfuscation_command=obfuscation_command,
                 )
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
             return code
 
         elif language == "python":
@@ -757,6 +767,10 @@ class Listener(object):
                     'workingHours = "REPLACE_WORKINGHOURS"',
                     f'workingHours = "{ killDate }"',
                 )
+
+            if obfuscate:
+                code = self.mainMenu.obfuscationv2.python_obfuscate(code)
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
         elif language == "csharp":

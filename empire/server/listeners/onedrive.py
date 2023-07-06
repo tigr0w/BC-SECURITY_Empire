@@ -293,6 +293,7 @@ class Listener(object):
                         launcher,
                         obfuscation_command=obfuscation_command,
                     )
+                    launcher = self.mainMenu.obfuscationv2.obfuscate_keywords(launcher)
 
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -308,7 +309,14 @@ class Listener(object):
                 return "Python not implemented yet"
 
     def generate_stager(
-        self, listenerOptions, encode=False, encrypt=True, language=None, token=None
+        self,
+        listenerOptions,
+        encode=False,
+        encrypt=True,
+        language=None,
+        token=None,
+        obfuscate=False,
+        obfuscation_command="",
     ):
         """
         Generate the stager code
@@ -354,21 +362,24 @@ class Listener(object):
                 "taskings_folder": taskings_folder,
             }
             stager = template.render(template_options)
+            stager = listener_util.remove_lines_comments(stager)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-            unobfuscated_stager = listener_util.remove_lines_comments(stager)
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager, obfuscation_command=obfuscation_command
+                )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
-                return helpers.enc_powershell(unobfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 staging_key = staging_key.encode("UTF-8")
                 return RC4IV + encryption.rc4(
-                    RC4IV + staging_key, unobfuscated_stager.encode("UTF-8")
+                    RC4IV + staging_key, stager.encode("UTF-8")
                 )
             else:
-                return unobfuscated_stager
+                return stager
 
         else:
             log.error("Python agent not available for Onedrive")
@@ -432,6 +443,8 @@ class Listener(object):
         redirect_uri,
         language=None,
         version="",
+        obfuscate=False,
+        obfuscation_command="",
     ):
         """
         Generate the agent code
@@ -482,6 +495,12 @@ class Listener(object):
                 )
 
             agent_code = agent_code.replace("REPLACE_COMMS", "")
+
+            if obfuscate:
+                agent_code = self.mainMenu.obfuscationv2.obfuscate(
+                    agent_code, obfuscation_command=obfuscation_command
+                )
+                agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
 
             return agent_code
 

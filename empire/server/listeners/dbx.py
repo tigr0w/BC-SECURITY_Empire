@@ -291,6 +291,8 @@ class Listener(object):
                         stager,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 # base64 encode the stager and return it
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -374,7 +376,13 @@ class Listener(object):
                     return launcherBase
 
     def generate_stager(
-        self, listenerOptions, encode=False, encrypt=True, language=None
+        self,
+        listenerOptions,
+        encode=False,
+        encrypt=True,
+        obfuscate=False,
+        obfuscation_command="",
+        language=None,
     ):
         """
         Generate the stager code needed for communications with this listener.
@@ -423,22 +431,27 @@ class Listener(object):
             }
 
             stager = template.render(template_options)
-            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+            stager = listener_util.remove_lines_comments(stager)
 
-            unobfuscated_stager = listener_util.remove_lines_comments(stager)
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager,
+                    obfuscation_command=obfuscation_command,
+                )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode:
-                return helpers.enc_powershell(unobfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
                     RC4IV + stagingKey.encode("UTF-8"),
-                    unobfuscated_stager.encode("UTF-8"),
+                    stager.encode("UTF-8"),
                 )
             else:
                 # otherwise just return the case-randomized stager
-                return unobfuscated_stager
+                return stager
 
         elif language.lower() == "python":
             template_path = [
@@ -460,6 +473,10 @@ class Listener(object):
             }
 
             stager = template.render(template_options)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return base64.b64encode(stager)
@@ -509,7 +526,6 @@ class Listener(object):
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
-            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
             code = code.replace("$AgentDelay = 60", "$AgentDelay = " + str(delay))
@@ -530,6 +546,13 @@ class Listener(object):
                     "$KillDate,", "$KillDate = '" + str(killDate) + "',"
                 )
             code = code.replace("REPLACE_COMMS", "")
+
+            if obfuscate:
+                code = self.mainMenu.obfuscationv2.obfuscate(
+                    code,
+                    obfuscation_command=obfuscation_command,
+                )
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
 
@@ -567,6 +590,10 @@ class Listener(object):
                 )
 
             code = code.replace("REPLACE_COMMS", "")
+
+            if obfuscate:
+                code = self.mainMenu.obfuscationv2.python_obfuscate(code)
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
         else:

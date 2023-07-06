@@ -318,6 +318,8 @@ class Listener(object):
                         stager,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 # base64 encode the stager and return it
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -383,9 +385,6 @@ class Listener(object):
             }
             stager = template.render(template_options)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
@@ -409,24 +408,26 @@ class Listener(object):
                 )
 
             stagingKey = stagingKey.encode("UTF-8")
-            unobfuscated_stager = listener_util.remove_lines_comments(stager)
+            stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
-                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
-                    unobfuscated_stager,
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager,
                     obfuscation_command=obfuscation_command,
                 )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
             # base64 encode the stager and return it
             if encode:
-                return helpers.enc_powershell(unobfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, unobfuscated_stager.encode("UTF-8")
+                    RC4IV + stagingKey, stager.encode("UTF-8")
                 )
             else:
                 # otherwise just return the case-randomized stager
-                return unobfuscated_stager
+                return stager
 
         else:
             log.error(
@@ -462,9 +463,6 @@ class Listener(object):
             code = f.read()
             f.close()
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
-
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
 
@@ -492,6 +490,8 @@ class Listener(object):
                     code,
                     obfuscation_command=obfuscation_command,
                 )
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
+
             return code
 
         else:

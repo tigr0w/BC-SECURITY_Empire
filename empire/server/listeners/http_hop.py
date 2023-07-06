@@ -236,6 +236,8 @@ class Listener(object):
                         stager,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 # base64 encode the stager and return it
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -321,6 +323,15 @@ class Listener(object):
 
                 # download the stager and extract the IV
                 launcherBase += listener_util.python_extract_stager(staging_key)
+
+                if obfuscate:
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
+                        launcherBase,
+                        obfuscation_command=obfuscation_command,
+                    )
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                        launcherBase
+                    )
 
                 if encode:
                     launchEncoded = base64.b64encode(
@@ -420,6 +431,10 @@ class Listener(object):
                 obfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
                     unobfuscated_stager, obfuscation_command=obfuscation_command
                 )
+                obfuscated_stager = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                    obfuscated_stager
+                )
+
             # base64 encode the stager and return it
             # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
             # if/else statements are irrelevant
@@ -433,7 +448,7 @@ class Listener(object):
             else:
                 return obfuscated_stager
 
-        elif language.lower() == "python":
+        if language in ["python", "ironpython"]:
             template_path = [
                 os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
@@ -455,6 +470,13 @@ class Listener(object):
             stager = template.render(template_options)
 
             # base64 encode the stager and return it
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager,
+                    obfuscation_command=obfuscation_command,
+                )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
             if encode:
                 return base64.b64encode(stager)
             if encrypt:
