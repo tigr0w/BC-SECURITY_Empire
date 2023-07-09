@@ -597,7 +597,7 @@ def test_create_task_script_import_agent_not_found(client, admin_auth_header, ag
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "r"),
+                open("./empire/test/test-upload.yaml", "rb"),
                 "text/plain",
             )
         },
@@ -614,7 +614,7 @@ def test_create_task_script_import(client, admin_auth_header, agent):
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "r"),
+                open("./empire/test/test-upload.yaml", "rb"),
                 "text/plain",
             )
         },

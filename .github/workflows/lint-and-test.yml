@@ -2,8 +2,6 @@ name: Lint and Test
 
 on:
   pull_request:
-    paths-ignore:
-      - '**.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -14,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: psf/black@23.1.0
+      - uses: psf/black@23.3.0
       - uses: isort/isort-action@master
       - name: Run ruff
         run: |
