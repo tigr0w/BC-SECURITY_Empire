@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 -   Fix TypeError and crash when using `main` command in client (@jellyjellyrobot)
+-   Fix extraneous semi-colon breaking powershell 'literal' execution (@crittico)
 
 ## [5.5.1] - 2023-07-06
 
