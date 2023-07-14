@@ -287,6 +287,7 @@ class EmpireCli(object):
             state.get_listeners()
             print_util.title(
                 state.empire_version,
+                f"{state.host}:{state.port}" if state.connected else "",
                 len(state.modules),
                 len(state.listeners),
                 len(state.active_agents),
