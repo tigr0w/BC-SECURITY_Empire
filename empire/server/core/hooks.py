@@ -37,6 +37,14 @@ class Hooks(object):
     # Its arguments are (db: Session, agent: models.Agent)
     AFTER_AGENT_CHECKIN_HOOK = "after_agent_checkin_hook"
 
+    # This event is triggered after a tag is created.
+    # Its arguments are (db: Session, tag: models.Tag, taggable: Union[models.Agent, models.Listener, etc])
+    AFTER_TAG_CREATED_HOOK = "after_tag_created_hook"
+
+    # This event is triggered after a tag is updated.
+    # Its arguments are (db: Session, tag: models.Tag, taggable: Union[models.Agent, models.Listener, etc])
+    AFTER_TAG_UPDATED_HOOK = "after_tag_updated_hook"
+
     def __init__(self):
         self.hooks: Dict[str, Dict[str, Callable]] = {}
         self.filters: Dict[str, Dict[str, Callable]] = {}

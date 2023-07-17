@@ -38,6 +38,8 @@ from empire.server.api.v2.shared_dto import (
     NotFoundResponse,
     OrderDirection,
 )
+from empire.server.api.v2.tag import tag_api
+from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.db import models
@@ -83,6 +85,9 @@ async def get_task(
     )
 
 
+tag_api.add_endpoints_to_taggable(router, "/{agent_id}/tasks/{uid}/tags", get_task)
+
+
 @router.get("/tasks", response_model=AgentTasks)
 async def read_tasks_all_agents(
     limit: int = -1,
@@ -96,6 +101,7 @@ async def read_tasks_all_agents(
     status: Optional[AgentTaskStatus] = None,
     agents: Optional[List[str]] = Query(None),
     users: Optional[List[int]] = Query(None),
+    tags: Optional[List[TagStr]] = Query(None),
     query: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
@@ -103,6 +109,7 @@ async def read_tasks_all_agents(
         db,
         agents=agents,
         users=users,
+        tags=tags,
         limit=limit,
         offset=(page - 1) * limit,
         include_full_input=include_full_input,
@@ -145,6 +152,7 @@ async def read_tasks(
     order_direction: OrderDirection = OrderDirection.desc,
     status: Optional[AgentTaskStatus] = None,
     users: Optional[List[int]] = Query(None),
+    tags: Optional[List[TagStr]] = Query(None),
     db: Session = Depends(get_db),
     db_agent: models.Agent = Depends(get_agent),
     query: Optional[str] = None,
@@ -153,6 +161,7 @@ async def read_tasks(
         db,
         agents=[db_agent.session_id],
         users=users,
+        tags=tags,
         limit=limit,
         offset=(page - 1) * limit,
         include_full_input=include_full_input,

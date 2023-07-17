@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, undefer
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
@@ -184,6 +184,7 @@ class PluginService(object):
         db: Session,
         plugins: List[str] = None,
         users: List[int] = None,
+        tags: List[str] = None,
         limit: int = -1,
         offset: int = 0,
         include_full_input: bool = False,
@@ -202,11 +203,24 @@ class PluginService(object):
             query = query.filter(models.PluginTask.plugin_id.in_(plugins))
 
         if users:
-            query = query.filter(models.PluginTask.user_id.in_(users))
+            user_filters = [models.PluginTask.user_id.in_(users)]
+            if 0 in users:
+                user_filters.append(models.PluginTask.user_id.is_(None))
+            query = query.filter(or_(*user_filters))
+
+        if tags:
+            tags_split = [tag.split(":", 1) for tag in tags]
+            query = query.join(models.PluginTask.tags).filter(
+                and_(
+                    models.Tag.name.in_([tag[0] for tag in tags_split]),
+                    models.Tag.value.in_([tag[1] for tag in tags_split]),
+                )
+            )
 
         query_options = [
             joinedload(models.PluginTask.user),
         ]
+
         if include_full_input:
             query_options.append(undefer(models.PluginTask.input_full))
         if include_output:

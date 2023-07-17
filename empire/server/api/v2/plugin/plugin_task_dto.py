@@ -8,6 +8,7 @@ from empire.server.api.v2.shared_dto import (
     DownloadDescription,
     domain_to_dto_download_description,
 )
+from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 from empire.server.core.db import models
 
 
@@ -37,6 +38,7 @@ def domain_to_dto_plugin_task(
         status=task.status,
         created_at=task.created_at,
         updated_at=task.updated_at,
+        tags=list(map(lambda x: domain_to_dto_tag(x), task.tags)),
     )
 
 
@@ -52,6 +54,7 @@ class PluginTask(BaseModel):
     status: Optional[models.PluginTaskStatus]
     created_at: datetime
     updated_at: datetime
+    tags: List[Tag]
 
 
 class PluginTasks(BaseModel):

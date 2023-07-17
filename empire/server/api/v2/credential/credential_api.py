@@ -16,6 +16,7 @@ from empire.server.api.v2.credential.credential_dto import (
 )
 from empire.server.api.v2.shared_dependencies import get_db
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
+from empire.server.api.v2.tag import tag_api
 from empire.server.core.db import models
 from empire.server.server import main
 
@@ -39,6 +40,9 @@ async def get_credential(uid: int, db: Session = Depends(get_db)):
         return credential
 
     raise HTTPException(404, f"Credential not found for id {uid}")
+
+
+tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_credential)
 
 
 @router.get("/{uid}", response_model=Credential)

@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
+from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 
 
 def domain_to_dto_template(listener, uid: str):
@@ -59,6 +60,7 @@ def domain_to_dto_listener(listener):
         enabled=listener.enabled,
         options=options,
         created_at=listener.created_at,
+        tags=list(map(lambda x: domain_to_dto_tag(x), listener.tags)),
     )
 
 
@@ -249,6 +251,7 @@ class Listener(BaseModel):
     template: str
     options: Dict[str, str]
     created_at: datetime
+    tags: List[Tag]
 
 
 class Listeners(BaseModel):
