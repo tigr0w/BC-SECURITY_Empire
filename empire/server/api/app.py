@@ -133,7 +133,7 @@ def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
 
     try:
         load_starkiller(v2App)
-        log.info(f"Starkiller served at http://localhost:{port}/index.html")
+        log.info(f"Starkiller served at http://{ip}:{port}/index.html")
     except Exception as e:
         log.warning("Failed to load Starkiller: %s", e, exc_info=True)
         log.warning(
@@ -158,7 +158,7 @@ def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
     else:
         uvicorn.run(
             v2App,
-            host="0.0.0.0",
+            host=ip,
             port=port,
             log_config=None,
             lifespan="on",
