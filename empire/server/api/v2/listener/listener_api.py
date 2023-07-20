@@ -14,6 +14,7 @@ from empire.server.api.v2.listener.listener_dto import (
 )
 from empire.server.api.v2.shared_dependencies import get_db
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
+from empire.server.api.v2.tag import tag_api
 from empire.server.core.db import models
 from empire.server.server import main
 
@@ -37,6 +38,9 @@ async def get_listener(uid: int, db: Session = Depends(get_db)):
         return listener
 
     raise HTTPException(404, f"Listener not found for id {uid}")
+
+
+tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_listener)
 
 
 @router.get("/{uid}", response_model=Listener)

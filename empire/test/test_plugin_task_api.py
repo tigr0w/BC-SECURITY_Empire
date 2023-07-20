@@ -1,11 +1,6 @@
 import pytest
 
 
-@pytest.fixture(scope="module")
-def plugin_name():
-    return "basic_reporting"
-
-
 @pytest.fixture(scope="module", autouse=True)
 def plugin_task_1(main, db, models, plugin_name):
     db.add(

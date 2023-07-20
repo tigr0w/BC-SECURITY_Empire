@@ -24,6 +24,7 @@ from empire.server.api.v2.shared_dto import (
     NotFoundResponse,
     OrderDirection,
 )
+from empire.server.api.v2.tag import tag_api
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.server import main
@@ -48,6 +49,9 @@ async def get_agent(uid: str, db: Session = Depends(get_db)):
         return agent
 
     raise HTTPException(404, f"Agent not found for id {uid}")
+
+
+tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_agent)
 
 
 @router.get("/checkins", response_model=AgentCheckIns)

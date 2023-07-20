@@ -179,7 +179,7 @@ def test_get_agent_checkins_multiple_agents(
     response = client.get(
         "/api/v2/agents/checkins",
         headers=admin_auth_header,
-        params={"agents": [with_checkins[:2]], "limit": 400000},
+        params={"agents": with_checkins[:2], "limit": 400000},
     )
 
     assert response.status_code == 200

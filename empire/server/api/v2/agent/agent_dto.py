@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import PROXY_ID
+from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 from empire.server.core.db import models
 
 
@@ -48,6 +49,7 @@ def domain_to_dto_agent(agent: models.Agent):
         archived=agent.archived,
         # Could make this a typed class later to match the schema
         proxies=to_proxy_dto(agent.proxies),
+        tags=list(map(lambda x: domain_to_dto_tag(x), agent.tags)),
     )
 
 
@@ -111,6 +113,7 @@ class Agent(BaseModel):
     archived: bool
     stale: bool
     proxies: Optional[Dict]
+    tags: List[Tag]
 
 
 class Agents(BaseModel):

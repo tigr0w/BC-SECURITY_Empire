@@ -1,19 +1,15 @@
 import pytest
 
-from empire.test.conftest import base_listener_non_fixture
-
-my_globals = {"stager_id_1": 0, "stager_id_2": 0}
-
 
 @pytest.fixture(scope="module", autouse=True)
-def create_listener(client, admin_auth_header):
-    # not using fixture because scope issues
-    response = client.post(
-        "/api/v2/listeners/",
-        headers=admin_auth_header,
-        json=base_listener_non_fixture(),
-    )
-    return response.json()
+def cleanup_stagers(session_local, models):
+    yield
+
+    with session_local.begin() as db:
+        db.query(models.stager_download_assc).delete()
+        db.query(models.upload_download_assc).delete()
+        db.query(models.Stager).delete()
+        db.query(models.Download).delete()
 
 
 def test_get_stager_templates(client, admin_auth_header):
@@ -93,7 +89,7 @@ def test_create_stager_one_liner(client, base_stager, admin_auth_header):
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
 
-    my_globals["stager_id_1"] = response.json()["id"]
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
 def test_create_obfuscated_stager_one_liner(client, base_stager, admin_auth_header):
@@ -113,7 +109,7 @@ def test_create_obfuscated_stager_one_liner(client, base_stager, admin_auth_head
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
 
-    my_globals["stager_id_1"] = response.json()["id"]
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
 def test_create_stager_file(client, base_stager_2, admin_auth_header):
@@ -130,10 +126,16 @@ def test_create_stager_file(client, base_stager_2, admin_auth_header):
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
 
-    my_globals["stager_id_2"] = response.json()["id"]
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
 def test_create_stager_name_conflict(client, base_stager, admin_auth_header):
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
+    )
+    assert response.status_code == 201
+    stager_id = response.json()["id"]
+
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
@@ -142,6 +144,8 @@ def test_create_stager_name_conflict(client, base_stager, admin_auth_header):
         response.json()["detail"]
         == f'Stager with name {base_stager["name"]} already exists.'
     )
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
 def test_create_stager_save_false(client, base_stager, admin_auth_header):
@@ -156,13 +160,22 @@ def test_create_stager_save_false(client, base_stager, admin_auth_header):
     )
 
 
-def test_get_stager(client, admin_auth_header):
+def test_get_stager(client, admin_auth_header, base_stager):
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
+    )
+    stager_id = response.json()["id"]
+
+    assert response.status_code == 201
+
     response = client.get(
-        f"/api/v2/stagers/{my_globals['stager_id_1']}",
+        f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
-    assert response.json()["id"] == my_globals["stager_id_1"]
+    assert response.json()["id"] == stager_id
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
 def test_get_stager_not_found(client, admin_auth_header):
@@ -182,9 +195,17 @@ def test_update_stager_not_found(client, base_stager, admin_auth_header):
     assert response.json()["detail"] == "Stager not found for id 9999"
 
 
-def test_download_stager_one_liner(client, admin_auth_header):
+def test_download_stager_one_liner(client, admin_auth_header, base_stager):
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager,
+    )
+    assert response.status_code == 201
+    stager_id = response.json()["id"]
+
     response = client.get(
-        f"/api/v2/stagers/{my_globals['stager_id_1']}",
+        f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
     )
     response = client.get(
@@ -195,10 +216,20 @@ def test_download_stager_one_liner(client, admin_auth_header):
     assert response.headers.get("content-type").split(";")[0] == "text/plain"
     assert response.text.startswith("powershell -noP -sta")
 
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
-def test_download_stager_file(client, admin_auth_header):
+
+def test_download_stager_file(client, admin_auth_header, base_stager_2):
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager_2,
+    )
+    assert response.status_code == 201
+    stager_id = response.json()["id"]
+
     response = client.get(
-        f"/api/v2/stagers/{my_globals['stager_id_2']}",
+        f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
     )
     response = client.get(
@@ -212,10 +243,22 @@ def test_download_stager_file(client, admin_auth_header):
     ]
     assert type(response.content) == bytes
 
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
-def test_update_stager_allows_edits_and_generates_new_file(client, admin_auth_header):
+
+def test_update_stager_allows_edits_and_generates_new_file(
+    client, admin_auth_header, base_stager
+):
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager,
+    )
+    assert response.status_code == 201
+    stager_id = response.json()["id"]
+
     response = client.get(
-        f"/api/v2/stagers/{my_globals['stager_id_1']}",
+        f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -226,7 +269,7 @@ def test_update_stager_allows_edits_and_generates_new_file(client, admin_auth_he
     stager["options"]["Base64"] = "False"
 
     response = client.put(
-        f"/api/v2/stagers/{my_globals['stager_id_1']}",
+        f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
         json=stager,
     )
@@ -234,16 +277,36 @@ def test_update_stager_allows_edits_and_generates_new_file(client, admin_auth_he
     assert response.json()["options"]["Base64"] == "False"
     assert response.json()["name"] == original_name + "_updated!"
 
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
-def test_update_stager_name_conflict(client, admin_auth_header):
+
+def test_update_stager_name_conflict(client, admin_auth_header, base_stager):
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager,
+    )
+    assert response.status_code == 201
+    stager_id = response.json()["id"]
+
     response = client.get(
-        f"/api/v2/stagers/{my_globals['stager_id_1']}",
+        f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
 
+    base_stager_2 = base_stager.copy()
+    base_stager_2["name"] = "test_stager_2"
+    response2 = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager_2,
+    )
+    assert response2.status_code == 201
+    stager_id_2 = response2.json()["id"]
+
     response2 = client.get(
-        f"/api/v2/stagers/{my_globals['stager_id_2']}",
+        f"/api/v2/stagers/{stager_id_2}",
         headers=admin_auth_header,
     )
     assert response.status_code == 200
@@ -252,7 +315,7 @@ def test_update_stager_name_conflict(client, admin_auth_header):
 
     stager_1["name"] = stager_2["name"]
     response = client.put(
-        f"/api/v2/stagers/{my_globals['stager_id_1']}",
+        f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
         json=stager_1,
     )
@@ -263,39 +326,54 @@ def test_update_stager_name_conflict(client, admin_auth_header):
         == f"Stager with name {stager_2['name']} already exists."
     )
 
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+    client.delete(f"/api/v2/stagers/{stager_id_2}", headers=admin_auth_header)
 
-def test_get_stagers(client, admin_auth_header):
+
+def test_get_stagers(client, admin_auth_header, base_stager):
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager,
+    )
+    assert response.status_code == 201
+    stager_id = response.json()["id"]
+
+    base_stager_2 = base_stager.copy()
+    base_stager_2["name"] = "test_stager_2"
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager_2,
+    )
+    assert response.status_code == 201
+    stager_id_2 = response.json()["id"]
+
     response = client.get(
         "/api/v2/stagers",
         headers=admin_auth_header,
     )
 
-    assert response.status_code == 200
-    assert len(response.json()["records"]) == 3
-
-
-def test_delete_stager(client, admin_auth_header):
-    response = client.get(
-        "/api/v2/stagers",
-        headers=admin_auth_header,
-    )
-    assert response.status_code == 200
-    assert len(response.json()["records"]) == 3
-
-    to_delete = response.json()["records"][0]
-    response = client.delete(
-        f"/api/v2/stagers/{to_delete['id']}",
-        headers=admin_auth_header,
-    )
-    assert response.status_code == 204
-
-    response = client.get(
-        "/api/v2/stagers",
-        headers=admin_auth_header,
-    )
     assert response.status_code == 200
     assert len(response.json()["records"]) == 2
-    assert response.json()["records"][0]["id"] != to_delete["id"]
+    assert response.json()["records"][0]["id"] == stager_id
+    assert response.json()["records"][1]["id"] == stager_id_2
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+    client.delete(f"/api/v2/stagers/{stager_id_2}", headers=admin_auth_header)
+
+
+def test_delete_stager(client, admin_auth_header, base_stager):
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager,
+    )
+    assert response.status_code == 201
+    stager_id = response.json()["id"]
+
+    response = client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+    assert response.status_code == 204
 
 
 def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_header):
@@ -330,3 +408,5 @@ def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_head
 
     # Check if the downloaded file is not empty
     assert len(response.content) > 0
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)

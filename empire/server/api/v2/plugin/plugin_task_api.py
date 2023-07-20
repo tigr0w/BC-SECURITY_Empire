@@ -19,6 +19,8 @@ from empire.server.api.v2.shared_dto import (
     NotFoundResponse,
     OrderDirection,
 )
+from empire.server.api.v2.tag import tag_api
+from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.db import models
 from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.download_service import DownloadService
@@ -59,6 +61,9 @@ async def get_task(uid: int, db: Session = Depends(get_db), plugin=Depends(get_p
     )
 
 
+tag_api.add_endpoints_to_taggable(router, "/{plugin_id}/tasks/{uid}/tags", get_task)
+
+
 @router.get("/tasks", response_model=PluginTasks)
 async def read_tasks_all_plugins(
     limit: int = -1,
@@ -71,6 +76,7 @@ async def read_tasks_all_plugins(
     status: Optional[PluginTaskStatus] = None,
     plugins: Optional[List[str]] = Query(None),
     users: Optional[List[int]] = Query(None),
+    tags: Optional[List[TagStr]] = Query(None),
     query: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
@@ -78,6 +84,7 @@ async def read_tasks_all_plugins(
         db,
         plugins=plugins,
         users=users,
+        tags=tags,
         limit=limit,
         offset=(page - 1) * limit,
         include_full_input=include_full_input,
@@ -116,6 +123,7 @@ async def read_tasks(
     order_direction: OrderDirection = OrderDirection.desc,
     status: Optional[PluginTaskStatus] = None,
     users: Optional[List[int]] = Query(None),
+    tags: Optional[List[TagStr]] = Query(None),
     db: Session = Depends(get_db),
     plugin=Depends(get_plugin),
     query: Optional[str] = None,
@@ -124,6 +132,7 @@ async def read_tasks(
         db,
         plugins=[plugin.info["Name"]],
         users=users,
+        tags=tags,
         limit=limit,
         offset=(page - 1) * limit,
         include_full_input=include_full_input,

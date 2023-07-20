@@ -1,5 +1,6 @@
 import os
 import shutil
+from operator import and_
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -28,7 +29,8 @@ class DownloadService(object):
     def get_all(
         db: Session,
         download_types: Optional[List[DownloadSourceFilter]],
-        q: str,
+        tags: List[str] = None,
+        q: str = None,
         limit: int = -1,
         offset: int = 0,
         order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
@@ -76,6 +78,15 @@ class DownloadService(object):
                 or_(
                     models.Download.filename.like(f"%{q}%"),
                     models.Download.location.like(f"%{q}%"),
+                )
+            )
+
+        if tags:
+            tags_split = [tag.split(":", 1) for tag in tags]
+            query = query.join(models.Download.tags).filter(
+                and_(
+                    models.Tag.name.in_([tag[0] for tag in tags_split]),
+                    models.Tag.value.in_([tag[1] for tag in tags_split]),
                 )
             )
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Upgrade dependencies
+
 ## [5.5.3] - 2023-07-20
 
 -   Updated restip message to show IP address on server (@Cx01N)

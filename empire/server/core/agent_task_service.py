@@ -44,6 +44,7 @@ class AgentTaskService(object):
         db: Session,
         agents: List[str] = None,
         users: List[int] = None,
+        tags: List[str] = None,
         limit: int = -1,
         offset: int = 0,
         include_full_input: bool = False,
@@ -63,7 +64,19 @@ class AgentTaskService(object):
             query = query.filter(models.AgentTask.agent_id.in_(agents))
 
         if users:
-            query = query.filter(models.AgentTask.user_id.in_(users))
+            user_filters = [models.AgentTask.user_id.in_(users)]
+            if 0 in users:
+                user_filters.append(models.AgentTask.user_id.is_(None))
+            query = query.filter(or_(*user_filters))
+
+        if tags:
+            tags_split = [tag.split(":", 1) for tag in tags]
+            query = query.join(models.AgentTask.tags).filter(
+                and_(
+                    models.Tag.name.in_([tag[0] for tag in tags_split]),
+                    models.Tag.value.in_([tag[1] for tag in tags_split]),
+                )
+            )
 
         query_options = [
             joinedload(models.AgentTask.user),
@@ -299,7 +312,7 @@ class AgentTaskService(object):
         db: Session,
         agent: models.Agent,
         module_req: ModulePostRequest,
-        user_id: int,
+        user_id: int = 0,
     ):
         module_req.options["Agent"] = agent.session_id
         resp, err = self.module_service.execute_module(
