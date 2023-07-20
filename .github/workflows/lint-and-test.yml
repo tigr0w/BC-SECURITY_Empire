@@ -37,7 +37,7 @@ jobs:
     needs:
       - matrix-prep-config
       - lint
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     name: Test Python ${{ matrix.python-version }}
     strategy:
@@ -76,16 +76,16 @@ jobs:
           poetry install
       - name: Run test suite - mysql
         run: |
-          DATABASE_USE=mysql poetry run pytest . -v
+          DATABASE_USE=mysql poetry run pytest . -v --runslow
       - name: Run test suite - sqlite
         if: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name, 'test-sqlite') }}
         run: |
-          DATABASE_USE=sqlite poetry run pytest . -v
+          DATABASE_USE=sqlite poetry run pytest . -v --runslow
 
   test_image:
     # To save CI time, only run these tests on the release PRs
     if: ${{ startsWith(github.head_ref, 'release/') }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     name: Test Docker Image
     steps:
@@ -118,81 +118,81 @@ jobs:
           submodules: 'recursive'
           depth: 0
           token: ${{ secrets.RELEASE_TOKEN }}
-      # To save CI time, only run these tests when the install script is changed
+      # To save CI time, only run these tests when the install script or deps changed
       - name: Get changed files using defaults
         id: changed-files
         uses: tj-actions/changed-files@v29.0.2
       - name: Build images
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         run: docker-compose -f .github/install_tests/docker-compose-install-tests.yml build --parallel
       - name: run structure tests base Ubuntu 20.04
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-ubuntu2004:latest
           config: .github/cst-config-base.yaml
       - name: run structure tests Ubuntu 20.04
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-ubuntu2004:latest
           config: .github/install_tests/cst-config-ubuntu2004.yaml
       - name: run structure tests base Ubuntu 22.04
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-ubuntu2204:latest
           config: .github/cst-config-base.yaml
       - name: run structure tests Ubuntu 22.04
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-ubuntu2204:latest
           config: .github/install_tests/cst-config-ubuntu2204.yaml
       - name: run structure tests base Debian 10
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-debian10:latest
           config: .github/cst-config-base.yaml
       - name: run structure tests Debian 10
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-debian10:latest
           config: .github/install_tests/cst-config-debian10.yaml
       - name: run structure tests base Debian 11
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-debian11:latest
           config: .github/cst-config-base.yaml
       - name: run structure tests Debian 11
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-debian11:latest
           config: .github/install_tests/cst-config-debian11.yaml
       - name: run structure tests Kali base
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-kalirolling:latest
           config: .github/cst-config-base.yaml
       - name: run structure tests Kali
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-kalirolling:latest
           config: .github/install_tests/cst-config-kalirolling.yaml
       - name: run structure tests Parrot base
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-parrotrolling:latest
           config: .github/cst-config-base.yaml
       - name: run structure tests Parrot
-        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
+        if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         uses: plexsystems/container-structure-test-action@v0.1.0
         with:
           image: docker.io/bcsecurity/empire-test-parrotrolling:latest

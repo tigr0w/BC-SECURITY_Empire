@@ -31,13 +31,6 @@ jobs:
         run: |
           # Get the version from pyproject.toml using sed
           echo "APP_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)" >> $GITHUB_ENV
-      - name: Update Starkiller Version
-        if: ${{ github.event.inputs.starkillerVersion }}
-        uses: ./.github/actions/update-starkiller
-        with:
-          starkiller-version: ${{ env.STARKILLER_TAG }}
-          app-version: ${{ env.APP_VERSION }}
-          changelog-path: CHANGELOG-SPONSORS.md
       - name: Update Sponsors Changelog
         uses: vinnybod/keep-a-changelog-new-release@1.4.0
         with:
@@ -50,6 +43,13 @@ jobs:
           git add -A
           git commit --message "Prepare release ${{ env.APP_VERSION }} sponsors"
           echo "commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+      - name: Update Starkiller Version
+        if: ${{ github.event.inputs.starkillerVersion }}
+        uses: ./.github/actions/update-starkiller
+        with:
+          starkiller-version: ${{ env.STARKILLER_TAG }}
+          app-version: ${{ env.APP_VERSION }}
+          changelog-path: CHANGELOG-SPONSORS.md
       - name: Get release branch name
         run: |
             echo "RELEASE_BRANCH=release/$APP_VERSION-sponsors" >> $GITHUB_ENV

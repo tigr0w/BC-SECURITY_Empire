@@ -131,9 +131,19 @@ def check_submodules():
             exit(1)
 
 
+def check_recommended_configuration():
+    log.info(f"Using {empire_config.database.use} database.")
+    if empire_config.database.use == "sqlite":
+        log.warning(
+            "Using SQLite may result in performance issues and some functions may be disabled."
+        )
+        log.warning("Consider using MySQL instead.")
+
+
 def run(args):
     setup_logging(args)
     check_submodules()
+    check_recommended_configuration()
 
     if not args.restport:
         args.restport = 1337

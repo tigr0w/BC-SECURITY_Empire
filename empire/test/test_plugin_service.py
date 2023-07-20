@@ -16,6 +16,14 @@ def patch_plugin_execute(plugin, execute_func):
 
 
 @contextmanager
+def patch_plugin_options(plugin, options):
+    old_options = plugin.options
+    plugin.options = options
+    yield
+    plugin.options = old_options
+
+
+@contextmanager
 def temp_copy_plugin(plugin_path):
     """
     Copy the example plugin to a temporary location. Since plugin_service
@@ -88,3 +96,75 @@ def test_plugin_execute_with_kwargs(install_path):
         res, err = plugin_service.execute_plugin("db_session", plugin, req, 1)
 
     assert res == execute(req.options, db="db_session", user=1)
+
+
+def test_execute_plugin_file_option_not_found(install_path, db):
+    from empire.server.core.plugin_service import PluginService
+
+    main_menu_mock = MagicMock()
+    main_menu_mock.installPath = install_path
+
+    main_menu_mock.downloadsv2 = MagicMock()
+    main_menu_mock.downloadsv2.get_by_id.return_value = None
+
+    plugin_service = PluginService(main_menu_mock)
+    plugin_service.startup()
+
+    plugin = plugin_service.get_by_id("basic_reporting")
+
+    with patch_plugin_options(
+        plugin,
+        {
+            "file_option": {
+                "Name": "file_option",
+                "Description": "File option",
+                "Type": "File",
+                "Strict": False,
+                "Required": True,
+            }
+        },
+    ):
+        req = PluginExecutePostRequest(options={"file_option": 9999})
+        res, err = plugin_service.execute_plugin(db, plugin, req, None)
+
+        assert err == "File not found for 'file_option' id 9999"
+
+
+def test_execute_plugin_file_option(install_path, db, models):
+    from empire.server.core.plugin_service import PluginService
+
+    main_menu_mock = MagicMock()
+    main_menu_mock.installPath = install_path
+
+    download = models.Download(id=9999, filename="test_file", location="/tmp/test_file")
+    main_menu_mock.downloadsv2 = MagicMock()
+    main_menu_mock.downloadsv2.get_by_id.return_value = download
+
+    plugin_service = PluginService(main_menu_mock)
+    plugin_service.startup()
+
+    plugin = plugin_service.get_by_id("basic_reporting")
+
+    mocked_execute = MagicMock()
+    mocked_execute.return_value = "success"
+
+    with patch_plugin_options(
+        plugin,
+        {
+            "file_option": {
+                "Name": "file_option",
+                "Description": "File option",
+                "Type": "File",
+                "Strict": False,
+                "Required": True,
+            }
+        },
+    ), patch_plugin_execute(plugin, mocked_execute):
+        req = PluginExecutePostRequest(options={"file_option": "9999"})
+        res, err = plugin_service.execute_plugin(db, plugin, req, None)
+
+        assert err is None
+        assert res == "success"
+        mocked_execute.assert_called_once_with(
+            {"file_option": download}, db=db, user=None
+        )

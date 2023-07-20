@@ -1,5 +1,7 @@
 import typing
 
+from sqlalchemy.orm import Session
+
 from empire.server.core.module_models import EmpireModuleOption
 
 
@@ -35,7 +37,9 @@ def convert_module_options(options: typing.List[EmpireModuleOption]) -> typing.D
     return converted_options
 
 
-def validate_options(instance_options: typing.Dict, params: typing.Dict):
+def validate_options(
+    instance_options: typing.Dict, params: typing.Dict, db: Session, download_service
+):
     """
     Compares the options passed in (params) to the options defined in the
     class (instance). If any options are invalid, returns a Tuple of
@@ -51,7 +55,15 @@ def validate_options(instance_options: typing.Dict, params: typing.Dict):
     params = params.copy()
 
     for instance_key, option_meta in instance_options.items():
-        if option_meta.get("Type") == "file":
+        if _lower_default(option_meta.get("Type")) == "file":
+            db_download = download_service.get_by_id(db, params[instance_key])
+            if not db_download:
+                return (
+                    None,
+                    f"File not found for '{instance_key}' id {params[instance_key]}",
+                )
+
+            options[instance_key] = db_download
             continue
 
         # Attempt to default a unset required option to the default value
@@ -103,11 +115,59 @@ def set_options(instance, options: typing.Dict):
         instance.options[option_name]["Value"] = option_value
 
 
+def _lower_default(x):
+    return "" if x is None else x.lower()
+
+
+def get_file_options(db, download_service, options, params):
+    files = {}
+
+    for option_name, option_meta in filter(
+        lambda x: _lower_default(x[1].get("Type")) == "file", options.items()
+    ):
+        db_download = download_service.get_by_id(db, params[option_name])
+        if not db_download:
+            return (
+                None,
+                f"File not found for '{option_name}' id {params[option_name]}",
+            )
+
+        files[option_name] = db_download
+
+    return files, None
+
+
+def _parse_type(type_str: str = "", value: str = ""):
+    if not type_str:
+        return type(value)
+
+    if type_str.lower() in ["int", "integer"]:
+        return int
+    elif type_str.lower() in ["bool", "boolean"]:
+        return bool
+    elif type_str.lower() in ["str", "string"]:
+        return str
+    elif type_str.lower() == "float":
+        return float
+    elif type_str.lower() == "file":
+        return "file"
+    else:
+        return None
+
+
 def _safe_cast_option(
     param_name, param_value, option_meta
 ) -> typing.Tuple[typing.Any, typing.Optional[str]]:
     option_type = type(param_value)
-    expected_option_type = option_meta.get("Type") or type(option_meta["Value"])
+    if (
+        option_meta.get("Type") is not None
+        and type(option_meta.get("Type")) == typing.Type
+    ):
+        expected_option_type = option_meta.get("Type")
+    else:
+        expected_option_type = _parse_type(
+            option_meta.get("Type"), option_meta.get("Value")
+        )
     casted = safe_cast(param_value, expected_option_type)
     if casted is None:
         return (

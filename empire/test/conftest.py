@@ -13,10 +13,8 @@ CLIENT_CONFIG_LOC = "empire/test/test_client_config.yaml"
 DEFAULT_ARGV = ["", "server", "--config", SERVER_CONFIG_LOC]
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_args():
-    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
-    sys.argv = DEFAULT_ARGV
+os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
+sys.argv = DEFAULT_ARGV
 
 
 @pytest.fixture(scope="session")
@@ -29,8 +27,9 @@ def install_path():
     return Path(os.path.realpath(__file__)).parent.parent / "server"
 
 
-@pytest.fixture(scope="session")
-def client(empire_config):
+@pytest.fixture(scope="session", autouse=True)
+def client():
+    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
 
     import empire.server.core.db.base
@@ -41,8 +40,6 @@ def client(empire_config):
 
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
     shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)
-
-    sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     from empire import arguments
 
@@ -92,24 +89,15 @@ def client(empire_config):
 
     print("cleanup")
 
-    from empire.server.core.db.base import engine
-    from empire.server.core.db.models import Base
     from empire.server.server import main
 
     main.shutdown()
-    Base.metadata.drop_all(engine)
+    reset_db()
 
 
-# It would be nice to swap out the db within pytest using params.
-# @pytest.fixture(scope="session", params=["mysql", "sqlite"])
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def empire_config():
     from empire.server.core.config import empire_config
-
-    # This could be used to dynamically change the db location if we ever try to
-    # run multiple tests in parallel.
-    # random_string = "".join(random.choice(string.ascii_letters) for x in range(5))
-    # empire_config.database.location = f"empire/test/test_empire_{random_string}.db"
 
     yield empire_config
 
@@ -276,6 +264,87 @@ def base_stager_2():
             "Bypasses": "mattifestation etw",
         },
     }
+
+
+@pytest.fixture(scope="function")
+def pyinstaller_stager():
+    return {
+        "name": "MyStager3",
+        "template": "multi_pyinstaller",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "python",
+            "OutFile": "empire",
+            "SafeChecks": "True",
+            "UserAgent": "default",
+        },
+    }
+
+
+@pytest.fixture(scope="session")
+def session_local(client):
+    from empire.server.core.db.base import SessionLocal
+
+    yield SessionLocal
+
+
+@pytest.fixture(scope="function")
+def host(session_local, models):
+    with session_local.begin() as db:
+        host = models.Host(name="host1", internal_ip="192.168.0.1")
+        db.add(host)
+        db.flush()
+        host_id = host.id
+
+    yield host_id
+
+    with session_local.begin() as db:
+        db.query(models.Host).filter(models.Host.id == host_id).delete()
+
+
+@pytest.fixture(scope="function")
+def agent(session_local, models, host, main):
+    with session_local.begin() as db:
+        name = f'agent_{__name__.split(".")[-1]}'
+        agent = models.Agent(
+            name=name,
+            session_id=name,
+            delay=1,
+            jitter=0.1,
+            external_ip="1.1.1.1",
+            session_key="qwerty",
+            nonce="nonce",
+            profile="profile",
+            kill_date="killDate",
+            working_hours="workingHours",
+            lost_limit=60,
+            listener="http",
+            language="powershell",
+            language_version="5",
+            high_integrity=True,
+            process_name="abc",
+            process_id=123,
+            host_id=host,
+            archived=False,
+        )
+        db.add(agent)
+        db.add(models.AgentCheckIn(agent_id=agent.session_id))
+        db.flush()
+
+        main.agents.agents[name] = {
+            "sessionKey": agent.session_key,
+            "functions": agent.functions,
+        }
+
+        agent_id = agent.session_id
+
+    yield agent_id
+
+    with session_local.begin() as db:
+        db.query(models.AgentCheckIn).filter(
+            models.AgentCheckIn.agent_id == agent_id
+        ).delete()
+        db.query(models.Agent).filter(models.Agent.session_id == agent_id).delete()
 
 
 @pytest.fixture(scope="session")

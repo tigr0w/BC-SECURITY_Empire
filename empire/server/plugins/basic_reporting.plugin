@@ -88,7 +88,7 @@ class Plugin(Plugin):
         writer.writerow(["SessionID", "Hostname", "User Name", "First Check-in"])
         for row in db.query(models.Agent).all():
             writer.writerow(
-                [row.session_id, row.hostname, row.username, row.checkin_time]
+                [row.session_id, row.hostname, row.username, row.firstseen_time]
             )
 
         output_str = out.getvalue()

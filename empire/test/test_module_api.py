@@ -55,7 +55,7 @@ def test_get_modules(client, admin_auth_header):
 
     assert response.status_code == 200
 
-    assert len(response.json()["records"]) >= 392
+    assert len(response.json()["records"]) >= 383
 
 
 def test_update_module(client, admin_auth_header):
@@ -111,4 +111,52 @@ def test_update_modules_bulk(client, admin_auth_header):
         },
     )
 
+    assert response.status_code == 204
+
+
+def test_reset_modules(client, admin_auth_header):
+    initial_response = client.get("/api/v2/modules", headers=admin_auth_header)
+    initial_modules = initial_response.json()["records"]
+
+    uid = "python_trollsploit_osx_say"
+    response = client.put(
+        f"/api/v2/modules/{uid}", headers=admin_auth_header, json={"enabled": False}
+    )
+    assert response.status_code == 200
+
+    response = client.post("/api/v2/modules/reset", headers=admin_auth_header)
+    assert response.status_code == 204
+
+    final_response = client.get("/api/v2/modules", headers=admin_auth_header)
+    final_modules = final_response.json()["records"]
+
+    assert len(initial_modules) == len(final_modules)
+
+    response = client.get(f"/api/v2/modules/{uid}", headers=admin_auth_header)
+    assert response.json()["enabled"] is True
+
+
+def test_reload_modules(client, admin_auth_header):
+    uid = "python_trollsploit_osx_say"
+    response = client.put(
+        f"/api/v2/modules/{uid}", headers=admin_auth_header, json={"enabled": False}
+    )
+    assert response.status_code == 200
+
+    initial_response = client.get("/api/v2/modules", headers=admin_auth_header)
+    initial_modules = initial_response.json()["records"]
+
+    response = client.post("/api/v2/modules/reload", headers=admin_auth_header)
+    assert response.status_code == 204
+
+    final_response = client.get("/api/v2/modules", headers=admin_auth_header)
+    final_modules = final_response.json()["records"]
+
+    assert len(initial_modules) == len(final_modules)
+
+    response = client.get(f"/api/v2/modules/{uid}", headers=admin_auth_header)
+    assert response.json()["enabled"] is False
+
+    # Adding a reset here, so it doesn't break other tests in test_module_service
+    response = client.post("/api/v2/modules/reset", headers=admin_auth_header)
     assert response.status_code == 204

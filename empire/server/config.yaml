@@ -25,6 +25,11 @@ database:
         command: ""
         module: "confuser"
         preobfuscatable: false
+      - language: python
+        enabled: false
+        command: ""
+        module: "python-obfuscator"
+        preobfuscatable: false
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
@@ -38,7 +43,7 @@ starkiller:
   repo: https://github.com/BC-SECURITY/Starkiller.git
   directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
-  ref: v2.3.2
+  ref: v2.4.2
   auto_update: true
 plugins:
   # Auto-load plugin with defined settings

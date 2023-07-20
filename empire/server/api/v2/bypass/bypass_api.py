@@ -83,3 +83,14 @@ async def delete_bypass(
     db_bypass: models.Bypass = Depends(get_bypass),
 ):
     bypass_service.delete_bypass(db, db_bypass)
+
+
+@router.post("/reset", status_code=HTTP_204_NO_CONTENT, response_class=Response)
+async def reset_bypasses(db: Session = Depends(get_db)):
+    bypass_service.delete_all_bypasses(db)
+    bypass_service.load_bypasses(db)
+
+
+@router.post("/reload", status_code=HTTP_204_NO_CONTENT, response_class=Response)
+async def reload_bypasses(db: Session = Depends(get_db)):
+    bypass_service.load_bypasses(db)

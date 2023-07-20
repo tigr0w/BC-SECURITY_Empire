@@ -13,9 +13,9 @@ services:
     entrypoint: /bin/bash
     platform: linux/amd64
     command: >
-      -c "DATABASE_USE=sqlite poetry run python -m pytest .
+      -c "DATABASE_USE=sqlite poetry run python -m pytest . --runslow
       && sed -i 's/localhost:3306/db:3306/g' empire/test/test_server_config.yaml
-      && DATABASE_USE=mysql poetry run python -m pytest ."
+      && DATABASE_USE=mysql poetry run python -m pytest . --runslow"
   db:
     image: mysql:8.0
     restart: always

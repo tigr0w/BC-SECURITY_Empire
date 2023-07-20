@@ -96,6 +96,26 @@ def test_create_stager_one_liner(client, base_stager, admin_auth_header):
     my_globals["stager_id_1"] = response.json()["id"]
 
 
+def test_create_obfuscated_stager_one_liner(client, base_stager, admin_auth_header):
+    # test that it ignore extra params
+    base_stager["options"]["xyz"] = "xyz"
+
+    base_stager["name"] = "My_Obfuscated_Stager"
+    base_stager["options"]["Obfuscate"] = "True"
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
+    )
+    assert response.status_code == 201
+    assert response.json()["options"].get("xyz") is None
+    assert len(response.json().get("downloads", [])) > 0
+    assert (
+        response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
+    )
+
+    my_globals["stager_id_1"] = response.json()["id"]
+
+
 def test_create_stager_file(client, base_stager_2, admin_auth_header):
     # test that it ignore extra params
     base_stager_2["options"]["xyz"] = "xyz"
@@ -251,7 +271,7 @@ def test_get_stagers(client, admin_auth_header):
     )
 
     assert response.status_code == 200
-    assert len(response.json()["records"]) == 2
+    assert len(response.json()["records"]) == 3
 
 
 def test_delete_stager(client, admin_auth_header):
@@ -260,7 +280,7 @@ def test_delete_stager(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == 200
-    assert len(response.json()["records"]) == 2
+    assert len(response.json()["records"]) == 3
 
     to_delete = response.json()["records"][0]
     response = client.delete(
@@ -274,5 +294,39 @@ def test_delete_stager(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == 200
-    assert len(response.json()["records"]) == 1
+    assert len(response.json()["records"]) == 2
     assert response.json()["records"][0]["id"] != to_delete["id"]
+
+
+def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_header):
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=pyinstaller_stager
+    )
+
+    # Check if the stager is successfully created
+    assert response.status_code == 201
+    assert response.json()["id"] != 0
+
+    stager_id = response.json()["id"]
+
+    response = client.get(
+        f"/api/v2/stagers/{stager_id}",
+        headers=admin_auth_header,
+    )
+
+    # Check if we can successfully retrieve the stager
+    assert response.status_code == 200
+    assert response.json()["id"] == stager_id
+
+    response = client.get(
+        response.json()["downloads"][0]["link"],
+        headers=admin_auth_header,
+    )
+
+    # Check if the file is downloaded successfully
+    assert response.status_code == 200
+    assert response.headers.get("content-type").split(";")[0] == "text/plain"
+    assert type(response.content) == bytes
+
+    # Check if the downloaded file is not empty
+    assert len(response.content) > 0

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
+from empire.server.core.download_service import DownloadService
 from empire.server.core.listener_service import ListenerService
 from empire.server.core.stager_template_service import StagerTemplateService
 from empire.server.utils.option_util import set_options, validate_options
@@ -21,6 +22,7 @@ class StagerService(object):
             main_menu.stagertemplatesv2
         )
         self.listener_service: ListenerService = main_menu.listenersv2
+        self.download_service: DownloadService = main_menu.downloadsv2
 
     @staticmethod
     def get_all(db: Session):
@@ -52,7 +54,9 @@ class StagerService(object):
             return None, f'Listener {params["Listener"]} not found'
 
         template_instance = self.stager_template_service.new_instance(template)
-        cleaned_options, err = validate_options(template_instance.options, params)
+        cleaned_options, err = validate_options(
+            template_instance.options, params, db, self.download_service
+        )
 
         if err:
             return None, err

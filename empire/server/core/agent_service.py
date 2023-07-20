@@ -1,9 +1,13 @@
 import logging
 import queue
+from datetime import datetime, timezone
+from typing import List, Optional
 
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
+from empire.server.api.v2.agent.agent_dto import AggregateBucket
+from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.common.helpers import KThread
 from empire.server.common.socks import create_client, start_client
 from empire.server.core.agent_task_service import AgentTaskService
@@ -32,11 +36,10 @@ class AgentService(object):
         if not include_archived:
             query = query.filter(models.Agent.archived == False)  # noqa: E712
 
-        agents = query.all()
-
-        # can't use the hybrid expression until the function in models.py is updated to support mysql.
         if not include_stale:
-            agents = [agent for agent in agents if not agent.stale]
+            query = query.filter(models.Agent.stale == False)  # noqa: E712
+
+        agents = query.all()
 
         return agents
 
@@ -58,6 +61,105 @@ class AgentService(object):
         db_agent.notes = agent_req.notes
 
         return db_agent, None
+
+    @staticmethod
+    def get_agent_checkins(
+        db: Session,
+        agents: List[str] = None,
+        limit: int = -1,
+        offset: int = 0,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        order_direction: OrderDirection = OrderDirection.desc,
+    ):
+        query = db.query(
+            models.AgentCheckIn,
+            func.count(models.AgentCheckIn.checkin_time).over().label("total"),
+        )
+
+        if agents:
+            query = query.filter(models.AgentCheckIn.agent_id.in_(agents))
+
+        if start_date:
+            query = query.filter(models.AgentCheckIn.checkin_time >= start_date)
+
+        if end_date:
+            query = query.filter(models.AgentCheckIn.checkin_time <= end_date)
+
+        if order_direction == OrderDirection.asc:
+            query = query.order_by(models.AgentCheckIn.checkin_time.asc())
+        else:
+            query = query.order_by(models.AgentCheckIn.checkin_time.desc())
+
+        if limit > 0:
+            query = query.limit(limit).offset(offset)
+
+        results = query.all()
+
+        total = 0 if len(results) == 0 else results[0].total
+        results = list(map(lambda x: x[0], results))
+
+        return results, total
+
+    @staticmethod
+    def get_agent_checkins_aggregate(
+        db: Session,
+        agents: List[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        bucket_size: AggregateBucket = None,
+    ):
+        """
+        Returns a list of checkin counts for the given agents, start_date, end_date, and bucket_size.
+        This will raise a database exception if the empire server is using SQLite.
+        Additional work could be done to build a query for SQLite, but I don't think it's worth the effort,
+        given that we are moving towards a more robust database.
+        """
+        hour_format = {"sql": "%Y-%m-%d %H:00:00Z", "python": "%Y-%m-%d %H:00:00Z"}
+        minute_format = {"sql": "%Y-%m-%d %H:%i:00Z", "python": "%Y-%m-%d %H:%M:00Z"}
+        second_format = {"sql": "%Y-%m-%d %H:%i:%sZ", "python": "%Y-%m-%d %H:%M:%SZ"}
+        day_format = {"sql": "%Y-%m-%d", "python": "%Y-%m-%d"}
+        if bucket_size == AggregateBucket.hour:
+            format = hour_format
+        elif bucket_size == AggregateBucket.minute:
+            format = minute_format
+        elif bucket_size == AggregateBucket.second:
+            format = second_format
+        else:
+            format = day_format
+
+        time_agg = func.date_format(models.AgentCheckIn.checkin_time, format["sql"])
+
+        query = db.query(
+            time_agg.label("time_agg"),
+            func.count(models.AgentCheckIn.checkin_time).label("count"),
+        )
+
+        if agents:
+            query = query.filter(models.AgentCheckIn.agent_id.in_(agents))
+
+        if start_date:
+            query = query.filter(models.AgentCheckIn.checkin_time >= start_date)
+
+        if end_date:
+            query = query.filter(models.AgentCheckIn.checkin_time <= end_date)
+
+        query = query.group_by("time_agg")
+
+        results = query.all()
+        converted_results = []
+
+        for result in results:
+            converted_results.append(
+                {
+                    "checkin_time": datetime.strptime(
+                        result[0], format["python"]
+                    ).replace(tzinfo=timezone.utc),
+                    "count": result[1],
+                }
+            )
+
+        return converted_results
 
     def start_existing_socks(self, db: Session, agent: models.Agent):
         log.info(f"Starting SOCKS client for {agent.session_id}")

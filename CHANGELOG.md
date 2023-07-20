@@ -7,7 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.3] - 2023-07-20
+
+-   Updated Starkiller to v2.4.2
+-   Updated restip message to show IP address on server (@Cx01N)
+-   Fixed onedrive taskings for powershell (@Cx01N)
+-   Update pyyaml to 6.0.1 to avoid build issue from cython (@Vinnybod)
+-   Use MariaDB in Debian (@Vinnybod)
+
+## [5.5.2] - 2023-07-14
+
+-   Fix TypeError and crash when using `main` command in client (@jellyjellyrobot)
+-   Fix extraneous semi-colon breaking powershell 'literal' execution (@crittico)
+
+## [5.5.1] - 2023-07-06
+
+-   Fix basic_reporting plugin using the wrong agent checkin column
+
+## [5.5.0] - 2023-06-21
+
+-   Break out agent checkins to a new table (@Vinnybod)
+    -   New checkins endpoint to get them as a list
+    -   New checkins aggregate endpoint to get aggregated checkin data
+    -   Aggregate endpoint not supported with SQLite
+-   Add a warning message about using SQLite
+-   Added LinPEAS to Python modules (@Cx01N)
+-   Added python obfusscation using python-obfuscator (@Cx01N)
+-   Added IronPython SMB Agents/Listener (@Cx01N)
+-   Expand file options to plugins, stagers, and listeners (@Vinnybod)
+-   Added Python agent support to hop listener (@Cx01N)
+-   Added staging to hop listener (@Cx01N)
+-   Added python module for Pwnkit (CVE-2021-4034) (@Cx01N)
+-   Added python module for Polkit (CVE-2021-3560) (@Cx01N)
+-   Fixed safecheck error for python module sudo spawn (@Cx01N)
+-   Fixed file error in Invoke-Shellcode (@Cx01N)
+-   Removed duplicate modules between languages (@Cx01N) 
+    -   Removed .NET Core modules due to errors
+    -   Removed redundant C# lateral movement modules
+    -   Removed Covenant Mimikatz in favor of Invoke-Mimikatz
+    -   Removed Invoke-Assembly in favor of Covenant's execute assembly
+    -   Removed Invoke-BOF in favor of RunOF
+    -   Removed Invoke-Rubeus in favor of Covenant's Rubeus
+    -   Removed Invoke-Seatbelt in favor of Covenant's Seatbelt
+    -   Removed Bloodhound v1 module
+-   Revamped malleable profiles and increased their generation reliability (@Cx01N)
+-   Allow the server to start even when starkiller sync fails (@Vinnybod)
+-   Remove libssl1.1 from the install script since it doesn't appear to be needed and causes install failures on some OS (@Vinnybod)
 -   Fix the restip argument which wasn't being used (@Vinnybod)
+-   Added reload endpoint to Malleable Profiles, Modules, Bypasses, and Plugins (@Cx01N)
+-   Updated and fixed pyinstaller stager (@Cx01N)
 
 ## [5.4.2] - 2023-06-07
 
@@ -493,7 +541,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.3...HEAD
+
+[5.5.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.2...v5.5.3
+
+[5.5.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.1...v5.5.2
+
+[5.5.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.0...v5.5.1
+
+[5.5.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.2...v5.5.0
 
 [5.4.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.4.1...v5.4.2
 

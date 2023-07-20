@@ -1,13 +1,12 @@
 import logging
-import os
 import sqlite3
+from pathlib import Path
 
 from sqlalchemy import UniqueConstraint, create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
-from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.defaults import (
     get_default_config,
@@ -15,7 +14,7 @@ from empire.server.core.db.defaults import (
     get_default_obfuscation_config,
     get_default_user,
 )
-from empire.server.core.db.models import Base
+from empire.server.core.db.models import Base, get_database_config
 
 log = logging.getLogger(__name__)
 
@@ -44,24 +43,21 @@ def try_create_engine(engine_url: str, *args, **kwargs) -> Engine:
     return engine
 
 
+use, database_config = get_database_config()
+
+
 def reset_db():
+    SessionLocal.close_all()
+
     if use == "mysql":
         cmd = f"DROP DATABASE IF EXISTS {database_config.database_name}"
         reset_engine = try_create_engine(mysql_url, echo=False)
         with reset_engine.connect() as connection:
             connection.execute(text(cmd))
 
-    SessionLocal.close_all()
-    Base.metadata.drop_all(engine)
-
     if use == "sqlite":
-        os.unlink(database_config.location)
+        Path(database_config.location).unlink(missing_ok=True)
 
-
-database_config = empire_config.database
-use = os.environ.get("DATABASE_USE", database_config.use)
-database_config.use = use
-database_config = database_config[use.lower()]
 
 if use == "mysql":
     url = database_config.url
@@ -97,19 +93,33 @@ with SessionLocal.begin() as db:
         database_name = database_config.database_name
 
         result = db.execute(
-            f"""
+            text(
+                f"""
             SELECT * FROM information_schema.COLUMNS
             WHERE TABLE_SCHEMA = '{database_name}'
             AND table_name = 'hosts'
             AND column_name = 'unique_check'
             """
+            )
         ).fetchone()
         if not result:
             db.execute(
-                """
+                text(
+                    """
                 ALTER TABLE hosts
                 ADD COLUMN unique_check VARCHAR(255) GENERATED ALWAYS AS (MD5(CONCAT(name, internal_ip))) UNIQUE;
                 """
+                )
+            )
+
+            # index agent_id and checkin_time together
+            # won't work for sqlite.
+            from sqlalchemy import Index
+
+            Index(
+                "agent_checkin_idx",
+                models.AgentCheckIn.agent_id,
+                models.AgentCheckIn.checkin_time.desc(),
             )
 
     # When Empire starts up for the first time, it will create the database and create

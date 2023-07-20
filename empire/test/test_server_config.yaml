@@ -1,6 +1,6 @@
 suppress-self-cert-warning: true
 database:
-  use: sqlite
+  use: mysql
   mysql:
     url: localhost:3306
     username: empire_user
@@ -24,6 +24,11 @@ database:
         enabled: false
         command: ""
         module: "confuser"
+        preobfuscatable: false
+      - language: python
+        enabled: false
+        command: ""
+        module: "python-obfuscator"
         preobfuscatable: false
     keyword_obfuscation:
       - Invoke-Empire

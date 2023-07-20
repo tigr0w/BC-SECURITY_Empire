@@ -70,11 +70,11 @@ class AgentTaskService(object):
             joinedload(models.AgentTask.agent).joinedload(models.Agent.host),
         ]
         if include_full_input:
-            query_options.append(undefer("input_full"))
+            query_options.append(undefer(models.AgentTask.input_full))
         if include_original_output:
-            query_options.append(undefer("original_output"))
+            query_options.append(undefer(models.AgentTask.output_original))
         if include_output:
-            query_options.append(undefer("output"))
+            query_options.append(undefer(models.AgentTask.output))
         query = query.options(*query_options)
 
         if since:
@@ -207,6 +207,14 @@ class AgentTaskService(object):
 
     def create_task_socks_data(self, agent_id: str, data: str):
         return self.add_temporary_task(agent_id, "TASK_SOCKS_DATA", data)
+
+    def create_task_smb(
+        self, db, agent: models.Agent, pipe_name, current_user_id: int = 0
+    ):
+        resp, err = self.add_task(
+            db, agent, "TASK_SMB_SERVER", pipe_name, user_id=current_user_id
+        )
+        return resp, err
 
     def create_task_update_comms(
         self, db: Session, agent: models.Agent, new_listener_id: int, user_id: int

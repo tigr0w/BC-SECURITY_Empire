@@ -1,7 +1,6 @@
 import logging
-from datetime import datetime
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from empire.server.api.api_router import APIRouter
@@ -49,14 +48,11 @@ async def get_module(uid: str):
     # response_model=Modules,
 )
 async def read_modules():
-    log.info(f"Request Received {datetime.utcnow()}")
     modules = list(
         map(
             lambda x: domain_to_dto_module(x[1], x[0]), module_service.get_all().items()
         )
     )
-
-    log.info(f"Done Converting Objects {datetime.utcnow()}")
 
     return {"records": modules}
 
@@ -88,8 +84,23 @@ async def update_module(
     return domain_to_dto_module(module, uid)
 
 
-@router.put("/bulk/enable", status_code=204)
+@router.put("/bulk/enable", status_code=204, response_class=Response)
 async def update_bulk_enable(
     module_req: ModuleBulkUpdateRequest, db: Session = Depends(get_db)
 ):
     module_service.update_modules(db, module_req)
+
+
+@router.post("/reload", status_code=204, response_class=Response)
+async def reload_modules(
+    db: Session = Depends(get_db),
+):
+    module_service.load_modules(db)
+
+
+@router.post("/reset", status_code=204, response_class=Response)
+async def reset_modules(
+    db: Session = Depends(get_db),
+):
+    module_service.delete_all_modules(db)
+    module_service.load_modules(db)

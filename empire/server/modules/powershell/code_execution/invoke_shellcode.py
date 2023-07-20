@@ -1,10 +1,9 @@
 from __future__ import print_function
 
+import base64
 from builtins import object, str
-from pathlib import Path
 from typing import Dict
 
-from empire.server.core.config import empire_config
 from empire.server.core.module_models import EmpireModule
 
 
@@ -34,10 +33,8 @@ class Module(object):
                         sc = ",0".join(values.split("\\"))[0:]
                         script_end += " -" + str(option) + " @(" + sc + ")"
                     elif option.lower() == "file":
-                        location = Path(empire_config.directories.downloads) / values
-                        with open(location, "rb") as f:
-                            byte_array = bytearray(f.read())
-                        sc = ",".join([f"0x{byte:02x}" for byte in byte_array])
+                        data = base64.b64decode(params["File"].get_base64_file())
+                        sc = ",".join([f"0x{byte:02x}" for byte in data])
                         script_end += f" -shellcode @({sc[:-1]})"
                     else:
                         script_end += " -" + str(option) + " " + str(values)

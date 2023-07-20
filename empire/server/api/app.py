@@ -133,10 +133,16 @@ def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
 
     try:
         load_starkiller(v2App)
-        log.info(f"Starkiller served at http://localhost:{port}/index.html")
+        log.info(f"Starkiller served at http://{ip}:{port}/index.html")
     except Exception as e:
         log.warning("Failed to load Starkiller: %s", e, exc_info=True)
-        pass
+        log.warning(
+            "If you are trying to pull Starkiller from a private repository ("
+            "such as Starkiller-Sponsors), make sure you have the proper ssh "
+            "credentials set in your Empire config. See "
+            "https://docs.github.com/en/github/authenticating-to-github"
+            "/connecting-to-github-with-ssh"
+        )
 
     cert_path = os.path.abspath("./empire/server/data/")
 
@@ -152,7 +158,7 @@ def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
     else:
         uvicorn.run(
             v2App,
-            host="0.0.0.0",
+            host=ip,
             port=port,
             log_config=None,
             lifespan="on",
