@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [5.5.3] - 2023-07-20
--   Updated Starkiller to v2.4.2
 
+-   Updated Starkiller to v2.4.2
 -   Updated restip message to show IP address on server (@Cx01N)
 -   Fixed onedrive taskings for powershell (@Cx01N)
 -   Update pyyaml to 6.0.1 to avoid build issue from cython (@Vinnybod)
