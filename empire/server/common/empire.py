@@ -40,7 +40,7 @@ from empire.server.utils import data_util
 
 from . import agents, credentials, listeners, stagers
 
-VERSION = "5.5.1 BC Security Fork"
+VERSION = "5.5.3 BC Security Fork"
 
 log = logging.getLogger(__name__)
 

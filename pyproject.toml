@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "5.5.1"
+version = "5.5.3"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -27,7 +27,7 @@ xlutils = "^2.0.0"
 pyparsing = "^3.1.0"
 PyMySQL = "^1.1.0"
 SQLAlchemy = "^2.0.18"
-PyYAML = "^6.0"
+PyYAML = "^6.0.1"
 SQLAlchemy-Utc = "^0.14.0"
 prompt-toolkit = "^3.0.39"
 terminaltables = "^3.1.10"

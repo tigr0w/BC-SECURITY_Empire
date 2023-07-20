@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Upgrade dependencies
 
+## [5.5.3] - 2023-07-20
+
+-   Updated restip message to show IP address on server (@Cx01N)
+-   Fixed onedrive taskings for powershell (@Cx01N)
+-   Update pyyaml to 6.0.1 to avoid build issue from cython (@Vinnybod)
+-   Use MariaDB in Debian (@Vinnybod)
+
+## [5.5.2] - 2023-07-14
+
+-   Fix TypeError and crash when using `main` command in client (@jellyjellyrobot)
+-   Fix extraneous semi-colon breaking powershell 'literal' execution (@crittico)
+
 ## [5.5.1] - 2023-07-06
 
 -   Fix basic_reporting plugin using the wrong agent checkin column
@@ -526,7 +538,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.3...HEAD
+
+[5.5.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.2...v5.5.3
+
+[5.5.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.1...v5.5.2
 
 [5.5.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.0...v5.5.1
 
