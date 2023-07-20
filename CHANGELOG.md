@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [5.5.3] - 2023-07-20
+
 -   Updated restip message to show IP address on server (@Cx01N)
 -   Fixed onedrive taskings for powershell (@Cx01N)
 -   Update pyyaml to 6.0.1 to avoid build issue from cython (@Vinnybod)
@@ -533,7 +536,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.3...HEAD
+
+[5.5.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.2...v5.5.3
 
 [5.5.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.1...v5.5.2
 
