@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.4] - 2023-07-20
+-   Updated Starkiller to v2.4.3
+
 ## [5.5.3] - 2023-07-20
 
 -   Updated Starkiller to v2.4.2
@@ -541,7 +544,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.4...HEAD
+
+[5.5.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.3...v5.5.4
 
 [5.5.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.2...v5.5.3
 
