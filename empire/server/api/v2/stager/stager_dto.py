@@ -24,7 +24,7 @@ def domain_to_dto_template(stager, uid: str):
                     "value": x[1]["Value"],
                     "strict": x[1]["Strict"],
                     "suggested_values": x[1]["SuggestedValues"],
-                    "value_type": to_value_type(x[1]["Value"]),
+                    "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
                 },
             ),
             stager.options.items(),

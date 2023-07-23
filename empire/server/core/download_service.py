@@ -2,7 +2,7 @@ import os
 import shutil
 from operator import and_
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from fastapi import UploadFile
 from sqlalchemy import func, or_
@@ -144,7 +144,9 @@ class DownloadService(object):
 
         return self._save_download(db, filename, location)
 
-    def create_download(self, db: Session, user: models.User, file: UploadFile):
+    def create_download(
+        self, db: Session, user: models.User, file: Union[UploadFile, Path]
+    ):
         """
         Upload the file to the downloads directory and save a reference to the db.
         :param db:
@@ -152,7 +154,10 @@ class DownloadService(object):
         :param file:
         :return:
         """
-        filename = file.filename
+        if isinstance(file, Path):
+            filename = file.name
+        else:
+            filename = file.filename
 
         location = (
             Path(empire_config.directories.downloads)
@@ -165,7 +170,11 @@ class DownloadService(object):
         filename, location = self._increment_filename(filename, location)
 
         with location.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            if isinstance(file, Path):
+                with file.open("rb") as f:
+                    shutil.copyfileobj(f, buffer)
+            else:
+                shutil.copyfileobj(file.file, buffer)
 
         return self._save_download(db, filename, location)
 
