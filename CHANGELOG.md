@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Upgrade dependencies
 -   Allow download_service to accept a pathlib.Path object to create a download (@Vinnybod)
 -   Fix file option for listeners, stagers, plugins (@Vinnybod)
+-   Add tags to Listeners, Agents, Agent Tasks, Plugin Tasks, Credentials, and Downloads (@Vinnybod)
+    -   Add endpoints to add, edit, and delete tags for each resource type
+    -   Add tag list endpoint
+    -   Add tag filters to Agent Tasks, Plugin Tasks, and Downloads
+    -   Add events for new and updated tags
+-   Fix user filters for tasks to include tasks without any users (@Vinnybod)
+-   Refactor stager and listener tests to work better in parallel (@Vinnybod)
   
 ## [5.5.4] - 2023-07-20
 
