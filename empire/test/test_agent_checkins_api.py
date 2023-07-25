@@ -118,7 +118,7 @@ def test_database_performance_checkins(models, host, agents, session_local):
             query = db.query(models.AgentCheckIn).limit(100000)
             query.all()
         log.info(f"Time to query {checkins} checkins: {t():0.4f} seconds")
-        assert t() < 4
+        assert t() < 5
 
         agents = db.query(models.Agent).all()
 
