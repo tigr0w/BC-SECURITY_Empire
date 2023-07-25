@@ -64,7 +64,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 
 ## Release Notes
 
-Please see our [Releases](https://github.com/BC-SECURITY/Empire/releases) or [Changelog](/changelog) page for detailed release notes.
+Please see our [Releases](https://github.com/BC-SECURITY/Empire/releases) or [Changelog](/CHANGELOG.md) page for detailed release notes.
 
 ###  Quickstart
 When cloning this repository, you will need to recurse submodules.
