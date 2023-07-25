@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Add events for new and updated tags
 -   Fix user filters for tasks to include tasks without any users (@Vinnybod)
 -   Refactor stager and listener tests to work better in parallel (@Vinnybod)
+-   Add a Invoke-PhishingLNK Module (@0xFFaraday)
+-   Fix changelog link in README (@theguly)
   
 ## [5.5.4] - 2023-07-20
 
