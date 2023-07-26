@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.6.0] - 2023-07-25
 
 -   Upgrade dependencies
+-   Upgrade Dockerfile to bullseye and 3.11.4
 -   Allow download_service to accept a pathlib.Path object to create a download (@Vinnybod)
 -   Fix file option for listeners, stagers, plugins (@Vinnybod)
 -   Add tags to Listeners, Agents, Agent Tasks, Plugin Tasks, Credentials, and Downloads (@Vinnybod)
