@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.6.0] - 2023-07-25
+
 -   Upgrade dependencies
+-   Upgrade Dockerfile to bullseye and 3.11.4
 -   Allow download_service to accept a pathlib.Path object to create a download (@Vinnybod)
 -   Fix file option for listeners, stagers, plugins (@Vinnybod)
 -   Add tags to Listeners, Agents, Agent Tasks, Plugin Tasks, Credentials, and Downloads (@Vinnybod)
@@ -19,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Refactor stager and listener tests to work better in parallel (@Vinnybod)
 -   Add a Invoke-PhishingLNK Module (@0xFFaraday)
 -   Fix changelog link in README (@theguly)
-  
+
 ## [5.5.4] - 2023-07-20
 
 ## [5.5.3] - 2023-07-20
@@ -551,7 +554,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.0...HEAD
+
+[5.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.4...v5.6.0
 
 [5.5.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.3...v5.5.4
 

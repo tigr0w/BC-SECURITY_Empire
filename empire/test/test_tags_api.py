@@ -337,7 +337,12 @@ def test_get_tags(client, admin_auth_header, _create_tags):
 
 
 @pytest.fixture(scope="function")
-def _create_agent_tasks_with_tags(client, admin_auth_header, agent):
+def _create_agent_tasks_with_tags(
+    client, admin_auth_header, agent, session_local, models
+):
+    with session_local.begin() as db:
+        db.query(models.AgentTask).delete()
+
     agent_id = agent
     agent_tasks = []
     tags = []
@@ -548,6 +553,7 @@ def test_get_downloads_tag_filter(
     resp = client.get("/api/v2/downloads/", headers=admin_auth_header)
 
     assert resp.status_code == 200
+
     assert len(resp.json()["records"]) == 3
 
     resp = client.get(
@@ -567,10 +573,17 @@ def test_get_downloads_tag_filter(
 
     assert resp.status_code == 200
     assert len(resp.json()["records"]) == 2
-    assert resp.json()["records"][1]["location"] == "path/1"
-    assert resp.json()["records"][1]["tags"][0]["name"] == "test_tag_1"
-    assert resp.json()["records"][0]["location"] == "path/0"
-    assert resp.json()["records"][0]["tags"][0]["name"] == "test_tag_0"
+
+    record_0 = next(filter(lambda x: x["location"] == "path/0", resp.json()["records"]))
+    record_1 = next(filter(lambda x: x["location"] == "path/1", resp.json()["records"]))
+
+    assert record_0
+    assert record_0["location"] == "path/0"
+    assert record_0["tags"][0]["name"] == "test_tag_0"
+
+    assert record_1
+    assert record_1["location"] == "path/1"
+    assert record_1["tags"][0]["name"] == "test_tag_1"
 
     # Test tag value bad
     resp = client.get("/api/v2/downloads?tags=test_tag_0", headers=admin_auth_header)
