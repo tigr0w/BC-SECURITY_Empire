@@ -19,6 +19,13 @@ Sponsors and Kali releases go through the same release process. It is easier to 
 A side effect of this is its possible for a version bump to be empty (no changes) and still be released.
 
 ### 1. cherry-pick any changes from BC-SECURITY/Empire#main to BC-SECURITY/Empire-Sponsors#private-main
+
+Pull requests that should be merged from `main` to `private-main` can be auto-cherry-picked using the `Prerelease - Cherry Pick Main` workflow.
+Add the label `auto-cherry-pick` to the pull request and upon merge, it will open a pull request into `BC-SECURITY/Empire-Sponsors#private-main`, assuming no conflicts.
+If there are conflicts, you must cherry-pick the commits manually. See the steps below.
+
+If you forgot to add the label, the workflow can be manually run, just enter the commit hash as an input to the workflow.
+
 If you don't feel comfortable pushing to `private-main`, you can branch from `private-main` before cherry-picking and open a pull request to merge into `private-main`.
 
 ```bash
