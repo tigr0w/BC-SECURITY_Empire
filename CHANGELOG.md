@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.6.1] - 2023-08-02
+
 ## [5.6.0] - 2023-07-25
 
 -   Upgrade dependencies
@@ -554,7 +556,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.1...HEAD
+
+[5.6.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.0...v5.6.1
 
 [5.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.4...v5.6.0
 
