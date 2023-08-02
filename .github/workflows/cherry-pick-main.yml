@@ -52,11 +52,11 @@ jobs:
       - name: Set commitHash workflow input
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-            echo "COMMIT_HASH=$(git rev-parse HEAD)" >> $GITHUB_ENV
+            echo "COMMIT_HASH=${{ github.event.inputs.commitHash }}" >> $GITHUB_ENV
       - name: Set commitHash pull request input
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-            echo "COMMIT_HASH=$(git rev-parse ${{ github.event.pull_request.head.sha }})" >> $GITHUB_ENV
+            echo "COMMIT_HASH=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
       - name: Create cherry-pick branch
         run: |
           git checkout -b cherry-pick-${{ env.COMMIT_HASH }}
