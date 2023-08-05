@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-  Update the github issue templates to use forms (@Vinnybod)
+
 ## [5.6.1] - 2023-08-02
 
 ## [5.6.0] - 2023-07-25
