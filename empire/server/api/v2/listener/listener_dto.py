@@ -88,7 +88,7 @@ class ListenerTemplate(BaseModel):
                         "name": "",
                     }
                 ],
-                "description": "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.",
+                "description": "Starts a http[s] listener that uses a GET/POST approach.",
                 "category": "client_server",
                 "comments": [],
                 "tactics": [],

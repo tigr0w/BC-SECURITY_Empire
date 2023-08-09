@@ -43,7 +43,7 @@ class Listener(object):
                 },
             ],
             "Description": (
-                "Starts a http[s] listener (PowerShell or Python) that adheres to a Malleable C2 profile."
+                "Starts a http[s] listener that adheres to a Malleable C2 profile."
             ),
             # categories - client_server, peer_to_peer, broadcast, third_party
             "Category": ("client_server"),

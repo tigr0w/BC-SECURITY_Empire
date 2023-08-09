@@ -72,6 +72,8 @@ class ListenerService(object):
             else:
                 return None, f"Listener with name {listener_req.name} already exists."
 
+        listener_req.options["Name"] = listener_req.name
+        db_listener.name = listener_req.name
         db_listener.enabled = listener_req.enabled
         template_instance, err = self._validate_listener_options(
             db, db_listener.module, listener_req.options

@@ -172,7 +172,7 @@ class StagerService(object):
             Path(empire_config.directories.downloads) / "generated-stagers" / file_name
         )
         file_name.parent.mkdir(parents=True, exist_ok=True)
-        mode = "w" if type(resp) == str else "wb"
+        mode = "w" if isinstance(resp, str) else "wb"
         with open(file_name, mode) as f:
             f.write(resp)
 

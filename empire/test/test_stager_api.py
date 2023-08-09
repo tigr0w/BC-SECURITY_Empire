@@ -241,7 +241,7 @@ def test_download_stager_file(client, admin_auth_header, base_stager_2):
         "application/x-msdownload",
         "application/x-msdos-program",
     ]
-    assert type(response.content) == bytes
+    assert isinstance(response.content, bytes)
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
@@ -404,7 +404,7 @@ def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_head
     # Check if the file is downloaded successfully
     assert response.status_code == 200
     assert response.headers.get("content-type").split(";")[0] == "text/plain"
-    assert type(response.content) == bytes
+    assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
     assert len(response.content) > 0

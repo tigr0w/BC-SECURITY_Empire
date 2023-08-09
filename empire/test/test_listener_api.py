@@ -174,6 +174,7 @@ def test_update_listener_allows_and_disables_while_enabled(
 
 
 def test_update_listener_allows_while_disabled(client, admin_auth_header, listener):
+    original_name = listener["name"]
     response = client.get(
         f"/api/v2/listeners/{listener['id']}", headers=admin_auth_header
     )
@@ -185,6 +186,8 @@ def test_update_listener_allows_while_disabled(client, admin_auth_header, listen
     # test that it ignore extra params
     listener["options"]["xyz"] = "xyz"
 
+    listener["name"] = "new-name"
+
     response = client.put(
         f"/api/v2/listeners/{listener['id']}",
         headers=admin_auth_header,
@@ -194,6 +197,15 @@ def test_update_listener_allows_while_disabled(client, admin_auth_header, listen
     assert response.json()["enabled"] is False
     assert response.json()["options"]["Port"] == new_port
     assert response.json()["options"].get("xyz") is None
+    assert response.json()["options"]["Name"] == "new-name"
+    assert response.json()["name"] == "new-name"
+
+    listener["name"] = original_name
+    client.put(
+        f"/api/v2/listeners/{listener['id']}",
+        headers=admin_auth_header,
+        json=listener,
+    )
 
 
 def test_update_listener_name_conflict(client, base_listener, admin_auth_header):

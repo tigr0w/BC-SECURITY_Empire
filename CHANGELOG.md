@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--  Update the github issue templates to use forms (@Vinnybod)
+-   Update the github issue templates to use forms (@Vinnybod)
+-   Fix issue with option validator throwing error for strict non-required options (@Vinnybod)
+-   Allow Starkiller to load even if the git pull fails if the dir exists (@Vinnybod)
+-   Update listener descriptions to not specify languages since Empire supports more languages now
 
 ## [5.6.1] - 2023-08-02
 

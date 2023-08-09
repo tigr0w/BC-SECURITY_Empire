@@ -105,7 +105,7 @@ def test_validate_options_casts_string_to_int_success():
     assert cleaned_options == {"Port": 123}
 
 
-def test_validate_options_missing_optional_field_no_defauls():
+def test_validate_options_missing_optional_field_no_default():
     instance_options = {
         "Command": {
             "Description": "Command to run",
@@ -121,6 +121,42 @@ def test_validate_options_missing_optional_field_no_defauls():
     cleaned_options, err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Command": ""}
+
+
+def test_validate_options_missing_optional_field_with_default():
+    instance_options = {
+        "Command": {
+            "Description": "Command to run",
+            "Required": False,
+            "Value": "Test",
+            "SuggestedValues": [],
+            "Strict": False,
+        }
+    }
+
+    options = {}
+
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert cleaned_options == {"Command": "Test"}
+
+
+def test_validate_options_missing_optional_field_with_default_and_strict():
+    instance_options = {
+        "Command": {
+            "Description": "Command to run",
+            "Required": False,
+            "Value": "Test",
+            "SuggestedValues": ["Test"],
+            "Strict": True,
+        }
+    }
+
+    options = {}
+
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert cleaned_options == {"Command": "Test"}
 
 
 def test_validate_options_with_file_not_found(db):
