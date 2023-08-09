@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.6.2] - 2023-08-09
+
 -   Update the github issue templates to use forms (@Vinnybod)
 -   Fix issue with option validator throwing error for strict non-required options (@Vinnybod)
 -   Allow Starkiller to load even if the git pull fails if the dir exists (@Vinnybod)
@@ -561,7 +563,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.2...HEAD
+
+[5.6.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.1...v5.6.2
 
 [5.6.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.0...v5.6.1
 
