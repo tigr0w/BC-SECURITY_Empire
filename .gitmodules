@@ -49,3 +49,6 @@
 [submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/RunOF"]
 	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/RunOF
 	url = https://github.com/BC-SECURITY/RunOF.git
+[submodule "empire/server/plugins/Report-Generation-Plugin"]
+	path = empire/server/plugins/Report-Generation-Plugin
+	url = https://github.com/BC-SECURITY/Report-Generation-Plugin.git
