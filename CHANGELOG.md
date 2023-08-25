@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 -   Pin linters in the workflow
 
+- Updated Windows BAT launcher to use Base64 for all payloads (@Cx01N)
+
 ## [5.6.2] - 2023-08-09
 
 -   Update the github issue templates to use forms (@Vinnybod)

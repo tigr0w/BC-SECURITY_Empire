@@ -287,6 +287,22 @@ def base_stager_2():
 
 
 @pytest.fixture(scope="function")
+def bat_stager():
+    return {
+        "name": "bat_stager",
+        "template": "windows_launcher_bat",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "powershell",
+            "OutFile": "my-bat.bat",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "Bypasses": "mattifestation etw",
+        },
+    }
+
+
+@pytest.fixture(scope="function")
 def pyinstaller_stager():
     return {
         "name": "MyStager3",

