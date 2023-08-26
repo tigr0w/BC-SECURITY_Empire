@@ -34,10 +34,11 @@ def client():
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
 
     import empire.server.core.db.base
-    from empire.server.core.db.base import reset_db
+    from empire.server.core.db.base import reset_db, startup_db
 
     reset_db()
     reload(empire.server.core.db.base)
+    startup_db()
 
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
     shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)

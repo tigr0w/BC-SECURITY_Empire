@@ -88,61 +88,77 @@ else:
 SessionLocal = sessionmaker(bind=engine)
 Base.metadata.create_all(engine)
 
-with SessionLocal.begin() as db:
-    if use == "mysql":
-        database_name = database_config.database_name
 
-        result = db.execute(
-            text(
-                f"""
-            SELECT * FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = '{database_name}'
-            AND table_name = 'hosts'
-            AND column_name = 'unique_check'
-            """
-            )
-        ).fetchone()
-        if not result:
-            db.execute(
-                text(
+def startup_db():
+    try:
+        with SessionLocal.begin() as db:
+            if use == "mysql":
+                database_name = database_config.database_name
+
+                result = db.execute(
+                    text(
+                        f"""
+                    SELECT * FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = '{database_name}'
+                    AND table_name = 'hosts'
+                    AND column_name = 'unique_check'
                     """
-                ALTER TABLE hosts
-                ADD COLUMN unique_check VARCHAR(255) GENERATED ALWAYS AS (MD5(CONCAT(name, internal_ip))) UNIQUE;
-                """
-                )
-            )
+                    )
+                ).fetchone()
+                if not result:
+                    db.execute(
+                        text(
+                            """
+                        ALTER TABLE hosts
+                        ADD COLUMN unique_check VARCHAR(255) GENERATED ALWAYS AS (MD5(CONCAT(name, internal_ip))) UNIQUE;
+                        """
+                        )
+                    )
 
-            # index agent_id and checkin_time together
-            # won't work for sqlite.
-            from sqlalchemy import Index
+                    # index agent_id and checkin_time together
+                    # won't work for sqlite.
+                    from sqlalchemy import Index
 
-            Index(
-                "agent_checkin_idx",
-                models.AgentCheckIn.agent_id,
-                models.AgentCheckIn.checkin_time.desc(),
-            )
+                    Index(
+                        "agent_checkin_idx",
+                        models.AgentCheckIn.agent_id,
+                        models.AgentCheckIn.checkin_time.desc(),
+                    )
 
-    # When Empire starts up for the first time, it will create the database and create
-    # these default records.
-    if len(db.query(models.User).all()) == 0:
-        log.info("Setting up database.")
-        log.info("Adding default user.")
-        db.add(get_default_user())
+            # When Empire starts up for the first time, it will create the database and create
+            # these default records.
+            if len(db.query(models.User).all()) == 0:
+                log.info("Setting up database.")
+                log.info("Adding default user.")
+                db.add(get_default_user())
 
-    if len(db.query(models.Config).all()) == 0:
-        log.info("Adding database config.")
-        db.add(get_default_config())
+            if len(db.query(models.Config).all()) == 0:
+                log.info("Adding database config.")
+                db.add(get_default_config())
 
-    if len(db.query(models.Keyword).all()) == 0:
-        log.info("Adding default keyword obfuscation functions.")
-        keywords = get_default_keyword_obfuscation()
+            if len(db.query(models.Keyword).all()) == 0:
+                log.info("Adding default keyword obfuscation functions.")
+                keywords = get_default_keyword_obfuscation()
 
-        for keyword in keywords:
-            db.add(keyword)
+                for keyword in keywords:
+                    db.add(keyword)
 
-    if len(db.query(models.ObfuscationConfig).all()) == 0:
-        log.info("Adding default obfuscation config.")
-        obf_configs = get_default_obfuscation_config()
+            if len(db.query(models.ObfuscationConfig).all()) == 0:
+                log.info("Adding default obfuscation config.")
+                obf_configs = get_default_obfuscation_config()
 
-        for config in obf_configs:
-            db.add(config)
+                for config in obf_configs:
+                    db.add(config)
+
+            # Checking that schema matches the db.
+            # Some errors don't manifest until query time.
+            for model in models.Base.__subclasses__():
+                db.query(model).first()
+
+    except Exception as e:
+        log.error(e, exc_info=True)
+        log.error("Failed to setup database.")
+        log.error(
+            "If you have recently updated Empire, please run 'server --reset' to reset the database."
+        )
+        exit(1)

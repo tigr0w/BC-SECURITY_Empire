@@ -11,9 +11,6 @@ from pathlib import Path
 
 import urllib3
 
-from empire.server.api import app
-
-# Empire imports
 from empire.server.common import empire
 from empire.server.core.config import empire_config
 from empire.server.core.db import base
@@ -170,6 +167,7 @@ def run(args):
         sys.exit()
 
     else:
+        base.startup_db()
         global main
 
         # Calling run more than once, such as in the test suite
@@ -182,6 +180,8 @@ def run(args):
             log.info("Certificate not found. Generating...")
             subprocess.call("./setup/cert.sh")
             time.sleep(3)
+
+        from empire.server.api import app
 
         app.initialize(secure=args.secure_api, ip=args.restip, port=args.restport)
 

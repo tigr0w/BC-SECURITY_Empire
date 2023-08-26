@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 -   Added Advanced Reporting Plugin and dependencies (@Cx01N)
 -   Pin linters in the workflow
-
-- Updated Windows BAT launcher to use Base64 for all payloads (@Cx01N)
+-   Catch error when starting up database that was seeded by an older version of Empire (@Vinnybod)
+-   Updated Windows BAT launcher to use Base64 for all payloads (@Cx01N)
 
 ## [5.6.2] - 2023-08-09
 
