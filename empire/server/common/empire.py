@@ -34,12 +34,13 @@ from empire.server.core.plugin_service import PluginService
 from empire.server.core.profile_service import ProfileService
 from empire.server.core.stager_service import StagerService
 from empire.server.core.stager_template_service import StagerTemplateService
+from empire.server.core.tag_service import TagService
 from empire.server.core.user_service import UserService
 from empire.server.utils import data_util
 
 from . import agents, credentials, listeners, stagers
 
-VERSION = "5.5.4 BC Security Fork"
+VERSION = "5.6.3 BC Security Fork"
 
 log = logging.getLogger(__name__)
 
@@ -89,6 +90,7 @@ class MainMenu(object):
         self.agentfilesv2 = AgentFileService(self)
         self.agentsv2 = AgentService(self)
         self.pluginsv2 = PluginService(self)
+        self.tagsv2 = TagService(self)
 
         self.pluginsv2.startup()
         hooks_internal.initialize()

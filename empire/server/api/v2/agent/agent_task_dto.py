@@ -8,6 +8,7 @@ from empire.server.api.v2.shared_dto import (
     DownloadDescription,
     domain_to_dto_download_description,
 )
+from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 from empire.server.core.db import models
 
 
@@ -41,6 +42,7 @@ def domain_to_dto_task(
         status=task.status,
         created_at=task.created_at,
         updated_at=task.updated_at,
+        tags=list(map(lambda x: domain_to_dto_tag(x), task.tags)),
     )
 
 
@@ -59,6 +61,7 @@ class AgentTask(BaseModel):
     status: models.AgentTaskStatus
     created_at: datetime
     updated_at: datetime
+    tags: List[Tag]
 
 
 class AgentTasks(BaseModel):

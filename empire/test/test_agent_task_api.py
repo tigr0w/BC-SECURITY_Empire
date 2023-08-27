@@ -2,24 +2,6 @@ from textwrap import dedent
 
 import pytest
 
-from empire.test.conftest import base_listener_non_fixture
-
-
-@pytest.fixture(scope="module", autouse=True)
-def listener(client, admin_auth_header):
-    # not using fixture because scope issues
-    response = client.post(
-        "/api/v2/listeners/",
-        headers=admin_auth_header,
-        json=base_listener_non_fixture(),
-    )
-
-    yield response.json()
-
-    client.delete(
-        f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
-    )
-
 
 @pytest.fixture(scope="module", autouse=True)
 def agent_low_version(db, models, main):
@@ -597,7 +579,7 @@ def test_create_task_script_import_agent_not_found(client, admin_auth_header, ag
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "r"),
+                open("./empire/test/test-upload.yaml", "rb"),
                 "text/plain",
             )
         },
@@ -614,7 +596,7 @@ def test_create_task_script_import(client, admin_auth_header, agent):
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "r"),
+                open("./empire/test/test-upload.yaml", "rb"),
                 "text/plain",
             )
         },

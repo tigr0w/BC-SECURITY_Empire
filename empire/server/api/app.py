@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime
 from json import JSONEncoder
+from pathlib import Path
 
 import socketio
 import uvicorn
@@ -42,14 +43,27 @@ class MyJsonEncoder(JSONEncoder):
         return JSONEncoder.default(self, o)
 
 
-def load_starkiller(v2App):
-    sync_starkiller(empire_config.dict())
+def load_starkiller(v2App, ip, port):
+    try:
+        sync_starkiller(empire_config.dict())
+    except Exception as e:
+        log.warning("Failed to load Starkiller: %s", e, exc_info=True)
+        log.warning(
+            "If you are trying to pull Starkiller from a private repository ("
+            "such as Starkiller-Sponsors), make sure you have the proper ssh "
+            "credentials set in your Empire config. See "
+            "https://docs.github.com/en/github/authenticating-to-github"
+            "/connecting-to-github-with-ssh"
+        )
 
-    v2App.mount(
-        "/",
-        StaticFiles(directory=f"{empire_config.starkiller.directory}/dist"),
-        name="static",
-    )
+    if (Path(empire_config.starkiller.directory) / "dist").exists():
+        v2App.mount(
+            "/",
+            StaticFiles(directory=f"{empire_config.starkiller.directory}/dist"),
+            name="static",
+        )
+        log.info("Starkiller served at the same ip and port as Empire Server")
+        log.info(f"Starkiller served at http://localhost:{port}/index.html")
 
 
 def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
@@ -66,6 +80,7 @@ def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
     from empire.server.api.v2.plugin import plugin_api, plugin_task_api
     from empire.server.api.v2.profile import profile_api
     from empire.server.api.v2.stager import stager_api, stager_template_api
+    from empire.server.api.v2.tag import tag_api
     from empire.server.api.v2.user import user_api
     from empire.server.server import main
 
@@ -97,6 +112,7 @@ def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
     v2App.include_router(meta_api.router)
     v2App.include_router(plugin_task_api.router)
     v2App.include_router(plugin_api.router)
+    v2App.include_router(tag_api.router)
 
     v2App.add_middleware(
         EmpireCORSMiddleware,
@@ -131,18 +147,7 @@ def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
 
     setup_socket_events(sio, main)
 
-    try:
-        load_starkiller(v2App)
-        log.info(f"Starkiller served at http://{ip}:{port}/index.html")
-    except Exception as e:
-        log.warning("Failed to load Starkiller: %s", e, exc_info=True)
-        log.warning(
-            "If you are trying to pull Starkiller from a private repository ("
-            "such as Starkiller-Sponsors), make sure you have the proper ssh "
-            "credentials set in your Empire config. See "
-            "https://docs.github.com/en/github/authenticating-to-github"
-            "/connecting-to-github-with-ssh"
-        )
+    load_starkiller(v2App, ip, port)
 
     cert_path = os.path.abspath("./empire/server/data/")
 

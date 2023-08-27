@@ -66,12 +66,8 @@ def validate_options(
             options[instance_key] = db_download
             continue
 
-        # Attempt to default a unset required option to the default value
-        if (
-            instance_key not in params
-            and option_meta["Required"]
-            and option_meta["Value"]
-        ):
+        # Attempt to default a unset option to the default value
+        if instance_key not in params and option_meta["Value"] not in ["", None]:
             params[instance_key] = option_meta["Value"]
 
         # If the required option still isn't set, return an error

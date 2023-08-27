@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+from contextlib import suppress
 from importlib import reload
 from pathlib import Path
 
@@ -33,10 +34,11 @@ def client():
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
 
     import empire.server.core.db.base
-    from empire.server.core.db.base import reset_db
+    from empire.server.core.db.base import reset_db, startup_db
 
     reset_db()
     reload(empire.server.core.db.base)
+    startup_db()
 
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
     shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)
@@ -62,6 +64,7 @@ def client():
     from empire.server.api.v2.plugin import plugin_api, plugin_task_api
     from empire.server.api.v2.profile import profile_api
     from empire.server.api.v2.stager import stager_api, stager_template_api
+    from empire.server.api.v2.tag import tag_api
     from empire.server.api.v2.user import user_api
 
     v2App = FastAPI()
@@ -84,6 +87,7 @@ def client():
     v2App.include_router(process_api.router)
     v2App.include_router(download_api.router)
     v2App.include_router(meta_api.router)
+    v2App.include_router(tag_api.router)
 
     yield TestClient(v2App)
 
@@ -221,6 +225,23 @@ def base_listener_non_fixture():
     }
 
 
+@pytest.fixture(scope="module", autouse=True)
+def listener(client, admin_auth_header):
+    # not using fixture because scope issues
+    response = client.post(
+        "/api/v2/listeners/",
+        headers=admin_auth_header,
+        json=base_listener_non_fixture(),
+    )
+
+    yield response.json()
+
+    with suppress(Exception):
+        client.delete(
+            f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
+        )
+
+
 @pytest.fixture(scope="function")
 def base_stager():
     return {
@@ -267,6 +288,22 @@ def base_stager_2():
 
 
 @pytest.fixture(scope="function")
+def bat_stager():
+    return {
+        "name": "bat_stager",
+        "template": "windows_launcher_bat",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "powershell",
+            "OutFile": "my-bat.bat",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "Bypasses": "mattifestation etw",
+        },
+    }
+
+
+@pytest.fixture(scope="function")
 def pyinstaller_stager():
     return {
         "name": "MyStager3",
@@ -299,6 +336,7 @@ def host(session_local, models):
     yield host_id
 
     with session_local.begin() as db:
+        db.query(models.Agent).filter(models.Agent.host_id == host_id).delete()
         db.query(models.Host).filter(models.Host.id == host_id).delete()
 
 
@@ -345,6 +383,79 @@ def agent(session_local, models, host, main):
             models.AgentCheckIn.agent_id == agent_id
         ).delete()
         db.query(models.Agent).filter(models.Agent.session_id == agent_id).delete()
+
+
+@pytest.fixture(scope="function")
+def agent_task(client, admin_auth_header, agent):
+    resp = client.post(
+        f"/api/v2/agents/{agent}/tasks/shell",
+        headers=admin_auth_header,
+        json={"command": 'echo "HELLO WORLD"'},
+    )
+
+    yield resp.json()
+
+    # No need to delete the task, it will be deleted when the agent is deleted
+    # After the test.
+
+
+@pytest.fixture(scope="module")
+def plugin_name():
+    return "basic_reporting"
+
+
+@pytest.fixture(scope="function")
+def plugin_task(main, session_local, models, plugin_name):
+    with session_local.begin() as db:
+        plugin_task = models.PluginTask(
+            plugin_id=plugin_name,
+            input="This is the trimmed input for the task.",
+            input_full="This is the full input for the task.",
+            user_id=1,
+        )
+        db.add(plugin_task)
+        db.flush()
+        task_id = plugin_task.id
+
+    yield task_id
+
+    with session_local.begin() as db:
+        db.query(models.PluginTask).delete()
+
+
+@pytest.fixture(scope="function")
+def credential(client, admin_auth_header):
+    resp = client.post(
+        "/api/v2/credentials/",
+        headers=admin_auth_header,
+        json={
+            "credtype": "hash",
+            "domain": "the-domain",
+            "username": "user",
+            "password": "hunter2",
+            "host": "host1",
+        },
+    )
+
+    yield resp.json()["id"]
+
+    client.delete(f"/api/v2/credentials/{resp.json()['id']}", headers=admin_auth_header)
+
+
+@pytest.fixture(scope="function")
+def download(client, admin_auth_header):
+    response = client.post(
+        "/api/v2/downloads",
+        headers=admin_auth_header,
+        files={
+            "file": (
+                "test-upload-2.yaml",
+                open("./empire/test/test-upload-2.yaml", "r").read(),
+            )
+        },
+    )
+
+    yield response.json()["id"]
 
 
 @pytest.fixture(scope="session")

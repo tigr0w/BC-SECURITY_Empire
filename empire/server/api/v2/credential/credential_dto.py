@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
+from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
+
 
 def domain_to_dto_credential(credential):
     return Credential(
@@ -17,6 +19,7 @@ def domain_to_dto_credential(credential):
         notes=credential.notes,
         created_at=credential.created_at,
         updated_at=credential.updated_at,
+        tags=list(map(lambda x: domain_to_dto_tag(x), credential.tags)),
     )
 
 
@@ -32,6 +35,7 @@ class Credential(BaseModel):
     notes: Optional[str]
     created_at: datetime
     updated_at: datetime
+    tags: List[Tag]
 
 
 class Credentials(BaseModel):

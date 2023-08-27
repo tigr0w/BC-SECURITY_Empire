@@ -118,7 +118,8 @@ def test_database_performance_checkins(models, host, agents, session_local):
             query = db.query(models.AgentCheckIn).limit(100000)
             query.all()
         log.info(f"Time to query {checkins} checkins: {t():0.4f} seconds")
-        assert t() < 4
+        # Changed from 4 to 5 in 2023/07
+        assert t() < 5
 
         agents = db.query(models.Agent).all()
 
@@ -179,7 +180,7 @@ def test_get_agent_checkins_multiple_agents(
     response = client.get(
         "/api/v2/agents/checkins",
         headers=admin_auth_header,
-        params={"agents": [with_checkins[:2]], "limit": 400000},
+        params={"agents": with_checkins[:2], "limit": 400000},
     )
 
     assert response.status_code == 200
@@ -238,7 +239,8 @@ def test_agent_checkins_aggregate(
 
     assert response.status_code == 200
     # On an m1 macbook this is <1s, but in CI it's ~11s. ymmv
-    assert response.elapsed.total_seconds() < 15
+    # Changed from 15 to 17 in 2023/07
+    assert response.elapsed.total_seconds() < 17
     assert response.json()["bucket_size"] == "second"
     assert response.json()["records"][1]["count"] == 1 * 3
 

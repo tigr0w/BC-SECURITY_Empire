@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "5.5.4"
+version = "5.6.3"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -14,52 +14,55 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-urllib3 = "*"
-requests = "^2.24.0"
-iptools = "*"
-macholib = "*"
-dropbox = "*"
-pyOpenSSL = "*"
+urllib3 = "^2.0.3"
+requests = "^2.31.0"
+iptools = "^0.7.0"
+macholib = "^1.16.2"
+dropbox = "^11.36.2"
+pyOpenSSL = "^23.2.0"
 zlib_wrapper = "^0.1.3"
-netifaces = "*"
-jinja2 = "*"
-xlutils = "*"
-pyparsing = "*"
-PyMySQL = "^0.10.1"
-SQLAlchemy = "^2.0"
+netifaces = "^0.11.0"
+jinja2 = "^3.1.2"
+xlutils = "^2.0.0"
+pyparsing = "^3.1.0"
+PyMySQL = "^1.1.0"
+SQLAlchemy = "^2.0.18"
 PyYAML = "^6.0.1"
 SQLAlchemy-Utc = "^0.14.0"
-prompt-toolkit = "^3.0.9"
-terminaltables = "^3.1.0"
+prompt-toolkit = "^3.0.39"
+terminaltables = "^3.1.10"
 docopt = "^0.6.2"
-humanize = "^3.2.0"
-pydantic = "^1.8.1"
-pycryptodome = "^3.10.1"
-cryptography = "^37.0.3"
-fastapi = "0.70"
-uvicorn = "^0.14.0"
-jq = "^1.2.1"
-aiofiles = "^0.7.0"
-python-multipart = "^0.0.5"
+humanize = "^4.7.0"
+pycryptodome = "^3.18.0"
+cryptography = "^41.0.1"
+fastapi = "^0.99.1"
+uvicorn = "^0.22.0"
+jq = "^1.4.1"
+aiofiles = "^23.1.0"
+python-multipart = "^0.0.6"
 python-jose = {version = "^3.3.0", extras = ["cryptography"]}
 passlib = {version = "^1.7.4", extras = ["bcrypt"]}
 websockify = "^0.10.0"
-websockets = "^10.1"
+websockets = "^11.0.3"
 pyperclip = "^1.8.2"
 pyvnc = {git = "https://github.com/BC-SECURITY/pyVNC.git"}
-python-socketio = {extras = ["client"], version = "^5.7.1"}
-Flask = "^2.1.2"
+python-socketio = {extras = ["client"], version = "^5.8.0"}
+Flask = "^2.3.2"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git"}
 donut-shellcode = "^1.0.2"
 python-obfuscator = "^0.0.2"
-pyinstaller = "^5.12"
+pyinstaller = "^5.13.0"
+md2pdf = "^1.0.1"
+tabulate = "^0.9.0"
 
-[tool.poetry.dev-dependencies]
-isort = "^5.10.1"
-black = "^23.1.0"
-pytest = "^7.2.0"
+
+[tool.poetry.group.dev.dependencies]
+httpx = "^0.24.1" # For starlette TestClient
+isort = "^5.12.0"
+black = "^23.7.0"
+pytest = "^7.4.0"
 pytest-timeout = "^2.1.0"
-ruff = "^0.0.233"
+ruff = "^0.0.283"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

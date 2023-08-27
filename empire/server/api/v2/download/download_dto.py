@@ -4,6 +4,8 @@ from typing import List
 
 from pydantic import BaseModel
 
+from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
+
 
 def removeprefix(value: str, prefix: str) -> str:
     if value.startswith(prefix):
@@ -21,6 +23,7 @@ def domain_to_dto_download(download):
         size=download.size,
         created_at=download.created_at,
         updated_at=download.updated_at,
+        tags=list(map(lambda x: domain_to_dto_tag(x), download.tags)),
     )
 
 
@@ -46,6 +49,7 @@ class Download(BaseModel):
     size: int
     created_at: datetime
     updated_at: datetime
+    tags: List[Tag]
 
 
 class Downloads(BaseModel):

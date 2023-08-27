@@ -20,6 +20,8 @@ from empire.server.api.v2.shared_dto import (
     NotFoundResponse,
     OrderDirection,
 )
+from empire.server.api.v2.tag import tag_api
+from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.db import models
 from empire.server.server import main
 
@@ -59,8 +61,12 @@ async def download_download(
     return FileResponse(db_download.location, filename=filename)
 
 
+tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_download)
+
+
 @router.get(
     "/{uid}",
+    response_model=Download,
 )
 async def read_download(
     uid: int,
@@ -79,10 +85,12 @@ async def read_downloads(
     order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
     query: Optional[str] = None,
     sources: Optional[List[DownloadSourceFilter]] = Query(None),
+    tags: Optional[List[TagStr]] = Query(None),
 ):
     downloads, total = download_service.get_all(
         db=db,
         download_types=sources,
+        tags=tags,
         q=query,
         limit=limit,
         offset=(page - 1) * limit,

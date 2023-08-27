@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
+from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 
 
 def domain_to_dto_template(listener, uid: str):
@@ -17,7 +18,7 @@ def domain_to_dto_template(listener, uid: str):
                     "value": x[1]["Value"],
                     "strict": x[1]["Strict"],
                     "suggested_values": x[1]["SuggestedValues"],
-                    "value_type": to_value_type(x[1]["Value"]),
+                    "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
                 },
             ),
             listener.options.items(),
@@ -59,6 +60,7 @@ def domain_to_dto_listener(listener):
         enabled=listener.enabled,
         options=options,
         created_at=listener.created_at,
+        tags=list(map(lambda x: domain_to_dto_tag(x), listener.tags)),
     )
 
 
@@ -86,7 +88,7 @@ class ListenerTemplate(BaseModel):
                         "name": "",
                     }
                 ],
-                "description": "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach.",
+                "description": "Starts a http[s] listener that uses a GET/POST approach.",
                 "category": "client_server",
                 "comments": [],
                 "tactics": [],
@@ -249,6 +251,7 @@ class Listener(BaseModel):
     template: str
     options: Dict[str, str]
     created_at: datetime
+    tags: List[Tag]
 
 
 class Listeners(BaseModel):

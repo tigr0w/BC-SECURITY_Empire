@@ -27,9 +27,7 @@ class Listener(object):
                     "Link": "https://twitter.com/harmj0y",
                 }
             ],
-            "Description": (
-                "Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach."
-            ),
+            "Description": ("Starts a http[s] listener that uses a GET/POST approach."),
             "Category": ("client_server"),
             "Comments": [],
             "Software": "",

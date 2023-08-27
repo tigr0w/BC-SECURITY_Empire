@@ -45,11 +45,11 @@ The `main` branch in `BC-SECURITY/Empire` automatically syncs.
 
 ### Code Formatting and Linting
 
-* As of Empire 4.4, we are using [psf/black](https://github.com/psf/black) for code formatting.
+* We are using [psf/black](https://github.com/psf/black) for code formatting.
     * Black is a Python code formatter that helps to keep the codebase uniform and easy to read
-* As of Empire 4.4, we are using [PyCQA/isort](https://github.com/PyCQA/isort)
+* We are using [PyCQA/isort](https://github.com/PyCQA/isort)
     * Isort is a Python utility that sorts and formats imports.
-* As of Empire 5.0.1, we are using [charliermarsh/ruff](https://github.com/charliermarsh/ruff) for linting.
+* We are using [charliermarsh/ruff](https://github.com/charliermarsh/ruff) for linting.
     * Ruff is a python linter that helps identify common bugs and style issues.
 * After implementing your changes:
     1. run `black .` (or `poetry run black .`).
@@ -66,5 +66,4 @@ Please write tests for your code! We use [pytest](https://docs.pytest.org/en/lat
 For tests that take >20-30 seconds, please add the `@pytest.mark.slow` decorator to the test function. This will allow us to skip the slow tests when running the tests, unless we explicitly want to run them with `pytest --runslow`.
 
 ## Upgrading dependencies
-
 Dependencies can be upgraded using [poetry-plugin-up](https://github.com/MousaZeidBaker/poetry-plugin-up).

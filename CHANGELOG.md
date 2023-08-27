@@ -7,7 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--  Update the github issue templates to use forms (@Vinnybod)
+## [5.6.3] - 2023-08-27
+
+-   Updated Starkiller to v2.5.3
+-   Added Advanced Reporting Plugin and dependencies (@Cx01N)
+-   Pin linters in the workflow
+-   Catch error when starting up database that was seeded by an older version of Empire (@Vinnybod)
+-   Updated Windows BAT launcher to use Base64 for all payloads (@Cx01N)
+
+## [5.6.2] - 2023-08-09
+
+-   Update the github issue templates to use forms (@Vinnybod)
+-   Fix issue with option validator throwing error for strict non-required options (@Vinnybod)
+-   Allow Starkiller to load even if the git pull fails if the dir exists (@Vinnybod)
+-   Update listener descriptions to not specify languages since Empire supports more languages now
+
+## [5.6.1] - 2023-08-02
+
+## [5.6.0] - 2023-07-25
+
+-   Upgrade dependencies
+-   Upgrade Dockerfile to bullseye and 3.11.4
+-   Allow download_service to accept a pathlib.Path object to create a download (@Vinnybod)
+-   Fix file option for listeners, stagers, plugins (@Vinnybod)
+-   Add tags to Listeners, Agents, Agent Tasks, Plugin Tasks, Credentials, and Downloads (@Vinnybod)
+    -   Add endpoints to add, edit, and delete tags for each resource type
+    -   Add tag list endpoint
+    -   Add tag filters to Agent Tasks, Plugin Tasks, and Downloads
+    -   Add events for new and updated tags
+-   Fix user filters for tasks to include tasks without any users (@Vinnybod)
+-   Refactor stager and listener tests to work better in parallel (@Vinnybod)
+-   Add a Invoke-PhishingLNK Module (@0xFFaraday)
+-   Fix changelog link in README (@theguly)
 
 ## [5.5.4] - 2023-07-20
 -   Updated Starkiller to v2.4.3
@@ -546,7 +577,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.3...HEAD
+
+[5.6.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.2...v5.6.3
+
+[5.6.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.1...v5.6.2
+
+[5.6.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.0...v5.6.1
+
+[5.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.4...v5.6.0
 
 [5.5.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.5.3...v5.5.4
 

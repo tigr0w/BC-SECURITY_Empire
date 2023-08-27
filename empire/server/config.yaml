@@ -43,7 +43,7 @@ starkiller:
   repo: https://github.com/BC-SECURITY/Starkiller.git
   directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
-  ref: v2.4.3
+  ref: v2.5.3
   auto_update: true
 plugins:
   # Auto-load plugin with defined settings

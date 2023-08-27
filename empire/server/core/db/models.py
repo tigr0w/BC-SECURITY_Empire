@@ -67,7 +67,6 @@ agent_file_download_assc = Table(
     Column("download_id", Integer, ForeignKey("downloads.id")),
 )
 
-
 stager_download_assc = Table(
     "stager_download_assc",
     Base.metadata,
@@ -80,6 +79,52 @@ upload_download_assc = Table(
     "upload_download_assc",
     Base.metadata,
     Column("download_id", Integer, ForeignKey("downloads.id")),
+)
+
+listener_tag_assc = Table(
+    "listener_tag_assc",
+    Base.metadata,
+    Column("listener_id", Integer, ForeignKey("listeners.id")),
+    Column("tag_id", Integer, ForeignKey("tags.id")),
+)
+
+agent_tag_assc = Table(
+    "agent_tag_assc",
+    Base.metadata,
+    Column("agent_id", String(255), ForeignKey("agents.session_id")),
+    Column("tag_id", Integer, ForeignKey("tags.id")),
+)
+
+agent_task_tag_assc = Table(
+    "agent_task_tag_assc",
+    Base.metadata,
+    Column("agent_task_id", Integer),
+    Column("agent_id", String(255)),
+    Column("tag_id", Integer, ForeignKey("tags.id")),
+    ForeignKeyConstraint(
+        ("agent_task_id", "agent_id"), ("agent_tasks.id", "agent_tasks.agent_id")
+    ),
+)
+
+plugin_task_tag_assc = Table(
+    "plugin_task_tag_assc",
+    Base.metadata,
+    Column("plugin_task_id", Integer, ForeignKey("plugin_tasks.id")),
+    Column("tag_id", Integer, ForeignKey("tags.id")),
+)
+
+credential_tag_assc = Table(
+    "credential_tag_assc",
+    Base.metadata,
+    Column("credential_id", Integer, ForeignKey("credentials.id")),
+    Column("tag_id", Integer, ForeignKey("tags.id")),
+)
+
+download_tag_assc = Table(
+    "download_tag_assc",
+    Base.metadata,
+    Column("download_id", Integer, ForeignKey("downloads.id")),
+    Column("tag_id", Integer, ForeignKey("tags.id")),
 )
 
 
@@ -111,6 +156,7 @@ class Listener(Base):
     enabled = Column(Boolean, nullable=False)
     options = Column(JSON)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
+    tags = relationship("Tag", secondary=listener_tag_assc)
 
     def __repr__(self):
         return "<Listener(name='%s')>" % (self.name)
@@ -187,6 +233,7 @@ class Agent(Base):
     proxies = Column(JSON)
     socks = Column(Boolean)
     socks_port = Column(Integer)
+    tags = relationship("Tag", secondary=agent_tag_assc)
 
     @hybrid_property
     def lastseen_time(self):
@@ -297,6 +344,7 @@ class Credential(Base):
     updated_at = Column(
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
+    tags = relationship("Tag", secondary=credential_tag_assc)
 
     def __repr__(self):
         return "<Credential(id='%s')>" % (self.id)
@@ -318,6 +366,7 @@ class Download(Base):
     updated_at = Column(
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
+    tags = relationship("Tag", secondary=download_tag_assc)
 
     def get_base64_file(self):
         with open(self.location, "rb") as f:
@@ -359,6 +408,7 @@ class AgentTask(Base):
     task_name = Column(Text)
     status = Column(Enum(AgentTaskStatus), index=True)
     downloads = relationship("Download", secondary=agent_task_download_assc)
+    tags = relationship("Tag", secondary=agent_task_tag_assc)
 
     def __repr__(self):
         return "<AgentTask(id='%s')>" % (self.id)
@@ -394,6 +444,7 @@ class PluginTask(Base):
     task_name = Column(Text)
     status = Column(Enum(PluginTaskStatus), index=True)
     downloads = relationship("Download", secondary=plugin_task_download_assc)
+    tags = relationship("Tag", secondary=plugin_task_tag_assc)
 
     def __repr__(self):
         return "<PluginTask(id='%s')>" % (self.id)
@@ -484,3 +535,15 @@ class ObfuscationConfig(Base):
     module = Column(String(255))
     enabled = Column(Boolean)
     preobfuscatable = Column(Boolean)
+
+
+class Tag(Base):
+    __tablename__ = "tags"
+    id = Column(Integer, Sequence("tag_seq"), primary_key=True)
+    name = Column(String(255), nullable=False)
+    value = Column(String(255), nullable=False)
+    color = Column(String(12), nullable=True)
+    created_at = Column(UtcDateTime, nullable=False, default=utcnow())
+    updated_at = Column(
+        UtcDateTime, nullable=False, onupdate=utcnow(), default=utcnow()
+    )
