@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [5.6.3] - 2023-08-27
+
 -   Added Advanced Reporting Plugin and dependencies (@Cx01N)
 -   Pin linters in the workflow
 -   Catch error when starting up database that was seeded by an older version of Empire (@Vinnybod)
@@ -567,7 +570,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.3...HEAD
+
+[5.6.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.2...v5.6.3
 
 [5.6.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.1...v5.6.2
 
