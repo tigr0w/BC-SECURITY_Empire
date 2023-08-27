@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [5.6.3] - 2023-08-27
+-   Updated Starkiller to v2.5.3
 
 -   Added Advanced Reporting Plugin and dependencies (@Cx01N)
 -   Pin linters in the workflow
