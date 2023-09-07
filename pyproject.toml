@@ -54,6 +54,7 @@ python-obfuscator = "^0.0.2"
 pyinstaller = "^5.13.0"
 md2pdf = "^1.0.1"
 tabulate = "^0.9.0"
+stix2 = "^3.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
