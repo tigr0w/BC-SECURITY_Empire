@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.6.4] - 2023-09-08
+
+-   Added Stix2 to dependency list for Advanced Reports (@Cx01N)
+-   Fixed C# module imports for IronPython agent (@Cx01N)
 -   Updated Invoke-DllInjection.ps1 (@Signum21)
+-   Fix nimble install error (@fukusuket)
 
 ## [5.6.3] - 2023-08-27
 
@@ -579,7 +584,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.4...HEAD
+
+[5.6.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.3...v5.6.4
 
 [5.6.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.2...v5.6.3
 

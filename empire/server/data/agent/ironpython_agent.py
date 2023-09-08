@@ -425,8 +425,10 @@ def process_packet(packetType, data, resultID):
         # run csharp module in ironpython using reflection
         # todo: make this a job a thread to be trackable
         try:
+            import time
             import zlib
 
+            import clr
             import System.IO
             from System import Array, Byte, Char, Console, Object, String, Text
             from System.IO import Compression, MemoryStream, StreamWriter
