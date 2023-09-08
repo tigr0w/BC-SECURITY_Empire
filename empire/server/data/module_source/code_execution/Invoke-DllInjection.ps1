@@ -174,11 +174,6 @@ http://www.exploit-monday.com
         $Architecture = '{0}' -f (( $IMAGE_FILE_MACHINE[-1..-2] | % { $_.ToString('X2') } ) -join '')
         $FileStream.Close()
     
-        if (($Architecture -ne '014C') -and ($Architecture -ne '8664'))
-        {
-            Throw 'Invalid PE header or unsupported architecture.'
-        }
-    
         if ($Architecture -eq '014C')
         {
             Write-Output 'X86'
@@ -189,7 +184,7 @@ http://www.exploit-monday.com
         }
         else
         {
-            Write-Output 'OTHER'
+            Throw 'Invalid PE header or unsupported architecture.'
         }
     }
 
@@ -229,7 +224,9 @@ http://www.exploit-monday.com
     switch ($OSArchitecture)
     {
         '32-bit' { $64bitOS = $False }
+        '32 bit' { $64bitOS = $False }
         '64-bit' { $64bitOS = $True }
+        '64 bit' { $64bitOS = $True }
     }
 
     # The address for IsWow64Process will be returned if and only if running on a 64-bit CPU. Otherwise, Get-ProcAddress will return $null.
@@ -253,11 +250,11 @@ http://www.exploit-monday.com
         Throw 'Unable to open process handle.'
     }
 
-    if ($64bitOS) # Only perform theses checks if OS is 64-bit
+    if ($64bitOS) # Only perform these checks if OS is 64-bit
     {
         if ( ($Architecture -ne 'X86') -and ($Architecture -ne 'X64') )
         {
-            Throw 'Only x86 or AMD64 architechtures supported.'
+            Throw 'Only x86 or AMD64 architectures supported.'
         }
 
         # Determine is the process specified is 32 or 64 bit. Assume that it is 64-bit unless determined otherwise.
@@ -321,7 +318,7 @@ http://www.exploit-monday.com
 
     if (!$DllInfo)
     {
-        Throw "Dll did dot inject properly into the victim process."
+        Throw "Dll did not inject properly into the victim process."
     }
 
     Write-Verbose 'Dll injection complete!'
