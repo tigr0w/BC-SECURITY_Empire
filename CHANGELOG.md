@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added Stix2 to dependency list for Advanced Reports (@Cx01N)
 -   Fixed C# module imports for IronPython agent (@Cx01N)
 
+-   Updated Invoke-DllInjection.ps1 (@Signum21)
+
 ## [5.6.3] - 2023-08-27
 
 -   Added Advanced Reporting Plugin and dependencies (@Cx01N)
