@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Updated Invoke-DllInjection.ps1 (@Signum21)
+
 ## [5.6.3] - 2023-08-27
 
 -   Updated Starkiller to v2.5.3
