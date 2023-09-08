@@ -222,6 +222,7 @@ if [ "$answer" != "${answer#[Yy]}" ] ;then
   echo "export PATH=/root/.nimble/bin:$PATH" >> ~/.bashrc
   export PATH=/root/.nimble/bin:$PATH
   SOURCE_MESSAGE=true
+  nimble install -y nimble@0.14.2
   nimble install -y winim zippy nimcrypto
   sudo apt install -y mingw-w64
 else
