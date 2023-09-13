@@ -64,6 +64,7 @@ black = "^23.7.0"
 pytest = "^7.4.0"
 pytest-timeout = "^2.1.0"
 ruff = "^0.0.283"
+pytest-cov = "^4.1.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -101,3 +102,25 @@ extend-exclude = [
 # by default. And the experimental flag still has some issues.
 # fixes right now: https://github.com/psf/black/issues/2188
 extend-ignore = ["E501"]
+
+[tool.coverage.run]
+omit = [
+    "empire/server/data/*",
+    ]
+
+[tool.coverage.report]
+# https://coverage.readthedocs.io/en/latest/config.html
+exclude_also = [
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    ]
+
+ignore_errors = true

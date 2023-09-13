@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Report test coverage on pull requests (@Vinnybod)
+
 ## [5.6.4] - 2023-09-08
 
 -   Added Stix2 to dependency list for Advanced Reports (@Cx01N)
