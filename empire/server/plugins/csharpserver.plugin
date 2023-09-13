@@ -1,11 +1,8 @@
-from __future__ import print_function
-
 import base64
 import logging
 import os
 import socket
 import subprocess
-import time
 
 import empire.server.common.helpers as helpers
 from empire.server.common.plugins import Plugin
@@ -53,8 +50,7 @@ class Plugin(Plugin):
             return results
         except Exception as e:
             log.error(e)
-            self.plugin_service.plugin_socketio_message(self.info["Name"], f"[!] {e}")
-            return False
+            return False, f"[!] {e}"
 
     def get_commands(self):
         return self.commands
@@ -81,15 +77,11 @@ class Plugin(Plugin):
 
         if self.start == "stop":
             if self.status == "ON":
-                self.csharpserver_proc.kill()
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[*] Stopping Empire C# server"
-                )
+                self.shutdown()
                 self.status = "OFF"
+                return "[*] Stopping Empire C# server"
             else:
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Empire C# server is already stopped"
-                )
+                return "[!] Empire C# server is already stopped"
 
         elif self.start == "start":
             if self.status == "OFF":
@@ -103,9 +95,6 @@ class Plugin(Plugin):
                     csharp_cmd = ["dotnet", "build", self.installPath + "/csharp/"]
                     self.csharpserverbuild_proc = subprocess.call(csharp_cmd)
 
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[*] Starting Empire C# server"
-                )
                 csharp_cmd = [
                     "dotnet",
                     self.installPath
@@ -114,21 +103,24 @@ class Plugin(Plugin):
                 self.csharpserver_proc = subprocess.Popen(
                     csharp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
-                self.status = "ON"
-            else:
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Empire C# server is already started"
-                )
 
-            self.thread = helpers.KThread(target=self.thread_csharp_responses, args=())
-            self.thread.daemon = True
-            self.thread.start()
+                self.thread = helpers.KThread(
+                    target=self.thread_csharp_responses, args=()
+                )
+                self.thread.daemon = True
+                self.thread.start()
+
+                self.status = "ON"
+
+                return "[*] Starting Empire C# server"
+            else:
+                return "[!] Empire C# server is already started"
 
     def thread_csharp_responses(self):
         while True:
             output = self.csharpserver_proc.stdout.readline()
             if not output:
-                print(helpers.color("[!] csharpserver output stream closed"))
+                log.warning("csharpserver output stream closed")
                 return
             output = output.rstrip()
             if output:
@@ -142,9 +134,9 @@ class Plugin(Plugin):
 
         # check for confuse bool and convert to string
         if confuse:
-            bytes_confuse = 'true'.encode("UTF-8")
+            bytes_confuse = "true".encode("UTF-8")
         else:
-            bytes_confuse = 'false'.encode("UTF-8")
+            bytes_confuse = "false".encode("UTF-8")
         b64_confuse = base64.b64encode(bytes_confuse)
 
         deliminator = ",".encode("UTF-8")
@@ -171,13 +163,13 @@ class Plugin(Plugin):
         b64_yaml = base64.b64encode(bytes_yaml)
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
-        #compiler only checks for true and ignores otherwise
+        # compiler only checks for true and ignores otherwise
 
         # check for confuse bool and convert to string
         if confuse:
-            bytes_confuse = 'true'.encode("UTF-8")
+            bytes_confuse = "true".encode("UTF-8")
         else:
-            bytes_confuse = 'false'.encode("UTF-8")
+            bytes_confuse = "false".encode("UTF-8")
         b64_confuse = base64.b64encode(bytes_confuse)
 
         deliminator = ",".encode("UTF-8")

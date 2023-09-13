@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Update plugin documentation, update embedded plugins to not abuse notifications (@Vinnybod)
+-   Add additional pre-commit hooks for code cleanup (@Vinnybod)
 -   Report test coverage on pull requests (@Vinnybod)
 
 ## [5.6.4] - 2023-09-08
@@ -83,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added python module for Polkit (CVE-2021-3560) (@Cx01N)
 -   Fixed safecheck error for python module sudo spawn (@Cx01N)
 -   Fixed file error in Invoke-Shellcode (@Cx01N)
--   Removed duplicate modules between languages (@Cx01N) 
+-   Removed duplicate modules between languages (@Cx01N)
     -   Removed .NET Core modules due to errors
     -   Removed redundant C# lateral movement modules
     -   Removed Covenant Mimikatz in favor of Invoke-Mimikatz
@@ -115,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.4.0] - 2023-05-22
 
 -   Remove Starkiller as a submodule, treat it as a normal directory (@Vinnybod)
-    -   Everything should 'just work', but if you have issues after pulling these latest changes, try deleting the Starkiller directory before running the server `rm -r empire/server/api/v2/starkiller`. 
+    -   Everything should 'just work', but if you have issues after pulling these latest changes, try deleting the Starkiller directory before running the server `rm -r empire/server/api/v2/starkiller`.
 -   Some improvements to the release flow after starkiller submodule removal (@Vinnybod)
 
 ## [5.3.0] - 2023-05-17

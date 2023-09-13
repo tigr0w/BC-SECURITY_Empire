@@ -1,8 +1,7 @@
 # Plugin Development
 
-
 ## Execute Function
-The execute function is the entry point for the plugin. It is called when the plugin is executed via the CLI or the API. The execute function is passed the following arguments:
+The execute function is the entry point for the plugin. It is called when the plugin is executed via the API. The execute function is passed the following arguments:
 
 * command - A dict of the command arguments, already parsed and validated by the core Empire code
 * kwargs - Additional arguments that may be passed in by the core Empire code. Right now there are only two.
@@ -11,35 +10,45 @@ The execute function is the entry point for the plugin. It is called when the pl
 
 If the plugin doesn't have `**kwargs`, then no kwargs will be sent. This is to ensure backwards compatibility with plugin pre-5.2.
 
+### Response
+
+Before the plugin's execute function is called, the core Empire code will validate the command arguments. If the arguments are invalid, the API will return a 400 error with the error message.
+
+The execute function can return a String, a Boolean, or a Tuple of (Any, String)
+
+* None - The execution will be considered successful.
+* String - The string will be displayed to the user executing the plugin and the execution will be considered successful.
+* Boolean - If the boolean is True, the execution will be considered successful. If the boolean is False, the execution will be considered failed.
+* Tuple - The tuple must be a tuple of (Any, String). The second value in the tuple represents an error message. The string will be displayed to the user executing the plugin and the execution will be considered failed.
 
 ```python
 def execute(self, command, **kwargs):
-    user = kwargs.get('user', None)
-    db = kwargs.get('db', None)
+    ...
 
-    return "Execution complete"
+    # Successful execution
+    # return None
+    # return "Execution complete"
+    # return True
+
+    # Failed execution
+    # return False, "Execution failed"
 ```
 
+### Custom Exceptions
 
-## Using the database
-If objects are being retrieved from the database, the service functions require a database session be passed in.
-Effectively, this means that you must handle your database session in the plugin. Using the Context Manager syntax
-ensures the db session gets cleaned up when done.
+If the plugin raises a `PluginValidationException`, the API will return a 400 error with the error message.
 
 ```python
-from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import PluginValidationException
 
 def execute(self, command, **kwargs):
-    user = kwargs.get('user', None)
-    db = kwargs.get('db', None)
+    ...
 
-    agents = self.main_menu.agentsv2.get_all(db)
-
-    return "Execution complete"
+    raise PluginValidationException("This is a validation error")
 ```
 
 ## Plugin Tasks
-Plugins can now store tasks. The data model looks pretty close to Agent tasks. This is for agent executions that:
+Plugins can store tasks. The data model looks pretty close to Agent tasks. This is for agent executions that:
 
 1. Want to attach a file result
 2. Need to display a lot of output, where notifications don't quite work
@@ -63,11 +72,67 @@ def execute(self, command, **kwargs):
     )
 
     db.add(plugin_task)
-    db.commit()
 ```
 
-
 For an example of using plugin tasks and attaching files, see the [basic_reporting plugin](https://github.com/BC-SECURITY/Empire/blob/main/server/plugins/basic_reporting/basic_reporting.plugin).
+
+## Notifications
+Notifications are meant for time sensitive information that the user should be aware of.
+In Starkiller, these get displayed immediately, so it is important not to spam them.
+
+To send a notification, use the `plugin_service`.
+
+```python
+def register(self, mainMenu):
+    self.plugin_service = mainMenu.pluginsv2
+
+def execute(self, command, **kwargs):
+    # Do something
+
+    self.plugin_service.plugin_socketio_message(
+        self.info["Name"], "Helo World!"
+    )
+```
+
+## Using the database
+Execute functions and hooks/filters are sent a SQLAlchemy database session. This does not need to be
+opened or closed, as the calling code handles that. The database session is passed in
+as a keyword argument.
+
+```python
+from sqlalchemy.orm import Session
+
+def execute(self, command, **kwargs):
+    user = kwargs.get('user', None)
+    db: Session = kwargs.get('db', None)
+
+    agents = self.main_menu.agentsv2.get_all(db)
+
+    return "Execution complete"
+```
+
+It is important not to close the database session, as it will be used by the calling code and sent to other hooks/filters.
+
+```python
+from sqlalchemy.orm import Session
+from empire.server.core.db import models
+
+def on_agent_checkin(self, db: Session, agent: models.Agent):
+    # Do something
+    pass
+```
+
+When executing code outside of the execute function or hooks/filters, you will need to open a database session.
+This means that you must handle your database session in the plugin. Using the Context Manager syntax
+ensures the db session commits and closes properly.
+```python
+from empire.server.core.db.base import SessionLocal
+
+def do_something():
+    with SessionLocal.begin() as db:
+        # Do the things with the db session
+        pass
+```
 
 ## Event-based functionality (hooks and filters)
 This is outlined in [Hooks and Filters](./hooks-and-filters.md).

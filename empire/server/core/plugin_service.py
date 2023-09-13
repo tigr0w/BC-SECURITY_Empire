@@ -4,7 +4,7 @@ import importlib
 import logging
 import os
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union
 
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, undefer
@@ -16,6 +16,7 @@ from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
+from empire.server.core.exceptions import PluginValidationException
 from empire.server.utils.option_util import validate_options
 
 log = logging.getLogger(__name__)
@@ -112,24 +113,37 @@ class PluginService(object):
         plugin,
         plugin_req: PluginExecutePostRequest,
         user: Optional[models.User] = None,
-    ):
+    ) -> Tuple[Optional[Union[bool, str]], Optional[str]]:
         cleaned_options, err = validate_options(
             plugin.options, plugin_req.options, db, self.download_service
         )
 
         if err:
-            return None, err
+            raise PluginValidationException(err)
 
         try:
-            # As of 5.2, plugins can now be executed with a user_id and db session
-            return plugin.execute(cleaned_options, db=db, user=user), None
+            # As of 5.2, plugins should now be executed with a user_id and db session
+            res = plugin.execute(cleaned_options, db=db, user=user)
+            if isinstance(res, tuple):
+                return res
+            return res, None
         except TypeError:
             log.warning(
                 f"Plugin {plugin.info.get('Name')} does not support db session or user_id, falling back to old method"
             )
+        except PluginValidationException as e:
+            raise e
+        except Exception as e:
+            log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
+            return False, str(e)
 
         try:
-            return plugin.execute(cleaned_options), None
+            res = plugin.execute(cleaned_options)
+            if isinstance(res, tuple):
+                return res
+            return res, None
+        except PluginValidationException as e:
+            raise e
         except Exception as e:
             log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
             return False, str(e)

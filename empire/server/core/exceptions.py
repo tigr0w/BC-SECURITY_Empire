@@ -1,0 +1,2 @@
+class PluginValidationException(Exception):
+    pass
