@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Add avatars to users (@Vinnybod)
 -   Update plugin documentation, update embedded plugins to not abuse notifications (@Vinnybod)
 -   Add additional pre-commit hooks for code cleanup (@Vinnybod)
 -   Report test coverage on pull requests (@Vinnybod)

@@ -141,6 +141,8 @@ class User(Base):
     updated_at = Column(
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
+    avatar = relationship("Download")
+    avatar_id = Column(Integer, ForeignKey("downloads.id"), nullable=True)
 
     def __repr__(self):
         return "<User(username='%s')>" % (self.username)

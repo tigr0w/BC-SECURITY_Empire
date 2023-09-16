@@ -9,6 +9,8 @@ import pytest
 from fastapi import FastAPI
 from starlette.testclient import TestClient
 
+from empire.client.src.utils.data_util import get_random_string
+
 SERVER_CONFIG_LOC = "empire/test/test_server_config.yaml"
 CLIENT_CONFIG_LOC = "empire/test/test_client_config.yaml"
 DEFAULT_ARGV = ["", "server", "--config", SERVER_CONFIG_LOC]
@@ -431,15 +433,18 @@ def credential(client, admin_auth_header):
         json={
             "credtype": "hash",
             "domain": "the-domain",
-            "username": "user",
-            "password": "hunter2",
+            "username": get_random_string(8),
+            "password": get_random_string(8),
             "host": "host1",
         },
     )
 
     yield resp.json()["id"]
 
-    client.delete(f"/api/v2/credentials/{resp.json()['id']}", headers=admin_auth_header)
+    with suppress(Exception):
+        client.delete(
+            f"/api/v2/credentials/{resp.json()['id']}", headers=admin_auth_header
+        )
 
 
 @pytest.fixture(scope="function")

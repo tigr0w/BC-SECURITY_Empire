@@ -73,8 +73,10 @@ def test_download_download(client, admin_auth_header):
     )
 
     assert response.status_code == 200
-    assert response.headers.get("content-disposition").startswith(
+    assert response.headers.get("content-disposition").lower().startswith(
         'attachment; filename="test-upload-2'
+    ) or response.headers.get("content-disposition").lower().startswith(
+        "attachment; filename*=utf-8''test-upload-2"
     )
 
 

@@ -75,7 +75,6 @@ class MainMenu(object):
 
         self.listenertemplatesv2 = ListenerTemplateService(self)
         self.stagertemplatesv2 = StagerTemplateService(self)
-        self.usersv2 = UserService(self)
         self.bypassesv2 = BypassService(self)
         self.obfuscationv2 = ObfuscationService(self)
         self.profilesv2 = ProfileService(self)
@@ -83,6 +82,7 @@ class MainMenu(object):
         self.hostsv2 = HostService(self)
         self.processesv2 = HostProcessService(self)
         self.downloadsv2 = DownloadService(self)
+        self.usersv2 = UserService(self)
         self.listenersv2 = ListenerService(self)
         self.stagersv2 = StagerService(self)
         self.modulesv2 = ModuleService(self)
