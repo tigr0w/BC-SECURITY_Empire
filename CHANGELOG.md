@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.7.1] - 2023-09-25
+
 ## [5.7.0] - 2023-09-17
 
 -   Add avatars to users (@Vinnybod)
@@ -587,7 +589,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.1...HEAD
+
+[5.7.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.0...v5.7.1
 
 [5.7.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.4...v5.7.0
 
