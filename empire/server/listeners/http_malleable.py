@@ -793,11 +793,6 @@ class Listener(object):
                 f'$DefaultResponse = "{ b64DefaultResponse }"',
             )
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace(
-                    "$KillDate,", "$KillDate = '" + str(killDate) + "',"
-                )
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.obfuscate(
                     code,

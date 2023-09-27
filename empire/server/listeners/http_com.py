@@ -455,7 +455,6 @@ class Listener(object):
         jitter = listenerOptions["DefaultJitter"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
         lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-        killDate = listenerOptions["KillDate"]["Value"]
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
@@ -480,11 +479,6 @@ class Listener(object):
                 '$DefaultResponse = "' + str(b64DefaultResponse) + '"',
             )
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace(
-                    "$KillDate,", "$KillDate = '" + str(killDate) + "',"
-                )
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.obfuscate(
                     code,

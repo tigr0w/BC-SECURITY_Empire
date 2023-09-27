@@ -398,6 +398,7 @@ class Listener(object):
         api_token = listenerOptions["APIToken"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
+        killDate = listenerOptions["KillDate"]["Value"]
         stagingFolder = "/%s/%s" % (
             baseFolder,
             listenerOptions["StagingFolder"]["Value"].strip("/"),
@@ -427,6 +428,7 @@ class Listener(object):
                 "staging_folder": stagingFolder,
                 "poll_interval": pollInterval,
                 "working_hours": workingHours,
+                "kill_date": killDate,
                 "staging_key": stagingKey,
             }
 
@@ -540,11 +542,6 @@ class Listener(object):
                 '$DefaultResponse = "' + b64DefaultResponse.decode("UTF-8") + '"',
             )
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace(
-                    "$KillDate,", "$KillDate = '" + str(killDate) + "',"
-                )
             code = code.replace("REPLACE_COMMS", "")
 
             if obfuscate:

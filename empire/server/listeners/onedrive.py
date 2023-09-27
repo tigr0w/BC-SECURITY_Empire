@@ -335,6 +335,7 @@ class Listener(object):
         base_folder = listenerOptions["BaseFolder"]["Value"]
         staging_folder = listenerOptions["StagingFolder"]["Value"]
         working_hours = listenerOptions["WorkingHours"]["Value"]
+        kill_date = listenerOptions["KillDate"]["Value"]
         agent_delay = listenerOptions["DefaultDelay"]["Value"]
 
         if language.lower() == "powershell":
@@ -348,6 +349,7 @@ class Listener(object):
 
             template_options = {
                 "working_hours": working_hours,
+                "kill_date": kill_date,
                 "staging_key": staging_key,
                 "token": token,
                 "refresh_token": refresh_token,
@@ -448,7 +450,6 @@ class Listener(object):
         jitter = listener_options["DefaultJitter"]["Value"]
         profile = listener_options["DefaultProfile"]["Value"]
         lost_limit = listener_options["DefaultLostLimit"]["Value"]
-        kill_date = listener_options["KillDate"]["Value"]
         b64_default_response = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
@@ -475,11 +476,6 @@ class Listener(object):
                 '$DefaultResponse = ""',
                 '$DefaultResponse = "' + b64_default_response.decode("UTF-8") + '"',
             )
-
-            if kill_date != "":
-                agent_code = agent_code.replace(
-                    "$KillDate,", "$KillDate = '" + str(kill_date) + "',"
-                )
 
             agent_code = agent_code.replace("REPLACE_COMMS", "")
 

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 -  Updated Dropbox C2 to use new API endpoints (@Cx01N)
+-  Standardized Kill Date and Working Hours for PowerShell Agents (@Cx01N)
 
 ## [5.7.1] - 2023-09-25
 

