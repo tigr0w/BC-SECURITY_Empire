@@ -1,13 +1,10 @@
-from __future__ import print_function
-
 import logging
-from builtins import object
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "VBS Launcher",
             "Authors": [
@@ -72,18 +69,13 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
         }
 
         self.mainMenu = mainMenu
-
-        for param in params:
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         # extract all of our options

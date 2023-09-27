@@ -1,12 +1,9 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -77,7 +74,7 @@ try:
             print(("[!] Error enumerating Hardware Overview: " + str(e)))
     # Enum Users
     try:
-        process = subprocess.Popen("dscacheutil -q user | grep -A 3 -B 2 -e uid:\ 5'[0-9][0-9]'", stdout=subprocess.PIPE, shell=True)
+        process = subprocess.Popen("dscacheutil -q user | grep -A 3 -B 2 -e uid:\\ 5'[0-9][0-9]'", stdout=subprocess.PIPE, shell=True)
         users = process.communicate()
         users = users[0].split('\\n')
         print("[*] Client Users:")
@@ -172,7 +169,7 @@ try:
         if Debug:
             print("[!] Error enumerating user bash_history: " + str(e))
         pass
-        
+
     # Enum Wireless Connectivity Info
     try:
         process = subprocess.Popen(executable="/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", args="-I", stdout=subprocess.PIPE, shell=True)
@@ -188,7 +185,7 @@ try:
     except Exception as e:
         if Debug:
             print("[!] Error enumerating user Wireless Connectivity Info: " + str(e))
-        pass         
+        pass
 
     # Enum AV / Protection Software
 

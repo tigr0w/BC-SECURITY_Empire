@@ -1,13 +1,10 @@
-from __future__ import print_function
-
 import logging
-from builtins import object
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "regsvr32",
             "Authors": [
@@ -84,7 +81,7 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -93,12 +90,6 @@ class Stager(object):
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
-        for param in params:
-            # parameter format is [Name, Value]
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         # extract all of our options

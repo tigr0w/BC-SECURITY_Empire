@@ -22,7 +22,7 @@ from empire.server.utils.option_util import validate_options
 log = logging.getLogger(__name__)
 
 
-class PluginService(object):
+class PluginService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
         self.download_service = main_menu.downloadsv2
@@ -76,7 +76,7 @@ class PluginService(object):
                 file_path = os.path.join(plugin_path, plugin_name)
                 self.load_plugin(plugin_name, file_path)
 
-        for root, dirs, files in os.walk(plugin_path):
+        for root, _dirs, files in os.walk(plugin_path):
             for filename in files:
                 if not filename.lower().endswith(".plugin"):
                     continue
@@ -99,7 +99,7 @@ class PluginService(object):
         module = loader.load_module()
         plugin_obj = module.Plugin(self.main_menu)
 
-        for key, value in plugin_obj.options.items():
+        for value in plugin_obj.options.values():
             if value.get("SuggestedValues") is None:
                 value["SuggestedValues"] = []
             if value.get("Strict") is None:

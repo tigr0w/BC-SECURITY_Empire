@@ -7,7 +7,6 @@ Contains the Main, Listener, Agents, Agent, and Module
 menu loops.
 
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -45,7 +44,7 @@ VERSION = "5.7.1 BC Security Fork"
 log = logging.getLogger(__name__)
 
 
-class MainMenu(object):
+class MainMenu:
     """
     The main class used by Empire to drive the 'main' menu
     displayed when Empire starts.

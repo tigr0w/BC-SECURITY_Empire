@@ -86,3 +86,17 @@ def ps_convert_to_oneliner(psscript):
 def is_port_in_use(port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
+
+
+def removeprefix(s, prefix):
+    # Remove when we drop Python 3.8 support
+    if s.startswith(prefix):
+        return s[len(prefix) :]
+    return s
+
+
+def removesuffix(s, suffix):
+    # Remove when we drop Python 3.8 support
+    if s.endswith(suffix):
+        return s[: -len(suffix)]
+    return s

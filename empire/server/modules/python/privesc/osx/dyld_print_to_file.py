@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import logging
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
@@ -9,7 +6,7 @@ from empire.server.core.module_models import EmpireModule
 log = logging.getLogger(__name__)
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -51,7 +48,7 @@ try:
 	print("Successfully ran command, you should be getting an elevated stager")
 except:
 	print("[!] Could not execute payload!")
-            
+
 	""".format(
             fullpath=fullPath, filecontents=launcher, filename=fileName
         )

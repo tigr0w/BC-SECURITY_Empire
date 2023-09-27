@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -79,7 +76,7 @@ class Module(object):
         else:
             Cmd = "%COMSPEC% /C start /b " + command.replace('"', '\\"')
 
-        script_end = "Invoke-DCOM -ComputerName %s -Method %s -Command '%s'" % (
+        script_end = "Invoke-DCOM -ComputerName {} -Method {} -Command '{}'".format(
             computer_name,
             method,
             Cmd,

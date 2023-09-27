@@ -86,7 +86,7 @@ def test_load_modules(main_menu_mock, models, db):
         messages = [x.message for x in handler.records if x.levelno >= logging.WARNING]
 
     if messages:
-        pytest.fail("warning messages encountered during testing: {}".format(messages))
+        pytest.fail(f"warning messages encountered during testing: {messages}")
 
     assert len(module_service.modules) > 300
     assert len(db.query(models.Module).all()) > 300

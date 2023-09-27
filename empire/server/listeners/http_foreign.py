@@ -2,7 +2,6 @@ import base64
 import logging
 import os
 import random
-from builtins import object, str
 from textwrap import dedent
 from typing import List, Optional, Tuple
 
@@ -14,8 +13,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "HTTP[S]",
             "Authors": [

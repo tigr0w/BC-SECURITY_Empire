@@ -5,7 +5,7 @@ from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
 from empire.server.core.db import models
 
 
-class CredentialService(object):
+class CredentialService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 

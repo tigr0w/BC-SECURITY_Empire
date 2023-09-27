@@ -58,7 +58,6 @@ HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
             [X...]     - tasking data
 
 """
-from __future__ import absolute_import
 
 import base64
 import logging

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from empire.server.core.db import models
 
 
-class AgentFileService(object):
+class AgentFileService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 

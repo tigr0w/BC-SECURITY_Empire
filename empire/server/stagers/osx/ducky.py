@@ -1,12 +1,8 @@
-from __future__ import print_function
-
-from builtins import object
-
 from empire.server.common import helpers
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "DuckyLauncher",
             "Authors": [
@@ -58,12 +54,6 @@ class Stager(object):
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
-        for param in params:
-            # parameter format is [Name, Value]
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         # extract all of our options

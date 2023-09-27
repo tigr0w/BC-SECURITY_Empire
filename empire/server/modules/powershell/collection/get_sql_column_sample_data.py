@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -37,7 +34,7 @@ class Module(object):
                 obfuscate_command=obfuscation_command,
             )
             try:
-                with open(aux_module_source, "r") as auxSource:
+                with open(aux_module_source) as auxSource:
                     aux_script = auxSource.read()
                     script += " " + aux_script
             except Exception:

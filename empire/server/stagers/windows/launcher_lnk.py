@@ -1,15 +1,12 @@
-from __future__ import print_function
-
 import logging
-from builtins import object
 
 from empire.server.common import pylnk
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "LNKLauncher",
             "Authors": [
@@ -60,12 +57,12 @@ class Stager(object):
             "PowershellPath": {
                 "Description": "Path to powershell.exe",
                 "Required": True,
-                "Value": "C:\windows\system32\WindowsPowershell\\v1.0\powershell.exe",
+                "Value": "C:\\windows\\system32\\WindowsPowershell\\v1.0\\powershell.exe",
             },
             "Icon": {
                 "Description": "Path to LNK icon.",
                 "Required": False,
-                "Value": "C:\program files\windows nt\\accessories\wordpad.exe",
+                "Value": "C:\\program files\\windows nt\\accessories\\wordpad.exe",
             },
             "LNKComment": {
                 "Description": "LNK Comment.",
@@ -90,7 +87,7 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -116,12 +113,6 @@ class Stager(object):
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
-        for param in params:
-            # parameter format is [Name, Value]
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         language = self.options["Language"]["Value"]

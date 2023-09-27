@@ -6,8 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
--  Updated Dropbox C2 to use new API endpoints (@Cx01N)
--  Standardized Kill Date and Working Hours for PowerShell Agents (@Cx01N)
+-   Updated Dropbox C2 to use new API endpoints (@Cx01N)
+-   Standardized Kill Date and Working Hours for PowerShell Agents (@Cx01N)
+-   Apply fixes for future Python 3.12 compatibility (@Vinnybod)
+-   Add additional rulesets to ruff linting (@Vinnybod)
 
 ## [5.7.1] - 2023-09-25
 

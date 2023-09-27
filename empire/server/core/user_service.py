@@ -5,7 +5,7 @@ from empire.server.core.db import models
 from empire.server.core.download_service import DownloadService
 
 
-class UserService(object):
+class UserService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
         self.download_service: DownloadService = main_menu.downloadsv2

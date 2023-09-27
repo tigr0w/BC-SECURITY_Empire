@@ -8,7 +8,7 @@ from empire.client.src.utils.autocomplete_util import (
 from empire.client.src.utils.cli_util import command
 
 
-class Menu(object):
+class Menu:
     """
     Base Menu object.
     """

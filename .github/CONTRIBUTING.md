@@ -46,18 +46,14 @@ The `main` branch in `BC-SECURITY/Empire` automatically syncs.
 ### Code Formatting and Linting
 
 * We are using [psf/black](https://github.com/psf/black) for code formatting.
-    * Black is a Python code formatter that helps to keep the codebase uniform and easy to read
-* We are using [PyCQA/isort](https://github.com/PyCQA/isort)
-    * Isort is a Python utility that sorts and formats imports.
 * We are using [charliermarsh/ruff](https://github.com/charliermarsh/ruff) for linting.
-    * Ruff is a python linter that helps identify common bugs and style issues.
+    * We are using the E, W, F, I, UP, and B rulesets.
 * After implementing your changes:
-    1. run `black .` (or `poetry run black .`).
-    2. run `isort .` (or `poetry run isort .`).
-    3. run `ruff . --fix` (or `poetry run ruff . --fix`). 
+    1. run `ruff . --fix` (or `poetry run ruff . --fix`).
+    2. run `black .` (or `poetry run black .`).
 * The repo is also configured to use [pre-commit](https://pre-commit.com/) to automatically format code.
   * Once you have pre-commit installed, you can run `pre-commit install` to install the pre-commit hooks.
-  * Then pre-commit will execute black, isort, and ruff automatically before committing.
+  * Then pre-commit will execute black and ruff automatically before committing.
 
 ### Tests
 

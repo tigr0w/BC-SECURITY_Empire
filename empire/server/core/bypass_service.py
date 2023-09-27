@@ -12,7 +12,7 @@ from empire.server.utils.data_util import ps_convert_to_oneliner
 log = logging.getLogger(__name__)
 
 
-class BypassService(object):
+class BypassService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -23,7 +23,7 @@ class BypassService(object):
         root_path = f"{self.main_menu.installPath}/bypasses/"
         log.info(f"v2: Loading bypasses from: {root_path}")
 
-        for root, dirs, files in os.walk(root_path):
+        for root, _dirs, files in os.walk(root_path):
             for filename in files:
                 if not filename.lower().endswith(
                     ".yaml"
@@ -37,7 +37,7 @@ class BypassService(object):
                     continue
 
                 try:
-                    with open(file_path, "r") as stream:
+                    with open(file_path) as stream:
                         yaml2 = yaml.safe_load(stream)
                         yaml_bypass = {k: v for k, v in yaml2.items() if v is not None}
 

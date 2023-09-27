@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -69,12 +66,12 @@ class Module(object):
                 launcher_code = launcher.split(" ")[-1]
 
                 if proc_id != "":
-                    script_end += "Invoke-PSInject -ProcID %s -PoshCode %s" % (
+                    script_end += "Invoke-PSInject -ProcID {} -PoshCode {}".format(
                         proc_id,
                         launcher_code,
                     )
                 else:
-                    script_end += "Invoke-PSInject -ProcName %s -PoshCode %s" % (
+                    script_end += "Invoke-PSInject -ProcName {} -PoshCode {}".format(
                         proc_name,
                         launcher_code,
                     )

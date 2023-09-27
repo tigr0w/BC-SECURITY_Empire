@@ -13,9 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: psf/black@23.9.1
-      - uses: isort/isort-action@master
-        with:
-          isort-version: 5.12.0
       - name: Run ruff
         run: |
           pip install ruff==0.0.283
@@ -76,6 +73,7 @@ jobs:
           poetry install
       - name: Run test suite - mysql
         run: |
+            set -o pipefail
             if [ "${{ matrix.python-version }}" = "3.11" ]; then
                 DATABASE_USE=mysql poetry run pytest -v --runslow --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
             else

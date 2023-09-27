@@ -1,14 +1,11 @@
-from __future__ import print_function
-
 import logging
 import os
-from builtins import object
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, main_menu, params=[]):
+class Stager:
+    def __init__(self, main_menu):
         self.info = {
             "Name": "Nim Powershell Launcher",
             "Authors": [
@@ -51,7 +48,7 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -80,11 +77,6 @@ class Stager(object):
         }
 
         self.main_menu = main_menu
-
-        for param in params:
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         # staging options
@@ -173,6 +165,6 @@ class Stager(object):
                 with open(directory, "rb") as f:
                     code = f.read()
                 return code
-            except IOError:
+            except OSError:
                 log.error("Could not read file at " + str(directory))
                 return ""

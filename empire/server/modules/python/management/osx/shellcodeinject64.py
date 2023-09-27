@@ -1,15 +1,12 @@
-from __future__ import print_function
-
 import base64
 import os
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -40,7 +37,7 @@ def run():
 
     STACK_SIZE = 65536
     VM_FLAGS_ANYWHERE = 0x0001
-    VM_PROT_READ = 0x01 
+    VM_PROT_READ = 0x01
     VM_PROT_EXECUTE = 0x04
     x86_THREAD_STATE64 = 4
     KERN_SUCCESS = 0

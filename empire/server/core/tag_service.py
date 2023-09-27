@@ -12,7 +12,7 @@ from empire.server.core.hooks import hooks
 log = logging.getLogger(__name__)
 
 
-class TagService(object):
+class TagService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 

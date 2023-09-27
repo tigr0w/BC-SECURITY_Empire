@@ -67,7 +67,7 @@ async def execute_plugin(
             db, plugin, plugin_req, current_user
         )
     except PluginValidationException as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     if results is False or err:
         raise HTTPException(500, err or "internal plugin error")

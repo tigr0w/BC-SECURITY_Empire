@@ -118,7 +118,7 @@ class CliExitException(BaseException):
     pass
 
 
-class EmpireCli(object):
+class EmpireCli:
     def __init__(self) -> None:
         self.completer = MyCustomCompleter(self)
         self.menus: Dict[Menu] = {
@@ -443,7 +443,7 @@ class EmpireCli(object):
                     args = self.strip(docopt(func.__doc__, argv=cmd_line[1:]))
                     new_args = {}
                     # todo casting for type hinted values?
-                    for key, hint in get_type_hints(func).items():
+                    for key in get_type_hints(func).keys():
                         if key != "return":
                             new_args[key] = args[key]
                     func(**new_args)

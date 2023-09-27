@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -37,9 +34,8 @@ class Module(object):
 
         if cleanup.lower() == "true":
             # the registry command to disable the debugger for Utilman.exe
-            script = (
-                "Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\%s';'%s debugger removed.'"
-                % (target_binary, target_binary)
+            script = "Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\{}';'{} debugger removed.'".format(
+                target_binary, target_binary
             )
             script = main_menu.modulesv2.finalize_module(
                 script=script,

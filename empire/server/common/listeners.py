@@ -1,8 +1,7 @@
 import warnings
-from builtins import object
 
 
-class Listeners(object):
+class Listeners:
     """
     At this point, just a pass-through class to the v2 listener service
     until we get around to more refactoring.
@@ -16,5 +15,6 @@ class Listeners(object):
         warnings.warn(
             "This has been deprecated and may be removed. Use listener_service.get_active_listener_by_name().",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.mainMenu.listenersv2.get_active_listener_by_name(name) is not None

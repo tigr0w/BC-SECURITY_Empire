@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -34,9 +31,11 @@ class Module(object):
         ).generate_comms(listenerOptions=listener_options, language="powershell")
 
         # signal the existing listener that we're switching listeners, and the new comms code
-        script = "Send-Message -Packets $(Encode-Packet -Type 130 -Data '%s');\n%s" % (
-            listener_name,
-            script,
+        script = (
+            "Send-Message -Packets $(Encode-Packet -Type 130 -Data '{}');\n{}".format(
+                listener_name,
+                script,
+            )
         )
 
         script = main_menu.modulesv2.finalize_module(

@@ -17,7 +17,7 @@ from empire.server.utils import data_util
 log = logging.getLogger(__name__)
 
 
-class ObfuscationService(object):
+class ObfuscationService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -120,7 +120,7 @@ class ObfuscationService(object):
             return
 
         try:
-            with open(module_source, "r") as f:
+            with open(module_source) as f:
                 module_code = f.read()
         except Exception:
             log.error(f"Could not read module source path at: {module_source}")
@@ -208,7 +208,7 @@ class ObfuscationService(object):
         paths = []
         # This logic will need to be updated later. Right now we're only doing powershell.
         pattern = "*.ps1"
-        for root, dirs, files in os.walk(empire_config.directories.module_source):
+        for root, _dirs, files in os.walk(empire_config.directories.module_source):
             for filename in fnmatch.filter(files, pattern):
                 paths.append(os.path.join(root, filename))
 
@@ -222,7 +222,7 @@ class ObfuscationService(object):
         paths = []
         # This logic will need to be updated later. Right now we're only doing powershell.
         pattern = "*.ps1"
-        for root, dirs, files in os.walk(
+        for root, _dirs, files in os.walk(
             empire_config.directories.obfuscated_module_source
         ):
             for filename in fnmatch.filter(files, pattern):

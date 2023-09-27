@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -68,9 +65,8 @@ class Module(object):
 
             parts = stager_code.split(" ")
 
-            script = (
-                "Start-Process -NoNewWindow -FilePath \"%s\" -ArgumentList '%s'; 'Agent spawned to %s'"
-                % (parts[0], " ".join(parts[1:]), listener_name)
+            script = "Start-Process -NoNewWindow -FilePath \"{}\" -ArgumentList '{}'; 'Agent spawned to {}'".format(
+                parts[0], " ".join(parts[1:]), listener_name
             )
 
         script = main_menu.modulesv2.finalize_module(

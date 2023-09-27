@@ -455,7 +455,7 @@ def download(client, admin_auth_header):
         files={
             "file": (
                 "test-upload-2.yaml",
-                open("./empire/test/test-upload-2.yaml", "r").read(),
+                open("./empire/test/test-upload-2.yaml").read(),
             )
         },
     )
@@ -468,7 +468,7 @@ def server_config_dict():
     # load the config file
     import yaml
 
-    with open(SERVER_CONFIG_LOC, "r") as f:
+    with open(SERVER_CONFIG_LOC) as f:
         config_dict = yaml.safe_load(f)
 
     yield config_dict
@@ -478,7 +478,7 @@ def server_config_dict():
 def client_config_dict():
     import yaml
 
-    with open(CLIENT_CONFIG_LOC, "r") as f:
+    with open(CLIENT_CONFIG_LOC) as f:
         config_dict = yaml.safe_load(f)
 
     yield config_dict

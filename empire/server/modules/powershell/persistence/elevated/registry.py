@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import os
-from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -9,7 +6,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -85,7 +82,7 @@ class Module(object):
             # read in an external file as the payload and build a
             #   base64 encoded version as encScript
             if os.path.exists(ext_file):
-                f = open(ext_file, "r")
+                f = open(ext_file)
                 fileData = f.read()
                 f.close()
 

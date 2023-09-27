@@ -1,8 +1,5 @@
-from builtins import object
-
-
-class Module(object):
-    def __init__(self, mainMenu, params=[]):
+class Module:
+    def __init__(self, mainMenu):
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
@@ -47,17 +44,6 @@ class Module(object):
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
-        # During instantiation, any settable option parameters
-        #   are passed as an object set to the module and the
-        #   options dictionary is automatically set. This is mostly
-        #   in case options are passed on the command line
-        if params:
-            for param in params:
-                # parameter format is [Name, Value]
-                option, value = param
-                if option in self.options:
-                    self.options[option]["Value"] = value
 
     def generate(self):
         script = """

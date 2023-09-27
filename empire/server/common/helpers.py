@@ -50,7 +50,6 @@ import threading
 import urllib.error
 import urllib.parse
 import urllib.request
-from builtins import range, str
 from datetime import datetime
 
 import netifaces
@@ -265,7 +264,7 @@ def get_dependent_functions(code, functionNames):
             # TODO: fix superflous functions from being added to PowerUp Invoke-AllChecks code...
             dependentFunctions.add(functionName)
 
-    if re.search("\$Netapi32|\$Advapi32|\$Kernel32|\$Wtsapi32", code, re.IGNORECASE):
+    if re.search(r"\$Netapi32|\$Advapi32|\$Kernel32|\$Wtsapi32", code, re.IGNORECASE):
         dependentFunctions |= set(
             ["New-InMemoryModule", "func", "Add-Win32Type", "psenum", "struct"]
         )
@@ -273,7 +272,7 @@ def get_dependent_functions(code, functionNames):
     return dependentFunctions
 
 
-def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=[]):
+def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=None):
     """
     Takes a dictionary of "[functionName] -> functionCode" and a set of functions
     to process, and recursively returns all nested functions that may be required.
@@ -281,7 +280,7 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
     Used to map the dependent functions for nested script dependencies like in
     PowerView.
     """
-
+    resultFunctions = [] if resultFunctions is None else resultFunctions
     if isinstance(functionsToProcess, str):
         functionsToProcess = [functionsToProcess]
 
@@ -629,7 +628,7 @@ def lhost():
                         struct.pack("256s", ifname[:15].encode("UTF-8")),
                     )[20:24]
                 )
-            except IOError:
+            except OSError:
                 return ""
 
     ip = ""
@@ -673,21 +672,21 @@ def color(string, color=None):
             attr.append("33")
         elif color.lower() == "blue":
             attr.append("34")
-        return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
 
     else:
         if string.strip().startswith("[!]"):
             attr.append("31")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
         elif string.strip().startswith("[+]"):
             attr.append("32")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
         elif string.strip().startswith("[*]"):
             attr.append("34")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
         elif string.strip().startswith("[>]"):
             attr.append("33")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
         else:
             return string
 
@@ -727,8 +726,8 @@ def uniquify_tuples(tuples):
     return [
         item
         for item in tuples
-        if "%s%s%s%s" % (item[0], item[1], item[2], item[3]) not in seen
-        and not seen.add("%s%s%s%s" % (item[0], item[1], item[2], item[3]))
+        if f"{item[0]}{item[1]}{item[2]}{item[3]}" not in seen
+        and not seen.add(f"{item[0]}{item[1]}{item[2]}{item[3]}")
     ]
 
 

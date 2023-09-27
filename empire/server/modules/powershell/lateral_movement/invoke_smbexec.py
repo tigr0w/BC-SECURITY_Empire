@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -80,9 +77,8 @@ class Module(object):
         else:
             Cmd = "%COMSPEC% /C start /b " + command
 
-        script_end = (
-            "Invoke-SMBExec -Target %s -Username %s -Domain %s -Hash %s -Command '%s'"
-            % (computer_name, user_name, domain, ntlm_hash, Cmd)
+        script_end = "Invoke-SMBExec -Target {} -Username {} -Domain {} -Hash {} -Command '{}'".format(
+            computer_name, user_name, domain, ntlm_hash, Cmd
         )
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (

@@ -97,7 +97,7 @@ class EmpireConfig(BaseModel):
 
 def set_yaml(location: str):
     try:
-        with open(location, "r") as stream:
+        with open(location) as stream:
             return yaml.safe_load(stream)
     except yaml.YAMLError as exc:
         print(exc)

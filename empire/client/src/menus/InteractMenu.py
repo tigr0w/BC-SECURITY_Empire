@@ -495,7 +495,7 @@ class InteractMenu(Menu):
 
         # TODO Still haven't figured out other data types. Right now everything is a string.
         #  Which I think is how it is in the old cli
-        for key, value in module_options.items():
+        for key in module_options.keys():
             if key in shortcut.get_dynamic_param_names():
                 # Grab filename, send to server, and save a copy off in the downloads folder
                 if key in ["File"]:
@@ -569,7 +569,7 @@ class InteractMenu(Menu):
         post_body = {}
         post_body["options"] = {}
 
-        for key, value in module_options.items():
+        for key in module_options.keys():
             post_body["options"][key] = str(module_options[key]["value"])
 
         post_body["module_id"] = "csharp_vnc_vncserver"

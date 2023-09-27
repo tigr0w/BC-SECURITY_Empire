@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 
 
 # https://yzhong-cs.medium.com/serialize-and-deserialize-complex-json-in-python-205ecc636caa
-class ShortcutParam(object):
+class ShortcutParam:
     def __init__(self, name: str, dynamic: bool = False, value: Optional[str] = ""):
         self.name = name
         self.dynamic = dynamic
@@ -18,7 +18,7 @@ class ShortcutParam(object):
         return cls(**data)
 
 
-class Shortcut(object):
+class Shortcut:
     def __init__(
         self,
         name: str,

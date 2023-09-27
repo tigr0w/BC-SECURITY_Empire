@@ -6,7 +6,6 @@ import random
 import ssl
 import sys
 import time
-from builtins import str
 from textwrap import dedent
 from typing import List, Optional, Tuple
 
@@ -24,8 +23,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "HTTP[S]",
             "Authors": [
@@ -141,7 +140,7 @@ class Listener(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -187,7 +186,7 @@ class Listener(object):
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return open(f"{self.template_dir }/default.html", "r").read()
+        return open(f"{self.template_dir }/default.html").read()
 
     def validate_options(self) -> Tuple[bool, Optional[str]]:
         """

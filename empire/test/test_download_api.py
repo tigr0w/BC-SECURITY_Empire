@@ -17,7 +17,7 @@ def test_create_download(client, admin_auth_header):
         files={
             "file": (
                 "test-upload-2.yaml",
-                open("./empire/test/test-upload-2.yaml", "r").read(),
+                open("./empire/test/test-upload-2.yaml").read(),
             )
         },
     )
@@ -34,7 +34,7 @@ def test_create_download_appends_number_if_already_exists(client, admin_auth_hea
         files={
             "file": (
                 "test-upload-2.yaml",
-                open("./empire/test/test-upload-2.yaml", "r").read(),
+                open("./empire/test/test-upload-2.yaml").read(),
             )
         },
     )
@@ -48,7 +48,7 @@ def test_create_download_appends_number_if_already_exists(client, admin_auth_hea
         files={
             "file": (
                 "test-upload-2.yaml",
-                open("./empire/test/test-upload-2.yaml", "r").read(),
+                open("./empire/test/test-upload-2.yaml").read(),
             )
         },
     )

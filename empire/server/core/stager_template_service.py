@@ -11,7 +11,7 @@ from empire.server.core.db.base import SessionLocal
 log = logging.getLogger(__name__)
 
 
-class StagerTemplateService(object):
+class StagerTemplateService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -24,7 +24,7 @@ class StagerTemplateService(object):
 
     def new_instance(self, template: str):
         instance = type(self._loaded_stager_templates[template])(self.main_menu)
-        for key, value in instance.options.items():
+        for value in instance.options.values():
             if value.get("SuggestedValues") is None:
                 value["SuggestedValues"] = []
             if value.get("Strict") is None:
@@ -49,7 +49,7 @@ class StagerTemplateService(object):
 
         log.info(f"v2: Loading stager templates from: {root_path}")
 
-        for root, dirs, files in os.walk(root_path):
+        for root, _dirs, files in os.walk(root_path):
             for filename in fnmatch.filter(files, pattern):
                 file_path = os.path.join(root, filename)
 
@@ -65,8 +65,8 @@ class StagerTemplateService(object):
                 mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(mod)
 
-                stager = mod.Stager(self.main_menu, [])
-                for key, value in stager.options.items():
+                stager = mod.Stager(self.main_menu)
+                for value in stager.options.values():
                     if value.get("SuggestedValues") is None:
                         value["SuggestedValues"] = []
                     if value.get("Strict") is None:
