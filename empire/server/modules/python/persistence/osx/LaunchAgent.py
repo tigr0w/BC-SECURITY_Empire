@@ -2,7 +2,7 @@ import base64
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.data_util import removeprefix, removesuffix
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 
 class Module:

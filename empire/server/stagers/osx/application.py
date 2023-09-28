@@ -1,6 +1,6 @@
 import logging
 
-from empire.server.utils.data_util import removeprefix, removesuffix
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 log = logging.getLogger(__name__)
 
