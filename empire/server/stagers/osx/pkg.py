@@ -1,5 +1,5 @@
 from empire.server.common import helpers
-from empire.server.utils.data_util import removeprefix, removesuffix
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 
 class Stager:
