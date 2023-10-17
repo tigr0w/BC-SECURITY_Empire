@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.7.3] - 2023-10-17
+
 -   Fixed global obfuscation not working on modules (@Cx01N)
 -   Added bypass module in PowerShell to run bypasses after agent is staged (@Cx01N)
 -   Fixed IronPython and Python stagers not getting obfuscation applied (@Cx01N)
@@ -600,7 +602,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.3...HEAD
+
+[5.7.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.2...v5.7.3
 
 [5.7.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.1...v5.7.2
 
