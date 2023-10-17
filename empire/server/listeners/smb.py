@@ -208,7 +208,9 @@ class Listener:
                 launcherBase += listener_util.python_extract_stager(stagingKey)
 
                 if obfuscate:
-                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(launcherBase)
+                    launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
+                        launcherBase
+                    )
                     launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
                         launcherBase
                     )

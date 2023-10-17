@@ -356,7 +356,7 @@ class Listener:
 
                 if obfuscate:
                     launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
-                        launcherBase, obfuscation_command=obfuscation_command
+                        launcherBase
                     )
                     launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
                         launcherBase

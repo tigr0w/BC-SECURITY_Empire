@@ -148,7 +148,7 @@ class Stager:
 
         if language.lower() == "powershell":
             directory = self.mainMenu.stagers.generate_powershell_exe(
-                launcher, dot_net_version=dot_net_version
+                launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
                 code = f.read()
@@ -162,7 +162,7 @@ class Stager:
 
         elif language.lower() == "ironpython":
             directory = self.mainMenu.stagers.generate_python_exe(
-                launcher, dot_net_version=dot_net_version
+                launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
                 code = f.read()

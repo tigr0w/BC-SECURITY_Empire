@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 import python_obfuscator
-from python_obfuscator.techniques import one_liner
+from python_obfuscator.techniques import one_liner, variable_renamer
 from sqlalchemy.orm import Session
 
 from empire.server.core.config import empire_config
@@ -247,6 +247,8 @@ class ObfuscationService:
         Obfuscate Python scripts using python-obfuscator
         """
         obfuscator = python_obfuscator.obfuscator()
-        obfuscated_code = obfuscator.obfuscate(module_source, [one_liner])
+        obfuscated_code = obfuscator.obfuscate(
+            module_source, [one_liner, variable_renamer]
+        )
 
         return obfuscated_code
