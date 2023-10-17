@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--   Fixed IronPython and Python stagers not getting obfuscation applied (@Cx01n)
+-   Fixed global obfuscation not working on modules (@Cx01N)
+-   Added bypass module in PowerShell to run bypasses after agent is staged (@Cx01N)
+-   Fixed IronPython and Python stagers not getting obfuscation applied (@Cx01N)
 
 ## [5.7.2] - 2023-09-28
 

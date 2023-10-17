@@ -602,11 +602,9 @@ class ModuleService:
             module_name = script_end.lstrip().split(" ")[0]
             script = helpers.generate_dynamic_powershell_script(script, module_name)
 
-        if obfuscate:
-            script_end = self.obfuscation_service.obfuscate(
-                script_end, obfuscation_command
-            )
         script += script_end
+        if obfuscate:
+            script = self.obfuscation_service.obfuscate(script, obfuscation_command)
         script = self.obfuscation_service.obfuscate_keywords(script)
         return script
 
