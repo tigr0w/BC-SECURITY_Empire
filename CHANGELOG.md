@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.6.3] - 2023-08-27
 
+-   Updated Starkiller to v2.5.3
 -   Added Advanced Reporting Plugin and dependencies (@Cx01N)
 -   Pin linters in the workflow
 -   Catch error when starting up database that was seeded by an older version of Empire (@Vinnybod)
@@ -73,9 +74,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fix changelog link in README (@theguly)
 
 ## [5.5.4] - 2023-07-20
+-   Updated Starkiller to v2.4.3
 
 ## [5.5.3] - 2023-07-20
 
+-   Updated Starkiller to v2.4.2
 -   Updated restip message to show IP address on server (@Cx01N)
 -   Fixed onedrive taskings for powershell (@Cx01N)
 -   Update pyyaml to 6.0.1 to avoid build issue from cython (@Vinnybod)
@@ -125,6 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.4.2] - 2023-06-07
 
+-   Updated Starkiller to v2.3.2
 -   Fixed python modules not running properly (Cx01N)
 -   Updated python multi_socks to run with Python 3 (Cx01N)
 
@@ -148,6 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.2.2] - 2023-04-30
 
+-   Updated Starkiller to v2.2.0
 -   Dependency upgrades (@Vinnybod)
 
 ## [5.2.1] - 2023-04-30
@@ -173,6 +178,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.1.2] - 2023-03-29
 
+-   Updated Starkiller to v2.1.1
 -   Removed thread from IronPython agent (@Hubbl3)
 -   Fixed foreign listener issue with cookies (@Hubbl3)
 -   Fixed error message handling for port forward pivot (@Cx01N)
@@ -205,6 +211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.0.3] - 2023-02-20
 
+-   Updated Starkiller to v2.0.5
 -   Fix Invoke-Kerberoast with etype 17 or 18 (@AdrianVollmer)
 -   Add 3.11 support, bump Dockerfile to 3.11, bump Debian install to 3.8.16 (@Cx01N)
 -   Update the GitHub actions to remove usages of deprecated ::set-output function (@Vinnybod)
