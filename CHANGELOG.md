@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [5.7.3] - 2023-10-17
--   Updated Starkiller to v2.6.1
 
+-   Updated Starkiller to v2.6.1
 -   Fixed global obfuscation not working on modules (@Cx01N)
 -   Added bypass module in PowerShell to run bypasses after agent is staged (@Cx01N)
 -   Fixed IronPython and Python stagers not getting obfuscation applied (@Cx01N)
