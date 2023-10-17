@@ -85,7 +85,7 @@ class UseStagerMenu(UseMenu):
         # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
         temp_record = {}
-        for key, value in self.record_options.items():
+        for key in self.record_options.keys():
             post_body[key] = self.record_options[key]["value"]
 
         temp_record["options"] = post_body

@@ -5,13 +5,7 @@ from typing import List
 from pydantic import BaseModel
 
 from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
-
-
-def removeprefix(value: str, prefix: str) -> str:
-    if value.startswith(prefix):
-        return value[len(prefix) :]
-    else:
-        return value[:]
+from empire.server.utils.string_util import removeprefix
 
 
 def domain_to_dto_download(download):

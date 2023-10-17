@@ -134,7 +134,7 @@ class UseMenu(Menu):
             value = value[1:-1]
         if key in self.record_options:
             self.record_options[key]["value"] = value
-            log.info("Set %s to %s" % (key, value))
+            log.info(f"Set {key} to {value}")
         else:
             log.error(f"Could not find field: {key}")
 

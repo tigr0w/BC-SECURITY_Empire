@@ -1,10 +1,9 @@
-from builtins import object
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -40,8 +39,8 @@ print(os.popen('osascript -e \\\'display dialog "Software Update requires that y
                 # osascript prompt for the specific application
                 script = """
 import os
-print(os.popen('osascript -e \\\'tell app "%s" to activate\\\' -e \\\'tell app "%s" to display dialog "%s requires your password to continue." & return  default answer "" with icon 1 with hidden answer with title "%s Alert"\\\'').read())
-""" % (
+print(os.popen('osascript -e \\\'tell app "{}" to activate\\\' -e \\\'tell app "{}" to display dialog "{} requires your password to continue." & return  default answer "" with icon 1 with hidden answer with title "{} Alert"\\\'').read())
+""".format(
                     appName,
                     appName,
                     appName,

@@ -1,6 +1,3 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict, Optional, Tuple
 
 from empire.server.common.empire import MainMenu
@@ -8,7 +5,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     """
     STOP. In most cases you will not need this file.
     Take a look at the wiki to see if you truly need this.

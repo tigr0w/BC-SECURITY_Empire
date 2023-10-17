@@ -42,7 +42,7 @@ def python_safe_checks():
     Check for Little Snitch and exits if found.
     """
     return dedent(
-        """
+        r"""
     import re, subprocess;
     cmd = "ps -ef | grep Little\ Snitch | grep -v grep"
     ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

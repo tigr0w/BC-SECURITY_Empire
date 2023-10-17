@@ -11,7 +11,9 @@ Hooks and filters are a function that a developer can implement that will be cal
 A minimal hook implementation.
 
 ```python
-from empire.server.common.hooks import hooks
+from sqlalchemy.orm import Session
+from empire.server.core.hooks import hooks
+from empire.server.core.db import models
 
 def my_hook(db: Session, agent: models.Agent):
     """
@@ -26,15 +28,17 @@ hooks.register_hook(hooks.AFTER_AGENT_CHECKIN_HOOK, 'checkin_logger_hook', my_ho
 A minimal filter implementation.
 
 ```python
-from empire.server.common.hooks import hooks
+from sqlalchemy.orm import Session
+from empire.server.core.hooks import hooks
+from empire.server.core.db import models
 
-def my_filter(db: Session, tasking: models.Tasking):
+def my_filter(db: Session, task: models.AgentTask):
     """
     Reverses the output string of a tasking.
     """
-    tasking.output = tasking.output[::-1]
+    task.output = task.output[::-1]
 
-    return tasking
+    return task
 
 
 hooks.register_filter(hooks.BEFORE_TASKING_RESULT_FILTER, 'reverse_filter', my_filter)

@@ -7,7 +7,6 @@ Contains the Main, Listener, Agents, Agent, and Module
 menu loops.
 
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -40,12 +39,12 @@ from empire.server.utils import data_util
 
 from . import agents, credentials, listeners, stagers
 
-VERSION = "5.6.4 BC Security Fork"
+VERSION = "5.7.3 BC Security Fork"
 
 log = logging.getLogger(__name__)
 
 
-class MainMenu(object):
+class MainMenu:
     """
     The main class used by Empire to drive the 'main' menu
     displayed when Empire starts.
@@ -75,7 +74,6 @@ class MainMenu(object):
 
         self.listenertemplatesv2 = ListenerTemplateService(self)
         self.stagertemplatesv2 = StagerTemplateService(self)
-        self.usersv2 = UserService(self)
         self.bypassesv2 = BypassService(self)
         self.obfuscationv2 = ObfuscationService(self)
         self.profilesv2 = ProfileService(self)
@@ -83,6 +81,7 @@ class MainMenu(object):
         self.hostsv2 = HostService(self)
         self.processesv2 = HostProcessService(self)
         self.downloadsv2 = DownloadService(self)
+        self.usersv2 = UserService(self)
         self.listenersv2 = ListenerService(self)
         self.stagersv2 = StagerService(self)
         self.modulesv2 = ModuleService(self)

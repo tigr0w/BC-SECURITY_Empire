@@ -42,7 +42,6 @@ import string
 import threading
 import time
 import warnings
-from builtins import object, str
 from pathlib import Path
 from typing import Dict
 
@@ -65,7 +64,7 @@ from . import encryption, helpers, packets
 log = logging.getLogger(__name__)
 
 
-class Agents(object):
+class Agents:
     """
     Main class that contains agent communication functionality, including key
     negotiation in process_get() and process_post().
@@ -138,6 +137,7 @@ class Agents(object):
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return sessionID in self.agents
 
@@ -436,6 +436,7 @@ class Agents(object):
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         with SessionLocal() as db:
             elevated = (
@@ -463,6 +464,7 @@ class Agents(object):
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         nonce = (
             db.query(models.Agent.nonce)
@@ -471,7 +473,7 @@ class Agents(object):
         )
 
         if nonce and nonce is not None:
-            if type(nonce) is str:
+            if isinstance(nonce, str):
                 return nonce
             else:
                 return nonce[0]
@@ -484,6 +486,7 @@ class Agents(object):
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         with SessionLocal() as db:
             # see if we were passed a name instead of an ID
@@ -508,10 +511,11 @@ class Agents(object):
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         # db is optional for backwards compatibility until this function is phased out
         with db or SessionLocal() as db:
-            agent = db.query(models.Agent).filter((models.Agent.name == name)).first()
+            agent = db.query(models.Agent).filter(models.Agent.name == name).first()
 
         if agent:
             return agent.session_id
@@ -526,6 +530,7 @@ class Agents(object):
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         with SessionLocal() as db:
             agents = (
@@ -544,6 +549,7 @@ class Agents(object):
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         with SessionLocal() as db:
             results = db.query(models.Config.autorun_command).all()
@@ -717,6 +723,7 @@ class Agents(object):
             "This has been deprecated and may be removed."
             "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         try:
             with SessionLocal.begin() as db:
@@ -871,7 +878,7 @@ class Agents(object):
                         )
 
                         client_session_key = agent.session_key
-                        data = "%s%s" % (nonce, client_session_key)
+                        data = f"{nonce}{client_session_key}"
 
                         data = data.encode("ascii", "ignore")
 
@@ -937,7 +944,7 @@ class Agents(object):
                     )
 
                     # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
-                    data = "%s%s" % (nonce, serverPub.publicKey)
+                    data = f"{nonce}{serverPub.publicKey}"
                     encrypted_msg = encryption.aes_encrypt_then_hmac(stagingKey, data)
                     # TODO: wrap this in a routing packet?
 
@@ -1007,7 +1014,7 @@ class Agents(object):
                 return f"Error: Exception in agents.handle_agent_staging() for {sessionID} : {e}"
 
             if domainname and domainname.strip() != "":
-                username = "%s\\%s" % (domainname, username)
+                username = f"{domainname}\\{username}"
 
             # update the agent with this new information
             self.update_agent_sysinfo_db(
@@ -1030,16 +1037,13 @@ class Agents(object):
 
             slack_webhook_url = listenerOptions["SlackURL"]["Value"]
             if slack_webhook_url != "":
-                slack_text = (
-                    ":biohazard_sign: NEW AGENT :biohazard_sign:\r\n```Machine Name: %s\r\nInternal IP: %s\r\nExternal IP: %s\r\nUser: %s\r\nOS Version: %s\r\nAgent ID: %s```"
-                    % (
-                        hostname,
-                        internal_ip,
-                        external_ip,
-                        username,
-                        os_details,
-                        sessionID,
-                    )
+                slack_text = ":biohazard_sign: NEW AGENT :biohazard_sign:\r\n```Machine Name: {}\r\nInternal IP: {}\r\nExternal IP: {}\r\nUser: {}\r\nOS Version: {}\r\nAgent ID: {}```".format(
+                    hostname,
+                    internal_ip,
+                    external_ip,
+                    username,
+                    os_details,
+                    sessionID,
                 )
                 helpers.slackMessage(slack_webhook_url, slack_text)
 
@@ -1271,10 +1275,10 @@ class Agents(object):
             # process each result packet
             for (
                 responseName,
-                totalPacket,
-                packetNum,
+                _totalPacket,
+                _packetNum,
                 taskID,
-                length,
+                _length,
                 data,
             ) in responsePackets:
                 # process the agent's response
@@ -1397,7 +1401,7 @@ class Agents(object):
                     high_integrity = 0
 
                 # username = str(domainname)+"\\"+str(username)
-                username = "%s\\%s" % (domainname, username)
+                username = f"{domainname}\\{username}"
 
                 # update the agent with this new information
                 self.update_agent_sysinfo_db(
@@ -1416,21 +1420,21 @@ class Agents(object):
                     architecture=architecture,
                 )
 
-                sysinfo = "{0: <18}".format("Listener:") + listener + "\n"
-                sysinfo += "{0: <18}".format("Internal IP:") + internal_ip + "\n"
-                sysinfo += "{0: <18}".format("Username:") + username + "\n"
-                sysinfo += "{0: <18}".format("Hostname:") + hostname + "\n"
-                sysinfo += "{0: <18}".format("OS:") + os_details + "\n"
+                sysinfo = "{: <18}".format("Listener:") + listener + "\n"
+                sysinfo += "{: <18}".format("Internal IP:") + internal_ip + "\n"
+                sysinfo += "{: <18}".format("Username:") + username + "\n"
+                sysinfo += "{: <18}".format("Hostname:") + hostname + "\n"
+                sysinfo += "{: <18}".format("OS:") + os_details + "\n"
                 sysinfo += (
-                    "{0: <18}".format("High Integrity:") + str(high_integrity) + "\n"
+                    "{: <18}".format("High Integrity:") + str(high_integrity) + "\n"
                 )
-                sysinfo += "{0: <18}".format("Process Name:") + process_name + "\n"
-                sysinfo += "{0: <18}".format("Process ID:") + process_id + "\n"
-                sysinfo += "{0: <18}".format("Language:") + language + "\n"
+                sysinfo += "{: <18}".format("Process Name:") + process_name + "\n"
+                sysinfo += "{: <18}".format("Process ID:") + process_id + "\n"
+                sysinfo += "{: <18}".format("Language:") + language + "\n"
                 sysinfo += (
-                    "{0: <18}".format("Language Version:") + language_version + "\n"
+                    "{: <18}".format("Language Version:") + language_version + "\n"
                 )
-                sysinfo += "{0: <18}".format("Architecture:") + architecture + "\n"
+                sysinfo += "{: <18}".format("Architecture:") + architecture + "\n"
 
                 # update the agent log
                 self.save_agent_log(session_id, sysinfo)
@@ -1529,7 +1533,7 @@ class Agents(object):
                         append=True,
                     )
                 # update the agent log
-                msg = "file download: %s, part: %s" % (path, index)
+                msg = f"file download: {path}, part: {index}"
                 self.save_agent_log(session_id, msg)
 
         elif response_name == "TASK_DIR_LIST":
@@ -1612,7 +1616,7 @@ class Agents(object):
             file_data = helpers.decode_base64(data[20:])
 
             # save the file off to the appropriate path
-            save_path = "%s/%s_%s.%s" % (
+            save_path = "{}/{}_{}.{}".format(
                 prefix,
                 agent.hostname,
                 helpers.get_file_datetime(),
@@ -1740,7 +1744,7 @@ class Agents(object):
             file_data = helpers.decode_base64(data[20:])
 
             # save the file off to the appropriate path
-            save_path = "%s/%s_%s.%s" % (
+            save_path = "{}/{}_{}.{}".format(
                 prefix,
                 agent.hostname,
                 helpers.get_file_datetime(),
@@ -1796,6 +1800,14 @@ class Agents(object):
             log.info(message)
 
         else:
-            log.warning("Unknown response %s from %s" % (response_name, session_id))
+            log.warning(f"Unknown response {response_name} from {session_id}")
+
+        # Not sure why, but for Python agents these are bytes initially, but
+        # after storing in the database they're strings. So we need to convert
+        # so socketio and other hooks get the right data type.
+        if isinstance(tasking.output, bytes):
+            tasking.output = tasking.output.decode("UTF-8")
+        if isinstance(tasking.original_output, bytes):
+            tasking.original_output = tasking.original_output.decode("UTF-8")
 
         hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, db, tasking)

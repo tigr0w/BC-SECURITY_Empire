@@ -26,7 +26,6 @@ import os
 import random
 import string
 import sys
-from builtins import bytes, chr, object, range, str
 from xml.dom import minidom
 
 from Crypto.Cipher import PKCS1_v1_5
@@ -211,7 +210,7 @@ def generate_aes_key():
     rng = random.SystemRandom()
     return "".join(
         rng.sample(
-            string.ascii_letters + string.digits + "!#$%&()*+,-./:;<=>?@[\]^_`{|}~", 32
+            string.ascii_letters + string.digits + r"!#$%&()*+,-./:;<=>?@[\]^_`{|}~", 32
         )
     )
 
@@ -246,7 +245,7 @@ def rc4(key, data):
     return tmp
 
 
-class DiffieHellman(object):
+class DiffieHellman:
     """
     A reference implementation of the Diffie-Hellman protocol.
     By default, this class uses the 6144-bit MODP Group (Group 17) from RFC 3526.

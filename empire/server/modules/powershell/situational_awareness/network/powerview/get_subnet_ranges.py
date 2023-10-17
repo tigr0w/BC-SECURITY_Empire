@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import pathlib
-from builtins import object, str
 from typing import Dict
 
 from empire.server.common.empire import MainMenu
@@ -9,7 +6,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu: MainMenu,
@@ -33,7 +30,7 @@ class Module(object):
                 module_source = obfuscated_module_source
 
         try:
-            with open(module_source, "r") as f:
+            with open(module_source) as f:
                 module_code = f.read()
         except Exception:
             return handle_error_message(

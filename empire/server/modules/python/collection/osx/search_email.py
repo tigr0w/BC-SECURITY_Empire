@@ -1,10 +1,9 @@
-from builtins import object
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,

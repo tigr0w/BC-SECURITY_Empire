@@ -5,7 +5,7 @@ from typing import Callable, Dict
 log = logging.getLogger(__name__)
 
 
-class Hooks(object):
+class Hooks:
     """
     Hooks are currently a *Beta feature*. The methods, event names, and callback arguments are subject to change until
     it is not a beta feature.

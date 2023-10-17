@@ -51,7 +51,7 @@ class UsePluginMenu(UseMenu):
         Print the plugin results for all the results that have been received for this plugin.
         """
         plugin_results = state.cached_plugin_results.get(self.selected, {})
-        for key, value in plugin_results.items():
+        for value in plugin_results.values():
             print(print_util.color(value))
 
         state.cached_plugin_results.get(self.selected, {}).clear()
@@ -77,7 +77,7 @@ class UsePluginMenu(UseMenu):
         """
         post_body = {}
         post_body["options"] = {}
-        for key, value in self.record_options.items():
+        for key in self.record_options.keys():
             post_body["options"][key] = self.record_options[key]["value"]
 
         response = state.execute_plugin(self.record["id"], post_body)

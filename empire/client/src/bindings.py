@@ -43,6 +43,6 @@ def do_konami(event):
 
     color_depth = ColorDepth.DEPTH_8_BIT
     with ProgressBar(formatters=custom_formatters, color_depth=color_depth) as pb:
-        for i in pb(range(1000), label=""):
+        for _i in pb(range(1000), label=""):
             time.sleep(0.001)
     print("Downloaded L33t Hax...")

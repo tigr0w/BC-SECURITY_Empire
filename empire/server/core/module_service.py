@@ -26,7 +26,7 @@ from empire.server.utils.option_util import convert_module_options, validate_opt
 log = logging.getLogger(__name__)
 
 
-class ModuleService(object):
+class ModuleService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
         self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
@@ -295,7 +295,7 @@ class ModuleService(object):
                 empire_config.directories.module_source,
                 module.script_path,
             )
-            with open(script_path, "r") as stream:
+            with open(script_path) as stream:
                 script = stream.read()
         else:
             script = module.script
@@ -443,7 +443,7 @@ class ModuleService(object):
 
         log.info(f"v2: Loading modules from: {root_path}")
 
-        for root, dirs, files in os.walk(root_path):
+        for root, _dirs, files in os.walk(root_path):
             for filename in files:
                 if not filename.lower().endswith(
                     ".yaml"
@@ -458,7 +458,7 @@ class ModuleService(object):
 
                 # instantiate the module and save it to the internal cache
                 try:
-                    with open(file_path, "r") as stream:
+                    with open(file_path) as stream:
                         if file_path.lower().endswith(".covenant.yaml"):
                             yaml2 = yaml.safe_load(stream)
                             for covenant_module in yaml2:
@@ -563,7 +563,7 @@ class ModuleService(object):
                 module_path = os.path.join(obfuscated_module_source, module_name)
                 # If pre-obfuscated module exists then return code
                 if os.path.exists(module_path):
-                    with open(module_path, "r") as f:
+                    with open(module_path) as f:
                         obfuscated_module_code = f.read()
                     return obfuscated_module_code, None
 
@@ -571,7 +571,7 @@ class ModuleService(object):
                 else:
                     module_source = empire_config.directories.module_source
                     module_path = os.path.join(module_source, module_name)
-                    with open(module_path, "r") as f:
+                    with open(module_path) as f:
                         module_code = f.read()
                     obfuscated_module_code = self.obfuscation_service.obfuscate(
                         module_code, obfuscate_command
@@ -582,7 +582,7 @@ class ModuleService(object):
             else:
                 module_source = empire_config.directories.module_source
                 module_path = os.path.join(module_source, module_name)
-                with open(module_path, "r") as f:
+                with open(module_path) as f:
                     module_code = f.read()
                 return module_code, None
         except Exception:
@@ -602,11 +602,9 @@ class ModuleService(object):
             module_name = script_end.lstrip().split(" ")[0]
             script = helpers.generate_dynamic_powershell_script(script, module_name)
 
-        if obfuscate:
-            script_end = self.obfuscation_service.obfuscate(
-                script_end, obfuscation_command
-            )
         script += script_end
+        if obfuscate:
+            script = self.obfuscation_service.obfuscate(script, obfuscation_command)
         script = self.obfuscation_service.obfuscate_keywords(script)
         return script
 

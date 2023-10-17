@@ -1,10 +1,13 @@
 from __future__ import print_function
 
+import logging
 import socket
 
 import empire.server.common.helpers as helpers
 from empire.server.common.plugins import Plugin
 from empire.server.core.plugin_service import PluginService
+
+log = logging.getLogger(__name__)
 
 
 class Plugin(Plugin):
@@ -123,9 +126,8 @@ class Plugin(Plugin):
             results = self.do_server(command)
             return results
         except Exception as e:
-            print(e)
-            self.plugin_service.plugin_socketio_message(self.info[0]["Name"], f"[!] {e}")
-            return False
+            log.error(e)
+            return False, f"[!] {e}"
 
     def get_commands(self):
         return self.commands
@@ -150,24 +152,16 @@ class Plugin(Plugin):
 
         if self.status == "status":
             if self.enabled:
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[+] Reverseshell server is currently running"
-                )
+                return "[+] Reverseshell server is currently running"
             else:
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Reverseshell server is currently stopped"
-                )
+                return "[!] Reverseshell server is currently stopped"
 
         elif self.status == "stop":
             if self.enabled:
-                self.reverseshell_proc.kill()
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Stopped reverseshell server"
-                )
+                self.shutdown()
+                return "[!] Stopped reverseshell server"
             else:
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Reverseshell server is already stopped"
-                )
+                return "[!] Reverseshell server is already stopped"
 
         elif self.status == "start":
             # extract all of our options
@@ -208,10 +202,7 @@ class Plugin(Plugin):
             )
 
             if self.launcher == "":
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Error in launcher command generation."
-                )
-                return ""
+                return False, "[!] Error in launcher command generation."
 
             self.reverseshell_proc = helpers.KThread(
                 target=self.server_listen, args=(str(lhost), str(lport))

@@ -1,6 +1,3 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 import yaml
@@ -8,7 +5,7 @@ import yaml
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,

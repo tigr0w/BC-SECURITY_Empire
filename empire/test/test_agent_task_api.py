@@ -128,7 +128,7 @@ def download(client, admin_auth_header, db, models):
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "r").read(),
+                open("./empire/test/test-upload.yaml").read(),
             )
         },
     )
@@ -896,7 +896,7 @@ def test_last_task(client, admin_auth_header, agent, empire_config):
     assert response.status_code == 201
 
     location = empire_config.yaml["debug"]["last_task"]["file"]
-    with open(location, "r") as f:
+    with open(location) as f:
         last_task = f.read()
 
     assert 'echo "HELLO WORLD"' in last_task

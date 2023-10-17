@@ -12,10 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: psf/black@23.7.0
-      - uses: isort/isort-action@master
-        with:
-          isort-version: 5.12.0
+      - uses: psf/black@23.9.1
       - name: Run ruff
         run: |
           pip install ruff==0.0.283
@@ -76,12 +73,22 @@ jobs:
           poetry install
       - name: Run test suite - mysql
         run: |
-          DATABASE_USE=mysql poetry run pytest . -v --runslow
+            set -o pipefail
+            if [ "${{ matrix.python-version }}" = "3.11" ]; then
+                DATABASE_USE=mysql poetry run pytest -v --runslow --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
+            else
+                DATABASE_USE=mysql poetry run pytest -v --runslow .
+            fi
       - name: Run test suite - sqlite
         if: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name, 'test-sqlite') }}
         run: |
           DATABASE_USE=sqlite poetry run pytest . -v --runslow
-
+      - name: Pytest coverage comment
+        if: ${{ matrix.python-version == '3.11' }}
+        uses: MishaKav/pytest-coverage-comment@v1.1.48
+        with:
+          pytest-coverage-path: ./pytest-coverage.txt
+          junitxml-path: ./pytest.xml
   test_image:
     # To save CI time, only run these tests on the release PRs
     if: ${{ startsWith(github.head_ref, 'release/') }}

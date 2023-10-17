@@ -2,20 +2,23 @@ import pytest
 
 
 @pytest.fixture(scope="module", autouse=True)
-def plugin_task_1(main, db, models, plugin_name):
-    db.add(
-        models.PluginTask(
+def plugin_task_1(main, session_local, models, plugin_name):
+    with session_local.begin() as db:
+        task = models.PluginTask(
             plugin_id=plugin_name,
             input="This is the trimmed input for the task.",
             input_full="This is the full input for the task.",
             user_id=1,
         )
-    )
-    db.commit()
-    yield
+        db.add(task)
+        db.flush()
 
-    db.query(models.PluginTask).delete()
-    db.commit()
+        task_id = task.id
+
+    yield task_id
+
+    with session_local.begin() as db:
+        db.query(models.PluginTask).delete()
 
 
 def test_get_tasks_for_plugin_not_found(client, admin_auth_header):
@@ -60,10 +63,11 @@ def test_get_task_for_plugin_not_found(client, admin_auth_header, plugin_name):
     )
 
 
-def test_get_task_for_plugin(client, admin_auth_header, plugin_name, db):
+def test_get_task_for_plugin(client, admin_auth_header, plugin_name, db, plugin_task_1):
     response = client.get(
-        f"/api/v2/plugins/{plugin_name}/tasks/1", headers=admin_auth_header
+        f"/api/v2/plugins/{plugin_name}/tasks/{plugin_task_1}",
+        headers=admin_auth_header,
     )
     assert response.status_code == 200
-    assert response.json()["id"] == 1
+    assert response.json()["id"] == plugin_task_1
     assert response.json()["plugin_id"] == plugin_name

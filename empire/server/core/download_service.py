@@ -17,7 +17,7 @@ from empire.server.core.config import empire_config
 from empire.server.core.db import models
 
 
-class DownloadService(object):
+class DownloadService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "5.6.4"
+version = "5.7.3"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -59,19 +59,15 @@ stix2 = "^3.0.1"
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.24.1" # For starlette TestClient
-isort = "^5.12.0"
 black = "^23.7.0"
 pytest = "^7.4.0"
 pytest-timeout = "^2.1.0"
 ruff = "^0.0.283"
+pytest-cov = "^4.1.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.isort]
-profile = "black"
-supported_extensions = ['pxd', 'py', 'pyi', 'pyx', 'plugin']
 
 [tool.black]
 extend-exclude = '''
@@ -95,9 +91,49 @@ extend-exclude = [
     'empire/server/downloads',
     'empire/server/common/malleable',
     'empire/client/generated-stagers',
-    'empire/client/downloads'
+    'empire/client/downloads',
+    'empire/server/plugins/Report-Generation-Plugin'
 ]
 # Will revisit line lengths later. Black won't format the strings and comments
 # by default. And the experimental flag still has some issues.
 # fixes right now: https://github.com/psf/black/issues/2188
 extend-ignore = ["E501"]
+
+select = [
+    "E", # Pycodestyle
+    "W", # Pycodestyle
+    "F", # Pyflakes
+    "I", # Isort (I)
+    "UP", # PyUpgrade
+    "B"  # Bugbear
+]
+target-version = "py38"
+
+[tool.ruff.pyupgrade]
+# https://docs.astral.sh/ruff/settings/#pyupgrade-keep-runtime-typing
+keep-runtime-typing = true
+
+[tool.ruff.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query", "fastapi.File"]
+
+[tool.coverage.run]
+omit = [
+    "empire/server/data/*",
+    ]
+
+[tool.coverage.report]
+# https://coverage.readthedocs.io/en/latest/config.html
+exclude_also = [
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    ]
+
+ignore_errors = true

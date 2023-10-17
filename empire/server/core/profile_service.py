@@ -10,7 +10,7 @@ from empire.server.core.db.base import SessionLocal
 log = logging.getLogger(__name__)
 
 
-class ProfileService(object):
+class ProfileService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -27,7 +27,7 @@ class ProfileService(object):
         malleable_directories = os.listdir(malleable_path)
 
         for malleable_directory in malleable_directories:
-            for root, dirs, files in os.walk(
+            for root, _dirs, files in os.walk(
                 malleable_path + "/" + malleable_directory
             ):
                 for filename in files:
@@ -53,7 +53,7 @@ class ProfileService(object):
                     if not profile:
                         log.debug(f"Adding malleable profile: {profile_name}")
 
-                        with open(file_path, "r") as stream:
+                        with open(file_path) as stream:
                             profile_data = stream.read()
                             db.add(
                                 models.Profile(

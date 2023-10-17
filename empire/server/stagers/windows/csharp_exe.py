@@ -1,7 +1,3 @@
-from __future__ import print_function
-
-from builtins import object
-
 from empire.server.common.helpers import (
     strip_powershell_comments,
     strip_python_comments,
@@ -9,8 +5,8 @@ from empire.server.common.helpers import (
 from empire.server.utils.data_util import ps_convert_to_oneliner
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "C# PowerShell Launcher",
             "Authors": [
@@ -65,7 +61,7 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -101,11 +97,6 @@ class Stager(object):
         }
 
         self.mainMenu = mainMenu
-
-        for param in params:
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         self.options.pop("Output", None)  # clear the previous output
@@ -157,7 +148,7 @@ class Stager(object):
 
         if language.lower() == "powershell":
             directory = self.mainMenu.stagers.generate_powershell_exe(
-                launcher, dot_net_version=dot_net_version
+                launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
                 code = f.read()
@@ -171,7 +162,7 @@ class Stager(object):
 
         elif language.lower() == "ironpython":
             directory = self.mainMenu.stagers.generate_python_exe(
-                launcher, dot_net_version=dot_net_version
+                launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
                 code = f.read()

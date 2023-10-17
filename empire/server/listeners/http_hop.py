@@ -3,7 +3,6 @@ import errno
 import logging
 import os
 import random
-from builtins import object, str
 from textwrap import dedent
 from typing import List, Optional, Tuple
 
@@ -16,8 +15,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "HTTP[S] Hop",
             "Authors": [
@@ -323,9 +322,8 @@ class Listener(object):
                 launcherBase += listener_util.python_extract_stager(staging_key)
 
                 if obfuscate:
-                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
-                        launcherBase,
-                        obfuscation_command=obfuscation_command,
+                    launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
+                        launcherBase
                     )
                     launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
                         launcherBase
@@ -578,7 +576,7 @@ class Listener(object):
             ]
 
             hopCodeLocation = "%s/data/misc/hop.php" % (self.mainMenu.installPath)
-            with open(hopCodeLocation, "r") as f:
+            with open(hopCodeLocation) as f:
                 hopCode = f.read()
 
             hopCode = hopCode.replace("REPLACE_SERVER", redirectHost)
@@ -586,7 +584,7 @@ class Listener(object):
 
             saveFolder = self.options["OutFolder"]["Value"]
             for uri in uris:
-                saveName = "%s%s" % (saveFolder, uri)
+                saveName = f"{saveFolder}{uri}"
 
                 # recursively create the file's folders if they don't exist
                 if not os.path.exists(os.path.dirname(saveName)):

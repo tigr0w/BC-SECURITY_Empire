@@ -9,6 +9,8 @@ import pytest
 from fastapi import FastAPI
 from starlette.testclient import TestClient
 
+from empire.client.src.utils.data_util import get_random_string
+
 SERVER_CONFIG_LOC = "empire/test/test_server_config.yaml"
 CLIENT_CONFIG_LOC = "empire/test/test_client_config.yaml"
 DEFAULT_ARGV = ["", "server", "--config", SERVER_CONFIG_LOC]
@@ -431,15 +433,18 @@ def credential(client, admin_auth_header):
         json={
             "credtype": "hash",
             "domain": "the-domain",
-            "username": "user",
-            "password": "hunter2",
+            "username": get_random_string(8),
+            "password": get_random_string(8),
             "host": "host1",
         },
     )
 
     yield resp.json()["id"]
 
-    client.delete(f"/api/v2/credentials/{resp.json()['id']}", headers=admin_auth_header)
+    with suppress(Exception):
+        client.delete(
+            f"/api/v2/credentials/{resp.json()['id']}", headers=admin_auth_header
+        )
 
 
 @pytest.fixture(scope="function")
@@ -450,7 +455,7 @@ def download(client, admin_auth_header):
         files={
             "file": (
                 "test-upload-2.yaml",
-                open("./empire/test/test-upload-2.yaml", "r").read(),
+                open("./empire/test/test-upload-2.yaml").read(),
             )
         },
     )
@@ -463,7 +468,7 @@ def server_config_dict():
     # load the config file
     import yaml
 
-    with open(SERVER_CONFIG_LOC, "r") as f:
+    with open(SERVER_CONFIG_LOC) as f:
         config_dict = yaml.safe_load(f)
 
     yield config_dict
@@ -473,7 +478,7 @@ def server_config_dict():
 def client_config_dict():
     import yaml
 
-    with open(CLIENT_CONFIG_LOC, "r") as f:
+    with open(CLIENT_CONFIG_LOC) as f:
         config_dict = yaml.safe_load(f)
 
     yield config_dict

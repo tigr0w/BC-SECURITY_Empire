@@ -15,7 +15,7 @@ from empire.server.utils.option_util import set_options, validate_options
 log = logging.getLogger(__name__)
 
 
-class ListenerService(object):
+class ListenerService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 
@@ -120,7 +120,7 @@ class ListenerService(object):
         db.delete(db_listener)
 
     def shutdown_listeners(self):
-        for key, listener in self._active_listeners.items():
+        for listener in self._active_listeners.values():
             listener.shutdown()
 
     def start_existing_listener(self, db: Session, listener: models.Listener):
@@ -269,19 +269,19 @@ class ListenerService(object):
                 # Unsure if this section is needed
                 if len(parts) != 1 and parts[-1].isdigit():
                     # if a port is specified with http://host:port
-                    instance.options["Host"]["Value"] = "%s://%s" % (protocol, value)
+                    instance.options["Host"]["Value"] = f"{protocol}://{value}"
                     if instance.options["Port"]["Value"] == "":
                         instance.options["Port"]["Value"] = parts[-1]
                 elif instance.options["Port"]["Value"] != "":
                     # otherwise, check if the port value was manually set
-                    instance.options["Host"]["Value"] = "%s://%s:%s" % (
+                    instance.options["Host"]["Value"] = "{}://{}:{}".format(
                         protocol,
                         value,
                         instance.options["Port"]["Value"],
                     )
                 else:
                     # otherwise use default port
-                    instance.options["Host"]["Value"] = "%s://%s" % (protocol, value)
+                    instance.options["Host"]["Value"] = f"{protocol}://{value}"
                     if instance.options["Port"]["Value"] == "":
                         instance.options["Port"]["Value"] = default_port
 
@@ -302,7 +302,7 @@ class ListenerService(object):
                     address = parts[8:]
                     address = "".join(address.split(":")[0])
                     protocol = "https"
-                    instance.options["Host"]["Value"] = "%s://%s:%s" % (
+                    instance.options["Host"]["Value"] = "{}://{}:{}".format(
                         protocol,
                         address,
                         instance.options["Port"]["Value"],
@@ -311,7 +311,7 @@ class ListenerService(object):
                     address = parts[7:]
                     address = "".join(address.split(":")[0])
                     protocol = "http"
-                    instance.options["Host"]["Value"] = "%s://%s:%s" % (
+                    instance.options["Host"]["Value"] = "{}://{}:{}".format(
                         protocol,
                         address,
                         instance.options["Port"]["Value"],

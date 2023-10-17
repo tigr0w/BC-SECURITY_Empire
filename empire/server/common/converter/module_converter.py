@@ -56,7 +56,7 @@ if __name__ == "__main__":
     root_path = "../../modules/python"
     pattern = "*.py"
     count = 0
-    for root, dirs, files in os.walk(root_path):
+    for root, _dirs, files in os.walk(root_path):
         for filename in fnmatch.filter(files, pattern):
             file_path = os.path.join(root, filename)
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
             module_name = file_path.split(root_path)[-1][0:-3]
 
-            with open(file_path, "r") as stream:
+            with open(file_path) as stream:
                 spec = importlib.util.spec_from_file_location(
                     module_name + ".py", file_path[:-3] + ".py"
                 )

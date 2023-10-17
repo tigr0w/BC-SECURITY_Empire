@@ -1,10 +1,9 @@
-from builtins import object
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -35,7 +34,7 @@ class Module(object):
 IN_MEMORY = False
 PCAP_ERRBUF_SIZE = 256
 packet_count_limit = ctypes.c_int(1)
-timeout_limit = ctypes.c_int(1000) # In milliseconds 
+timeout_limit = ctypes.c_int(1000) # In milliseconds
 err_buf = ctypes.create_string_buffer(PCAP_ERRBUF_SIZE)
 
 class bpf_program(ctypes.Structure):
@@ -93,7 +92,7 @@ pcap_create.restype = ctypes.c_void_p
 #pcap_handle = pcap.pcap_create(INTERFACE, err_buf)
 pcap_handle = pcap.pcap_open_live(INTERFACE, 1024, packet_count_limit, timeout_limit, err_buf)
 if DEBUG:
-    print("* Live capture device handle at: %s" % pcap_handle) 
+    print("* Live capture device handle at: %s" % pcap_handle)
 
 pcap_can_set_rfmon = pcap.pcap_can_set_rfmon
 pcap_can_set_rfmon.argtypes = [ctypes.c_void_p]
@@ -110,8 +109,8 @@ pcap_dump_open = pcap.pcap_dump_open
 pcap_dump_open.restype = ctypes.POINTER(ctypes.c_void_p)
 pcap_dumper_t = pcap.pcap_dump_open(pcap_handle,PCAP_FILENAME)
 if DEBUG:
-    print("* Pcap dump handle created: %s" % pcap_dumper_t) 
-    print("* Pcap data dump to file: %s" % (PCAP_FILENAME)) 
+    print("* Pcap dump handle created: %s" % pcap_dumper_t)
+    print("* Pcap data dump to file: %s" % (PCAP_FILENAME))
     print("* Max Packets to capture: %s" % (PCAP_CAPTURE_COUNT))
     print("-------------------------------------------")
 

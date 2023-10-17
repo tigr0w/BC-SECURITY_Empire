@@ -6,7 +6,6 @@ import random
 import ssl
 import sys
 import time
-from builtins import object, str
 from typing import List, Optional, Tuple
 
 from flask import Flask, make_response, request, send_from_directory
@@ -22,8 +21,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "HTTP[S] COM",
             "Authors": [
@@ -164,7 +163,7 @@ class Listener(object):
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return open(f"{self.template_dir }/default.html", "r").read()
+        return open(f"{self.template_dir }/default.html").read()
 
     def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
@@ -402,7 +401,7 @@ class Listener(object):
                         headers += "`r`n"
                     else:
                         crlf = True
-                    headers += "%s: %s" % (headerKey, headerValue)
+                    headers += f"{headerKey}: {headerValue}"
                 stager = stager.replace(
                     '$customHeaders = "";', '$customHeaders = "' + headers + '";'
                 )
@@ -455,7 +454,6 @@ class Listener(object):
         jitter = listenerOptions["DefaultJitter"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
         lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-        killDate = listenerOptions["KillDate"]["Value"]
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
@@ -480,11 +478,6 @@ class Listener(object):
                 '$DefaultResponse = "' + str(b64DefaultResponse) + '"',
             )
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace(
-                    "$KillDate,", "$KillDate = '" + str(killDate) + "',"
-                )
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.obfuscate(
                     code,

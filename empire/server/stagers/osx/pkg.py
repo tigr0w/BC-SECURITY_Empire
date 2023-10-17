@@ -1,12 +1,9 @@
-from __future__ import print_function
-
-from builtins import object
-
 from empire.server.common import helpers
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "pkg",
             "Authors": [
@@ -70,12 +67,6 @@ class Stager(object):
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
-        for param in params:
-            # parameter format is [Name, Value]
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
-
     def generate(self):
         # extract all of our options
         language = self.options["Language"]["Value"]
@@ -102,7 +93,9 @@ class Stager(object):
             if app_name == "":
                 app_name = "Update"
             disarm = True
-            launcher_code = launcher.strip("echo").strip(" | python3 &").strip('"')
+            launcher_code = removeprefix(launcher, "echo ")
+            launcher_code = removesuffix(launcher_code, " | python3 &")
+            launcher_code = launcher_code.strip('"')
             application_zip = self.mainMenu.stagers.generate_appbundle(
                 launcherCode=launcher_code,
                 Arch=arch,

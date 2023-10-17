@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import logging
-from builtins import object
 from textwrap import dedent
 
 from empire.server.common.helpers import enc_powershell
@@ -11,8 +8,8 @@ from empire.server.core.db.base import SessionLocal
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "BAT Launcher",
             "Authors": [
@@ -73,11 +70,6 @@ class Stager(object):
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
-        for param in params:
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         # Extract options

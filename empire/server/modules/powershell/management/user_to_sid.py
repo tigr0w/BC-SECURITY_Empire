@@ -1,12 +1,9 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -15,9 +12,8 @@ class Module(object):
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        script = (
-            '(New-Object System.Security.Principal.NTAccount("%s","%s")).Translate([System.Security.Principal.SecurityIdentifier]).Value'
-            % (params["Domain"], params["User"])
+        script = '(New-Object System.Security.Principal.NTAccount("{}","{}")).Translate([System.Security.Principal.SecurityIdentifier]).Value'.format(
+            params["Domain"], params["User"]
         )
 
         script = main_menu.modulesv2.finalize_module(

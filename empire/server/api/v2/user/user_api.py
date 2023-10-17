@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, File, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette import status
@@ -160,3 +160,21 @@ async def update_user_password(
         raise HTTPException(status_code=400, detail=err)
 
     return domain_to_dto_user(resp)
+
+
+@router.post("/api/v2/users/{uid}/avatar", status_code=201)
+async def create_avatar(
+    uid: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_active_user),
+    file: UploadFile = File(...),
+):
+    if not user.id == uid:
+        raise HTTPException(
+            status_code=403, detail="User does not have access to update this resource."
+        )
+
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image.")
+
+    user_service.update_user_avatar(db, user, file)

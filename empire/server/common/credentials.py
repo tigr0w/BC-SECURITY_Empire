@@ -5,7 +5,6 @@ Credential handling functionality for Empire.
 """
 import logging
 import warnings
-from builtins import object
 
 from sqlalchemy import and_, or_
 
@@ -15,7 +14,7 @@ from empire.server.core.db.base import SessionLocal
 log = logging.getLogger(__name__)
 
 
-class Credentials(object):
+class Credentials:
     """
     Class that handles interaction with the backend credential model
     (adding creds, displaying, etc.).
@@ -39,6 +38,7 @@ class Credentials(object):
         warnings.warn(
             "This has been deprecated and may be removed. Use credential_service.get_by_id() instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         with SessionLocal() as db:
             if (
@@ -60,6 +60,7 @@ class Credentials(object):
         warnings.warn(
             "This has been deprecated and may be removed. Use credential_service.get_all().",
             DeprecationWarning,
+            stacklevel=2,
         )
         # if we're returning a single credential by ID
         with SessionLocal() as db:
@@ -73,7 +74,7 @@ class Credentials(object):
             # if we're filtering by host/username
             elif filter_term and filter_term != "":
                 filter_term = filter_term.replace("*", "%")
-                search = "%{}%".format(filter_term)
+                search = f"%{filter_term}%"
                 results = (
                     db.query(models.Credential)
                     .filter(
@@ -97,7 +98,7 @@ class Credentials(object):
 
             # if we're filtering by content in the note field
             elif note and note != "":
-                search = "%{}%".format(note)
+                search = f"%{note}%"
                 results = (
                     db.query(models.Credential)
                     .filter(models.Credential.note.ilike("%search%"))
@@ -106,7 +107,7 @@ class Credentials(object):
 
             # if we're filtering by content in the OS field
             elif os and os != "":
-                search = "%{}%".format(os)
+                search = f"%{os}%"
                 results = (
                     db.query(models.Credential)
                     .filter(models.Credential.os.ilike("%search%"))
@@ -128,6 +129,7 @@ class Credentials(object):
         warnings.warn(
             "This has been deprecated and may be removed. Use credential_service.create_credential().",
             DeprecationWarning,
+            stacklevel=2,
         )
         with SessionLocal.begin() as db:
             results = (

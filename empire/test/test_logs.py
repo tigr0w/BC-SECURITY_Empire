@@ -141,6 +141,6 @@ def test_log_level_by_debug_arg(monkeypatch):
 
 
 def _load_test_config():
-    with open(SERVER_CONFIG_LOC, "r") as f:
+    with open(SERVER_CONFIG_LOC) as f:
         loaded = yaml.safe_load(f)
     return loaded

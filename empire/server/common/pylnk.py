@@ -21,11 +21,9 @@
 # not as clean as i wished
 # cannibal: @theguly
 
-from __future__ import print_function
 
 import re
 import time
-from builtins import chr, object, range, str
 from datetime import datetime
 from io import StringIO
 from pprint import PrettyPrinter, pformat
@@ -195,7 +193,7 @@ _ENTRY_TYPES = {
 }
 _ENTRY_TYPE_IDS = dict((v, k) for k, v in _ENTRY_TYPES.items())
 
-_DRIVE_PATTERN = re.compile("(\w)[:/\\\\]*$")
+_DRIVE_PATTERN = re.compile("(\\w)[:/\\\\]*$")
 
 # ---- read and write binary data
 
@@ -361,7 +359,7 @@ class InvalidKeyException(Exception):
 # ---- data structures
 
 
-class Flags(object):
+class Flags:
     def __init__(self, flag_names, flags_bytes=0):
         self._flag_names = flag_names
         self._flags = dict([(name, None) for name in flag_names])
@@ -416,7 +414,7 @@ class ModifierKeys(Flags):
         return s
 
 
-class RootEntry(object):
+class RootEntry:
     def __init__(self, root):
         if root is not None:
             if root in list(_ROOT_LOCATION_GUIDS.keys()):
@@ -448,9 +446,8 @@ class RootEntry(object):
                     bytes[14],
                     bytes[15],
                 ]
-                self.guid = (
-                    "{%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X}"
-                    % tuple([ord(x) for x in ordered])
+                self.guid = "{{{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}}}".format(
+                    *tuple([ord(x) for x in ordered])
                 )
                 self.root = _ROOT_LOCATIONS.get(self.guid, "UNKNOWN")
 
@@ -476,7 +473,7 @@ class RootEntry(object):
         return "<RootEntry: %s>" % self.root
 
 
-class DriveEntry(object):
+class DriveEntry:
     def __init__(self, drive):
         if len(drive) == 23:
             self.drive = drive[1:3]
@@ -496,7 +493,7 @@ class DriveEntry(object):
         return "<DriveEntry: %s>" % self.drive
 
 
-class PathSegmentEntry(object):
+class PathSegmentEntry:
     def __init__(self, bytes=None):
         self.type = None
         self.file_size = None
@@ -602,7 +599,7 @@ class PathSegmentEntry(object):
         return "<PathSegmentEntry: %s>" % self.full_name
 
 
-class LinkTargetIDList(object):
+class LinkTargetIDList:
     def __init__(self, bytes=None):
         self.items = []
         if bytes is not None:
@@ -660,7 +657,7 @@ class LinkTargetIDList(object):
         return "<LinkTargetIDList:\n%s>" % pformat([str(item) for item in self.items])
 
 
-class LinkInfo(object):
+class LinkInfo:
     def __init__(self, lnk=None):
         if lnk is not None:
             self.start = lnk.tell()
@@ -693,14 +690,14 @@ class LinkInfo(object):
             self._path = None
 
 
-class Lnk(object):
+class Lnk:
     def __init__(self, f=None):
         self.file = None
-        if type(f) == str or type(f) == str:
+        if isinstance(f, str):
             self.file = f
             try:
                 f = open(self.file, "rb")
-            except IOError:
+            except OSError:
                 self.file += ".lnk"
                 f = open(self.file, "rb")
         # defaults
@@ -727,8 +724,10 @@ class Lnk(object):
             hot_key = hot_key.split("+")
             try:
                 low = _KEY_CODES[hot_key[-1]]
-            except KeyError:
-                raise InvalidKeyException("Cannot find key code for %s" % hot_key[1])
+            except KeyError as e:
+                raise InvalidKeyException(
+                    "Cannot find key code for %s" % hot_key[1]
+                ) from e
             modifiers = ModifierKeys()
             for modifier in hot_key[:-1]:
                 modifiers[modifier.upper()] = True
@@ -743,7 +742,7 @@ class Lnk(object):
             raise ValueError("File (name) missing for saveing the lnk")
         is_file = hasattr(f, "write")
         if not is_file:
-            if not type(f) == str and not type(f) == str:
+            if not isinstance(f, str):
                 raise ValueError(
                     "Need a writeable object or a file name to save to, got %s" % f
                 )

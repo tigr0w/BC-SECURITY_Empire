@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.7.3] - 2023-10-17
+
+-   Updated Starkiller to v2.6.1
+-   Fixed global obfuscation not working on modules (@Cx01N)
+-   Added bypass module in PowerShell to run bypasses after agent is staged (@Cx01N)
+-   Fixed IronPython and Python stagers not getting obfuscation applied (@Cx01N)
+
+## [5.7.2] - 2023-09-28
+
+-   Updated Dropbox C2 to use new API endpoints (@Cx01N)
+-   Standardized Kill Date and Working Hours for PowerShell Agents (@Cx01N)
+-   Apply fixes for future Python 3.12 compatibility (@Vinnybod)
+-   Add additional rulesets to ruff linting (@Vinnybod)
+
+## [5.7.1] - 2023-09-25
+
+## [5.7.0] - 2023-09-17
+
+-   Add avatars to users (@Vinnybod)
+-   Update plugin documentation, update embedded plugins to not abuse notifications (@Vinnybod)
+-   Add additional pre-commit hooks for code cleanup (@Vinnybod)
+-   Report test coverage on pull requests (@Vinnybod)
+-   Fixed issue with multiple parameters not executing in IronPython for C# tasks (@Cx01N)
+-   Fix for spawnas not generating bat file (@wizquaza)
+-   Fixed taskings for OneDrive listener (@Hubbl3)
+
 ## [5.6.4] - 2023-09-08
 
 -   Added Stix2 to dependency list for Advanced Reports (@Cx01N)
@@ -84,7 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added python module for Polkit (CVE-2021-3560) (@Cx01N)
 -   Fixed safecheck error for python module sudo spawn (@Cx01N)
 -   Fixed file error in Invoke-Shellcode (@Cx01N)
--   Removed duplicate modules between languages (@Cx01N) 
+-   Removed duplicate modules between languages (@Cx01N)
     -   Removed .NET Core modules due to errors
     -   Removed redundant C# lateral movement modules
     -   Removed Covenant Mimikatz in favor of Invoke-Mimikatz
@@ -117,7 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.4.0] - 2023-05-22
 
 -   Remove Starkiller as a submodule, treat it as a normal directory (@Vinnybod)
-    -   Everything should 'just work', but if you have issues after pulling these latest changes, try deleting the Starkiller directory before running the server `rm -r empire/server/api/v2/starkiller`. 
+    -   Everything should 'just work', but if you have issues after pulling these latest changes, try deleting the Starkiller directory before running the server `rm -r empire/server/api/v2/starkiller`.
 -   Some improvements to the release flow after starkiller submodule removal (@Vinnybod)
 
 ## [5.3.0] - 2023-05-17
@@ -584,7 +610,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.3...HEAD
+
+[5.7.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.2...v5.7.3
+
+[5.7.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.1...v5.7.2
+
+[5.7.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.0...v5.7.1
+
+[5.7.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.4...v5.7.0
 
 [5.6.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.6.3...v5.6.4
 

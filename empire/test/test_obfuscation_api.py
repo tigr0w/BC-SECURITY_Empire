@@ -229,7 +229,7 @@ def test_preobfuscate_post(client, admin_auth_header, empire_config):
         obf_module_dir = empire_config.directories.obfuscated_module_source
 
         count = 0
-        for root, dirs, files in os.walk(module_dir):
+        for root, _dirs, files in os.walk(module_dir):
             for file in files:
                 root_rep = root.replace(module_dir, obf_module_dir)
                 assert os.path.exists(root_rep + "/" + file)
@@ -264,7 +264,7 @@ def test_preobfuscate_delete(client, admin_auth_header, empire_config):
         module_dir = empire_config.directories.module_source
         obf_module_dir = empire_config.directories.obfuscated_module_source
 
-        for root, dirs, files in os.walk(module_dir):
+        for root, _dirs, files in os.walk(module_dir):
             for file in files:
                 root_rep = root.replace(module_dir, obf_module_dir)
                 assert not os.path.exists(root_rep + "/" + file)

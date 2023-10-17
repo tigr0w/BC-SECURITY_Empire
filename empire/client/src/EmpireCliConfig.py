@@ -7,7 +7,7 @@ import yaml
 log = logging.getLogger(__name__)
 
 
-class EmpireCliConfig(object):
+class EmpireCliConfig:
     def __init__(self):
         self.yaml: Dict = {}
         if "--config" in sys.argv:
@@ -20,7 +20,7 @@ class EmpireCliConfig(object):
 
     def set_yaml(self, location: str):
         try:
-            with open(location, "r") as stream:
+            with open(location) as stream:
                 self.yaml = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             log.error(exc)

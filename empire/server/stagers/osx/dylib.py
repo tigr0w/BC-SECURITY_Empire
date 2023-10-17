@@ -1,12 +1,9 @@
-from __future__ import print_function
-
-from builtins import object
-
 from empire.server.common import helpers
+from empire.server.utils.string_util import removeprefix, removesuffix
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "dylib",
             "Authors": [
@@ -71,12 +68,6 @@ class Stager(object):
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
-        for param in params:
-            # parameter format is [Name, Value]
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
-
     def generate(self):
         # extract all of our options
         language = self.options["Language"]["Value"]
@@ -103,7 +94,9 @@ class Stager(object):
             return ""
 
         else:
-            launcher = launcher.strip("echo").strip(" | python3 &").strip('"')
+            launcher = removeprefix(launcher, "echo ")
+            launcher = removesuffix(launcher, " | python3 &")
+            launcher = launcher.strip('"')
             dylib = self.mainMenu.stagers.generate_dylib(
                 launcherCode=launcher, arch=arch, hijacker=hijacker
             )

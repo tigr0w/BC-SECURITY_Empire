@@ -1,13 +1,10 @@
-from __future__ import print_function
-
 import base64
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,

@@ -1,16 +1,14 @@
 from __future__ import print_function
 
-import base64
-import os
-import socket
-import subprocess
-import time
+import logging
 
 import websockify
 
 import empire.server.common.helpers as helpers
 from empire.server.common.plugins import Plugin
 from empire.server.core.plugin_service import PluginService
+
+log = logging.getLogger(__name__)
 
 
 class Plugin(Plugin):
@@ -74,9 +72,8 @@ class Plugin(Plugin):
             results = self.do_websockify(command)
             return results
         except Exception as e:
-            print(e)
-            self.plugin_service.plugin_socketio_message(self.info["Name"], f"[!] {e}")
-            return False
+            log.error(e)
+            return False, f"[!] {e}"
 
     def get_commands(self):
         return self.commands
@@ -101,24 +98,16 @@ class Plugin(Plugin):
 
         if self.status == "status":
             if self.enabled:
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[+] Websockify server is currently running"
-                )
+                return "[+] Websockify server is currently running"
             else:
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Websockify server is currently stopped"
-                )
+                return "[!] Websockify server is currently stopped"
 
         elif self.status == "stop":
             if self.enabled:
-                self.reverseshell_proc.kill()
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Stopped Websockify server"
-                )
+                self.shutdown()
+                return "[!] Stopped Websockify server"
             else:
-                self.plugin_service.plugin_socketio_message(
-                    self.info["Name"], "[!] Websockify server is already stopped"
-                )
+                return "[!] Websockify server is already stopped"
 
         elif self.status == "start":
             source_host = command["SourceHost"]
@@ -126,9 +115,6 @@ class Plugin(Plugin):
             target_host = command["TargetHost"]
             target_port = int(command["TargetPort"])
 
-            self.plugin_service.plugin_socketio_message(
-                self.info["Name"], "[*] Websockify server is currently starting..."
-            )
             server = websockify.LibProxyServer(
                 target_host=target_host,
                 target_port=target_port,
@@ -139,9 +125,7 @@ class Plugin(Plugin):
             self.websockify_proc = helpers.KThread(target=server.serve_forever)
             self.websockify_proc.daemon = True
             self.websockify_proc.start()
-            self.plugin_service.plugin_socketio_message(
-                self.info["Name"], "[+] Websockify server succesfully started"
-            )
+            return "[+] Websockify server successfully started"
 
     def shutdown(self):
         try:

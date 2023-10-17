@@ -68,7 +68,7 @@ if __name__ == "__main__":
     # yaml.add_representer(type(None), represent_none)
     root_path = "../../modules"
     pattern = "*.yaml"
-    for root, dirs, files in os.walk(root_path):
+    for root, _dirs, files in os.walk(root_path):
         for filename in fnmatch.filter(files, pattern):
             try:
                 file_path = os.path.join(root, filename)
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                 if fnmatch.fnmatch(filename, "*Covenant.yaml"):
                     continue
 
-                with open(file_path, "r") as stream:
+                with open(file_path) as stream:
                     yaml_dict = yaml.load(stream)
                     author_handles = yaml_dict["authors"]
 

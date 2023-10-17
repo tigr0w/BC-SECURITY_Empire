@@ -59,13 +59,17 @@ class ShellMenu(Menu):
         Update current directory
         """
         if self.language == "powershell":
-            task_id: int = state.agent_shell(session_id, "(Resolve-Path .\).Path")["id"]
+            task_id: int = state.agent_shell(session_id, r"(Resolve-Path .\).Path")[
+                "id"
+            ]
         elif self.language == "python":
             task_id: int = state.agent_shell(session_id, "echo $PWD")["id"]
         elif self.language == "ironpython":
             task_id: int = state.agent_shell(session_id, "cd .")["id"]
         elif self.language == "csharp":
-            task_id: int = state.agent_shell(session_id, "(Resolve-Path .\).Path")["id"]
+            task_id: int = state.agent_shell(session_id, r"(Resolve-Path .\).Path")[
+                "id"
+            ]
             pass
 
         count = 0

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from empire.server.core.db import models
 
 
-class HostProcessService(object):
+class HostProcessService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 

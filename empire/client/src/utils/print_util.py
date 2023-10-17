@@ -29,24 +29,24 @@ def color(string_name, color_name=None):
             str_list = string_name.split("\n")
             str_list_modified = []
             for s in str_list:
-                str_list_modified.append("\x1b[%sm%s\x1b[0m" % (";".join(attr), s))
+                str_list_modified.append("\x1b[{}m{}\x1b[0m".format(";".join(attr), s))
             return "\n".join(str_list_modified)
         else:
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string_name)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
 
     else:
         if string_name.strip().startswith("[!]"):
             attr.append("31")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string_name)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
         elif string_name.strip().startswith("[+]"):
             attr.append("32")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string_name)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
         elif string_name.strip().startswith("[*]"):
             attr.append("34")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string_name)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
         elif string_name.strip().startswith("[>]"):
             attr.append("33")
-            return "\x1b[%sm%s\x1b[0m" % (";".join(attr), string_name)
+            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
         else:
             return string_name
 
@@ -84,11 +84,11 @@ def title(version, server, modules, listeners, agents):
     )
     print(
         """
-                   ███████╗███╗   ███╗██████╗ ██╗██████╗    ███████╗                                         
-                   ██╔════╝████╗ ████║██╔══██╗██║██╔══██╗   ██╔════╝                                         
-                   █████╗  ██╔████╔██║██████╔╝██║██████╔╝   █████╗                                          
-                   ██╔══╝  ██║╚██╔╝██║██╔═══╝ ██║██╔══██╗   ██╔══╝                                          
-                   ███████╗██║ ╚═╝ ██║██║     ██║██║  █████║███████╗  
+                   ███████╗███╗   ███╗██████╗ ██╗██████╗    ███████╗
+                   ██╔════╝████╗ ████║██╔══██╗██║██╔══██╗   ██╔════╝
+                   █████╗  ██╔████╔██║██████╔╝██║██████╔╝   █████╗
+                   ██╔══╝  ██║╚██╔╝██║██╔═══╝ ██║██╔══██╗   ██╔══╝
+                   ███████╗██║ ╚═╝ ██║██║     ██║██║  █████║███████╗
                    ╚══════╝╚═╝     ╚═╝╚═╝     ╚═╝╚═╝  ╚════╝╚══════╝
 
 """
@@ -152,13 +152,13 @@ def loading():
                            `-/osyhdddddhyo:
                                 ``.----.`
                         \x1b[0m
-                        
-          ███████╗███╗   ███╗██████╗ ██╗██████╗    ███████╗                                          
-          ██╔════╝████╗ ████║██╔══██╗██║██╔══██╗   ██╔════╝                                          
-          █████╗  ██╔████╔██║██████╔╝██║██████╔╝   █████╗                                          
-          ██╔══╝  ██║╚██╔╝██║██╔═══╝ ██║██╔══██╗   ██╔══╝                                         
-          ███████╗██║ ╚═╝ ██║██║     ██║██║  █████║███████╗    
-          ╚══════╝╚═╝     ╚═╝╚═╝     ╚═╝╚═╝  ╚════╝╚══════╝             
+
+          ███████╗███╗   ███╗██████╗ ██╗██████╗    ███████╗
+          ██╔════╝████╗ ████║██╔══██╗██║██╔══██╗   ██╔════╝
+          █████╗  ██╔████╔██║██████╔╝██║██████╔╝   █████╗
+          ██╔══╝  ██║╚██╔╝██║██╔═══╝ ██║██╔══██╗   ██╔══╝
+          ███████╗██║ ╚═╝ ██║██║     ██║██║  █████║███████╗
+          ╚══════╝╚═╝     ╚═╝╚═╝     ╚═╝╚═╝  ╚════╝╚══════╝
                         """
     )
 

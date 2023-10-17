@@ -1,7 +1,4 @@
-from __future__ import print_function
-
 import logging
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.db.models import Credential
@@ -11,7 +8,7 @@ from empire.server.utils.module_util import handle_error_message
 log = logging.getLogger(__name__)
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,

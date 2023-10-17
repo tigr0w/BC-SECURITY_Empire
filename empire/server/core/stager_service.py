@@ -14,7 +14,7 @@ from empire.server.core.stager_template_service import StagerTemplateService
 from empire.server.utils.option_util import set_options, validate_options
 
 
-class StagerService(object):
+class StagerService:
     def __init__(self, main_menu):
         self.main_menu = main_menu
 

