@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Updated listeners to consistently use port 80 and 443 for HTTP traffic by default (@Cx01N)
+
 ## [5.7.3] - 2023-10-17
 
 -   Fixed global obfuscation not working on modules (@Cx01N)

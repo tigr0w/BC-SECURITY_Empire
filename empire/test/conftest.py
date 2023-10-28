@@ -203,9 +203,9 @@ def base_listener_non_fixture():
         "template": "http",
         "options": {
             "Name": "new-listener-1",
-            "Host": "http://localhost:1336",
+            "Host": "http://localhost:80",
             "BindIP": "0.0.0.0",
-            "Port": "1336",
+            "Port": "80",
             "Launcher": "powershell -noP -sta -w 1 -enc ",
             "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
             "DefaultDelay": "5",

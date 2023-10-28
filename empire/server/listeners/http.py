@@ -66,8 +66,8 @@ class Listener:
             "Port": {
                 "Description": "Port for the listener.",
                 "Required": True,
-                "Value": "",
-                "SuggestedValues": ["1335", "1336"],
+                "Value": "80",
+                "SuggestedValues": ["80", "443"],
             },
             "Launcher": {
                 "Description": "Launcher string.",

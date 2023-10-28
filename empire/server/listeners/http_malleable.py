@@ -72,7 +72,8 @@ class Listener:
             "Port": {
                 "Description": "Port for the listener.",
                 "Required": True,
-                "Value": 80,
+                "Value": "80",
+                "SuggestedValues": ["80", "443"],
             },
             "Profile": {
                 "Description": "Malleable C2 profile to describe comms.",

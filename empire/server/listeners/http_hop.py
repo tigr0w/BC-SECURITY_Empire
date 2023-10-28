@@ -66,7 +66,8 @@ class Listener:
             "Port": {
                 "Description": "Port for the listener.",
                 "Required": True,
-                "Value": "",
+                "Value": "80",
+                "SuggestedValues": ["80", "443"],
             },
             "DefaultProfile": {
                 "Description": "Default communication profile for the agent, extracted from RedirectListener automatically.",
