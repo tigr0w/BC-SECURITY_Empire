@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import UniqueConstraint, create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import close_all_sessions, sessionmaker
 
 from empire.server.core.db import models
 from empire.server.core.db.defaults import (
@@ -47,7 +47,7 @@ use, database_config = get_database_config()
 
 
 def reset_db():
-    SessionLocal.close_all()
+    close_all_sessions()
 
     if use == "mysql":
         cmd = f"DROP DATABASE IF EXISTS {database_config.database_name}"

@@ -21,9 +21,8 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects import mysql
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, deferred, relationship
+from sqlalchemy.orm import Mapped, declarative_base, deferred, relationship
 from sqlalchemy_utc import UtcDateTime, utcnow
 
 from empire.server.core.config import empire_config

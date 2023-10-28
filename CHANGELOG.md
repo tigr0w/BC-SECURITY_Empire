@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Correct more deprecation warnings for SQLAlchemy and invalid escape sequences (@Vinnybod)
 -   Added option to start MySQL service on boot to install script (@Cx01N)
 -   Modernized the Python and IronPython agents with new agent and staging code (@Cx01N)
 -   Added automatic tasking for sysinfo for stageless agents (@Cx01N)
