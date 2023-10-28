@@ -694,8 +694,8 @@ class Listener:
         jitter = listenerOptions["DefaultJitter"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
         lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-        killDate = listenerOptions["KillDate"]["Value"]
-        workingHours = listenerOptions["WorkingHours"]["Value"]
+        listenerOptions["KillDate"]["Value"]
+        listenerOptions["WorkingHours"]["Value"]
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
@@ -738,28 +738,16 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay = 60", f"delay = { delay }")
-            code = code.replace("jitter = 0.0", f"jitter = { jitter }")
+            code = code.replace("delay=60", f"delay={ delay }")
+            code = code.replace("jitter=0.0", f"jitter={ jitter }")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
                 f'profile = "{ profile }"',
             )
-            code = code.replace("lostLimit = 60", f"lostLimit = { lostLimit }")
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
                 f'defaultResponse = base64.b64decode("{ b64DefaultResponse.decode("UTF-8") }")',
             )
-
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace(
-                    'killDate = "REPLACE_KILLDATE"', f'killDate = "{ killDate }"'
-                )
-            if workingHours != "":
-                code = code.replace(
-                    'workingHours = "REPLACE_WORKINGHOURS"',
-                    f'workingHours = "{ killDate }"',
-                )
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)

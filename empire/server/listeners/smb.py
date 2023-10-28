@@ -332,9 +332,9 @@ class Listener:
         delay = listenerOptions["DefaultDelay"]["Value"]
         jitter = listenerOptions["DefaultJitter"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
-        lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-        killDate = listenerOptions["KillDate"]["Value"]
-        workingHours = listenerOptions["WorkingHours"]["Value"]
+        listenerOptions["DefaultLostLimit"]["Value"]
+        listenerOptions["KillDate"]["Value"]
+        listenerOptions["WorkingHours"]["Value"]
         b64DefaultResponse = self.b64DefaultResponse
 
         if language == "powershell":
@@ -352,25 +352,17 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay = 60", "delay = %s" % (delay))
-            code = code.replace("jitter = 0.0", "jitter = %s" % (jitter))
+            code = code.replace("delay=60", "delay=%s" % (delay))
+            code = code.replace("jitter=0.0", "jitter=%s" % (jitter))
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
                 'profile = "%s"' % (profile),
             )
-            code = code.replace("lostLimit = 60", "lostLimit = %s" % (lostLimit))
-            code = code.replace(
-                'defaultResponse = base64.b64decode("")',
-                "defaultResponse = base64.b64decode(%s)" % (b64DefaultResponse),
-            )
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
-            if workingHours != "":
-                code = code.replace(
-                    'workingHours = ""', 'workingHours = "%s"' % (killDate)
-                )
+            code = code.replace(
+                'self.defaultResponse = base64.b64decode("")',
+                "self.defaultResponse = base64.b64decode(%s)" % (b64DefaultResponse),
+            )
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)

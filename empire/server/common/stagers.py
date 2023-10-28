@@ -770,6 +770,9 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 architecture="AMD64",
             )
 
+            # Send initial task for sysinfo into the database
+            self.mainMenu.agenttasksv2.create_task_sysinfo(db, agent, 0)
+
             # get the agent's session key
             session_key = agent.session_key
 
@@ -798,17 +801,33 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
 
             elif options["Language"]["Value"] in ["python", "ironpython"]:
                 stager_code = stager_code.replace(
-                    "b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))",
-                    f"b'{session_id}'",
+                    "return b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))",
+                    f"return b'{session_id}'",
                 )
-                stager_code = stager_code.split("clientPub=DiffieHellman()")[0]
-                stager_code = stager_code + f"\nkey = b'{session_key}'"
+
+                stager_code = replace_execute_function(stager_code, session_key)
                 launch_code = ""
 
                 if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
                     full_agent = "\n".join(
-                        [stager_code, agent_code, comms_code, launch_code]
+                        [agent_code, stager_code, comms_code, launch_code]
                     )
                 else:
-                    full_agent = "\n".join([stager_code, agent_code, launch_code])
+                    full_agent = "\n".join([agent_code, stager_code, launch_code])
                 return full_agent
+
+
+def replace_execute_function(code, session_key):
+    code_first = code.split("def execute(self):")[0]
+    code_last = code.split("agent.run()")[1]
+
+    new_function = f"""
+    def execute(self):
+        self.key = b'{session_key}'
+        self.packet_handler.key = self.key
+        agent = MainAgent(packet_handler=self.packet_handler, profile=self.profile, server=self.server, session_id=self.session_id, kill_date=self.kill_date, working_hours=self.working_hours)
+        self.packet_handler.agent = agent
+        agent.run()
+"""
+
+    return code_first + new_function + code_last
