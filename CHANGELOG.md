@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Added option to start MySQL service on boot to install script (@Cx01N)
 -   Modernized the Python and IronPython agents with new agent and staging code (@Cx01N)
 -   Added automatic tasking for sysinfo for stageless agents (@Cx01N)
 -   Updated listeners to consistently use port 80 and 443 for HTTP traffic by default (@Cx01N)

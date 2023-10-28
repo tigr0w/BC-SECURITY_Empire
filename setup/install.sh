@@ -68,6 +68,7 @@ function install_mysql() {
 }
 
 function start_mysql() {
+  echo -e "\x1b[1;34m[*] Configuring MySQL\x1b[0m"
   sudo systemctl start mysql.service || true # will fail in a docker image
 
   # Add the default empire user to the mysql database
@@ -80,6 +81,17 @@ function start_mysql() {
   mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
   mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
   mysql -u root -proot -e "FLUSH PRIVILEGES;" || true
+
+  if [ "$ASSUME_YES" == "1" ]; then
+    answer="Y"
+  else
+    echo -n -e "\x1b[1;33m[>] Do you want to enable MySQL to start on boot? (y/N)? \x1b[0m"
+    read -r answer
+  fi
+
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    sudo systemctl enable mysql || true
+  fi
 }
 
 function install_xar() {
