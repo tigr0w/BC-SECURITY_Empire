@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Modernized the Python and IronPython agents with new agent and staging code (@Cx01N)
 -   Added automatic tasking for sysinfo for stageless agents (@Cx01N)
 -   Updated listeners to consistently use port 80 and 443 for HTTP traffic by default (@Cx01N)
+-   Remove unneeded condition statement from all listeners (@Vinnybod)
 
 ## [5.7.3] - 2023-10-17
 

