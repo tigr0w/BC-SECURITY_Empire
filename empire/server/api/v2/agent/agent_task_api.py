@@ -1,7 +1,6 @@
 import base64
 import math
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
@@ -95,14 +94,14 @@ async def read_tasks_all_agents(
     include_full_input: bool = False,
     include_original_output: bool = False,
     include_output: bool = True,
-    since: Optional[datetime] = None,
+    since: datetime | None = None,
     order_by: AgentTaskOrderOptions = AgentTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[AgentTaskStatus] = None,
-    agents: Optional[List[str]] = Query(None),
-    users: Optional[List[int]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
-    query: Optional[str] = None,
+    status: AgentTaskStatus | None = None,
+    agents: list[str] | None = Query(None),
+    users: list[int] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
+    query: str | None = None,
     db: Session = Depends(get_db),
 ):
     tasks, total = agent_task_service.get_tasks(
@@ -147,15 +146,15 @@ async def read_tasks(
     include_full_input: bool = False,
     include_original_output: bool = False,
     include_output: bool = True,
-    since: Optional[datetime] = None,
+    since: datetime | None = None,
     order_by: AgentTaskOrderOptions = AgentTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[AgentTaskStatus] = None,
-    users: Optional[List[int]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
+    status: AgentTaskStatus | None = None,
+    users: list[int] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
     db: Session = Depends(get_db),
     db_agent: models.Agent = Depends(get_agent),
-    query: Optional[str] = None,
+    query: str | None = None,
 ):
     tasks, total = agent_task_service.get_tasks(
         db,

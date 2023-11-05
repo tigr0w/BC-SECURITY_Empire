@@ -2,7 +2,6 @@ import fnmatch
 import importlib.util
 import logging
 import os
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -34,7 +33,7 @@ class StagerTemplateService:
 
     def get_stager_template(
         self, name: str
-    ) -> Optional[object]:  # would be nice to have a BaseListener object.
+    ) -> object | None:  # would be nice to have a BaseListener object.
         return self._loaded_stager_templates.get(name)
 
     def get_stager_templates(self):

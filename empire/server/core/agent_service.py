@@ -1,7 +1,6 @@
 import logging
 import queue
 from datetime import datetime, timezone
-from typing import List, Optional
 
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
@@ -65,11 +64,11 @@ class AgentService:
     @staticmethod
     def get_agent_checkins(
         db: Session,
-        agents: List[str] = None,
+        agents: list[str] = None,
         limit: int = -1,
         offset: int = 0,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         order_direction: OrderDirection = OrderDirection.desc,
     ):
         query = db.query(
@@ -104,9 +103,9 @@ class AgentService:
     @staticmethod
     def get_agent_checkins_aggregate(
         db: Session,
-        agents: List[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        agents: list[str] = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         bucket_size: AggregateBucket = None,
     ):
         """

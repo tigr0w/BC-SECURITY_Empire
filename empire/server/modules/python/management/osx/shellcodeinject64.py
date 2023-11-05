@@ -1,6 +1,5 @@
 import base64
 import os
-from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
@@ -11,7 +10,7 @@ class Module:
     def generate(
         main_menu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):

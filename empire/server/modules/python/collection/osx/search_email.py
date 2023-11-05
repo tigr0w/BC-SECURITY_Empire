@@ -1,5 +1,3 @@
-from typing import Dict, Optional, Tuple
-
 from empire.server.core.module_models import EmpireModule
 
 
@@ -8,10 +6,10 @@ class Module:
     def generate(
         main_menu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         searchTerm = params["SearchTerm"]
 
         script = 'cmd = "find /Users/ -name *.emlx 2>/dev/null'

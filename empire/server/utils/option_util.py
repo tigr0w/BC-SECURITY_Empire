@@ -5,9 +5,7 @@ from sqlalchemy.orm import Session
 from empire.server.core.module_models import EmpireModuleOption
 
 
-def safe_cast(
-    option: typing.Any, expected_option_type: typing.Type
-) -> typing.Optional[typing.Any]:
+def safe_cast(option: typing.Any, expected_option_type: type) -> typing.Any | None:
     try:
         if expected_option_type is bool:
             return option.lower() in ["true", "1"]
@@ -16,7 +14,7 @@ def safe_cast(
         return None
 
 
-def convert_module_options(options: typing.List[EmpireModuleOption]) -> typing.Dict:
+def convert_module_options(options: list[EmpireModuleOption]) -> dict:
     """
     Since modules options are typed classes vs listeners/stagers/etc which are dicts, this function
     converts the options to dicts so they can use the same validation logic in validate_options.
@@ -38,7 +36,7 @@ def convert_module_options(options: typing.List[EmpireModuleOption]) -> typing.D
 
 
 def validate_options(
-    instance_options: typing.Dict, params: typing.Dict, db: Session, download_service
+    instance_options: dict, params: dict, db: Session, download_service
 ):
     """
     Compares the options passed in (params) to the options defined in the
@@ -103,7 +101,7 @@ def validate_options(
     return options, None
 
 
-def set_options(instance, options: typing.Dict):
+def set_options(instance, options: dict):
     """
     Sets the options for the listener/stager/plugin instance.
     """
@@ -153,12 +151,9 @@ def _parse_type(type_str: str = "", value: str = ""):
 
 def _safe_cast_option(
     param_name, param_value, option_meta
-) -> typing.Tuple[typing.Any, typing.Optional[str]]:
+) -> tuple[typing.Any, str | None]:
     option_type = type(param_value)
-    if (
-        option_meta.get("Type") is not None
-        and type(option_meta.get("Type")) == typing.Type
-    ):
+    if option_meta.get("Type") is not None and type(option_meta.get("Type")) == type:
         expected_option_type = option_meta.get("Type")
     else:
         expected_option_type = _parse_type(

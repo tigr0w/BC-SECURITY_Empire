@@ -15,7 +15,7 @@ def test_get_listener_template(client, admin_auth_header):
     assert response.status_code == 200
     assert response.json()["name"] == "HTTP[S]"
     assert response.json()["id"] == "http"
-    assert type(response.json()["options"]) == dict
+    assert isinstance(response.json()["options"], dict)
 
 
 def test_create_listener_validation_fails_required_field(

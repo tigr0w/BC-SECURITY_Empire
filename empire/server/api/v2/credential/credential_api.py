@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from starlette.responses import Response
@@ -55,8 +53,8 @@ async def read_credential(
 @router.get("/", response_model=Credentials)
 async def read_credentials(
     db: Session = Depends(get_db),
-    search: Optional[str] = None,
-    credtype: Optional[str] = None,
+    search: str | None = None,
+    credtype: str | None = None,
 ):
     credentials = list(
         map(

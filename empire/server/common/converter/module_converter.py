@@ -1,7 +1,6 @@
 import fnmatch
 import importlib.util
 import os
-from typing import Dict
 
 import yaml
 
@@ -26,7 +25,7 @@ def represent_none(self, _):
     return self.represent_scalar("tag:yaml.org,2002:null", "")
 
 
-def format_info(info: Dict) -> Dict:
+def format_info(info: dict) -> dict:
     ordered_dict = {}
 
     for old, new in info_keys.items():
@@ -35,7 +34,7 @@ def format_info(info: Dict) -> Dict:
     return ordered_dict
 
 
-def format_options(options: Dict) -> Dict:
+def format_options(options: dict) -> dict:
     option_list = []
 
     for key, value in options.items():
@@ -87,7 +86,7 @@ if __name__ == "__main__":
                 spec.loader.exec_module(imp_mod)
                 my_module = imp_mod.Module(None)
 
-                info: Dict = format_info(my_module.info)
+                info: dict = format_info(my_module.info)
                 options = format_options(my_module.options)
 
                 info.update(options)

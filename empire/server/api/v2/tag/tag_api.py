@@ -1,5 +1,4 @@
 import math
-from typing import List, Optional, Union
 
 from fastapi import Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -45,8 +44,8 @@ async def get_tags(
     page: int = 1,
     order_direction: OrderDirection = OrderDirection.asc,
     order_by: TagOrderOptions = TagOrderOptions.updated_at,
-    query: Optional[str] = None,
-    sources: Optional[List[TagSourceFilter]] = Query(None),
+    query: str | None = None,
+    sources: list[TagSourceFilter] | None = Query(None),
 ):
     tags, total = tag_service.get_all(
         db=db,
@@ -79,7 +78,7 @@ def add_endpoints_to_taggable(router, path, get_taggable):
         raise HTTPException(404, f"Tag not found for id {tag_id}")
 
     async def add_tag(
-        uid: Union[int, str],
+        uid: int | str,
         tag_req: TagRequest,
         db_taggable=Depends(get_taggable),
         db: Session = Depends(get_db),
@@ -89,7 +88,7 @@ def add_endpoints_to_taggable(router, path, get_taggable):
         return domain_to_dto_tag(tag)
 
     async def update_tag(
-        uid: Union[int, str],
+        uid: int | str,
         tag_req: TagRequest,
         db_taggable=Depends(get_taggable),
         db_tag: models.Tag = Depends(get_tag),
@@ -100,7 +99,7 @@ def add_endpoints_to_taggable(router, path, get_taggable):
         return domain_to_dto_tag(tag)
 
     async def delete_tag(
-        uid: Union[int, str],
+        uid: int | str,
         tag_id: int,
         db_taggable=Depends(get_taggable),
         db: Session = Depends(get_db),

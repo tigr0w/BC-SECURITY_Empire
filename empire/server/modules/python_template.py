@@ -1,5 +1,3 @@
-from typing import Dict, Optional, Tuple
-
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
@@ -16,10 +14,10 @@ class Module:
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         # Step 1: Get the module source code
         # The script should be stripped of comments, with a link to any
         #   original reference script included in the comments.

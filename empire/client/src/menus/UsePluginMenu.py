@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 from prompt_toolkit.completion import Completion
 
@@ -81,7 +80,7 @@ class UsePluginMenu(UseMenu):
             post_body["options"][key] = self.record_options[key]["value"]
 
         response = state.execute_plugin(self.record["id"], post_body)
-        if isinstance(response, Dict) and "detail" in response:
+        if isinstance(response, dict) and "detail" in response:
             print(print_util.color(response["detail"]))
 
     @command

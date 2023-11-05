@@ -1,5 +1,3 @@
-from typing import Dict
-
 try:
     import donut
 except ModuleNotFoundError:
@@ -17,7 +15,7 @@ class Module:
     def generate(
         main_menu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
@@ -91,7 +89,7 @@ class Module:
             return None, "csharpserver plugin not running"
 
         # Convert compiler.yaml to python dict
-        compiler_dict: Dict = yaml.safe_load(module.compiler_yaml)
+        compiler_dict: dict = yaml.safe_load(module.compiler_yaml)
         # delete the 'Empire' key
         del compiler_dict[0]["Empire"]
         # convert back to yaml string

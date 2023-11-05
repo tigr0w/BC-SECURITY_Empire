@@ -7,7 +7,6 @@ import ssl
 import sys
 import time
 from textwrap import dedent
-from typing import List, Optional, Tuple
 
 from flask import Flask, make_response, render_template, request, send_from_directory
 from werkzeug.serving import WSGIRequestHandler
@@ -188,7 +187,7 @@ class Listener:
         """
         return open(f"{self.template_dir }/default.html").read()
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         """
         Validate all options for this listener.
         """
@@ -221,7 +220,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         """
         Generate a basic launcher for the specified listener.

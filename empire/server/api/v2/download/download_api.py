@@ -1,5 +1,4 @@
 import math
-from typing import List, Optional
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
@@ -83,9 +82,9 @@ async def read_downloads(
     page: int = 1,
     order_direction: OrderDirection = OrderDirection.desc,
     order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
-    query: Optional[str] = None,
-    sources: Optional[List[DownloadSourceFilter]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
+    query: str | None = None,
+    sources: list[DownloadSourceFilter] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
 ):
     downloads, total = download_service.get_all(
         db=db,

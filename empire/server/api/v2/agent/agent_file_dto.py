@@ -2,8 +2,6 @@
 # https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
 from __future__ import annotations
 
-from typing import List, Optional
-
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import (
@@ -13,7 +11,7 @@ from empire.server.api.v2.shared_dto import (
 from empire.server.core.db import models
 
 
-def domain_to_dto_file(file: models.AgentFile, children: List[models.AgentFile]):
+def domain_to_dto_file(file: models.AgentFile, children: list[models.AgentFile]):
     return AgentFile(
         id=file.id,
         session_id=file.session_id,
@@ -34,9 +32,9 @@ class AgentFile(BaseModel):
     name: str
     path: str
     is_file: bool
-    parent_id: Optional[int]
-    downloads: List[DownloadDescription]
-    children: List[AgentFile] = []
+    parent_id: int | None
+    downloads: list[DownloadDescription]
+    children: list[AgentFile] = []
 
     class Config:
         orm_mode = True

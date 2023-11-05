@@ -3,7 +3,6 @@ import pathlib
 import subprocess
 import textwrap
 import time
-from typing import List
 
 from prompt_toolkit import HTML
 from prompt_toolkit.completion import Completion
@@ -468,7 +467,7 @@ class InteractMenu(Menu):
             for line in task["output"].split("\n"):
                 print(print_util.color(line))
 
-    def execute_shortcut(self, command_name: str, params: List[str]):
+    def execute_shortcut(self, command_name: str, params: list[str]):
         shortcut: Shortcut = shortcut_handler.get(self.agent_language, command_name)
 
         if not shortcut:

@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, constr
 
@@ -26,11 +25,11 @@ class Tag(BaseModel):
     name: str
     value: str
     label: str
-    color: Optional[str]
+    color: str | None
 
 
 class Tags(BaseModel):
-    records: List[Tag]
+    records: list[Tag]
     limit: int
     page: int
     total_pages: int
@@ -40,7 +39,7 @@ class Tags(BaseModel):
 class TagRequest(BaseModel):
     name: TagStrNoColon
     value: TagStrNoColon
-    color: Optional[str]
+    color: str | None
 
 
 class TagOrderOptions(str, Enum):

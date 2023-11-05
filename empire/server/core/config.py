@@ -1,6 +1,5 @@
 import logging
 import sys
-from typing import Dict, List
 
 import yaml
 from pydantic import BaseModel, Extra, Field
@@ -27,8 +26,8 @@ class DatabaseDefaultsConfig(BaseModel):
     staging_key: str = "RANDOM"
     username: str = "empireadmin"
     password: str = "password123"
-    obfuscation: List[DatabaseDefaultObfuscationConfig] = []
-    keyword_obfuscation: List[str] = []
+    obfuscation: list[DatabaseDefaultObfuscationConfig] = []
+    keyword_obfuscation: list[str] = []
     ip_whitelist: str = Field("", alias="ip-whitelist")
     ip_blacklist: str = Field("", alias="ip-blacklist")
 
@@ -81,12 +80,12 @@ class EmpireConfig(BaseModel):
     )
     starkiller: StarkillerConfig
     database: DatabaseConfig
-    plugins: Dict[str, Dict[str, str]] = {}
+    plugins: dict[str, dict[str, str]] = {}
     directories: DirectoriesConfig
     logging: LoggingConfig
     debug: DebugConfig
 
-    def __init__(self, config_dict: Dict):
+    def __init__(self, config_dict: dict):
         super().__init__(**config_dict)
         # For backwards compatibility
         self.yaml = config_dict

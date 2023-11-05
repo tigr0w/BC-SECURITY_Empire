@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -19,13 +19,13 @@ class EmpireModuleAdvanced(BaseModel):
 
 class EmpireModuleOption(BaseModel):
     name: str
-    name_in_code: Optional[str]
+    name_in_code: str | None
     description: str = ""
     required: bool = False
     value: str = ""
-    suggested_values: List[str] = []
+    suggested_values: list[str] = []
     strict: bool = False
-    type: Optional[str]
+    type: str | None
 
 
 class EmpireModuleAuthor(BaseModel):
@@ -37,25 +37,25 @@ class EmpireModuleAuthor(BaseModel):
 class EmpireModule(BaseModel):
     id: str
     name: str
-    authors: List[EmpireModuleAuthor] = []
+    authors: list[EmpireModuleAuthor] = []
     description: str = ""
     software: str = ""
-    techniques: List[str] = []
-    tactics: List[str] = []
+    techniques: list[str] = []
+    tactics: list[str] = []
     background: bool = False
-    output_extension: Optional[str] = None
+    output_extension: str | None = None
     needs_admin: bool = False
     opsec_safe: bool = False
     language: LanguageEnum
-    min_language_version: Optional[str]
-    comments: List[str] = []
-    options: List[EmpireModuleOption] = []
-    script: Optional[str] = None
-    script_path: Optional[str] = None
+    min_language_version: str | None
+    comments: list[str] = []
+    options: list[EmpireModuleOption] = []
+    script: str | None = None
+    script_path: str | None = None
     script_end: str = " {{ PARAMS }}"
     enabled: bool = True
     advanced: EmpireModuleAdvanced = EmpireModuleAdvanced()
-    compiler_yaml: Optional[str]
+    compiler_yaml: str | None
 
     def matches(self, query: str, parameter: str = "any") -> bool:
         query = query.lower()
@@ -72,7 +72,7 @@ class EmpireModule(BaseModel):
         return match[parameter]
 
     @property
-    def info(self) -> Dict:
+    def info(self) -> dict:
         desc = self.dict(include={"name", "authors", "description", "comments"})
         desc["options"] = [option.dict() for option in self.options]
         return desc

@@ -341,7 +341,7 @@ def generate_dynamic_powershell_script(script, function_names):
         "struct",
     ]
 
-    if type(function_names) is not list:
+    if not isinstance(function_names, list):
         function_names = [function_names]
 
     # build a mapping of functionNames -> stripped function code

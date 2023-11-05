@@ -1,9 +1,7 @@
-from typing import Dict, List
-
 import yaml
 
 
-def _convert_covenant_to_empire(covenant_dict: Dict, file_path: str):
+def _convert_covenant_to_empire(covenant_dict: dict, file_path: str):
     empire_yaml = {
         "name": covenant_dict["Name"],
         "authors": _convert_convenant_authors_to_empire([covenant_dict["Author"]]),
@@ -25,7 +23,7 @@ def _convert_covenant_to_empire(covenant_dict: Dict, file_path: str):
     return empire_yaml
 
 
-def _convert_convenant_authors_to_empire(covenant_authors: List[Dict]):
+def _convert_convenant_authors_to_empire(covenant_authors: list[dict]):
     empire_authors = []
     for author in covenant_authors:
         empire_authors.append(
@@ -39,9 +37,9 @@ def _convert_convenant_authors_to_empire(covenant_authors: List[Dict]):
 
 
 def _convert_covenant_options_to_empire(
-    covenant_options: List[Dict],
-    empire_options: List[Dict],
-    compatible_versions: List[str],
+    covenant_options: list[dict],
+    empire_options: list[dict],
+    compatible_versions: list[str],
 ):
     empire_options.append(
         {

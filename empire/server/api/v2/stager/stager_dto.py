@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -71,10 +70,10 @@ def domain_to_dto_stager(stager: models.Stager):
 class StagerTemplate(BaseModel):
     id: str
     name: str
-    authors: List[Author]
+    authors: list[Author]
     description: str
-    comments: List[str]
-    options: Dict[str, CustomOptionSchema]
+    comments: list[str]
+    options: dict[str, CustomOptionSchema]
 
     class Config:
         schema_extra = {
@@ -175,7 +174,7 @@ class StagerTemplate(BaseModel):
 
 
 class StagerTemplates(BaseModel):
-    records: List[StagerTemplate]
+    records: list[StagerTemplate]
 
 
 class Stager(BaseModel):
@@ -183,23 +182,21 @@ class Stager(BaseModel):
     name: str
     template: str
     one_liner: bool
-    downloads: List[DownloadDescription]
-    options: Dict[str, str]
+    downloads: list[DownloadDescription]
+    options: dict[str, str]
     user_id: int
-    created_at: Optional[
-        datetime
-    ]  # optional because if its not saved yet, it will be None
-    updated_at: Optional[datetime]
+    created_at: datetime | None  # optional because if its not saved yet, it will be None
+    updated_at: datetime | None
 
 
 class Stagers(BaseModel):
-    records: List[Stager]
+    records: list[Stager]
 
 
 class StagerPostRequest(BaseModel):
     name: str
     template: str
-    options: Dict[str, str]
+    options: dict[str, str]
 
     class Config:
         schema_extra = {
@@ -226,7 +223,7 @@ class StagerPostRequest(BaseModel):
 
 class StagerUpdateRequest(BaseModel):
     name: str
-    options: Dict[str, str]
+    options: dict[str, str]
 
     def __iter__(self):
         return iter(self.__root__)

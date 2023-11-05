@@ -4,7 +4,6 @@ import importlib
 import logging
 import os
 from datetime import datetime
-from typing import List, Optional, Tuple, Union
 
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, undefer
@@ -112,8 +111,8 @@ class PluginService:
         db: Session,
         plugin,
         plugin_req: PluginExecutePostRequest,
-        user: Optional[models.User] = None,
-    ) -> Tuple[Optional[Union[bool, str]], Optional[str]]:
+        user: models.User | None = None,
+    ) -> tuple[bool | str | None, str | None]:
         cleaned_options, err = validate_options(
             plugin.options, plugin_req.options, db, self.download_service
         )
@@ -196,18 +195,18 @@ class PluginService:
     @staticmethod
     def get_tasks(
         db: Session,
-        plugins: List[str] = None,
-        users: List[int] = None,
-        tags: List[str] = None,
+        plugins: list[str] = None,
+        users: list[int] = None,
+        tags: list[str] = None,
         limit: int = -1,
         offset: int = 0,
         include_full_input: bool = False,
         include_output: bool = True,
-        since: Optional[datetime] = None,
+        since: datetime | None = None,
         order_by: PluginTaskOrderOptions = PluginTaskOrderOptions.id,
         order_direction: OrderDirection = OrderDirection.desc,
-        status: Optional[AgentTaskStatus] = None,
-        q: Optional[str] = None,
+        status: AgentTaskStatus | None = None,
+        q: str | None = None,
     ):
         query = db.query(
             models.PluginTask, func.count(models.PluginTask.id).over().label("total")

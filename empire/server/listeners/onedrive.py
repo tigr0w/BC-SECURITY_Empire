@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import time
-from typing import List, Optional, Tuple
 
 from requests import Request, Session
 
@@ -158,7 +157,7 @@ class Listener:
     def default_response(self):
         return ""
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         self.uris = [
             a.strip("/")
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
@@ -203,7 +202,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         bypasses = [] if bypasses is None else bypasses
 

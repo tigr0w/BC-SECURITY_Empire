@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from prompt_toolkit import HTML
 from prompt_toolkit.completion import Completion
@@ -241,7 +240,7 @@ class UseMenu(Menu):
             record_list, "Record Info", colored_header=False, borders=False
         )
 
-    def suggested_values_for_option(self, option: str) -> List[str]:
+    def suggested_values_for_option(self, option: str) -> list[str]:
         try:
             lower = {k.lower(): v for k, v in self.record_options.items()}
             return lower.get(option, {}).get("suggested_values", [])

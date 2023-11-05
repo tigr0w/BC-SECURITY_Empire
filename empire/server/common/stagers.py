@@ -21,7 +21,6 @@ import string
 import subprocess
 import zipfile
 from itertools import cycle
-from typing import Optional, Tuple
 
 try:
     import donut
@@ -184,7 +183,7 @@ class Stagers:
 
     def generate_powershell_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """
         Generate powershell shellcode using donut python module
         """
@@ -281,7 +280,7 @@ class Stagers:
 
     def generate_python_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """
         Generate ironpython shellcode using donut python module
         """
@@ -519,7 +518,7 @@ class Stagers:
                 shutil.copy2(icon, tmpdir + "Contents/Resources/" + iconfile + ".icns")
             else:
                 iconfile = icon
-            appPlist = """<?xml version="1.0" encoding="UTF-8"?>
+            appPlist = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -528,15 +527,15 @@ class Stagers:
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>{}</string>
+    <string>{AppName}</string>
     <key>CFBundleIconFile</key>
-    <string>{}</string>
+    <string>{iconfile}</string>
     <key>CFBundleIdentifier</key>
-    <string>com.apple.{}</string>
+    <string>com.apple.{AppName}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>{}</string>
+    <string>{AppName}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -577,12 +576,7 @@ class Stagers:
     <string>NSApplication</string>
 </dict>
 </plist>
-""".format(
-                AppName,
-                iconfile,
-                AppName,
-                AppName,
-            )
+"""
             with open(tmpdir + "Contents/Info.plist", "w") as f:
                 f.write(appPlist)
 

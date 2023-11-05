@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Callable, Dict
+from collections.abc import Callable
 
 log = logging.getLogger(__name__)
 
@@ -46,8 +46,8 @@ class Hooks:
     AFTER_TAG_UPDATED_HOOK = "after_tag_updated_hook"
 
     def __init__(self):
-        self.hooks: Dict[str, Dict[str, Callable]] = {}
-        self.filters: Dict[str, Dict[str, Callable]] = {}
+        self.hooks: dict[str, dict[str, Callable]] = {}
+        self.filters: dict[str, dict[str, Callable]] = {}
 
     def register_hook(self, event: str, name: str, hook: Callable):
         """

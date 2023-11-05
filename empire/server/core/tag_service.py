@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional, Union
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
@@ -10,6 +9,15 @@ from empire.server.core.db import models
 from empire.server.core.hooks import hooks
 
 log = logging.getLogger(__name__)
+
+Taggable = (
+    models.Listener
+    | models.Agent
+    | models.AgentTask
+    | models.PluginTask
+    | models.Credential
+    | models.Download
+)
 
 
 class TagService:
@@ -22,7 +30,7 @@ class TagService:
     def get_all(
         self,
         db: Session,
-        tag_types: Optional[List[TagSourceFilter]],
+        tag_types: list[TagSourceFilter] | None,
         q: str,
         limit: int = -1,
         offset: int = 0,
@@ -88,14 +96,7 @@ class TagService:
     def add_tag(
         self,
         db: Session,
-        taggable: Union[
-            models.Listener,
-            models.Agent,
-            models.AgentTask,
-            models.PluginTask,
-            models.Credential,
-            models.Download,
-        ],
+        taggable: Taggable,
         tag_req,
     ):
         tag = models.Tag(name=tag_req.name, value=tag_req.value, color=tag_req.color)
@@ -110,14 +111,7 @@ class TagService:
         self,
         db: Session,
         db_tag: models.Tag,
-        taggable: Union[
-            models.Listener,
-            models.Agent,
-            models.AgentTask,
-            models.PluginTask,
-            models.Credential,
-            models.Download,
-        ],
+        taggable: Taggable,
         tag_req,
     ):
         db_tag.name = tag_req.name
@@ -132,14 +126,7 @@ class TagService:
     def delete_tag(
         self,
         db: Session,
-        taggable: Union[
-            models.Listener,
-            models.Agent,
-            models.AgentTask,
-            models.PluginTask,
-            models.Credential,
-            models.Download,
-        ],
+        taggable: Taggable,
         tag_id: int,
     ):
         if tag_id in [tag.id for tag in taggable.tags]:

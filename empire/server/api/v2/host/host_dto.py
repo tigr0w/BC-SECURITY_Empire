@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel
 
 
@@ -18,4 +16,4 @@ class Host(BaseModel):
 
 
 class Hosts(BaseModel):
-    records: List[Host]
+    records: list[Host]

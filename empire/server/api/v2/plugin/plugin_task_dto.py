@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -45,20 +44,20 @@ def domain_to_dto_plugin_task(
 class PluginTask(BaseModel):
     id: int
     input: str
-    full_input: Optional[str]
-    output: Optional[str]
-    user_id: Optional[int]
-    username: Optional[str]
+    full_input: str | None
+    output: str | None
+    user_id: int | None
+    username: str | None
     plugin_id: str
-    downloads: List[DownloadDescription]
-    status: Optional[models.PluginTaskStatus]
+    downloads: list[DownloadDescription]
+    status: models.PluginTaskStatus | None
     created_at: datetime
     updated_at: datetime
-    tags: List[Tag]
+    tags: list[Tag]
 
 
 class PluginTasks(BaseModel):
-    records: List[PluginTask]
+    records: list[PluginTask]
     limit: int
     page: int
     total_pages: int

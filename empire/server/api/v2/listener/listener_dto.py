@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -67,14 +66,14 @@ def domain_to_dto_listener(listener):
 class ListenerTemplate(BaseModel):
     id: str
     name: str
-    authors: List[Author]
+    authors: list[Author]
     description: str
     category: str
-    comments: List[str]
-    tactics: List[str]
-    techniques: List[str]
-    software: Optional[str]
-    options: Dict[str, CustomOptionSchema]
+    comments: list[str]
+    tactics: list[str]
+    techniques: list[str]
+    software: str | None
+    options: dict[str, CustomOptionSchema]
 
     class Config:
         schema_extra = {
@@ -241,7 +240,7 @@ class ListenerTemplate(BaseModel):
 
 
 class ListenerTemplates(BaseModel):
-    records: List[ListenerTemplate]
+    records: list[ListenerTemplate]
 
 
 class Listener(BaseModel):
@@ -249,19 +248,19 @@ class Listener(BaseModel):
     name: str
     enabled: bool
     template: str
-    options: Dict[str, str]
+    options: dict[str, str]
     created_at: datetime
-    tags: List[Tag]
+    tags: list[Tag]
 
 
 class Listeners(BaseModel):
-    records: List[Listener]
+    records: list[Listener]
 
 
 class ListenerPostRequest(BaseModel):
     name: str
     template: str
-    options: Dict[str, str]
+    options: dict[str, str]
 
     class Config:
         schema_extra = {
@@ -300,7 +299,7 @@ class ListenerPostRequest(BaseModel):
 class ListenerUpdateRequest(BaseModel):
     name: str
     enabled: bool
-    options: Dict[str, str]
+    options: dict[str, str]
 
     def __iter__(self):
         return iter(self.__root__)

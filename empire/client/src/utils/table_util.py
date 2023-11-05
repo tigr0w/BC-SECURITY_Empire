@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from terminaltables import SingleTable
 
@@ -10,7 +9,7 @@ log = logging.getLogger(__name__)
 
 
 def print_table(
-    data: List[List[str]] = None,
+    data: list[list[str]] = None,
     title: str = "",
     colored_header: bool = True,
     borders: bool = None,
@@ -46,8 +45,8 @@ def print_table(
 
 
 def print_agent_table(
-    data: List[List[str]] = None,
-    formatting: List[List[str]] = None,
+    data: list[list[str]] = None,
+    formatting: list[list[str]] = None,
     title: str = "",
     borders: bool = None,
 ):

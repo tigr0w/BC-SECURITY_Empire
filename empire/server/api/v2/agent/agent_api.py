@@ -1,6 +1,5 @@
 import math
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -57,11 +56,11 @@ tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_agent)
 @router.get("/checkins", response_model=AgentCheckIns)
 def read_agent_checkins_all(
     db: Session = Depends(get_db),
-    agents: List[str] = Query(None),
+    agents: list[str] = Query(None),
     limit: int = 1000,
     page: int = 1,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
     order_direction: OrderDirection = OrderDirection.desc,
 ):
     checkins, total = agent_service.get_agent_checkins(
@@ -81,10 +80,10 @@ def read_agent_checkins_all(
 @router.get("/checkins/aggregate", response_model=AgentCheckInsAggregate)
 def read_agent_checkins_aggregate(
     db: Session = Depends(get_db),
-    agents: List[str] = Query(None),
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
-    bucket_size: Optional[AggregateBucket] = AggregateBucket.day,
+    agents: list[str] = Query(None),
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    bucket_size: AggregateBucket | None = AggregateBucket.day,
 ):
     if empire_config.database.use == "sqlite":
         raise HTTPException(
@@ -147,8 +146,8 @@ def read_agent_checkins(
     db_agent: models.Agent = Depends(get_agent),
     limit: int = -1,
     page: int = 1,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
     order_direction: OrderDirection = OrderDirection.desc,
 ):
     checkins, total = agent_service.get_agent_checkins(

@@ -31,7 +31,7 @@ def test_get_stager_template(client, admin_auth_header):
     assert response.status_code == 200
     assert response.json()["name"] == "Launcher"
     assert response.json()["id"] == "multi_launcher"
-    assert type(response.json()["options"]) == dict
+    assert isinstance(response.json()["options"], dict)
 
 
 def test_create_stager_validation_fails_required_field(

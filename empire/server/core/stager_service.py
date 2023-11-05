@@ -2,7 +2,7 @@ import copy
 import os
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -37,8 +37,8 @@ class StagerService:
         return db.query(models.Stager).filter(models.Stager.name == name).first()
 
     def validate_stager_options(
-        self, db: Session, template: str, params: Dict
-    ) -> Tuple[Optional[Any], Optional[str]]:
+        self, db: Session, template: str, params: dict
+    ) -> tuple[Any | None, str | None]:
         """
         Validates the new listener's options. Constructs a new "Listener" object.
         :param template:

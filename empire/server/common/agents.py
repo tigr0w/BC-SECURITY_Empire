@@ -43,7 +43,6 @@ import threading
 import time
 import warnings
 from pathlib import Path
-from typing import Dict
 
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
@@ -94,7 +93,7 @@ class Agents:
 
         # Since each agent logs to a different file, we can have multiple locks to reduce
         #  waiting time when writing to the file.
-        self.agent_log_locks: Dict[str, threading.Lock] = {}
+        self.agent_log_locks: dict[str, threading.Lock] = {}
 
         # reinitialize any agents that already exist in the database
         db_agents = self.get_agents_db()

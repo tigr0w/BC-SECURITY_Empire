@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -30,13 +29,13 @@ class User(BaseModel):
     username: str
     enabled: bool
     is_admin: bool
-    avatar: Optional[DownloadDescription]
+    avatar: DownloadDescription | None
     created_at: datetime
     updated_at: datetime
 
 
 class Users(BaseModel):
-    records: List[User]
+    records: list[User]
 
 
 class UserPostRequest(BaseModel):

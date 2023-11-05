@@ -13,7 +13,6 @@ import os
 import time
 from pathlib import Path
 from socket import SocketIO
-from typing import Optional
 
 # Empire imports
 from empire.server.core import hooks_internal
@@ -65,7 +64,7 @@ class MainMenu:
         # parse/handle any passed command line arguments
         self.args = args
 
-        self.socketio: Optional[SocketIO] = None
+        self.socketio: SocketIO | None = None
 
         self.agents = agents.Agents(self, args=args)
         self.credentials = credentials.Credentials(self, args=args)

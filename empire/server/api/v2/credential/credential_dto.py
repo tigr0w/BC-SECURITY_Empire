@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -30,16 +29,16 @@ class Credential(BaseModel):
     username: str
     password: str
     host: str
-    os: Optional[str]
-    sid: Optional[str]
-    notes: Optional[str]
+    os: str | None
+    sid: str | None
+    notes: str | None
     created_at: datetime
     updated_at: datetime
-    tags: List[Tag]
+    tags: list[Tag]
 
 
 class Credentials(BaseModel):
-    records: List[Credential]
+    records: list[Credential]
 
 
 class CredentialUpdateRequest(BaseModel):
@@ -51,9 +50,9 @@ class CredentialUpdateRequest(BaseModel):
     os: str
     sid: str
     notes: str
-    os: Optional[str]
-    sid: Optional[str]
-    notes: Optional[str]
+    os: str | None
+    sid: str | None
+    notes: str | None
 
 
 class CredentialPostRequest(BaseModel):
@@ -62,6 +61,6 @@ class CredentialPostRequest(BaseModel):
     username: str
     password: str
     host: str
-    os: Optional[str]
-    sid: Optional[str]
-    notes: Optional[str]
+    os: str | None
+    sid: str | None
+    notes: str | None

@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Dict, Optional
 
 import requests
 import socketio
@@ -29,7 +28,7 @@ class EmpireCliState:
         self.host = ""
         self.port = ""
         self.token = ""
-        self.sio: Optional[socketio.Client] = None
+        self.sio: socketio.Client | None = None
         self.connected = False
         self.menus = []
 
@@ -345,7 +344,7 @@ class EmpireCliState:
         self.get_listeners()
         return response
 
-    def edit_listener(self, listener_id: str, options: Dict):
+    def edit_listener(self, listener_id: str, options: dict):
         response = requests.put(
             url=f"{self.host}:{self.port}/api/v2/listeners/{listener_id}",
             json=options,
@@ -379,7 +378,7 @@ class EmpireCliState:
         )
         return response.json()
 
-    def create_listener(self, options: Dict):
+    def create_listener(self, options: dict):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/listeners",
             json=options,
@@ -400,7 +399,7 @@ class EmpireCliState:
         self.stagers = {x["id"]: x for x in response.json()["records"]}
         return self.stagers
 
-    def create_stager(self, options: Dict):
+    def create_stager(self, options: dict):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/stagers",
             json=options,
@@ -450,7 +449,7 @@ class EmpireCliState:
         self.modules = {x["id"]: x for x in response.json()["records"] if x["enabled"]}
         return self.modules
 
-    def execute_module(self, session_id: str, options: Dict):
+    def execute_module(self, session_id: str, options: dict):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/module",
             json=options,
@@ -459,7 +458,7 @@ class EmpireCliState:
         )
         return response.json()
 
-    def update_agent(self, session_id: str, options: Dict):
+    def update_agent(self, session_id: str, options: dict):
         response = requests.put(
             url=f"{self.host}:{self.port}/api/v2/agents/{session_id}",
             json=options,
@@ -630,7 +629,7 @@ class EmpireCliState:
         )
         return response.json()
 
-    def edit_credential(self, cred_id, cred_options: Dict):
+    def edit_credential(self, cred_id, cred_options: dict):
         response = requests.put(
             url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
             verify=False,
@@ -677,7 +676,7 @@ class EmpireCliState:
         )
         return response.json()
 
-    def execute_plugin(self, uid: str, options: Dict):
+    def execute_plugin(self, uid: str, options: dict):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/plugins/{uid}/execute",
             json=options,

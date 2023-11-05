@@ -2,7 +2,6 @@ import os
 import shutil
 from operator import and_
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 from fastapi import UploadFile
 from sqlalchemy import func, or_
@@ -28,14 +27,14 @@ class DownloadService:
     @staticmethod
     def get_all(
         db: Session,
-        download_types: Optional[List[DownloadSourceFilter]],
-        tags: List[str] = None,
+        download_types: list[DownloadSourceFilter] | None,
+        tags: list[str] = None,
         q: str = None,
         limit: int = -1,
         offset: int = 0,
         order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
         order_direction: OrderDirection = OrderDirection.desc,
-    ) -> Tuple[List[models.Download], int]:
+    ) -> tuple[list[models.Download], int]:
         query = db.query(
             models.Download, func.count(models.Download.id).over().label("total")
         )
@@ -122,7 +121,7 @@ class DownloadService:
         user: models.User,
         file: str,
         filename: str,
-        subdirectory: Optional[str] = None,
+        subdirectory: str | None = None,
     ):
         """
         Upload the file to the downloads directory and save a reference to the db.
@@ -144,9 +143,7 @@ class DownloadService:
 
         return self._save_download(db, filename, location)
 
-    def create_download(
-        self, db: Session, user: models.User, file: Union[UploadFile, Path]
-    ):
+    def create_download(self, db: Session, user: models.User, file: UploadFile | Path):
         """
         Upload the file to the downloads directory and save a reference to the db.
         :param db:

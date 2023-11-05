@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -49,23 +48,23 @@ def domain_to_dto_task(
 class AgentTask(BaseModel):
     id: int
     input: str
-    full_input: Optional[str]
-    output: Optional[str]
-    original_output: Optional[str]
-    user_id: Optional[int]
-    username: Optional[str]
+    full_input: str | None
+    output: str | None
+    original_output: str | None
+    user_id: int | None
+    username: str | None
     agent_id: str
-    downloads: List[DownloadDescription]
-    module_name: Optional[str]
-    task_name: Optional[str]
+    downloads: list[DownloadDescription]
+    module_name: str | None
+    task_name: str | None
     status: models.AgentTaskStatus
     created_at: datetime
     updated_at: datetime
-    tags: List[Tag]
+    tags: list[Tag]
 
 
 class AgentTasks(BaseModel):
-    records: List[AgentTask]
+    records: list[AgentTask]
     limit: int
     page: int
     total_pages: int
@@ -81,8 +80,8 @@ class ModulePostRequest(BaseModel):
     module_id: str
     ignore_language_version_check: bool = False
     ignore_admin_check: bool = False
-    options: Dict[str, Union[str, int, float]]
-    modified_input: Optional[str] = None
+    options: dict[str, str | int | float]
+    modified_input: str | None = None
 
 
 class DownloadPostRequest(BaseModel):
@@ -143,7 +142,7 @@ class ProxyItem(BaseModel):
 
 
 class ProxyListPostRequest(BaseModel):
-    proxies: List[ProxyItem]
+    proxies: list[ProxyItem]
 
 
 class ExitPostRequest(BaseModel):

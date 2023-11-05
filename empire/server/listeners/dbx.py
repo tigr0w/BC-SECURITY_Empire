@@ -4,7 +4,6 @@ import logging
 import os
 import time
 from textwrap import dedent
-from typing import List, Optional, Tuple
 
 import dropbox
 
@@ -143,7 +142,7 @@ class Listener:
         """
         return ""
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         """
         Validate all options for this listener.
         """
@@ -173,7 +172,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         """
         Generate a basic launcher for the specified listener.

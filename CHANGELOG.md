@@ -8,7 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 -   Warning: You may run into errors installing things such as nim if you are running the install script on a machine that previously ran it. This is due to permissions changes with the install script. In this case it is recommended to use a fresh machine or manually remove the offending directories/files.
--   Update install script (@Vinnybod)
+-   Modernized the Python and IronPython agents with new agent and staging code (@Cx01N)
+-   Added automatic tasking for sysinfo for stageless agents (@Cx01N)
+-   Updated listeners to consistently use port 80 and 443 for HTTP traffic by default (@Cx01N)
+-   Make the installation of donut conditional on architecture since it doesn't work on ARM (@Vinnybod)
+    -   When donut is invoked but not installed, give a useful warning (@Vinnybod)
+-   Drop support for Python 3.8 and 3.9
+- Update install script (@Vinnybod)
     -   Use pyenv to install Python
     -   Use the official Poetry installer
     -   Don't run the entire script as root
@@ -27,15 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Use a patched version of pysecretsocks that packages asyncore for Python 3.12 support
     -   Use docopt-ng for Python 3.12 support
     -   Add packaging as a runtime dependency
--   Drop support for Python 3.8 and 3.9
 -   Correct more deprecation warnings for SQLAlchemy and invalid escape sequences (@Vinnybod)
 -   Added option to start MySQL service on boot to install script (@Cx01N)
--   Modernized the Python and IronPython agents with new agent and staging code (@Cx01N)
--   Added automatic tasking for sysinfo for stageless agents (@Cx01N)
--   Updated listeners to consistently use port 80 and 443 for HTTP traffic by default (@Cx01N)
 -   Remove unneeded condition statement from all listeners (@Vinnybod)
--   Make the installation of donut conditional on architecture since it doesn't work on ARM (@Vinnybod)
-    -   When donut is invoked but not installed, give a useful warning (@Vinnybod)
+-   Updated the ruff minimum Python version to 3.10 and applied fixes to get codebase compliant (@Vinnybod)
 
 ## [5.7.3] - 2023-10-17
 
@@ -632,7 +633,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.3...HEAD
+
+[5.7.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.2...v5.7.3
 
 [5.7.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.1...v5.7.2
 

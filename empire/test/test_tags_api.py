@@ -299,6 +299,7 @@ def _create_tags(
     for taggable in zip(
         [listener, agent, agent_task, plugin_task, credential, download],
         paths,
+        strict=True,
     ):
         if isinstance(taggable[0], dict):
             taggable_id = taggable[0]["id"]

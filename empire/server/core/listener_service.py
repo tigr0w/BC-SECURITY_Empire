@@ -1,7 +1,7 @@
 import copy
 import hashlib
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -31,15 +31,15 @@ class ListenerService:
         self._active_listeners = {}
 
     @staticmethod
-    def get_all(db: Session) -> List[models.Listener]:
+    def get_all(db: Session) -> list[models.Listener]:
         return db.query(models.Listener).all()
 
     @staticmethod
-    def get_by_id(db: Session, uid: int) -> Optional[models.Listener]:
+    def get_by_id(db: Session, uid: int) -> models.Listener | None:
         return db.query(models.Listener).filter(models.Listener.id == uid).first()
 
     @staticmethod
-    def get_by_name(db: Session, name: str) -> Optional[models.Listener]:
+    def get_by_name(db: Session, name: str) -> models.Listener | None:
         return db.query(models.Listener).filter(models.Listener.name == name).first()
 
     def get_active_listeners(self):
@@ -194,8 +194,8 @@ class ListenerService:
             return None, msg
 
     def _validate_listener_options(
-        self, db: Session, template: str, params: Dict
-    ) -> Tuple[Optional[Any], Optional[str]]:
+        self, db: Session, template: str, params: dict
+    ) -> tuple[Any | None, str | None]:
         """
         Validates the new listener's options. Constructs a new "Listener" object.
         :param template:

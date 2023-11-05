@@ -3,7 +3,6 @@ import copy
 import logging
 import os
 import random
-from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets, templating
 from empire.server.common.empire import MainMenu
@@ -76,7 +75,7 @@ class Listener:
         self.instance_log.info("default_response() not implemented for pivot listeners")
         return b""
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         """
         Validate all options for this listener.
         """
@@ -94,7 +93,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         """
         Generate a basic launcher for the specified listener.

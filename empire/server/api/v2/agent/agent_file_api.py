@@ -1,5 +1,3 @@
-from typing import List, Optional, Tuple
-
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -69,9 +67,7 @@ async def read_file_root(
 async def read_file(
     uid: int,
     db_agent: models.Agent = Depends(get_agent),
-    db_file: Optional[Tuple[models.AgentFile, List[models.AgentFile]]] = Depends(
-        get_file
-    ),
+    db_file: tuple[models.AgentFile, list[models.AgentFile]] | None = Depends(get_file),
 ):
     if db_file:
         return domain_to_dto_file(*db_file)

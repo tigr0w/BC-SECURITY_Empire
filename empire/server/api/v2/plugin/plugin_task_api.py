@@ -1,6 +1,5 @@
 import math
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -70,14 +69,14 @@ async def read_tasks_all_plugins(
     page: int = 1,
     include_full_input: bool = False,
     include_output: bool = True,
-    since: Optional[datetime] = None,
+    since: datetime | None = None,
     order_by: PluginTaskOrderOptions = PluginTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[PluginTaskStatus] = None,
-    plugins: Optional[List[str]] = Query(None),
-    users: Optional[List[int]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
-    query: Optional[str] = None,
+    status: PluginTaskStatus | None = None,
+    plugins: list[str] | None = Query(None),
+    users: list[int] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
+    query: str | None = None,
     db: Session = Depends(get_db),
 ):
     tasks, total = plugin_service.get_tasks(
@@ -118,15 +117,15 @@ async def read_tasks(
     page: int = 1,
     include_full_input: bool = False,
     include_output: bool = True,
-    since: Optional[datetime] = None,
+    since: datetime | None = None,
     order_by: PluginTaskOrderOptions = PluginTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[PluginTaskStatus] = None,
-    users: Optional[List[int]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
+    status: PluginTaskStatus | None = None,
+    users: list[int] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
     db: Session = Depends(get_db),
     plugin=Depends(get_plugin),
-    query: Optional[str] = None,
+    query: str | None = None,
 ):
     tasks, total = plugin_service.get_tasks(
         db,

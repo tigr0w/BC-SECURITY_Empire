@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -26,7 +26,7 @@ class CustomOptionSchema(BaseModel):
     description: str
     required: bool
     value: str
-    suggested_values: List[str]
+    suggested_values: list[str]
     strict: bool
     value_type: ValueType
 
@@ -46,9 +46,9 @@ class DownloadDescription(BaseModel):
 
 
 class Author(BaseModel):
-    name: Optional[str]
-    handle: Optional[str]
-    link: Optional[str]
+    name: str | None
+    handle: str | None
+    link: str | None
 
 
 def domain_to_dto_download_description(download: models.Download):

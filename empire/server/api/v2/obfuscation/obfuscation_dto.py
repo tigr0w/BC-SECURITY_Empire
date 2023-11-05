@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 from pydantic import BaseModel, Field
 
@@ -18,7 +17,7 @@ class Keyword(BaseModel):
 
 
 class Keywords(BaseModel):
-    records: List[Keyword]
+    records: list[Keyword]
 
 
 class KeywordUpdateRequest(BaseModel):
@@ -53,7 +52,7 @@ class ObfuscationConfig(BaseModel):
 
 
 class ObfuscationConfigs(BaseModel):
-    records: List[ObfuscationConfig]
+    records: list[ObfuscationConfig]
 
 
 class ObfuscationConfigUpdateRequest(BaseModel):

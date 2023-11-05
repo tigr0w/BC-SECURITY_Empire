@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
@@ -51,20 +49,20 @@ def domain_to_dto_plugin(plugin: Plugin, uid: str):
 class Plugin(BaseModel):
     id: str
     name: str
-    authors: List[Author]
+    authors: list[Author]
     description: str
-    techniques: List[str] = []
-    software: Optional[str]
-    comments: List[str]
-    options: Dict[str, CustomOptionSchema]
+    techniques: list[str] = []
+    software: str | None
+    comments: list[str]
+    options: dict[str, CustomOptionSchema]
 
 
 class Plugins(BaseModel):
-    records: List[Plugin]
+    records: list[Plugin]
 
 
 class PluginExecutePostRequest(BaseModel):
-    options: Dict[str, str]
+    options: dict[str, str]
 
 
 class PluginExecuteResponse(BaseModel):

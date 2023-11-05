@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from prompt_toolkit.completion import Completion
 
@@ -162,7 +161,7 @@ class ProxyMenu(UseMenu):
 
         table_util.print_table(proxies, "Active Proxies")
 
-    def suggested_values_for_option(self, option: str) -> List[str]:
+    def suggested_values_for_option(self, option: str):
         try:
             lower = {k.lower(): v for k, v in self.record_options.items()}
             return lower.get(option, {}).get("suggested_values", [])

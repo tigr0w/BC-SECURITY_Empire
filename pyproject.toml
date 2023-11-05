@@ -63,7 +63,7 @@ httpx = "^0.24.1" # For starlette TestClient
 black = "^23.10.0"
 pytest = "^7.4.2"
 pytest-timeout = "^2.2.0"
-ruff = "^0.0.283"
+ruff = "^0.1.4"
 pytest-cov = "^4.1.0"
 
 [build-system]
@@ -108,11 +108,7 @@ select = [
     "UP", # PyUpgrade
     "B"  # Bugbear
 ]
-target-version = "py38"
-
-[tool.ruff.pyupgrade]
-# https://docs.astral.sh/ruff/settings/#pyupgrade-keep-runtime-typing
-keep-runtime-typing = true
+target-version = "py310"
 
 [tool.ruff.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query", "fastapi.File"]

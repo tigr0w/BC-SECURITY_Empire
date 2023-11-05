@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: psf/black@23.10.0
+      - uses: psf/black@23.10.1
       - name: Run ruff
         run: |
-          pip install ruff==0.0.283
+          pip install ruff==0.1.4
           ruff .
   matrix-prep-config:
     runs-on: ubuntu-latest

@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
@@ -49,22 +47,22 @@ class Module(BaseModel):
     id: str
     name: str
     enabled: bool
-    authors: List[Author]
+    authors: list[Author]
     description: str
     background: bool
     language: LanguageEnum
-    min_language_version: Optional[str]
+    min_language_version: str | None
     needs_admin: bool
     opsec_safe: bool
-    techniques: List[str]
-    tactics: List[str]
-    software: Optional[str]
-    comments: List[str]
-    options: Dict[str, CustomOptionSchema]
+    techniques: list[str]
+    tactics: list[str]
+    software: str | None
+    comments: list[str]
+    options: dict[str, CustomOptionSchema]
 
 
 class Modules(BaseModel):
-    records: List[Module]
+    records: list[Module]
 
 
 class ModuleScript(BaseModel):
@@ -77,5 +75,5 @@ class ModuleUpdateRequest(BaseModel):
 
 
 class ModuleBulkUpdateRequest(BaseModel):
-    modules: List[str]
+    modules: list[str]
     enabled: bool
