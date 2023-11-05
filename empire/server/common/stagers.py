@@ -21,8 +21,13 @@ import string
 import subprocess
 import zipfile
 from itertools import cycle
+from typing import Optional, Tuple
 
-import donut
+try:
+    import donut
+except ModuleNotFoundError:
+    donut = None
+
 import macholib.MachO
 
 from empire.server.core.db import models
@@ -179,7 +184,7 @@ class Stagers:
 
     def generate_powershell_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
-    ):
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
         Generate powershell shellcode using donut python module
         """
@@ -191,8 +196,14 @@ class Stagers:
             arch_type = 3
 
         directory = self.generate_powershell_exe(posh_code, dot_net_version)
+
+        if not donut:
+            err = "module donut-shellcode not installed. It is only supported on x86."
+            log.warning(err, exc_info=True)
+            return None, err
+
         shellcode = donut.create(file=directory, arch=arch_type)
-        return shellcode
+        return shellcode, None
 
     def generate_exe_oneliner(
         self, language, obfuscate, obfuscation_command, encode, listener_name
@@ -270,7 +281,7 @@ class Stagers:
 
     def generate_python_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
-    ):
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
         Generate ironpython shellcode using donut python module
         """
@@ -281,9 +292,14 @@ class Stagers:
         elif arch == "both":
             arch_type = 3
 
+        if not donut:
+            err = "module donut-shellcode not installed. It is only supported on x86."
+            log.warning(err, exc_info=True)
+            return None, err
+
         directory = self.generate_python_exe(posh_code, dot_net_version)
         shellcode = donut.create(file=directory, arch=arch_type)
-        return shellcode
+        return shellcode, None
 
     def generate_macho(self, launcherCode):
         """

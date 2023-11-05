@@ -1,6 +1,10 @@
 from typing import Dict
 
-import donut
+try:
+    import donut
+except ModuleNotFoundError:
+    donut = None
+
 import yaml
 
 from empire.server.common import helpers
@@ -48,9 +52,11 @@ class Module:
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
         if language.lower() == "powershell":
-            shellcode = main_menu.stagers.generate_powershell_shellcode(
+            shellcode, err = main_menu.stagers.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
+            if err:
+                return handle_error_message(err)
 
         elif language.lower() == "csharp":
             if arch == "x86":
@@ -60,6 +66,12 @@ class Module:
             elif arch == "both":
                 arch_type = 3
             directory = f"{main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
+
+            if not donut:
+                return handle_error_message(
+                    "module donut-shellcode not installed. It is only supported on x86."
+                )
+
             shellcode = donut.create(file=directory, arch=arch_type)
 
         elif language.lower() == "ironpython":

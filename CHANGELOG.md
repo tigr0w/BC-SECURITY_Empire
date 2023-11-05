@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added automatic tasking for sysinfo for stageless agents (@Cx01N)
 -   Updated listeners to consistently use port 80 and 443 for HTTP traffic by default (@Cx01N)
 -   Remove unneeded condition statement from all listeners (@Vinnybod)
+-   Make the installation of donut conditional on architecture since it doesn't work on ARM (@Vinnybod)
+    -   When donut is invoked but not installed, give a useful warning (@Vinnybod)
 
 ## [5.7.3] - 2023-10-17
 
