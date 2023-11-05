@@ -1,10 +1,59 @@
 schemaVersion: 2.0.0
 commandTests:
-  - name: "python3 which"
-    command: "which"
-    args: ["python3"]
+  - name: "poetry python"
+    command: "poetry"
+    args: ["run", "which", "python3"]
     expectedOutput: ["/usr/local/bin/python3"]
   - name: "python3 version"
     command: "python3"
     args: ["--version"]
-    expectedOutput: ["Python 3.11.*"]
+    expectedOutput: ["Python 3.12.*"]
+  - name: "poetry"
+    command: "which"
+    args: ["poetry"]
+    expectedOutput: ["/usr/bin/poetry"]
+  - name: "poetry version"
+    command: "poetry"
+    args: ["--version"]
+    expectedOutput: ["Poetry (version 1.6*)*"]
+  - name: "poetry python version"
+    command: "poetry"
+    args: ["run", "python3", "--version"]
+    expectedOutput: ["Python 3.12.*"]
+  - name: "dotnet which"
+    command: "which"
+    args: ["dotnet"]
+    expectedOutput: ["/usr/bin/dotnet"]
+  - name: "dotnet version"
+    command: "dotnet"
+    args: [ "--version" ]
+    expectedOutput: ["6.0.*"]
+  - name: "powershell which"
+    command: "which"
+    args: ["pwsh"]
+    expectedOutput: ["/usr/bin/pwsh"]
+  - name: "powershell version"
+    command: "pwsh"
+    args: ["--version"]
+    expectedOutput: ["PowerShell 7.*"]
+  - name: "ps-empire help"
+    command: "./ps-empire"
+    args: ["server", "--help"]
+    expectedOutput: ["usage: empire.py server [-h]*"]
+  - name: "ps-empire version"
+    command: "./ps-empire"
+    args: ["server", "--version"]
+    expectedOutput: ["5.* BC Security Fork"]
+fileExistenceTests:
+  - name: 'profiles'
+    path: '/empire/empire/server/data/profiles/'
+    shouldExist: true
+  - name: 'invoke obfuscation'
+    path: '/usr/local/share/powershell/Modules/Invoke-Obfuscation/'
+    shouldExist: true
+  - name: 'sharpire'
+    path: '/empire/empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Sharpire'
+    shouldExist: true
+  - name: 'starkiller'
+    path: '/empire/empire/server/api/v2/starkiller/index.html'
+    shouldExist: true

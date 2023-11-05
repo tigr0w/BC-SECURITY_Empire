@@ -6,10 +6,10 @@ The following operating systems have been tested for Empire compatibility. We wi
 
 * Kali Linux Rolling
 * Ubuntu 20.04 / 22.04
-* Debian 10 / 11
+* Debian 10 / 11 / 12
 * ParrotOS
 
-As of Empire 4.0, Python 3.8 is the minimum Python version required.
+As of Empire 5.8, Python 3.10 is the minimum Python version required.
 
 ## Github
 
@@ -19,7 +19,7 @@ Note: The `main` branch is a reflection of the latest changes and may not always
 git clone --recursive https://github.com/BC-SECURITY/Empire.git
 cd Empire
 ./setup/checkout-latest-tag.sh
-sudo ./setup/install.sh
+./setup/install.sh
 ```
 
 **Sponsors:**
@@ -28,7 +28,7 @@ sudo ./setup/install.sh
 git clone --recursive https://github.com/BC-SECURITY/Empire-Sponsors.git
 cd Empire-Sponsors
 ./setup/checkout-latest-tag.sh sponsors
-sudo ./setup/install.sh
+./setup/install.sh
 ```
 
 If you are using the sponsors version of Empire, it will pull the sponsors version of Starkiller.
@@ -83,4 +83,4 @@ All image versions can be found at: [https://hub.docker.com/r/bcsecurity/empire/
 
 ## Community-Supported Operating Systems
 
-At this time, we are choosing to only support Kali, Debian 10, and Ubuntu 20.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
+At this time, we are choosing to only support Kali, ParrotOS, Debian 10/11/12, and Ubuntu 20.04/22.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.

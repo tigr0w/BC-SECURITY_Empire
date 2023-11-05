@@ -26,7 +26,12 @@ function command_exists() {
 function install_powershell() {
   echo -e "\x1b[1;34m[*] Installing PowerShell\x1b[0m"
   if [ "$OS_NAME" == "DEBIAN" ]; then
-    wget https://packages.microsoft.com/config/debian/"${VERSION_ID}"/packages-microsoft-prod.deb
+    # TODO Temporary until official Debian 12 support is added
+    VERSION_ID_2=$VERSION_ID
+    if [ "$VERSION_ID" == "12" ]; then
+      VERSION_ID_2="11"
+    fi
+    wget https://packages.microsoft.com/config/debian/"${VERSION_ID_2}"/packages-microsoft-prod.deb
     sudo dpkg -i packages-microsoft-prod.deb
     rm packages-microsoft-prod.deb
     sudo apt-get update
@@ -40,13 +45,13 @@ function install_powershell() {
     sudo apt-get update
     sudo apt-get install -y powershell
   elif [ "$OS_NAME" == "KALI" ]; then
-    apt update && apt -y install powershell
+    sudo apt-get update && sudo apt-get -y install powershell
   elif [ $OS_NAME == "PARROT" ]; then
-    apt update && apt -y install powershell
+    sudo apt-get update && sudo apt-get -y install powershell
   fi
 
-  mkdir -p /usr/local/share/powershell/Modules
-  cp -r "$PARENT_PATH"/empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
+  sudo mkdir -p /usr/local/share/powershell/Modules
+  sudo cp -r "$PARENT_PATH"/empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
   rm -f packages-microsoft-prod.deb*
 }
 
@@ -58,10 +63,10 @@ function install_mysql() {
   echo mysql-community-server mysql-server/default-auth-override select "Use Strong Password Encryption (RECOMMENDED)" | sudo debconf-set-selections
 
   if [ "$OS_NAME" == "UBUNTU" ]; then
-    sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
   elif [[ "$OS_NAME" == "KALI" || "$OS_NAME" == "PARROT" || "$OS_NAME" == "DEBIAN" ]]; then
-    sudo apt update
-    sudo DEBIAN_FRONTEND=noninteractive apt install -y default-mysql-server # mariadb
+    sudo apt-get update
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y default-mysql-server # mariadb
   fi
 
   echo -e "\x1b[1;34m[*] Starting MySQL\x1b[0m"
@@ -72,15 +77,15 @@ function start_mysql() {
   sudo systemctl start mysql.service || true # will fail in a docker image
 
   # Add the default empire user to the mysql database
-  mysql -u root -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
-  mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
-  mysql -u root -e "FLUSH PRIVILEGES;" || true
+  sudo mysql -u root -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
+  sudo mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
+  sudo mysql -u root -e "FLUSH PRIVILEGES;" || true
 
   # Some OS have a root password set by default. We could probably
   # be more smart about this, but we just try both.
-  mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
-  mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
-  mysql -u root -proot -e "FLUSH PRIVILEGES;" || true
+  sudo mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
+  sudo mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
+  sudo mysql -u root -proot -e "FLUSH PRIVILEGES;" || true
 
   if [ "$ASSUME_YES" == "1" ]; then
     answer="Y"
@@ -119,10 +124,73 @@ function install_bomutils() {
   rm -rf bomutils
 }
 
-export DEBIAN_FRONTEND=noninteractive
+function install_dotnet() {
+  echo -e "\x1b[1;34m[*] Installing dotnet for C# agents and modules\x1b[0m"
+  if [ $OS_NAME == "UBUNTU" ]; then
+    wget https://packages.microsoft.com/config/ubuntu/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    rm packages-microsoft-prod.deb
+
+    # If version is 22.04, we need to write an /etc/apt/preferences file
+    # https://github.com/dotnet/core/issues/7699
+    if [ "$VERSION_ID" == "22.04" ]; then
+      echo -e "\x1b[1;34m[*] Detected Ubuntu 22.04, writing /etc/apt/preferences file\x1b[0m"
+      sudo tee -a /etc/apt/preferences <<EOT
+Package: *
+Pin: origin "packages.microsoft.com"
+Pin-Priority: 100
+EOT
+    fi
+
+    sudo apt-get update
+    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
+  elif [ $OS_NAME == "DEBIAN" ]; then
+    wget https://packages.microsoft.com/config/debian/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    sudo apt-get update
+    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
+  else
+    wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    sudo apt-get update
+    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
+  fi
+}
+
+function install_nim() {
+  if [ "$ASSUME_YES" == "1" ] ;then
+    answer="Y"
+  else
+    echo -n -e "\x1b[1;33m[>] Do you want to install Nim and MinGW? It is only needed to generate a Nim stager (y/N)? \x1b[0m"
+    read -r answer
+  fi
+  if [ "$answer" != "${answer#[Yy]}" ]; then
+    sudo apt-get install -y curl git gcc xz-utils
+    export CHOOSENIM_CHOOSE_VERSION=1.6.12
+    curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
+    echo "export PATH=$HOME/.nimble/bin:$PATH" >> ~/.bashrc
+    echo "export PATH=$HOME/.nimble/bin:$PATH" >> ~/.zshrc
+    export PATH=$HOME/.nimble/bin:$PATH
+    sudo ln -s $HOME/.nimble/bin/* /usr/bin/
+    nimble install -y nimble@0.14.2
+    nimble install -y winim zippy nimcrypto
+    sudo apt-get install -y mingw-w64
+  else
+    echo -e "\x1b[1;34m[*] Skipping Nim\x1b[0m"
+  fi
+}
+
 set -e
 
-apt-get update && apt-get install -y wget sudo git lsb-release
+if [ "$EUID" -eq 0 ]; then
+  if grep -q docker /proc/1/cgroup; then
+    echo "This script is being run in a Docker build context."
+  else
+    echo "This script should not be run as root."
+    exit 1
+  fi
+fi
+sudo apt-get update && sudo apt-get install -y wget git lsb-release curl
 
 sudo -v
 
@@ -130,14 +198,9 @@ sudo -v
 PARENT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; cd .. ; pwd -P )
 OS_NAME=
 VERSION_ID=
-if grep "10.*" /etc/debian_version 2>/dev/null; then
-  echo -e "\x1b[1;34m[*] Detected Debian 10\x1b[0m"
+if VERSION_ID=$(grep -oP '^(10|11|12)' /etc/debian_version 2>/dev/null); then
+  echo -e "\x1b[1;34m[*] Detected Debian $VERSION_ID\x1b[0m"
   OS_NAME="DEBIAN"
-  VERSION_ID="10"
-elif grep "11.*" /etc/debian_version 2>/dev/null; then
-  echo -e "\x1b[1;34m[*] Detected Debian 11\x1b[0m"
-  OS_NAME="DEBIAN"
-  VERSION_ID="11"
 elif grep -i "NAME=\"Ubuntu\"" /etc/os-release 2>/dev/null; then
   OS_NAME=UBUNTU
   VERSION_ID=$(grep -i VERSION_ID /etc/os-release | grep -o -E "[[:digit:]]+\\.[[:digit:]]+")
@@ -158,9 +221,26 @@ else
 fi
 
 sudo apt-get update
-sudo apt-get install -y python3-dev python3-pip xclip
+# xclip for copying to clipboard
+# libpango-1.0-0 and libharfbuzz0b for weasyprint
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  python3 \
+  xclip \
+  libpango-1.0-0 \
+  libharfbuzz0b \
+  libpangoft2-1.0-0
 
-install_powershell
+if ! command_exists pwsh; then
+  install_powershell
+fi
+
+if ! command_exists dotnet; then
+  install_dotnet
+fi
+
+if ! command_exists nim; then
+  install_nim
+fi
 
 if ! command_exists mysql; then
   install_mysql
@@ -195,103 +275,50 @@ else
   echo -e "\x1b[1;34m[*] Skipping OpenJDK\x1b[0m"
 fi
 
-echo -e "\x1b[1;34m[*] Installing dotnet for C# agents and modules\x1b[0m"
-if [ $OS_NAME == "UBUNTU" ]; then
-  wget https://packages.microsoft.com/config/ubuntu/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-  sudo dpkg -i packages-microsoft-prod.deb
-  rm packages-microsoft-prod.deb
-
-  # If version is 22.04, we need to write an /etc/apt/preferences file
-  # https://github.com/dotnet/core/issues/7699
-  if [ "$VERSION_ID" == "22.04" ]; then
-    echo -e "\x1b[1;34m[*] Detected Ubuntu 22.04, writing /etc/apt/preferences file\x1b[0m"
-    sudo tee -a /etc/apt/preferences <<EOT
-Package: *
-Pin: origin "packages.microsoft.com"
-Pin-Priority: 100
-EOT
-  fi
-
-  sudo apt-get update
-  sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
-else
-  wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-  sudo dpkg -i packages-microsoft-prod.deb
-  sudo apt-get update
-  sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
-fi
-
-if [ "$ASSUME_YES" == "1" ] ;then
-  answer="Y"
-else
-  echo -n -e "\x1b[1;33m[>] Do you want to install Nim and MinGW? It is only needed to generate a Nim stager (y/N)? \x1b[0m"
-  read -r answer
-fi
-if [ "$answer" != "${answer#[Yy]}" ] ;then
-  sudo apt install -y curl git gcc
-  export CHOOSENIM_CHOOSE_VERSION=1.6.12
-  curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
-  echo "export PATH=/root/.nimble/bin:$PATH" >> ~/.bashrc
-  export PATH=/root/.nimble/bin:$PATH
-  SOURCE_MESSAGE=true
-  nimble install -y nimble@0.14.2
-  nimble install -y winim zippy nimcrypto
-  sudo apt install -y mingw-w64
-else
-  echo -e "\x1b[1;34m[*] Skipping Nim\x1b[0m"
-fi
-
-if [ "$OS_NAME" == "PARROT" ]; then
-  # https://github.com/python-poetry/poetry/issues/1917#issuecomment-1235998997
-  export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
-fi
+# https://github.com/python-poetry/poetry/issues/1917#issuecomment-1235998997
+export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
 echo -e "\x1b[1;34m[*] Checking Python version\x1b[0m"
-python_version=($(python3 -c 'import sys; print("{} {}".format(sys.version_info.major, sys.version_info.minor))'))
-if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
-  if ! command_exists python3.8; then
-    if [ "$OS_NAME" == "UBUNTU" ]; then
-      echo -e "\x1b[1;34m[*] Python3 version less than 3.8, installing 3.8\x1b[0m"
-      sudo apt-get install -y python3.8 python3.8-dev python3-pip
-    elif [ "$OS_NAME" == "DEBIAN" ]; then
-      echo -e "\x1b[1;34m[*] Python3 version less than 3.8, installing 3.8\x1b[0m"
-      if [ "$ASSUME_YES" == "1" ] ;then
-        answer="Y"
-      else
-        echo -n -e "\x1b[1;33m[>] Python 3.8 must be built from source. This might take a bit, do you want to continue (y/N)? \x1b[0m"
-        read -r answer
-      fi
-      if [ "$answer" != "${answer#[Yy]}" ] ;then
-        sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev curl libbz2-dev
-        curl -O https://www.python.org/ftp/python/3.8.16/Python-3.8.16.tar.xz
-        tar -xf Python-3.8.16.tar.xz
-        cd Python-3.8.16
-        ./configure --enable-optimizations
-        make -j"$(nproc)"
-        sudo make altinstall
-        cd ..
-        rm -rf Python-3.8.16
-        rm Python-3.8.16.tar.xz
-      else
-        echo -e "Abort"
-        exit
-      fi
-    fi
-  fi
-  # TODO: We should really use the official poetry installer, but since right now we
-  #  recommend running this script as sudo, it installs poetry in a way that you can't
-  #  run it without sudo su. We should probably update the script to not be run as sudo,
-  #  and only use sudo when needed within the script itself.
-  python3.8 -m pip install poetry
-else
-  if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -ge 11 ]; then
-    python3 -m pip install poetry --break-system-packages
-  else
-    python3 -m pip install poetry
-  fi
+
+# Ubuntu 22.04 - 3.10, 20.04 - 3.8
+# Debian 10 - 3.7, 11 - 3.9, 12 - 3.11
+# Kali and Parrot do not have a reliable version
+if ! command_exists pyenv; then
+  curl https://pyenv.run | bash
+
+  export PYENV_ROOT="$HOME/.pyenv"
+  command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init -)"
+
+  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+  echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+  echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+
+  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
+  echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
+  echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+
+  sudo ln -s $HOME/.pyenv/bin/pyenv /usr/bin/pyenv
+
+  sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC \
+    apt-get -y install build-essential gdb lcov pkg-config \
+      libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
+      libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
+      lzma lzma-dev tk-dev uuid-dev zlib1g-dev
+
+  pyenv install 3.12.0
+fi
+
+if ! command_exists poetry; then
+  curl -sSL https://install.python-poetry.org | python3 -
+  export PATH="$HOME/.local/bin:$PATH"
+  echo "export PATH=$HOME/.local/bin:$PATH" >> ~/.bashrc
+  echo "export PATH=$HOME/.local/bin:$PATH" >> ~/.zshrc
+  sudo ln -s $HOME/.local/bin/poetry /usr/bin
 fi
 
 echo -e "\x1b[1;34m[*] Installing Packages\x1b[0m"
 poetry config virtualenvs.in-project true
+poetry config virtualenvs.prefer-active-python true
 poetry install
 
 echo -e '\x1b[1;32m[+] Install Complete!\x1b[0m'
@@ -299,7 +326,3 @@ echo -e ''
 echo -e '\x1b[1;32m[+] Run the following commands in separate terminals to start Empire\x1b[0m'
 echo -e '\x1b[1;34m[*] ./ps-empire server\x1b[0m'
 echo -e '\x1b[1;34m[*] ./ps-empire client\x1b[0m'
-
-if $SOURCE_MESSAGE; then
-  echo -e '\x1b[1;34m[*] source ~/.bashrc to enable nim \x1b[0m'
-fi

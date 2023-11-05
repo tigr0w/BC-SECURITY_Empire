@@ -441,10 +441,10 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
 
     # Check if the file is downloaded successfully
     assert response.status_code == 200
-    assert (
-        response.headers.get("content-type").split(";")[0]
-        == "application/x-msdos-program"
-    )
+    assert response.headers.get("content-type").split(";")[0] in [
+        "application/x-msdownload",
+        "application/x-msdos-program",
+    ]
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty

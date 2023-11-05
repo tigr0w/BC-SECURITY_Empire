@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Warning: You may run into errors installing things such as nim if you are running the install script on a machine that previously ran it. This is due to permissions changes with the install script. In this case it is recommended to use a fresh machine or manually remove the offending directories/files.
+-   Update install script (@Vinnybod)
+    -   Use pyenv to install Python
+    -   Use the official Poetry installer
+    -   Don't run the entire script as root
+    -   Rewrite the test containers and reuse a templated Dockerfile
+    -   Add Debian12 support
+    -   Bump all OS to use Python 3.12
+    -   Refactor the script to be a bit more readable
+    -   Condense the test_install_script job
+-   Update Dockerfile (@Vinnybod)
+    -   Use the official Poetry installer
+    -   Fix Starkiller trying to auto-update inside the container
+    -   Pre-install Starkiller as part of the docker build
+    -   Use Python 3.12
+-   Dependency changes (@Vinnybod)
+    -   Use BC-Security fork of md2pdf until upstream can support Python 3.12
+    -   Use a patched version of pysecretsocks that packages asyncore for Python 3.12 support
+    -   Use docopt-ng for Python 3.12 support
+    -   Add packaging as a runtime dependency
+-   Drop support for Python 3.8 and 3.9
 -   Correct more deprecation warnings for SQLAlchemy and invalid escape sequences (@Vinnybod)
 -   Added option to start MySQL service on boot to install script (@Cx01N)
 -   Modernized the Python and IronPython agents with new agent and staging code (@Cx01N)

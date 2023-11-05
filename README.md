@@ -1,6 +1,6 @@
 <div align="center">
-  
-![Empire](https://user-images.githubusercontent.com/20302208/70022749-1ad2b080-154a-11ea-9d8c-1b42632fd9f9.jpg)  
+
+![Empire](https://user-images.githubusercontent.com/20302208/70022749-1ad2b080-154a-11ea-9d8c-1b42632fd9f9.jpg)
 [![Donate](https://img.shields.io/badge/Donate-Sponsor-blue?style=plastic&logo=github)](https://github.com/sponsors/BC-SECURITY)
 [![Docs](https://img.shields.io/badge/Wiki-Docs-green?style=plastic&logo=wikipedia)](https://bc-security.gitbook.io/empire-wiki/)
 [![Discord](https://img.shields.io/discord/716165691383873536?style=plastic&logo=discord)](https://discord.gg/P8PZPyf)
@@ -34,7 +34,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - JA3/S and JARM Evasion
 - MITRE ATT&CK Integration
 - Integrated Roslyn compiler (Thanks to [Covenant](https://github.com/cobbr/Covenant))
-- Docker, Kali, ParrotOS, Ubuntu 20.04/22.04, and Debian 10/11 Install Support
+- Docker, Kali, ParrotOS, Ubuntu 20.04/22.04, and Debian 10/11/12 Install Support
 
 ### Agents
 - PowerShell

@@ -93,8 +93,6 @@ def client():
 
     yield TestClient(v2App)
 
-    print("cleanup")
-
     from empire.server.server import main
 
     main.shutdown()
