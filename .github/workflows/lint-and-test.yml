@@ -102,10 +102,12 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
       # For the sponsors repo, this is a sort of hack to get around the fact that
       # the docker image fails on ./ps-empire sync-starkiller because the repo is private.
-      - name: Sync Starkiller
+      - name: Rewrite Starkiller
         run: |
-          poetry install
-          ./ps-empire sync-starkiller
+            if [ ${{ endswith(github.repository, 'Empire-Sponsors') }} ]; then
+                sed -i 's|git@github.com:BC-SECURITY/Starkiller-Sponsors.git|https://github.com/BC-SECURITY/Starkiller.git|g' empire/server/config.yaml
+                sed -i 's|ref: sponsors-main|ref: main|g' empire/server/config.yaml
+            fi
       - name: Build docker image
         run: docker-compose -f .github/docker-compose.yml build
       - name: Run tests on docker image
