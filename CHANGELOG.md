@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.8.0] - 2023-11-06
+
 -   Warning: You may run into errors installing things such as nim if you are running the install script on a machine that previously ran it. This is due to permissions changes with the install script. In this case it is recommended to use a fresh machine or manually remove the offending directories/files.
 -   Modernized the Python and IronPython agents with new agent and staging code (@Cx01N)
 -   Added automatic tasking for sysinfo for stageless agents (@Cx01N)
@@ -15,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   When donut is invoked but not installed, give a useful warning (@Vinnybod)
 -   Allow a config to be loaded from an outside directory and the downloads/logs/etc to be stored in an outside directory (@Vinnybod)
 -   Drop support for Python 3.8 and 3.9
-- Update install script (@Vinnybod)
+-   Update install script (@Vinnybod)
     -   Use pyenv to install Python
     -   Use the official Poetry installer
     -   Don't run the entire script as root
@@ -636,7 +638,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.0...HEAD
+
+[5.8.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.3...v5.8.0
 
 [5.7.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.2...v5.7.3
 
