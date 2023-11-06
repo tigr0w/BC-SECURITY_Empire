@@ -16,23 +16,39 @@ ENV STAGING_KEY=RANDOM DEBIAN_FRONTEND=noninteractive DOTNET_CLI_TELEMETRY_OPTOU
 
 SHELL ["/bin/bash", "-c"]
 
-RUN wget -q https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb && \
-    dpkg -i packages-microsoft-prod.deb && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install -qq \
     --no-install-recommends \
     apt-transport-https \
-    dotnet-sdk-6.0 \
     libicu-dev \
-    powershell \
     sudo \
     xclip \
     zip \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sSL https://install.python-poetry.org | python3 -
-RUN ln -s /root/.local/bin/poetry /usr/bin
+RUN unameOut="$(uname -m)" && \
+    case "$unameOut" in \
+      x86_64) export arch=x64 ;; \
+      aarch64) export arch=arm64 ;; \
+      *) exit 1;; \
+    esac && \
+    curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v7.3.9/powershell-7.3.9-linux-$arch.tar.gz && \
+    mkdir -p /opt/microsoft/powershell/7 && \
+    tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7 && \
+    chmod +x /opt/microsoft/powershell/7/pwsh && \
+    ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh && \
+    rm /tmp/powershell.tar.gz
+
+
+RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
+    chmod +x ./dotnet-install.sh && \
+    ./dotnet-install.sh --channel 6.0 && \
+    ln -s /root/.dotnet/dotnet /usr/bin/dotnet && \
+    rm dotnet-install.sh
+
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    ln -s /root/.local/bin/poetry /usr/bin
 
 WORKDIR /empire
 
@@ -44,12 +60,11 @@ RUN poetry config virtualenvs.create false && \
 COPY . /empire
 
 RUN mkdir -p /usr/local/share/powershell/Modules && \
-    cp -r ./empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
+    cp -r ./empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules && \
+    rm -rf /empire/empire/server/data/empire*
 
-RUN rm -rf /empire/empire/server/data/empire*
-
-RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml
-RUN sed -i 's/auto_update: true/auto_update: false/g' empire/server/config.yaml
+RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml && \
+    sed -i 's/auto_update: true/auto_update: false/g' empire/server/config.yaml
 
 RUN ./ps-empire sync-starkiller
 

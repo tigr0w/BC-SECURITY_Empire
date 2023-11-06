@@ -23,11 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Bump all OS to use Python 3.12
     -   Refactor the script to be a bit more readable
     -   Condense the test_install_script job
--   Update Dockerfile (@Vinnybod)
+-   Update Docker build (@Vinnybod)
     -   Use the official Poetry installer
     -   Fix Starkiller trying to auto-update inside the container
     -   Pre-install Starkiller as part of the docker build
     -   Use Python 3.12
+    -   Don't use apt for powershell and dotnet
+    -   DockerHub images now have linux/amd64 and linux/arm64 architectures
 -   Dependency changes (@Vinnybod)
     -   Use BC-Security fork of md2pdf until upstream can support Python 3.12
     -   Use a patched version of pysecretsocks that packages asyncore for Python 3.12 support
