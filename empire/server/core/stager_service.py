@@ -1,7 +1,6 @@
 import copy
 import os
 import uuid
-from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -169,7 +168,7 @@ class StagerService:
             file_name = f"{uuid.uuid4()}.txt"
 
         file_name = (
-            Path(empire_config.directories.downloads) / "generated-stagers" / file_name
+            empire_config.directories.downloads / "generated-stagers" / file_name
         )
         file_name.parent.mkdir(parents=True, exist_ok=True)
         mode = "w" if isinstance(resp, str) else "wb"

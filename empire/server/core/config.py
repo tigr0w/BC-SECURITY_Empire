@@ -1,20 +1,29 @@
 import logging
 import sys
+from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, Extra, Field, validator
 
 log = logging.getLogger(__name__)
 
 
-class StarkillerConfig(BaseModel):
+class EmpireBaseModel(BaseModel):
+    @validator("*")
+    def set_path(cls, v):
+        if isinstance(v, Path):
+            return v.expanduser().resolve()
+        return v
+
+
+class StarkillerConfig(EmpireBaseModel):
     repo: str = "bc-security/starkiller"
-    directory: str = "empire/server/api/v2/starkiller"
+    directory: Path = "empire/server/api/v2/starkiller"
     ref: str = "main"
     auto_update: bool = True
 
 
-class DatabaseDefaultObfuscationConfig(BaseModel):
+class DatabaseDefaultObfuscationConfig(EmpireBaseModel):
     language: str = "powershell"
     enabled: bool = False
     command: str = r"Token\All\1"
@@ -22,7 +31,7 @@ class DatabaseDefaultObfuscationConfig(BaseModel):
     preobfuscatable: bool = True
 
 
-class DatabaseDefaultsConfig(BaseModel):
+class DatabaseDefaultsConfig(EmpireBaseModel):
     staging_key: str = "RANDOM"
     username: str = "empireadmin"
     password: str = "password123"
@@ -32,18 +41,18 @@ class DatabaseDefaultsConfig(BaseModel):
     ip_blacklist: str = Field("", alias="ip-blacklist")
 
 
-class SQLiteDatabaseConfig(BaseModel):
-    location: str = "empire/server/data/empire.db"
+class SQLiteDatabaseConfig(EmpireBaseModel):
+    location: Path = "empire/server/data/empire.db"
 
 
-class MySQLDatabaseConfig(BaseModel):
+class MySQLDatabaseConfig(EmpireBaseModel):
     url: str = "localhost:3306"
     username: str = ""
     password: str = ""
     database_name: str = "empire"
 
 
-class DatabaseConfig(BaseModel):
+class DatabaseConfig(EmpireBaseModel):
     use: str = "sqlite"
     sqlite: SQLiteDatabaseConfig
     mysql: MySQLDatabaseConfig
@@ -53,28 +62,28 @@ class DatabaseConfig(BaseModel):
         return getattr(self, key)
 
 
-class DirectoriesConfig(BaseModel):
-    downloads: str
-    module_source: str
-    obfuscated_module_source: str
+class DirectoriesConfig(EmpireBaseModel):
+    downloads: Path
+    module_source: Path
+    obfuscated_module_source: Path
 
 
-class LoggingConfig(BaseModel):
+class LoggingConfig(EmpireBaseModel):
     level: str = "INFO"
-    directory: str = "empire/server/downloads/logs/"
+    directory: Path = "empire/server/downloads/logs/"
     simple_console: bool = True
 
 
-class LastTaskConfig(BaseModel):
+class LastTaskConfig(EmpireBaseModel):
     enabled: bool = False
-    file: str = "empire/server/data/last_task.txt"
+    file: Path = "empire/server/data/last_task.txt"
 
 
-class DebugConfig(BaseModel):
+class DebugConfig(EmpireBaseModel):
     last_task: LastTaskConfig
 
 
-class EmpireConfig(BaseModel):
+class EmpireConfig(EmpireBaseModel):
     supress_self_cert_warning: bool = Field(
         alias="supress-self-cert-warning", default=True
     )
@@ -95,13 +104,14 @@ class EmpireConfig(BaseModel):
 
 
 def set_yaml(location: str):
+    location = Path(location).expanduser().resolve()
     try:
-        with open(location) as stream:
+        with location.open() as stream:
             return yaml.safe_load(stream)
     except yaml.YAMLError as exc:
-        print(exc)
+        log.warning(exc)
     except FileNotFoundError as exc:
-        print(exc)
+        log.warning(exc)
 
 
 config_dict = {}

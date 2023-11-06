@@ -32,8 +32,7 @@ def setup_logging(args):
     else:
         log_level = logging.getLevelName(empire_config.logging.level.upper())
 
-    logging_dir = empire_config.logging.directory
-    log_dir = Path(logging_dir)
+    log_dir = empire_config.logging.directory
     log_dir.mkdir(parents=True, exist_ok=True)
     root_log_file = log_dir / "empire_server.log"
     root_logger = logging.getLogger()

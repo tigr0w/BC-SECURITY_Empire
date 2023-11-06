@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated listeners to consistently use port 80 and 443 for HTTP traffic by default (@Cx01N)
 -   Make the installation of donut conditional on architecture since it doesn't work on ARM (@Vinnybod)
     -   When donut is invoked but not installed, give a useful warning (@Vinnybod)
+-   Allow a config to be loaded from an outside directory and the downloads/logs/etc to be stored in an outside directory (@Vinnybod)
 -   Drop support for Python 3.8 and 3.9
 - Update install script (@Vinnybod)
     -   Use pyenv to install Python
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Bump all OS to use Python 3.12
     -   Refactor the script to be a bit more readable
     -   Condense the test_install_script job
+    -   Added option to start MySQL service on boot (@Cx01N)
 -   Update Docker build (@Vinnybod)
     -   Use the official Poetry installer
     -   Fix Starkiller trying to auto-update inside the container
@@ -36,7 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Use docopt-ng for Python 3.12 support
     -   Add packaging as a runtime dependency
 -   Correct more deprecation warnings for SQLAlchemy and invalid escape sequences (@Vinnybod)
--   Added option to start MySQL service on boot to install script (@Cx01N)
 -   Remove unneeded condition statement from all listeners (@Vinnybod)
 -   Updated the ruff minimum Python version to 3.10 and applied fixes to get codebase compliant (@Vinnybod)
 

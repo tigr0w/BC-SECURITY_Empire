@@ -129,10 +129,7 @@ class DownloadService:
         """
         subdirectory = subdirectory or f"user/{user.username}"
         location = (
-            Path(empire_config.directories.downloads)
-            / "uploads"
-            / subdirectory
-            / filename
+            empire_config.directories.downloads / "uploads" / subdirectory / filename
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 
@@ -157,10 +154,7 @@ class DownloadService:
             filename = file.filename
 
         location = (
-            Path(empire_config.directories.downloads)
-            / "uploads"
-            / user.username
-            / filename
+            empire_config.directories.downloads / "uploads" / user.username / filename
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 

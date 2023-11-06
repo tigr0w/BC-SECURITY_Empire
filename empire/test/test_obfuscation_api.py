@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 
@@ -12,7 +13,9 @@ def patch_config(empire_config):
     """
     orig_src_dir = empire_config.directories.module_source
     try:
-        empire_config.directories.module_source = "empire/test/data/module_source/"
+        empire_config.directories.module_source = Path(
+            "empire/test/data/module_source/"
+        ).resolve()
         yield empire_config
     finally:
         empire_config.directories.module_source = orig_src_dir
@@ -231,8 +234,8 @@ def test_preobfuscate_post(client, admin_auth_header, empire_config):
         count = 0
         for root, _dirs, files in os.walk(module_dir):
             for file in files:
-                root_rep = root.replace(module_dir, obf_module_dir)
-                assert os.path.exists(root_rep + "/" + file)
+                root_rep = root.replace(str(module_dir), str(obf_module_dir))
+                assert (Path(root_rep) / file).exists()
                 count += 1
 
         assert count > 0
@@ -266,5 +269,5 @@ def test_preobfuscate_delete(client, admin_auth_header, empire_config):
 
         for root, _dirs, files in os.walk(module_dir):
             for file in files:
-                root_rep = root.replace(module_dir, obf_module_dir)
+                root_rep = root.replace(str(module_dir), str(obf_module_dir))
                 assert not os.path.exists(root_rep + "/" + file)

@@ -36,11 +36,9 @@ def test_create_download_from_path(main, session_local, models):
         download = download_service.create_download(db, user, test_upload)
 
         assert download.id > 0
-        assert download.filename.startswith(
-            "test-upload"
-        ) and download.filename.endswith(".yaml")
-        assert download.location.startswith(
-            f"empire/test/downloads/uploads/{user.username}/test-upload"
-        ) and download.location.endswith(".yaml")
+        assert download.filename.startswith("test-upload")
+        assert download.filename.endswith(".yaml")
+        assert f"empire/test/downloads/uploads/{user.username}/" in download.location
+        assert download.location.endswith(".yaml")
 
         db.delete(download)
