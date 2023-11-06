@@ -80,7 +80,7 @@ After cloning the repo, you can checkout the latest stable release by running th
 git clone --recursive https://github.com/BC-SECURITY/Empire.git
 cd Empire
 ./setup/checkout-latest-tag.sh
-sudo ./setup/install.sh
+./setup/install.sh
 ```
 
 If you are using the sponsors version of Empire, it will pull the sponsors version of Starkiller.
