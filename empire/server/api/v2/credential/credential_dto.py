@@ -29,9 +29,9 @@ class Credential(BaseModel):
     username: str
     password: str
     host: str
-    os: str | None
-    sid: str | None
-    notes: str | None
+    os: str | None = None
+    sid: str | None = None
+    notes: str | None = None
     created_at: datetime
     updated_at: datetime
     tags: list[Tag]
@@ -50,9 +50,9 @@ class CredentialUpdateRequest(BaseModel):
     os: str
     sid: str
     notes: str
-    os: str | None
-    sid: str | None
-    notes: str | None
+    os: str | None = None
+    sid: str | None = None
+    notes: str | None = None
 
 
 class CredentialPostRequest(BaseModel):
@@ -61,6 +61,6 @@ class CredentialPostRequest(BaseModel):
     username: str
     password: str
     host: str
-    os: str | None
-    sid: str | None
-    notes: str | None
+    os: str | None = None
+    sid: str | None = None
+    notes: str | None = None

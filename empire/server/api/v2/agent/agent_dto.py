@@ -83,35 +83,35 @@ class Agent(BaseModel):
     name: str
     # listener_id: int
     listener: str
-    host_id: int | None
-    hostname: str | None
-    language: str | None
-    language_version: str | None
+    host_id: int | None = None
+    hostname: str | None = None
+    language: str | None = None
+    language_version: str | None = None
     delay: int
     jitter: float
-    external_ip: str | None
-    internal_ip: str | None
-    username: str | None
-    high_integrity: bool | None
-    process_id: int | None
-    process_name: str | None
-    os_details: str | None
+    external_ip: str | None = None
+    internal_ip: str | None = None
+    username: str | None = None
+    high_integrity: bool | None = None
+    process_id: int | None = None
+    process_name: str | None = None
+    os_details: str | None = None
     nonce: str
     checkin_time: datetime
     lastseen_time: datetime
-    parent: str | None
-    children: str | None
-    servers: str | None
-    profile: str | None
-    functions: str | None
-    kill_date: str | None
-    working_hours: str | None
+    parent: str | None = None
+    children: str | None = None
+    servers: str | None = None
+    profile: str | None = None
+    functions: str | None = None
+    kill_date: str | None = None
+    working_hours: str | None = None
     lost_limit: int
-    notes: str | None
-    architecture: str | None
+    notes: str | None = None
+    architecture: str | None = None
     archived: bool
     stale: bool
-    proxies: dict | None
+    proxies: dict | None = None
     tags: list[Tag]
 
 
@@ -139,8 +139,8 @@ class AgentCheckInAggregate(BaseModel):
 
 class AgentCheckInsAggregate(BaseModel):
     records: list[AgentCheckInAggregate]
-    start_date: datetime | None
-    end_date: datetime | None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     bucket_size: str
 
 
@@ -153,4 +153,4 @@ class AggregateBucket(str, Enum):
 
 class AgentUpdateRequest(BaseModel):
     name: str
-    notes: str | None
+    notes: str | None = None

@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator, ConfigDict, field_validator
 
 from empire.server.core.db import models
 
@@ -30,6 +30,18 @@ class CustomOptionSchema(BaseModel):
     strict: bool
     value_type: ValueType
 
+    # Ensure the functionality of pydantic v1 coercing values to strings
+    # https://github.com/pydantic/pydantic/issues/5606
+    @field_validator("value", mode="plain")
+    @classmethod
+    def check_value(cls, v):
+        return str(v)
+
+    @field_validator("suggested_values", mode="plain")
+    @classmethod
+    def check_suggested_values(cls, v):
+        return [str(value) for value in v]
+
 
 class OrderDirection(str, Enum):
     asc = "asc"
@@ -40,15 +52,13 @@ class DownloadDescription(BaseModel):
     id: int
     filename: str
     link: str
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Author(BaseModel):
-    name: str | None
-    handle: str | None
-    link: str | None
+    name: str | None = None
+    handle: str | None = None
+    link: str | None = None
 
 
 def domain_to_dto_download_description(download: models.Download):
@@ -78,6 +88,20 @@ def to_value_type(value: Any, type: str = "") -> ValueType:
         return ValueType.integer
     else:
         return ValueType.string
+
+
+def to_string(value):
+    return str(value)
+
+
+# This is sort of an undocumented behavior for the Empire API. The openapi spec says
+#   the values should be strings, but it has allowed other types.
+# The behavior in pydantic v1 was to just coerce values to strings, but in v2
+#   this behavior was changed to raise a validation error. Using this custom
+#   type with a BeforeValidator allows us to coerce the value to a string before
+#   validation.
+# This could be removed in Empire 6 as a breaking change.
+coerced_dict = dict[str, Annotated[str, BeforeValidator(to_string)]]
 
 
 # Set proxy IDs

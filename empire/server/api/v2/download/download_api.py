@@ -1,11 +1,10 @@
 import math
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy.orm import Session
 from starlette.responses import FileResponse
 
 from empire.server.api.api_router import APIRouter
-from empire.server.api.jwt_auth import get_current_active_user
+from empire.server.api.jwt_auth import CurrentActiveUser, get_current_active_user
 from empire.server.api.v2.download.download_dto import (
     Download,
     DownloadOrderOptions,
@@ -13,7 +12,7 @@ from empire.server.api.v2.download.download_dto import (
     DownloadSourceFilter,
     domain_to_dto_download,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -37,7 +36,7 @@ router = APIRouter(
 )
 
 
-async def get_download(uid: int, db: Session = Depends(get_db)):
+async def get_download(uid: int, db: CurrentSession):
     download = download_service.get_by_id(db, uid)
 
     if download:
@@ -49,7 +48,7 @@ async def get_download(uid: int, db: Session = Depends(get_db)):
 @router.get("/{uid}/download", response_class=FileResponse)
 async def download_download(
     uid: int,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_download: models.Download = Depends(get_download),
 ):
     if db_download.filename:
@@ -69,7 +68,7 @@ tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_download)
 )
 async def read_download(
     uid: int,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_download: models.Download = Depends(get_download),
 ):
     return domain_to_dto_download(db_download)
@@ -77,7 +76,7 @@ async def read_download(
 
 @router.get("/", response_model=Downloads)
 async def read_downloads(
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     limit: int = -1,
     page: int = 1,
     order_direction: OrderDirection = OrderDirection.desc,
@@ -110,8 +109,8 @@ async def read_downloads(
 
 @router.post("/", status_code=201, response_model=Download)
 async def create_download(
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_active_user),
+    user: CurrentActiveUser,
+    db: CurrentSession,
     file: UploadFile = File(...),
 ):
     return domain_to_dto_download(download_service.create_download(db, user, file))

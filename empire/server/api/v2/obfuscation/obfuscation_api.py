@@ -1,5 +1,4 @@
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
 from starlette.background import BackgroundTasks
 from starlette.responses import Response
 from starlette.status import HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT
@@ -16,7 +15,7 @@ from empire.server.api.v2.obfuscation.obfuscation_dto import (
     ObfuscationConfigUpdateRequest,
     domain_to_dto_obfuscation_config,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.db import models
 from empire.server.server import main
@@ -34,7 +33,7 @@ router = APIRouter(
 )
 
 
-async def get_keyword(uid: int, db: Session = Depends(get_db)):
+async def get_keyword(uid: int, db: CurrentSession):
     keyword = obfuscation_service.get_keyword_by_id(db, uid)
 
     if keyword:
@@ -49,16 +48,14 @@ async def read_keyword(uid: int, db_keyword: models.Keyword = Depends(get_keywor
 
 
 @router.get("/keywords", response_model=Keywords)
-async def read_keywords(db: Session = Depends(get_db)):
+async def read_keywords(db: CurrentSession):
     keywords = obfuscation_service.get_all_keywords(db)
 
     return {"records": keywords}
 
 
 @router.post("/keywords", status_code=201, response_model=Keyword)
-async def create_keyword(
-    keyword_req: KeywordPostRequest, db: Session = Depends(get_db)
-):
+async def create_keyword(keyword_req: KeywordPostRequest, db: CurrentSession):
     resp, err = obfuscation_service.create_keyword(db, keyword_req)
 
     if err:
@@ -71,7 +68,7 @@ async def create_keyword(
 async def update_keyword(
     uid: int,
     keyword_req: KeywordUpdateRequest,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_keyword: models.Keyword = Depends(get_keyword),
 ):
     resp, err = obfuscation_service.update_keyword(db, db_keyword, keyword_req)
@@ -87,13 +84,13 @@ async def update_keyword(
 )
 async def delete_keyword(
     uid: str,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_keyword: models.Keyword = Depends(get_keyword),
 ):
     obfuscation_service.delete_keyword(db, db_keyword)
 
 
-async def get_obfuscation_config(language: str, db: Session = Depends(get_db)):
+async def get_obfuscation_config(language: str, db: CurrentSession):
     obf_config = obfuscation_service.get_obfuscation_config(db, language)
 
     if obf_config:
@@ -106,7 +103,7 @@ async def get_obfuscation_config(language: str, db: Session = Depends(get_db)):
 
 
 @router.get("/global", response_model=ObfuscationConfigs)
-async def read_obfuscation_configs(db: Session = Depends(get_db)):
+async def read_obfuscation_configs(db: CurrentSession):
     obf_configs = obfuscation_service.get_all_obfuscation_configs(db)
 
     return {"records": obf_configs}
@@ -124,7 +121,7 @@ async def read_obfuscation_config(
 async def update_obfuscation_config(
     language: str,
     obf_req: ObfuscationConfigUpdateRequest,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_obf_config: models.Bypass = Depends(get_obfuscation_config),
 ):
     resp, err = obfuscation_service.update_obfuscation_config(
@@ -145,9 +142,9 @@ async def update_obfuscation_config(
 async def preobfuscate_modules(
     language: str,
     background_tasks: BackgroundTasks,
+    db: CurrentSession,
     reobfuscate: bool = False,
     db_obf_config: models.ObfuscationConfig = Depends(get_obfuscation_config),
-    db: Session = Depends(get_db),
 ):
     if not db_obf_config.preobfuscatable:
         raise HTTPException(

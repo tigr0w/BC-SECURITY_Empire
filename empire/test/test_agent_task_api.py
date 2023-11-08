@@ -698,9 +698,9 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
         filter(lambda x: "jitter" in x["loc"], response.json()["detail"])
     )[0]
     assert delay_err["loc"] == ["body", "delay"]
-    assert delay_err["msg"] == "ensure this value is greater than or equal to 0"
+    assert delay_err["msg"] == "Input should be greater than or equal to 0"
     assert jitter_err["loc"] == ["body", "jitter"]
-    assert jitter_err["msg"] == "ensure this value is less than or equal to 1"
+    assert jitter_err["msg"] == "Input should be less than or equal to 1"
 
 
 def test_create_task_update_sleep(client, admin_auth_header, agent):

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Upgrade Pydantic to v2 (@Vinnybod)
+-   Update common FastAPI Dependencies to use 'Annotated' types for simpler code (@Vinnybod)
+
 ## [5.8.0] - 2023-11-06
 
 -   Warning: You may run into errors installing things such as nim if you are running the install script on a machine that previously ran it. This is due to permissions changes with the install script. In this case it is recommended to use a fresh machine or manually remove the offending directories/files.

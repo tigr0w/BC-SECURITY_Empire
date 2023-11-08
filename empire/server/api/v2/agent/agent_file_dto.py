@@ -2,7 +2,7 @@
 # https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from empire.server.api.v2.shared_dto import (
     DownloadDescription,
@@ -32,12 +32,10 @@ class AgentFile(BaseModel):
     name: str
     path: str
     is_file: bool
-    parent_id: int | None
+    parent_id: int | None = None
     downloads: list[DownloadDescription]
     children: list[AgentFile] = []
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 AgentFile.update_forward_refs()

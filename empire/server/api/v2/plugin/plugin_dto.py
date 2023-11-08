@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
-from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
+from empire.server.api.v2.shared_dto import (
+    Author,
+    CustomOptionSchema,
+    coerced_dict,
+    to_value_type,
+)
 from empire.server.common.plugins import Plugin
 
 
@@ -52,7 +57,7 @@ class Plugin(BaseModel):
     authors: list[Author]
     description: str
     techniques: list[str] = []
-    software: str | None
+    software: str | None = None
     comments: list[str]
     options: dict[str, CustomOptionSchema]
 
@@ -62,7 +67,7 @@ class Plugins(BaseModel):
 
 
 class PluginExecutePostRequest(BaseModel):
-    options: dict[str, str]
+    options: coerced_dict
 
 
 class PluginExecuteResponse(BaseModel):

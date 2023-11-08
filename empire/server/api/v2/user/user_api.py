@@ -2,12 +2,12 @@ from datetime import timedelta
 
 from fastapi import Depends, File, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 from starlette import status
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    CurrentActiveUser,
     Token,
     authenticate_user,
     create_access_token,
@@ -15,7 +15,7 @@ from empire.server.api.jwt_auth import (
     get_current_active_user,
     get_password_hash,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.user.user_dto import (
     User,
@@ -41,7 +41,7 @@ router = APIRouter(
 )
 
 
-async def get_user(uid: int, db: Session = Depends(get_db)):
+async def get_user(uid: int, db: CurrentSession):
     user = user_service.get_by_id(db, uid)
 
     if user:
@@ -52,7 +52,8 @@ async def get_user(uid: int, db: Session = Depends(get_db)):
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    db: CurrentSession,
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -69,7 +70,7 @@ async def login_for_access_token(
 
 
 @router.get("/api/v2/users/me", response_model=User)
-async def read_user_me(current_user: User = Depends(get_current_active_user)):
+async def read_user_me(current_user: CurrentActiveUser):
     return domain_to_dto_user(current_user)
 
 
@@ -78,7 +79,7 @@ async def read_user_me(current_user: User = Depends(get_current_active_user)):
     response_model=Users,
     dependencies=[Depends(get_current_active_user)],
 )
-async def read_users(db: Session = Depends(get_db)):
+async def read_users(db: CurrentSession):
     users = list(map(lambda x: domain_to_dto_user(x), user_service.get_all(db)))
 
     return {"records": users}
@@ -98,7 +99,7 @@ async def read_user(uid: int, db_user: models.User = Depends(get_user)):
     status_code=201,
     dependencies=[Depends(get_current_active_admin_user)],
 )
-async def create_user(user: UserPostRequest, db: Session = Depends(get_db)):
+async def create_user(user: UserPostRequest, db: CurrentSession):
     resp, err = user_service.create_user(
         db, user.username, get_password_hash(user.password), user.is_admin
     )
@@ -113,8 +114,8 @@ async def create_user(user: UserPostRequest, db: Session = Depends(get_db)):
 async def update_user(
     uid: int,
     user_req: UserUpdateRequest,
-    current_user: models.User = Depends(get_current_active_user),
-    db: Session = Depends(get_db),
+    current_user: CurrentActiveUser,
+    db: CurrentSession,
     db_user: models.User = Depends(get_user),
 ):
     if not (current_user.admin or current_user.id == uid):
@@ -142,8 +143,8 @@ async def update_user(
 async def update_user_password(
     uid: int,
     user_req: UserUpdatePasswordRequest,
-    current_user: models.User = Depends(get_current_active_user),
-    db: Session = Depends(get_db),
+    current_user: CurrentActiveUser,
+    db: CurrentSession,
     db_user: models.User = Depends(get_user),
 ):
     if not current_user.id == uid:
@@ -165,8 +166,8 @@ async def update_user_password(
 @router.post("/api/v2/users/{uid}/avatar", status_code=201)
 async def create_avatar(
     uid: int,
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_active_user),
+    user: CurrentActiveUser,
+    db: CurrentSession,
     file: UploadFile = File(...),
 ):
     if not user.id == uid:

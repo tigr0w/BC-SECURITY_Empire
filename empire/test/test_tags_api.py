@@ -14,15 +14,19 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
         "detail": [
             {
                 "ctx": {"pattern": "^[^:]+$"},
+                "input": "test:tag",
                 "loc": ["body", "name"],
-                "msg": 'string does not match regex "^[^:]+$"',
-                "type": "value_error.str.regex",
+                "msg": "String should match pattern '^[^:]+$'",
+                "type": "string_pattern_mismatch",
+                "url": "https://errors.pydantic.dev/2.4/v/string_pattern_mismatch",
             },
             {
                 "ctx": {"pattern": "^[^:]+$"},
+                "input": "test:value",
                 "loc": ["body", "value"],
-                "msg": 'string does not match regex "^[^:]+$"',
-                "type": "value_error.str.regex",
+                "msg": "String should match pattern '^[^:]+$'",
+                "type": "string_pattern_mismatch",
+                "url": "https://errors.pydantic.dev/2.4/v/string_pattern_mismatch",
             },
         ]
     }
@@ -121,15 +125,19 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
         "detail": [
             {
                 "ctx": {"pattern": "^[^:]+$"},
+                "input": "test:tag",
                 "loc": ["body", "name"],
-                "msg": 'string does not match regex "^[^:]+$"',
-                "type": "value_error.str.regex",
+                "msg": "String should match pattern '^[^:]+$'",
+                "type": "string_pattern_mismatch",
+                "url": "https://errors.pydantic.dev/2.4/v/string_pattern_mismatch",
             },
             {
                 "ctx": {"pattern": "^[^:]+$"},
+                "input": "test:value",
                 "loc": ["body", "value"],
-                "msg": 'string does not match regex "^[^:]+$"',
-                "type": "value_error.str.regex",
+                "msg": "String should match pattern '^[^:]+$'",
+                "type": "string_pattern_mismatch",
+                "url": "https://errors.pydantic.dev/2.4/v/string_pattern_mismatch",
             },
         ]
     }
@@ -419,7 +427,7 @@ def test_get_agent_tasks_tag_filter(
 
     assert resp.status_code == 422
     assert (
-        resp.json()["detail"][0]["msg"] == 'string does not match regex "^[^:]+:[^:]+$"'
+        resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )
 
 
@@ -502,7 +510,7 @@ def test_get_plugin_tasks_tag_filter(
 
     assert resp.status_code == 422
     assert (
-        resp.json()["detail"][0]["msg"] == 'string does not match regex "^[^:]+:[^:]+$"'
+        resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )
 
 
@@ -591,5 +599,5 @@ def test_get_downloads_tag_filter(
 
     assert resp.status_code == 422
     assert (
-        resp.json()["detail"][0]["msg"] == 'string does not match regex "^[^:]+:[^:]+$"'
+        resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )

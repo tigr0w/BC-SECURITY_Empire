@@ -48,15 +48,15 @@ def domain_to_dto_task(
 class AgentTask(BaseModel):
     id: int
     input: str
-    full_input: str | None
-    output: str | None
-    original_output: str | None
-    user_id: int | None
-    username: str | None
+    full_input: str | None = None
+    output: str | None = None
+    original_output: str | None = None
+    user_id: int | None = None
+    username: str | None = None
     agent_id: str
     downloads: list[DownloadDescription]
-    module_name: str | None
-    task_name: str | None
+    module_name: str | None = None
+    task_name: str | None = None
     status: models.AgentTaskStatus
     created_at: datetime
     updated_at: datetime

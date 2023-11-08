@@ -1,7 +1,6 @@
 import logging
 
 from fastapi import Depends, HTTPException, Response
-from sqlalchemy.orm import Session
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
@@ -12,7 +11,7 @@ from empire.server.api.v2.module.module_dto import (
     ModuleUpdateRequest,
     domain_to_dto_module,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.module_models import EmpireModule
 from empire.server.server import main
@@ -76,8 +75,8 @@ async def read_module_script(uid: str, module: EmpireModule = Depends(get_module
 async def update_module(
     uid: str,
     module_req: ModuleUpdateRequest,
+    db: CurrentSession,
     module: EmpireModule = Depends(get_module),
-    db: Session = Depends(get_db),
 ):
     module_service.update_module(db, module, module_req)
 
@@ -85,22 +84,20 @@ async def update_module(
 
 
 @router.put("/bulk/enable", status_code=204, response_class=Response)
-async def update_bulk_enable(
-    module_req: ModuleBulkUpdateRequest, db: Session = Depends(get_db)
-):
+async def update_bulk_enable(module_req: ModuleBulkUpdateRequest, db: CurrentSession):
     module_service.update_modules(db, module_req)
 
 
 @router.post("/reload", status_code=204, response_class=Response)
 async def reload_modules(
-    db: Session = Depends(get_db),
+    db: CurrentSession,
 ):
     module_service.load_modules(db)
 
 
 @router.post("/reset", status_code=204, response_class=Response)
 async def reset_modules(
-    db: Session = Depends(get_db),
+    db: CurrentSession,
 ):
     module_service.delete_all_modules(db)
     module_service.load_modules(db)

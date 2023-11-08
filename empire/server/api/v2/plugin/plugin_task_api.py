@@ -2,7 +2,6 @@ import math
 from datetime import datetime
 
 from fastapi import Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
@@ -12,7 +11,7 @@ from empire.server.api.v2.plugin.plugin_task_dto import (
     PluginTasks,
     domain_to_dto_plugin_task,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -49,7 +48,7 @@ async def get_plugin(plugin_id: str):
     raise HTTPException(404, f"Plugin not found for id {plugin_id}")
 
 
-async def get_task(uid: int, db: Session = Depends(get_db), plugin=Depends(get_plugin)):
+async def get_task(uid: int, db: CurrentSession, plugin=Depends(get_plugin)):
     task = plugin_service.get_task(db, plugin.info["Name"], uid)
 
     if task:
@@ -65,6 +64,7 @@ tag_api.add_endpoints_to_taggable(router, "/{plugin_id}/tasks/{uid}/tags", get_t
 
 @router.get("/tasks", response_model=PluginTasks)
 async def read_tasks_all_plugins(
+    db: CurrentSession,
     limit: int = -1,
     page: int = 1,
     include_full_input: bool = False,
@@ -77,7 +77,6 @@ async def read_tasks_all_plugins(
     users: list[int] | None = Query(None),
     tags: list[TagStr] | None = Query(None),
     query: str | None = None,
-    db: Session = Depends(get_db),
 ):
     tasks, total = plugin_service.get_tasks(
         db,
@@ -113,6 +112,7 @@ async def read_tasks_all_plugins(
 
 @router.get("/{plugin_id}/tasks", response_model=PluginTasks)
 async def read_tasks(
+    db: CurrentSession,
     limit: int = -1,
     page: int = 1,
     include_full_input: bool = False,
@@ -123,7 +123,6 @@ async def read_tasks(
     status: PluginTaskStatus | None = None,
     users: list[int] | None = Query(None),
     tags: list[TagStr] | None = Query(None),
-    db: Session = Depends(get_db),
     plugin=Depends(get_plugin),
     query: str | None = None,
 ):
@@ -162,7 +161,7 @@ async def read_tasks(
 @router.get("/{plugin_id}/tasks/{uid}", response_model=PluginTask)
 async def read_task(
     uid: int,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     plugin=Depends(get_plugin),
     db_task: models.PluginTask = Depends(get_task),
 ):

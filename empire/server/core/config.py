@@ -3,13 +3,14 @@ import sys
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 log = logging.getLogger(__name__)
 
 
 class EmpireBaseModel(BaseModel):
-    @validator("*")
+    @classmethod
+    @field_validator("*")
     def set_path(cls, v):
         if isinstance(v, Path):
             return v.expanduser().resolve()
@@ -94,13 +95,12 @@ class EmpireConfig(EmpireBaseModel):
     logging: LoggingConfig
     debug: DebugConfig
 
+    model_config = ConfigDict(extra="allow")
+
     def __init__(self, config_dict: dict):
         super().__init__(**config_dict)
         # For backwards compatibility
         self.yaml = config_dict
-
-    class Config:
-        extra = Extra.allow
 
 
 def set_yaml(location: str):

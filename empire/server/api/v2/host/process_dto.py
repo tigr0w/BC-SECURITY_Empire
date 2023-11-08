@@ -24,10 +24,10 @@ class Process(BaseModel):
     process_id: int
     process_name: str
     host_id: int
-    architecture: str | None
-    user: str | None
+    architecture: str | None = None
+    user: str | None = None
     stale: bool
-    agent_id: str | None
+    agent_id: str | None = None
 
 
 class Processes(BaseModel):

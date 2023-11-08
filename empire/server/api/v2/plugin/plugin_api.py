@@ -1,18 +1,19 @@
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
 from starlette.responses import Response
 
 from empire.server.api.api_router import APIRouter
-from empire.server.api.jwt_auth import get_current_active_user, get_current_user
+from empire.server.api.jwt_auth import (
+    CurrentUser,
+    get_current_active_user,
+)
 from empire.server.api.v2.plugin.plugin_dto import (
     PluginExecutePostRequest,
     PluginExecuteResponse,
     Plugins,
     domain_to_dto_plugin,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
-from empire.server.core.db import models
 from empire.server.core.exceptions import PluginValidationException
 from empire.server.server import main
 
@@ -58,9 +59,9 @@ async def read_plugin(uid: str, plugin=Depends(get_plugin)):
 async def execute_plugin(
     uid: str,
     plugin_req: PluginExecutePostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     plugin=Depends(get_plugin),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     try:
         results, err = plugin_service.execute_plugin(
@@ -79,6 +80,6 @@ async def execute_plugin(
 
 
 @router.post("/reload", status_code=204, response_class=Response)
-async def reload_plugins(db: Session = Depends(get_db)):
+async def reload_plugins(db: CurrentSession):
     plugin_service.shutdown()
     plugin_service.startup_plugins(db)

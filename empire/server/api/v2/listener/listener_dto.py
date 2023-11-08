@@ -1,8 +1,13 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
+from empire.server.api.v2.shared_dto import (
+    Author,
+    CustomOptionSchema,
+    coerced_dict,
+    to_value_type,
+)
 from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 
 
@@ -72,11 +77,10 @@ class ListenerTemplate(BaseModel):
     comments: list[str]
     tactics: list[str]
     techniques: list[str]
-    software: str | None
+    software: str | None = None
     options: dict[str, CustomOptionSchema]
-
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "http",
                 "name": "HTTP[S]",
@@ -237,6 +241,7 @@ class ListenerTemplate(BaseModel):
                 },
             }
         }
+    )
 
 
 class ListenerTemplates(BaseModel):
@@ -248,7 +253,7 @@ class Listener(BaseModel):
     name: str
     enabled: bool
     template: str
-    options: dict[str, str]
+    options: coerced_dict
     created_at: datetime
     tags: list[Tag]
 
@@ -260,10 +265,9 @@ class Listeners(BaseModel):
 class ListenerPostRequest(BaseModel):
     name: str
     template: str
-    options: dict[str, str]
-
-    class Config:
-        schema_extra = {
+    options: coerced_dict
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "name": "MyListener",
                 "template": "http",
@@ -294,12 +298,13 @@ class ListenerPostRequest(BaseModel):
                 },
             }
         }
+    )
 
 
 class ListenerUpdateRequest(BaseModel):
     name: str
     enabled: bool
-    options: dict[str, str]
+    options: coerced_dict
 
     def __iter__(self):
         return iter(self.__root__)

@@ -1,19 +1,17 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Profile(BaseModel):
     id: int
     name: str
-    file_path: str | None  # todo vr needed?
+    file_path: str | None = None  # todo vr needed?
     category: str
     data: str
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Profiles(BaseModel):

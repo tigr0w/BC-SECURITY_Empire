@@ -1,11 +1,10 @@
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
 
 from empire.server.api.api_router import APIRouter
-from empire.server.api.jwt_auth import get_current_active_user
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.jwt_auth import CurrentActiveUser, get_current_active_user
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.stager.stager_dto import (
     Stager,
@@ -30,7 +29,7 @@ router = APIRouter(
 )
 
 
-async def get_stager(uid: int, db: Session = Depends(get_db)):
+async def get_stager(uid: int, db: CurrentSession):
     stager = stager_service.get_by_id(db, uid)
 
     if stager:
@@ -40,7 +39,7 @@ async def get_stager(uid: int, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=Stagers)
-async def read_stagers(db: Session = Depends(get_db)):
+async def read_stagers(db: CurrentSession):
     stagers = list(map(lambda x: domain_to_dto_stager(x), stager_service.get_all(db)))
 
     return {"records": stagers}
@@ -54,8 +53,8 @@ async def read_stager(uid: int, db_stager: models.Stager = Depends(get_stager)):
 @router.post("/", status_code=201, response_model=Stager)
 async def create_stager(
     stager_req: StagerPostRequest,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    current_user: CurrentActiveUser,
+    db: CurrentSession,
     save: bool = True,
 ):
     resp, err = stager_service.create_stager(
@@ -72,7 +71,7 @@ async def create_stager(
 async def update_stager(
     uid: int,
     stager_req: StagerUpdateRequest,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_stager: models.Stager = Depends(get_stager),
 ):
     resp, err = stager_service.update_stager(db, db_stager, stager_req)
@@ -90,7 +89,7 @@ async def update_stager(
 )
 async def delete_stager(
     uid: int,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_stager: models.Stager = Depends(get_stager),
 ):
     stager_service.delete_stager(db, db_stager)

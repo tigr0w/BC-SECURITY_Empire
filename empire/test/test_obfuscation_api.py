@@ -68,7 +68,7 @@ def test_create_keyword_validate_length(client, admin_auth_header):
     assert response.status_code == 422
     assert (
         response.json()["detail"][0]["msg"]
-        == "ensure this value has at least 3 characters"
+        == "String should have at least 3 characters"
     )
 
 

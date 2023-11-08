@@ -28,7 +28,7 @@ def domain_to_dto_module(module: EmpireModule, uid: str):
         id=uid,
         name=module.name,
         enabled=module.enabled,
-        authors=module.authors,
+        authors=[a.model_dump() for a in module.authors],
         description=module.description,
         background=module.background,
         language=module.language,
@@ -51,12 +51,12 @@ class Module(BaseModel):
     description: str
     background: bool
     language: LanguageEnum
-    min_language_version: str | None
+    min_language_version: str | None = None
     needs_admin: bool
     opsec_safe: bool
     techniques: list[str]
     tactics: list[str]
-    software: str | None
+    software: str | None = None
     comments: list[str]
     options: dict[str, CustomOptionSchema]
 

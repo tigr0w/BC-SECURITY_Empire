@@ -359,7 +359,7 @@ class AgentTaskService:
         agent_id: str
         task_name: str
         input_full: str
-        module_name: str | None
+        module_name: str | None = None
 
     def add_temporary_task(
         self, agent_id: str, task_name, task_input="", module_name: str = None

@@ -1,11 +1,12 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from empire.server.api.v2.shared_dto import (
     Author,
     CustomOptionSchema,
     DownloadDescription,
+    coerced_dict,
     domain_to_dto_download_description,
     to_value_type,
 )
@@ -74,9 +75,8 @@ class StagerTemplate(BaseModel):
     description: str
     comments: list[str]
     options: dict[str, CustomOptionSchema]
-
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "multi_launcher",
                 "name": "Launcher",
@@ -171,6 +171,7 @@ class StagerTemplate(BaseModel):
                 },
             }
         }
+    )
 
 
 class StagerTemplates(BaseModel):
@@ -183,10 +184,11 @@ class Stager(BaseModel):
     template: str
     one_liner: bool
     downloads: list[DownloadDescription]
-    options: dict[str, str]
+    options: coerced_dict
     user_id: int
-    created_at: datetime | None  # optional because if its not saved yet, it will be None
-    updated_at: datetime | None
+    # optional because if its not saved yet, it will be None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class Stagers(BaseModel):
@@ -196,10 +198,9 @@ class Stagers(BaseModel):
 class StagerPostRequest(BaseModel):
     name: str
     template: str
-    options: dict[str, str]
-
-    class Config:
-        schema_extra = {
+    options: coerced_dict
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "name": "MyStager",
                 "template": "multi_launcher",
@@ -219,11 +220,12 @@ class StagerPostRequest(BaseModel):
                 },
             }
         }
+    )
 
 
 class StagerUpdateRequest(BaseModel):
     name: str
-    options: dict[str, str]
+    options: coerced_dict
 
     def __iter__(self):
         return iter(self.__root__)

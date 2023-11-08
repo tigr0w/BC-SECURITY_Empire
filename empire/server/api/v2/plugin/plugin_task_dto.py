@@ -44,13 +44,13 @@ def domain_to_dto_plugin_task(
 class PluginTask(BaseModel):
     id: int
     input: str
-    full_input: str | None
-    output: str | None
-    user_id: int | None
-    username: str | None
+    full_input: str | None = None
+    output: str | None = None
+    user_id: int | None = None
+    username: str | None = None
     plugin_id: str
     downloads: list[DownloadDescription]
-    status: models.PluginTaskStatus | None
+    status: models.PluginTaskStatus | None = None
     created_at: datetime
     updated_at: datetime
     tags: list[Tag]

@@ -29,7 +29,7 @@ class User(BaseModel):
     username: str
     enabled: bool
     is_admin: bool
-    avatar: DownloadDescription | None
+    avatar: DownloadDescription | None = None
     created_at: datetime
     updated_at: datetime
 
