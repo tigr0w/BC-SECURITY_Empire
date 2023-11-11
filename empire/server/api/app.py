@@ -66,7 +66,9 @@ def load_starkiller(v2App, ip, port):
         log.info(f"Starkiller served at http://localhost:{port}/index.html")
 
 
-def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
+def initialize(
+    secure: bool = False, ip: str = "0.0.0.0", port: int = 1337, run: bool = True
+):
     # Not pretty but allows us to use main_menu by delaying the import
     from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
     from empire.server.api.v2.bypass import bypass_api
@@ -151,23 +153,26 @@ def initialize(secure: bool = False, ip: str = "0.0.0.0", port: int = 1337):
 
     cert_path = os.path.abspath("./empire/server/data/")
 
-    if not secure:
-        uvicorn.run(
-            v2App,
-            host=ip,
-            port=port,
-            log_config=None,
-            lifespan="on",
-            # log_level="info",
-        )
-    else:
-        uvicorn.run(
-            v2App,
-            host=ip,
-            port=port,
-            log_config=None,
-            lifespan="on",
-            ssl_keyfile=f"{cert_path}/empire-priv.key",
-            ssl_certfile=f"{cert_path}/empire-chain.pem",
-            # log_level="info",
-        )
+    if run:
+        if not secure:
+            uvicorn.run(
+                v2App,
+                host=ip,
+                port=port,
+                log_config=None,
+                lifespan="on",
+                # log_level="info",
+            )
+        else:
+            uvicorn.run(
+                v2App,
+                host=ip,
+                port=port,
+                log_config=None,
+                lifespan="on",
+                ssl_keyfile=f"{cert_path}/empire-priv.key",
+                ssl_certfile=f"{cert_path}/empire-chain.pem",
+                # log_level="info",
+            )
+
+    return v2App

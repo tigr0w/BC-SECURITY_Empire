@@ -6,7 +6,6 @@ from importlib import reload
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from empire.client.src.utils.data_util import get_random_string
@@ -50,48 +49,14 @@ def client():
     args = arguments.parent_parser.parse_args()
 
     import empire.server.server
+    from empire.server.api.app import initialize
     from empire.server.common.empire import MainMenu
 
     empire.server.server.main = MainMenu(args)
 
-    from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
-    from empire.server.api.v2.bypass import bypass_api
-    from empire.server.api.v2.credential import credential_api
-    from empire.server.api.v2.download import download_api
-    from empire.server.api.v2.host import host_api, process_api
-    from empire.server.api.v2.listener import listener_api, listener_template_api
-    from empire.server.api.v2.meta import meta_api
-    from empire.server.api.v2.module import module_api
-    from empire.server.api.v2.obfuscation import obfuscation_api
-    from empire.server.api.v2.plugin import plugin_api, plugin_task_api
-    from empire.server.api.v2.profile import profile_api
-    from empire.server.api.v2.stager import stager_api, stager_template_api
-    from empire.server.api.v2.tag import tag_api
-    from empire.server.api.v2.user import user_api
+    app = initialize(ip="localhost", run=False)
 
-    v2App = FastAPI()
-    v2App.include_router(listener_template_api.router)
-    v2App.include_router(listener_api.router)
-    v2App.include_router(stager_template_api.router)
-    v2App.include_router(stager_api.router)
-    v2App.include_router(agent_task_api.router)
-    v2App.include_router(agent_file_api.router)
-    v2App.include_router(agent_api.router)
-    v2App.include_router(module_api.router)
-    v2App.include_router(bypass_api.router)
-    v2App.include_router(obfuscation_api.router)
-    v2App.include_router(profile_api.router)
-    v2App.include_router(plugin_api.router)
-    v2App.include_router(plugin_task_api.router)
-    v2App.include_router(credential_api.router)
-    v2App.include_router(host_api.router)
-    v2App.include_router(user_api.router)
-    v2App.include_router(process_api.router)
-    v2App.include_router(download_api.router)
-    v2App.include_router(meta_api.router)
-    v2App.include_router(tag_api.router)
-
-    yield TestClient(v2App)
+    yield TestClient(app)
 
     from empire.server.server import main
 

@@ -10,7 +10,9 @@ class CredentialService:
         self.main_menu = main_menu
 
     @staticmethod
-    def get_all(db: Session, search: str = None, credtype: str = None):
+    def get_all(
+        db: Session, search: str = None, credtype: str = None, tags: list[str] = None
+    ):
         query = db.query(models.Credential)
 
         if search:
@@ -20,6 +22,15 @@ class CredentialService:
                     models.Credential.username.like(f"%{search}%"),
                     models.Credential.password.like(f"%{search}%"),
                     models.Credential.host.like(f"%{search}%"),
+                )
+            )
+
+        if tags:
+            tags_split = [tag.split(":", 1) for tag in tags]
+            query = query.join(models.Credential.tags).filter(
+                and_(
+                    models.Tag.name.in_([tag[0] for tag in tags_split]),
+                    models.Tag.value.in_([tag[1] for tag in tags_split]),
                 )
             )
 

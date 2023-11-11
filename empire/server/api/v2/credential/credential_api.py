@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Query
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
 
@@ -14,6 +14,7 @@ from empire.server.api.v2.credential.credential_dto import (
 from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.tag import tag_api
+from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.db import models
 from empire.server.server import main
 
@@ -54,11 +55,12 @@ async def read_credentials(
     db: CurrentSession,
     search: str | None = None,
     credtype: str | None = None,
+    tags: list[TagStr] | None = Query(None),
 ):
     credentials = list(
         map(
             lambda x: domain_to_dto_credential(x),
-            credential_service.get_all(db, search, credtype),
+            credential_service.get_all(db, search, credtype, tags),
         )
     )
 

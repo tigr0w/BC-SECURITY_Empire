@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Upgrade Pydantic to v2 (@Vinnybod)
 -   Update common FastAPI Dependencies to use 'Annotated' types for simpler code (@Vinnybod)
+-   Add tags search to credentials endpoints (@Vinnybod)
+-   Remove unused migration scripts (@Vinnybod)
+-   Simplify TestClient setup (@Vinnybod)
 
 ## [5.8.0] - 2023-11-06
 
