@@ -142,7 +142,7 @@ def run(args):
     check_recommended_configuration()
 
     if not args.restport:
-        args.restport = 1337
+        args.restport = empire_config.api.port
     else:
         args.restport = int(args.restport[0])
 

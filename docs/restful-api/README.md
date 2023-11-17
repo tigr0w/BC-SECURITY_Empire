@@ -1,16 +1,17 @@
 # RESTful API
 
 ## Introduction
-The Empire v2 API is a RESTful API that provides access to the data in Empire. It was introduced in Empire 5.0 and replaced the old v1 API. 
-The API is powered by [FastAPI](https://fastapi.tiangolo.com/) and is available at [http://localhost:1337/api/v2/](http://localhost:1337/api/v2/). 
+The Empire v2 API is a RESTful API that provides access to the data in Empire. It was introduced in Empire 5.0 and replaced the old v1 API.
+The API is powered by [FastAPI](https://fastapi.tiangolo.com/) and is available at [http://localhost:1337/api/v2/](http://localhost:1337/api/v2/).
 The Swagger UI is available at [http://localhost:1337/docs/](http://localhost:1337/docs/).
-The docs here are to be used as a reference for the API and to explain nuances for interacting with it. For actual endpoint definitions, use the OpenAPI Spec. For explanations of what the heck a listener, stager, etc is, see the associated non-API documentation. 
+The docs here are to be used as a reference for the API and to explain nuances for interacting with it. For actual endpoint definitions, use the OpenAPI Spec. For explanations of what the heck a listener, stager, etc is, see the associated non-API documentation.
 
 The server can be launched by running `./ps-empire server` and can be connected to with the built-in client or [Starkiller](https://github.com/BC-SECURITY/Starkiller). By default, the RESTful API is started on port 1337, over HTTP without a certificate. This is because self-signed certs are blocked by most web browsers and Starkiller is used via a web browser.
 
 If launched with `--secure-api`, https will be used using the certificate located at `empire/server/data/empire.pem`, which is generated at startup.
 
-The port can be changed by supplying `--restport <PORT_NUM>` on launch.
+The port can be configured in the server `config.yaml` file by the `api.port` property.
+It can also be set by supplying `--restport <PORT_NUM>` on launch, which will take precedence over the config file.
 
 ## API Authentication
 API Authentication is handled via JSON Web Tokens (JWT).
@@ -55,7 +56,7 @@ options dictionary to contain the options that are required for associated stage
 and will be validated against the template. The options can be sent as strings, but Empire will
 still validate that they can be parsed to the correct type and raise an exception if it isn't correct.
 
-They can be created, updated, and deleted via the API. 
+They can be created, updated, and deleted via the API.
 When creating a stager, there is an option to only "generate" instead of save.
 If `save=false`, then the stager will not be saved to the database, but will be returned in the response. If the stager is a file, then the response will contain a reference to the download uri for that file.
 
@@ -101,7 +102,7 @@ is based on its internal IP address and name.
 
 ### Host Processes
 */api/v2/hosts/{host_id}/host-processes/*
-Host processes are the processes that are scraped via the `ps` command on an agent. They are read-only via the API. 
+Host processes are the processes that are scraped via the `ps` command on an agent. They are read-only via the API.
 
 ### Downloads
 */api/v2/downloads*
@@ -155,4 +156,3 @@ At the moment, there is only an endpoint for getting the version of the server.
 Users support basic CRUD operations via the API.
 There is also an endpoint for updating a user's password. Only an admin user can create and
 update other users.
-

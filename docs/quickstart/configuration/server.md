@@ -3,6 +3,14 @@
 The Server configuration is managed via [empire/server/config.yaml](https://github.com/BC-SECURITY/Empire/blob/master/empire/client/config.yaml).
 
 * **suppress-self-cert-warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
+
+* **api** - Configure the RESTful API. The only option is the port to run the API on.
+
+```yaml
+api:
+  port: 1337
+```
+
 * **database** - Configure Empire's database. Empire defaults to SQLite and has the ability to run with MySQL. For more info on the database, see the [Database](database/README.md) section.
 
 SQLite - The location of the SQLite db file is configurable.
@@ -21,8 +29,8 @@ database:
   use: mysql
   mysql:
     url: localhost
-    username: 
-    password: 
+    username:
+    password:
     database_name:
 ```
 

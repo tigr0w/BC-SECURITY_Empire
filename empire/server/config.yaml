@@ -1,4 +1,6 @@
 suppress-self-cert-warning: true
+api:
+  port: 1350
 database:
   use: mysql
   mysql:
@@ -40,6 +42,7 @@ database:
     #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
     ip-blacklist: ""
 starkiller:
+  enabled: false
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
   directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash

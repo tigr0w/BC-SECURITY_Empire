@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Add tags search to credentials endpoints (@Vinnybod)
 -   Remove unused migration scripts (@Vinnybod)
 -   Simplify TestClient setup (@Vinnybod)
+-   Allow Starkiller to be disabled (@Vinnybod)
+-   Allow API port to be configured from the config.yaml (@Vinnybod)
 
 ## [5.8.0] - 2023-11-06
 

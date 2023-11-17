@@ -17,11 +17,16 @@ class EmpireBaseModel(BaseModel):
         return v
 
 
+class ApiConfig(EmpireBaseModel):
+    port: int = 1337
+
+
 class StarkillerConfig(EmpireBaseModel):
     repo: str = "bc-security/starkiller"
     directory: Path = "empire/server/api/v2/starkiller"
     ref: str = "main"
     auto_update: bool = True
+    enabled: bool | None = True
 
 
 class DatabaseDefaultObfuscationConfig(EmpireBaseModel):
@@ -88,6 +93,7 @@ class EmpireConfig(EmpireBaseModel):
     supress_self_cert_warning: bool = Field(
         alias="supress-self-cert-warning", default=True
     )
+    api: ApiConfig | None = ApiConfig()
     starkiller: StarkillerConfig
     database: DatabaseConfig
     plugins: dict[str, dict[str, str]] = {}

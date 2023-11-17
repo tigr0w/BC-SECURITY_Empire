@@ -149,7 +149,11 @@ def initialize(
 
     setup_socket_events(sio, main)
 
-    load_starkiller(v2App, ip, port)
+    if empire_config.starkiller.enabled:
+        log.info("Starkiller enabled. Loading.")
+        load_starkiller(v2App, ip, port)
+    else:
+        log.info("Starkiller disabled. Not loading.")
 
     cert_path = os.path.abspath("./empire/server/data/")
 
