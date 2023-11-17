@@ -19,10 +19,8 @@ def domain_to_dto_file(file: models.AgentFile, children: list[models.AgentFile])
         path=file.path,
         is_file=file.is_file,
         parent_id=file.parent_id,
-        downloads=list(
-            map(lambda x: domain_to_dto_download_description(x), file.downloads)
-        ),
-        children=list(map(lambda c: domain_to_dto_file(c, []), children)),
+        downloads=[domain_to_dto_download_description(x) for x in file.downloads],
+        children=[domain_to_dto_file(c, []) for c in children],
     )
 
 

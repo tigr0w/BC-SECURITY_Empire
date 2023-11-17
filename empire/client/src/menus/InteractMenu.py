@@ -42,12 +42,10 @@ class InteractMenu(Menu):
         if cmd_line[0] in ["interact"] and position_util(
             cmd_line, 2, word_before_cursor
         ):
-            active_agents = list(
-                map(
-                    lambda a: a["name"],
-                    filter(lambda a: a["stale"] is not True, state.agents.values()),
-                )
-            )
+            active_agents = [
+                a["name"]
+                for a in filter(lambda a: a["stale"] is not True, state.agents.values())
+            ]
             for agent in filtered_search_list(word_before_cursor, active_agents):
                 yield Completion(agent, start_position=-len(word_before_cursor))
         elif cmd_line[0] in ["display"] and position_util(

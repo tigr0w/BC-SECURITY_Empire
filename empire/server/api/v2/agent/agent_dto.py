@@ -48,7 +48,7 @@ def domain_to_dto_agent(agent: models.Agent):
         archived=agent.archived,
         # Could make this a typed class later to match the schema
         proxies=to_proxy_dto(agent.proxies),
-        tags=list(map(lambda x: domain_to_dto_tag(x), agent.tags)),
+        tags=[domain_to_dto_tag(x) for x in agent.tags],
     )
 
 

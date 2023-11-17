@@ -12,33 +12,26 @@ from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 
 
 def domain_to_dto_template(listener, uid: str):
-    options = dict(
-        map(
-            lambda x: (
-                x[0],
-                {
-                    "description": x[1]["Description"],
-                    "required": x[1]["Required"],
-                    "value": x[1]["Value"],
-                    "strict": x[1]["Strict"],
-                    "suggested_values": x[1]["SuggestedValues"],
-                    "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
-                },
-            ),
-            listener.options.items(),
-        )
-    )
+    options = {
+        x[0]: {
+            "description": x[1]["Description"],
+            "required": x[1]["Required"],
+            "value": x[1]["Value"],
+            "strict": x[1]["Strict"],
+            "suggested_values": x[1]["SuggestedValues"],
+            "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+        }
+        for x in listener.options.items()
+    }
 
-    authors = list(
-        map(
-            lambda x: {
-                "name": x["Name"],
-                "handle": x["Handle"],
-                "link": x["Link"],
-            },
-            listener.info.get("Authors") or [],
-        )
-    )
+    authors = [
+        {
+            "name": x["Name"],
+            "handle": x["Handle"],
+            "link": x["Link"],
+        }
+        for x in listener.info.get("Authors") or []
+    ]
 
     return ListenerTemplate(
         id=uid,
@@ -55,7 +48,7 @@ def domain_to_dto_template(listener, uid: str):
 
 
 def domain_to_dto_listener(listener):
-    options = dict(map(lambda x: (x[0], x[1]["Value"]), listener.options.items()))
+    options = {x[0]: x[1]["Value"] for x in listener.options.items()}
 
     return Listener(
         id=listener.id,
@@ -64,7 +57,7 @@ def domain_to_dto_listener(listener):
         enabled=listener.enabled,
         options=options,
         created_at=listener.created_at,
-        tags=list(map(lambda x: domain_to_dto_tag(x), listener.tags)),
+        tags=[domain_to_dto_tag(x) for x in listener.tags],
     )
 
 

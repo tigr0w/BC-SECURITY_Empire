@@ -94,12 +94,9 @@ async def read_tasks_all_plugins(
         q=query,
     )
 
-    tasks_converted = list(
-        map(
-            lambda x: domain_to_dto_plugin_task(x, include_full_input, include_output),
-            tasks,
-        )
-    )
+    tasks_converted = [
+        domain_to_dto_plugin_task(x, include_full_input, include_output) for x in tasks
+    ]
 
     return PluginTasks(
         records=tasks_converted,
@@ -142,12 +139,9 @@ async def read_tasks(
         q=query,
     )
 
-    tasks_converted = list(
-        map(
-            lambda x: domain_to_dto_plugin_task(x, include_full_input, include_output),
-            tasks,
-        )
-    )
+    tasks_converted = [
+        domain_to_dto_plugin_task(x, include_full_input, include_output) for x in tasks
+    ]
 
     return PluginTasks(
         records=tasks_converted,

@@ -65,7 +65,7 @@ def read_agent_checkins_all(
     checkins, total = agent_service.get_agent_checkins(
         db, agents, limit, (page - 1) * limit, start_date, end_date, order_direction
     )
-    checkins = list(map(lambda x: domain_to_dto_agent_checkin(x), checkins))
+    checkins = [domain_to_dto_agent_checkin(x) for x in checkins]
 
     return AgentCheckIns(
         records=checkins,
@@ -93,7 +93,7 @@ def read_agent_checkins_aggregate(
     checkins = agent_service.get_agent_checkins_aggregate(
         db, agents, start_date, end_date, bucket_size
     )
-    checkins = list(map(lambda x: domain_to_dto_agent_checkin_agg(x), checkins))
+    checkins = [domain_to_dto_agent_checkin_agg(x) for x in checkins]
 
     return AgentCheckInsAggregate(
         records=checkins,
@@ -114,12 +114,10 @@ async def read_agents(
     include_archived: bool = False,
     include_stale: bool = True,
 ):
-    agents = list(
-        map(
-            lambda x: domain_to_dto_agent(x),
-            agent_service.get_all(db, include_archived, include_stale),
-        )
-    )
+    agents = [
+        domain_to_dto_agent(x)
+        for x in agent_service.get_all(db, include_archived, include_stale)
+    ]
 
     return {"records": agents}
 
@@ -158,7 +156,7 @@ def read_agent_checkins(
         end_date,
         order_direction,
     )
-    checkins = list(map(lambda x: domain_to_dto_agent_checkin(x), checkins))
+    checkins = [domain_to_dto_agent_checkin(x) for x in checkins]
 
     return AgentCheckIns(
         records=checkins,

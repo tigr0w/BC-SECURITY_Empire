@@ -41,11 +41,9 @@ async def get_plugin(uid: str):
 
 @router.get("/", response_model=Plugins)
 async def read_plugins():
-    plugins = list(
-        map(
-            lambda x: domain_to_dto_plugin(x[1], x[0]), plugin_service.get_all().items()
-        )
-    )
+    plugins = [
+        domain_to_dto_plugin(x[1], x[0]) for x in plugin_service.get_all().items()
+    ]
 
     return {"records": plugins}
 

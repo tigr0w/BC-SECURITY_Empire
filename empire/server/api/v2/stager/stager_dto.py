@@ -14,33 +14,26 @@ from empire.server.core.db import models
 
 
 def domain_to_dto_template(stager, uid: str):
-    options = dict(
-        map(
-            lambda x: (
-                x[0],
-                {
-                    "description": x[1]["Description"],
-                    "required": x[1]["Required"],
-                    "value": x[1]["Value"],
-                    "strict": x[1]["Strict"],
-                    "suggested_values": x[1]["SuggestedValues"],
-                    "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
-                },
-            ),
-            stager.options.items(),
-        )
-    )
+    options = {
+        x[0]: {
+            "description": x[1]["Description"],
+            "required": x[1]["Required"],
+            "value": x[1]["Value"],
+            "strict": x[1]["Strict"],
+            "suggested_values": x[1]["SuggestedValues"],
+            "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+        }
+        for x in stager.options.items()
+    }
 
-    authors = list(
-        map(
-            lambda x: {
-                "name": x["Name"],
-                "handle": x["Handle"],
-                "link": x["Link"],
-            },
-            stager.info.get("Authors") or [],
-        )
-    )
+    authors = [
+        {
+            "name": x["Name"],
+            "handle": x["Handle"],
+            "link": x["Link"],
+        }
+        for x in stager.info.get("Authors") or []
+    ]
 
     return StagerTemplate(
         id=uid,
@@ -58,9 +51,7 @@ def domain_to_dto_stager(stager: models.Stager):
         name=stager.name,
         template=stager.module,
         one_liner=stager.one_liner,
-        downloads=list(
-            map(lambda x: domain_to_dto_download_description(x), stager.downloads)
-        ),
+        downloads=[domain_to_dto_download_description(x) for x in stager.downloads],
         options=stager.options,
         user_id=stager.user_id,
         created_at=stager.created_at,

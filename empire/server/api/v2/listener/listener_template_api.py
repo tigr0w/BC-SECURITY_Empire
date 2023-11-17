@@ -28,12 +28,10 @@ router = APIRouter(
     response_model=ListenerTemplates,
 )
 async def get_listener_templates():
-    templates = list(
-        map(
-            lambda x: domain_to_dto_template(x[1], x[0]),
-            listener_template_service.get_listener_templates().items(),
-        )
-    )
+    templates = [
+        domain_to_dto_template(x[1], x[0])
+        for x in listener_template_service.get_listener_templates().items()
+    ]
 
     return {"records": templates}
 

@@ -38,13 +38,13 @@ class Shortcut:
         return list(filter(lambda x: x.dynamic, self.params))
 
     def get_dynamic_param_names(self) -> list[str]:
-        return list(map(lambda x: x.name, self.get_dynamic_params()))
+        return [x.name for x in self.get_dynamic_params()]
 
     def get_static_params(self) -> list[ShortcutParam]:
         return list(filter(lambda x: not x.dynamic, self.params))
 
     def get_static_param_names(self) -> list[str]:
-        return list(map(lambda x: x.name, self.get_static_params()))
+        return [x.name for x in self.get_static_params()]
 
     def get_param(self, name: str) -> ShortcutParam | None:
         param = None
@@ -70,9 +70,7 @@ class Shortcut:
             )
 
         module = self.module
-        default_params = list(
-            map(lambda x: f"{x.name}: {x.value}", self.get_static_params())
-        )
+        default_params = [f"{x.name}: {x.value}" for x in self.get_static_params()]
         description = f"Tasks the agent to run module {module}."
         if len(default_params) > 0:
             description += " Default parameters include:\n"

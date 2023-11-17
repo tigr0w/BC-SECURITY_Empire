@@ -6,23 +6,18 @@ from empire.server.core.module_models import EmpireModule, LanguageEnum
 
 def domain_to_dto_module(module: EmpireModule, uid: str):
     options = {x.name: x for x in module.options}
-    options = dict(
-        map(
-            lambda x: (
-                x[0],
-                {
-                    "description": x[1].description,
-                    "required": x[1].required,
-                    "value": x[1].value,
-                    "strict": x[1].strict,
-                    "suggested_values": x[1].suggested_values,
-                    # todo expand to listener, stager, etc
-                    "value_type": to_value_type(x[1].value, x[1].type),
-                },
-            ),
-            options.items(),
-        )
-    )
+    options = {
+        x[0]: {
+            "description": x[1].description,
+            "required": x[1].required,
+            "value": x[1].value,
+            "strict": x[1].strict,
+            "suggested_values": x[1].suggested_values,
+            # todo expand to listener, stager, etc
+            "value_type": to_value_type(x[1].value, x[1].type),
+        }
+        for x in options.items()
+    }
 
     return Module(
         id=uid,

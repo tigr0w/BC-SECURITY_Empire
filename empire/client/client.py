@@ -56,9 +56,7 @@ class MyCustomCompleter(Completer):
         word_before_cursor = document.get_word_before_cursor(WORD=True)
 
         try:
-            cmd_line = list(
-                map(lambda s: s.lower(), shlex.split(document.current_line))
-            )
+            cmd_line = [s.lower() for s in shlex.split(document.current_line)]
             if len(cmd_line) == 0:
                 cmd_line.append("")
         except ValueError:

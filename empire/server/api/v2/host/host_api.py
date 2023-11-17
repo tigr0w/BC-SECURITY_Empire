@@ -37,6 +37,6 @@ async def read_host(uid: int, db_host: models.Host = Depends(get_host)):
 
 @router.get("/", response_model=Hosts)
 async def read_hosts(db: CurrentSession):
-    hosts = list(map(lambda x: domain_to_dto_host(x), host_service.get_all(db)))
+    hosts = [domain_to_dto_host(x) for x in host_service.get_all(db)]
 
     return {"records": hosts}

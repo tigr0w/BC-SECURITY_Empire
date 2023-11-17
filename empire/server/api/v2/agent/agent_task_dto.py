@@ -33,15 +33,13 @@ def domain_to_dto_task(
         user_id=task.user_id,
         username=None if not task.user else task.user.username,
         agent_id=task.agent_id,
-        downloads=list(
-            map(lambda x: domain_to_dto_download_description(x), task.downloads)
-        ),
+        downloads=[domain_to_dto_download_description(x) for x in task.downloads],
         module_name=task.module_name,
         task_name=task.task_name,
         status=task.status,
         created_at=task.created_at,
         updated_at=task.updated_at,
-        tags=list(map(lambda x: domain_to_dto_tag(x), task.tags)),
+        tags=[domain_to_dto_tag(x) for x in task.tags],
     )
 
 

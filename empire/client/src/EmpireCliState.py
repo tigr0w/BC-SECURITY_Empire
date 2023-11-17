@@ -431,12 +431,10 @@ class EmpireCliState:
             self.sio.on(f"agents/{session_id}/task", self.add_to_cached_results)
 
         # Get active agents
-        self.active_agents = list(
-            map(
-                lambda a: a["name"],
-                filter(lambda a: a["stale"] is not True, state.agents.values()),
-            )
-        )
+        self.active_agents = [
+            a["name"]
+            for a in filter(lambda a: a["stale"] is not True, state.agents.values())
+        ]
         return self.agents
 
     def get_modules(self):

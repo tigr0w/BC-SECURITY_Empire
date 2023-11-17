@@ -123,14 +123,12 @@ async def read_tasks_all_agents(
         q=query,
     )
 
-    tasks_converted = list(
-        map(
-            lambda x: domain_to_dto_task(
-                x, include_full_input, include_original_output, include_output
-            ),
-            tasks,
+    tasks_converted = [
+        domain_to_dto_task(
+            x, include_full_input, include_original_output, include_output
         )
-    )
+        for x in tasks
+    ]
 
     return AgentTasks(
         records=tasks_converted,
@@ -175,14 +173,12 @@ async def read_tasks(
         q=query,
     )
 
-    tasks_converted = list(
-        map(
-            lambda x: domain_to_dto_task(
-                x, include_full_input, include_original_output, include_output
-            ),
-            tasks,
+    tasks_converted = [
+        domain_to_dto_task(
+            x, include_full_input, include_original_output, include_output
         )
-    )
+        for x in tasks
+    ]
 
     return AgentTasks(
         records=tasks_converted,

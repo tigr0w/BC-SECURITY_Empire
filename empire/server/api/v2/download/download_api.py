@@ -96,7 +96,7 @@ async def read_downloads(
         order_direction=order_direction,
     )
 
-    downloads_converted = list(map(lambda x: domain_to_dto_download(x), downloads))
+    downloads_converted = [domain_to_dto_download(x) for x in downloads]
 
     return Downloads(
         records=downloads_converted,

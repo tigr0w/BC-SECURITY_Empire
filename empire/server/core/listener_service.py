@@ -126,7 +126,7 @@ class ListenerService:
     def start_existing_listener(self, db: Session, listener: models.Listener):
         listener.enabled = True
 
-        options = dict(map(lambda x: (x[0], x[1]["Value"]), listener.options.items()))
+        options = {x[0]: x[1]["Value"] for x in listener.options.items()}
         template_instance, err = self._validate_listener_options(
             db, listener.module, options
         )

@@ -265,9 +265,13 @@ def get_dependent_functions(code, functionNames):
             dependentFunctions.add(functionName)
 
     if re.search(r"\$Netapi32|\$Advapi32|\$Kernel32|\$Wtsapi32", code, re.IGNORECASE):
-        dependentFunctions |= set(
-            ["New-InMemoryModule", "func", "Add-Win32Type", "psenum", "struct"]
-        )
+        dependentFunctions |= {
+            "New-InMemoryModule",
+            "func",
+            "Add-Win32Type",
+            "psenum",
+            "struct",
+        }
 
     return dependentFunctions
 

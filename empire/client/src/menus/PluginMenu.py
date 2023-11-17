@@ -28,12 +28,9 @@ class PluginMenu(Menu):
 
         Usage: list
         """
-        plugins_list = list(
-            map(
-                lambda x: [x["name"], x["description"]],
-                state.get_active_plugins().values(),
-            )
-        )
+        plugins_list = [
+            [x["name"], x["description"]] for x in state.get_active_plugins().values()
+        ]
         plugins_list.insert(0, ["Name", "Description"])
 
         table_util.print_table(plugins_list, "Plugins")

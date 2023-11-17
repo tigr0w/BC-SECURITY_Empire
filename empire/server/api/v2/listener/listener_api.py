@@ -49,9 +49,7 @@ async def read_listener(uid: int, db_listener: models.Listener = Depends(get_lis
 
 @router.get("/", response_model=Listeners)
 async def read_listeners(db: CurrentSession):
-    listeners = list(
-        map(lambda x: domain_to_dto_listener(x), listener_service.get_all(db))
-    )
+    listeners = [domain_to_dto_listener(x) for x in listener_service.get_all(db)]
 
     return {"records": listeners}
 

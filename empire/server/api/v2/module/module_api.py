@@ -47,11 +47,9 @@ async def get_module(uid: str):
     # response_model=Modules,
 )
 async def read_modules():
-    modules = list(
-        map(
-            lambda x: domain_to_dto_module(x[1], x[0]), module_service.get_all().items()
-        )
-    )
+    modules = [
+        domain_to_dto_module(x[1], x[0]) for x in module_service.get_all().items()
+    ]
 
     return {"records": modules}
 

@@ -103,7 +103,7 @@ class Listener:
             host = listenerOptions["Host"]["Value"]
             stagingKey = listenerOptions["StagingKey"]["Value"]
             profile = listenerOptions["DefaultProfile"]["Value"]
-            uris = [a for a in profile.split("|")[0].split(",")]
+            uris = list(profile.split("|")[0].split(","))
             stage0 = random.choice(uris)
             customHeaders = profile.split("|")[2:]
 

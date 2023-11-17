@@ -45,7 +45,7 @@ async def read_bypass(uid: int, db_bypass: models.Bypass = Depends(get_bypass)):
 
 @router.get("/", response_model=Bypasses)
 async def read_bypasses(db: CurrentSession):
-    bypasses = list(map(lambda x: domain_to_dto_bypass(x), bypass_service.get_all(db)))
+    bypasses = [domain_to_dto_bypass(x) for x in bypass_service.get_all(db)]
 
     return {"records": bypasses}
 

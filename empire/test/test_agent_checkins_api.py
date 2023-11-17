@@ -184,9 +184,7 @@ def test_get_agent_checkins_multiple_agents(
 
     assert response.status_code == 200
     assert len(response.json()["records"]) == days_back * 17280 * 2
-    assert set([r["agent_id"] for r in response.json()["records"]]) == set(
-        with_checkins[:2]
-    )
+    assert {r["agent_id"] for r in response.json()["records"]} == set(with_checkins[:2])
 
 
 # @pytest.mark.slow

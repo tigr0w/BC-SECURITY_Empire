@@ -40,7 +40,7 @@ async def get_stager(uid: int, db: CurrentSession):
 
 @router.get("/", response_model=Stagers)
 async def read_stagers(db: CurrentSession):
-    stagers = list(map(lambda x: domain_to_dto_stager(x), stager_service.get_all(db)))
+    stagers = [domain_to_dto_stager(x) for x in stager_service.get_all(db)]
 
     return {"records": stagers}
 

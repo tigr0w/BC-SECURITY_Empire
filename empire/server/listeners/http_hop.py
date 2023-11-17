@@ -136,7 +136,7 @@ class Listener:
         launcher = listenerOptions["Launcher"]["Value"]
         staging_key = listenerOptions["RedirectStagingKey"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
-        uris = [a for a in profile.split("|")[0].split(",")]
+        uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
 
         if language == "powershell":
@@ -558,12 +558,9 @@ class Listener:
             ]["Value"]
             redirectHost = redirectListenerOptions.options["Host"]["Value"]
 
-            uris = [
-                a
-                for a in self.options["DefaultProfile"]["Value"]
-                .split("|")[0]
-                .split(",")
-            ]
+            uris = list(
+                self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
+            )
 
             hopCodeLocation = "%s/data/misc/hop.php" % (self.mainMenu.installPath)
             with open(hopCodeLocation) as f:

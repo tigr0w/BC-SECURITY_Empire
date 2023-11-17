@@ -10,33 +10,26 @@ from empire.server.common.plugins import Plugin
 
 
 def domain_to_dto_plugin(plugin: Plugin, uid: str):
-    options = dict(
-        map(
-            lambda x: (
-                x[0],
-                {
-                    "description": x[1]["Description"],
-                    "required": x[1]["Required"],
-                    "value": x[1]["Value"],
-                    "strict": x[1]["Strict"],
-                    "suggested_values": x[1]["SuggestedValues"],
-                    "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
-                },
-            ),
-            plugin.options.items(),
-        )
-    )
+    options = {
+        x[0]: {
+            "description": x[1]["Description"],
+            "required": x[1]["Required"],
+            "value": x[1]["Value"],
+            "strict": x[1]["Strict"],
+            "suggested_values": x[1]["SuggestedValues"],
+            "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+        }
+        for x in plugin.options.items()
+    }
 
-    authors = list(
-        map(
-            lambda x: {
-                "name": x["Name"],
-                "handle": x["Handle"],
-                "link": x["Link"],
-            },
-            plugin.info.get("Authors") or [],
-        )
-    )
+    authors = [
+        {
+            "name": x["Name"],
+            "handle": x["Handle"],
+            "link": x["Link"],
+        }
+        for x in plugin.info.get("Authors") or []
+    ]
 
     return Plugin(
         id=uid,

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Simplify TestClient setup (@Vinnybod)
 -   Allow Starkiller to be disabled (@Vinnybod)
 -   Allow API port to be configured from the config.yaml (@Vinnybod)
+-   Add flake8-comprehensions rules to ruff config (@Vinnybod)
 
 ## [5.8.0] - 2023-11-06
 

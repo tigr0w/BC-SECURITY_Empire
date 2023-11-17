@@ -88,9 +88,7 @@ class StagerService:
             return None, err
 
         stager_options = copy.deepcopy(template_instance.options)
-        stager_options = dict(
-            map(lambda x: (x[0], x[1]["Value"]), stager_options.items())
-        )
+        stager_options = {x[0]: x[1]["Value"] for x in stager_options.items()}
 
         db_stager = models.Stager(
             name=stager_req.name,
@@ -137,9 +135,7 @@ class StagerService:
             return None, err
 
         stager_options = copy.deepcopy(template_instance.options)
-        stager_options = dict(
-            map(lambda x: (x[0], x[1]["Value"]), stager_options.items())
-        )
+        stager_options = {x[0]: x[1]["Value"] for x in stager_options.items()}
         db_stager.options = stager_options
 
         download = models.Download(

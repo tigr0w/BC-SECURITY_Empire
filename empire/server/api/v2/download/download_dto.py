@@ -16,7 +16,7 @@ def domain_to_dto_download(download):
         size=download.size,
         created_at=download.created_at,
         updated_at=download.updated_at,
-        tags=list(map(lambda x: domain_to_dto_tag(x), download.tags)),
+        tags=[domain_to_dto_tag(x) for x in download.tags],
     )
 
 

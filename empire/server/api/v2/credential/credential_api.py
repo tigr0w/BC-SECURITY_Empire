@@ -57,12 +57,10 @@ async def read_credentials(
     credtype: str | None = None,
     tags: list[TagStr] | None = Query(None),
 ):
-    credentials = list(
-        map(
-            lambda x: domain_to_dto_credential(x),
-            credential_service.get_all(db, search, credtype, tags),
-        )
-    )
+    credentials = [
+        domain_to_dto_credential(x)
+        for x in credential_service.get_all(db, search, credtype, tags)
+    ]
 
     return {"records": credentials}
 

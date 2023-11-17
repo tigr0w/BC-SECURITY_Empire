@@ -55,11 +55,9 @@ async def read_process(uid: int, db_process: models.HostProcess = Depends(get_pr
 
 @router.get("/", response_model=Processes)
 async def read_processes(db: CurrentSession, db_host: models.Host = Depends(get_host)):
-    processes = list(
-        map(
-            lambda x: domain_to_dto_process(x),
-            host_process_service.get_processes_for_host(db, db_host),
-        )
-    )
+    processes = [
+        domain_to_dto_process(x)
+        for x in host_process_service.get_processes_for_host(db, db_host)
+    ]
 
     return {"records": processes}

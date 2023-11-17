@@ -18,7 +18,7 @@ def domain_to_dto_credential(credential):
         notes=credential.notes,
         created_at=credential.created_at,
         updated_at=credential.updated_at,
-        tags=list(map(lambda x: domain_to_dto_tag(x), credential.tags)),
+        tags=[domain_to_dto_tag(x) for x in credential.tags],
     )
 
 

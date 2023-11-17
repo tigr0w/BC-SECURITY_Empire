@@ -123,7 +123,7 @@ class AgentTaskService:
         results = query.all()
 
         total = 0 if len(results) == 0 else results[0].total
-        results = list(map(lambda x: x[0], results))
+        results = [x[0] for x in results]
 
         return results, total
 

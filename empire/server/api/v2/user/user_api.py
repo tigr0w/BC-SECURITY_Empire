@@ -80,7 +80,7 @@ async def read_user_me(current_user: CurrentActiveUser):
     dependencies=[Depends(get_current_active_user)],
 )
 async def read_users(db: CurrentSession):
-    users = list(map(lambda x: domain_to_dto_user(x), user_service.get_all(db)))
+    users = [domain_to_dto_user(x) for x in user_service.get_all(db)]
 
     return {"records": users}
 

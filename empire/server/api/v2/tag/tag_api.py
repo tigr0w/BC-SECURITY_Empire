@@ -56,7 +56,7 @@ async def get_tags(
         order_direction=order_direction,
     )
 
-    tags_converted = list(map(lambda x: domain_to_dto_tag(x), tags))
+    tags_converted = [domain_to_dto_tag(x) for x in tags]
 
     return Tags(
         records=tags_converted,

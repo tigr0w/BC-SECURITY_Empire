@@ -48,7 +48,7 @@ class UseMenu(Menu):
             cmd_line[0] == "set"
             and len(cmd_line) > 1
             and cmd_line[1] == "bypasses"
-            and "bypasses" in map(lambda x: x.lower(), self.record_options.keys())
+            and "bypasses" in (x.lower() for x in self.record_options.keys())
             and position_util(
                 cmd_line, where_am_i(cmd_line, word_before_cursor), word_before_cursor
             )
