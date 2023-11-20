@@ -1,4 +1,5 @@
-from empire.server.core.db.models import Credential
+from empire.server.common.empire import MainMenu
+from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -6,7 +7,7 @@ from empire.server.utils.module_util import handle_error_message
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
@@ -27,22 +28,23 @@ class Module:
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
         if cred_id != "":
-            if not main_menu.credentials.is_credential_valid(cred_id):
-                return handle_error_message("[!] CredID is invalid!")
+            with SessionLocal() as db:
+                cred = main_menu.credentialsv2.get_by_id(db, cred_id)
 
-            cred: Credential = main_menu.credentials.get_credentials(cred_id)
+                if not cred:
+                    return handle_error_message("[!] CredID is invalid!")
 
-            if cred.credtype != "plaintext":
-                return handle_error_message(
-                    "[!] A CredID with a plaintext password must be used!"
-                )
+                if cred.credtype != "plaintext":
+                    return handle_error_message(
+                        "[!] A CredID with a plaintext password must be used!"
+                    )
 
-            if cred.domain != "":
-                params["Domain"] = cred.domain
-            if cred.username != "":
-                params["UserName"] = cred.username
-            if cred.password != "":
-                params["Password"] = "'" + cred.password + "'"
+                if cred.domain != "":
+                    params["Domain"] = cred.domain
+                if cred.username != "":
+                    params["UserName"] = cred.username
+                if cred.password != "":
+                    params["Password"] = "'" + cred.password + "'"
 
         if (
             params["Domain"] == ""

@@ -40,7 +40,7 @@ class CredentialService:
         return query.all()
 
     @staticmethod
-    def get_by_id(db: Session, uid: int):
+    def get_by_id(db: Session, uid: int) -> models.Credential | None:
         return db.query(models.Credential).filter(models.Credential.id == uid).first()
 
     @staticmethod

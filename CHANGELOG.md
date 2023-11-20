@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Upgrade Pydantic to v2 (@Vinnybod)
 -   Update common FastAPI Dependencies to use 'Annotated' types for simpler code (@Vinnybod)
 -   Simplify TestClient setup (@Vinnybod)
+-   Removed usages of deprecated `Credentials` and `Listeners` functions (@Vinnybod)
+-   Remove usages of deprecated `Agents` functions (@Vinnybod)
+-   Add typehinting for `MainMenu` object in modules (@Vinnybod)
 
 ### Removed
 

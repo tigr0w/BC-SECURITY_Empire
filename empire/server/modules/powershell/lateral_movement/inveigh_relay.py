@@ -1,3 +1,4 @@
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -5,7 +6,7 @@ from empire.server.utils.module_util import handle_error_message
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
@@ -34,7 +35,7 @@ class Module:
             return handle_error_message(err)
 
         if command == "":
-            if not main_menu.listeners.is_listener_valid(listener_name):
+            if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
                 # not a valid listener, return nothing for the script
                 return handle_error_message("[!] Invalid listener: " + listener_name)
 

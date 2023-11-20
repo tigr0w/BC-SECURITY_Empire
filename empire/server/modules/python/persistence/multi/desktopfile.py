@@ -1,3 +1,4 @@
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.string_util import removeprefix, removesuffix
 
@@ -5,7 +6,7 @@ from empire.server.utils.string_util import removeprefix, removesuffix
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,

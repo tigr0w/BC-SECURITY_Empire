@@ -2,13 +2,14 @@ from random import choice
 from string import ascii_uppercase
 from time import time
 
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 
 
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,

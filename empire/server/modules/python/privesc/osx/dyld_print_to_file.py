@@ -1,5 +1,6 @@
 import logging
 
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 
 log = logging.getLogger(__name__)
@@ -8,7 +9,7 @@ log = logging.getLogger(__name__)
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,

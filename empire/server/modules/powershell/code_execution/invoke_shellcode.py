@@ -1,12 +1,13 @@
 import base64
 
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 
 
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,

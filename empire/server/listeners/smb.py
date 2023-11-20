@@ -423,20 +423,20 @@ class Listener:
         """
         try:
             tempOptions = copy.deepcopy(self.options)
-            sessionID = self.mainMenu.agents.get_agent_id_db(
-                self.options["Agent"]["Value"]
-            )
 
-            if self.mainMenu.agents.is_agent_present(sessionID):
-                with SessionLocal.begin() as db:
-                    agent = self.mainMenu.agentsv2.get_by_id(
-                        db, self.options["Agent"]["Value"]
-                    )
-                    self.mainMenu.agenttasksv2.create_task_smb(
-                        db, agent, name + "|" + self.options["PipeName"]["Value"]
-                    )
-                    self.parent_agent = agent.session_id
-                    parent_listener_name = agent.listener
+            with SessionLocal() as db:
+                agent = self.mainMenu.agentsv2.get_by_id(
+                    db, self.options["Agent"]["Value"]
+                )
+
+                if not agent:
+                    return
+
+                self.mainMenu.agenttasksv2.create_task_smb(
+                    db, agent, name + "|" + self.options["PipeName"]["Value"]
+                )
+                self.parent_agent = agent.session_id
+                parent_listener_name = agent.listener
 
                 log.info(
                     f"{self.options['Agent']['Value']}: SMB pivot server task request send to agent"

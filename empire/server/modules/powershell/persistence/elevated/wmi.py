@@ -107,7 +107,7 @@ class Module:
                 )
 
             # if an external file isn't specified, use a listener
-            elif not main_menu.listeners.is_listener_valid(listener_name):
+            elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
                 # not a valid listener, return nothing for the script
                 return handle_error_message("[!] Invalid listener: " + listener_name)
 

@@ -100,7 +100,7 @@ class Stager:
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
 
-        if not self.mainMenu.listeners.is_listener_valid(
+        if not self.mainMenu.listenersv2.get_active_listener_by_name(
             listener_name
         ) and not self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name):
             # not a valid listener, return nothing for the script

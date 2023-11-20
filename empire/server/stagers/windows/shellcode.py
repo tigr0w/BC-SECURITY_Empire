@@ -118,7 +118,7 @@ class Stager:
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
         arch = self.options["Architecture"]["Value"]
 
-        if not self.mainMenu.listeners.is_listener_valid(listener_name):
+        if not self.mainMenu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
             return "[!] Invalid listener: " + listener_name
 

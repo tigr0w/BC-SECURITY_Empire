@@ -1,4 +1,5 @@
-from empire.server.core.db.models import Credential
+from empire.server.common.empire import MainMenu
+from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -6,7 +7,7 @@ from empire.server.utils.module_util import handle_error_message
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
@@ -37,14 +38,19 @@ class Module:
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
         if cred_id != "":
-            if not main_menu.credentials.is_credential_valid(cred_id):
-                return handle_error_message("[!] CredID is invalid!")
+            with SessionLocal() as db:
+                cred = main_menu.credentialsv2.get_by_id(db, cred_id)
 
-            cred: Credential = main_menu.credentials.get_credentials(cred_id)
-            params["UserName"] = str(cred.domain) + "\\" + str(cred.username)
-            params["Password"] = cred.password
+                if not cred:
+                    return handle_error_message("[!] CredID is invalid!")
 
-        if not main_menu.listeners.is_listener_valid(listener_name) and not command:
+                params["UserName"] = str(cred.domain) + "\\" + str(cred.username)
+                params["Password"] = cred.password
+
+        if (
+            not main_menu.listenersv2.get_active_listener_by_name(listener_name)
+            and not command
+        ):
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
