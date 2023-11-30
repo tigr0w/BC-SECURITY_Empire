@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Remove unused migration scripts (@Vinnybod)
 
+### Fixed
+
+-   Fixed the database session management for websocket endpoints (@Vinnybod)
+
 
 ## [5.8.0] - 2023-11-06
 
