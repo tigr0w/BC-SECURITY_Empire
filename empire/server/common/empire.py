@@ -107,7 +107,7 @@ class MainMenu:
         """
         log.info("Empire shutting down...")
 
-        # enumerate all active servers/listeners and shut them down
+        log.info("Shutting down listeners...")
         self.listenersv2.shutdown_listeners()
 
         log.info("Shutting down plugins...")

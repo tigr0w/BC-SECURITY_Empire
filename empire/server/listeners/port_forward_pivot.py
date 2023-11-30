@@ -63,7 +63,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}  # used to keep track of any threaded instances of this server
+        self.thread = None
 
         self.instance_log = log
 
@@ -677,12 +677,13 @@ class Listener:
         else:
             log.error("listeners/http generate_comms(): no language specified!")
 
-    def start(self, name=""):
+    def start(self):
         """
         If a server component needs to be started, implement the kick off logic
         here and the actual server code in another function to facilitate threading
         (i.e. start_server() in the http listener).
         """
+        name = self.options["Name"]["Value"]
         try:
             tempOptions = copy.deepcopy(self.options)
             with SessionLocal.begin() as db:
@@ -853,53 +854,53 @@ class Listener:
             log.error(f'Listener "{name}" failed to start')
             return False
 
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
         If a server component was started, implement the logic that kills the particular
         named listener here.
         """
-        if name and name != "":
-            self.instance_log.info(f"{name}: shutting down...")
-            log.info(f"{name}: shutting down...")
+        name = self.options["Name"]["Value"]
+        self.instance_log.info(f"{name}: shutting down...")
+        log.info(f"{name}: shutting down...")
 
-            with SessionLocal() as db:
-                agent = self.mainMenu.agentsv2.get_by_name(db, name)
+        with SessionLocal() as db:
+            agent = self.mainMenu.agentsv2.get_by_name(db, name)
 
-                if not agent:
-                    log.error("Agent is not present in the cache or not elevated")
-                    return
+            if not agent:
+                log.error("Agent is not present in the cache or not elevated")
+                return
 
-                if agent.high_integrity:
-                    if agent.language.startswith("po"):
-                        script = """
-                    function Invoke-Redirector {
-                        param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
-                        if($ShowAll){
-                            $out = netsh interface portproxy show all
-                            if($out){
-                                $out
-                            }
-                            else{
-                                "[*] no redirectors currently configured"
-                            }
-                        }
-                        elseif($Reset){
-                            Netsh.exe advfirewall firewall del rule name="$FirewallName"
-                            $out = netsh interface portproxy reset
-                            if($out){
-                                $out
-                            }
-                            else{
-                                "[+] successfully removed all redirectors"
-                            }
+            if agent.high_integrity:
+                if agent.language.startswith("po"):
+                    script = """
+                function Invoke-Redirector {
+                    param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
+                    if($ShowAll){
+                        $out = netsh interface portproxy show all
+                        if($out){
+                            $out
                         }
                         else{
-                            if((-not $ListenPort)){
-                                "[!] netsh error: required option not specified"
-                            }
-                            else{
-                                $ConnectAddress = ""
-                                $ConnectPort = ""
+                            "[*] no redirectors currently configured"
+                        }
+                    }
+                    elseif($Reset){
+                        Netsh.exe advfirewall firewall del rule name="$FirewallName"
+                        $out = netsh interface portproxy reset
+                        if($out){
+                            $out
+                        }
+                        else{
+                            "[+] successfully removed all redirectors"
+                        }
+                    }
+                    else{
+                        if((-not $ListenPort)){
+                            "[!] netsh error: required option not specified"
+                        }
+                        else{
+                            $ConnectAddress = ""
+                            $ConnectPort = ""
 
                                 $parts = $ConnectHost -split(":")
                                 if($parts.Length -eq 2){
@@ -941,12 +942,12 @@ class Listener:
                     }
                     Invoke-Redirector"""
 
-                        script += " -Reset"
-                        script += f" -FirewallName {agent.session_id}"
+                    script += " -Reset"
+                    script += f" -FirewallName {agent.session_id}"
 
-                        self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
-                        msg = "Tasked agent to uninstall Pivot listener "
-                        self.mainMenu.agents.save_agent_log(agent.session_id, msg)
+                    self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
+                    msg = "Tasked agent to uninstall Pivot listener "
+                    self.mainMenu.agents.save_agent_log(agent.session_id, msg)
 
-                    elif agent.language.startswith("py"):
-                        log.error("Shutdown not implemented for python")
+                elif agent.language.startswith("py"):
+                    log.error("Shutdown not implemented for python")

@@ -87,7 +87,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}
+        self.thread = None
 
         self.instance_log = log
 
@@ -540,7 +540,7 @@ class Listener:
         else:
             log.error("listeners/http_hop generate_comms(): no language specified!")
 
-    def start(self, name=""):
+    def start(self):
         """
         Nothing to actually start for a hop listner, but ensure the stagingKey is
         synced with the redirect listener.

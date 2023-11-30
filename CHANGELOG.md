@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed usages of deprecated `Credentials` and `Listeners` functions (@Vinnybod)
 -   Remove usages of deprecated `Agents` functions (@Vinnybod)
 -   Add typehinting for `MainMenu` object in modules (@Vinnybod)
+-   Removed `name` property from listener start and shutdown functions (@Vinnybod)
 
 ### Removed
 

@@ -415,13 +415,14 @@ class Listener:
         else:
             log.error("generate_comms(): no language specified!")
 
-    def start(self, name=""):
+    def start(self):
         """
         If a server component needs to be started, implement the kick off logic
         here and the actual server code in another function to facilitate threading
         (i.e. start_server() in the http listener).
         """
         try:
+            name = self.options["Name"]["Value"]
             tempOptions = copy.deepcopy(self.options)
 
             with SessionLocal() as db:
@@ -480,7 +481,7 @@ class Listener:
         except Exception:
             return False
 
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
         If a server component was started, implement the logic that kills the particular
         named listener here.

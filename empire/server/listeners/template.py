@@ -1,4 +1,5 @@
 import random
+import time
 
 # Empire imports
 from empire.server.common import helpers
@@ -129,7 +130,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}  # used to keep track of any threaded instances of this server
+        self.thread = None
 
         # optional/specific for this module
 
@@ -305,31 +306,23 @@ class Listener:
                 )
             )
 
-    def start(self, name=""):
+    def start_server(self):
+        pass
+
+    def start(self):
         """
         If a server component needs to be started, implement the kick off logic
         here and the actual server code in another function to facilitate threading
         (i.e. start_server() in the http listener).
         """
+        listenerOptions = self.options
+        self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
+        self.thread.start()
+        time.sleep(1)
+        # returns True if the listener successfully started, false otherwise
+        return self.thread.is_alive()
 
-        # listenerOptions = self.options
-        # if name and name != '':
-        #     self.threads[name] = helpers.KThread(target=self.start_server, args=(listenerOptions,))
-        #     self.threads[name].start()
-        #     time.sleep(1)
-        #     # returns True if the listener successfully started, false otherwise
-        #     return self.threads[name].is_alive()
-        # else:
-        #     name = listenerOptions['Name']['Value']
-        #     self.threads[name] = helpers.KThread(target=self.start_server, args=(listenerOptions,))
-        #     self.threads[name].start()
-        #     time.sleep(1)
-        #     # returns True if the listener successfully started, false otherwise
-        #     return self.threads[name].is_alive()
-
-        return True
-
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
         If a server component was started, implement the logic that kills the particular
         named listener here.

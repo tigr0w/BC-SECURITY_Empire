@@ -112,7 +112,7 @@ class ListenerService:
 
     def stop_listener(self, db_listener: models.Listener):
         if self._active_listeners.get(db_listener.id):
-            self._active_listeners[db_listener.id].shutdown(name=db_listener.name)
+            self._active_listeners[db_listener.id].shutdown()
             del self._active_listeners[db_listener.id]
 
     def delete_listener(self, db: Session, db_listener: models.Listener):
@@ -135,7 +135,7 @@ class ListenerService:
             log.error(err)
             return None, err
 
-        success = template_instance.start(name=listener.name)
+        success = template_instance.start()
         db.flush()
 
         if success:
@@ -160,7 +160,7 @@ class ListenerService:
         name = template_instance.options["Name"]["Value"]
         try:
             log.info(f"v2: Starting listener '{name}'")
-            success = template_instance.start(name=name)
+            success = template_instance.start()
 
             if success:
                 listener_options = copy.deepcopy(template_instance.options)

@@ -125,7 +125,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}
+        self.thread = None
 
         # optional/specific for this module
 
@@ -1016,40 +1016,23 @@ class Listener:
                     stagingKey, responseData, listenerOptions
                 )
 
-    def start(self, name=""):
+    def start(self):
         """
         Start a threaded instance of self.start_server() and store it in the
-        self.threads dictionary keyed by the listener name.
+        self.thread property.
         """
         listenerOptions = self.options
-        if name and name != "":
-            self.threads[name] = helpers.KThread(
-                target=self.start_server, args=(listenerOptions,)
-            )
-            self.threads[name].start()
-            time.sleep(3)
-            # returns True if the listener successfully started, false otherwise
-            return self.threads[name].is_alive()
-        else:
-            name = listenerOptions["Name"]["Value"]
-            self.threads[name] = helpers.KThread(
-                target=self.start_server, args=(listenerOptions,)
-            )
-            self.threads[name].start()
-            time.sleep(3)
-            # returns True if the listener successfully started, false otherwise
-            return self.threads[name].is_alive()
+        self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
+        self.thread.start()
+        time.sleep(3)
+        # returns True if the listener successfully started, false otherwise
+        return self.thread.is_alive()
 
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
-        Terminates the server thread stored in the self.threads dictionary,
-        keyed by the listener name.
+        Terminates the server thread stored in the self.thread property.
         """
-        if name and name != "":
-            to_kill = name
-        else:
-            to_kill = self.options["Name"]["Value"]
-
+        to_kill = self.options["Name"]["Value"]
         self.instance_log.info(f"{to_kill}: shutting down...")
         log.info(f"{to_kill}: shutting down...")
-        self.threads[to_kill].kill()
+        self.thread.kill()

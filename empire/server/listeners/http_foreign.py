@@ -110,7 +110,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}
+        self.thread = None
 
         # optional/specific for this module
         self.app = None
@@ -465,13 +465,13 @@ class Listener:
         else:
             log.error("listeners/http_foreign generate_comms(): no language specified!")
 
-    def start(self, name=""):
+    def start(self):
         """
         Nothing to actually start for a foreign listner.
         """
         return True
 
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
         Nothing to actually shut down for a foreign listner.
         """
