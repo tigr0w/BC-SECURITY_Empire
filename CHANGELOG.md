@@ -5,14 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-* **Added** for new features.
-* **Changed** for changes in existing functionality.
-* **Deprecated** for soon-to-be removed features.
-* **Removed** for now removed features.
-* **Fixed** for any bug fixes.
-* **Security** in case of vulnerabilities.
+-   **Added** for new features.
+-   **Changed** for changes in existing functionality.
+-   **Deprecated** for soon-to-be removed features.
+-   **Removed** for now removed features.
+-   **Fixed** for any bug fixes.
+-   **Security** in case of vulnerabilities.
 
 ## [Unreleased]
+
+## [5.8.1] - 2023-11-30
 
 ### Added
 
@@ -40,7 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed the database session management for websocket endpoints (@Vinnybod)
 
-
 ## [5.8.0] - 2023-11-06
 
 -   Warning: You may run into errors installing things such as nim if you are running the install script on a machine that previously ran it. This is due to permissions changes with the install script. In this case it is recommended to use a fresh machine or manually remove the offending directories/files.
@@ -66,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Use Python 3.12
     -   Don't use apt for powershell and dotnet
     -   DockerHub images now have linux/amd64 and linux/arm64 architectures
-- Dependency changes (@Vinnybod)
+-   Dependency changes (@Vinnybod)
     -   Use BC-Security fork of md2pdf until upstream can support Python 3.12
     -   Use a patched version of pysecretsocks that packages asyncore for Python 3.12 support
     -   Use docopt-ng for Python 3.12 support
@@ -681,7 +682,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.1...HEAD
+
+[5.8.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.0...v5.8.1
 
 [5.8.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.3...v5.8.0
 
