@@ -26,8 +26,6 @@ from io import StringIO
 from os.path import expanduser
 from threading import Thread
 
-import secretsocks
-
 ################################################
 #
 # agent configuration information
@@ -168,40 +166,6 @@ class CFinder(object):
 # Socks Server
 #
 ################################################
-class Server(secretsocks.Server):
-    # Initialize our data channel
-    def __init__(self, q, resultID):
-        secretsocks.Server.__init__(self)
-        self.queue = q
-        self.resultID = resultID
-        self.alive = True
-        self.start()
-
-    # Receive data from our data channel and push it to the receive queue
-    def recv(self):
-        while self.alive:
-            try:
-                data = self.queue.get()
-                self.recvbuf.put(data)
-            except socket.timeout:
-                continue
-            except:
-                self.alive = False
-
-    # Take data from the write queue and send it over our data channel
-    def write(self):
-        while self.alive:
-            try:
-                data = self.writebuf.get(timeout=10)
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        61, base64.b64encode(data).decode("UTF-8"), self.resultID
-                    )
-                )
-            except Queue.Empty:
-                continue
-            except:
-                self.alive = False
 
 
 ################################################
@@ -606,41 +570,6 @@ class MainAgent:
                 )
             )
 
-    def start_socks_server(self, resultID):
-        """
-        Start a SOCKS server on the target.
-        Task 60
-        """
-        # Create a server object in its own thread
-        if not self.socksthread:
-            try:
-                self.socksqueue = Queue.Queue()
-                self.jobs[resultID] = KThread(
-                    target=Server,
-                    args=(
-                        self.socksqueue,
-                        resultID,
-                    ),
-                )
-                self.jobs[resultID].daemon = True
-                self.jobs[resultID].start()
-                self.socksthread = True
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        60, "[+] SOCKS server successfully started", resultID
-                    )
-                )
-            except:
-                self.socksthread = False
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        60, "[!] SOCKS server failed to start", resultID
-                    )
-                )
-        else:
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(60, "[!] SOCKS server already running", resultID)
-            )
 
     def start_smb_pipe_server(self, data, resultID):
         """
@@ -1207,10 +1136,18 @@ class MainAgent:
             self.stop_job(data, resultID)
 
         elif packetType == 60:
-            self.start_socks_server(resultID)
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0, "[!] SOCKS Server not implemented", resultID
+                )
+            )
 
         elif packetType == 61:
-            self.socksqueue.put(base64.b64decode(data.encode("UTF-8")))
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0, "[!] SOCKS Server not implemented", resultID
+                )
+            )
 
         elif packetType == 70:
             self.start_smb_pipe_server(data, resultID)
@@ -1256,7 +1193,7 @@ class MainAgent:
             # Dynamically update agent comms
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    60, "[!] Switch agent comms not implemented", resultID
+                    0, "[!] Switch agent comms not implemented", resultID
                 )
             )
 
@@ -1264,7 +1201,7 @@ class MainAgent:
             # Update the listener name variable
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    60, "[!] Switch agent comms not implemented", resultID
+                    0, "[!] Switch agent comms not implemented", resultID
                 )
             )
 
