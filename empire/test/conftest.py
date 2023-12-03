@@ -2,7 +2,6 @@ import os
 import shutil
 import sys
 from contextlib import suppress
-from importlib import reload
 from pathlib import Path
 
 import pytest
@@ -37,8 +36,6 @@ def client():
     import empire.server.core.db.base
     from empire.server.core.db.base import reset_db, startup_db
 
-    reset_db()
-    reload(empire.server.core.db.base)
     startup_db()
 
     shutil.rmtree("empire/test/downloads", ignore_errors=True)

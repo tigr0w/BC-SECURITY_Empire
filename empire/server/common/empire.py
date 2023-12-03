@@ -27,7 +27,7 @@ from empire.server.core.user_service import UserService
 
 from . import stagers
 
-VERSION = "5.8.0 BC Security Fork"
+VERSION = "5.8.1 BC Security Fork"
 
 log = logging.getLogger(__name__)
 
