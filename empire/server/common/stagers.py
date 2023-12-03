@@ -749,7 +749,8 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             host = ""
 
         with SessionLocal.begin() as db:
-            agent = self.mainMenu.agents.add_agent(
+            agent = self.mainMenu.agentsv2.create_agent(
+                db,
                 session_id,
                 "0.0.0.0",
                 delay,
@@ -760,11 +761,10 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 lost_limit,
                 listener=listener_name,
                 language=language,
-                db=db,
             )
 
             # update the agent with this new information
-            self.mainMenu.agents.update_agent_sysinfo_db(
+            self.mainMenu.agentcommsv2.update_agent_sysinfo(
                 db,
                 session_id,
                 listener=listener_name,

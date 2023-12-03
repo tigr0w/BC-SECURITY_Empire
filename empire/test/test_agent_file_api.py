@@ -25,7 +25,7 @@ def agent_no_files(session_local, models, main):
         db.add(agent)
         db.add(models.AgentCheckIn(agent_id=agent.session_id))
 
-        main.agents.agents["EMPTY"] = {
+        main.agentcommsv2.agents["EMPTY"] = {
             "sessionKey": agent.session_key,
             "functions": agent.functions,
         }

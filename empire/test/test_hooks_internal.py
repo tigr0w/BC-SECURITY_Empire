@@ -8,6 +8,7 @@ from empire.server.core.hooks import hooks
 @pytest.fixture(scope="function")
 def existing_processes(session_local, models, host):
     with session_local.begin() as db:
+        db.query(models.HostProcess).delete()
         existing_processes = [
             models.HostProcess(
                 host_id=host,

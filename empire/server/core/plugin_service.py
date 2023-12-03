@@ -3,6 +3,7 @@ import fnmatch
 import importlib
 import logging
 import os
+import typing
 from datetime import datetime
 
 from sqlalchemy import and_, func, or_
@@ -18,11 +19,14 @@ from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.exceptions import PluginValidationException
 from empire.server.utils.option_util import validate_options
 
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 log = logging.getLogger(__name__)
 
 
 class PluginService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
         self.download_service = main_menu.downloadsv2
         self.loaded_plugins = {}

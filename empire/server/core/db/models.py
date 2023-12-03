@@ -314,9 +314,6 @@ class Config(Base):
     staging_key = Column(String(255), primary_key=True)
     ip_whitelist = Column(Text, nullable=False)
     ip_blacklist = Column(Text, nullable=False)
-    autorun_command = Column(Text, nullable=False)
-    autorun_data = Column(Text, nullable=False)
-    rootuser = Column(Boolean, nullable=False)
     jwt_secret_key = Column(Text, nullable=False)
 
     def __repr__(self):
@@ -371,6 +368,10 @@ class Download(Base):
     def get_base64_file(self):
         with open(self.location, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
+
+    def get_bytes_file(self):
+        with open(self.location, "rb") as f:
+            return f.read()
 
 
 class AgentTaskStatus(str, enum.Enum):

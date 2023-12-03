@@ -2,6 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from empire.server.common.empire import MainMenu
+
 
 @pytest.fixture(scope="module", autouse=True)
 def agent(db, models, main):
@@ -123,19 +125,19 @@ def agent(db, models, main):
         db.commit()
         agents = [agent, agent2, agent3, agent4]
 
-    main.agents.agents["TEST123"] = {
+    main.agentcommsv2.agents["TEST123"] = {
         "sessionKey": agents[0].session_key,
         "functions": agents[0].functions,
     }
-    main.agents.agents["SECOND"] = {
+    main.agentcommsv2.agents["SECOND"] = {
         "sessionKey": agents[1].session_key,
         "functions": agents[1].functions,
     }
-    main.agents.agents["ARCHIVED"] = {
+    main.agentcommsv2.agents["ARCHIVED"] = {
         "sessionKey": agents[2].session_key,
         "functions": agents[2].functions,
     }
-    main.agents.agents["STALE"] = {
+    main.agentcommsv2.agents["STALE"] = {
         "sessionKey": agents[3].session_key,
         "functions": agents[3].functions,
     }
@@ -228,3 +230,24 @@ def test_update_agent(client, admin_auth_header):
     assert response.status_code == 200
     assert response.json()["name"] == "My New Agent Name"
     assert response.json()["notes"] == "The new notes!"
+
+
+def test_create_agent(main: MainMenu, session_local):
+    with session_local() as db:
+        agent = main.agentsv2.create_agent(
+            db,
+            "ABC123",
+            "1.1.1.1",
+            60,
+            0.1,
+            "Windows",
+            None,
+            None,
+            None,
+            "SESSION_KEY",
+            "",
+            "http",
+            "powershell",
+        )
+
+        assert agent is not None

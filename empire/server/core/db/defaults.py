@@ -36,9 +36,6 @@ def get_default_config():
         staging_key=get_staging_key(),
         ip_whitelist=database_config.ip_whitelist,
         ip_blacklist=database_config.ip_blacklist,
-        autorun_command="",
-        autorun_data="",
-        rootuser=True,
         jwt_secret_key=pwd.genword(length=32, charset="hex"),
     )
 

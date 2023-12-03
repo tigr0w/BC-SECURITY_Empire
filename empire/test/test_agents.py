@@ -210,8 +210,8 @@ def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
         # as the original checkin
         time.sleep(2)
 
-        main.agents.update_agent_lastseen_db(db_agent.session_id, db)
-        main.agents.update_agent_lastseen_db(db_agent.session_id, db)
+        main.agentsv2.update_agent_lastseen(db, db_agent.session_id)
+        main.agentsv2.update_agent_lastseen(db, db_agent.session_id)
 
     with session_local.begin() as db:
         db_agent = (

@@ -1453,7 +1453,7 @@ class ExtendedPacketHandler(PacketHandler):
                     else:
                         agentInfo = implementation.extract_client(malleableRequest)
                     if agentInfo:
-                        dataResults = self.mainMenu.agents.handle_agent_data(
+                        dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                             stagingKey, agentInfo, listenerOptions, clientIP
                         )
                         if dataResults and len(dataResults) > 0:
@@ -1512,7 +1512,7 @@ class ExtendedPacketHandler(PacketHandler):
                                             .strip()
                                             .decode("UTF-8")
                                         )
-                                        sessionKey = self.mainMenu.agents.agents[
+                                        sessionKey = self.mainMenu.agentcommsv2.agents[
                                             sessionID
                                         ]["sessionKey"]
 

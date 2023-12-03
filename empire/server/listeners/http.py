@@ -921,7 +921,7 @@ class Listener:
             """
             Before every request, check if the IP address is allowed.
             """
-            if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
+            if not self.mainMenu.agentcommsv2.is_ip_allowed(request.remote_addr):
                 listenerName = self.options["Name"]["Value"]
                 message = f"{listenerName}: {request.remote_addr} on the blacklist/not on the whitelist requested resource"
                 self.instance_log.info(message)
@@ -1012,7 +1012,7 @@ class Listener:
             if routingPacket:
                 # parse the routing packet and process the results
 
-                dataResults = self.mainMenu.agents.handle_agent_data(
+                dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                     stagingKey, routingPacket, listenerOptions, clientIP
                 )
                 if dataResults and len(dataResults) > 0:
@@ -1111,7 +1111,7 @@ class Listener:
 
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
-            dataResults = self.mainMenu.agents.handle_agent_data(
+            dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                 stagingKey, requestData, listenerOptions, clientIP
             )
             if dataResults and len(dataResults) > 0:
@@ -1125,7 +1125,7 @@ class Listener:
                             if ":" in clientIP:
                                 clientIP = "[" + str(clientIP) + "]"
                             sessionID = results.split(b" ")[1].strip().decode("UTF-8")
-                            sessionKey = self.mainMenu.agents.agents[sessionID][
+                            sessionKey = self.mainMenu.agentcommsv2.agents[sessionID][
                                 "sessionKey"
                             ]
 

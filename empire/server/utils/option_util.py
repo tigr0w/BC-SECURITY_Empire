@@ -79,7 +79,7 @@ def validate_options(
         # If strict, check that the option is one of the suggested values
         if (
             option_meta["Strict"]
-            and params[instance_key] not in option_meta["SuggestedValues"]
+            and params.get(instance_key, "") not in option_meta["SuggestedValues"]
         ):
             return (
                 None,

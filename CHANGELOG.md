@@ -12,6 +12,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **Fixed** for any bug fixes.
 * **Security** in case of vulnerabilities.
 
+## [6.0.0-dev]
+
+### Added
+-   Typehinting for MainMenu object in services
+
+### Changed
+
+#### Breaking
+-   Moved `Agents` class to `AgentCommunicationService`
+    -   Refactored many of the functions and parameter names
+-   Moved socks management to `AgentSocksService`
+-   Renamed socks properties on `AgentSocksService` to use plural naming
+-   Remove `update_lastseen` parameter from `handle_agent_request`
+
+### Deprecated
+
+### Removed
+
+-   Removed autorun config options which haven't been used since Empire 3
+
+#### Breaking
+
+-   Removed `Listeners` class
+-   Removed `Credentials` class
+-   Removed functions from `Agents` class that were marked as deprecated in 5.x
+
+### Fixed
+
+### Security
+
 ## [Unreleased]
 
 ### Added

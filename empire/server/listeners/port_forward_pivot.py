@@ -831,7 +831,7 @@ class Listener:
                             )
 
                             msg = "Tasked agent to install Pivot listener "
-                            self.mainMenu.agents.save_agent_log(
+                            self.mainMenu.agentsv2.save_agent_log(
                                 tempOptions["Agent"]["Value"], msg
                             )
 
@@ -947,7 +947,7 @@ class Listener:
 
                     self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
                     msg = "Tasked agent to uninstall Pivot listener "
-                    self.mainMenu.agents.save_agent_log(agent.session_id, msg)
+                    self.mainMenu.agentsv2.save_agent_log(agent.session_id, msg)
 
                 elif agent.language.startswith("py"):
                     log.error("Shutdown not implemented for python")

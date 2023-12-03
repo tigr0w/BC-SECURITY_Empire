@@ -1,7 +1,7 @@
 import json
 import logging
 import threading
-import time
+import typing
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -20,18 +20,21 @@ from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
-from empire.server.core.listener_service import ListenerService
-from empire.server.core.module_service import ModuleService
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
 
 
 class AgentTaskService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
-        self.module_service: ModuleService = main_menu.modulesv2
-        self.listener_service: ListenerService = main_menu.listenersv2
+        self.module_service = main_menu.modulesv2
+        self.listener_service = main_menu.listenersv2
+        self.agent_socks_service = main_menu.agentsocksv2
+        self.agent_service = main_menu.agentsv2
 
         # { agent_id: [TemporaryTask] }
         self.temporary_tasks = defaultdict(list)
@@ -201,12 +204,8 @@ class AgentTaskService:
         resp, err = self.add_task(db, agent, "TASK_EXIT", user_id=current_user_id)
         agent.archived = True
 
-        # Close socks client
-        if (agent.session_id in self.main_menu.agents.socksthread) and agent.stale:
-            agent.socks = False
-            self.main_menu.agents.socksclient[agent.session_id].shutdown()
-            time.sleep(1)
-            self.main_menu.agents.socksthread[agent.session_id].kill()
+        self.agent_socks_service.close_socks_client(agent)
+
         return resp, err
 
     def create_task_socks(
@@ -395,7 +394,7 @@ class AgentTaskService:
 
         message = f"Tasked {agent.session_id} to run {task_name}"
         log.info(message)
-        self.main_menu.agents.save_agent_log(agent.session_id, message)
+        self.agent_service.save_agent_log(agent.session_id, message)
 
         pk = (
             db.query(func.max(models.AgentTask.id))

@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import tempfile
+import typing
 from pathlib import Path
 
 import python_obfuscator
@@ -14,11 +15,14 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util
 
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 log = logging.getLogger(__name__)
 
 
 class ObfuscationService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
     @staticmethod

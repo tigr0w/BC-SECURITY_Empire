@@ -838,7 +838,7 @@ class Listener:
                             continue
                         stageData = res.content
 
-                        dataResults = self.mainMenu.agents.handle_agent_data(
+                        dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                             stagingKey, stageData, listenerOptions
                         )
                         if dataResults and len(dataResults) > 0:
@@ -873,16 +873,16 @@ class Listener:
                             continue
                         stageData = res.content
 
-                        dataResults = self.mainMenu.agents.handle_agent_data(
+                        dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                             stagingKey, stageData, listenerOptions
                         )
                         if dataResults and len(dataResults) > 0:
                             # print "dataResults:",dataResults
                             for language, results in dataResults:
                                 if results.startswith("STAGE2"):
-                                    sessionKey = self.mainMenu.agents.agents[sessionID][
-                                        "sessionKey"
-                                    ]
+                                    sessionKey = self.mainMenu.agentcommsv2.agents[
+                                        sessionID
+                                    ]["sessionKey"]
                                     listenerName = self.options["Name"]["Value"]
                                     message = f"{listenerName}: Sending agent (stage 2) to {sessionID} through Dropbox"
                                     self.instance_log.info(message)
@@ -944,10 +944,11 @@ class Listener:
                                         self.instance_log.error(message, exc_info=True)
 
             # get any taskings applicable for agents linked to this listener
-            sessionIDs = self.mainMenu.agents.get_agents_for_listener(listenerName)
+            with SessionLocal() as db:
+                sessionIDs = self.mainMenu.agentsv2.get_for_listener(db, listenerName)
 
             for sessionID in sessionIDs:
-                taskingData = self.mainMenu.agents.handle_agent_request(
+                taskingData = self.mainMenu.agentcommsv2.handle_agent_request(
                     sessionID, "powershell", stagingKey
                 )
                 if taskingData:
@@ -1012,7 +1013,7 @@ class Listener:
                     self.instance_log.error(message, exc_info=True)
                     log.error(message, exc_info=True)
 
-                self.mainMenu.agents.handle_agent_data(
+                self.mainMenu.agentcommsv2.handle_agent_data(
                     stagingKey, responseData, listenerOptions
                 )
 

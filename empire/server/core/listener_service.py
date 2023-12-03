@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import logging
+import typing
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -14,9 +15,12 @@ from empire.server.utils.option_util import set_options, validate_options
 
 log = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 
 class ListenerService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
         self.listener_template_service: ListenerTemplateService = (

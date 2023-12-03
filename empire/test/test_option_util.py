@@ -123,6 +123,24 @@ def test_validate_options_missing_optional_field_no_default():
     assert cleaned_options == {"Command": ""}
 
 
+def test_validate_options_strict_required_no_default():
+    instance_options = {
+        "Command": {
+            "Description": "Command to run",
+            "Required": True,
+            "Value": "",
+            "SuggestedValues": ["True", "False"],
+            "Strict": True,
+        }
+    }
+
+    options = {}
+
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert err == "required option missing: Command"
+
+
 def test_validate_options_missing_optional_field_with_default():
     instance_options = {
         "Command": {

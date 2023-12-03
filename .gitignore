@@ -30,6 +30,8 @@ empire/client/downloads/*
 # test
 empire/test/downloads
 empire/test/data/obfuscated_module_source
+.coverage
+htmlcov/
 
 # misc
 *.log

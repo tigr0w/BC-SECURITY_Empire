@@ -736,9 +736,14 @@ class Listener:
                             content = s.get(
                                 item["@microsoft.graph.downloadUrl"]
                             ).content
-                            lang, return_val = self.mainMenu.agents.handle_agent_data(
+                            (
+                                lang,
+                                return_val,
+                            ) = self.mainMenu.agentcommsv2.handle_agent_data(
                                 staging_key, content, listener_options
-                            )[0]
+                            )[
+                                0
+                            ]
                             message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {str(len(return_val))} bytes"
                             self.instance_log.info(message)
                             s.put(
@@ -759,11 +764,16 @@ class Listener:
                             content = s.get(
                                 item["@microsoft.graph.downloadUrl"]
                             ).content
-                            lang, return_val = self.mainMenu.agents.handle_agent_data(
+                            (
+                                lang,
+                                return_val,
+                            ) = self.mainMenu.agentcommsv2.handle_agent_data(
                                 staging_key, content, listener_options
-                            )[0]
+                            )[
+                                0
+                            ]
 
-                            session_key = self.mainMenu.agents.agents[agent_name][
+                            session_key = self.mainMenu.agentcommsv2.agents[agent_name][
                                 "sessionKey"
                             ]
                             renew_token(
@@ -799,13 +809,16 @@ class Listener:
                         message = f"{listener_name}: Could not handle agent staging, continuing"
                         self.instance_log.error(message, exc_info=True)
 
-                agent_ids = self.mainMenu.agents.get_agents_for_listener(listener_name)
+                with SessionLocal() as db:
+                    agent_ids = self.mainMenu.agentsv2.get_for_listener(
+                        db, listener_name
+                    )
 
                 for agent_id in agent_ids:  # Upload any tasks for the current agents
                     if isinstance(agent_id, bytes):
                         agent_id = agent_id.decode("UTF-8")
-                    task_data = self.mainMenu.agents.handle_agent_request(
-                        agent_id, "powershell", staging_key, update_lastseen=True
+                    task_data = self.mainMenu.agentcommsv2.handle_agent_request(
+                        agent_id, "powershell", staging_key
                     )
                     if task_data:
                         try:
@@ -859,14 +872,14 @@ class Listener:
                             continue
 
                         with SessionLocal() as db:
-                            self.mainMenu.agents.update_agent_lastseen_db(agent_id, db)
+                            self.mainMenu.agentsv2.update_agent_lastseen(db, agent_id)
 
                         # If the agent is just checking in, the file will only be 1 byte, so no results to fetch
                         if item["size"] > 1:
                             message = f"{listener_name}: Downloading results from {results_folder}/{item['name']}, {item['size']} bytes"
                             self.instance_log.info(message)
                             r = s.get(item["@microsoft.graph.downloadUrl"])
-                            self.mainMenu.agents.handle_agent_data(
+                            self.mainMenu.agentcommsv2.handle_agent_data(
                                 staging_key,
                                 r.content,
                                 listener_options,

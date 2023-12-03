@@ -29,7 +29,7 @@ def agent_low_version(db, models, main):
         db.flush()
         db.commit()
 
-    main.agents.agents["WEAK"] = {
+    main.agentcommsv2.agents["WEAK"] = {
         "sessionKey": agent.session_key,
         "functions": agent.functions,
     }
@@ -69,7 +69,7 @@ def agent_archived(db, models, main):
         db.flush()
         db.commit()
 
-    main.agents.agents["iamarchived"] = {
+    main.agentcommsv2.agents["iamarchived"] = {
         "sessionKey": agent.session_key,
         "functions": agent.functions,
     }
@@ -106,7 +106,7 @@ def agent_low_integrity(db, models, main):
         db.flush()
         db.commit()
 
-    main.agents.agents["WEAK2"] = {
+    main.agentcommsv2.agents["WEAK2"] = {
         "sessionKey": agent.session_key,
         "functions": agent.functions,
     }

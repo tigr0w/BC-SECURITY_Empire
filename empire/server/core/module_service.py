@@ -2,6 +2,7 @@ import fnmatch
 import importlib.util
 import logging
 import os
+import typing
 from pathlib import Path
 
 import yaml
@@ -22,11 +23,14 @@ from empire.server.core.module_models import EmpireModule, LanguageEnum
 from empire.server.core.obfuscation_service import ObfuscationService
 from empire.server.utils.option_util import convert_module_options, validate_options
 
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 log = logging.getLogger(__name__)
 
 
 class ModuleService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
         self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
         self.download_service: DownloadService = main_menu.downloadsv2

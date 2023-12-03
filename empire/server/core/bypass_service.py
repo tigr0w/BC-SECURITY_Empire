@@ -1,6 +1,7 @@
 import fnmatch
 import logging
 import os
+import typing
 
 import yaml
 from sqlalchemy.orm import Session
@@ -9,11 +10,14 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils.data_util import ps_convert_to_oneliner
 
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 log = logging.getLogger(__name__)
 
 
 class BypassService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
         with SessionLocal.begin() as db:

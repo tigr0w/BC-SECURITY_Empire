@@ -315,7 +315,7 @@ def agent(session_local, models, host, main):
             delay=1,
             jitter=0.1,
             external_ip="1.1.1.1",
-            session_key="qwerty",
+            session_key="2c103f2c4ed1e59c0b4e2e01821770fa",
             nonce="nonce",
             profile="profile",
             kill_date="killDate",
@@ -334,8 +334,9 @@ def agent(session_local, models, host, main):
         db.add(models.AgentCheckIn(agent_id=agent.session_id))
         db.flush()
 
-        main.agents.agents[name] = {
+        main.agentcommsv2.agents[name] = {
             "sessionKey": agent.session_key,
+            "language": agent.language,
             "functions": agent.functions,
         }
 
@@ -351,7 +352,7 @@ def agent(session_local, models, host, main):
 
 
 @pytest.fixture(scope="function")
-def agent_task(client, admin_auth_header, agent):
+def agent_task(client, admin_auth_header, agent, session_local, main):
     resp = client.post(
         f"/api/v2/agents/{agent}/tasks/shell",
         headers=admin_auth_header,
@@ -360,8 +361,13 @@ def agent_task(client, admin_auth_header, agent):
 
     yield resp.json()
 
-    # No need to delete the task, it will be deleted when the agent is deleted
-    # After the test.
+    with session_local.begin() as db:
+        task = main.agenttasksv2.get_task_for_agent(db, agent, resp.json()["id"])
+
+        for download in task.downloads:
+            db.delete(download)
+
+        db.delete(task)
 
 
 @pytest.fixture(scope="module")
