@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [5.8.1] - 2023-11-30
+-   Updated Starkiller to v2.7.1
 
 ### Added
 
