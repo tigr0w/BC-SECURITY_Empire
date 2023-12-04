@@ -42,8 +42,6 @@ import string
 import threading
 import time
 import warnings
-from pathlib import Path
-from typing import Dict
 
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
@@ -94,7 +92,7 @@ class Agents:
 
         # Since each agent logs to a different file, we can have multiple locks to reduce
         #  waiting time when writing to the file.
-        self.agent_log_locks: Dict[str, threading.Lock] = {}
+        self.agent_log_locks: dict[str, threading.Lock] = {}
 
         # reinitialize any agents that already exist in the database
         db_agents = self.get_agents_db()
@@ -256,7 +254,7 @@ class Agents:
         parts = path.split("\\")
 
         # construct the appropriate save path
-        download_dir = Path(empire_config.directories.downloads)
+        download_dir = empire_config.directories.downloads
         save_path = download_dir / sessionID / "/".join(parts[0:-1])
         filename = os.path.basename(parts[-1])
         save_file = save_path / filename
@@ -346,7 +344,7 @@ class Agents:
         parts = path.split("/")
 
         # construct the appropriate save path
-        download_dir = Path(empire_config.directories.downloads)
+        download_dir = empire_config.directories.downloads
         save_path = download_dir / sessionID / "/".join(parts[0:-1])
         filename = parts[-1]
         save_file = save_path / filename
@@ -404,7 +402,7 @@ class Agents:
         if isinstance(data, bytes):
             data = data.decode("UTF-8")
 
-        save_path = Path(empire_config.directories.downloads) / session_id
+        save_path = empire_config.directories.downloads / session_id
 
         # make the recursive directory structure if it doesn't already exist
         if not save_path.exists():
@@ -1643,7 +1641,7 @@ class Agents:
         elif response_name == "TASK_CMD_JOB":
             # check if this is the powershell keylogging task, if so, write output to file instead of screen
             if key_log_task_id and key_log_task_id == task_id:
-                download_dir = Path(empire_config.directories.downloads)
+                download_dir = empire_config.directories.downloads
                 safe_path = download_dir.absolute()
                 save_path = download_dir / session_id / "keystrokes.txt"
 

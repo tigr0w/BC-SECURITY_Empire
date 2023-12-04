@@ -85,7 +85,7 @@ def test_log_level_by_config(monkeypatch):
     assert stream_handler.level == logging.WARNING
 
 
-def test_log_level_by_arg(monkeypatch):
+def test_log_level_by_arg():
     logging.getLogger().handlers.clear()
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     sys.argv = [
@@ -97,8 +97,6 @@ def test_log_level_by_arg(monkeypatch):
         "ERROR",
     ]
 
-    monkeypatch.setattr("empire.server.server.empire", MagicMock())
-
     from empire import arguments
     from empire.server.server import setup_logging
 
@@ -106,7 +104,6 @@ def test_log_level_by_arg(monkeypatch):
     test_config = _load_test_config()
     test_config["logging"]["level"] = "WaRNiNG"  # Should be overwritten by arg
     config_mock.yaml = test_config
-    monkeypatch.setattr("empire.server.server.empire_config", config_mock)
 
     args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
     setup_logging(args)
@@ -118,12 +115,10 @@ def test_log_level_by_arg(monkeypatch):
     assert stream_handler.level == logging.ERROR
 
 
-def test_log_level_by_debug_arg(monkeypatch):
+def test_log_level_by_debug_arg():
     logging.getLogger().handlers.clear()
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC, "--debug"]
-
-    monkeypatch.setattr("empire.server.server.empire", MagicMock())
 
     from empire import arguments
     from empire.server.server import setup_logging
@@ -132,7 +127,6 @@ def test_log_level_by_debug_arg(monkeypatch):
     test_config = _load_test_config()
     test_config["logging"]["level"] = "WaRNiNG"  # Should be overwritten by arg
     config_mock.yaml = test_config
-    monkeypatch.setattr("empire.server.server.empire_config", config_mock)
 
     args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
     setup_logging(args)

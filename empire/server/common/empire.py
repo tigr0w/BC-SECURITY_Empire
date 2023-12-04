@@ -13,7 +13,6 @@ import os
 import time
 from pathlib import Path
 from socket import SocketIO
-from typing import Optional
 
 # Empire imports
 from empire.server.core import hooks_internal
@@ -39,7 +38,7 @@ from empire.server.utils import data_util
 
 from . import agents, credentials, listeners, stagers
 
-VERSION = "5.7.3 BC Security Fork"
+VERSION = "5.8.1 BC Security Fork"
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ class MainMenu:
         # parse/handle any passed command line arguments
         self.args = args
 
-        self.socketio: Optional[SocketIO] = None
+        self.socketio: SocketIO | None = None
 
         self.agents = agents.Agents(self, args=args)
         self.credentials = credentials.Credentials(self, args=args)
@@ -108,7 +107,7 @@ class MainMenu:
         """
         log.info("Empire shutting down...")
 
-        # enumerate all active servers/listeners and shut them down
+        log.info("Shutting down listeners...")
         self.listenersv2.shutdown_listeners()
 
         log.info("Shutting down plugins...")

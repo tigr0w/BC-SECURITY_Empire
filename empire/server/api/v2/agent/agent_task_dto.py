@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -34,38 +33,36 @@ def domain_to_dto_task(
         user_id=task.user_id,
         username=None if not task.user else task.user.username,
         agent_id=task.agent_id,
-        downloads=list(
-            map(lambda x: domain_to_dto_download_description(x), task.downloads)
-        ),
+        downloads=[domain_to_dto_download_description(x) for x in task.downloads],
         module_name=task.module_name,
         task_name=task.task_name,
         status=task.status,
         created_at=task.created_at,
         updated_at=task.updated_at,
-        tags=list(map(lambda x: domain_to_dto_tag(x), task.tags)),
+        tags=[domain_to_dto_tag(x) for x in task.tags],
     )
 
 
 class AgentTask(BaseModel):
     id: int
     input: str
-    full_input: Optional[str]
-    output: Optional[str]
-    original_output: Optional[str]
-    user_id: Optional[int]
-    username: Optional[str]
+    full_input: str | None = None
+    output: str | None = None
+    original_output: str | None = None
+    user_id: int | None = None
+    username: str | None = None
     agent_id: str
-    downloads: List[DownloadDescription]
-    module_name: Optional[str]
-    task_name: Optional[str]
+    downloads: list[DownloadDescription]
+    module_name: str | None = None
+    task_name: str | None = None
     status: models.AgentTaskStatus
     created_at: datetime
     updated_at: datetime
-    tags: List[Tag]
+    tags: list[Tag]
 
 
 class AgentTasks(BaseModel):
-    records: List[AgentTask]
+    records: list[AgentTask]
     limit: int
     page: int
     total_pages: int
@@ -81,8 +78,8 @@ class ModulePostRequest(BaseModel):
     module_id: str
     ignore_language_version_check: bool = False
     ignore_admin_check: bool = False
-    options: Dict[str, Union[str, int, float]]
-    modified_input: Optional[str] = None
+    options: dict[str, str | int | float]
+    modified_input: str | None = None
 
 
 class DownloadPostRequest(BaseModel):
@@ -143,7 +140,7 @@ class ProxyItem(BaseModel):
 
 
 class ProxyListPostRequest(BaseModel):
-    proxies: List[ProxyItem]
+    proxies: list[ProxyItem]
 
 
 class ExitPostRequest(BaseModel):

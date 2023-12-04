@@ -1,7 +1,4 @@
-from typing import Optional
-
-from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import Depends, HTTPException, Query
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
 
@@ -14,9 +11,10 @@ from empire.server.api.v2.credential.credential_dto import (
     CredentialUpdateRequest,
     domain_to_dto_credential,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.tag import tag_api
+from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.db import models
 from empire.server.server import main
 
@@ -33,7 +31,7 @@ router = APIRouter(
 )
 
 
-async def get_credential(uid: int, db: Session = Depends(get_db)):
+async def get_credential(uid: int, db: CurrentSession):
     credential = credential_service.get_by_id(db, uid)
 
     if credential:
@@ -54,16 +52,15 @@ async def read_credential(
 
 @router.get("/", response_model=Credentials)
 async def read_credentials(
-    db: Session = Depends(get_db),
-    search: Optional[str] = None,
-    credtype: Optional[str] = None,
+    db: CurrentSession,
+    search: str | None = None,
+    credtype: str | None = None,
+    tags: list[TagStr] | None = Query(None),
 ):
-    credentials = list(
-        map(
-            lambda x: domain_to_dto_credential(x),
-            credential_service.get_all(db, search, credtype),
-        )
-    )
+    credentials = [
+        domain_to_dto_credential(x)
+        for x in credential_service.get_all(db, search, credtype, tags)
+    ]
 
     return {"records": credentials}
 
@@ -73,9 +70,7 @@ async def read_credentials(
     status_code=201,
     response_model=Credential,
 )
-async def create_credential(
-    credential_req: CredentialPostRequest, db: Session = Depends(get_db)
-):
+async def create_credential(credential_req: CredentialPostRequest, db: CurrentSession):
     resp, err = credential_service.create_credential(db, credential_req)
 
     if err:
@@ -88,7 +83,7 @@ async def create_credential(
 async def update_credential(
     uid: int,
     credential_req: CredentialUpdateRequest,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_credential: models.Credential = Depends(get_credential),
 ):
     resp, err = credential_service.update_credential(db, db_credential, credential_req)
@@ -106,7 +101,7 @@ async def update_credential(
 )
 async def delete_credential(
     uid: str,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_credential: models.Credential = Depends(get_credential),
 ):
     credential_service.delete_credential(db, db_credential)

@@ -1,40 +1,37 @@
 from datetime import datetime
-from typing import Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
+from empire.server.api.v2.shared_dto import (
+    Author,
+    CustomOptionSchema,
+    coerced_dict,
+    to_value_type,
+)
 from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 
 
 def domain_to_dto_template(listener, uid: str):
-    options = dict(
-        map(
-            lambda x: (
-                x[0],
-                {
-                    "description": x[1]["Description"],
-                    "required": x[1]["Required"],
-                    "value": x[1]["Value"],
-                    "strict": x[1]["Strict"],
-                    "suggested_values": x[1]["SuggestedValues"],
-                    "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
-                },
-            ),
-            listener.options.items(),
-        )
-    )
+    options = {
+        x[0]: {
+            "description": x[1]["Description"],
+            "required": x[1]["Required"],
+            "value": x[1]["Value"],
+            "strict": x[1]["Strict"],
+            "suggested_values": x[1]["SuggestedValues"],
+            "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+        }
+        for x in listener.options.items()
+    }
 
-    authors = list(
-        map(
-            lambda x: {
-                "name": x["Name"],
-                "handle": x["Handle"],
-                "link": x["Link"],
-            },
-            listener.info.get("Authors") or [],
-        )
-    )
+    authors = [
+        {
+            "name": x["Name"],
+            "handle": x["Handle"],
+            "link": x["Link"],
+        }
+        for x in listener.info.get("Authors") or []
+    ]
 
     return ListenerTemplate(
         id=uid,
@@ -51,7 +48,7 @@ def domain_to_dto_template(listener, uid: str):
 
 
 def domain_to_dto_listener(listener):
-    options = dict(map(lambda x: (x[0], x[1]["Value"]), listener.options.items()))
+    options = {x[0]: x[1]["Value"] for x in listener.options.items()}
 
     return Listener(
         id=listener.id,
@@ -60,24 +57,23 @@ def domain_to_dto_listener(listener):
         enabled=listener.enabled,
         options=options,
         created_at=listener.created_at,
-        tags=list(map(lambda x: domain_to_dto_tag(x), listener.tags)),
+        tags=[domain_to_dto_tag(x) for x in listener.tags],
     )
 
 
 class ListenerTemplate(BaseModel):
     id: str
     name: str
-    authors: List[Author]
+    authors: list[Author]
     description: str
     category: str
-    comments: List[str]
-    tactics: List[str]
-    techniques: List[str]
-    software: Optional[str]
-    options: Dict[str, CustomOptionSchema]
-
-    class Config:
-        schema_extra = {
+    comments: list[str]
+    tactics: list[str]
+    techniques: list[str]
+    software: str | None = None
+    options: dict[str, CustomOptionSchema]
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "http",
                 "name": "HTTP[S]",
@@ -238,10 +234,11 @@ class ListenerTemplate(BaseModel):
                 },
             }
         }
+    )
 
 
 class ListenerTemplates(BaseModel):
-    records: List[ListenerTemplate]
+    records: list[ListenerTemplate]
 
 
 class Listener(BaseModel):
@@ -249,22 +246,21 @@ class Listener(BaseModel):
     name: str
     enabled: bool
     template: str
-    options: Dict[str, str]
+    options: coerced_dict
     created_at: datetime
-    tags: List[Tag]
+    tags: list[Tag]
 
 
 class Listeners(BaseModel):
-    records: List[Listener]
+    records: list[Listener]
 
 
 class ListenerPostRequest(BaseModel):
     name: str
     template: str
-    options: Dict[str, str]
-
-    class Config:
-        schema_extra = {
+    options: coerced_dict
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "name": "MyListener",
                 "template": "http",
@@ -295,12 +291,13 @@ class ListenerPostRequest(BaseModel):
                 },
             }
         }
+    )
 
 
 class ListenerUpdateRequest(BaseModel):
     name: str
     enabled: bool
-    options: Dict[str, str]
+    options: coerced_dict
 
     def __iter__(self):
         return iter(self.__root__)

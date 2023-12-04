@@ -22,7 +22,11 @@ import subprocess
 import zipfile
 from itertools import cycle
 
-import donut
+try:
+    import donut
+except ModuleNotFoundError:
+    donut = None
+
 import macholib.MachO
 
 from empire.server.core.db import models
@@ -179,7 +183,7 @@ class Stagers:
 
     def generate_powershell_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
-    ):
+    ) -> tuple[str | None, str | None]:
         """
         Generate powershell shellcode using donut python module
         """
@@ -191,8 +195,14 @@ class Stagers:
             arch_type = 3
 
         directory = self.generate_powershell_exe(posh_code, dot_net_version)
+
+        if not donut:
+            err = "module donut-shellcode not installed. It is only supported on x86."
+            log.warning(err, exc_info=True)
+            return None, err
+
         shellcode = donut.create(file=directory, arch=arch_type)
-        return shellcode
+        return shellcode, None
 
     def generate_exe_oneliner(
         self, language, obfuscate, obfuscation_command, encode, listener_name
@@ -270,7 +280,7 @@ class Stagers:
 
     def generate_python_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
-    ):
+    ) -> tuple[str | None, str | None]:
         """
         Generate ironpython shellcode using donut python module
         """
@@ -281,9 +291,14 @@ class Stagers:
         elif arch == "both":
             arch_type = 3
 
+        if not donut:
+            err = "module donut-shellcode not installed. It is only supported on x86."
+            log.warning(err, exc_info=True)
+            return None, err
+
         directory = self.generate_python_exe(posh_code, dot_net_version)
         shellcode = donut.create(file=directory, arch=arch_type)
-        return shellcode
+        return shellcode, None
 
     def generate_macho(self, launcherCode):
         """
@@ -503,7 +518,7 @@ class Stagers:
                 shutil.copy2(icon, tmpdir + "Contents/Resources/" + iconfile + ".icns")
             else:
                 iconfile = icon
-            appPlist = """<?xml version="1.0" encoding="UTF-8"?>
+            appPlist = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -512,15 +527,15 @@ class Stagers:
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>{}</string>
+    <string>{AppName}</string>
     <key>CFBundleIconFile</key>
-    <string>{}</string>
+    <string>{iconfile}</string>
     <key>CFBundleIdentifier</key>
-    <string>com.apple.{}</string>
+    <string>com.apple.{AppName}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>{}</string>
+    <string>{AppName}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -561,12 +576,7 @@ class Stagers:
     <string>NSApplication</string>
 </dict>
 </plist>
-""".format(
-                AppName,
-                iconfile,
-                AppName,
-                AppName,
-            )
+"""
             with open(tmpdir + "Contents/Info.plist", "w") as f:
                 f.write(appPlist)
 
@@ -770,6 +780,9 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 architecture="AMD64",
             )
 
+            # Send initial task for sysinfo into the database
+            self.mainMenu.agenttasksv2.create_task_sysinfo(db, agent, 0)
+
             # get the agent's session key
             session_key = agent.session_key
 
@@ -798,17 +811,33 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
 
             elif options["Language"]["Value"] in ["python", "ironpython"]:
                 stager_code = stager_code.replace(
-                    "b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))",
-                    f"b'{session_id}'",
+                    "return b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))",
+                    f"return b'{session_id}'",
                 )
-                stager_code = stager_code.split("clientPub=DiffieHellman()")[0]
-                stager_code = stager_code + f"\nkey = b'{session_key}'"
+
+                stager_code = replace_execute_function(stager_code, session_key)
                 launch_code = ""
 
                 if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
                     full_agent = "\n".join(
-                        [stager_code, agent_code, comms_code, launch_code]
+                        [agent_code, stager_code, comms_code, launch_code]
                     )
                 else:
-                    full_agent = "\n".join([stager_code, agent_code, launch_code])
+                    full_agent = "\n".join([agent_code, stager_code, launch_code])
                 return full_agent
+
+
+def replace_execute_function(code, session_key):
+    code_first = code.split("def execute(self):")[0]
+    code_last = code.split("agent.run()")[1]
+
+    new_function = f"""
+    def execute(self):
+        self.key = b'{session_key}'
+        self.packet_handler.key = self.key
+        agent = MainAgent(packet_handler=self.packet_handler, profile=self.profile, server=self.server, session_id=self.session_id, kill_date=self.kill_date, working_hours=self.working_hours)
+        self.packet_handler.agent = agent
+        agent.run()
+"""
+
+    return code_first + new_function + code_last

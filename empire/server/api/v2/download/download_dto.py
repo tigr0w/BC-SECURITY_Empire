@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import List
 
 from pydantic import BaseModel
 
@@ -17,7 +16,7 @@ def domain_to_dto_download(download):
         size=download.size,
         created_at=download.created_at,
         updated_at=download.updated_at,
-        tags=list(map(lambda x: domain_to_dto_tag(x), download.tags)),
+        tags=[domain_to_dto_tag(x) for x in download.tags],
     )
 
 
@@ -43,11 +42,11 @@ class Download(BaseModel):
     size: int
     created_at: datetime
     updated_at: datetime
-    tags: List[Tag]
+    tags: list[Tag]
 
 
 class Downloads(BaseModel):
-    records: List[Download]
+    records: list[Download]
     limit: int
     page: int
     total_pages: int

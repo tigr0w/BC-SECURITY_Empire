@@ -2,7 +2,6 @@ import os
 import shutil
 from operator import and_
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 from fastapi import UploadFile
 from sqlalchemy import func, or_
@@ -28,14 +27,14 @@ class DownloadService:
     @staticmethod
     def get_all(
         db: Session,
-        download_types: Optional[List[DownloadSourceFilter]],
-        tags: List[str] = None,
+        download_types: list[DownloadSourceFilter] | None,
+        tags: list[str] = None,
         q: str = None,
         limit: int = -1,
         offset: int = 0,
         order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
         order_direction: OrderDirection = OrderDirection.desc,
-    ) -> Tuple[List[models.Download], int]:
+    ) -> tuple[list[models.Download], int]:
         query = db.query(
             models.Download, func.count(models.Download.id).over().label("total")
         )
@@ -112,7 +111,7 @@ class DownloadService:
         results = query.all()
 
         total = 0 if len(results) == 0 else results[0].total
-        results = list(map(lambda x: x[0], results))
+        results = [x[0] for x in results]
 
         return results, total
 
@@ -122,7 +121,7 @@ class DownloadService:
         user: models.User,
         file: str,
         filename: str,
-        subdirectory: Optional[str] = None,
+        subdirectory: str | None = None,
     ):
         """
         Upload the file to the downloads directory and save a reference to the db.
@@ -130,10 +129,7 @@ class DownloadService:
         """
         subdirectory = subdirectory or f"user/{user.username}"
         location = (
-            Path(empire_config.directories.downloads)
-            / "uploads"
-            / subdirectory
-            / filename
+            empire_config.directories.downloads / "uploads" / subdirectory / filename
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 
@@ -144,9 +140,7 @@ class DownloadService:
 
         return self._save_download(db, filename, location)
 
-    def create_download(
-        self, db: Session, user: models.User, file: Union[UploadFile, Path]
-    ):
+    def create_download(self, db: Session, user: models.User, file: UploadFile | Path):
         """
         Upload the file to the downloads directory and save a reference to the db.
         :param db:
@@ -160,10 +154,7 @@ class DownloadService:
             filename = file.filename
 
         location = (
-            Path(empire_config.directories.downloads)
-            / "uploads"
-            / user.username
-            / filename
+            empire_config.directories.downloads / "uploads" / user.username / filename
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 

@@ -1,7 +1,6 @@
 import logging
 import subprocess
 from pathlib import Path
-from typing import Dict
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ def sync_starkiller(empire_config):
         )
 
 
-def _clone_starkiller(starkiller_config: Dict, starkiller_dir: str):
+def _clone_starkiller(starkiller_config: dict, starkiller_dir: str):
     subprocess.run(
         ["git", "clone", starkiller_config["repo"], starkiller_dir],
         check=True,

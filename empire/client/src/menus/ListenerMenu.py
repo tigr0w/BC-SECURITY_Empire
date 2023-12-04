@@ -53,18 +53,16 @@ class ListenerMenu(Menu):
 
         Usage: list
         """
-        listener_list = list(
-            map(
-                lambda x: [
-                    x["id"],
-                    x["name"],
-                    x["template"],
-                    date_util.humanize_datetime(x["created_at"]),
-                    x["enabled"],
-                ],
-                state.listeners.values(),
-            )
-        )
+        listener_list = [
+            [
+                x["id"],
+                x["name"],
+                x["template"],
+                date_util.humanize_datetime(x["created_at"]),
+                x["enabled"],
+            ]
+            for x in state.listeners.values()
+        ]
         listener_list.insert(0, ["ID", "Name", "Template", "Created At", "Enabled"])
 
         table_util.print_table(listener_list, "Listeners List")

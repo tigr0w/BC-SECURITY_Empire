@@ -1,18 +1,18 @@
 import base64
-from typing import Dict, Optional, Tuple
 
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 
 
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         path = main_menu.installPath + "/data/misc/python_modules/mss.zip"
         open_file = open(path, "rb")
         module_data = open_file.read()

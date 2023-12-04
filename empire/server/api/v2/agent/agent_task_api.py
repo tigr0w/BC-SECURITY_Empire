@@ -1,15 +1,16 @@
 import base64
 import math
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy.orm import Session
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
 
 from empire.server.api.api_router import APIRouter
-from empire.server.api.jwt_auth import get_current_active_user, get_current_user
+from empire.server.api.jwt_auth import (
+    CurrentUser,
+    get_current_active_user,
+)
 from empire.server.api.v2.agent.agent_task_dto import (
     AgentTask,
     AgentTaskOrderOptions,
@@ -31,7 +32,7 @@ from empire.server.api.v2.agent.agent_task_dto import (
     WorkingHoursPostRequest,
     domain_to_dto_task,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import (
     PROXY_NAME,
     BadRequestResponse,
@@ -63,7 +64,7 @@ router = APIRouter(
 )
 
 
-async def get_agent(agent_id: str, db: Session = Depends(get_db)):
+async def get_agent(agent_id: str, db: CurrentSession):
     agent = agent_service.get_by_id(db, agent_id)
 
     if agent:
@@ -73,7 +74,7 @@ async def get_agent(agent_id: str, db: Session = Depends(get_db)):
 
 
 async def get_task(
-    uid: int, db: Session = Depends(get_db), db_agent: models.Agent = Depends(get_agent)
+    uid: int, db: CurrentSession, db_agent: models.Agent = Depends(get_agent)
 ):
     task = agent_task_service.get_task_for_agent(db, db_agent.session_id, uid)
 
@@ -90,20 +91,20 @@ tag_api.add_endpoints_to_taggable(router, "/{agent_id}/tasks/{uid}/tags", get_ta
 
 @router.get("/tasks", response_model=AgentTasks)
 async def read_tasks_all_agents(
+    db: CurrentSession,
     limit: int = -1,
     page: int = 1,
     include_full_input: bool = False,
     include_original_output: bool = False,
     include_output: bool = True,
-    since: Optional[datetime] = None,
+    since: datetime | None = None,
     order_by: AgentTaskOrderOptions = AgentTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[AgentTaskStatus] = None,
-    agents: Optional[List[str]] = Query(None),
-    users: Optional[List[int]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
-    query: Optional[str] = None,
-    db: Session = Depends(get_db),
+    status: AgentTaskStatus | None = None,
+    agents: list[str] | None = Query(None),
+    users: list[int] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
+    query: str | None = None,
 ):
     tasks, total = agent_task_service.get_tasks(
         db,
@@ -122,14 +123,12 @@ async def read_tasks_all_agents(
         q=query,
     )
 
-    tasks_converted = list(
-        map(
-            lambda x: domain_to_dto_task(
-                x, include_full_input, include_original_output, include_output
-            ),
-            tasks,
+    tasks_converted = [
+        domain_to_dto_task(
+            x, include_full_input, include_original_output, include_output
         )
-    )
+        for x in tasks
+    ]
 
     return AgentTasks(
         records=tasks_converted,
@@ -142,20 +141,20 @@ async def read_tasks_all_agents(
 
 @router.get("/{agent_id}/tasks", response_model=AgentTasks)
 async def read_tasks(
+    db: CurrentSession,
     limit: int = -1,
     page: int = 1,
     include_full_input: bool = False,
     include_original_output: bool = False,
     include_output: bool = True,
-    since: Optional[datetime] = None,
+    since: datetime | None = None,
     order_by: AgentTaskOrderOptions = AgentTaskOrderOptions.id,
     order_direction: OrderDirection = OrderDirection.desc,
-    status: Optional[AgentTaskStatus] = None,
-    users: Optional[List[int]] = Query(None),
-    tags: Optional[List[TagStr]] = Query(None),
-    db: Session = Depends(get_db),
+    status: AgentTaskStatus | None = None,
+    users: list[int] | None = Query(None),
+    tags: list[TagStr] | None = Query(None),
     db_agent: models.Agent = Depends(get_agent),
-    query: Optional[str] = None,
+    query: str | None = None,
 ):
     tasks, total = agent_task_service.get_tasks(
         db,
@@ -174,14 +173,12 @@ async def read_tasks(
         q=query,
     )
 
-    tasks_converted = list(
-        map(
-            lambda x: domain_to_dto_task(
-                x, include_full_input, include_original_output, include_output
-            ),
-            tasks,
+    tasks_converted = [
+        domain_to_dto_task(
+            x, include_full_input, include_original_output, include_output
         )
-    )
+        for x in tasks
+    ]
 
     return AgentTasks(
         records=tasks_converted,
@@ -195,7 +192,7 @@ async def read_tasks(
 @router.get("/{agent_id}/tasks/{uid}", response_model=AgentTask)
 async def read_task(
     uid: int,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_agent: models.Agent = Depends(get_agent),
     db_task: models.AgentTask = Depends(get_task),
 ):
@@ -207,9 +204,9 @@ async def read_task(
 
 @router.post("/{agent_id}/tasks/jobs", response_model=AgentTask)
 async def create_task_jobs(
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_jobs(db, db_agent, current_user.id)
 
@@ -219,9 +216,9 @@ async def create_task_jobs(
 @router.post("/{agent_id}/tasks/kill_job", response_model=AgentTask)
 async def create_task_kill_job(
     jobs: KillJobPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     kill_job = str(jobs.id)
     resp, err = agent_task_service.create_task_kill_job(
@@ -234,9 +231,9 @@ async def create_task_kill_job(
 @router.post("/{agent_id}/tasks/shell", status_code=201, response_model=AgentTask)
 async def create_task_shell(
     shell_request: ShellPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     """
     Executes a command on the agent. If literal is true, it will ignore the built-in aliases
@@ -255,9 +252,9 @@ async def create_task_shell(
 @router.post("/{agent_id}/tasks/module", status_code=201, response_model=AgentTask)
 async def create_task_module(
     module_request: ModulePostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_module(
         db, db_agent, module_request, current_user.id
@@ -272,9 +269,9 @@ async def create_task_module(
 @router.post("/{agent_id}/tasks/upload", status_code=201, response_model=AgentTask)
 async def create_task_upload(
     upload_request: UploadPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     download = download_service.get_by_id(db, upload_request.file_id)
 
@@ -312,9 +309,9 @@ async def create_task_upload(
 @router.post("/{agent_id}/tasks/download", status_code=201, response_model=AgentTask)
 async def create_task_download(
     download_request: DownloadPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_download(
         db, db_agent, download_request.path_to_file, current_user.id
@@ -330,10 +327,10 @@ async def create_task_download(
     "/{agent_id}/tasks/script_import", status_code=201, response_model=AgentTask
 )
 async def create_task_script_import(
+    db: CurrentSession,
+    current_user: CurrentUser,
     file: UploadFile = File(...),
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     file_data = await file.read()
     file_data = file_data.decode("utf-8")
@@ -352,9 +349,9 @@ async def create_task_script_import(
 )
 async def create_task_script_command(
     script_command_request: ScriptCommandPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     """
     For python agents, this will run a script on the agent.
@@ -379,9 +376,9 @@ async def create_task_script_command(
 @router.post("/{agent_id}/tasks/sysinfo", status_code=201, response_model=AgentTask)
 async def create_task_sysinfo(
     sysinfo_request: SysinfoPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_sysinfo(db, db_agent, current_user.id)
 
@@ -396,9 +393,9 @@ async def create_task_sysinfo(
 )
 async def create_task_update_comms(
     comms_request: CommsPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_update_comms(
         db, db_agent, comms_request.new_listener_id, current_user.id
@@ -413,9 +410,9 @@ async def create_task_update_comms(
 @router.post("/{agent_id}/tasks/sleep", status_code=201, response_model=AgentTask)
 async def create_task_update_sleep(
     sleep_request: SleepPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_update_sleep(
         db, db_agent, sleep_request.delay, sleep_request.jitter, current_user.id
@@ -430,9 +427,9 @@ async def create_task_update_sleep(
 @router.post("/{agent_id}/tasks/kill_date", status_code=201, response_model=AgentTask)
 async def create_task_update_kill_date(
     kill_date_request: KillDatePostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_update_kill_date(
         db, db_agent, kill_date_request.kill_date, current_user.id
@@ -449,9 +446,9 @@ async def create_task_update_kill_date(
 )
 async def create_task_update_working_hours(
     working_hours_request: WorkingHoursPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_update_working_hours(
         db, db_agent, working_hours_request.working_hours, current_user.id
@@ -468,9 +465,9 @@ async def create_task_update_working_hours(
 )
 async def create_task_update_directory_list(
     directory_list_request: DirectoryListPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_directory_list(
         db, db_agent, directory_list_request.path, current_user.id
@@ -485,9 +482,9 @@ async def create_task_update_directory_list(
 @router.post("/{agent_id}/tasks/proxy_list", status_code=201, response_model=AgentTask)
 async def create_task_update_proxy_list(
     proxy_list_request: ProxyListPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     # We have to use a string enum to get the api to accept strings
     # then convert to int manually. Agent code could be refactored to just
@@ -508,9 +505,9 @@ async def create_task_update_proxy_list(
 @router.post("/{agent_id}/tasks/exit", status_code=201, response_model=AgentTask)
 async def create_task_exit(
     exit_request: ExitPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     resp, err = agent_task_service.create_task_exit(db, db_agent, current_user.id)
 
@@ -525,7 +522,7 @@ async def create_task_exit(
 )
 async def delete_task(
     uid: int,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_task: models.AgentTask = Depends(get_task),
 ):
     if db_task.status != AgentTaskStatus.queued:
@@ -539,9 +536,9 @@ async def delete_task(
 @router.post("/{agent_id}/tasks/socks", status_code=201, response_model=AgentTask)
 async def create_task_socks(
     socks: SocksPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
 ):
     if is_port_in_use(socks.port):
         raise HTTPException(status_code=400, detail="Socks port is in use")

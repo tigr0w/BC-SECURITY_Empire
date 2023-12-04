@@ -23,15 +23,15 @@ class Module(object):
             'Background' : False,
 
             'OutputExtension' : None,
-            
+
             'NeedsAdmin' : True,
 
             'OpsecSafe' : True,
-            
+
             'Language' : 'powershell',
 
             'MinLanguageVersion' : '2',
-            
+
             'Comments': []
         }
 
@@ -81,7 +81,7 @@ class Module(object):
         self.mainMenu = mainMenu
 
     def generate(self, obfuscate=False, obfuscation_command=""):
-        
+
         script = """
 function Invoke-Redirector {
     param($ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
@@ -111,7 +111,7 @@ function Invoke-Redirector {
         else{
             $ConnectAddress = ""
             $ConnectPort = ""
-            
+
             $parts = $ConnectHost -split(":")
             if($parts.Length -eq 2){
                 # if the form is http[s]://HOST or HOST:PORT
@@ -135,7 +135,7 @@ function Invoke-Redirector {
                 $ConnectPort = $parts[2]
             }
             if($ConnectPort -ne ""){
-            
+
                 $out = netsh interface portproxy add v4tov4 listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
                 if($out){
                     $out
@@ -151,14 +151,14 @@ function Invoke-Redirector {
     }
 }
 Invoke-Redirector"""
-        
+
         addAsListener = False
         listenerName = False
 
         for option,values in self.options.items():
             if option.lower() == "listener" and values['Value'] != '':
                 # extract out all options from a listener if one is set
-                if not self.mainMenu.listeners.is_listener_valid(values['Value']):
+                if not self.mainMenu.listenersv2.get_active_listener_by_name(values['Value']):
                     print(helpers.color("[!] Invalid listener set"))
                     return ""
                 else:
@@ -178,7 +178,7 @@ Invoke-Redirector"""
                             # if we're just adding a switch
                             script += " -" + str(option)
                         else:
-                            script += " -" + str(option) + " " + str(values['Value']) 
+                            script += " -" + str(option) + " " + str(values['Value'])
         if addAsListener:
             if listenerName:
                 # if we're add this as a pivot listener

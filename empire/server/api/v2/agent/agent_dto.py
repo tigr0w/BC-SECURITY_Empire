@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -49,7 +48,7 @@ def domain_to_dto_agent(agent: models.Agent):
         archived=agent.archived,
         # Could make this a typed class later to match the schema
         proxies=to_proxy_dto(agent.proxies),
-        tags=list(map(lambda x: domain_to_dto_tag(x), agent.tags)),
+        tags=[domain_to_dto_tag(x) for x in agent.tags],
     )
 
 
@@ -84,40 +83,40 @@ class Agent(BaseModel):
     name: str
     # listener_id: int
     listener: str
-    host_id: Optional[int]
-    hostname: Optional[str]
-    language: Optional[str]
-    language_version: Optional[str]
+    host_id: int | None = None
+    hostname: str | None = None
+    language: str | None = None
+    language_version: str | None = None
     delay: int
     jitter: float
-    external_ip: Optional[str]
-    internal_ip: Optional[str]
-    username: Optional[str]
-    high_integrity: Optional[bool]
-    process_id: Optional[int]
-    process_name: Optional[str]
-    os_details: Optional[str]
+    external_ip: str | None = None
+    internal_ip: str | None = None
+    username: str | None = None
+    high_integrity: bool | None = None
+    process_id: int | None = None
+    process_name: str | None = None
+    os_details: str | None = None
     nonce: str
     checkin_time: datetime
     lastseen_time: datetime
-    parent: Optional[str]
-    children: Optional[str]
-    servers: Optional[str]
-    profile: Optional[str]
-    functions: Optional[str]
-    kill_date: Optional[str]
-    working_hours: Optional[str]
+    parent: str | None = None
+    children: str | None = None
+    servers: str | None = None
+    profile: str | None = None
+    functions: str | None = None
+    kill_date: str | None = None
+    working_hours: str | None = None
     lost_limit: int
-    notes: Optional[str]
-    architecture: Optional[str]
+    notes: str | None = None
+    architecture: str | None = None
     archived: bool
     stale: bool
-    proxies: Optional[Dict]
-    tags: List[Tag]
+    proxies: dict | None = None
+    tags: list[Tag]
 
 
 class Agents(BaseModel):
-    records: List[Agent]
+    records: list[Agent]
 
 
 class AgentCheckIn(BaseModel):
@@ -126,7 +125,7 @@ class AgentCheckIn(BaseModel):
 
 
 class AgentCheckIns(BaseModel):
-    records: List[AgentCheckIn]
+    records: list[AgentCheckIn]
     limit: int
     page: int
     total_pages: int
@@ -139,9 +138,9 @@ class AgentCheckInAggregate(BaseModel):
 
 
 class AgentCheckInsAggregate(BaseModel):
-    records: List[AgentCheckInAggregate]
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
+    records: list[AgentCheckInAggregate]
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     bucket_size: str
 
 
@@ -154,4 +153,4 @@ class AggregateBucket(str, Enum):
 
 class AgentUpdateRequest(BaseModel):
     name: str
-    notes: Optional[str]
+    notes: str | None = None

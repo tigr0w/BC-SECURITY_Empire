@@ -1,5 +1,3 @@
-from typing import List, Optional, Tuple
-
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
@@ -13,7 +11,7 @@ class AgentFileService:
     @staticmethod
     def get_file(
         db: Session, agent_id: str, uid: int
-    ) -> Optional[Tuple[models.AgentFile, List[models.AgentFile]]]:
+    ) -> tuple[models.AgentFile, list[models.AgentFile]] | None:
         found = (
             db.query(models.AgentFile)
             .filter(
@@ -43,7 +41,7 @@ class AgentFileService:
     @staticmethod
     def get_file_by_path(
         db: Session, agent_id: str, path: str
-    ) -> Optional[Tuple[models.AgentFile, List[models.AgentFile]]]:
+    ) -> tuple[models.AgentFile, list[models.AgentFile]] | None:
         found = (
             db.query(models.AgentFile)
             .filter(

@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from empire.server.api.v2.shared_dto import (
     Author,
     CustomOptionSchema,
     DownloadDescription,
+    coerced_dict,
     domain_to_dto_download_description,
     to_value_type,
 )
@@ -14,33 +14,26 @@ from empire.server.core.db import models
 
 
 def domain_to_dto_template(stager, uid: str):
-    options = dict(
-        map(
-            lambda x: (
-                x[0],
-                {
-                    "description": x[1]["Description"],
-                    "required": x[1]["Required"],
-                    "value": x[1]["Value"],
-                    "strict": x[1]["Strict"],
-                    "suggested_values": x[1]["SuggestedValues"],
-                    "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
-                },
-            ),
-            stager.options.items(),
-        )
-    )
+    options = {
+        x[0]: {
+            "description": x[1]["Description"],
+            "required": x[1]["Required"],
+            "value": x[1]["Value"],
+            "strict": x[1]["Strict"],
+            "suggested_values": x[1]["SuggestedValues"],
+            "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+        }
+        for x in stager.options.items()
+    }
 
-    authors = list(
-        map(
-            lambda x: {
-                "name": x["Name"],
-                "handle": x["Handle"],
-                "link": x["Link"],
-            },
-            stager.info.get("Authors") or [],
-        )
-    )
+    authors = [
+        {
+            "name": x["Name"],
+            "handle": x["Handle"],
+            "link": x["Link"],
+        }
+        for x in stager.info.get("Authors") or []
+    ]
 
     return StagerTemplate(
         id=uid,
@@ -58,9 +51,7 @@ def domain_to_dto_stager(stager: models.Stager):
         name=stager.name,
         template=stager.module,
         one_liner=stager.one_liner,
-        downloads=list(
-            map(lambda x: domain_to_dto_download_description(x), stager.downloads)
-        ),
+        downloads=[domain_to_dto_download_description(x) for x in stager.downloads],
         options=stager.options,
         user_id=stager.user_id,
         created_at=stager.created_at,
@@ -71,13 +62,12 @@ def domain_to_dto_stager(stager: models.Stager):
 class StagerTemplate(BaseModel):
     id: str
     name: str
-    authors: List[Author]
+    authors: list[Author]
     description: str
-    comments: List[str]
-    options: Dict[str, CustomOptionSchema]
-
-    class Config:
-        schema_extra = {
+    comments: list[str]
+    options: dict[str, CustomOptionSchema]
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "multi_launcher",
                 "name": "Launcher",
@@ -172,10 +162,11 @@ class StagerTemplate(BaseModel):
                 },
             }
         }
+    )
 
 
 class StagerTemplates(BaseModel):
-    records: List[StagerTemplate]
+    records: list[StagerTemplate]
 
 
 class Stager(BaseModel):
@@ -183,26 +174,24 @@ class Stager(BaseModel):
     name: str
     template: str
     one_liner: bool
-    downloads: List[DownloadDescription]
-    options: Dict[str, str]
+    downloads: list[DownloadDescription]
+    options: coerced_dict
     user_id: int
-    created_at: Optional[
-        datetime
-    ]  # optional because if its not saved yet, it will be None
-    updated_at: Optional[datetime]
+    # optional because if its not saved yet, it will be None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class Stagers(BaseModel):
-    records: List[Stager]
+    records: list[Stager]
 
 
 class StagerPostRequest(BaseModel):
     name: str
     template: str
-    options: Dict[str, str]
-
-    class Config:
-        schema_extra = {
+    options: coerced_dict
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "name": "MyStager",
                 "template": "multi_launcher",
@@ -222,11 +211,12 @@ class StagerPostRequest(BaseModel):
                 },
             }
         }
+    )
 
 
 class StagerUpdateRequest(BaseModel):
     name: str
-    options: Dict[str, str]
+    options: coerced_dict
 
     def __iter__(self):
         return iter(self.__root__)

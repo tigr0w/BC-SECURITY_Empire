@@ -119,7 +119,7 @@ def test_execute_custom_generate(
         db_agent = (
             db.query(models.Agent).filter(models.Agent.session_id == agent).first()
         )
-        execute = module_service.execute_module(
+        execute, err = module_service.execute_module(
             db,
             db_agent,
             "empire_test_data_modules_test_custom_module",
@@ -128,5 +128,5 @@ def test_execute_custom_generate(
             ignore_language_version_check=True,
         )
 
-        assert execute is not None
-        assert execute[0]["data"] == "This is the module code."
+        assert err is None
+        assert execute["data"] == "This is the module code."

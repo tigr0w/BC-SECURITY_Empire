@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -19,7 +18,7 @@ def domain_to_dto_credential(credential):
         notes=credential.notes,
         created_at=credential.created_at,
         updated_at=credential.updated_at,
-        tags=list(map(lambda x: domain_to_dto_tag(x), credential.tags)),
+        tags=[domain_to_dto_tag(x) for x in credential.tags],
     )
 
 
@@ -30,16 +29,16 @@ class Credential(BaseModel):
     username: str
     password: str
     host: str
-    os: Optional[str]
-    sid: Optional[str]
-    notes: Optional[str]
+    os: str | None = None
+    sid: str | None = None
+    notes: str | None = None
     created_at: datetime
     updated_at: datetime
-    tags: List[Tag]
+    tags: list[Tag]
 
 
 class Credentials(BaseModel):
-    records: List[Credential]
+    records: list[Credential]
 
 
 class CredentialUpdateRequest(BaseModel):
@@ -51,9 +50,9 @@ class CredentialUpdateRequest(BaseModel):
     os: str
     sid: str
     notes: str
-    os: Optional[str]
-    sid: Optional[str]
-    notes: Optional[str]
+    os: str | None = None
+    sid: str | None = None
+    notes: str | None = None
 
 
 class CredentialPostRequest(BaseModel):
@@ -62,6 +61,6 @@ class CredentialPostRequest(BaseModel):
     username: str
     password: str
     host: str
-    os: Optional[str]
-    sid: Optional[str]
-    notes: Optional[str]
+    os: str | None = None
+    sid: str | None = None
+    notes: str | None = None

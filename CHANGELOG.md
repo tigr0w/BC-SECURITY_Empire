@@ -5,7 +5,88 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+-   **Added** for new features.
+-   **Changed** for changes in existing functionality.
+-   **Deprecated** for soon-to-be removed features.
+-   **Removed** for now removed features.
+-   **Fixed** for any bug fixes.
+-   **Security** in case of vulnerabilities.
+
 ## [Unreleased]
+
+## [5.8.1] - 2023-11-30
+-   Updated Starkiller to v2.7.1
+
+### Added
+
+-   Add tags search to credentials endpoints (@Vinnybod)
+-   Allow Starkiller to be disabled (@Vinnybod)
+-   Allow API port to be configured from the config.yaml (@Vinnybod)
+-   Add flake8-comprehensions rules to ruff config (@Vinnybod)
+
+### Changed
+
+-   Upgrade Pydantic to v2 (@Vinnybod)
+-   Update common FastAPI Dependencies to use 'Annotated' types for simpler code (@Vinnybod)
+-   Simplify TestClient setup (@Vinnybod)
+-   Removed usages of deprecated `Credentials` and `Listeners` functions (@Vinnybod)
+-   Remove usages of deprecated `Agents` functions (@Vinnybod)
+-   Add typehinting for `MainMenu` object in modules (@Vinnybod)
+-   Removed `name` property from listener start and shutdown functions (@Vinnybod)
+-   Removed secretsocks as dependency for Python agents (@Cx01N)
+
+### Removed
+
+-   Remove unused migration scripts (@Vinnybod)
+
+### Fixed
+
+-   Fixed the database session management for websocket endpoints (@Vinnybod)
+
+## [5.8.0] - 2023-11-06
+
+-   Warning: You may run into errors installing things such as nim if you are running the install script on a machine that previously ran it. This is due to permissions changes with the install script. In this case it is recommended to use a fresh machine or manually remove the offending directories/files.
+
+### Added
+
+-   Added automatic tasking for sysinfo for stageless agents (@Cx01N)
+
+### Changed
+
+-   Modernized the Python and IronPython agents with new agent and staging code (@Cx01N)
+-   Updated listeners to consistently use port 80 and 443 for HTTP traffic by default (@Cx01N)
+-   Make the installation of donut conditional on architecture since it doesn't work on ARM (@Vinnybod)
+    -   When donut is invoked but not installed, give a useful warning (@Vinnybod)
+-   Allow a config to be loaded from an outside directory and the downloads/logs/etc to be stored in an outside directory (@Vinnybod)
+-   Correct more deprecation warnings for SQLAlchemy and invalid escape sequences (@Vinnybod)
+-   Updated the ruff minimum Python version to 3.10 and applied fixes to get codebase compliant (@Vinnybod)
+-   Remove unneeded condition statement from all listeners (@Vinnybod)
+-   Update Docker build (@Vinnybod)
+    -   Use the official Poetry installer
+    -   Fix Starkiller trying to auto-update inside the container
+    -   Pre-install Starkiller as part of the docker build
+    -   Use Python 3.12
+    -   Don't use apt for powershell and dotnet
+    -   DockerHub images now have linux/amd64 and linux/arm64 architectures
+-   Dependency changes (@Vinnybod)
+    -   Use BC-Security fork of md2pdf until upstream can support Python 3.12
+    -   Use a patched version of pysecretsocks that packages asyncore for Python 3.12 support
+    -   Use docopt-ng for Python 3.12 support
+    -   Add packaging as a runtime dependency
+-   Update install script (@Vinnybod)
+    -   Use pyenv to install Python
+    -   Use the official Poetry installer
+    -   Don't run the entire script as root
+    -   Rewrite the test containers and reuse a templated Dockerfile
+    -   Add Debian12 support
+    -   Bump all OS to use Python 3.12
+    -   Refactor the script to be a bit more readable
+    -   Condense the test_install_script job
+    -   Added option to start MySQL service on boot (@Cx01N)
+
+### Removed
+
+-   Drop support for Python 3.8 and 3.9
 
 ## [5.7.3] - 2023-10-17
 
@@ -610,7 +691,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.1...HEAD
+
+[5.8.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.0...v5.8.1
+
+[5.8.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.3...v5.8.0
 
 [5.7.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.7.2...v5.7.3
 

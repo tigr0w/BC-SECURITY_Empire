@@ -1,6 +1,5 @@
 import logging
 import sys
-from typing import Dict
 
 import yaml
 
@@ -9,7 +8,7 @@ log = logging.getLogger(__name__)
 
 class EmpireCliConfig:
     def __init__(self):
-        self.yaml: Dict = {}
+        self.yaml: dict = {}
         if "--config" in sys.argv:
             location = sys.argv[sys.argv.index("--config") + 1]
             log.info(f"Loading config from {location}")

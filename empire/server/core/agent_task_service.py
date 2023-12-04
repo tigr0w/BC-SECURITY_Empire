@@ -5,7 +5,6 @@ import time
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 from sqlalchemy import and_, func, or_
@@ -42,19 +41,19 @@ class AgentTaskService:
     @staticmethod
     def get_tasks(
         db: Session,
-        agents: List[str] = None,
-        users: List[int] = None,
-        tags: List[str] = None,
+        agents: list[str] = None,
+        users: list[int] = None,
+        tags: list[str] = None,
         limit: int = -1,
         offset: int = 0,
         include_full_input: bool = False,
         include_original_output: bool = False,
         include_output: bool = True,
-        since: Optional[datetime] = None,
+        since: datetime | None = None,
         order_by: AgentTaskOrderOptions = AgentTaskOrderOptions.id,
         order_direction: OrderDirection = OrderDirection.desc,
-        status: Optional[AgentTaskStatus] = None,
-        q: Optional[str] = None,
+        status: AgentTaskStatus | None = None,
+        q: str | None = None,
     ):
         query = db.query(
             models.AgentTask, func.count(models.AgentTask.id).over().label("total")
@@ -124,7 +123,7 @@ class AgentTaskService:
         results = query.all()
 
         total = 0 if len(results) == 0 else results[0].total
-        results = list(map(lambda x: x[0], results))
+        results = [x[0] for x in results]
 
         return results, total
 
@@ -343,7 +342,7 @@ class AgentTaskService:
         return self.add_task(db, agent, "TASK_DIR_LIST", path, user_id=user_id)
 
     def create_task_proxy_list(
-        self, db: Session, agent: models.Agent, body: Dict, user_id: int
+        self, db: Session, agent: models.Agent, body: dict, user_id: int
     ):
         agent.proxies = body
         return self.add_task(
@@ -360,11 +359,11 @@ class AgentTaskService:
         agent_id: str
         task_name: str
         input_full: str
-        module_name: Optional[str]
+        module_name: str | None = None
 
     def add_temporary_task(
         self, agent_id: str, task_name, task_input="", module_name: str = None
-    ) -> Tuple[Optional[TemporaryTask], Optional[str]]:
+    ) -> tuple[TemporaryTask | None, str | None]:
         """
         Add a temporary task for the agent to execute. These tasks are not saved in the database,
         since they don't provide any value to end users and can be very write-heavy.
@@ -387,7 +386,7 @@ class AgentTaskService:
         task_input="",
         module_name: str = None,
         user_id: int = 0,
-    ) -> Tuple[Optional[models.AgentTask], Optional[str]]:
+    ) -> tuple[models.AgentTask | None, str | None]:
         """
         Task an agent. Adapted from agents.py
         """

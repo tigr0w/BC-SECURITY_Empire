@@ -15,7 +15,7 @@ def test_get_listener_template(client, admin_auth_header):
     assert response.status_code == 200
     assert response.json()["name"] == "HTTP[S]"
     assert response.json()["id"] == "http"
-    assert type(response.json()["options"]) == dict
+    assert isinstance(response.json()["options"], dict)
 
 
 def test_create_listener_validation_fails_required_field(
@@ -250,7 +250,7 @@ def test_update_listener_reverts_if_validation_fails(
     assert response.json()["enabled"] is False
 
     listener = response.json()
-    del listener["options"]["Port"]
+    listener["options"]["DefaultJitter"] = "Invalid"
     listener["options"]["BindIP"] = "1.1.1.1"
     response = client.put(
         f"/api/v2/listeners/{listener['id']}",
@@ -258,7 +258,10 @@ def test_update_listener_reverts_if_validation_fails(
         json=listener,
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "required option missing: Port"
+    assert (
+        response.json()["detail"]
+        == "incorrect type for option DefaultJitter. Expected <class 'float'> but got <class 'str'>"
+    )
 
     response = client.get(
         f"/api/v2/listeners/{listener['id']}", headers=admin_auth_header

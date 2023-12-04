@@ -1,5 +1,3 @@
-from typing import Optional
-
 from empire.client.src.menus.Menu import Menu
 
 
@@ -9,7 +7,7 @@ class MenuState:
     """
 
     def __init__(self):
-        self.current_menu: Optional[Menu] = None
+        self.current_menu: Menu | None = None
         self.menu_history = []
 
     @property

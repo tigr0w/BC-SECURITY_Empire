@@ -1,12 +1,9 @@
-from typing import List, Optional, Tuple
-
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
 from empire.server.api.v2.agent.agent_file_dto import AgentFile, domain_to_dto_file
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.agent_file_service import AgentFileService
 from empire.server.core.agent_service import AgentService
@@ -27,7 +24,7 @@ router = APIRouter(
 )
 
 
-async def get_agent(agent_id: str, db: Session = Depends(get_db)):
+async def get_agent(agent_id: str, db: CurrentSession):
     agent = agent_service.get_by_id(db, agent_id)
 
     if agent:
@@ -37,7 +34,7 @@ async def get_agent(agent_id: str, db: Session = Depends(get_db)):
 
 
 async def get_file(
-    uid: int, db: Session = Depends(get_db), db_agent: models.Agent = Depends(get_agent)
+    uid: int, db: CurrentSession, db_agent: models.Agent = Depends(get_agent)
 ):
     file = agent_file_service.get_file(db, db_agent.session_id, uid)
 
@@ -49,9 +46,9 @@ async def get_file(
     )
 
 
-@router.get("/root", dependencies=[Depends(get_current_active_user)])
+@router.get("/root")
 async def read_file_root(
-    db: Session = Depends(get_db), db_agent: models.Agent = Depends(get_agent)
+    db: CurrentSession, db_agent: models.Agent = Depends(get_agent)
 ):
     file = agent_file_service.get_file_by_path(db, db_agent.session_id, "/")
 
@@ -63,15 +60,11 @@ async def read_file_root(
     )
 
 
-@router.get(
-    "/{uid}", response_model=AgentFile, dependencies=[Depends(get_current_active_user)]
-)
+@router.get("/{uid}", response_model=AgentFile)
 async def read_file(
     uid: int,
     db_agent: models.Agent = Depends(get_agent),
-    db_file: Optional[Tuple[models.AgentFile, List[models.AgentFile]]] = Depends(
-        get_file
-    ),
+    db_file: tuple[models.AgentFile, list[models.AgentFile]] | None = Depends(get_file),
 ):
     if db_file:
         return domain_to_dto_file(*db_file)

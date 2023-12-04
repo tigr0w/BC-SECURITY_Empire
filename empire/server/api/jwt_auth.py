@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Annotated
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import status
 
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
@@ -27,7 +27,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: Optional[str] = None
+    username: str | None = None
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -58,7 +58,7 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -70,7 +70,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+    db: CurrentSession,
+    token: str = Depends(oauth2_scheme),
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -91,19 +92,28 @@ async def get_current_user(
     return user
 
 
+CurrentUser = Annotated[models.User, Depends(get_current_user)]
+
+
 async def get_current_active_user(
-    current_user: models.User = Depends(get_current_user),
+    current_user: CurrentUser,
 ):
     if not current_user.enabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
+CurrentActiveUser = Annotated[models.User, Depends(get_current_active_user)]
+
+
 async def get_current_active_admin_user(
-    current_user: models.User = Depends(get_current_user),
+    current_user: CurrentUser,
 ):
     if not current_user.enabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     if not current_user.admin:
         raise HTTPException(status_code=403, detail="Not an admin user")
     return current_user
+
+
+CurrentActiveAdminUser = Annotated[models.User, Depends(get_current_active_admin_user)]

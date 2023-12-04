@@ -1,40 +1,65 @@
-# This is for testing the install script for the supported OS.
 version: '3'
+
+x-common-build: &common-build
+  context: ../../
+  dockerfile: .github/install_tests/InstallTest.Dockerfile
+
+x-common-platform: &common-platform
+  platform: "linux/amd64"
 
 services:
   ubuntu2004:
     build:
-      context: ../../
-      dockerfile: .github/install_tests/Ubuntu2004.Dockerfile
+      <<: *common-build
+      args:
+        BASE_IMAGE: ubuntu:20.04
     image: bcsecurity/empire-test-ubuntu2004
-    platform: "linux/amd64"
+    <<: *common-platform
+
   ubuntu2204:
     build:
-      context: ../../
-      dockerfile: .github/install_tests/Ubuntu2204.Dockerfile
+      <<: *common-build
+      args:
+        BASE_IMAGE: ubuntu:22.04
     image: bcsecurity/empire-test-ubuntu2204
-    platform: "linux/amd64"
+    <<: *common-platform
+
   debian10:
     build:
-      context: ../../
-      dockerfile: .github/install_tests/Debian10.Dockerfile
+      <<: *common-build
+      args:
+        BASE_IMAGE: debian:buster
     image: bcsecurity/empire-test-debian10
-    platform: "linux/amd64"
+    <<: *common-platform
+
   debian11:
     build:
-      context: ../../
-      dockerfile: .github/install_tests/Debian11.Dockerfile
+      <<: *common-build
+      args:
+        BASE_IMAGE: debian:bullseye
     image: bcsecurity/empire-test-debian11
-    platform: "linux/amd64"
+    <<: *common-platform
+
+  debian12:
+    build:
+      <<: *common-build
+      args:
+        BASE_IMAGE: debian:bookworm
+    image: bcsecurity/empire-test-debian12
+    <<: *common-platform
+
   kalirolling:
     build:
-      context: ../../
-      dockerfile: .github/install_tests/KaliRolling.Dockerfile
+      <<: *common-build
+      args:
+        BASE_IMAGE: kalilinux/kali-rolling
     image: bcsecurity/empire-test-kalirolling
-    platform: "linux/amd64"
+    <<: *common-platform
+
   parrotrolling:
     build:
-      context: ../../
-      dockerfile: .github/install_tests/ParrotRolling.Dockerfile
+      <<: *common-build
+      args:
+        BASE_IMAGE: parrotsec/core
     image: bcsecurity/empire-test-parrotrolling
-    platform: "linux/amd64"
+    <<: *common-platform

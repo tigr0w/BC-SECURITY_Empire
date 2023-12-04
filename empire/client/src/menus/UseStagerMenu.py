@@ -64,12 +64,9 @@ class UseStagerMenu(UseMenu):
 
             listener_list = []
             for key, value in self.record_options.items():
-                values = list(
-                    map(
-                        lambda x: "\n".join(textwrap.wrap(str(x), width=35)),
-                        value.values(),
-                    )
-                )
+                values = [
+                    "\n".join(textwrap.wrap(str(x), width=35)) for x in value.values()
+                ]
                 values.reverse()
                 temp = [key] + values
                 listener_list.append(temp)

@@ -2,7 +2,6 @@ import fnmatch
 import importlib.util
 import logging
 import os
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -32,7 +31,7 @@ class ListenerTemplateService:
 
         return instance
 
-    def get_listener_template(self, name: str) -> Optional[object]:
+    def get_listener_template(self, name: str) -> object | None:
         return self._loaded_listener_templates.get(name)
 
     def get_listener_templates(self):

@@ -47,7 +47,6 @@ The `main` branch in `BC-SECURITY/Empire` automatically syncs.
 
 * We are using [psf/black](https://github.com/psf/black) for code formatting.
 * We are using [charliermarsh/ruff](https://github.com/charliermarsh/ruff) for linting.
-    * We are using the E, W, F, I, UP, and B rulesets.
 * After implementing your changes:
     1. run `ruff . --fix` (or `poetry run ruff . --fix`).
     2. run `black .` (or `poetry run black .`).

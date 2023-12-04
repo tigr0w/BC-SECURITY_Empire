@@ -1,8 +1,7 @@
 import copy
 import os
 import uuid
-from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -37,8 +36,8 @@ class StagerService:
         return db.query(models.Stager).filter(models.Stager.name == name).first()
 
     def validate_stager_options(
-        self, db: Session, template: str, params: Dict
-    ) -> Tuple[Optional[Any], Optional[str]]:
+        self, db: Session, template: str, params: dict
+    ) -> tuple[Any | None, str | None]:
         """
         Validates the new listener's options. Constructs a new "Listener" object.
         :param template:
@@ -89,9 +88,7 @@ class StagerService:
             return None, err
 
         stager_options = copy.deepcopy(template_instance.options)
-        stager_options = dict(
-            map(lambda x: (x[0], x[1]["Value"]), stager_options.items())
-        )
+        stager_options = {x[0]: x[1]["Value"] for x in stager_options.items()}
 
         db_stager = models.Stager(
             name=stager_req.name,
@@ -138,9 +135,7 @@ class StagerService:
             return None, err
 
         stager_options = copy.deepcopy(template_instance.options)
-        stager_options = dict(
-            map(lambda x: (x[0], x[1]["Value"]), stager_options.items())
-        )
+        stager_options = {x[0]: x[1]["Value"] for x in stager_options.items()}
         db_stager.options = stager_options
 
         download = models.Download(
@@ -169,7 +164,7 @@ class StagerService:
             file_name = f"{uuid.uuid4()}.txt"
 
         file_name = (
-            Path(empire_config.directories.downloads) / "generated-stagers" / file_name
+            empire_config.directories.downloads / "generated-stagers" / file_name
         )
         file_name.parent.mkdir(parents=True, exist_ok=True)
         mode = "w" if isinstance(resp, str) else "wb"

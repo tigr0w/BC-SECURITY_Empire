@@ -5,7 +5,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, get_type_hints
+from typing import get_type_hints
 
 import urllib3
 from docopt import docopt
@@ -56,9 +56,7 @@ class MyCustomCompleter(Completer):
         word_before_cursor = document.get_word_before_cursor(WORD=True)
 
         try:
-            cmd_line = list(
-                map(lambda s: s.lower(), shlex.split(document.current_line))
-            )
+            cmd_line = [s.lower() for s in shlex.split(document.current_line)]
             if len(cmd_line) == 0:
                 cmd_line.append("")
         except ValueError:
@@ -121,7 +119,7 @@ class CliExitException(BaseException):
 class EmpireCli:
     def __init__(self) -> None:
         self.completer = MyCustomCompleter(self)
-        self.menus: Dict[Menu] = {
+        self.menus: dict[Menu] = {
             "MainMenu": main_menu,
             "ListenerMenu": listener_menu,
             "UseCredentialMenu": use_credential_menu,
@@ -148,7 +146,7 @@ class EmpireCli:
         return {re.sub("[^A-Za-z0-9 _]+", "", k): v for k, v in options.items()}
 
     @staticmethod
-    def get_autoconnect_server() -> Optional[str]:
+    def get_autoconnect_server() -> str | None:
         """
         Looks for a server in the yaml marked for autoconnect.
         If one is not found, returns None
@@ -268,7 +266,7 @@ class EmpireCli:
             except CliExitException:
                 break
 
-    def parse_command_line(self, text: str, cmd_line: List[str], resource_file=False):
+    def parse_command_line(self, text: str, cmd_line: list[str], resource_file=False):
         if len(cmd_line) == 0:
             return
         if not state.connected and not cmd_line[0] == "connect":

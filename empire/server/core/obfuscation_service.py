@@ -100,7 +100,6 @@ class ObfuscationService:
         files = self._get_module_source_files(db_obf_config.language)
 
         for file in files:
-            file = os.getcwd() + "/" + file
             if reobfuscate or not self._is_obfuscated(file):
                 message = f"Obfuscating {os.path.basename(file)}..."
                 log.info(message)
@@ -133,8 +132,8 @@ class ObfuscationService:
         obfuscated_code = self.obfuscate(module_code, obfuscation_command)
 
         obfuscated_source = module_source.replace(
-            empire_config.directories.module_source,
-            empire_config.directories.obfuscated_module_source,
+            str(empire_config.directories.module_source),
+            str(empire_config.directories.obfuscated_module_source),
         )
 
         try:
@@ -230,12 +229,16 @@ class ObfuscationService:
 
         return paths
 
-    def _is_obfuscated(self, module_source):
+    def _is_obfuscated(self, module_source: str | Path):
+        if isinstance(module_source, Path):
+            module_source = str(module_source)
+
         obfuscated_source = module_source.replace(
-            empire_config.directories.module_source,
-            empire_config.directories.obfuscated_module_source,
+            str(empire_config.directories.module_source),
+            str(empire_config.directories.obfuscated_module_source),
         )
-        return os.path.isfile(obfuscated_source)
+
+        return Path(obfuscated_source).exists()
 
     def _convert_obfuscation_command(self, obfuscate_command):
         return (

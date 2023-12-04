@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 from pydantic import BaseModel
 
@@ -21,7 +20,7 @@ def domain_to_dto_bypass(bypass):
 class Bypass(BaseModel):
     id: int
     name: str
-    authors: List[Author]
+    authors: list[Author]
     language: str
     code: str
     created_at: datetime
@@ -29,7 +28,7 @@ class Bypass(BaseModel):
 
 
 class Bypasses(BaseModel):
-    records: List[Bypass]
+    records: list[Bypass]
 
 
 class BypassUpdateRequest(BaseModel):

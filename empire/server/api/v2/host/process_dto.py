@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from pydantic import BaseModel
 
 from empire.server.core.db import models
@@ -26,11 +24,11 @@ class Process(BaseModel):
     process_id: int
     process_name: str
     host_id: int
-    architecture: Optional[str]
-    user: Optional[str]
+    architecture: str | None = None
+    user: str | None = None
     stale: bool
-    agent_id: Optional[str]
+    agent_id: str | None = None
 
 
 class Processes(BaseModel):
-    records: List[Process]
+    records: list[Process]

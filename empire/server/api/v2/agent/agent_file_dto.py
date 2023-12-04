@@ -2,9 +2,7 @@
 # https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
 from __future__ import annotations
 
-from typing import List, Optional
-
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from empire.server.api.v2.shared_dto import (
     DownloadDescription,
@@ -13,7 +11,7 @@ from empire.server.api.v2.shared_dto import (
 from empire.server.core.db import models
 
 
-def domain_to_dto_file(file: models.AgentFile, children: List[models.AgentFile]):
+def domain_to_dto_file(file: models.AgentFile, children: list[models.AgentFile]):
     return AgentFile(
         id=file.id,
         session_id=file.session_id,
@@ -21,10 +19,8 @@ def domain_to_dto_file(file: models.AgentFile, children: List[models.AgentFile])
         path=file.path,
         is_file=file.is_file,
         parent_id=file.parent_id,
-        downloads=list(
-            map(lambda x: domain_to_dto_download_description(x), file.downloads)
-        ),
-        children=list(map(lambda c: domain_to_dto_file(c, []), children)),
+        downloads=[domain_to_dto_download_description(x) for x in file.downloads],
+        children=[domain_to_dto_file(c, []) for c in children],
     )
 
 
@@ -34,12 +30,10 @@ class AgentFile(BaseModel):
     name: str
     path: str
     is_file: bool
-    parent_id: Optional[int]
-    downloads: List[DownloadDescription]
-    children: List[AgentFile] = []
-
-    class Config:
-        orm_mode = True
+    parent_id: int | None = None
+    downloads: list[DownloadDescription]
+    children: list[AgentFile] = []
+    model_config = ConfigDict(from_attributes=True)
 
 
 AgentFile.update_forward_refs()

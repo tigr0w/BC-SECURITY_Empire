@@ -30,30 +30,29 @@ def setup_socket_events(sio, empire_menu):
 
     sid_to_user = {}
 
-    async def get_user_from_token(sid, token):
-        user = await jwt_auth.get_current_user(token, SessionLocal())
+    async def get_user_from_token(sid, token, db: Session):
+        user = await jwt_auth.get_current_user(db, token)
         if user is None:
             return False
         sid_to_user[sid] = user.id
 
         return user
 
-    def get_user_from_sid(sid):
+    def get_user_from_sid(sid, db: Session):
         user_id = sid_to_user.get(sid)
         if user_id is None:
             return None
 
-        return (
-            SessionLocal().query(models.User).filter(models.User.id == user_id).first()
-        )
+        return db.query(models.User).filter(models.User.id == user_id).first()
 
     @sio.on("connect")
     async def on_connect(sid, environ, auth):
         try:
-            user = await get_user_from_token(sid, auth["token"])
-            if user:
-                log.info(f"{user.username} connected to socketio")
-                return
+            with SessionLocal() as db:
+                user = await get_user_from_token(sid, auth["token"], db)
+                if user:
+                    log.info(f"{user.username} connected to socketio")
+                    return
         except HTTPException:
             # If a server is restarted and clients are still connected, there are
             #  sometimes token handling errors. We want to reject these since they fail
@@ -64,10 +63,11 @@ def setup_socket_events(sio, empire_menu):
 
     @sio.on("disconnect")
     async def on_disconnect(sid):
-        user = get_user_from_sid(sid)
-        log.info(
-            f"{'Client' if user is None else user.username} disconnected from socketio"
-        )
+        with SessionLocal() as db:
+            user = get_user_from_sid(sid, db)
+            log.info(
+                f"{'Client' if user is None else user.username} disconnected from socketio"
+            )
 
     @sio.on("chat/join")
     async def on_join(sid, data=None):
@@ -77,19 +77,20 @@ def setup_socket_events(sio, empire_menu):
         The server fails if a client sends data when none is expected.
         :return: emits a join event with the user's details.
         """
-        user = get_user_from_sid(sid)
-        if user.username not in chat_participants:
-            chat_participants[user.username] = user.username
-        sio.enter_room(sid, room)
-        await sio.emit(
-            "chat/join",
-            {
-                "user": domain_to_dto_user(user),
-                "username": user.username,
-                "message": f"{user.username} has entered the room.",
-            },
-            room=room,
-        )
+        with SessionLocal() as db:
+            user = get_user_from_sid(sid, db)
+            if user.username not in chat_participants:
+                chat_participants[user.username] = user.username
+            await sio.enter_room(sid, room)
+            await sio.emit(
+                "chat/join",
+                {
+                    "user": domain_to_dto_user(user),
+                    "username": user.username,
+                    "message": f"{user.username} has entered the room.",
+                },
+                room=room,
+            )
 
     @sio.on("chat/leave")
     async def on_leave(sid, data=None):
@@ -97,19 +98,20 @@ def setup_socket_events(sio, empire_menu):
         The calling user gets removed from the "general" chat room.
         :return: emits a leave event with the user's details.
         """
-        user = get_user_from_sid(sid)
-        if user is not None:
-            chat_participants.pop(user.username, None)
-            sio.leave_room(sid, room)
-            await sio.emit(
-                "chat/leave",
-                {
-                    "user": domain_to_dto_user(user),
-                    "username": user.username,
-                    "message": user.username + " has left the room.",
-                },
-                room=room,
-            )
+        with SessionLocal() as db:
+            user = get_user_from_sid(sid, db)
+            if user is not None:
+                chat_participants.pop(user.username, None)
+                await sio.leave_room(sid, room)
+                await sio.emit(
+                    "chat/leave",
+                    {
+                        "user": domain_to_dto_user(user),
+                        "username": user.username,
+                        "message": user.username + " has left the room.",
+                    },
+                    room=room,
+                )
 
     @sio.on("chat/message")
     async def on_message(sid, data):
@@ -118,15 +120,16 @@ def setup_socket_events(sio, empire_menu):
         :param data: contains the user's message.
         :return: Emits a message event containing the message and the user's username
         """
-        user = get_user_from_sid(sid)
-        if isinstance(data, str):
-            data = json.loads(data)
-        chat_log.append({"username": user.username, "message": data["message"]})
-        await sio.emit(
-            "chat/message",
-            {"username": user.username, "message": data["message"]},
-            room=room,
-        )
+        with SessionLocal() as db:
+            user = get_user_from_sid(sid, db)
+            if isinstance(data, str):
+                data = json.loads(data)
+            chat_log.append({"username": user.username, "message": data["message"]})
+            await sio.emit(
+                "chat/message",
+                {"username": user.username, "message": data["message"]},
+                room=room,
+            )
 
     @sio.on("chat/history")
     async def on_history(sid, data=None):

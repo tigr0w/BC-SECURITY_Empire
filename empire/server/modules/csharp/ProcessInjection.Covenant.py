@@ -1,9 +1,12 @@
-from typing import Dict
+try:
+    import donut
+except ModuleNotFoundError:
+    donut = None
 
-import donut
 import yaml
 
 from empire.server.common import helpers
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -11,9 +14,9 @@ from empire.server.utils.module_util import handle_error_message
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
@@ -29,7 +32,7 @@ class Module:
         arch = params["Architecture"]
         launcher_obfuscation = params["Obfuscate"]
 
-        if not main_menu.listeners.is_listener_valid(listener_name):
+        if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
@@ -48,9 +51,11 @@ class Module:
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
         if language.lower() == "powershell":
-            shellcode = main_menu.stagers.generate_powershell_shellcode(
+            shellcode, err = main_menu.stagers.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
+            if err:
+                return handle_error_message(err)
 
         elif language.lower() == "csharp":
             if arch == "x86":
@@ -60,6 +65,12 @@ class Module:
             elif arch == "both":
                 arch_type = 3
             directory = f"{main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
+
+            if not donut:
+                return handle_error_message(
+                    "module donut-shellcode not installed. It is only supported on x86."
+                )
+
             shellcode = donut.create(file=directory, arch=arch_type)
 
         elif language.lower() == "ironpython":
@@ -79,7 +90,7 @@ class Module:
             return None, "csharpserver plugin not running"
 
         # Convert compiler.yaml to python dict
-        compiler_dict: Dict = yaml.safe_load(module.compiler_yaml)
+        compiler_dict: dict = yaml.safe_load(module.compiler_yaml)
         # delete the 'Empire' key
         del compiler_dict[0]["Empire"]
         # convert back to yaml string

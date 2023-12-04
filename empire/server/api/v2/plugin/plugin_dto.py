@@ -1,39 +1,35 @@
-from typing import Dict, List, Optional
-
 from pydantic import BaseModel
 
-from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
+from empire.server.api.v2.shared_dto import (
+    Author,
+    CustomOptionSchema,
+    coerced_dict,
+    to_value_type,
+)
 from empire.server.common.plugins import Plugin
 
 
 def domain_to_dto_plugin(plugin: Plugin, uid: str):
-    options = dict(
-        map(
-            lambda x: (
-                x[0],
-                {
-                    "description": x[1]["Description"],
-                    "required": x[1]["Required"],
-                    "value": x[1]["Value"],
-                    "strict": x[1]["Strict"],
-                    "suggested_values": x[1]["SuggestedValues"],
-                    "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
-                },
-            ),
-            plugin.options.items(),
-        )
-    )
+    options = {
+        x[0]: {
+            "description": x[1]["Description"],
+            "required": x[1]["Required"],
+            "value": x[1]["Value"],
+            "strict": x[1]["Strict"],
+            "suggested_values": x[1]["SuggestedValues"],
+            "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+        }
+        for x in plugin.options.items()
+    }
 
-    authors = list(
-        map(
-            lambda x: {
-                "name": x["Name"],
-                "handle": x["Handle"],
-                "link": x["Link"],
-            },
-            plugin.info.get("Authors") or [],
-        )
-    )
+    authors = [
+        {
+            "name": x["Name"],
+            "handle": x["Handle"],
+            "link": x["Link"],
+        }
+        for x in plugin.info.get("Authors") or []
+    ]
 
     return Plugin(
         id=uid,
@@ -51,20 +47,20 @@ def domain_to_dto_plugin(plugin: Plugin, uid: str):
 class Plugin(BaseModel):
     id: str
     name: str
-    authors: List[Author]
+    authors: list[Author]
     description: str
-    techniques: List[str] = []
-    software: Optional[str]
-    comments: List[str]
-    options: Dict[str, CustomOptionSchema]
+    techniques: list[str] = []
+    software: str | None = None
+    comments: list[str]
+    options: dict[str, CustomOptionSchema]
 
 
 class Plugins(BaseModel):
-    records: List[Plugin]
+    records: list[Plugin]
 
 
 class PluginExecutePostRequest(BaseModel):
-    options: Dict[str, str]
+    options: coerced_dict
 
 
 class PluginExecuteResponse(BaseModel):

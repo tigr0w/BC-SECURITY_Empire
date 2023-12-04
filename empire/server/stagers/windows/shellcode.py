@@ -1,6 +1,11 @@
 import logging
 
-import donut
+try:
+    import donut
+except ModuleNotFoundError:
+    donut = None
+
+from empire.server.utils.module_util import handle_error_message
 
 log = logging.getLogger(__name__)
 
@@ -113,7 +118,7 @@ class Stager:
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
         arch = self.options["Architecture"]["Value"]
 
-        if not self.mainMenu.listeners.is_listener_valid(listener_name):
+        if not self.mainMenu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
             return "[!] Invalid listener: " + listener_name
 
@@ -142,9 +147,12 @@ class Stager:
                 return "[!] Error in launcher command generation."
 
         if language.lower() == "powershell":
-            shellcode = self.mainMenu.stagers.generate_powershell_shellcode(
+            shellcode, err = self.mainMenu.stagers.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
+            if err:
+                return handle_error_message(err)
+
             return shellcode
 
         elif language.lower() == "csharp":
@@ -155,14 +163,22 @@ class Stager:
             elif arch == "both":
                 arch_type = 3
 
+            if not donut:
+                return handle_error_message(
+                    "module donut-shellcode not installed. It is only supported on x86."
+                )
+
             directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
             shellcode = donut.create(file=directory, arch=arch_type)
             return shellcode
 
         elif language.lower() == "python":
-            shellcode = self.mainMenu.stagers.generate_python_shellcode(
+            shellcode, err = self.mainMenu.stagers.generate_python_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
+            if err:
+                return handle_error_message(err)
+
             return shellcode
 
         else:

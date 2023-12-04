@@ -74,7 +74,7 @@ WINDOW_NORMAL = "Normal"
 WINDOW_MAXIMIZED = "Maximized"
 WINDOW_MINIMIZED = "Minimized"
 _SHOW_COMMANDS = {1: WINDOW_NORMAL, 3: WINDOW_MAXIMIZED, 7: WINDOW_MINIMIZED}
-_SHOW_COMMAND_IDS = dict((v, k) for k, v in _SHOW_COMMANDS.items())
+_SHOW_COMMAND_IDS = {v: k for k, v in _SHOW_COMMANDS.items()}
 
 DRIVE_UNKNOWN = "Unknown"
 DRIVE_NO_ROOT_DIR = "No root directory"
@@ -92,7 +92,7 @@ _DRIVE_TYPES = {
     5: DRIVE_CDROM,
     6: DRIVE_RAMDISK,
 }
-_DRIVE_TYPE_IDS = dict((v, k) for k, v in _DRIVE_TYPES.items())
+_DRIVE_TYPE_IDS = {v: k for k, v in _DRIVE_TYPES.items()}
 
 _KEYS = {
     0x30: "0",
@@ -158,7 +158,7 @@ _KEYS = {
     0x90: "NUM LOCK",
     0x91: "SCROLL LOCK",
 }
-_KEY_CODES = dict((v, k) for k, v in _KEYS.items())
+_KEY_CODES = {v: k for k, v in _KEYS.items()}
 
 ROOT_MY_COMPUTER = "MY_COMPUTER"
 ROOT_MY_DOCUMENTS = "MY_DOCUMENTS"
@@ -181,7 +181,7 @@ _ROOT_LOCATIONS = {
     "{645FF040-5081-101B-9F08-00AA002F954E}": ROOT_RECYLCE_BIN,
     "{21EC2020-3AEA-1069-A2DD-08002B30309D}": ROOT_CONTROL_PANEL,
 }
-_ROOT_LOCATION_GUIDS = dict((v, k) for k, v in _ROOT_LOCATIONS.items())
+_ROOT_LOCATION_GUIDS = {v: k for k, v in _ROOT_LOCATIONS.items()}
 
 TYPE_FOLDER = "FOLDER"
 TYPE_FILE = "FILE"
@@ -191,7 +191,7 @@ _ENTRY_TYPES = {
     0x35: "FOLDER (UNICODE)",
     0x36: "FILE (UNICODE)",
 }
-_ENTRY_TYPE_IDS = dict((v, k) for k, v in _ENTRY_TYPES.items())
+_ENTRY_TYPE_IDS = {v: k for k, v in _ENTRY_TYPES.items()}
 
 _DRIVE_PATTERN = re.compile("(\\w)[:/\\\\]*$")
 
@@ -362,7 +362,7 @@ class InvalidKeyException(Exception):
 class Flags:
     def __init__(self, flag_names, flags_bytes=0):
         self._flag_names = flag_names
-        self._flags = dict([(name, None) for name in flag_names])
+        self._flags = {name: None for name in flag_names}
         self.set_flags(flags_bytes)
 
     def set_flags(self, flags_bytes):

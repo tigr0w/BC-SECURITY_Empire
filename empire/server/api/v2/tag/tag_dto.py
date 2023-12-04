@@ -1,15 +1,15 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Annotated
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, StringConstraints
 
 from empire.server.core.db import models
 
 # Validate the string contains 1 colon
-TagStr = constr(regex=r"^[^:]+:[^:]+$")
+TagStr = Annotated[str, StringConstraints(pattern=r"^[^:]+:[^:]+$")]
 
 # Validate the string has no colons
-TagStrNoColon = constr(regex=r"^[^:]+$")
+TagStrNoColon = Annotated[str, StringConstraints(pattern=r"^[^:]+$")]
 
 
 class TagSourceFilter(str, Enum):
@@ -26,11 +26,11 @@ class Tag(BaseModel):
     name: str
     value: str
     label: str
-    color: Optional[str]
+    color: str | None = None
 
 
 class Tags(BaseModel):
-    records: List[Tag]
+    records: list[Tag]
     limit: int
     page: int
     total_pages: int
@@ -40,7 +40,7 @@ class Tags(BaseModel):
 class TagRequest(BaseModel):
     name: TagStrNoColon
     value: TagStrNoColon
-    color: Optional[str]
+    color: str | None = None
 
 
 class TagOrderOptions(str, Enum):

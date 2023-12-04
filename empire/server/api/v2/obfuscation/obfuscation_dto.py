@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from empire.server.core.db import models
 
@@ -12,13 +11,11 @@ class Keyword(BaseModel):
     replacement: str
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Keywords(BaseModel):
-    records: List[Keyword]
+    records: list[Keyword]
 
 
 class KeywordUpdateRequest(BaseModel):
@@ -47,13 +44,11 @@ class ObfuscationConfig(BaseModel):
     command: str
     module: str
     preobfuscatable: bool
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ObfuscationConfigs(BaseModel):
-    records: List[ObfuscationConfig]
+    records: list[ObfuscationConfig]
 
 
 class ObfuscationConfigUpdateRequest(BaseModel):

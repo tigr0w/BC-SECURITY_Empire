@@ -1,7 +1,6 @@
 import base64
 import enum
 import os
-from typing import List
 
 from sqlalchemy import (
     JSON,
@@ -21,9 +20,8 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects import mysql
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, deferred, relationship
+from sqlalchemy.orm import Mapped, declarative_base, deferred, relationship
 from sqlalchemy_utc import UtcDateTime, utcnow
 
 from empire.server.core.config import empire_config
@@ -215,7 +213,7 @@ class Agent(Base):
     session_key = Column(String(255))
     nonce = Column(String(255))
     firstseen_time = Column(UtcDateTime, default=utcnow())
-    checkins: Mapped[List[AgentCheckIn]] = relationship(
+    checkins: Mapped[list[AgentCheckIn]] = relationship(
         "AgentCheckIn",
         order_by="desc(AgentCheckIn.checkin_time)",
         lazy="dynamic",

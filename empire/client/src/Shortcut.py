@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional
 
 from empire.client.src.utils import print_util
 
@@ -8,7 +7,7 @@ log = logging.getLogger(__name__)
 
 # https://yzhong-cs.medium.com/serialize-and-deserialize-complex-json-in-python-205ecc636caa
 class ShortcutParam:
-    def __init__(self, name: str, dynamic: bool = False, value: Optional[str] = ""):
+    def __init__(self, name: str, dynamic: bool = False, value: str | None = ""):
         self.name = name
         self.dynamic = dynamic
         self.value = value
@@ -22,9 +21,9 @@ class Shortcut:
     def __init__(
         self,
         name: str,
-        module: Optional[str] = None,
-        shell: Optional[str] = None,
-        params: List[ShortcutParam] = None,
+        module: str | None = None,
+        shell: str | None = None,
+        params: list[ShortcutParam] = None,
     ):
         if not module and not shell:
             log.error("Shortcut must have either a module or shell command")
@@ -35,19 +34,19 @@ class Shortcut:
         self.module = module
         self.params = [] if not params else params
 
-    def get_dynamic_params(self) -> List[ShortcutParam]:
+    def get_dynamic_params(self) -> list[ShortcutParam]:
         return list(filter(lambda x: x.dynamic, self.params))
 
-    def get_dynamic_param_names(self) -> List[str]:
-        return list(map(lambda x: x.name, self.get_dynamic_params()))
+    def get_dynamic_param_names(self) -> list[str]:
+        return [x.name for x in self.get_dynamic_params()]
 
-    def get_static_params(self) -> List[ShortcutParam]:
+    def get_static_params(self) -> list[ShortcutParam]:
         return list(filter(lambda x: not x.dynamic, self.params))
 
-    def get_static_param_names(self) -> List[str]:
-        return list(map(lambda x: x.name, self.get_static_params()))
+    def get_static_param_names(self) -> list[str]:
+        return [x.name for x in self.get_static_params()]
 
-    def get_param(self, name: str) -> Optional[ShortcutParam]:
+    def get_param(self, name: str) -> ShortcutParam | None:
         param = None
         for p in self.params:
             if p.name == name:
@@ -71,9 +70,7 @@ class Shortcut:
             )
 
         module = self.module
-        default_params = list(
-            map(lambda x: f"{x.name}: {x.value}", self.get_static_params())
-        )
+        default_params = [f"{x.name}: {x.value}" for x in self.get_static_params()]
         description = f"Tasks the agent to run module {module}."
         if len(default_params) > 0:
             description += " Default parameters include:\n"

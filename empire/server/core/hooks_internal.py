@@ -44,7 +44,7 @@ def ps_hook(db: Session, task: models.AgentTask):
         .filter(models.HostProcess.host_id == task.agent.host_id)
         .all()
     )
-    existing_processes = list(map(lambda p: p[0], existing_processes))
+    existing_processes = [p[0] for p in existing_processes]
 
     for process in output:
         process_name = process.get("CMD") or process.get("ProcessName") or ""
@@ -82,8 +82,8 @@ def ps_hook(db: Session, task: models.AgentTask):
 
     for process in existing_processes:
         # mark processes that are no longer running stale
-        if process not in list(map(lambda p: int(p.get("PID")), output)):
-            db_process: models.HostProcess = (
+        if process not in [int(p.get("PID")) for p in output]:
+            db_process: models.HostProcess | None = (
                 db.query(models.HostProcess)
                 .filter(
                     and_(

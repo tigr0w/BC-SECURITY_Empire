@@ -3,7 +3,6 @@ import copy
 import logging
 import os
 import random
-from typing import List, Optional, Tuple
 
 from empire.server.common import encryption, helpers, packets, templating
 from empire.server.common.empire import MainMenu
@@ -68,7 +67,7 @@ class Listener:
         self.instance_log.info("default_response() not implemented for pivot listeners")
         return b""
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         """
         Validate all options for this listener.
         """
@@ -86,7 +85,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -104,7 +103,7 @@ class Listener:
             host = listenerOptions["Host"]["Value"]
             stagingKey = listenerOptions["StagingKey"]["Value"]
             profile = listenerOptions["DefaultProfile"]["Value"]
-            uris = [a for a in profile.split("|")[0].split(",")]
+            uris = list(profile.split("|")[0].split(","))
             stage0 = random.choice(uris)
             customHeaders = profile.split("|")[2:]
 
@@ -332,9 +331,9 @@ class Listener:
         delay = listenerOptions["DefaultDelay"]["Value"]
         jitter = listenerOptions["DefaultJitter"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
-        lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-        killDate = listenerOptions["KillDate"]["Value"]
-        workingHours = listenerOptions["WorkingHours"]["Value"]
+        listenerOptions["DefaultLostLimit"]["Value"]
+        listenerOptions["KillDate"]["Value"]
+        listenerOptions["WorkingHours"]["Value"]
         b64DefaultResponse = self.b64DefaultResponse
 
         if language == "powershell":
@@ -352,25 +351,17 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay = 60", "delay = %s" % (delay))
-            code = code.replace("jitter = 0.0", "jitter = %s" % (jitter))
+            code = code.replace("delay=60", "delay=%s" % (delay))
+            code = code.replace("jitter=0.0", "jitter=%s" % (jitter))
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
                 'profile = "%s"' % (profile),
             )
-            code = code.replace("lostLimit = 60", "lostLimit = %s" % (lostLimit))
-            code = code.replace(
-                'defaultResponse = base64.b64decode("")',
-                "defaultResponse = base64.b64decode(%s)" % (b64DefaultResponse),
-            )
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
-            if workingHours != "":
-                code = code.replace(
-                    'workingHours = ""', 'workingHours = "%s"' % (killDate)
-                )
+            code = code.replace(
+                'self.defaultResponse = base64.b64decode("")',
+                "self.defaultResponse = base64.b64decode(%s)" % (b64DefaultResponse),
+            )
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
@@ -424,28 +415,29 @@ class Listener:
         else:
             log.error("generate_comms(): no language specified!")
 
-    def start(self, name=""):
+    def start(self):
         """
         If a server component needs to be started, implement the kick off logic
         here and the actual server code in another function to facilitate threading
         (i.e. start_server() in the http listener).
         """
         try:
+            name = self.options["Name"]["Value"]
             tempOptions = copy.deepcopy(self.options)
-            sessionID = self.mainMenu.agents.get_agent_id_db(
-                self.options["Agent"]["Value"]
-            )
 
-            if self.mainMenu.agents.is_agent_present(sessionID):
-                with SessionLocal.begin() as db:
-                    agent = self.mainMenu.agentsv2.get_by_id(
-                        db, self.options["Agent"]["Value"]
-                    )
-                    self.mainMenu.agenttasksv2.create_task_smb(
-                        db, agent, name + "|" + self.options["PipeName"]["Value"]
-                    )
-                    self.parent_agent = agent.session_id
-                    parent_listener_name = agent.listener
+            with SessionLocal() as db:
+                agent = self.mainMenu.agentsv2.get_by_id(
+                    db, self.options["Agent"]["Value"]
+                )
+
+                if not agent:
+                    return
+
+                self.mainMenu.agenttasksv2.create_task_smb(
+                    db, agent, name + "|" + self.options["PipeName"]["Value"]
+                )
+                self.parent_agent = agent.session_id
+                parent_listener_name = agent.listener
 
                 log.info(
                     f"{self.options['Agent']['Value']}: SMB pivot server task request send to agent"
@@ -489,7 +481,7 @@ class Listener:
         except Exception:
             return False
 
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
         If a server component was started, implement the logic that kills the particular
         named listener here.

@@ -1,5 +1,4 @@
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
 
@@ -12,7 +11,7 @@ from empire.server.api.v2.listener.listener_dto import (
     ListenerUpdateRequest,
     domain_to_dto_listener,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.tag import tag_api
 from empire.server.core.db import models
@@ -31,7 +30,7 @@ router = APIRouter(
 )
 
 
-async def get_listener(uid: int, db: Session = Depends(get_db)):
+async def get_listener(uid: int, db: CurrentSession):
     listener = listener_service.get_by_id(db, uid)
 
     if listener:
@@ -49,18 +48,14 @@ async def read_listener(uid: int, db_listener: models.Listener = Depends(get_lis
 
 
 @router.get("/", response_model=Listeners)
-async def read_listeners(db: Session = Depends(get_db)):
-    listeners = list(
-        map(lambda x: domain_to_dto_listener(x), listener_service.get_all(db))
-    )
+async def read_listeners(db: CurrentSession):
+    listeners = [domain_to_dto_listener(x) for x in listener_service.get_all(db)]
 
     return {"records": listeners}
 
 
 @router.post("/", status_code=201, response_model=Listener)
-async def create_listener(
-    listener_req: ListenerPostRequest, db: Session = Depends(get_db)
-):
+async def create_listener(listener_req: ListenerPostRequest, db: CurrentSession):
     """
     Note: options['Name'] will be overwritten by name. When v1 api is eventually removed, it wil no longer be needed.
     :param listener_req:
@@ -79,7 +74,7 @@ async def create_listener(
 async def update_listener(
     uid: int,
     listener_req: ListenerUpdateRequest,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_listener: models.Listener = Depends(get_listener),
 ):
     if listener_req.enabled and not db_listener.enabled:
@@ -128,7 +123,7 @@ async def update_listener(
 )
 async def delete_listener(
     uid: int,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_listener: models.Listener = Depends(get_listener),
 ):
     listener_service.delete_listener(db, db_listener)

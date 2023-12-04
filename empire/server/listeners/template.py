@@ -1,8 +1,7 @@
 import random
+import time
 
 # Empire imports
-from typing import List, Optional, Tuple
-
 from empire.server.common import helpers
 from empire.server.utils import data_util
 from empire.server.utils.module_util import handle_validate_message
@@ -131,7 +130,7 @@ class Listener:
 
         # required:
         self.mainMenu = mainMenu
-        self.threads = {}  # used to keep track of any threaded instances of this server
+        self.thread = None
 
         # optional/specific for this module
 
@@ -152,7 +151,7 @@ class Listener:
         )
         return ""
 
-    def validate_options(self) -> Tuple[bool, Optional[str]]:
+    def validate_options(self) -> tuple[bool, str | None]:
         """
         Validate all options for this listener.
         """
@@ -177,7 +176,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: List[str] = None,
+        bypasses: list[str] = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -192,37 +191,31 @@ class Listener:
             )
             return None
 
-        # Previously, we had to do a lookup for the listener and check through threads on the instance.
-        # Beginning in 5.0, each instance is unique, so using self should work. This code could probably be simplified
-        # further, but for now keeping as is since 5.0 has enough rewrites as it is.
-        if (
-            True
-        ):  # The true check is just here to keep the indentation consistent with the old code.
-            active_listener = self
-            # extract the set options for this instantiated listener
-            listenerOptions = active_listener.options
+        active_listener = self
+        # extract the set options for this instantiated listener
+        listenerOptions = active_listener.options
 
-            host = listenerOptions["Host"]["Value"]
-            _stagingKey = listenerOptions["StagingKey"]["Value"]
-            profile = listenerOptions["DefaultProfile"]["Value"]
-            uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
-            stage0 = random.choice(uris)
-            _launchURI = f"{host}/{stage0}"
+        host = listenerOptions["Host"]["Value"]
+        _stagingKey = listenerOptions["StagingKey"]["Value"]
+        profile = listenerOptions["DefaultProfile"]["Value"]
+        uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
+        stage0 = random.choice(uris)
+        _launchURI = f"{host}/{stage0}"
 
-            if language.startswith("po"):
-                # PowerShell
-                return ""
+        if language.startswith("po"):
+            # PowerShell
+            return ""
 
-            if language.startswith("py"):
-                # Python
-                return ""
+        if language.startswith("py"):
+            # Python
+            return ""
 
-            else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-                    )
+        else:
+            print(
+                helpers.color(
+                    "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
+            )
 
     def generate_stager(
         self,
@@ -313,31 +306,23 @@ class Listener:
                 )
             )
 
-    def start(self, name=""):
+    def start_server(self):
+        pass
+
+    def start(self):
         """
         If a server component needs to be started, implement the kick off logic
         here and the actual server code in another function to facilitate threading
         (i.e. start_server() in the http listener).
         """
+        listenerOptions = self.options
+        self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
+        self.thread.start()
+        time.sleep(1)
+        # returns True if the listener successfully started, false otherwise
+        return self.thread.is_alive()
 
-        # listenerOptions = self.options
-        # if name and name != '':
-        #     self.threads[name] = helpers.KThread(target=self.start_server, args=(listenerOptions,))
-        #     self.threads[name].start()
-        #     time.sleep(1)
-        #     # returns True if the listener successfully started, false otherwise
-        #     return self.threads[name].is_alive()
-        # else:
-        #     name = listenerOptions['Name']['Value']
-        #     self.threads[name] = helpers.KThread(target=self.start_server, args=(listenerOptions,))
-        #     self.threads[name].start()
-        #     time.sleep(1)
-        #     # returns True if the listener successfully started, false otherwise
-        #     return self.threads[name].is_alive()
-
-        return True
-
-    def shutdown(self, name=""):
+    def shutdown(self):
         """
         If a server component was started, implement the logic that kills the particular
         named listener here.

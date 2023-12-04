@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Dict, List
 
 from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.Shortcut import Shortcut
@@ -15,10 +14,10 @@ class ShortcutHandler:
 
     def __init__(self):
         shortcuts_raw = empire_config.yaml.get("shortcuts", {})
-        python: Dict[str, Shortcut] = {}
-        ironpython: Dict[str, Shortcut] = {}
-        powershell: Dict[str, Shortcut] = {}
-        csharp: Dict[str, Shortcut] = {}
+        python: dict[str, Shortcut] = {}
+        ironpython: dict[str, Shortcut] = {}
+        powershell: dict[str, Shortcut] = {}
+        csharp: dict[str, Shortcut] = {}
         for key, value in shortcuts_raw["python"].items():
             try:
                 value["name"] = key
@@ -43,7 +42,7 @@ class ShortcutHandler:
                 csharp[key] = Shortcut.from_json(json.loads(json.dumps(value)))
             except TypeError:
                 log.error(f"Could not parse shortcut: {key}")
-        self.shortcuts: Dict[str, Dict[str, Shortcut]] = {
+        self.shortcuts: dict[str, dict[str, Shortcut]] = {
             "python": python,
             "powershell": powershell,
             "ironpython": ironpython,
@@ -53,7 +52,7 @@ class ShortcutHandler:
     def get(self, language: str, name: str) -> Shortcut:
         return self.shortcuts.get(language, {}).get(name)
 
-    def get_names(self, language: str) -> List[str]:
+    def get_names(self, language: str) -> list[str]:
         return list(self.shortcuts.get(language, {}).keys())
 
 

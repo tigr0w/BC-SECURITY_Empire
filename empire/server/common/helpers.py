@@ -265,9 +265,13 @@ def get_dependent_functions(code, functionNames):
             dependentFunctions.add(functionName)
 
     if re.search(r"\$Netapi32|\$Advapi32|\$Kernel32|\$Wtsapi32", code, re.IGNORECASE):
-        dependentFunctions |= set(
-            ["New-InMemoryModule", "func", "Add-Win32Type", "psenum", "struct"]
-        )
+        dependentFunctions |= {
+            "New-InMemoryModule",
+            "func",
+            "Add-Win32Type",
+            "psenum",
+            "struct",
+        }
 
     return dependentFunctions
 
@@ -341,7 +345,7 @@ def generate_dynamic_powershell_script(script, function_names):
         "struct",
     ]
 
-    if type(function_names) is not list:
+    if not isinstance(function_names, list):
         function_names = [function_names]
 
     # build a mapping of functionNames -> stripped function code

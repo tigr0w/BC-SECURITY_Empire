@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from prompt_toolkit import HTML
 from prompt_toolkit.completion import Completion
@@ -49,7 +48,7 @@ class UseMenu(Menu):
             cmd_line[0] == "set"
             and len(cmd_line) > 1
             and cmd_line[1] == "bypasses"
-            and "bypasses" in map(lambda x: x.lower(), self.record_options.keys())
+            and "bypasses" in (x.lower() for x in self.record_options.keys())
             and position_util(
                 cmd_line, where_am_i(cmd_line, word_before_cursor), word_before_cursor
             )
@@ -241,7 +240,7 @@ class UseMenu(Menu):
             record_list, "Record Info", colored_header=False, borders=False
         )
 
-    def suggested_values_for_option(self, option: str) -> List[str]:
+    def suggested_values_for_option(self, option: str) -> list[str]:
         try:
             lower = {k.lower(): v for k, v in self.record_options.items()}
             return lower.get(option, {}).get("suggested_values", [])

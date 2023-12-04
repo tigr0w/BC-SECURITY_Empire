@@ -1,7 +1,7 @@
 import copy
 import hashlib
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -31,15 +31,15 @@ class ListenerService:
         self._active_listeners = {}
 
     @staticmethod
-    def get_all(db: Session) -> List[models.Listener]:
+    def get_all(db: Session) -> list[models.Listener]:
         return db.query(models.Listener).all()
 
     @staticmethod
-    def get_by_id(db: Session, uid: int) -> Optional[models.Listener]:
+    def get_by_id(db: Session, uid: int) -> models.Listener | None:
         return db.query(models.Listener).filter(models.Listener.id == uid).first()
 
     @staticmethod
-    def get_by_name(db: Session, name: str) -> Optional[models.Listener]:
+    def get_by_name(db: Session, name: str) -> models.Listener | None:
         return db.query(models.Listener).filter(models.Listener.name == name).first()
 
     def get_active_listeners(self):
@@ -112,7 +112,7 @@ class ListenerService:
 
     def stop_listener(self, db_listener: models.Listener):
         if self._active_listeners.get(db_listener.id):
-            self._active_listeners[db_listener.id].shutdown(name=db_listener.name)
+            self._active_listeners[db_listener.id].shutdown()
             del self._active_listeners[db_listener.id]
 
     def delete_listener(self, db: Session, db_listener: models.Listener):
@@ -126,7 +126,7 @@ class ListenerService:
     def start_existing_listener(self, db: Session, listener: models.Listener):
         listener.enabled = True
 
-        options = dict(map(lambda x: (x[0], x[1]["Value"]), listener.options.items()))
+        options = {x[0]: x[1]["Value"] for x in listener.options.items()}
         template_instance, err = self._validate_listener_options(
             db, listener.module, options
         )
@@ -135,7 +135,7 @@ class ListenerService:
             log.error(err)
             return None, err
 
-        success = template_instance.start(name=listener.name)
+        success = template_instance.start()
         db.flush()
 
         if success:
@@ -160,7 +160,7 @@ class ListenerService:
         name = template_instance.options["Name"]["Value"]
         try:
             log.info(f"v2: Starting listener '{name}'")
-            success = template_instance.start(name=name)
+            success = template_instance.start()
 
             if success:
                 listener_options = copy.deepcopy(template_instance.options)
@@ -194,8 +194,8 @@ class ListenerService:
             return None, msg
 
     def _validate_listener_options(
-        self, db: Session, template: str, params: Dict
-    ) -> Tuple[Optional[Any], Optional[str]]:
+        self, db: Session, template: str, params: dict
+    ) -> tuple[Any | None, str | None]:
         """
         Validates the new listener's options. Constructs a new "Listener" object.
         :param template:

@@ -1,24 +1,21 @@
 from datetime import datetime
-from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Profile(BaseModel):
     id: int
     name: str
-    file_path: Optional[str]  # todo vr needed?
+    file_path: str | None = None  # todo vr needed?
     category: str
     data: str
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Profiles(BaseModel):
-    records: List[Profile]
+    records: list[Profile]
 
 
 # name can't be modified atm because of the way name is inferred from the file name.

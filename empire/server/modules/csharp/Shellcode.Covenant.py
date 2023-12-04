@@ -1,16 +1,15 @@
-from typing import Dict
-
 import yaml
 
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 
 
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
@@ -24,7 +23,7 @@ class Module:
             return None, "csharpserver plugin not running"
 
         # Convert compiler.yaml to python dict
-        compiler_dict: Dict = yaml.safe_load(module.compiler_yaml)
+        compiler_dict: dict = yaml.safe_load(module.compiler_yaml)
         # delete the 'Empire' key
         del compiler_dict[0]["Empire"]
         # convert back to yaml string

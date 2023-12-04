@@ -1,5 +1,4 @@
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
 
@@ -11,7 +10,7 @@ from empire.server.api.v2.profile.profile_dto import (
     Profiles,
     ProfileUpdateRequest,
 )
-from empire.server.api.v2.shared_dependencies import get_db
+from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.db import models
 from empire.server.server import main
@@ -29,7 +28,7 @@ router = APIRouter(
 )
 
 
-async def get_profile(uid: int, db: Session = Depends(get_db)):
+async def get_profile(uid: int, db: CurrentSession):
     profile = profile_service.get_by_id(db, uid)
 
     if profile:
@@ -44,7 +43,7 @@ async def read_profile(uid: int, db_profile: models.Profile = Depends(get_profil
 
 
 @router.get("/", response_model=Profiles)
-async def read_profiles(db: Session = Depends(get_db)):
+async def read_profiles(db: CurrentSession):
     profiles = profile_service.get_all(db)
 
     return {"records": profiles}
@@ -55,9 +54,7 @@ async def read_profiles(db: Session = Depends(get_db)):
     status_code=201,
     response_model=Profile,
 )
-async def create_profile(
-    profile_req: ProfilePostRequest, db: Session = Depends(get_db)
-):
+async def create_profile(profile_req: ProfilePostRequest, db: CurrentSession):
     resp, err = profile_service.create_profile(db, profile_req)
 
     if err:
@@ -70,7 +67,7 @@ async def create_profile(
 async def update_profile(
     uid: int,
     profile_req: ProfileUpdateRequest,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_profile: models.Profile = Depends(get_profile),
 ):
     resp, err = profile_service.update_profile(db, db_profile, profile_req)
@@ -88,7 +85,7 @@ async def update_profile(
 )
 async def delete_profile(
     uid: str,
-    db: Session = Depends(get_db),
+    db: CurrentSession,
     db_profile: models.Profile = Depends(get_profile),
 ):
     profile_service.delete_profile(db, db_profile)
@@ -100,7 +97,7 @@ async def delete_profile(
     response_class=Response,
 )
 async def reload_profiles(
-    db: Session = Depends(get_db),
+    db: CurrentSession,
 ):
     profile_service.load_malleable_profiles(db)
 
@@ -111,7 +108,7 @@ async def reload_profiles(
     response_class=Response,
 )
 async def reset_profiles(
-    db: Session = Depends(get_db),
+    db: CurrentSession,
 ):
     profile_service.delete_all_profiles(db)
     profile_service.load_malleable_profiles(db)

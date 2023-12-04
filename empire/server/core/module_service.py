@@ -3,7 +3,6 @@ import importlib.util
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import yaml
 from packaging.version import parse
@@ -54,7 +53,7 @@ class ModuleService:
         self.modules.get(module.id).enabled = module_req.enabled
 
     def update_modules(self, db: Session, module_req: ModuleBulkUpdateRequest):
-        db_modules: List[models.Module] = (
+        db_modules: list[models.Module] = (
             db.query(models.Module)
             .filter(models.Module.id.in_(module_req.modules))
             .all()
@@ -71,11 +70,11 @@ class ModuleService:
         db: Session,
         agent: models.Agent,
         module_id: str,
-        params: Dict,
+        params: dict,
         ignore_language_version_check: bool = False,
         ignore_admin_check: bool = False,
-        modified_input: Optional[str] = None,
-    ) -> Tuple[Optional[Dict], Optional[str]]:
+        modified_input: str | None = None,
+    ) -> tuple[dict | None, str | None]:
         """
         Execute the module. Note this doesn't actually add the task to the queue,
         it only generates the module data needed for a task to be created.
@@ -199,10 +198,10 @@ class ModuleService:
         db: Session,
         module: EmpireModule,
         agent: models.Agent,
-        params: Dict[str, str],
+        params: dict[str, str],
         ignore_language_version_check: bool = False,
         ignore_admin_check: bool = False,
-    ) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    ) -> tuple[dict[str, str] | None, str | None]:
         """
         Given a module and execution params, validate the input and return back a clean Dict for execution.
         :param module: EmpireModule
@@ -238,9 +237,9 @@ class ModuleService:
         self,
         db: Session,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscation_config: models.ObfuscationConfig = None,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """
         Generate the script to execute
         :param module: the execution parameters (already validated)
@@ -285,9 +284,9 @@ class ModuleService:
     def _generate_script_python(
         self,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscaton_config: models.ObfuscationConfig,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         obfuscate = obfuscaton_config.enabled
 
         if module.script_path:
@@ -314,9 +313,9 @@ class ModuleService:
     def _generate_script_powershell(
         self,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscaton_config: models.ObfuscationConfig,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         obfuscate = obfuscaton_config.enabled
         obfuscate_command = obfuscaton_config.command
 
@@ -387,9 +386,9 @@ class ModuleService:
     def _generate_script_csharp(
         self,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscation_config: models.ObfuscationConfig,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         try:
             compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
             if not compiler.status == "ON":
@@ -551,7 +550,7 @@ class ModuleService:
 
     def get_module_source(
         self, module_name: str, obfuscate: bool = False, obfuscate_command: str = ""
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """
         Get the obfuscated/unobfuscated module source code.
         """

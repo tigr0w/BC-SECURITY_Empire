@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from prompt_toolkit.completion import Completion
 
@@ -147,22 +146,20 @@ class ProxyMenu(UseMenu):
 
         Usage: list
         """
-        proxies = list(
-            map(
-                lambda x: [
-                    self.proxy_list.index(x) + 1,
-                    x["addr"],
-                    x["port"],
-                    x["proxytype"],
-                ],
-                self.proxy_list,
-            )
-        )
+        proxies = [
+            [
+                self.proxy_list.index(x) + 1,
+                x["addr"],
+                x["port"],
+                x["proxytype"],
+            ]
+            for x in self.proxy_list
+        ]
         proxies.insert(0, ["Hop", "Address", "Port", "Proxy Type"])
 
         table_util.print_table(proxies, "Active Proxies")
 
-    def suggested_values_for_option(self, option: str) -> List[str]:
+    def suggested_values_for_option(self, option: str):
         try:
             lower = {k.lower(): v for k, v in self.record_options.items()}
             return lower.get(option, {}).get("suggested_values", [])

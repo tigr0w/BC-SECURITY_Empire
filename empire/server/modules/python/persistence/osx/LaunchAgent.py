@@ -1,6 +1,6 @@
 import base64
-from typing import Dict, Optional, Tuple
 
+from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.string_util import removeprefix, removesuffix
 
@@ -8,12 +8,12 @@ from empire.server.utils.string_util import removeprefix, removesuffix
 class Module:
     @staticmethod
     def generate(
-        main_menu,
+        main_menu: MainMenu,
         module: EmpireModule,
-        params: Dict,
+        params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         daemon_name = params["DaemonName"]
         program_name = daemon_name.split(".")[-1]
         plist_filename = "%s.plist" % daemon_name
