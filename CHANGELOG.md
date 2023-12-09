@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.8.2] - 2023-12-09
+
 ### Fixed
 
 -   Fixed error in generating stager for HTTP Hop listener (@Cx01N)
@@ -687,7 +689,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.2...HEAD
+
+[5.8.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.1...v5.8.2
 
 [5.8.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.0...v5.8.1
 
