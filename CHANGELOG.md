@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Security** in case of vulnerabilities.
 
 ## [Unreleased]
+-  Fixed error in generating stager for HTTP Hop listener (@Cx01N)
 
 ## [5.8.1] - 2023-11-30
 
