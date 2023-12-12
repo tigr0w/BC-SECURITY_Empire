@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+-   Fixed error in Get-DomainComputer in Powerview when dnshostname property is missing (@Cx01N)
+
 ## [5.8.2] - 2023-12-09
 
 ### Fixed
