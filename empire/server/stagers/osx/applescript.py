@@ -65,12 +65,12 @@ class Stager:
         safe_checks = self.options["SafeChecks"]["Value"]
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
             encode=True,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":

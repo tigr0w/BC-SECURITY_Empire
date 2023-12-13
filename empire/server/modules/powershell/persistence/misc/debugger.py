@@ -53,8 +53,8 @@ class Module:
 
             else:
                 # generate the PowerShell one-liner
-                launcher = main_menu.stagers.generate_launcher(
-                    listenerName=listener_name,
+                launcher = main_menu.stagergenv2.generate_launcher(
+                    listener_name=listener_name,
                     language="powershell",
                     obfuscate=launcher_obfuscate,
                     obfuscation_command=launcher_obfuscate_command,

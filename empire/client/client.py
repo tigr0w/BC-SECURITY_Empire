@@ -315,7 +315,7 @@ class EmpireCli:
             else:
                 log.error(f"Listener not found: {cmd_line[1]}")
         elif cmd_line[0] == "usestager" and len(cmd_line) > 1:
-            if cmd_line[1] in state.stagers:
+            if cmd_line[1] in state.stagergenv2:
                 menu_state.push(self.menus["UseStagerMenu"], selected=cmd_line[1])
             else:
                 log.error(f"Stager not found: {cmd_line[1]}")

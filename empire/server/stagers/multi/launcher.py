@@ -121,7 +121,7 @@ class Stager:
                 )
                 return ""
 
-            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
@@ -129,17 +129,17 @@ class Stager:
                 listener_name=listener_name,
             )
         else:
-            launcher = self.mainMenu.stagers.generate_launcher(
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=encode,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
-                safeChecks=safe_checks,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
+                safe_checks=safe_checks,
                 bypasses=self.options["Bypasses"]["Value"],
             )
 

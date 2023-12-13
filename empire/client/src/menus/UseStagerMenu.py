@@ -33,7 +33,7 @@ class UseStagerMenu(UseMenu):
             cmd_line, 2, word_before_cursor
         ):
             for stager in filtered_search_list(
-                word_before_cursor, state.stagers.keys()
+                word_before_cursor, state.stagergenv2.keys()
             ):
                 yield Completion(stager, start_position=-len(word_before_cursor))
 
@@ -57,10 +57,10 @@ class UseStagerMenu(UseMenu):
 
         Usage: use <module>
         """
-        if module in state.stagers.keys():  # todo rename module?
+        if module in state.stagergenv2.keys():  # todo rename module?
             self.selected = module
-            self.record = state.stagers[module]
-            self.record_options = state.stagers[module]["options"]
+            self.record = state.stagergenv2[module]
+            self.record_options = state.stagergenv2[module]["options"]
 
             listener_list = []
             for key, value in self.record_options.items():

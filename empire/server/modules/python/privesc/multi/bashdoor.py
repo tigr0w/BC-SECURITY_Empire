@@ -16,12 +16,12 @@ class Module:
         userAgent = params["UserAgent"]
         safeChecks = params["SafeChecks"]
         # generate the launcher code
-        launcher = main_menu.stagers.generate_launcher(
+        launcher = main_menu.stagergenv2.generate_launcher(
             listenerName,
             language="python",
             encode=True,
-            userAgent=userAgent,
-            safeChecks=safeChecks,
+            user_agent=userAgent,
+            safe_checks=safeChecks,
         )
         launcher = launcher.replace('"', '\\"')
         script = """

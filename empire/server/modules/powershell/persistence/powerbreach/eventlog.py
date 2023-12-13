@@ -58,8 +58,8 @@ Invoke-EventLogBackdoor"""
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
         else:
-            stager_code = main_menu.stagers.generate_launcher(
-                listenerName=listener_name,
+            stager_code = main_menu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
                 language="powershell",
                 obfuscate=False,
                 encode=False,

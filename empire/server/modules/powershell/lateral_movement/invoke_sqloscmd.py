@@ -57,15 +57,15 @@ class Module:
             if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
                 return handle_error_message("[!] Invalid listener: " + listener_name)
             else:
-                launcher = main_menu.stagers.generate_launcher(
-                    listenerName=listener_name,
+                launcher = main_menu.stagergenv2.generate_launcher(
+                    listener_name=listener_name,
                     language="powershell",
                     encode=True,
                     obfuscate=launcher_obfuscate,
                     obfuscation_command=launcher_obfuscate_command,
-                    userAgent=userAgent,
+                    user_agent=userAgent,
                     proxy=proxy,
-                    proxyCreds=proxy_creds,
+                    proxy_creds=proxy_creds,
                     bypasses=params["Bypasses"],
                 )
                 if launcher == "":

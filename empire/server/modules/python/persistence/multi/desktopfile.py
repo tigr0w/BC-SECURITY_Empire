@@ -15,7 +15,9 @@ class Module:
         remove = params["Remove"]
         file_name = params["FileName"]
         listener_name = params["Listener"]
-        launcher = main_menu.stagers.generate_launcher(listener_name, language="python")
+        launcher = main_menu.stagergenv2.generate_launcher(
+            listener_name, language="python"
+        )
         launcher = removeprefix(launcher, "echo ")
         launcher = removesuffix(launcher, " | python3 &")
         dt_settings = f"""

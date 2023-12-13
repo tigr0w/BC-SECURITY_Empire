@@ -90,10 +90,9 @@ class Module:
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagers.generate_launcher_fetcher(
-                language="powershell",
+            launcher = main_menu.stagergenv2.generate_launcher_fetcher(
                 encode=True,
-                webFile=web_file,
+                web_file=web_file,
                 launcher=launcher_prefix,
             )
 

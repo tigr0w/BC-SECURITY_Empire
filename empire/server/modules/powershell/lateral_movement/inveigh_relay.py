@@ -41,15 +41,15 @@ class Module:
 
             else:
                 # generate the PowerShell one-liner with all of the proper options set
-                command = main_menu.stagers.generate_launcher(
-                    listenerName=listener_name,
+                command = main_menu.stagergenv2.generate_launcher(
+                    listener_name=listener_name,
                     language="powershell",
                     encode=True,
                     obfuscate=launcher_obfuscate,
                     obfuscation_command=launcher_obfuscate_command,
-                    userAgent=user_agent,
+                    user_agent=user_agent,
                     proxy=proxy,
-                    proxyCreds=proxyCreds,
+                    proxy_creds=proxyCreds,
                     bypasses=params["Bypasses"],
                 )
 

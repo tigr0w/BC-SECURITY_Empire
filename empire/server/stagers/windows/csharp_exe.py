@@ -120,23 +120,23 @@ class Stager:
         staged = self.options["Staged"]["Value"].lower() == "true"
 
         if not staged and language != "csharp":
-            launcher = self.mainMenu.stagers.generate_stageless(self.options)
+            launcher = self.mainMenu.stagergenv2.generate_stageless(self.options)
 
             if language == "powershell":
                 launcher = ps_convert_to_oneliner(strip_powershell_comments(launcher))
             elif language == "ironpython":
                 launcher = strip_python_comments(launcher)
         else:
-            launcher = self.mainMenu.stagers.generate_launcher(
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=False,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
 
@@ -147,7 +147,7 @@ class Stager:
                 return "[!] Error in launcher command generation."
 
         if language.lower() == "powershell":
-            directory = self.mainMenu.stagers.generate_powershell_exe(
+            directory = self.mainMenu.stagergenv2.generate_powershell_exe(
                 launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
@@ -161,7 +161,7 @@ class Stager:
             return code
 
         elif language.lower() == "ironpython":
-            directory = self.mainMenu.stagers.generate_python_exe(
+            directory = self.mainMenu.stagergenv2.generate_python_exe(
                 launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:

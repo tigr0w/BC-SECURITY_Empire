@@ -62,12 +62,12 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         safe_checks = self.options["SafeChecks"]["Value"]
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
+            listener_name=listener_name,
             language=language,
             encode=True,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":
@@ -75,5 +75,5 @@ class Stager:
             return ""
         else:
             launcher = launcher.replace('"', '\\"')
-            jar_bytes = self.mainMenu.stagers.generate_jar(launcherCode=launcher)
+            jar_bytes = self.mainMenu.stagergenv2.generate_jar(launcher_code=launcher)
             return jar_bytes

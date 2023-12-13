@@ -190,13 +190,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] = None,
     ):
         """
@@ -224,7 +224,7 @@ class Listener:
             # PowerShell
 
             stager = '$ErrorActionPreference = "SilentlyContinue";'
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                 for bypass in bypasses:
@@ -553,8 +553,8 @@ class Listener:
                 obfuscation_command = obfuscation_config.command
 
             if "powershell" == stager:
-                launcher = self.mainMenu.stagers.generate_launcher(
-                    listenerName=listenerName,
+                launcher = self.mainMenu.stagergenv2.generate_launcher(
+                    listener_name=listenerName,
                     language="powershell",
                     encode=False,
                     obfuscate=obfuscation,

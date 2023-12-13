@@ -36,22 +36,22 @@ class Module:
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
-        launcher = main_menu.stagers.generate_launcher(
+        launcher = main_menu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
             encode=False,
             obfuscate=launcher_obfuscation,
             obfuscation_command=launcher_obfuscation_command,
-            userAgent=user_agent,
+            user_agent=user_agent,
             proxy=proxy,
-            proxyCreds=proxy_creds,
+            proxy_creds=proxy_creds,
         )
 
         if not launcher or launcher == "" or launcher.lower() == "failed":
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
         if language.lower() == "powershell":
-            shellcode, err = main_menu.stagers.generate_powershell_shellcode(
+            shellcode, err = main_menu.stagergenv2.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:
@@ -79,7 +79,7 @@ class Module:
                     None,
                     "[!] IronPython agent only supports NetFramework 4.0 and above.",
                 )
-            shellcode = main_menu.stagers.generate_python_shellcode(
+            shellcode = main_menu.stagergenv2.generate_python_shellcode(
                 launcher, arch=arch, dot_net_version="net40"
             )
 

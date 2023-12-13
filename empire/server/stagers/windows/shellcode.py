@@ -128,16 +128,16 @@ class Stager:
                 obfuscate_script = True
 
         # generate the PowerShell one-liner with all of the proper options set
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
             encode=False,
             obfuscate=obfuscate_script,
             obfuscation_command=obfuscate_command,
-            userAgent=user_agent,
+            user_agent=user_agent,
             proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
+            proxy_creds=proxy_creds,
+            stager_retries=stager_retries,
             bypasses=bypasses,
         )
         if launcher == "":
@@ -147,7 +147,7 @@ class Stager:
                 return "[!] Error in launcher command generation."
 
         if language.lower() == "powershell":
-            shellcode, err = self.mainMenu.stagers.generate_powershell_shellcode(
+            shellcode, err = self.mainMenu.stagergenv2.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:
@@ -173,7 +173,7 @@ class Stager:
             return shellcode
 
         elif language.lower() == "python":
-            shellcode, err = self.mainMenu.stagers.generate_python_shellcode(
+            shellcode, err = self.mainMenu.stagergenv2.generate_python_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:

@@ -82,11 +82,11 @@ class Stager:
             return ""
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":
@@ -97,7 +97,7 @@ class Stager:
             launcher = removeprefix(launcher, "echo ")
             launcher = removesuffix(launcher, " | python3 &")
             launcher = launcher.strip('"')
-            dylib = self.mainMenu.stagers.generate_dylib(
-                launcherCode=launcher, arch=arch, hijacker=hijacker
+            dylib = self.mainMenu.stagergenv2.generate_dylib(
+                launcher_code=launcher, arch=arch, hijacker=hijacker
             )
             return dylib

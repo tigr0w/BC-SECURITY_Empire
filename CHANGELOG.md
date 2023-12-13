@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking
 -   Moved `Agents` class to `AgentCommunicationService`
     -   Refactored many of the functions and parameter names
+-   Moved `Stagers` class to `StagerGenerationService`
+   -    Refactored many of the funtions and parameter names
 -   Moved socks management to `AgentSocksService`
 -   Renamed socks properties on `AgentSocksService` to use plural naming
 -   Remove `update_lastseen` parameter from `handle_agent_request`

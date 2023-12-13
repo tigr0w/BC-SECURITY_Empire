@@ -65,12 +65,12 @@ class Stager:
         # generate the launcher code
         # turn base64 encoding off
         encode = False
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
             encode=encode,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":
@@ -79,5 +79,5 @@ class Stager:
 
         else:
             # launcher = launcher.strip('echo')
-            macho = self.mainMenu.stagers.generate_macho(launcher)
+            macho = self.mainMenu.stagergenv2.generate_macho(launcher)
             return macho

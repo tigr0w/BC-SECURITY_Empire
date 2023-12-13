@@ -102,12 +102,12 @@ class Stager:
             return ""
         else:
             # generate the launcher code
-            launcher = self.mainMenu.stagers.generate_launcher(
-                listenerName=listener_name,
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
                 language=language,
                 encode=encode,
-                userAgent=user_agent,
-                safeChecks=safe_checks,
+                user_agent=user_agent,
+                safe_checks=safe_checks,
             )
             if launcher == "":
                 log.error("Error in launcher command generation.")

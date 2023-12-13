@@ -87,11 +87,11 @@ class Stager:
         app_name = self.options["AppName"]["Value"]
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":
@@ -103,11 +103,11 @@ class Stager:
             launcher = removeprefix(launcher, "echo ")
             launcher = removesuffix(launcher, " | python3 &")
             launcher = launcher.strip('"')
-            application_zip = self.mainMenu.stagers.generate_appbundle(
-                launcherCode=launcher,
-                Arch=arch,
+            application_zip = self.mainMenu.stagergenv2.generate_appbundle(
+                launcher_code=launcher,
+                arch=arch,
                 icon=icns_path,
-                AppName=app_name,
+                app_name=app_name,
                 disarm=disarm,
             )
             return application_zip
