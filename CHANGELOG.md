@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.8.3] - 2023-12-15
+
 ### Fixed
+
 -   Fixed error in Get-DomainComputer in Powerview when dnshostname property is missing (@Cx01N)
 
 ## [5.8.2] - 2023-12-09
@@ -692,7 +695,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.3...HEAD
+
+[5.8.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.2...v5.8.3
 
 [5.8.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.1...v5.8.2
 
