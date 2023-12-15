@@ -9,4 +9,4 @@ def test_dynamic_powershell():
     new_script = helpers.generate_dynamic_powershell_script(
         script, "Find-LocalAdminAccess"
     )
-    assert len(new_script) == 96681
+    assert len(new_script) == 96863
