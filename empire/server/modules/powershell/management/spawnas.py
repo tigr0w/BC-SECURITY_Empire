@@ -1,7 +1,7 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -21,7 +21,7 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
@@ -30,7 +30,7 @@ class Module:
                 cred = main_menu.credentialsv2.get_by_id(db, cred_id)
 
                 if not cred:
-                    return handle_error_message("[!] CredID is invalid!")
+                    raise ModuleValidationException("CredID is invalid")
 
                 if cred.domain != "":
                     params["Domain"] = cred.domain

@@ -37,7 +37,7 @@ def convert_module_options(options: list[EmpireModuleOption]) -> dict:
 
 def validate_options(
     instance_options: dict, params: dict, db: Session, download_service
-):
+) -> tuple[dict | None, str | None]:
     """
     Compares the options passed in (params) to the options defined in the
     class (instance). If any options are invalid, returns a Tuple of

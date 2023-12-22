@@ -2,6 +2,7 @@ import fnmatch
 import importlib.util
 import logging
 import os
+import warnings
 from pathlib import Path
 
 import yaml
@@ -18,6 +19,10 @@ from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.download_service import DownloadService
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
 from empire.server.core.module_models import EmpireModule, LanguageEnum
 from empire.server.core.obfuscation_service import ObfuscationService
 from empire.server.utils.option_util import convert_module_options, validate_options
@@ -98,7 +103,7 @@ class ModuleService:
         )
 
         if err:
-            return None, err
+            raise ModuleValidationException(err)
 
         module_data = self._generate_script(
             db,
@@ -106,13 +111,21 @@ class ModuleService:
             cleaned_options,
         )
         if isinstance(module_data, tuple):
+            warnings.warn(
+                "Returning a tuple on errors from module generation is deprecated. Raise exceptions instead."
+                "https://bc-security.gitbook.io/empire-wiki/module-development/powershell-modules#custom-generate",
+                DeprecationWarning,
+                stacklevel=5,
+            )
             (module_data, err) = module_data
         else:
             # Not all modules return a tuple. If they just return a single value,
             # we don't want to throw an unpacking error.
             err = None
         if not module_data or module_data == "":
-            return None, err or "module produced an empty script"
+            # This should probably be a ModuleExecutionException, but
+            # for backwards compatability with 5.x, it needs to raise a 400
+            raise ModuleValidationException(err or "module produced an empty script")
         if not module_data.isascii():
             # This previously returned 'None, 'module source contains non-ascii characters'
             # Was changed in 4.3 to print a warning.
@@ -221,15 +234,16 @@ class ModuleService:
             agent_version = parse(agent.language_version or "0")
             # check if the agent/module PowerShell versions are compatible
             if module_version > agent_version:
-                return (
-                    None,
+                raise ModuleValidationException(
                     f"module requires language version {module.min_language_version} but agent running language version {agent.language_version}",
                 )
 
         if module.needs_admin and not ignore_admin_check:
             # if we're running this module for all agents, skip this validation
             if not agent.high_integrity:
-                return None, "module needs to run in an elevated context"
+                raise ModuleValidationException(
+                    "module needs to run in an elevated context"
+                )
 
         return options, None
 
@@ -269,6 +283,8 @@ class ModuleService:
                     obfuscation_enabled,
                     obfuscation_command,
                 )
+            except (ModuleValidationException, ModuleExecutionException) as e:
+                raise e
             except Exception as e:
                 log.error(f"Error generating script: {e}", exc_info=True)
                 return None, "Error generating script."
@@ -286,7 +302,7 @@ class ModuleService:
         module: EmpireModule,
         params: dict,
         obfuscaton_config: models.ObfuscationConfig,
-    ) -> tuple[str | None, str | None]:
+    ) -> str:
         obfuscate = obfuscaton_config.enabled
 
         if module.script_path:
@@ -308,14 +324,14 @@ class ModuleService:
         if obfuscate:
             script = self.obfuscation_service.python_obfuscate(script)
 
-        return script, None
+        return script
 
     def _generate_script_powershell(
         self,
         module: EmpireModule,
         params: dict,
         obfuscaton_config: models.ObfuscationConfig,
-    ) -> tuple[str | None, str | None]:
+    ) -> str:
         obfuscate = obfuscaton_config.enabled
         obfuscate_command = obfuscaton_config.command
 
@@ -327,7 +343,7 @@ class ModuleService:
             )
 
             if err:
-                return None, err
+                raise ModuleValidationException(err)
         else:
             if obfuscate:
                 script = self.obfuscation_service.obfuscate(
@@ -381,23 +397,23 @@ class ModuleService:
             obfuscation_command=obfuscate_command,
         )
 
-        return script, None
+        return script
 
     def _generate_script_csharp(
         self,
         module: EmpireModule,
         params: dict,
         obfuscation_config: models.ObfuscationConfig,
-    ) -> tuple[str | None, str | None]:
+    ) -> str:
         try:
             compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
             if not compiler.status == "ON":
-                return None, "csharpserver plugin not running"
+                raise ModuleValidationException("csharpserver plugin not running")
             file_name = compiler.do_send_message(
                 module.compiler_yaml, module.name, confuse=obfuscation_config.enabled
             )
             if file_name == "failed":
-                return None, "module compile failed"
+                raise ModuleExecutionException("module compile failed")
 
             script_file = (
                 self.main_menu.installPath
@@ -413,11 +429,12 @@ class ModuleService:
                     if value and value != "":
                         param_string += "," + value
 
-            return f"{script_file}|{param_string}", None
-
+            return f"{script_file}|{param_string}"
+        except (ModuleValidationException, ModuleExecutionException) as e:
+            raise e
         except Exception as e:
             log.error(f"dotnet compile error: {e}")
-            return None, "dotnet compile error"
+            raise ModuleExecutionException("dotnet compile error") from e
 
     def _create_modified_module(self, module: EmpireModule, modified_input: str):
         """
@@ -620,3 +637,44 @@ class ModuleService:
                 db.delete(db_module)
             del self.modules[module.id]
         db.flush()
+
+
+def auto_get_source(func):
+    def wrapper(*args, **kwargs):
+        main_menu = args[0]
+        module = args[1]
+        obfuscate = args[3]
+        obfuscation_command = args[4]
+
+        script, err = main_menu.modulesv2.get_module_source(
+            module_name=module.script_path,
+            obfuscate=obfuscate,
+            obfuscate_command=obfuscation_command,
+        )
+
+        if err:
+            raise ModuleValidationException(err)
+
+        return func(*args, script=script, **kwargs)
+
+    return wrapper
+
+
+def auto_finalize(func):
+    def wrapper(*args, **kwargs):
+        script, script_end = func(*args, **kwargs)
+
+        main_menu = args[0]
+        obfuscate = args[3]
+        obfuscation_command = args[4]
+
+        script = main_menu.modulesv2.finalize_module(
+            script=script,
+            script_end=script_end,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )
+
+        return script
+
+    return wrapper

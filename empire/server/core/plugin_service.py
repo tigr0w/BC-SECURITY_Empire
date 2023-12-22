@@ -3,6 +3,7 @@ import fnmatch
 import importlib
 import logging
 import os
+import warnings
 from datetime import datetime
 
 from sqlalchemy import and_, func, or_
@@ -15,7 +16,10 @@ from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
-from empire.server.core.exceptions import PluginValidationException
+from empire.server.core.exceptions import (
+    PluginExecutionException,
+    PluginValidationException,
+)
 from empire.server.utils.option_util import validate_options
 
 log = logging.getLogger(__name__)
@@ -132,6 +136,8 @@ class PluginService:
             )
         except PluginValidationException as e:
             raise e
+        except PluginExecutionException as e:
+            raise e
         except Exception as e:
             log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
             return False, str(e)
@@ -139,9 +145,17 @@ class PluginService:
         try:
             res = plugin.execute(cleaned_options)
             if isinstance(res, tuple):
+                warnings.warn(
+                    "Returning a tuple on errors from plugin execution is deprecated. Raise exceptions instead."
+                    "https://bc-security.gitbook.io/empire-wiki/plugins/plugin-development",
+                    DeprecationWarning,
+                    stacklevel=5,
+                )
                 return res
             return res, None
         except PluginValidationException as e:
+            raise e
+        except PluginExecutionException as e:
             raise e
         except Exception as e:
             log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)

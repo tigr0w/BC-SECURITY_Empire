@@ -14,6 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Added validation and execution exceptions for modules to raise (@Vinnybod)
+-   Added decorators for module generate functions to automatically get the module_source and call finalize_module (@Vinnybod)
+-   Added execution exception to plugins (@Vinnybod)
+
+### Deprecated
+
+-   Returning tuples from module generate functions is deprecated
+    -   To return a 400, raise a `ModuleValidationException`
+    -   To return a 500, raise a `ModuleExecutionException`
+    -   Stop using `handle_error_message`
+-   Returning tuples from plugin execution functions is deprecated
+    -   To return a 400, raise a `PluginValidationException`
+    -   To return a 500, raise a `PluginExecutionException`
+
 ### Changed
 
 -   Migrated some Pydantic and FastAPI usage away from deprecated features (@Vinnybod)

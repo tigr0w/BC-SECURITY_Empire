@@ -1,7 +1,7 @@
 import os
 import shutil
 import sys
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from pathlib import Path
 
 import pytest
@@ -443,6 +443,21 @@ def client_config_dict():
         config_dict = yaml.safe_load(f)
 
     yield config_dict
+
+
+@contextmanager
+def patch_config(empire_config):
+    """
+    Change the module_source directory temporarily.
+    """
+    orig_src_dir = empire_config.directories.module_source
+    try:
+        empire_config.directories.module_source = Path(
+            "empire/test/data/module_source/"
+        ).resolve()
+        yield empire_config
+    finally:
+        empire_config.directories.module_source = orig_src_dir
 
 
 def load_test_config():
