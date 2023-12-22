@@ -411,28 +411,26 @@ class Listener:
                 )
 
             staging_key = staging_key.encode("UTF-8")
-            unobfuscated_stager = listener_util.remove_lines_comments(stager)
+            stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
-                obfuscated_stager = self.mainMenu.obfuscationv2.obfuscate(
-                    unobfuscated_stager, obfuscation_command=obfuscation_command
+                stager = self.mainMenu.obfuscationv2.obfuscate(
+                    stager, obfuscation_command=obfuscation_command
                 )
-                obfuscated_stager = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    obfuscated_stager
-                )
+                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
             # if/else statements are irrelevant
             if encode:
-                return helpers.enc_powershell(obfuscated_stager)
+                return helpers.enc_powershell(stager)
             elif encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
-                    RC4IV + staging_key, obfuscated_stager.encode("UTF-8")
+                    RC4IV + staging_key, stager.encode("UTF-8")
                 )
             else:
-                return obfuscated_stager
+                return stager
 
         if language in ["python", "ironpython"]:
             template_path = [

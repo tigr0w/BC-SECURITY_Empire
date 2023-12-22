@@ -43,4 +43,4 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: bcsecurity/empire-test:${{ steps.tag-step.outputs.RELEASE_TAG }}
+          tags: bcsecurity/empire:${{ steps.tag-step.outputs.RELEASE_TAG }}
