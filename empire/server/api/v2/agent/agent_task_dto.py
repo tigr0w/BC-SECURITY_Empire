@@ -24,7 +24,7 @@ def domain_to_dto_task(
     include_original_output: bool = True,
     include_output: bool = True,
 ):
-    return AgentTask.construct(  # .construct doesn't do any validation and speeds up the request a bit
+    return AgentTask.model_construct(  # .construct doesn't do any validation and speeds up the request a bit
         id=task.id,
         input=task.input,
         full_input=None if not include_full_input else task.input_full,

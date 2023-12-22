@@ -63,8 +63,13 @@ The generate function **should** treat these parameters as read only, to not cau
 ```python
 class Module(object):
     @staticmethod
-    def generate(main_menu, module: PydanticModule, params: Dict, obfuscate: bool = False, obfuscation_command: str = "") -> Tuple[Optiona[str], Optional[str]]:
-        pass
+    def generate(
+        main_menu: MainMenu,
+        module: EmpireModule,
+        params: dict,
+        obfuscate: bool = False,
+        obfuscation_command: str = "",
+    ):
 ```
 
 Examples of modules that use this custom generate function:
@@ -73,11 +78,118 @@ Examples of modules that use this custom generate function:
 * [invoke\_assembly](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code\_execution/invoke\_assembly.py)
 * [seatbelt](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational\_awareness/host/seatbelt.py)
 
-If an error occurs during the execution of the generate function, return the error message using `handle_error_message`, which will ensure that the client receives the error message in the REST response.
+#### Error Handling
+
+If an error occurs during the execution of the generate function and it goes unchecked,
+the client will receive a 500 error.
+
+There are two Exceptions that can be raised by the generate function:
+**ModuleValidationException**: This exception should be raised if the module fails validation. This will return a 400 error to the client with the error message.
+**ModuleExecutionException**: This exception should be raised if the module fails execution. This will return a 500 error to the client with the error message.
+
+```python
+raise ModuleValidationException("Error Message")
+raise ModuleExecutionException("Error Message")
+```
+
+##### Deprecated
+
+Previously, it was recommended that the generate function return a tuple of the script and the error.
+`handle_error_message` was provided as a helper function to handle this tuple.
+
+This is no longer recommended, but is still supported. Please migrate away from the tuple return type
+to raising exceptions. The tuple return type will be removed in a future major release.
+
+#### Functions
 
 `get_module_source` is used pull the script from the yaml file defined in **script\_path**. Once the script has been loaded, it will determine if obfuscation is enabled and obfuscate it.
 
 `finialize_module` will combine the `script` and `script_end` into a single script and then will apply obfuscation, if it is enabled.
+
+
+#### Decorators
+
+`@auto_get_source` is a decorator that will automatically call `get_module_source` and pass the script to the decorated function.
+To use this decorator, the function must have a `script` kwarg and the `script_path` must be set in the yaml config.
+
+```python
+@staticmethod
+@auto_get_source
+def generate(
+    main_menu: MainMenu,
+    module: EmpireModule,
+    params: dict,
+    obfuscate: bool = False,
+    obfuscation_command: str = "",
+    script: str = "",
+):
+    # do stuff
+    ...
+
+# The above is the equivalent of:
+@staticmethod
+def generate(
+    main_menu: MainMenu,
+    module: EmpireModule,
+    params: dict,
+    obfuscate: bool = False,
+    obfuscation_command: str = "",
+):
+    # read in the common module source code
+    script, err = main_menu.modulesv2.get_module_source(
+        module_name=module.script_path,
+        obfuscate=obfuscate,
+        obfuscate_command=obfuscation_command,
+    )
+
+    if err:
+        return handle_error_message(err)
+
+    # do stuff
+    ...
+```
+
+`@auto_finalize` is a decorator that will automatically call `finalize_module` on the returned script from the decorated function.
+
+To use this decorator, the function must not utilize the deprecated tuple return type or the
+`handle_error_message` function. First migrate the function to raise exceptions before using this decorator.
+
+```python
+@staticmethod
+@auto_finalize
+def generate(
+    main_menu: MainMenu,
+    module: EmpireModule,
+    params: dict,
+    obfuscate: bool = False,
+    obfuscation_command: str = "",
+):
+    # Do stuff
+
+    return script, script_end
+
+# The above is the equivalent of:
+@staticmethod
+def generate(
+    main_menu: MainMenu,
+    module: EmpireModule,
+    params: dict,
+    obfuscate: bool = False,
+    obfuscation_command: str = "",
+):
+    # Do stuff
+
+    script, script_end = main_menu.modulesv2.finalize_module(
+        script=script,
+        script_end=script_end,
+        obfuscate=obfuscate,
+        obfuscate_command=obfuscation_command,
+    )
+
+    return script
+```
+
+
 
 ### String Formatting
 

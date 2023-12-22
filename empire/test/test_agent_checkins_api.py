@@ -139,6 +139,7 @@ def test_get_agent_checkins_agent_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Agent not found for id XYZ123"
 
 
+@pytest.mark.slow
 def test_get_agent_checkins_with_limit_and_page(
     client, admin_auth_header, agent, session_local, models
 ):
@@ -187,7 +188,7 @@ def test_get_agent_checkins_multiple_agents(
     assert {r["agent_id"] for r in response.json()["records"]} == set(with_checkins[:2])
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 def test_agent_checkins_aggregate(
     client, admin_auth_header, session_local, models, agents, empire_config
 ):

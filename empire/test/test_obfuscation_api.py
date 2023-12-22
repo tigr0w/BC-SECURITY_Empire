@@ -1,24 +1,9 @@
 import os
-from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
 
-
-@contextmanager
-def patch_config(empire_config):
-    """
-    Change the module_source directory temporarily.
-    This way preobfuscate tests don't preobfuscate hundreds of modules.
-    """
-    orig_src_dir = empire_config.directories.module_source
-    try:
-        empire_config.directories.module_source = Path(
-            "empire/test/data/module_source/"
-        ).resolve()
-        yield empire_config
-    finally:
-        empire_config.directories.module_source = orig_src_dir
+from empire.test.conftest import patch_config
 
 
 def test_get_keyword_not_found(client, admin_auth_header):
@@ -234,6 +219,8 @@ def test_preobfuscate_post(client, admin_auth_header, empire_config):
         count = 0
         for root, _dirs, files in os.walk(module_dir):
             for file in files:
+                if not file.endswith(".ps1"):
+                    continue
                 root_rep = root.replace(str(module_dir), str(obf_module_dir))
                 assert (Path(root_rep) / file).exists()
                 count += 1

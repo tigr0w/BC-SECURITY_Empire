@@ -46,6 +46,10 @@ from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.download_service import DownloadService
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
 from empire.server.server import main
 from empire.server.utils.data_util import is_port_in_use
 
@@ -256,12 +260,25 @@ async def create_task_module(
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
 ):
-    resp, err = agent_task_service.create_task_module(
-        db, db_agent, module_request, current_user.id
-    )
+    try:
+        resp, err = agent_task_service.create_task_module(
+            db, db_agent, module_request, current_user.id
+        )
 
-    if err:
-        raise HTTPException(status_code=400, detail=err)
+        # This is for backwards compatibility with modules returning
+        # tuples for exceptions. All modules should remove returning
+        # tuples in favor of raising exceptions by Empire 6.0
+        if err:
+            raise HTTPException(status_code=400, detail=err)
+    except HTTPException as e:
+        # Propagate the HTTPException from above
+        raise e from None
+    except ModuleValidationException as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ModuleExecutionException as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     return domain_to_dto_task(resp)
 
@@ -489,7 +506,7 @@ async def create_task_update_proxy_list(
     # We have to use a string enum to get the api to accept strings
     # then convert to int manually. Agent code could be refactored to just
     # use strings, then this conversion could be removed.
-    proxy_list_dict = proxy_list_request.dict()
+    proxy_list_dict = proxy_list_request.model_dump()
     for proxy in proxy_list_dict["proxies"]:
         proxy["proxy_type"] = PROXY_NAME[proxy["proxy_type"]]
     resp, err = agent_task_service.create_task_proxy_list(
