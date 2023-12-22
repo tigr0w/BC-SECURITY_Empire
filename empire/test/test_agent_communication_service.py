@@ -31,18 +31,24 @@ def test_save_file_non_python(
     models,
     agent,
     agent_task,
+    empire_config,
 ):
     data = b"This is a test file"
+    file_path = r"C:\Users\Public\test.txt"
     with session_local.begin() as db:
         agent_communication_service.save_file(
             db,
             agent,
-            r"C:\Users\Public\test.txt",
+            file_path,
             data,
             len(data),
             agent_task_service.get_task_for_agent(db, agent, agent_task["id"]),
             "powershell",
         )
+
+    expected = (
+        empire_config.directories.downloads / agent / file_path.replace("\\", "/")
+    )
 
     with session_local.begin() as db:
         task = agent_task_service.get_task_for_agent(db, agent, agent_task["id"])
@@ -51,10 +57,7 @@ def test_save_file_non_python(
         assert download.filename == "test.txt"
         assert download.size == len(data)
         assert download.get_bytes_file() == data
-        assert (
-            download.location
-            == "empire/test/downloads/agent_conftest/C:/Users/Public/test.txt"
-        )
+        assert download.location == str(expected)
 
 
 def test_save_file_python(
