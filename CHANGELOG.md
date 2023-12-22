@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+-   Fixed `Path` variables in EmpireConfig not properly expanding `~` (@Vinnybod)
+
 ## [5.8.3] - 2023-12-15
 
 ### Fixed

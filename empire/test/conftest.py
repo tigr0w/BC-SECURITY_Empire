@@ -5,6 +5,7 @@ from contextlib import suppress
 from pathlib import Path
 
 import pytest
+import yaml
 from starlette.testclient import TestClient
 
 from empire.client.src.utils.data_util import get_random_string
@@ -442,3 +443,9 @@ def client_config_dict():
         config_dict = yaml.safe_load(f)
 
     yield config_dict
+
+
+def load_test_config():
+    with open(SERVER_CONFIG_LOC) as f:
+        loaded = yaml.safe_load(f)
+    return loaded
