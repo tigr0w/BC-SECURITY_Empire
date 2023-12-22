@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+-   Migrated some Pydantic and FastAPI usage away from deprecated features (@Vinnybod)
+-   Updated the install script and Docker file from Python 3.12.0 to 3.12.1 (@Vinnybod)
+-   Upgraded all dependencies with `poetry up` (@Vinnybod)
+-   Upgraded Black to 23.12.0 (@Vinnybod)
+-   Upgraded Ruff to 0.19.0 (@Vinnybod)
+
 ## [5.8.4] - 2023-12-22
 
 ### Fixed

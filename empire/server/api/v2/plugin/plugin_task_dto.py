@@ -23,7 +23,7 @@ def domain_to_dto_plugin_task(
     include_full_input: bool = True,
     include_output: bool = True,
 ):
-    return PluginTask.construct(  # .construct doesn't do any validation and speeds up the request a bit
+    return PluginTask.model_construct(  # .construct doesn't do any validation and speeds up the request a bit
         id=task.id,
         input=task.input,
         full_input=None if not include_full_input else task.input_full,

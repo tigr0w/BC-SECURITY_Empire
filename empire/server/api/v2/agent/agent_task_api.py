@@ -489,7 +489,7 @@ async def create_task_update_proxy_list(
     # We have to use a string enum to get the api to accept strings
     # then convert to int manually. Agent code could be refactored to just
     # use strings, then this conversion could be removed.
-    proxy_list_dict = proxy_list_request.dict()
+    proxy_list_dict = proxy_list_request.model_dump()
     for proxy in proxy_list_dict["proxies"]:
         proxy["proxy_type"] = PROXY_NAME[proxy["proxy_type"]]
     resp, err = agent_task_service.create_task_proxy_list(

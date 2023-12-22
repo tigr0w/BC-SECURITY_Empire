@@ -74,7 +74,7 @@ class CredentialService:
         if dupe:
             return None, "Credential not created. Duplicate detected."
 
-        credential = models.Credential(**credential_dto.dict())
+        credential = models.Credential(**credential_dto.model_dump())
 
         db.add(credential)
         db.flush()

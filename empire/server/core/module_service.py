@@ -423,7 +423,7 @@ class ModuleService:
         """
         Return a copy of the original module with the input modified.
         """
-        modified_module = module.copy(deep=True)
+        modified_module = module.model_copy(deep=True)
         modified_module.script = modified_input
         modified_module.script_path = None
 

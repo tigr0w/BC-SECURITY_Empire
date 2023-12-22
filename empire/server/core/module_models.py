@@ -87,5 +87,5 @@ class EmpireModule(BaseModel):
     @property
     def info(self) -> dict:
         desc = self.dict(include={"name", "authors", "description", "comments"})
-        desc["options"] = [option.dict() for option in self.options]
+        desc["options"] = [option.model_dump() for option in self.options]
         return desc
