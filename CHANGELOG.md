@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.8.4] - 2023-12-22
+
+### Fixed
+
+-   Fixed `Path` variables in EmpireConfig not properly expanding `~` (@Vinnybod)
+
 ## [5.8.3] - 2023-12-15
 
 ### Fixed
@@ -704,7 +710,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.4...HEAD
+
+[5.8.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.3...v5.8.4
 
 [5.8.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.2...v5.8.3
 

@@ -9,8 +9,8 @@ log = logging.getLogger(__name__)
 
 
 class EmpireBaseModel(BaseModel):
-    @classmethod
     @field_validator("*")
+    @classmethod
     def set_path(cls, v):
         if isinstance(v, Path):
             return v.expanduser().resolve()

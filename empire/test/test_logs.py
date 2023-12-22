@@ -4,9 +4,7 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import yaml
-
-from empire.test.conftest import SERVER_CONFIG_LOC
+from empire.test.conftest import SERVER_CONFIG_LOC, load_test_config
 
 
 def test_simple_log_format(monkeypatch):
@@ -43,7 +41,7 @@ def test_extended_log_format(monkeypatch):
     from empire.server.server import setup_logging
     from empire.server.utils.log_util import LOG_FORMAT, ColorFormatter
 
-    test_config = _load_test_config()
+    test_config = load_test_config()
     test_config["logging"]["simple_console"] = False
     modified_config = EmpireConfig(test_config)
     monkeypatch.setattr("empire.server.server.empire_config", modified_config)
@@ -70,7 +68,7 @@ def test_log_level_by_config(monkeypatch):
     from empire.server.core.config import EmpireConfig
     from empire.server.server import setup_logging
 
-    test_config = _load_test_config()
+    test_config = load_test_config()
     test_config["logging"]["level"] = "WaRNiNG"  # case insensitive
     modified_config = EmpireConfig(test_config)
     monkeypatch.setattr("empire.server.server.empire_config", modified_config)
@@ -101,7 +99,7 @@ def test_log_level_by_arg():
     from empire.server.server import setup_logging
 
     config_mock = MagicMock()
-    test_config = _load_test_config()
+    test_config = load_test_config()
     test_config["logging"]["level"] = "WaRNiNG"  # Should be overwritten by arg
     config_mock.yaml = test_config
 
@@ -124,7 +122,7 @@ def test_log_level_by_debug_arg():
     from empire.server.server import setup_logging
 
     config_mock = MagicMock()
-    test_config = _load_test_config()
+    test_config = load_test_config()
     test_config["logging"]["level"] = "WaRNiNG"  # Should be overwritten by arg
     config_mock.yaml = test_config
 
@@ -132,9 +130,3 @@ def test_log_level_by_debug_arg():
     setup_logging(args)
 
     assert logging.getLogger().level == logging.DEBUG
-
-
-def _load_test_config():
-    with open(SERVER_CONFIG_LOC) as f:
-        loaded = yaml.safe_load(f)
-    return loaded
