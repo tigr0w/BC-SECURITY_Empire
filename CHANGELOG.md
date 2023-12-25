@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Upgraded all dependencies with `poetry up` (@Vinnybod)
 -   Upgraded Black to 23.12.0 (@Vinnybod)
 -   Upgraded Ruff to 0.19.0 (@Vinnybod)
+-   Upgraded Seatbelt to 1.2.1 (@Cx01N)
 
 ## [5.8.4] - 2023-12-22
 
