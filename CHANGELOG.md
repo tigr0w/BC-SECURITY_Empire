@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Moved socks management to `AgentSocksService`
 -   Renamed socks properties on `AgentSocksService` to use plural naming
 -   Remove `update_lastseen` parameter from `handle_agent_request`
+-   Renamed all config properties in client and server yamls to use snake_case
 
 ### Deprecated
 
@@ -39,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed `Listeners` class
 -   Removed `Credentials` class
 -   Removed functions from `Agents` class that were marked as deprecated in 5.x
+-   Removed `socketport` config option on the client which was no longer being used
 
 ### Fixed
 

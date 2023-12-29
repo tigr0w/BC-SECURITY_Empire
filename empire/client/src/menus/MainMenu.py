@@ -68,20 +68,18 @@ class MainMenu(Menu):
         host: str,
         config: bool = False,
         port: int = 1337,
-        socketport: int = 5000,
         username: str = None,
         password: str = None,
     ) -> None:
         """
         Connect to empire instance
 
-        Usage: connect [--config | -c] <host> [--port=<p>] [--socketport=<sp>] [--username=<u>] [--password=<pw>]
+        Usage: connect [--config | -c] <host> [--port=<p>] [--username=<u>] [--password=<pw>]
 
         Options:
             host               The url for the empire server or the name of a server config from config.yaml
             --config -c        When true, host is a server name from config.yaml [default: False]
             --port=<p>         Port number for empire server. [default: 1337]
-            --socketport=<sp>  Port number for empire socketio server. [default: 5000]
             --username=<u>     Username for empire. if not provided, will attempt to pull from yaml
             --password=<pw>    Password for empire. if not provided, will attempt to pull from yaml
         """
@@ -96,13 +94,12 @@ class MainMenu(Menu):
             response = state.connect(
                 server["host"],
                 server["port"],
-                server["socketport"],
                 server["username"],
                 server["password"],
             )
         else:
             host = patch_protocol(host)
-            response = state.connect(host, port, socketport, username, password)
+            response = state.connect(host, port, username, password)
 
         if hasattr(response, "status_code"):
             if response.status_code == 200:

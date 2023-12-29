@@ -74,7 +74,7 @@ class EmpireCliState:
         for menu in self.menus:
             menu.on_disconnect()
 
-    def connect(self, host, port, socketport, username, password):
+    def connect(self, host, port, username, password):
         self.host = host
         self.port = port
         server = f"{host}:{port}"

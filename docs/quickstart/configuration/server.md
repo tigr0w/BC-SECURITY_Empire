@@ -2,7 +2,7 @@
 
 The Server configuration is managed via [empire/server/config.yaml](https://github.com/BC-SECURITY/Empire/blob/master/empire/client/config.yaml).
 
-* **suppress-self-cert-warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
+* **suppress_self_cert_warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
 
 * **api** - Configure the RESTful API. The only option is the port to run the API on.
 

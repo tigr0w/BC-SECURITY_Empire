@@ -185,7 +185,7 @@ class EmpireCli:
                             accept_default=True,
                             default=cmd.strip(),
                             mouse_support=empire_config.yaml.get(
-                                "mouse-support", False
+                                "mouse_support", False
                             ),
                         )
                         cmd_line = list(shlex.split(text))
@@ -200,7 +200,7 @@ class EmpireCli:
     def main(self):
         setup_logging(args)
 
-        if empire_config.yaml.get("suppress-self-cert-warning", True):
+        if empire_config.yaml.get("suppress_self_cert_warning", True):
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         # Create some history first. (Easy for testing.)
@@ -241,7 +241,7 @@ class EmpireCli:
                     text = session.prompt(
                         HTML(menu_state.current_menu.get_prompt()),
                         refresh_interval=None,
-                        mouse_support=empire_config.yaml.get("mouse-support", False),
+                        mouse_support=empire_config.yaml.get("mouse_support", False),
                     )
 
                     cmd_line = list(shlex.split(text))
@@ -486,7 +486,7 @@ def reset():
     download_dir = empire_config.yaml.get("directories", {}).get("downloads")
     if download_dir:
         file_util.remove_dir_contents(download_dir)
-    stager_dir = empire_config.yaml.get("directories", {}).get("generated-stagers")
+    stager_dir = empire_config.yaml.get("directories", {}).get("generated_stagers")
     if stager_dir:
         file_util.remove_dir_contents(stager_dir)
 

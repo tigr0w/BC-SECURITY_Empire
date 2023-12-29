@@ -103,7 +103,7 @@ class UseStagerMenu(UseMenu):
                 return
             file_name = response["downloads"][0]["filename"]
             # output_bytes = base64.b64decode(response[self.selected]["Output"])
-            directory = f"{state.directory['generated-stagers']}{file_name}"
+            directory = f"{state.directory['generated_stagers']}{file_name}"
             with open(directory, "wb") as f:
                 f.write(stager_data)
             log.info(f"{file_name} written to {os.path.abspath(directory)}")
@@ -112,7 +112,7 @@ class UseStagerMenu(UseMenu):
                 response["downloads"][0]["link"]
             ).decode("UTF-8")
             print(stager_data)
-            if empire_config.yaml.get("auto-copy-stagers", {}):
+            if empire_config.yaml.get("auto_copy_stagers", {}):
                 log.info("Stager copied to clipboard")
                 pyperclip.copy(stager_data)
 

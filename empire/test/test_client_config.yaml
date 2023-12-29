@@ -1,25 +1,12 @@
-suppress-self-cert-warning: true
-auto-copy-stagers: true
+suppress_self_cert_warning: true
+auto_copy_stagers: true
 servers:
   localhost:
     host: https://localhost
     port: 1337
-    socketport: 5000
     username: empireadmin
     password: password123
     autoconnect: true
-  other-server:
-    host: https://localhost
-    port: 1337
-    socketport: 5000
-    username: empireadmin
-    password: password123
-  another-one:
-    host: https://localhost
-    port: 1337
-    socketport: 5000
-    username: empireadmin
-    password: password123
 shortcuts:
   # Params can be a list like
   # params:
@@ -115,4 +102,4 @@ shortcuts:
       shell: ps
 directories:
   downloads: empire/test/downloads/client/downloads/
-  generated-stagers: empire/test/downloads/client/generated-stagers/
+  generated_stagers: empire/test/downloads/client/generated-stagers/

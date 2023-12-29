@@ -90,9 +90,7 @@ class DebugConfig(EmpireBaseModel):
 
 
 class EmpireConfig(EmpireBaseModel):
-    supress_self_cert_warning: bool = Field(
-        alias="supress-self-cert-warning", default=True
-    )
+    supress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig | None = ApiConfig()
     starkiller: StarkillerConfig
     database: DatabaseConfig

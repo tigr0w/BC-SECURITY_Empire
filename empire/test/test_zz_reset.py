@@ -160,12 +160,12 @@ def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
     ]
     for f in stager_files:
         write_to_file(
-            client_config_dict["directories"]["generated-stagers"] + f[0], f[1]
+            client_config_dict["directories"]["generated_stagers"] + f[0], f[1]
         )
 
     for f in stager_files:
         assert Path(
-            client_config_dict["directories"]["generated-stagers"] + f[0]
+            client_config_dict["directories"]["generated_stagers"] + f[0]
         ).exists()
 
     import empire.arguments
@@ -188,11 +188,11 @@ def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
     for f in stager_files:
         if f[0] != ".keep":
             assert not Path(
-                client_config_dict["directories"]["generated-stagers"] + f[0]
+                client_config_dict["directories"]["generated_stagers"] + f[0]
             ).exists()
         else:
             assert Path(
-                client_config_dict["directories"]["generated-stagers"] + f[0]
+                client_config_dict["directories"]["generated_stagers"] + f[0]
             ).exists()
 
     sys.argv = default_argv
