@@ -52,7 +52,7 @@ def client():
 
     empire.server.server.main = MainMenu(args)
 
-    app = initialize(ip="localhost", run=False)
+    app = initialize(run=False)
 
     yield TestClient(app)
 

@@ -141,16 +141,6 @@ def run(args):
     check_submodules()
     check_recommended_configuration()
 
-    if not args.restport:
-        args.restport = empire_config.api.port
-    else:
-        args.restport = int(args.restport[0])
-
-    if not args.restip:
-        args.restip = "0.0.0.0"
-    else:
-        args.restip = args.restip[0]
-
     if args.version:
         # log to stdout instead of stderr
         print(empire.VERSION)
@@ -182,6 +172,6 @@ def run(args):
 
         from empire.server.api import app
 
-        app.initialize(secure=args.secure_api, ip=args.restip, port=args.restport)
+        app.initialize()
 
     sys.exit()

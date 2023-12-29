@@ -18,7 +18,9 @@ class EmpireBaseModel(BaseModel):
 
 
 class ApiConfig(EmpireBaseModel):
+    ip: str = "0.0.0.0"
     port: int = 1337
+    secure: bool = False
 
 
 class StarkillerConfig(EmpireBaseModel):

@@ -1,8 +1,3 @@
-"""
-Parse arguments.
-Life saver comment on separating the parser.
-https://stackoverflow.com/a/30217387
-"""
 import argparse
 
 parent_parser = argparse.ArgumentParser()
@@ -73,25 +68,6 @@ general_group.add_argument(
     type=str,
     nargs=1,
     help="Specify a config.yaml different from the config.yaml in the empire/server directory.",
-)
-general_group.add_argument(
-    "--secure-api",
-    action="store_true",
-    help="Use https for the API. Uses .key and .pem file from empire/server/data."
-    "Note that Starkiller will not work with self-signed certs due to browsers blocking the requests.",
-)
-
-rest_group = server_parser.add_argument_group("RESTful API Options")
-rest_group.add_argument(
-    "--restip",
-    nargs=1,
-    help="IP to bind the Empire RESTful API on. Defaults to 0.0.0.0",
-)
-rest_group.add_argument(
-    "--restport",
-    type=int,
-    nargs=1,
-    help="Port to run the Empire RESTful API on. Defaults to 1337",
 )
 
 args = parent_parser.parse_args()

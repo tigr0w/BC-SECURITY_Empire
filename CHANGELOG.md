@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 -   Typehinting for MainMenu object in services
+-   Added `api.ip` and `api.secure` as server options
 
 ### Changed
 
@@ -40,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed `Listeners` class
 -   Removed `Credentials` class
 -   Removed functions from `Agents` class that were marked as deprecated in 5.x
+-   Removed `--restip` and `--restport` options from the command line. Use the config file instead.
 -   Removed `socketport` config option on the client which was no longer being used
 
 ### Fixed

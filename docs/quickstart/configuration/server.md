@@ -4,11 +4,17 @@ The Server configuration is managed via [empire/server/config.yaml](https://gith
 
 * **suppress_self_cert_warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
 
-* **api** - Configure the RESTful API. The only option is the port to run the API on.
+* **api** - Configure the RESTful API.
+
+ip - The IP address to bind the API and Starkiller to.
+port - The port to bind the API and Starkiller to.
+secure - Enable HTTPS for the API and Starkiller. Browsers will not work with self-signed certs. Uses .key and .pem file from empire/server/data
 
 ```yaml
 api:
+  ip: 0.0.0.0
   port: 1337
+  secure: false
 ```
 
 * **database** - Configure Empire's database. Empire defaults to SQLite and has the ability to run with MySQL. For more info on the database, see the [Database](database/README.md) section.

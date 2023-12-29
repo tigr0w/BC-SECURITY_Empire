@@ -67,9 +67,11 @@ def load_starkiller(v2App, ip, port):
         log.info(f"Starkiller served at http://localhost:{port}/index.html")
 
 
-def initialize(
-    secure: bool = False, ip: str = "0.0.0.0", port: int = 1337, run: bool = True
-):
+def initialize(run: bool = True):
+    ip = empire_config.api.ip
+    port = empire_config.api.port
+    secure = empire_config.api.secure
+
     # Not pretty but allows us to use main_menu by delaying the import
     from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
     from empire.server.api.v2.bypass import bypass_api
