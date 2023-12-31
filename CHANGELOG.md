@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Remove `update_lastseen` parameter from `handle_agent_request`
 -   Renamed all config properties in client and server yamls to use snake_case
 -   Changed minimum Python version to 3.11
+-   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
 
 ### Deprecated
 

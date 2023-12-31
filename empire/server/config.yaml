@@ -1,7 +1,7 @@
 suppress_self_cert_warning: true
 api:
   ip: 0.0.0.0
-  port: 1330
+  port: 1337
   secure: false
 database:
   use: mysql

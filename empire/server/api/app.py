@@ -44,7 +44,7 @@ class MyJsonEncoder(JSONEncoder):
         return JSONEncoder.default(self, o)
 
 
-def load_starkiller(v2App, ip, port):
+def load_starkiller(app, ip, port):
     try:
         sync_starkiller(empire_config.model_dump())
     except Exception as e:
@@ -58,13 +58,16 @@ def load_starkiller(v2App, ip, port):
         )
 
     if (Path(empire_config.starkiller.directory) / "dist").exists():
-        v2App.mount(
+        app.mount(
             "/",
-            StaticFiles(directory=f"{empire_config.starkiller.directory}/dist"),
+            StaticFiles(
+                directory=f"{empire_config.starkiller.directory}/dist", html=True
+            ),
             name="static",
         )
+
         log.info("Starkiller served at the same ip and port as Empire Server")
-        log.info(f"Starkiller served at http://localhost:{port}/index.html")
+        log.info(f"Starkiller served at http://localhost:{port}/")
 
 
 def initialize(run: bool = True):
@@ -89,7 +92,7 @@ def initialize(run: bool = True):
     from empire.server.api.v2.user import user_api
     from empire.server.server import main
 
-    v2App = FastAPI()
+    app = FastAPI()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -99,28 +102,28 @@ def initialize(run: bool = True):
             log.info("Shutting down MainMenu...")
             main.shutdown()
 
-    v2App.include_router(listener_template_api.router)
-    v2App.include_router(listener_api.router)
-    v2App.include_router(stager_template_api.router)
-    v2App.include_router(stager_api.router)
-    v2App.include_router(agent_task_api.router)
-    v2App.include_router(agent_api.router)
-    v2App.include_router(agent_file_api.router)
-    v2App.include_router(user_api.router)
-    v2App.include_router(module_api.router)
-    v2App.include_router(bypass_api.router)
-    v2App.include_router(obfuscation_api.router)
-    v2App.include_router(process_api.router)
-    v2App.include_router(profile_api.router)
-    v2App.include_router(credential_api.router)
-    v2App.include_router(host_api.router)
-    v2App.include_router(download_api.router)
-    v2App.include_router(meta_api.router)
-    v2App.include_router(plugin_task_api.router)
-    v2App.include_router(plugin_api.router)
-    v2App.include_router(tag_api.router)
+    app.include_router(listener_template_api.router)
+    app.include_router(listener_api.router)
+    app.include_router(stager_template_api.router)
+    app.include_router(stager_api.router)
+    app.include_router(agent_task_api.router)
+    app.include_router(agent_api.router)
+    app.include_router(agent_file_api.router)
+    app.include_router(user_api.router)
+    app.include_router(module_api.router)
+    app.include_router(bypass_api.router)
+    app.include_router(obfuscation_api.router)
+    app.include_router(process_api.router)
+    app.include_router(profile_api.router)
+    app.include_router(credential_api.router)
+    app.include_router(host_api.router)
+    app.include_router(download_api.router)
+    app.include_router(meta_api.router)
+    app.include_router(plugin_task_api.router)
+    app.include_router(plugin_api.router)
+    app.include_router(tag_api.router)
 
-    v2App.add_middleware(
+    app.add_middleware(
         EmpireCORSMiddleware,
         allow_origins=[
             "*",
@@ -134,7 +137,7 @@ def initialize(run: bool = True):
         expose_headers=["content-disposition"],
     )
 
-    v2App.add_middleware(GZipMiddleware, minimum_size=500)
+    app.add_middleware(GZipMiddleware, minimum_size=500)
 
     sio = socketio.AsyncServer(
         async_mode="asgi",
@@ -145,17 +148,17 @@ def initialize(run: bool = True):
         json=MyJsonWrapper,
     )
     sio_app = socketio.ASGIApp(
-        socketio_server=sio, other_asgi_app=v2App, socketio_path="/socket.io/"
+        socketio_server=sio, other_asgi_app=app, socketio_path="/socket.io/"
     )
 
-    v2App.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
-    v2App.add_websocket_route("/socket.io/", sio_app)
+    app.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
+    app.add_websocket_route("/socket.io/", sio_app)
 
     setup_socket_events(sio, main)
 
     if empire_config.starkiller.enabled:
         log.info("Starkiller enabled. Loading.")
-        load_starkiller(v2App, ip, port)
+        load_starkiller(app, ip, port)
     else:
         log.info("Starkiller disabled. Not loading.")
 
@@ -164,7 +167,7 @@ def initialize(run: bool = True):
     if run:
         if not secure:
             uvicorn.run(
-                v2App,
+                app,
                 host=ip,
                 port=port,
                 log_config=None,
@@ -173,7 +176,7 @@ def initialize(run: bool = True):
             )
         else:
             uvicorn.run(
-                v2App,
+                app,
                 host=ip,
                 port=port,
                 log_config=None,
@@ -183,4 +186,4 @@ def initialize(run: bool = True):
                 # log_level="info",
             )
 
-    return v2App
+    return app

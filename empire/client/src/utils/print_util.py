@@ -104,7 +104,7 @@ def title(version, server, modules, listeners, agents):
     print("              " + color(str(agents), "green") + " agents currently active")
     print("")
     print(color("Starkiller is now the recommended way to use Empire.", "green"))
-    print(color(f"Try it out at {server}/index.html", "green"))
+    print(color(f"Try it out at {server}/", "green"))
 
 
 def loading():
