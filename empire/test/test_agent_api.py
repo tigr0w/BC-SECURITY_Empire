@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -118,7 +118,7 @@ def agent(db, models, main):
         db.add(
             models.AgentCheckIn(
                 agent_id=agent4.session_id,
-                checkin_time=datetime.now(timezone.utc) - timedelta(days=2),
+                checkin_time=datetime.now(UTC) - timedelta(days=2),
             )
         )
         db.flush()

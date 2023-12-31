@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import humanize
 
@@ -16,8 +16,8 @@ def humanize_datetime(iso_string: str = None):
     parsed = datetime.fromisoformat(iso_string)
     local_str = parsed.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
 
-    return f"{local_str} ({humanize.naturaltime(datetime.now(timezone.utc) - parsed)})"
+    return f"{local_str} ({humanize.naturaltime(datetime.now(UTC) - parsed)})"
 
 
 def get_utc_now():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")

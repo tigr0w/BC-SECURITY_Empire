@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -118,7 +118,7 @@ def agents(session_local, models, host):
         db.add(
             models.AgentCheckIn(
                 agent_id=agent4.session_id,
-                checkin_time=datetime.now(timezone.utc) - timedelta(days=2),
+                checkin_time=datetime.now(UTC) - timedelta(days=2),
             )
         )
         db.flush()
@@ -187,7 +187,7 @@ def test_duplicate_checkin_raises_exception(session_local, models, agent):
         db_agent = (
             db.query(models.Agent).filter(models.Agent.session_id == agent).first()
         )
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         checkin = models.AgentCheckIn(
             agent_id=db_agent.session_id, checkin_time=timestamp
         )

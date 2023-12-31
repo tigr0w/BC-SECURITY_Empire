@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
@@ -69,7 +69,7 @@ async def _create_checkins(session_local, models, agent_ids):
 agent_count = 10
 time_delta = 5  # 17280 checkins per agent per day
 days_back = 7
-end_time = datetime(2023, 1, 8, tzinfo=timezone.utc)
+end_time = datetime(2023, 1, 8, tzinfo=UTC)
 start_time = end_time - timedelta(days=days_back)
 
 

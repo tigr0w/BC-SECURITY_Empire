@@ -2,7 +2,7 @@ import logging
 import os
 import threading
 import typing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
@@ -246,7 +246,7 @@ class AgentService:
                 {
                     "checkin_time": datetime.strptime(
                         result[0], format["python"]
-                    ).replace(tzinfo=timezone.utc),
+                    ).replace(tzinfo=UTC),
                     "count": result[1],
                 }
             )

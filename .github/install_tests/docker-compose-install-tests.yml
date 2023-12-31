@@ -24,14 +24,6 @@ services:
     image: bcsecurity/empire-test-ubuntu2204
     <<: *common-platform
 
-  debian10:
-    build:
-      <<: *common-build
-      args:
-        BASE_IMAGE: debian:buster
-    image: bcsecurity/empire-test-debian10
-    <<: *common-platform
-
   debian11:
     build:
       <<: *common-build

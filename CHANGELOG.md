@@ -29,12 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Renamed socks properties on `AgentSocksService` to use plural naming
 -   Remove `update_lastseen` parameter from `handle_agent_request`
 -   Renamed all config properties in client and server yamls to use snake_case
+-   Changed minimum Python version to 3.11
 
 ### Deprecated
 
 ### Removed
 
 -   Removed autorun config options which haven't been used since Empire 3
+-   Removed install support for Debian 10
 
 #### Breaking
 

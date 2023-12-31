@@ -23,11 +23,11 @@ jobs:
       - id: release
         if: ${{ startsWith(github.head_ref, 'release/') || contains( github.event.pull_request.labels.*.name, 'run-all-versions') }}
         run: |
-          echo "config={\"python-version\": [\"3.10\", \"3.11\", \"3.12\"]}" >> $GITHUB_OUTPUT
+          echo "config={\"python-version\": [\"3.11\", \"3.12\"]}" >> $GITHUB_OUTPUT
       - id: not-release
         if: ${{ !startsWith(github.head_ref, 'release/') }}
         run: |
-          echo "config={\"python-version\": [\"3.10\", \"3.12\"]}" >> $GITHUB_OUTPUT
+          echo "config={\"python-version\": [\"3.11\", \"3.12\"]}" >> $GITHUB_OUTPUT
     outputs:
         config: ${{ steps.release.outputs.config || steps.not-release.outputs.config }}
   test:
@@ -126,7 +126,7 @@ jobs:
       matrix:
         # Because the box runs out of disk space, we can't run all tests on a single docker compose build.
         images:
-          - ['debian10', 'debian11', 'debian12']
+          - ['debian11', 'debian12']
           - ['ubuntu2004', 'ubuntu2204']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
