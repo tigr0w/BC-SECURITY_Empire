@@ -43,7 +43,7 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
      5. Deletes / Copies invoke obfuscation
     """
     monkeypatch.setattr("builtins.input", lambda _: "y")
-    sys.argv = default_argv.copy() + ["--reset"]
+    sys.argv = [*default_argv.copy(), "--reset"]
 
     # Setup
     # Write to the downloads directory

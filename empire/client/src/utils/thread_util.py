@@ -31,9 +31,8 @@ class KThread(threading.Thread):
             return None
 
     def localtrace(self, frame, why, arg):
-        if self.killed:
-            if why == "line":
-                raise SystemExit()
+        if self.killed and why == "line":
+            raise SystemExit()
         return self.localtrace
 
     def kill(self):

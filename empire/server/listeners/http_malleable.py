@@ -160,7 +160,8 @@ class Listener:
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return open(f"{self.template_dir }/default.html").read()
+        with open(f"{self.template_dir}/default.html") as f:
+            return f.read()
 
     def validate_options(self) -> tuple[bool, str | None]:
         """
@@ -262,7 +263,7 @@ class Listener:
         safe_checks="",
         listener_name=None,
         stager=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -792,11 +793,11 @@ class Listener:
         elif language == "python":
             # read in the agent base
             if version == "ironpython":
-                f = open(self.mainMenu.installPath + "/data/agent/ironpython_agent.py")
+                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
-                f = open(self.mainMenu.installPath + "/data/agent/agent.py")
-            code = f.read()
-            f.close()
+                f = self.mainMenu.installPath + "/data/agent/agent.py"
+            with open(f) as f:
+                code = f.read()
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -1091,14 +1092,14 @@ class ExtendedPacketHandler(PacketHandler):
 
     def send_results_for_child(self, received_data):
         self.headers['Cookie'] = "session=%s" % (received_data[1:])
-        taskUri = random.sample({str(profile.post.client.uris)}, 1)[0]
+        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
         requestUri = self.server + taskURI
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
         return response
 
     def send_get_tasking_for_child(self, received_data):
         decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-        taskUri = random.sample({str(profile.post.client.uris)}, 1)[0]
+        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
         requestUri = self.server + taskURI
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
         return response
@@ -1708,7 +1709,7 @@ class ExtendedPacketHandler(PacketHandler):
                                     )
                         else:
                             # log error parsing routing packet
-                            message = f"{listenerName} Error parsing routing packet from {clientIP}: {str(agentInfo)}."
+                            message = f"{listenerName} Error parsing routing packet from {clientIP}: {agentInfo!s}."
                             self.instance_log.error(message)
                             log.error(message)
 
@@ -1723,7 +1724,7 @@ class ExtendedPacketHandler(PacketHandler):
 
             except malleable.MalleableError as e:
                 # probably an issue with the malleable library, please report it :)
-                message = f"{listenerName}: Malleable had trouble handling a request for /{request_uri} by {clientIP}: {str(e)}."
+                message = f"{listenerName}: Malleable had trouble handling a request for /{request_uri} by {clientIP}: {e!s}."
                 self.instance_log.error(message, exc_info=True)
                 log.error(message, exc_info=True)
 
@@ -1740,9 +1741,9 @@ class ExtendedPacketHandler(PacketHandler):
                 pyversion = sys.version_info
 
                 # support any version of tls
-                if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
-                    proto = ssl.PROTOCOL_TLS
-                elif pyversion[0] >= 3:
+                if (pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13) or (
+                    pyversion[0] >= 3
+                ):
                     proto = ssl.PROTOCOL_TLS
                 else:
                     proto = ssl.PROTOCOL_SSLv23
@@ -1760,7 +1761,7 @@ class ExtendedPacketHandler(PacketHandler):
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
         except Exception as e:
-            message = f"Listener startup on port {port} failed - {e.__class__.__name__}: {str(e)}"
+            message = f"Listener startup on port {port} failed - {e.__class__.__name__}: {e!s}"
             self.instance_log.error(message, exc_info=True)
             log.error(message, exc_info=True)
 

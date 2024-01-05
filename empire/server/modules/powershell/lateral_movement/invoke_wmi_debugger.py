@@ -21,10 +21,7 @@ class Module:
         binary = params["Binary"]
         target_binary = params["TargetBinary"]
         listener_name = params["Listener"]
-        if (params["Obfuscate"]).lower() == "true":
-            launcher_obfuscate = True
-        else:
-            launcher_obfuscate = False
+        launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         # storage options

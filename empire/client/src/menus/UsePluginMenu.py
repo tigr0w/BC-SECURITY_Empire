@@ -76,7 +76,7 @@ class UsePluginMenu(UseMenu):
         """
         post_body = {}
         post_body["options"] = {}
-        for key in self.record_options.keys():
+        for key in self.record_options:
             post_body["options"][key] = self.record_options[key]["value"]
 
         response = state.execute_plugin(self.record["id"], post_body)

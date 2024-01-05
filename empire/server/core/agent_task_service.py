@@ -44,9 +44,9 @@ class AgentTaskService:
     @staticmethod
     def get_tasks(
         db: Session,
-        agents: list[str] = None,
-        users: list[int] = None,
-        tags: list[str] = None,
+        agents: list[str] | None = None,
+        users: list[int] | None = None,
+        tags: list[str] | None = None,
         limit: int = -1,
         offset: int = 0,
         include_full_input: bool = False,
@@ -261,7 +261,7 @@ class AgentTaskService:
                 db,
                 agent,
                 "TASK_SHELL",
-                f"Set-Delay {str(delay)} {str(jitter)}",
+                f"Set-Delay {delay!s} {jitter!s}",
                 user_id=user_id,
             )
         elif agent.language in ["python", "ironpython"]:
@@ -277,7 +277,7 @@ class AgentTaskService:
                 db,
                 agent,
                 "TASK_SHELL",
-                f"Set-Delay {str(delay)} {str(jitter)}",
+                f"Set-Delay {delay!s} {jitter!s}",
                 user_id=user_id,
             )
         else:
@@ -361,7 +361,7 @@ class AgentTaskService:
         module_name: str | None = None
 
     def add_temporary_task(
-        self, agent_id: str, task_name, task_input="", module_name: str = None
+        self, agent_id: str, task_name, task_input="", module_name: str | None = None
     ) -> tuple[TemporaryTask | None, str | None]:
         """
         Add a temporary task for the agent to execute. These tasks are not saved in the database,
@@ -383,7 +383,7 @@ class AgentTaskService:
         agent: models.Agent,
         task_name,
         task_input="",
-        module_name: str = None,
+        module_name: str | None = None,
         user_id: int = 0,
     ) -> tuple[models.AgentTask | None, str | None]:
         """

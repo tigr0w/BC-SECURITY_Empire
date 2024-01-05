@@ -33,7 +33,7 @@ class UseStagerMenu(UseMenu):
             cmd_line, 2, word_before_cursor
         ):
             for stager in filtered_search_list(
-                word_before_cursor, state.stagergenv2.keys()
+                word_before_cursor, state.stagers.keys()
             ):
                 yield Completion(stager, start_position=-len(word_before_cursor))
 
@@ -57,10 +57,10 @@ class UseStagerMenu(UseMenu):
 
         Usage: use <module>
         """
-        if module in state.stagergenv2.keys():  # todo rename module?
+        if module in state.stagers:  # todo rename module?
             self.selected = module
-            self.record = state.stagergenv2[module]
-            self.record_options = state.stagergenv2[module]["options"]
+            self.record = state.stagers[module]
+            self.record_options = state.stagers[module]["options"]
 
             listener_list = []
             for key, value in self.record_options.items():
@@ -68,7 +68,7 @@ class UseStagerMenu(UseMenu):
                     "\n".join(textwrap.wrap(str(x), width=35)) for x in value.values()
                 ]
                 values.reverse()
-                temp = [key] + values
+                temp = [key, *values]
                 listener_list.append(temp)
 
     @command
@@ -82,7 +82,7 @@ class UseStagerMenu(UseMenu):
         # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
         temp_record = {}
-        for key in self.record_options.keys():
+        for key in self.record_options:
             post_body[key] = self.record_options[key]["value"]
 
         temp_record["options"] = post_body

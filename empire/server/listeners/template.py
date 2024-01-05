@@ -176,7 +176,7 @@ class Listener:
         language=None,
         safe_checks="",
         listener_name=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         """
         Generate a basic launcher for the specified listener.

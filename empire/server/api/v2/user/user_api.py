@@ -123,12 +123,11 @@ async def update_user(
             status_code=403, detail="User does not have access to update this resource."
         )
 
-    if user_req.is_admin != db_user.admin:
-        if not current_user.admin:
-            raise HTTPException(
-                status_code=403,
-                detail="User does not have access to update admin status.",
-            )
+    if user_req.is_admin != db_user.admin and not current_user.admin:
+        raise HTTPException(
+            status_code=403,
+            detail="User does not have access to update admin status.",
+        )
 
     # update
     resp, err = user_service.update_user(db, db_user, user_req)

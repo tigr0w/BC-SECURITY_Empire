@@ -18,10 +18,7 @@ class Module:
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
-        if (params["Obfuscate"]).lower() == "true":
-            launcher_obfuscate = True
-        else:
-            launcher_obfuscate = False
+        launcher_obfuscate = params["Obfuscate"].lower() == "true"
 
         # read in the common module source code
         script, err = main_menu.modulesv2.get_module_source(

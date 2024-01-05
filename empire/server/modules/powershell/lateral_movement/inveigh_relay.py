@@ -18,10 +18,7 @@ class Module:
         proxy = params["Proxy_"]
         proxyCreds = params["ProxyCreds"]
         command = params["Command"]
-        if (params["Obfuscate"]).lower() == "true":
-            launcher_obfuscate = True
-        else:
-            launcher_obfuscate = False
+        launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         # read in the common module source code
@@ -64,23 +61,26 @@ class Module:
 
         for option, values in params.items():
             if (
-                option.lower() != "agent"
-                and option.lower() != "listener"
-                and option.lower() != "useragent"
-                and option.lower() != "proxy_"
-                and option.lower() != "proxycreds"
-                and option.lower() != "command"
+                (
+                    option.lower() != "agent"
+                    and option.lower() != "listener"
+                    and option.lower() != "useragent"
+                    and option.lower() != "proxy_"
+                    and option.lower() != "proxycreds"
+                    and option.lower() != "command"
+                )
+                and values
+                and values != ""
             ):
-                if values and values != "":
-                    if values.lower() == "true":
-                        # if we're just adding a switch
-                        script_end += " -" + str(option)
+                if values.lower() == "true":
+                    # if we're just adding a switch
+                    script_end += " -" + str(option)
+                else:
+                    if "," in str(values):
+                        quoted = '"' + str(values).replace(",", '","') + '"'
+                        script_end += " -" + str(option) + " " + quoted
                     else:
-                        if "," in str(values):
-                            quoted = '"' + str(values).replace(",", '","') + '"'
-                            script_end += " -" + str(option) + " " + quoted
-                        else:
-                            script_end += " -" + str(option) + ' "' + str(values) + '"'
+                        script_end += " -" + str(option) + ' "' + str(values) + '"'
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

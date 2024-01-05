@@ -21,10 +21,7 @@ class Module:
         proxy_creds = params["ProxyCreds"]
         command = params["Command"]
         result_file = params["ResultFile"]
-        if (params["Obfuscate"]).lower() == "true":
-            launcher_obfuscate = True
-        else:
-            launcher_obfuscate = False
+        launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         # read in the common module source code

@@ -161,7 +161,7 @@ class StagerGenerationService:
             f.write(posh_code)
 
         compiler = self.plugin_service.get_by_id("csharpserver")
-        if not compiler.status == "ON":
+        if compiler.status != "ON":
             log.error("csharpserver plugin not running")
         else:
             file_name = compiler.do_send_stager(
@@ -258,7 +258,7 @@ class StagerGenerationService:
             f.write(python_code)
 
         compiler = self.plugin_service.get_by_id("csharpserver")
-        if not compiler.status == "ON":
+        if compiler.status != "ON":
             log.error("csharpserver plugin not running")
         else:
             file_name = compiler.do_send_stager(
@@ -352,57 +352,41 @@ class StagerGenerationService:
         MH_DYLIB = 6
         if hijacker.lower() == "true":
             if arch == "x86":
-                f = open(
-                    "%s/data/misc/hijackers/template.dylib"
-                    % (self.main_menu.installPath),
-                    "rb",
-                )
+                f = f"{self.mainMenu.installPath}/data/misc/hijackers/template.dylib"
             else:
-                f = open(
-                    "%s/data/misc/hijackers/template64.dylib"
-                    % (self.main_menu.installPath),
-                    "rb",
-                )
+                f = f"{self.mainMenu.installPath}/data/misc/hijackers/template64.dylib"
         else:
             if arch == "x86":
-                f = open(
-                    "%s/data/misc/templateLauncher.dylib"
-                    % (self.main_menu.installPath),
-                    "rb",
-                )
+                f = f"{self.mainMenu.installPath}/data/misc/templateLauncher.dylib"
             else:
-                f = open(
-                    "%s/data/misc/templateLauncher64.dylib"
-                    % (self.main_menu.installPath),
-                    "rb",
-                )
+                f = f"{self.mainMenu.installPath}/data/misc/templateLauncher64.dylib"
 
-        macho = macholib.MachO.MachO(f.name)
+        with open(f, "rb") as f:
+            macho = macholib.MachO.MachO(f.name)
 
-        if int(macho.headers[0].header.filetype) != MH_DYLIB:
-            log.error("Dylib template is not the correct filetype")
-            return ""
+            if int(macho.headers[0].header.filetype) != MH_DYLIB:
+                log.error("Dylib template is not the correct filetype")
+                return ""
 
-        cmds = macho.headers[0].commands
+            cmds = macho.headers[0].commands
 
-        for cmd in cmds:
-            count = 0
-            if (
-                int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64
-                or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT
-            ):
-                count += 1
+            for cmd in cmds:
+                count = 0
                 if (
-                    cmd[count].segname.strip(b"\x00") == b"__TEXT"
-                    and cmd[count].nsects > 0
+                    int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64
+                    or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT
                 ):
                     count += 1
-                    for section in cmd[count]:
-                        if section.sectname.strip(b"\x00") == b"__cstring":
-                            offset = int(section.offset)
-                            placeHolderSz = int(section.size) - 52
-        template = f.read()
-        f.close()
+                    if (
+                        cmd[count].segname.strip(b"\x00") == b"__TEXT"
+                        and cmd[count].nsects > 0
+                    ):
+                        count += 1
+                        for section in cmd[count]:
+                            if section.sectname.strip(b"\x00") == b"__cstring":
+                                offset = int(section.offset)
+                                placeHolderSz = int(section.size) - 52
+            template = f.read()
 
         if placeHolderSz and offset:
             launcher = launcher_code + "\x00" * (placeHolderSz - len(launcher_code))
@@ -423,53 +407,51 @@ class StagerGenerationService:
         MH_EXECUTE = 2
 
         if arch == "x64":
-            f = open(
+            f = (
                 self.main_menu.installPath
-                + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher",
-                "rb",
+                + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher"
             )
             directory = (
                 self.main_menu.installPath
                 + "/data/misc/apptemplateResources/x64/launcher.app/"
             )
         else:
-            f = open(
+            f = (
                 self.main_menu.installPath
-                + "/data/misc/apptemplateResources/x86/launcher.app/Contents/MacOS/launcher",
-                "rb",
+                + "/data/misc/apptemplateResources/x86/launcher.app/Contents/MacOS/launcher"
             )
             directory = (
                 self.main_menu.installPath
                 + "/data/misc/apptemplateResources/x86/launcher.app/"
             )
 
-        macho = macholib.MachO.MachO(f.name)
+        with open(f, "rb") as f:
+            macho = macholib.MachO.MachO(f.name)
 
-        if int(macho.headers[0].header.filetype) != MH_EXECUTE:
-            log.error("Macho binary template is not the correct filetype")
-            return ""
+            if int(macho.headers[0].header.filetype) != MH_EXECUTE:
+                log.error("Macho binary template is not the correct filetype")
+                return ""
 
-        cmds = macho.headers[0].commands
+            cmds = macho.headers[0].commands
 
-        for cmd in cmds:
-            count = 0
-            if (
-                int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64
-                or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT
-            ):
-                count += 1
+            for cmd in cmds:
+                count = 0
                 if (
-                    cmd[count].segname.strip(b"\x00") == b"__TEXT"
-                    and cmd[count].nsects > 0
+                    int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64
+                    or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT
                 ):
                     count += 1
-                    for section in cmd[count]:
-                        if section.sectname.strip(b"\x00") == b"__cstring":
-                            offset = int(section.offset)
-                            placeHolderSz = int(section.size) - 52
+                    if (
+                        cmd[count].segname.strip(b"\x00") == b"__TEXT"
+                        and cmd[count].nsects > 0
+                    ):
+                        count += 1
+                        for section in cmd[count]:
+                            if section.sectname.strip(b"\x00") == b"__cstring":
+                                offset = int(section.offset)
+                                placeHolderSz = int(section.size) - 52
 
-        template = f.read()
-        f.close()
+            template = f.read()
 
         if placeHolderSz and offset:
             launcher = launcher_code.encode("utf-8") + b"\x00" * (
@@ -483,20 +465,17 @@ class StagerGenerationService:
 
             tmpdir = "/tmp/application/%s.app/" % app_name
             shutil.copytree(directory, tmpdir)
-            f = open(tmpdir + "Contents/MacOS/launcher", "wb")
-            if disarm is not True:
-                f.write(patchedBinary)
-                f.close()
-            else:
-                t = open(
-                    self.main_menu.installPath
-                    + "/data/misc/apptemplateResources/empty/macho",
-                    "rb",
-                )
-                w = t.read()
-                f.write(w)
-                f.close()
-                t.close()
+            with open(tmpdir + "Contents/MacOS/launcher", "wb") as f:
+                if disarm is not True:
+                    f.write(patchedBinary)
+                else:
+                    t = (
+                        self.main_menu.installPath
+                        + "/data/misc/apptemplateResources/empty/macho"
+                    )
+                    with open(t, "rb") as t:
+                        w = t.read()
+                        f.write(w)
 
             os.rename(
                 tmpdir + "Contents/MacOS/launcher",

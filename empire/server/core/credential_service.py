@@ -16,7 +16,10 @@ class CredentialService:
 
     @staticmethod
     def get_all(
-        db: Session, search: str = None, credtype: str = None, tags: list[str] = None
+        db: Session,
+        search: str | None = None,
+        credtype: str | None = None,
+        tags: list[str] | None = None,
     ):
         query = db.query(models.Credential)
 

@@ -157,7 +157,7 @@ class AgentService:
     @staticmethod
     def get_agent_checkins(
         db: Session,
-        agents: list[str] = None,
+        agents: list[str] | None = None,
         limit: int = -1,
         offset: int = 0,
         start_date: datetime | None = None,
@@ -196,7 +196,7 @@ class AgentService:
     @staticmethod
     def get_agent_checkins_aggregate(
         db: Session,
-        agents: list[str] = None,
+        agents: list[str] | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
         bucket_size: AggregateBucket = None,
@@ -272,7 +272,6 @@ class AgentService:
             self._agent_log_locks[session_id] = threading.Lock()
         lock = self._agent_log_locks[session_id]
 
-        with lock:
-            with open(f"{save_path}/agent.log", "a") as f:
-                f.write("\n" + current_time + " : " + "\n")
-                f.write(data + "\n")
+        with lock, open(f"{save_path}/agent.log", "a") as f:
+            f.write("\n" + current_time + " : " + "\n")
+            f.write(data + "\n")

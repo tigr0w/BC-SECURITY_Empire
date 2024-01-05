@@ -1,11 +1,11 @@
 import base64
+import contextlib
 import json
 import logging
 import os
 import string
 import threading
 import typing
-from contextlib import suppress
 
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -592,10 +592,7 @@ class AgentCommunicationService:
                 language = str(parts[10], "utf-8")
                 language_version = str(parts[11], "utf-8")
                 architecture = str(parts[12], "utf-8")
-                if high_integrity == "True":
-                    high_integrity = 1
-                else:
-                    high_integrity = 0
+                high_integrity = 1 if high_integrity == "True" else 0
 
             except Exception as e:
                 message = (
@@ -784,7 +781,7 @@ class AgentCommunicationService:
                     "python",
                     "ironpython",
                 ]:
-                    with suppress(Exception):
+                    with contextlib.suppress(Exception):
                         session_key = bytes.fromhex(session_key)
 
                 # encrypt the tasking packets with the agent's session key
@@ -816,10 +813,8 @@ class AgentCommunicationService:
         sessionKey = self.agents[session_id]["sessionKey"]
 
         if self.agents[session_id]["language"].lower() in ["python", "ironpython"]:
-            try:
+            with contextlib.suppress(Exception):
                 sessionKey = bytes.fromhex(sessionKey)
-            except Exception:
-                pass
 
         try:
             # verify, decrypt and depad the packet
@@ -953,10 +948,7 @@ class AgentCommunicationService:
                 language = parts[10]
                 language_version = parts[11]
                 architecture = parts[12]
-                if high_integrity == "True":
-                    high_integrity = 1
-                else:
-                    high_integrity = 0
+                high_integrity = 1 if high_integrity == "True" else 0
 
                 # username = str(domainname)+"\\"+str(username)
                 username = f"{domainname}\\{username}"
@@ -1012,12 +1004,7 @@ class AgentCommunicationService:
             # Close socks client
             self.agent_socks_service.close_socks_client(agent)
 
-        elif response_name == "TASK_SHELL":
-            # shell command response
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_CSHARP":
+        elif response_name in ["TASK_SHELL", "TASK_CSHARP"]:
             # shell command response
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)
@@ -1282,23 +1269,13 @@ class AgentCommunicationService:
             msg = f"Output saved to .{final_save_path}"
             self.agent_service.save_agent_log(session_id, msg)
 
-        elif response_name == "TASK_SCRIPT_IMPORT":
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_IMPORT_MODULE":
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_VIEW_MODULE":
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_REMOVE_MODULE":
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_SCRIPT_COMMAND":
+        elif response_name in [
+            "TASK_SCRIPT_IMPORT",
+            "TASK_IMPORT_MODULE",
+            "TASK_VIEW_MODULE",
+            "TASK_REMOVE_MODULE",
+            "TASK_SCRIPT_COMMAND",
+        ]:
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)
 

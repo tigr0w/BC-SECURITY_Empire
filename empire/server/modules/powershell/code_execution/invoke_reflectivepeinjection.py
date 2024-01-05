@@ -32,9 +32,8 @@ class Module:
                 if option.lower() == "file":
                     if values != "":
                         try:
-                            f = open(values, "rb")
-                            dllbytes = f.read()
-                            f.close()
+                            with open(values, "rb") as f:
+                                dllbytes = f.read()
 
                             base64bytes = base64.b64encode(dllbytes).decode("UTF-8")
 

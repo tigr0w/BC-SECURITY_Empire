@@ -56,13 +56,17 @@ class Module:
             )
 
         for option, values in params.items():
-            if option.lower() != "agent" and option.lower() != "credid":
-                if values and values != "":
-                    if values.lower() == "true":
-                        # if we're just adding a switch
-                        script_end += " -" + str(option)
-                    else:
-                        script_end += " -" + str(option) + " '" + str(values) + "'"
+            if (
+                option.lower() != "agent"
+                and option.lower() != "credid"
+                and values
+                and values != ""
+            ):
+                if values.lower() == "true":
+                    # if we're just adding a switch
+                    script_end += " -" + str(option)
+                else:
+                    script_end += " -" + str(option) + " '" + str(values) + "'"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

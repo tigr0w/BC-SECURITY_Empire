@@ -109,10 +109,10 @@ class UseCredentialMenu(UseMenu):
             for key, val in self.record_options.items():
                 temp[key] = val["Value"]
             response = state.add_credential(temp)
-            if "id" in response.keys():
+            if "id" in response:
                 log.info(f'Credential {response["id"]} successfully added')
                 state.get_credentials()
-            elif "detail" in response.keys():
+            elif "detail" in response:
                 log.error(response["detail"])
         else:
             temp = {}

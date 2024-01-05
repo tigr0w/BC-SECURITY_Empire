@@ -40,13 +40,17 @@ class Module:
             )
         else:
             for option, values in params.items():
-                if option.lower() != "agent" and option.lower() != "outputfunction":
-                    if values and values != "":
-                        if values.lower() == "true":
-                            # if we're just adding a switch
-                            script_end += " -" + str(option)
-                        else:
-                            script_end += " -" + str(option) + " " + str(values)
+                if (
+                    option.lower() != "agent"
+                    and option.lower() != "outputfunction"
+                    and values
+                    and values != ""
+                ):
+                    if values.lower() == "true":
+                        # if we're just adding a switch
+                        script_end += " -" + str(option)
+                    else:
+                        script_end += " -" + str(option) + " " + str(values)
 
             # try to make the output look nice
             if script.endswith("Invoke-TokenManipulation") or script.endswith(

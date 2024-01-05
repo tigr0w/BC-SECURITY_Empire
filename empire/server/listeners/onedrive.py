@@ -202,7 +202,7 @@ class Listener:
         language=None,
         safe_checks="",
         listener_name=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         bypasses = [] if bypasses is None else bypasses
 
@@ -441,9 +441,8 @@ class Listener:
         b64_default_response = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
-            f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
-            agent_code = f.read()
-            f.close()
+            with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
+                agent_code = f.read()
 
             agent_code = helpers.strip_powershell_comments(agent_code)
 
@@ -544,7 +543,7 @@ class Listener:
                 raise ValueError("Could not set up folders, access token invalid")
 
             base_object = s.get(f"{base_url}/drive/root:/{base_folder}")
-            if not (base_object.status_code == 200):
+            if base_object.status_code != 200:
                 self.instance_log.info(
                     f"{listener_name}: Creating {base_folder} folder"
                 )
@@ -563,7 +562,7 @@ class Listener:
 
             for item in [staging_folder, taskings_folder, results_folder]:
                 item_object = s.get(f"{base_url}/drive/root:/{base_folder}/{item}")
-                if not (item_object.status_code == 200):
+                if item_object.status_code != 200:
                     self.instance_log.info(
                         f"{listener_name}: Creating {base_folder}/{item} folder"
                     )
@@ -744,7 +743,7 @@ class Listener:
                             )[
                                 0
                             ]
-                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {str(len(return_val))} bytes"
+                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {len(return_val)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
                                 "{}/drive/root:/{}/{}/{}_2.txt:/content".format(
@@ -793,7 +792,7 @@ class Listener:
                                 session_key, agent_code
                             )
 
-                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_4.txt, {str(len(enc_code))} bytes"
+                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_4.txt, {len(enc_code)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
                                 "{}/drive/root:/{}/{}/{}_4.txt:/content".format(
@@ -832,7 +831,7 @@ class Listener:
                             ):  # If there's already something there, download and append the new data
                                 task_data = r.content + task_data
 
-                            message = f"{listener_name}: Uploading agent tasks for {agent_id}, {str(len(task_data))} bytes"
+                            message = f"{listener_name}: Uploading agent tasks for {agent_id}, {len(task_data)!s} bytes"
                             self.instance_log.info(message)
 
                             r = s.put(

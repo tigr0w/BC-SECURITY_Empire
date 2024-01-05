@@ -1,3 +1,4 @@
+import contextlib
 import fnmatch
 import logging
 import os
@@ -189,10 +190,8 @@ class ObfuscationService:
         """
         files = self._get_obfuscated_module_source_files(language)
         for file in files:
-            try:
+            with contextlib.suppress(Exception):
                 os.remove(file)
-            except Exception:
-                pass
 
     def obfuscate_keywords(self, data):
         with SessionLocal.begin() as db:

@@ -141,9 +141,7 @@ class Stager:
                         elif line.startswith("import sslzliboff"):
                             # Sockschain checks to import this, so we will just skip it
                             pass
-                        elif line.startswith("import "):
-                            imports_list.append(line)
-                        elif line.startswith("from "):
+                        elif line.startswith("import ") or line.startswith("from "):
                             imports_list.append(line)
 
                 imports_list.append("import trace")

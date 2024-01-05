@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import re
 import shlex
@@ -269,7 +270,7 @@ class EmpireCli:
     def parse_command_line(self, text: str, cmd_line: list[str], resource_file=False):
         if len(cmd_line) == 0:
             return
-        if not state.connected and not cmd_line[0] == "connect":
+        if not state.connected and cmd_line[0] != "connect":
             if cmd_line[0] == "exit":
                 choice = input(print_util.color("[>] Exit? [y/N] ", "red"))
                 if choice.lower() == "y":
@@ -315,7 +316,7 @@ class EmpireCli:
             else:
                 log.error(f"Listener not found: {cmd_line[1]}")
         elif cmd_line[0] == "usestager" and len(cmd_line) > 1:
-            if cmd_line[1] in state.stagergenv2:
+            if cmd_line[1] in state.stagers:
                 menu_state.push(self.menus["UseStagerMenu"], selected=cmd_line[1])
             else:
                 log.error(f"Stager not found: {cmd_line[1]}")
@@ -404,29 +405,25 @@ class EmpireCli:
                 pass
         elif cmd_line[0] == "help" and len(cmd_line) > 1:
             func = None
-            try:
+            with contextlib.suppress(Exception):
                 func = getattr(
                     menu_state.current_menu
                     if hasattr(menu_state.current_menu, cmd_line[1])
                     else self,
                     cmd_line[1],
                 )
-            except Exception:
-                pass
 
             if func:
                 print(func.__doc__)
         else:
             func = None
-            try:
+            with contextlib.suppress(Exception):
                 func = getattr(
                     menu_state.current_menu
                     if hasattr(menu_state.current_menu, cmd_line[0])
                     else self,
                     cmd_line[0],
                 )
-            except Exception:
-                pass
 
             if func:
                 try:
@@ -434,14 +431,13 @@ class EmpireCli:
                     # doesn't interpret it as a parameter. Also concatenate all the words
                     # after the 3rd word for easier autofilling with suggested values that have spaces
                     # There may be a better way to do this.
-                    if cmd_line[0] == "set":
-                        if len(cmd_line) > 3:
-                            cmd_line[2] = f'"{" ".join(cmd_line[2:])}"'
-                            del cmd_line[3:]
+                    if cmd_line[0] == "set" and len(cmd_line) > 3:
+                        cmd_line[2] = f'"{" ".join(cmd_line[2:])}"'
+                        del cmd_line[3:]
                     args = self.strip(docopt(func.__doc__, argv=cmd_line[1:]))
                     new_args = {}
                     # todo casting for type hinted values?
-                    for key in get_type_hints(func).keys():
+                    for key in get_type_hints(func):
                         if key != "return":
                             new_args[key] = args[key]
                     func(**new_args)
@@ -450,11 +446,13 @@ class EmpireCli:
                     pass
                 except SystemExit:
                     pass
-            elif not func and menu_state.current_menu_name == "InteractMenu":
-                if cmd_line[0] in shortcut_handler.get_names(
-                    self.menus["InteractMenu"].agent_language
-                ):
-                    menu_state.current_menu.execute_shortcut(cmd_line[0], cmd_line[1:])
+            elif (
+                not func
+                and menu_state.current_menu_name == "InteractMenu"
+                and cmd_line[0]
+                in shortcut_handler.get_names(self.menus["InteractMenu"].agent_language)
+            ):
+                menu_state.current_menu.execute_shortcut(cmd_line[0], cmd_line[1:])
 
 
 def setup_logging(args):

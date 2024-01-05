@@ -29,10 +29,7 @@ def get_listener_logger(log_name_prefix: str, listener_name: str):
     listener_stream_handler = logging.StreamHandler()
     listener_stream_handler.setLevel(logging.WARNING)
     simple_console = empire_config.logging.simple_console
-    if simple_console:
-        stream_format = SIMPLE_LOG_FORMAT
-    else:
-        stream_format = LOG_FORMAT
+    stream_format = SIMPLE_LOG_FORMAT if simple_console else LOG_FORMAT
     listener_stream_handler.setFormatter(ColorFormatter(stream_format))
     log.addHandler(listener_stream_handler)
 

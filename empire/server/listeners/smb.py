@@ -85,7 +85,7 @@ class Listener:
         language=None,
         safe_checks="",
         listener_name=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -123,7 +123,7 @@ class Listener:
                     if safe_checks.lower() == "true":
                         launcherBase += listener_util.python_safe_checks()
                 except Exception as e:
-                    p = f"{listener_name}: Error setting LittleSnitch in stager: {str(e)}"
+                    p = f"{listener_name}: Error setting LittleSnitch in stager: {e!s}"
                     log.error(p, exc_info=True)
 
                 if user_agent.lower() == "default":

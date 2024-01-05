@@ -13,10 +13,7 @@ class Module:
         obfuscation_command: str = "",
     ):
         # staging options
-        if (params["Obfuscate"]).lower() == "true":
-            launcher_obfuscate = True
-        else:
-            launcher_obfuscate = False
+        launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         module_name = "Write-HijackDll"

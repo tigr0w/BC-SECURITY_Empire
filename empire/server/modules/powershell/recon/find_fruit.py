@@ -28,16 +28,19 @@ class Module:
 
         for option, values in params.items():
             if (
-                option.lower() != "agent"
-                and option.lower() != "showall"
-                and option.lower() != "outputfunction"
+                (
+                    option.lower() != "agent"
+                    and option.lower() != "showall"
+                    and option.lower() != "outputfunction"
+                )
+                and values
+                and values != ""
             ):
-                if values and values != "":
-                    if values.lower() == "true":
-                        # if we're just adding a switch
-                        script_end += " -" + str(option)
-                    else:
-                        script_end += " -" + str(option) + " " + str(values)
+                if values.lower() == "true":
+                    # if we're just adding a switch
+                    script_end += " -" + str(option)
+                else:
+                    script_end += " -" + str(option) + " " + str(values)
 
         if show_all != "true":
             script_end += " | ?{$_.Status -eq 'OK'}"
