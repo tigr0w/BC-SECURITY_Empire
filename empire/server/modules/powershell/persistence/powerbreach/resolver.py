@@ -81,16 +81,19 @@ Invoke-ResolverBackdoor"""
 
         for option, values in params.items():
             if (
-                option.lower() != "agent"
-                and option.lower() != "listener"
-                and option.lower() != "outfile"
+                (
+                    option.lower() != "agent"
+                    and option.lower() != "listener"
+                    and option.lower() != "outfile"
+                )
+                and values
+                and values != ""
             ):
-                if values and values != "":
-                    if values.lower() == "true":
-                        # if we're just adding a switch
-                        script += " -" + str(option)
-                    else:
-                        script += " -" + str(option) + " " + str(values)
+                if values.lower() == "true":
+                    # if we're just adding a switch
+                    script += " -" + str(option)
+                else:
+                    script += " -" + str(option) + " " + str(values)
 
         out_file = params["OutFile"]
         if out_file != "":

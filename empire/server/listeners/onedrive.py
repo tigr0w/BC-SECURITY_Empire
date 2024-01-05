@@ -441,9 +441,8 @@ class Listener:
         b64_default_response = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
-            f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
-            agent_code = f.read()
-            f.close()
+            with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
+                agent_code = f.read()
 
             agent_code = helpers.strip_powershell_comments(agent_code)
 
@@ -544,7 +543,7 @@ class Listener:
                 raise ValueError("Could not set up folders, access token invalid")
 
             base_object = s.get(f"{base_url}/drive/root:/{base_folder}")
-            if not (base_object.status_code == 200):
+            if base_object.status_code != 200:
                 self.instance_log.info(
                     f"{listener_name}: Creating {base_folder} folder"
                 )
@@ -563,7 +562,7 @@ class Listener:
 
             for item in [staging_folder, taskings_folder, results_folder]:
                 item_object = s.get(f"{base_url}/drive/root:/{base_folder}/{item}")
-                if not (item_object.status_code == 200):
+                if item_object.status_code != 200:
                     self.instance_log.info(
                         f"{listener_name}: Creating {base_folder}/{item} folder"
                     )

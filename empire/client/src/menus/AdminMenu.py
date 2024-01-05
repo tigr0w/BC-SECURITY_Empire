@@ -110,10 +110,7 @@ class AdminMenu(Menu):
 
         Usage: create_user <username> <password> <confirm_password> <admin>
         """
-        if admin == "True":
-            admin = True
-        else:
-            admin = False
+        admin = admin == "True"
 
         options = {
             "username": username,
@@ -124,9 +121,9 @@ class AdminMenu(Menu):
         response = state.create_user(options)
 
         # Return results and error message
-        if "id" in response.keys():
+        if "id" in response:
             log.info(f"Added user: {username}")
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(["detail"])
 
     @command
@@ -141,9 +138,9 @@ class AdminMenu(Menu):
         response = state.edit_user(user_id, user)
 
         # Return results and error message
-        if "id" in response.keys():
+        if "id" in response:
             log.info(f"Disabled user: {user['username']}")
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command
@@ -158,9 +155,9 @@ class AdminMenu(Menu):
         response = state.edit_user(user_id, user)
 
         # Return results and error message
-        if "id" in response.keys():
+        if "id" in response:
             log.info(f"Enabled user: {user['username']}")
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(["detail"])
 
     @command
@@ -170,7 +167,7 @@ class AdminMenu(Menu):
 
         Usage: malleable_profile <profile_name>
         """
-        if profile_name in state.profiles.keys():
+        if profile_name in state.profiles:
             record_list = []
             for key, value in state.profiles[profile_name].items():
                 record_list.append([print_util.color(key, "blue"), value])
@@ -198,10 +195,10 @@ class AdminMenu(Menu):
 
         response = state.add_malleable_profile(post_body)
 
-        if "id" in response.keys():
+        if "id" in response:
             log.info(f"Added {post_body['name']} to database")
             state.get_malleable_profile()
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command
@@ -217,10 +214,10 @@ class AdminMenu(Menu):
         profile_id = state.get_malleable_profile()[profile_name]["id"]
         response = state.delete_malleable_profile(profile_id)
 
-        if "id" in response.keys():
+        if "id" in response:
             log.info(f"Deleted {profile_name} from database")
             state.get_malleable_profile()
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command
@@ -236,9 +233,9 @@ class AdminMenu(Menu):
         if data:
             response = state.upload_file(filename, data)
 
-            if "id" in response.keys():
+            if "id" in response:
                 log.info(f"Uploaded {filename} to server")
-            elif "detail" in response.keys():
+            elif "detail" in response:
                 log.error(["detail"])
         else:
             log.error("Invalid file path")
@@ -253,7 +250,7 @@ class AdminMenu(Menu):
         file_id = state.server_files[filename]["id"]
         response = state.download_file(file_id)
 
-        if "location" in response.keys():
+        if "location" in response:
             link = response["location"]
             filename = response["filename"]
 
@@ -264,7 +261,7 @@ class AdminMenu(Menu):
                 f.write(data)
             log.info(f"Downloaded {filename} from server")
 
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command
@@ -283,7 +280,7 @@ class AdminMenu(Menu):
         # Return results and error message
         if response.status_code == 202:
             log.info("Preobfuscating modules...")
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command

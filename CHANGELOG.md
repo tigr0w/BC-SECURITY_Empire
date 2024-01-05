@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added validation and execution exceptions for modules to raise (@Vinnybod)
 -   Added decorators for module generate functions to automatically get the module_source and call finalize_module (@Vinnybod)
 -   Added execution exception to plugins (@Vinnybod)
+-   Added SIM rules to ruff config (@Vinnybod)
 
 ### Deprecated
 

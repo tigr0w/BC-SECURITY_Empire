@@ -148,10 +148,7 @@ class DownloadService:
         :param file:
         :return:
         """
-        if isinstance(file, Path):
-            filename = file.name
-        else:
-            filename = file.filename
+        filename = file.name if isinstance(file, Path) else file.filename
 
         location = (
             empire_config.directories.downloads / "uploads" / user.username / filename

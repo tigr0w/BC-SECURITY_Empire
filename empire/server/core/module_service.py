@@ -238,12 +238,10 @@ class ModuleService:
                     f"module requires language version {module.min_language_version} but agent running language version {agent.language_version}",
                 )
 
-        if module.needs_admin and not ignore_admin_check:
-            # if we're running this module for all agents, skip this validation
-            if not agent.high_integrity:
-                raise ModuleValidationException(
-                    "module needs to run in an elevated context"
-                )
+        if module.needs_admin and not ignore_admin_check and not agent.high_integrity:
+            raise ModuleValidationException(
+                "module needs to run in an elevated context"
+            )
 
         return options, None
 
@@ -357,28 +355,29 @@ class ModuleService:
 
         # This is where the code goes for all the modules that do not have a custom generate function.
         for key, value in params.items():
-            if key.lower() not in ["agent", "computername", "outputfunction"]:
-                if value and value != "":
-                    if value.lower() == "true":
-                        # if we're just adding a switch
-                        # wannabe mustache templating.
-                        # If we want to get more advanced, we can import a library for it.
-                        this_option = (
-                            module.advanced.option_format_string_boolean.replace(
-                                "{{ KEY }}", str(key)
-                            ).replace("{{KEY}}", str(key))
+            if (
+                key.lower() not in ["agent", "computername", "outputfunction"]
+                and value
+                and value != ""
+            ):
+                if value.lower() == "true":
+                    # if we're just adding a switch
+                    # wannabe mustache templating.
+                    # If we want to get more advanced, we can import a library for it.
+                    this_option = module.advanced.option_format_string_boolean.replace(
+                        "{{ KEY }}", str(key)
+                    ).replace("{{KEY}}", str(key))
+                    option_strings.append(f"{this_option}")
+                else:
+                    this_option = (
+                        module.advanced.option_format_string.replace(
+                            "{{ KEY }}", str(key)
                         )
-                        option_strings.append(f"{this_option}")
-                    else:
-                        this_option = (
-                            module.advanced.option_format_string.replace(
-                                "{{ KEY }}", str(key)
-                            )
-                            .replace("{{KEY}}", str(key))
-                            .replace("{{ VALUE }}", str(value))
-                            .replace("{{VALUE}}", str(value))
-                        )
-                        option_strings.append(f"{this_option}")
+                        .replace("{{KEY}}", str(key))
+                        .replace("{{ VALUE }}", str(value))
+                        .replace("{{VALUE}}", str(value))
+                    )
+                    option_strings.append(f"{this_option}")
 
         script_end = (
             script_end.replace("{{ PARAMS }}", " ".join(option_strings))
@@ -425,9 +424,12 @@ class ModuleService:
             )
             param_string = ""
             for key, value in params.items():
-                if key.lower() not in ["agent", "computername", "dotnetversion"]:
-                    if value and value != "":
-                        param_string += "," + value
+                if (
+                    key.lower() not in ["agent", "computername", "dotnetversion"]
+                    and value
+                    and value != ""
+                ):
+                    param_string += "," + value
 
             return f"{script_file}|{param_string}"
         except (ModuleValidationException, ModuleExecutionException) as e:

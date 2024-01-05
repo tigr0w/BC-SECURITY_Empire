@@ -553,11 +553,11 @@ class Listener:
 
         elif language == "python":
             if version == "ironpython":
-                f = open(self.mainMenu.installPath + "/data/agent/ironpython_agent.py")
+                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
-                f = open(self.mainMenu.installPath + "/data/agent/agent.py")
-            code = f.read()
-            f.close()
+                f = self.mainMenu.installPath + "/data/agent/agent.py"
+            with open(f) as f:
+                code = f.read()
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)

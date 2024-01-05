@@ -160,7 +160,8 @@ class Listener:
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return open(f"{self.template_dir }/default.html").read()
+        with open(f"{self.template_dir}/default.html") as f:
+            return f.read()
 
     def validate_options(self) -> tuple[bool, str | None]:
         """
@@ -792,11 +793,11 @@ class Listener:
         elif language == "python":
             # read in the agent base
             if version == "ironpython":
-                f = open(self.mainMenu.installPath + "/data/agent/ironpython_agent.py")
+                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
-                f = open(self.mainMenu.installPath + "/data/agent/agent.py")
-            code = f.read()
-            f.close()
+                f = self.mainMenu.installPath + "/data/agent/agent.py"
+            with open(f) as f:
+                code = f.read()
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -1740,9 +1741,9 @@ class ExtendedPacketHandler(PacketHandler):
                 pyversion = sys.version_info
 
                 # support any version of tls
-                if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
-                    proto = ssl.PROTOCOL_TLS
-                elif pyversion[0] >= 3:
+                if (pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13) or (
+                    pyversion[0] >= 3
+                ):
                     proto = ssl.PROTOCOL_TLS
                 else:
                     proto = ssl.PROTOCOL_SSLv23

@@ -17,20 +17,22 @@ class Module:
     ):
         script_end = ""
         for option, values in params.items():
-            if option.lower() != "agent":
-                if values and values != "":
-                    if option == "ProcessName":
-                        script_end = "Get-Process " + values + " | Out-Minidump"
-                    elif option == "ProcessId":
-                        script_end = "Get-Process -Id " + values + " | Out-Minidump"
+            if option.lower() != "agent" and values and values != "":
+                if option == "ProcessName":
+                    script_end = "Get-Process " + values + " | Out-Minidump"
+                elif option == "ProcessId":
+                    script_end = "Get-Process -Id " + values + " | Out-Minidump"
 
         for option, values in params.items():
-            if values and values != "":
-                if (
+            if (
+                values
+                and values != ""
+                and (
                     option != "Agent"
                     and option != "ProcessName"
                     and option != "ProcessId"
-                ):
-                    script_end += " -" + str(option) + " " + str(values)
+                )
+            ):
+                script_end += " -" + str(option) + " " + str(values)
 
         return script, script_end

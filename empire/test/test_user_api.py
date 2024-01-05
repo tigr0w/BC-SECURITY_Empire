@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 def test_create_user(client, admin_auth_header):
     response = client.post(
         "/api/v2/users/",
@@ -159,7 +162,7 @@ def test_upload_user_avatar_not_me(client, regular_auth_token):
         files={
             "file": (
                 "avatar.png",
-                open("./empire/test/avatar.png", "rb").read(),
+                Path("./empire/test/avatar.png").read_bytes(),
             )
         },
     )
@@ -178,7 +181,7 @@ def test_upload_user_avatar_not_image(client, admin_auth_header):
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "rb").read(),
+                Path("./empire/test/test-upload.yaml").read_bytes(),
             )
         },
     )
@@ -194,7 +197,7 @@ def test_upload_user_avatar(client, admin_auth_header):
         files={
             "file": (
                 "avatar.png",
-                open("./empire/test/avatar.png", "rb").read(),
+                Path("./empire/test/avatar.png").read_bytes(),
             )
         },
     )
@@ -218,7 +221,7 @@ def test_upload_user_avatar(client, admin_auth_header):
         files={
             "file": (
                 "avatar2.png",
-                open("./empire/test/avatar2.png", "rb").read(),
+                Path("./empire/test/avatar2.png").read_bytes(),
             )
         },
     )

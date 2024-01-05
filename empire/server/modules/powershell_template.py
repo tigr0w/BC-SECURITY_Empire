@@ -48,13 +48,12 @@ class Module:
         script_end = ""
         # Add any arguments to the end execution of the script
         for option, values in params.items():
-            if option.lower() != "agent":
-                if values and values != "":
-                    if values.lower() == "true":
-                        # if we're just adding a switch
-                        script_end += " -" + str(option)
-                    else:
-                        script_end += " -" + str(option) + " " + str(values)
+            if option.lower() != "agent" and values and values != "":
+                if values.lower() == "true":
+                    # if we're just adding a switch
+                    script_end += " -" + str(option)
+                else:
+                    script_end += " -" + str(option) + " " + str(values)
 
         # Step 3: Return the final script
         # finalize_module will obfuscate the "script_end" (if needed), then append it to the script.

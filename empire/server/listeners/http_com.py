@@ -162,7 +162,8 @@ class Listener:
         """
         Returns an IIS 7.5 404 not found page.
         """
-        return open(f"{self.template_dir }/default.html").read()
+        with open(f"{self.template_dir}/default.html") as f:
+            return f.read()
 
     def validate_options(self) -> tuple[bool, str | None]:
         """
@@ -238,12 +239,11 @@ class Listener:
             listenerOptions = copy.deepcopy(listenerOptions)
             bindIP = listenerOptions["BindIP"]["Value"]
             port = listenerOptions["Port"]["Value"]
-            if ":" in bindIP:
-                if "http" in host:
-                    if "https" in host:
-                        host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
-                    else:
-                        host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
+            if ":" in bindIP and "http" in host:
+                if "https" in host:
+                    host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
+                else:
+                    host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
@@ -448,9 +448,8 @@ class Listener:
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
-            f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
-            code = f.read()
-            f.close()
+            with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
+                code = f.read()
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -552,7 +551,7 @@ class Listener:
                 obfuscation = obfuscation_config.enabled
                 obfuscation_command = obfuscation_config.command
 
-            if "powershell" == stager:
+            if stager == "powershell":
                 launcher = self.mainMenu.stagers.generate_launcher(
                     listenerName=listenerName,
                     language="powershell",
@@ -821,9 +820,9 @@ class Listener:
 
                 # support any version of tls
                 pyversion = sys.version_info
-                if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
-                    proto = ssl.PROTOCOL_TLS
-                elif pyversion[0] >= 3:
+                if (pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13) or (
+                    pyversion[0] >= 3
+                ):
                     proto = ssl.PROTOCOL_TLS
                 else:
                     proto = ssl.PROTOCOL_SSLv23

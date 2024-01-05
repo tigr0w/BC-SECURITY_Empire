@@ -110,7 +110,7 @@ class AgentMenu(Menu):
         )
         if choice.lower() == "y":
             if agent_name == "all":
-                for agent_name in state.get_agents().keys():
+                for agent_name in state.get_agents():
                     self.kill_agent(agent_name)
             elif agent_name == "stale":
                 for agent_name, agent in state.get_agents().items():

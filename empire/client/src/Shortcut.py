@@ -30,9 +30,9 @@ class Shortcut:
             raise TypeError
 
         self.name = name
-        self.shell = None if not shell else shell
+        self.shell = shell if shell else None
         self.module = module
-        self.params = [] if not params else params
+        self.params = params if params else []
 
     def get_dynamic_params(self) -> list[ShortcutParam]:
         return list(filter(lambda x: x.dynamic, self.params))

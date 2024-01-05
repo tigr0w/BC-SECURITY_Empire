@@ -22,10 +22,7 @@ class Module:
         reg_path = params["RegPath"]
 
         # staging options
-        if (params["Obfuscate"]).lower() == "true":
-            launcher_obfuscate = True
-        else:
-            launcher_obfuscate = False
+        launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""

@@ -57,7 +57,7 @@ class UseStagerMenu(UseMenu):
 
         Usage: use <module>
         """
-        if module in state.stagers.keys():  # todo rename module?
+        if module in state.stagers:  # todo rename module?
             self.selected = module
             self.record = state.stagers[module]
             self.record_options = state.stagers[module]["options"]
@@ -82,7 +82,7 @@ class UseStagerMenu(UseMenu):
         # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
         temp_record = {}
-        for key in self.record_options.keys():
+        for key in self.record_options:
             post_body[key] = self.record_options[key]["value"]
 
         temp_record["options"] = post_body

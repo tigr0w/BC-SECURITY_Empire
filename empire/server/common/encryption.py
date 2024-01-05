@@ -341,9 +341,12 @@ class DiffieHellman:
         Check the other party's public key to make sure it's valid.
         Since a safe prime is used, verify that the Legendre symbol == 1
         """
-        if otherKey > 2 and otherKey < self.prime - 1:
-            if pow(otherKey, (self.prime - 1) // 2, self.prime) == 1:
-                return True
+        if (
+            otherKey > 2
+            and otherKey < self.prime - 1
+            and pow(otherKey, (self.prime - 1) // 2, self.prime) == 1
+        ):
+            return True
         return False
 
     def genSecret(self, privateKey, otherKey):

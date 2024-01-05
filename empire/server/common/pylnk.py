@@ -634,12 +634,10 @@ class LinkTargetIDList:
             self.items.append(PathSegmentEntry(item))
 
     def _validate(self):
-        if type(self.items[0]) == RootEntry:
-            if (
-                self.items[0].root == ROOT_MY_COMPUTER
-                and type(self.items[1]) != DriveEntry
-            ):
-                raise ValueError("A drive is required for absolute lnks")
+        if type(self.items[0]) == RootEntry and (
+            self.items[0].root == ROOT_MY_COMPUTER and type(self.items[1]) != DriveEntry
+        ):
+            raise ValueError("A drive is required for absolute lnks")
 
     def bytes(self):
         self._validate()
@@ -746,9 +744,8 @@ class Lnk:
                 raise ValueError(
                     "Need a writeable object or a file name to save to, got %s" % f
                 )
-            if force_ext:
-                if not f.lower().endswith(".lnk"):
-                    f += ".lnk"
+            if force_ext and not f.lower().endswith(".lnk"):
+                f += ".lnk"
             f = open(f, "wb")
         self.write(f)
         # only close the stream if it's our own

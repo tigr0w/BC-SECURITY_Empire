@@ -88,9 +88,9 @@ class PluginService:
                 plugin_name = filename.split(".")[0]
 
                 # don't load up any of the templates or examples
-                if fnmatch.fnmatch(filename, "*template.plugin"):
-                    continue
-                elif fnmatch.fnmatch(filename, "*example.plugin"):
+                if fnmatch.fnmatch(filename, "*template.plugin") or fnmatch.fnmatch(
+                    filename, "*example.plugin"
+                ):
                     continue
 
                 self.load_plugin(plugin_name, file_path)

@@ -90,6 +90,9 @@ force-exclude = '''
 extend-exclude = [
     'empire/server/data',
     'empire/server/downloads',
+    # This file is a pain to untangle for some of the linting rules
+    # it is from a 3rd party library, and its mostly untested.
+    'empire/server/common/pylnk.py',
     'empire/server/common/malleable',
     'empire/client/generated-stagers',
     'empire/client/downloads',
@@ -107,7 +110,8 @@ select = [
     "I", # isort
     "UP", # pyupgrade
     "B",  # flake8-bugbear
-    "C4" # flake8-comprehensions
+    "C4", # flake8-comprehensions
+    "SIM", # simplify
 ]
 target-version = "py310"
 

@@ -14,9 +14,8 @@ class Module:
         obfuscation_command: str = "",
     ) -> tuple[str | None, str | None]:
         path = main_menu.installPath + "/data/misc/python_modules/mss.zip"
-        open_file = open(path, "rb")
-        module_data = open_file.read()
-        open_file.close()
+        with open(path, "rb") as open_file:
+            module_data = open_file.read()
         module_data = base64.b64encode(module_data)
         script = """
 import os

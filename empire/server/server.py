@@ -44,10 +44,7 @@ def setup_logging(args):
     root_logger.addHandler(root_logger_file_handler)
 
     simple_console = empire_config.logging.simple_console
-    if simple_console:
-        stream_format = SIMPLE_LOG_FORMAT
-    else:
-        stream_format = LOG_FORMAT
+    stream_format = SIMPLE_LOG_FORMAT if simple_console else LOG_FORMAT
     root_logger_stream_handler = logging.StreamHandler()
     root_logger_stream_handler.setFormatter(ColorFormatter(stream_format))
     root_logger_stream_handler.setLevel(log_level)

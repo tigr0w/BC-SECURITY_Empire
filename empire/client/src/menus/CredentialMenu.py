@@ -102,7 +102,7 @@ class CredentialMenu(Menu):
                 )
             )
             if choice.lower() == "y":
-                for key in state.credentials.keys():
+                for key in state.credentials:
                     self.remove_credential(key)
         else:
             self.remove_credential(cred_id)

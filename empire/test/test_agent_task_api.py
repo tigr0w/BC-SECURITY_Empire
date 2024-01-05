@@ -1,3 +1,5 @@
+import contextlib
+from pathlib import Path
 from textwrap import dedent
 from types import SimpleNamespace
 
@@ -140,7 +142,7 @@ def download(client, admin_auth_header, db, models):
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml").read(),
+                Path("./empire/test/test-upload.yaml").read_bytes(),
             )
         },
     )
@@ -148,10 +150,8 @@ def download(client, admin_auth_header, db, models):
     yield response.json()
 
     # there is no delete endpoint for downloads, so we need to delete the file manually
-    try:
+    with contextlib.suppress(Exception):
         db.query(models.Download).delete()
-    except Exception:
-        pass
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -162,7 +162,7 @@ def bof_download(client, admin_auth_header, db, models):
         files={
             "file": (
                 "whoami.x64.o",
-                open("./empire/test/data/whoami.x64.o", "rb").read(),
+                Path("./empire/test/data/whoami.x64.o").read_bytes(),
             )
         },
     )
@@ -170,10 +170,8 @@ def bof_download(client, admin_auth_header, db, models):
     yield response.json()
 
     # there is no delete endpoint for downloads, so we need to delete the file manually
-    try:
+    with contextlib.suppress(Exception):
         db.query(models.Download).delete()
-    except Exception:
-        pass
 
 
 @pytest.fixture(scope="function")
@@ -721,7 +719,7 @@ def test_create_task_script_import_agent_not_found(client, admin_auth_header, ag
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "rb"),
+                Path("./empire/test/test-upload.yaml").read_bytes(),
                 "text/plain",
             )
         },
@@ -738,7 +736,7 @@ def test_create_task_script_import(client, admin_auth_header, agent):
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "rb"),
+                Path("./empire/test/test-upload.yaml").read_bytes(),
                 "text/plain",
             )
         },

@@ -68,7 +68,7 @@ class UseListenerMenu(UseMenu):
         # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
         temp_record = {}
-        for key in self.record_options.keys():
+        for key in self.record_options:
             post_body[key] = self.record_options[key]["value"]
 
         temp_record["options"] = post_body
@@ -76,9 +76,9 @@ class UseListenerMenu(UseMenu):
         temp_record["template"] = self.record["id"]
 
         response = state.create_listener(temp_record)
-        if "id" in response.keys():
+        if "id" in response:
             return
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command

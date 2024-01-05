@@ -83,14 +83,16 @@ class InteractMenu(Menu):
                             display=files.split("/")[-1],
                             start_position=-len(word_before_cursor),
                         )
-            elif position - 1 >= len(params) and position > 1:
-                if params[position - 2].lower() == "file":
-                    if len(cmd_line) > 1 and cmd_line[1] == "-p":
-                        file = state.search_files()
-                        if file:
-                            yield Completion(
-                                file, start_position=-len(word_before_cursor)
-                            )
+            elif (
+                position - 1 >= len(params)
+                and position > 1
+                and params[position - 2].lower() == "file"
+                and len(cmd_line) > 1
+                and cmd_line[1] == "-p"
+            ):
+                file = state.search_files()
+                if file:
+                    yield Completion(file, start_position=-len(word_before_cursor))
 
         elif cmd_line[0] in ["view"]:
             tasks = state.get_agent_tasks(self.session_id, 100)
@@ -156,7 +158,7 @@ class InteractMenu(Menu):
         Usage: use <agent_name>
         """
         state.get_agents()
-        if agent_name in state.agents.keys():
+        if agent_name in state.agents:
             self.name = agent_name
             self.selected = state.agents[agent_name]["session_id"]
             self.session_id = state.agents[agent_name]["session_id"]
@@ -176,7 +178,7 @@ class InteractMenu(Menu):
         """
         literal = bool(literal)  # docopt parses into 0/1
         response = state.agent_shell(self.session_id, shell_cmd, literal)
-        if "status" in response.keys():
+        if "status" in response:
             log.info(
                 "Tasked " + self.session_id + " to run Task " + str(response["id"])
             )
@@ -189,7 +191,7 @@ class InteractMenu(Menu):
         Usage: sysinfo
         """
         response = state.sysinfo(self.session_id)
-        if "status" in response.keys():
+        if "status" in response:
             log.info(
                 "Tasked " + self.session_id + " to run Task " + str(response["id"])
             )
@@ -214,7 +216,7 @@ class InteractMenu(Menu):
                 log.info(
                     "Tasked " + self.selected + " to run Task " + str(response["id"])
                 )
-            elif "detail" in response.keys():
+            elif "detail" in response:
                 log.error(response["detail"])
 
         else:
@@ -233,7 +235,7 @@ class InteractMenu(Menu):
                 "[*] Tasked " + self.session_id + " to run Task " + str(response["id"])
             )
 
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error("[!] Error: " + response["detail"])
 
     @command
@@ -253,19 +255,19 @@ class InteractMenu(Menu):
         if data:
             response = state.upload_file(filename, data)
 
-            if "id" in response.keys():
+            if "id" in response:
                 log.info(f"Uploaded {filename} to server")
 
                 # If successful upload then pass to agent
                 response = state.agent_upload_file(
                     self.session_id, response["id"], file_path=remote_file_directory
                 )
-                if "id" in response.keys():
+                if "id" in response:
                     log.info("Tasked " + self.selected + " to upload file " + filename)
-                elif "detail" in response.keys():
+                elif "detail" in response:
                     log.error(response["detail"])
 
-            elif "detail" in response.keys():
+            elif "detail" in response:
                 log.error(response["detail"])
         else:
             log.error("Invalid file path")
@@ -363,7 +365,7 @@ class InteractMenu(Menu):
 
         if "id" in response:
             log.info("Updated agent " + self.selected + " listener " + listener_name)
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command
@@ -377,7 +379,7 @@ class InteractMenu(Menu):
 
         if "id" in response:
             log.info("Updated agent " + self.selected + " kill_date to " + kill_date)
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command
@@ -427,7 +429,7 @@ class InteractMenu(Menu):
 
         response = state.get_agent_tasks(self.session_id, str(number_tasks))
 
-        if "records" in response.keys():
+        if "records" in response:
             tasks = response["records"]
             for task in tasks:
                 if task.get("output"):
@@ -436,7 +438,7 @@ class InteractMenu(Menu):
                         print(print_util.color(line))
                 else:
                     log.error(f'Task {task["id"]} No tasking results received')
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command
@@ -475,7 +477,7 @@ class InteractMenu(Menu):
             self.shell(shortcut.shell)
             return
 
-        if not len(params) == len(shortcut.get_dynamic_param_names()):
+        if len(params) != len(shortcut.get_dynamic_param_names()):
             return None  # todo log message
 
         if shortcut.module not in state.modules:
@@ -492,7 +494,7 @@ class InteractMenu(Menu):
 
         # TODO Still haven't figured out other data types. Right now everything is a string.
         #  Which I think is how it is in the old cli
-        for key in module_options.keys():
+        for key in module_options:
             if key in shortcut.get_dynamic_param_names():
                 # Grab filename, send to server, and save a copy off in the downloads folder
                 if key in ["File"]:
@@ -505,10 +507,10 @@ class InteractMenu(Menu):
                             log.error("Invalid filename or file does not exist")
                             return
                         response = state.upload_file(filename, data)
-                        if "id" in response.keys():
+                        if "id" in response:
                             log.info("File uploaded to server successfully")
                             post_body.get("options")["File"] = response["id"]
-                        elif "detail" in response.keys():
+                        elif "detail" in response:
                             if response["detail"].startswith("[!]"):
                                 msg = response["detail"]
                             else:
@@ -534,7 +536,7 @@ class InteractMenu(Menu):
             log.info(
                 "[*] Tasked " + self.selected + " to run Task " + str(response["id"])
             )
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
     @command
@@ -566,7 +568,7 @@ class InteractMenu(Menu):
         post_body = {}
         post_body["options"] = {}
 
-        for key in module_options.keys():
+        for key in module_options:
             post_body["options"][key] = str(module_options[key]["value"])
 
         post_body["module_id"] = "csharp_vnc_vncserver"

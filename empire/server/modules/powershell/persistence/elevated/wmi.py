@@ -32,10 +32,7 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        if (params["Obfuscate"]).lower() == "true":
-            launcher_obfuscate = True
-        else:
-            launcher_obfuscate = False
+        launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""
@@ -89,9 +86,8 @@ class Module:
             # read in an external file as the payload and build a
             #   base64 encoded version as encScript
             if os.path.exists(ext_file):
-                f = open(ext_file)
-                fileData = f.read()
-                f.close()
+                with open(ext_file) as f:
+                    fileData = f.read()
 
                 # unicode-base64 encode the script for -enc launching
                 enc_script = helpers.enc_powershell(fileData)

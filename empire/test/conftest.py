@@ -416,7 +416,7 @@ def download(client, admin_auth_header):
         files={
             "file": (
                 "test-upload-2.yaml",
-                open("./empire/test/test-upload-2.yaml").read(),
+                Path("./empire/test/test-upload-2.yaml").read_bytes(),
             )
         },
     )

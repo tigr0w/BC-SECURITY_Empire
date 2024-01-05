@@ -43,16 +43,19 @@ class Module:
 
         for option, values in params.items():
             if (
-                option.lower() != "agent"
-                and option.lower() != "guid"
-                and option.lower() != "outputfunction"
+                (
+                    option.lower() != "agent"
+                    and option.lower() != "guid"
+                    and option.lower() != "outputfunction"
+                )
+                and values
+                and values != ""
             ):
-                if values and values != "":
-                    if values.lower() == "true":
-                        # if we're just adding a switch
-                        script_end += " -" + str(option)
-                    else:
-                        script_end += " -" + str(option) + " " + str(values)
+                if values.lower() == "true":
+                    # if we're just adding a switch
+                    script_end += " -" + str(option)
+                else:
+                    script_end += " -" + str(option) + " " + str(values)
 
         script_end += (
             "-GPLink "
@@ -62,16 +65,19 @@ class Module:
 
         for option, values in params.items():
             if (
-                option.lower() != "agent"
-                and option.lower() != "guid"
-                and option.lower() != "outputfunction"
+                (
+                    option.lower() != "agent"
+                    and option.lower() != "guid"
+                    and option.lower() != "outputfunction"
+                )
+                and values
+                and values != ""
             ):
-                if values and values != "":
-                    if values.lower() == "true":
-                        # if we're just adding a switch
-                        script_end += " -" + str(option)
-                    else:
-                        script_end += " -" + str(option) + " " + str(values)
+                if values.lower() == "true":
+                    # if we're just adding a switch
+                    script_end += " -" + str(option)
+                else:
+                    script_end += " -" + str(option) + " " + str(values)
 
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (

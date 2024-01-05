@@ -21,9 +21,8 @@ class Module:
         if not os.path.exists(shellcodeBinPath):
             return handle_error_message("[!] Shellcode bin file not found.")
 
-        f = open(shellcodeBinPath, "rb")
-        shellcode = base64.b64encode(f.read())
-        f.close()
+        with open(shellcodeBinPath, "rb") as f:
+            shellcode = base64.b64encode(f.read())
 
         script = """
 from ctypes import *
