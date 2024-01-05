@@ -28,8 +28,8 @@ class DownloadService:
     def get_all(
         db: Session,
         download_types: list[DownloadSourceFilter] | None,
-        tags: list[str] = None,
-        q: str = None,
+        tags: list[str] | None = None,
+        q: str | None = None,
         limit: int = -1,
         offset: int = 0,
         order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,

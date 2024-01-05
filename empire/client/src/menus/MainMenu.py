@@ -70,8 +70,8 @@ class MainMenu(Menu):
         config: bool = False,
         port: int = 1337,
         socketport: int = 5000,
-        username: str = None,
-        password: str = None,
+        username: str | None = None,
+        password: str | None = None,
     ) -> None:
         """
         Connect to empire instance

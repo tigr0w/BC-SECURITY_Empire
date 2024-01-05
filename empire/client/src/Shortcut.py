@@ -23,7 +23,7 @@ class Shortcut:
         name: str,
         module: str | None = None,
         shell: str | None = None,
-        params: list[ShortcutParam] = None,
+        params: list[ShortcutParam] | None = None,
     ):
         if not module and not shell:
             log.error("Shortcut must have either a module or shell command")

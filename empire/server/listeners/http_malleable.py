@@ -263,7 +263,7 @@ class Listener:
         safeChecks="",
         listenerName=None,
         stager=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -1092,14 +1092,14 @@ class ExtendedPacketHandler(PacketHandler):
 
     def send_results_for_child(self, received_data):
         self.headers['Cookie'] = "session=%s" % (received_data[1:])
-        taskUri = random.sample({str(profile.post.client.uris)}, 1)[0]
+        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
         requestUri = self.server + taskURI
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
         return response
 
     def send_get_tasking_for_child(self, received_data):
         decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-        taskUri = random.sample({str(profile.post.client.uris)}, 1)[0]
+        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
         requestUri = self.server + taskURI
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
         return response
@@ -1709,7 +1709,7 @@ class ExtendedPacketHandler(PacketHandler):
                                     )
                         else:
                             # log error parsing routing packet
-                            message = f"{listenerName} Error parsing routing packet from {clientIP}: {str(agentInfo)}."
+                            message = f"{listenerName} Error parsing routing packet from {clientIP}: {agentInfo!s}."
                             self.instance_log.error(message)
                             log.error(message)
 
@@ -1724,7 +1724,7 @@ class ExtendedPacketHandler(PacketHandler):
 
             except malleable.MalleableError as e:
                 # probably an issue with the malleable library, please report it :)
-                message = f"{listenerName}: Malleable had trouble handling a request for /{request_uri} by {clientIP}: {str(e)}."
+                message = f"{listenerName}: Malleable had trouble handling a request for /{request_uri} by {clientIP}: {e!s}."
                 self.instance_log.error(message, exc_info=True)
                 log.error(message, exc_info=True)
 
@@ -1761,7 +1761,7 @@ class ExtendedPacketHandler(PacketHandler):
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
         except Exception as e:
-            message = f"Listener startup on port {port} failed - {e.__class__.__name__}: {str(e)}"
+            message = f"Listener startup on port {port} failed - {e.__class__.__name__}: {e!s}"
             self.instance_log.error(message, exc_info=True)
             log.error(message, exc_info=True)
 

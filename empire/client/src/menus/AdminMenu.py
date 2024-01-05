@@ -265,7 +265,7 @@ class AdminMenu(Menu):
             log.error(response["detail"])
 
     @command
-    def preobfuscate(self, reobfuscate: str = None):
+    def preobfuscate(self, reobfuscate: str | None = None):
         """
         Preobfuscate modules on the server.
         If reobfuscate is false, will not obfuscate modules that have already been obfuscated.
@@ -284,7 +284,7 @@ class AdminMenu(Menu):
             log.error(response["detail"])
 
     @command
-    def keyword_obfuscation(self, keyword: str, replacement: str = None):
+    def keyword_obfuscation(self, keyword: str, replacement: str | None = None):
         """
         Add keywords to be obfuscated from commands. Empire will generate a random word
         if no replacement word is provided.

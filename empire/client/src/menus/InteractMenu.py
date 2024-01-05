@@ -648,7 +648,7 @@ class InteractMenu(Menu):
         if "id" in response:
             print(
                 print_util.color(
-                    "[*] Tasked " + self.selected + f" to kill task {str(task_id)}"
+                    "[*] Tasked " + self.selected + f" to kill task {task_id!s}"
                 )
             )
 

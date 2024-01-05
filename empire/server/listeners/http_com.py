@@ -198,7 +198,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         """
         Generate a basic launcher for the specified listener.

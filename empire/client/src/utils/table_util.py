@@ -9,10 +9,10 @@ log = logging.getLogger(__name__)
 
 
 def print_table(
-    data: list[list[str]] = None,
+    data: list[list[str]] | None = None,
     title: str = "",
     colored_header: bool = True,
-    borders: bool = None,
+    borders: bool | None = None,
     end_space: bool = True,
 ):
     if data is None:
@@ -45,10 +45,10 @@ def print_table(
 
 
 def print_agent_table(
-    data: list[list[str]] = None,
-    formatting: list[list[str]] = None,
+    data: list[list[str]] | None = None,
+    formatting: list[list[str]] | None = None,
     title: str = "",
-    borders: bool = None,
+    borders: bool | None = None,
 ):
     if data is None:
         return

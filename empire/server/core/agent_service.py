@@ -64,7 +64,7 @@ class AgentService:
     @staticmethod
     def get_agent_checkins(
         db: Session,
-        agents: list[str] = None,
+        agents: list[str] | None = None,
         limit: int = -1,
         offset: int = 0,
         start_date: datetime | None = None,
@@ -103,7 +103,7 @@ class AgentService:
     @staticmethod
     def get_agent_checkins_aggregate(
         db: Session,
-        agents: list[str] = None,
+        agents: list[str] | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
         bucket_size: AggregateBucket = None,

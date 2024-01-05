@@ -202,7 +202,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         bypasses = [] if bypasses is None else bypasses
 
@@ -738,7 +738,7 @@ class Listener:
                             lang, return_val = self.mainMenu.agents.handle_agent_data(
                                 staging_key, content, listener_options
                             )[0]
-                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {str(len(return_val))} bytes"
+                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {len(return_val)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
                                 "{}/drive/root:/{}/{}/{}_2.txt:/content".format(
@@ -782,7 +782,7 @@ class Listener:
                                 session_key, agent_code
                             )
 
-                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_4.txt, {str(len(enc_code))} bytes"
+                            message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_4.txt, {len(enc_code)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
                                 "{}/drive/root:/{}/{}/{}_4.txt:/content".format(
@@ -818,7 +818,7 @@ class Listener:
                             ):  # If there's already something there, download and append the new data
                                 task_data = r.content + task_data
 
-                            message = f"{listener_name}: Uploading agent tasks for {agent_id}, {str(len(task_data))} bytes"
+                            message = f"{listener_name}: Uploading agent tasks for {agent_id}, {len(task_data)!s} bytes"
                             self.instance_log.info(message)
 
                             r = s.put(

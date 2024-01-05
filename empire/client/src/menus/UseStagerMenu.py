@@ -68,7 +68,7 @@ class UseStagerMenu(UseMenu):
                     "\n".join(textwrap.wrap(str(x), width=35)) for x in value.values()
                 ]
                 values.reverse()
-                temp = [key] + values
+                temp = [key, *values]
                 listener_list.append(temp)
 
     @command

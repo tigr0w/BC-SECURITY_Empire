@@ -831,12 +831,8 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
 
     assert response.status_code == 422
 
-    delay_err = list(filter(lambda x: "delay" in x["loc"], response.json()["detail"]))[
-        0
-    ]
-    jitter_err = list(
-        filter(lambda x: "jitter" in x["loc"], response.json()["detail"])
-    )[0]
+    delay_err = next(filter(lambda x: "delay" in x["loc"], response.json()["detail"]))
+    jitter_err = next(filter(lambda x: "jitter" in x["loc"], response.json()["detail"]))
     assert delay_err["loc"] == ["body", "delay"]
     assert delay_err["msg"] == "Input should be greater than or equal to 0"
     assert jitter_err["loc"] == ["body", "jitter"]

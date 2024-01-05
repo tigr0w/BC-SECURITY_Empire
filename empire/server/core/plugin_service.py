@@ -209,9 +209,9 @@ class PluginService:
     @staticmethod
     def get_tasks(
         db: Session,
-        plugins: list[str] = None,
-        users: list[int] = None,
-        tags: list[str] = None,
+        plugins: list[str] | None = None,
+        users: list[int] | None = None,
+        tags: list[str] | None = None,
         limit: int = -1,
         offset: int = 0,
         include_full_input: bool = False,
