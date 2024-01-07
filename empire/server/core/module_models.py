@@ -8,6 +8,8 @@ class LanguageEnum(str, Enum):
     python = "python"
     powershell = "powershell"
     csharp = "csharp"
+    ironpython = "ironpython"
+    bof = "bof"
 
 
 class EmpireModuleAdvanced(BaseModel):
@@ -26,6 +28,7 @@ class EmpireModuleOption(BaseModel):
     suggested_values: list[str] = []
     strict: bool = False
     type: str | None = None
+    format: str | None = None
 
     # Ensure the functionality of pydantic v1 coercing values to strings
     # https://github.com/pydantic/pydantic/issues/5606
@@ -47,6 +50,12 @@ class EmpireModuleAuthor(BaseModel):
     link: str
 
 
+class BofModuleOption(BaseModel):
+    x86: str | None = None
+    x64: str | None = None
+    entry_point: str | None = None
+
+
 class EmpireModule(BaseModel):
     id: str
     name: str
@@ -65,6 +74,7 @@ class EmpireModule(BaseModel):
     options: list[EmpireModuleOption] = []
     script: str | None = None
     script_path: str | None = None
+    bof: BofModuleOption | None = None
     script_end: str = " {{ PARAMS }}"
     enabled: bool = True
     advanced: EmpireModuleAdvanced = EmpireModuleAdvanced()

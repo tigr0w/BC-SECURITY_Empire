@@ -39,6 +39,7 @@
   * [PowerShell Modules](module-development/powershell-modules.md)
   * [Python Modules](module-development/python-modules.md)
   * [C# Modules](module-development/c-modules.md)
+  * [BOF Modules](module-development/bof-modules.md)
 * [Agents](agents/README.md)
   * [Python](agents/python/README.md)
     * [Main Agent Class](agents/python/mainagentclass.md)

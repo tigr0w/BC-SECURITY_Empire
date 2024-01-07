@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added execution exception to plugins (@Vinnybod)
 -   Added RUF rules to ruff config (@Vinnybod)
 -   Added SIM rules to ruff config (@Vinnybod)
+-   Added BOF modules to Empire as yamls (@Cx01N)
+    - Added ClipBoardWindow-Inject module
+    - Added nanodump module
+    - Added secinject module
+    - Added tgtdelegation module
+    - Added TrustedSec's SA modules
 
 ### Deprecated
 

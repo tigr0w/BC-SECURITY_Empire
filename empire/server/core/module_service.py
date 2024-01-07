@@ -1,3 +1,4 @@
+import base64
 import fnmatch
 import importlib.util
 import logging
@@ -157,7 +158,8 @@ class ModuleService:
                     task_command = "TASK_CMD_JOB_SAVE"
                 else:
                     task_command = "TASK_CMD_JOB"
-
+            elif module.language == LanguageEnum.bof:
+                task_command = "TASK_CSHARP"
             else:
                 # if this module is run in the foreground
                 extension = module.output_extension
@@ -205,6 +207,65 @@ class ModuleService:
             task_command = "TASK_CSHARP"
 
         return {"command": task_command, "data": module_data}, None
+
+    def generate_bof_data(
+        self,
+        module: EmpireModule,
+        params: dict,
+        obfuscate: bool = False,
+    ) -> tuple[str, str]:
+        bof_module = self.modules["csharp_inject_bof_inject_bof"]
+
+        compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
+        if not compiler.status == "ON":
+            raise ModuleValidationException("csharpserver plugin not running")
+
+        compiler_dict: dict = yaml.safe_load(bof_module.compiler_yaml)
+        del compiler_dict[0]["Empire"]
+
+        if params["Architecture"] == "x64":
+            script_path = empire_config.directories.module_source / module.bof.x64
+            bof_data = script_path.read_bytes()
+            b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
+
+        elif params["Architecture"] == "x86":
+            compiler_dict[0]["ReferenceSourceLibraries"][0]["EmbeddedResources"][0][
+                "Name"
+            ] = "RunOF.beacon_funcs.x64.o"
+            compiler_dict[0]["ReferenceSourceLibraries"][0]["EmbeddedResources"][0][
+                "Location"
+            ] = "RunOF.beacon_funcs.x64.o"
+            compiler_dict[0]["ReferenceSourceLibraries"][0][
+                "Location"
+            ] = "RunOF\\RunOF32\\"
+
+            script_path = empire_config.directories.module_source / module.bof.x86
+            bof_data = script_path.read_bytes()
+            b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
+
+        compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
+
+        file_name = compiler.do_send_message(
+            compiler_yaml, bof_module.name, confuse=obfuscate
+        )
+        if file_name == "failed":
+            raise ModuleExecutionException("module compile failed")
+
+        script_file = (
+            self.main_menu.installPath
+            + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
+            + "net40"
+            + "/"
+            + file_name
+            + ".compiled"
+        )
+
+        script_end = f",-a:{b64_bof_data}"
+
+        if module.bof.entry_point != "":
+            script_end += f" -e:{params['EntryPoint']}"
+
+        return script_file, script_end
 
     def _validate_module_params(
         self,
@@ -294,6 +355,33 @@ class ModuleService:
             return self._generate_script_python(module, params, obfuscation_config)
         elif module.language == LanguageEnum.csharp:
             return self._generate_script_csharp(module, params, obfuscation_config)
+        elif module.language == LanguageEnum.bof:
+            if not obfuscation_config:
+                obfuscation_config = self.obfuscation_service.get_obfuscation_config(
+                    db, LanguageEnum.csharp
+                )
+            return self._generate_script_bof(module, params, obfuscation_config)
+
+    def _generate_script_bof(
+        self,
+        module: EmpireModule,
+        params: dict,
+        obfuscation_config: models.ObfuscationConfig,
+    ) -> str:
+        script_file, script_end = self.generate_bof_data(
+            module=module, params=params, obfuscate=obfuscation_config.enabled
+        )
+
+        for key, value in params.items():
+            if key in ["Agent", "Architecture"]:
+                continue
+            for option in module.options:
+                if option.name == key:
+                    if value == "":
+                        value = " "
+                    script_end += f" -{option.format}:{value}"
+
+        return f"{script_file}|{script_end}"
 
     def _generate_script_python(
         self,
@@ -530,6 +618,15 @@ class ModuleService:
                 )
         elif my_model.script:
             pass
+        elif my_model.language == LanguageEnum.bof:
+            if not (
+                empire_config.directories.module_source / my_model.bof.x86
+            ).exists():
+                raise Exception(f"x86 bof file provided does not exist: {module_name}")
+            if not (
+                empire_config.directories.module_source / my_model.bof.x64
+            ).exists():
+                raise Exception(f"x64 bof file provided does not exist: {module_name}")
         else:
             raise Exception(
                 "Must provide a valid script, script_path, or custom generate function"

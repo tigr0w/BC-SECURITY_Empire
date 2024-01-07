@@ -1,0 +1,129 @@
+name: nanodump
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: A flexible tool that creates a minidump of the LSASS process.
+software: ''
+tactics: []
+techniques: []
+background: false
+output_extension:
+needs_admin: true
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/fortra/nanodump
+options:
+  - name: write
+    description: filename of the dump
+    required: false
+    value: 'C:\lsass.dmp'
+  - name: valid
+    description: create a dump with a valid signature
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: duplicate
+    description: duplicate a high privileged existing LSASS handle
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: duplicate-elevate
+    description: duplicate a low privileged existing LSASS handle and then elevate it
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: seclogon-leak-local
+    description: leak an LSASS handle into nanodump via seclogon
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: seclogon-leak-remote
+    description: leak an LSASS handle into another process via seclogon and duplicate it
+    required: false
+    value: ''
+    strict: false
+  - name: seclogon-duplicate
+    description: make seclogon open a handle to LSASS and duplicate it
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: spoof-callstack
+    description: open a handle to LSASS using a fake calling stack
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: silent-process-exit
+    description: force WerFault.exe to dump LSASS via SilentProcessExit
+    required: false
+    value: ''
+    strict: false
+  - name: shtinkering
+    description: force WerFault.exe to dump LSASS via Shtinkering
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: fork
+    description: fork the target process before dumping
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: snapshot
+    description: snapshot the target process before dumping
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: elevate-handle
+    description: open a handle to LSASS with low privileges and duplicate it to gain higher privileges
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: getpid
+    description: print the PID of LSASS and leave
+    required: false
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+    format: i
+bof:
+  x86: bof/nanodump/nanodump.x86.o
+  x64: bof/nanodump/nanodump.x64.oo
+  entry_point: ''
+script_path: ''
+script_end: ''
+advanced:
+  custom_generate: true
