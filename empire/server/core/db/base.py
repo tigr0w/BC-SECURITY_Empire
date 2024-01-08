@@ -10,6 +10,7 @@ from sqlalchemy.orm import close_all_sessions, sessionmaker
 from empire.server.core.db import models
 from empire.server.core.db.defaults import (
     get_default_config,
+    get_default_ips,
     get_default_keyword_obfuscation,
     get_default_obfuscation_config,
     get_default_user,
@@ -149,6 +150,12 @@ def startup_db():
 
                 for config in obf_configs:
                     db.add(config)
+
+            if len(db.query(models.IP).all()) == 0:
+                ips = get_default_ips()
+
+                for ip in ips:
+                    db.add(ip)
 
             # Checking that schema matches the db.
             # Some errors don't manifest until query time.

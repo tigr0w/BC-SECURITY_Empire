@@ -19,11 +19,6 @@ def agent_service(main: MainMenu):
     yield main.agentsv2
 
 
-def test_is_ip_allowed(agent_communication_service, session_local):
-    # TODO: Skipping because planning to redo allow/block list in 6.0
-    pass
-
-
 def test_save_file_non_python(
     agent_task_service,
     agent_communication_service,

@@ -62,15 +62,8 @@ database:
         command: ""
         module: "confuser"
         preobfuscatable: false
-    # an IP white list to ONLY accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-whitelist: ""
-    # an IP black list to reject accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-blacklist: ""
-    # Adds keywords that will be obfuscated in Empire. For example, anytime
-    # Invoke-Empire or Invoke-Mimikatz is used in a module/stager, it will
-    # be replaced with a random 5 character string.
+    ip_allow_list: []
+    ip_deny_list: []
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz

@@ -1,9 +1,12 @@
 import logging
 import sys
 from pathlib import Path
+from typing import Annotated
 
+import netaddr
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from netaddr.core import AddrFormatError
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator
 
 log = logging.getLogger(__name__)
 
@@ -39,14 +42,31 @@ class DatabaseDefaultObfuscationConfig(EmpireBaseModel):
     preobfuscatable: bool = True
 
 
+def valid_ip(v: str):
+    try:
+        if "-" in v:
+            start, end = v.split("-")
+            netaddr.IPRange(start, end)
+        elif "/" in v:
+            netaddr.IPNetwork(v)
+        else:
+            netaddr.IPAddress(v)
+
+        return v
+    except AddrFormatError as e:
+        raise ValueError(
+            f"Invalid IP address {v}. Must be a valid IP Address, Range, or CIDR."
+        ) from e
+
+
 class DatabaseDefaultsConfig(EmpireBaseModel):
     staging_key: str = "RANDOM"
     username: str = "empireadmin"
     password: str = "password123"
     obfuscation: list[DatabaseDefaultObfuscationConfig] = []
     keyword_obfuscation: list[str] = []
-    ip_whitelist: str = Field("", alias="ip-whitelist")
-    ip_blacklist: str = Field("", alias="ip-blacklist")
+    ip_allow_list: list[Annotated[str, AfterValidator(valid_ip)]] = []
+    ip_deny_list: list[Annotated[str, AfterValidator(valid_ip)]] = []
 
 
 class SQLiteDatabaseConfig(EmpireBaseModel):

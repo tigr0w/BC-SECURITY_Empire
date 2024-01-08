@@ -76,11 +76,13 @@ def initialize(run: bool = True):
     secure = empire_config.api.secure
 
     # Not pretty but allows us to use main_menu by delaying the import
+    from empire.server.api.v2.admin import admin_api
     from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
     from empire.server.api.v2.bypass import bypass_api
     from empire.server.api.v2.credential import credential_api
     from empire.server.api.v2.download import download_api
     from empire.server.api.v2.host import host_api, process_api
+    from empire.server.api.v2.ip import ip_api
     from empire.server.api.v2.listener import listener_api, listener_template_api
     from empire.server.api.v2.meta import meta_api
     from empire.server.api.v2.module import module_api
@@ -122,6 +124,8 @@ def initialize(run: bool = True):
     app.include_router(plugin_task_api.router)
     app.include_router(plugin_api.router)
     app.include_router(tag_api.router)
+    app.include_router(ip_api.router)
+    app.include_router(admin_api.router)
 
     app.add_middleware(
         EmpireCORSMiddleware,

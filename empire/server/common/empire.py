@@ -14,6 +14,7 @@ from empire.server.core.credential_service import CredentialService
 from empire.server.core.download_service import DownloadService
 from empire.server.core.host_process_service import HostProcessService
 from empire.server.core.host_service import HostService
+from empire.server.core.ip_service import IpService
 from empire.server.core.listener_service import ListenerService
 from empire.server.core.listener_template_service import ListenerTemplateService
 from empire.server.core.module_service import ModuleService
@@ -56,6 +57,7 @@ class MainMenu:
         self.agentsv2 = AgentService(self)
         self.agentsocksv2 = AgentSocksService(self)
         self.agenttasksv2 = AgentTaskService(self)
+        self.ipsv2 = IpService(self)
         self.agentcommsv2 = AgentCommunicationService(self)
         self.agentfilesv2 = AgentFileService(self)
         self.pluginsv2 = PluginService(self)

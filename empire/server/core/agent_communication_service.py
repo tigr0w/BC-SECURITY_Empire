@@ -33,6 +33,7 @@ class AgentCommunicationService:
         self.agent_task_service = main_menu.agenttasksv2
         self.agent_socks_service = main_menu.agentsocksv2
         self.credential_service = main_menu.credentialsv2
+        self.ip_service = main_menu.ipsv2
 
         # internal agent dictionary for the client's session key, funcions, and URI sets
         #   this is done to prevent database reads for extremely common tasks (like checking tasking URI existence)
@@ -48,10 +49,6 @@ class AgentCommunicationService:
             for agent in db_agents:
                 self._add_agent_to_cache(agent)
 
-            config = db.query(models.Config).first()
-            self.ipWhiteList = config.ip_whitelist
-            self.ipBlackList = config.ip_blacklist
-
     def _add_agent_to_cache(self, agent: models.Agent):
         self.agents[agent.session_id] = {
             "sessionKey": agent.session_key,
@@ -60,24 +57,7 @@ class AgentCommunicationService:
         }
 
     def is_ip_allowed(self, ip_address):
-        """
-        Check if the ip_address meshes with the whitelist/blacklist, if set.
-        """
-        if self.ipBlackList:
-            if self.ipWhiteList:
-                results = (
-                    ip_address in self.ipWhiteList
-                    and ip_address not in self.ipBlackList
-                )
-                return results
-            else:
-                results = ip_address not in self.ipBlackList
-                return results
-        if self.ipWhiteList:
-            results = ip_address in self.ipWhiteList
-            return results
-        else:
-            return True
+        return self.ip_service.is_ip_allowed(ip_address)
 
     def _decompress_python_data(self, data, filename, session_id):
         log.info(

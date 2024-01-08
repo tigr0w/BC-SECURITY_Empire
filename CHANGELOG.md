@@ -17,8 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 -   Typehinting for MainMenu object in services
 -   Added `api.ip` and `api.secure` as server options
+-   API endpoints for adding/removing ip allow/deny list entries
 
 ### Changed
+-   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs
 
 #### Breaking
 -   Moved `Agents` class to `AgentCommunicationService`
@@ -31,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Renamed all config properties in client and server yamls to use snake_case
 -   Changed minimum Python version to 3.11
 -   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
+-   `ip_whitelist` and `ip_blacklist` are now `ip_allow_list` and `ip_deny_list` and are lists instead of comma separated strings
 
 ### Deprecated
 

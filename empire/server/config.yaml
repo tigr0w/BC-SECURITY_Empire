@@ -37,12 +37,8 @@ database:
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
-    # an IP white list to ONLY accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-whitelist: ""
-    # an IP black list to reject accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-blacklist: ""
+    ip_allow_list: []
+    ip_deny_list: []
 starkiller:
   enabled: true
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git

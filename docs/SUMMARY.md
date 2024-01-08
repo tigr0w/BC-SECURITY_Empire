@@ -34,6 +34,7 @@
   * [Plugin Development](plugins/plugin-development.md)
   * [Hooks and Filters](plugins/hooks-and-filters.md)
 * [Bypasses](bypasses.md)
+* [IP Filtering](ip-filtering.md)
 * [C#](csharp.md)
 * [Module Development](module-development/README.md)
   * [PowerShell Modules](module-development/powershell-modules.md)

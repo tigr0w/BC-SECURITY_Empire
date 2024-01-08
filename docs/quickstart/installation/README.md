@@ -6,10 +6,10 @@ The following operating systems have been tested for Empire compatibility. We wi
 
 * Kali Linux Rolling
 * Ubuntu 20.04 / 22.04
-* Debian 10 / 11 / 12
+* Debian 11 / 12
 * ParrotOS
 
-As of Empire 5.8, Python 3.10 is the minimum Python version required.
+As of Empire 6.0, Python 3.11 is the minimum Python version required.
 
 ## Github
 
@@ -36,13 +36,14 @@ Because these are private repositories, you need to have ssh credentials configu
 
 ## Kali
 
-You can install the latest version of Empire by running the following:
+You can install Empire on Kali by running the following:
+**Kali's version may be a few versions behind the latest release.**
+**Note:** Kali requires you to run Empire with `sudo`.
 
 ```bash
 sudo apt install powershell-empire
 ```
 
-**Note:** Kali requires you to run Empire with `sudo`.
 
 ## Docker
 

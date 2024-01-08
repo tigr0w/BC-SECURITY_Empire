@@ -312,12 +312,11 @@ class HostProcess(Base):
 class Config(Base):
     __tablename__ = "config"
     staging_key = Column(String(255), primary_key=True)
-    ip_whitelist = Column(Text, nullable=False)
-    ip_blacklist = Column(Text, nullable=False)
     jwt_secret_key = Column(Text, nullable=False)
+    ip_filtering = Column(Boolean, nullable=False)
 
     def __repr__(self):
-        return "<Config(staging_key='%s')>" % (self.staging_key)
+        return f"<Config(staging_key='{self.staging_key}')>"
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -544,6 +543,22 @@ class Tag(Base):
     name = Column(String(255), nullable=False)
     value = Column(String(255), nullable=False)
     color = Column(String(12), nullable=True)
+    created_at = Column(UtcDateTime, nullable=False, default=utcnow())
+    updated_at = Column(
+        UtcDateTime, nullable=False, onupdate=utcnow(), default=utcnow()
+    )
+
+
+class IpList(str, enum.Enum):
+    allow = "allow"
+    deny = "deny"
+
+
+class IP(Base):
+    __tablename__ = "ips"
+    id = Column(Integer, Sequence("ip_seq"), primary_key=True)
+    ip_address = Column(String(255), nullable=False)
+    list = Column(Enum(IpList), nullable=False)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
     updated_at = Column(
         UtcDateTime, nullable=False, onupdate=utcnow(), default=utcnow()
