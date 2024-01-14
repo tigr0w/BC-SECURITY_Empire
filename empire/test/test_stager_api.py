@@ -377,6 +377,13 @@ def test_delete_stager(client, admin_auth_header, base_stager):
     response = client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
     assert response.status_code == 204
 
+    response = client.get(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+    assert response.status_code == 404
+
+    response = client.get("/api/v2/stagers", headers=admin_auth_header)
+    assert response.status_code == 200
+    assert stager_id not in [stager["id"] for stager in response.json()["records"]]
+
 
 def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_header):
     response = client.post(
