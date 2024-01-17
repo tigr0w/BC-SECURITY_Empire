@@ -4,7 +4,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class Plugin:
+class BasePlugin:
     # to be overwritten by child
     def __init__(self, mainMenu):
         # having these multiple messages should be helpful for debugging
@@ -35,3 +35,6 @@ class Plugin:
         """Any modifications made to the main menu are done here
         (meant to be overriden by child)"""
         pass
+
+
+Plugin = BasePlugin

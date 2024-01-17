@@ -147,6 +147,19 @@ def do_something():
 ## Event-based functionality (hooks and filters)
 This is outlined in [Hooks and Filters](./hooks-and-filters.md).
 
+## Importing other python files
+
+If you want to import other python files in your plugin, you can do so by importing
+them relative to `empire.server.plugins`. For example, if you have a file called
+`example_helpers.py` in the same directory as your plugin, you can import it like so:
+
+```python
+from empire.server.plugins.example import example_helpers
+```
+
+**Note**: Relative imports will not work. For example, the example plugin cannot
+import `example_helpers.py` with `from . import example_helpers`.
+
 ## 4->5 Changes
 Not a lot has changed for plugins in Empire 5.0. We've just added a few guard rails for better
 stability between Empire versions.
@@ -166,9 +179,8 @@ This is no different than the way things were pre 5.0.
 * `plugin_socketio_message` was moved from `MainMenu` to `plugin_service`.
 * Example conversion for a 5.0 plugin can be seen in [ChiselServer-Plugin](https://github.com/BC-SECURITY/ChiselServer-Plugin/compare/5.0)
 
-
 ## Future Work
 * improved plugin logging -
-  Give plugins indidual log files like listeners have. Make those logs accessible via Starkiller.
+  Give plugins individual log files like listeners have. Make those logs accessible via Starkiller.
 * endpoint for installing plugins -
   A user would be able to provide the URL to a git repository and Empire would download and install the plugin.

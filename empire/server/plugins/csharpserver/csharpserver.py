@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import logging
 import os
 import socket
@@ -44,7 +45,7 @@ class Plugin(Plugin):
         self.tcp_port = 2012
         self.status = "OFF"
 
-    def execute(self, command):
+    def execute(self, command, **kwargs):
         try:
             results = self.do_csharpserver(command)
             return results
@@ -133,13 +134,10 @@ class Plugin(Plugin):
         b64_task_name = base64.b64encode(bytes_task_name)
 
         # check for confuse bool and convert to string
-        if confuse:
-            bytes_confuse = "true".encode("UTF-8")
-        else:
-            bytes_confuse = "false".encode("UTF-8")
+        bytes_confuse = b"true" if confuse else b"false"
         b64_confuse = base64.b64encode(bytes_confuse)
 
-        deliminator = ",".encode("UTF-8")
+        deliminator = b","
         message = b64_task_name + deliminator + b64_confuse + deliminator + b64_yaml
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.tcp_ip, self.tcp_port))
@@ -166,13 +164,10 @@ class Plugin(Plugin):
         # compiler only checks for true and ignores otherwise
 
         # check for confuse bool and convert to string
-        if confuse:
-            bytes_confuse = "true".encode("UTF-8")
-        else:
-            bytes_confuse = "false".encode("UTF-8")
+        bytes_confuse = b"true" if confuse else b"false"
         b64_confuse = base64.b64encode(bytes_confuse)
 
-        deliminator = ",".encode("UTF-8")
+        deliminator = b","
         message = b64_task_name + deliminator + b64_confuse + deliminator + b64_yaml
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.tcp_ip, self.tcp_port))
@@ -192,11 +187,11 @@ class Plugin(Plugin):
         return file_name
 
     def shutdown(self):
-        try:
-            b64_yaml = base64.b64encode(("dummy data").encode("UTF-8"))
-            b64_confuse = base64.b64encode(("false").encode("UTF-8"))
-            b64_task_name = base64.b64encode(("close").encode("UTF-8"))
-            deliminator = ",".encode("UTF-8")
+        with contextlib.suppress(Exception):
+            b64_yaml = base64.b64encode(b"dummy data")
+            b64_confuse = base64.b64encode(b"false")
+            b64_task_name = base64.b64encode(b"close")
+            deliminator = b","
             message = b64_task_name + deliminator + b64_confuse + deliminator + b64_yaml
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.tcp_ip, self.tcp_port))
@@ -205,6 +200,5 @@ class Plugin(Plugin):
             self.csharpserverbuild_proc.kill()
             self.csharpserver_proc.kill()
             self.thread.kill()
-        except:
-            pass
+
         return

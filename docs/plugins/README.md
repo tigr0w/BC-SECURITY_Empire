@@ -1,6 +1,9 @@
 # Plugins
 
-Plugins are an extension of Empire that allow for custom scripts to be loaded. This allows anyone to easily build or add community projects to extend Empire functionality. Plugins can be accessed from the Empire client or the API as long as the plugin follows the [template example](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/plugins/example.py). A list of Empire Plugins is located here.
+Plugins are an extension of Empire that allow for custom scripts to be loaded.
+This allows anyone to build or add community projects to extend Empire functionality.
+Plugins can be accessed from the Empire client or the API as long as the plugin follows
+the [template example](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/plugins/example.py). A list of Empire Plugins is located here.
 
 ## Empire Plugins
 
@@ -15,4 +18,3 @@ Plugins are an extension of Empire that allow for custom scripts to be loaded. T
 | [Nmap-Plugin](https://github.com/BC-SECURITY/Nmap-Plugin)                    | Nmap-Plugin gives a way to interface directly from Empire to [Nmap](https://nmap.org/) and send commands through [Python3-Nmap](https://github.com/nmmapper/python3-nmap).                 |      [![nmap](https://user-images.githubusercontent.com/20302208/120945236-1feb5f80-c6ed-11eb-9ca3-160c66d4c447.gif)](https://user-images.githubusercontent.com/20302208/120945236-1feb5f80-c6ed-11eb-9ca3-160c66d4c447.gif)      | @Cx01N          | X              |
 | [Twilio-Plugin](https://github.com/BC-SECURITY/Twilio-Plugin)                | The Twilio Plugin is meant to show the possibilities of the Hooks feature implemented in Empire 4.1. It sends a text message every time an agent connects.                                 |                                                                                                                                                                                                                                   | @Vinnybod       |                |
 | [denylist-plugin](https://github.com/BC-SECURITY/denylist-plugin)            | The purpose of this plugin is to block certain IP addresses from connecting to the server. It is to showcase the event-driven nature of the hook system.                                   |                                                                                                                                                                                                                                   | @Vinnybod       |                |
-

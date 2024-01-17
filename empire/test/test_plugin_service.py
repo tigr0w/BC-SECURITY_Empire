@@ -1,5 +1,4 @@
 import logging
-import os
 import shutil
 from contextlib import contextmanager
 from unittest.mock import MagicMock
@@ -29,16 +28,15 @@ def temp_copy_plugin(plugin_path):
     Copy the example plugin to a temporary location. Since plugin_service
     won't load a plugin called "example".
     """
-    example_plugin_path = plugin_path / "example.plugin"
-    example_plugin_copy_path = plugin_path / "temporary.plugin"
+    example_plugin_path = plugin_path / "example"
+    example_plugin_copy_path = plugin_path / "example_2"
 
     # copy example plugin to a new location
-    shutil.copyfile(str(example_plugin_path), str(example_plugin_copy_path))
+    shutil.copytree(str(example_plugin_path), str(example_plugin_copy_path))
 
     yield
 
-    # remove the temporary copy
-    os.remove(example_plugin_copy_path)
+    shutil.rmtree(str(example_plugin_copy_path))
 
 
 def test_autostart_plugins(

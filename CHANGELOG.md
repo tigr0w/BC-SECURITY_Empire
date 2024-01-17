@@ -37,14 +37,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Returning tuples from plugin execution functions is deprecated
     -   To return a 400, raise a `PluginValidationException`
     -   To return a 500, raise a `PluginExecutionException`
+-   Loading plugins from a `.plugin` file is deprecated
+    -   Use a `.py` file with a `plugin.yaml` instead
+-   Extending the `Plugin` class is deprecated
+    -   Use the `BasePlugin` class instead
 
 ### Changed
 
 -   Migrated some Pydantic and FastAPI usage away from deprecated features (@Vinnybod)
 -   Updated the install script and Docker file from Python 3.12.0 to 3.12.1 (@Vinnybod)
 -   Upgraded all dependencies with `poetry up` (@Vinnybod)
+-   Plugin updates (@Vinnybod)
+    -   Plugins have a `plugin.yaml`
+    -   Base plugin class is now `BasePlugin`
+    -   Updated plugin documentation
 -   Upgraded Black to 23.12.0 (@Vinnybod)
--   Upgraded Ruff to 0.19.0 (@Vinnybod)
+-   Upgraded Ruff to 0.1.9 (@Vinnybod)
 -   Upgraded Seatbelt to 1.2.1 (@Cx01N)
 
 ## [5.8.4] - 2023-12-22

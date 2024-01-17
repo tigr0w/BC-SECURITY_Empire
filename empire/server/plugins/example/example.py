@@ -3,6 +3,13 @@ import logging
 
 from empire.server.common.plugins import Plugin
 
+# Relative imports don't work in plugins right now.
+# from . import example_helpers
+# example_helpers.this_is_an_example_function()
+from empire.server.plugins.example import example_helpers
+
+example_helpers.this_is_an_example_function()
+
 log = logging.getLogger(__name__)
 
 # anything you simply write out (like a script) will run immediately when the
@@ -24,7 +31,7 @@ class Plugin(Plugin):
         self.calledTimes = 0
 
         self.info = {
-            # Plugin Name, at the moment this much match the do_ command
+            # Plugin Name
             "Name": "example",
             # List of one or more authors for the plugin
             "Authors": [
@@ -68,7 +75,7 @@ class Plugin(Plugin):
         try:
             results = self.do_test(command)
             return results
-        except:
+        except Exception:
             return False
 
     def register(self, mainMenu):
@@ -90,7 +97,7 @@ class Plugin(Plugin):
 
         if self.status == "start":
             self.calledTimes += 1
-            log.info("This function has been called {} times.".format(self.calledTimes))
+            log.info(f"This function has been called {self.calledTimes} times.")
             log.info("Message: " + command["Message"])
 
         else:

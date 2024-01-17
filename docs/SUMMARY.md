@@ -31,6 +31,7 @@
   * [Starkiller](interfaces/starkiller/README.md)
     * [Introduction](interfaces/starkiller/introduction.md)
 * [Plugins](plugins/README.md)
+  * [Getting Started](plugins/getting-started.md)
   * [Plugin Development](plugins/plugin-development.md)
   * [Hooks and Filters](plugins/hooks-and-filters.md)
 * [Bypasses](bypasses.md)
