@@ -1,5 +1,4 @@
-from __future__ import print_function
-
+import contextlib
 import logging
 import socket
 
@@ -211,11 +210,10 @@ class Plugin(Plugin):
             self.reverseshell_proc.start()
 
     def shutdown(self):
-        try:
+        with contextlib.suppress(Exception):
             self.reverseshell_proc.kill()
             self.thread.kill()
-        except:
-            pass
+
         return
 
     def client_handler(self, client_socket):
@@ -227,14 +225,14 @@ class Plugin(Plugin):
             client_socket.send(buffer.encode())
         except KeyboardInterrupt:
             client_socket.close()
-        except:
+        except Exception:
             client_socket.close()
 
     def server_listen(self, host, port):
         try:
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server.bind((host, int(port)))
-        except:
+        except Exception:
             return f"[!] Can't bind at {host}:{port}"
 
         self.plugin_service.plugin_socketio_message(
@@ -261,6 +259,6 @@ class Plugin(Plugin):
                 if not len(data):
                     s.close()
                     break
-            except:
+            except Exception:
                 s.close()
                 break

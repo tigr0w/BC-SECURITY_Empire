@@ -1,5 +1,4 @@
-from __future__ import print_function
-
+import contextlib
 import logging
 
 import websockify
@@ -128,8 +127,6 @@ class Plugin(Plugin):
             return "[+] Websockify server successfully started"
 
     def shutdown(self):
-        try:
+        with contextlib.suppress(Exception):
             self.websockify_proc.kill()
-        except:
-            pass
         return
