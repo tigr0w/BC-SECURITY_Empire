@@ -9,6 +9,7 @@ The Server configuration is managed via [empire/server/config.yaml](https://gith
 ```yaml
 api:
   port: 1337
+  cert_path: empire/server/data/
 ```
 
 * **database** - Configure Empire's database. Empire defaults to SQLite and has the ability to run with MySQL. For more info on the database, see the [Database](database/README.md) section.
