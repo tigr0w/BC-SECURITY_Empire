@@ -4,7 +4,7 @@ The Server configuration is managed via [empire/server/config.yaml](https://gith
 
 * **suppress-self-cert-warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
 
-* **api** - Configure the RESTful API. The only option is the port to run the API on.
+* **api** - Configure the RESTful API. This includes the port to run the API on, as well as the path for the SSL certificates. If `empire-priv.key` and `empire-chain.pem` are not found in this directory, self-signed certs will be generated.
 
 ```yaml
 api:

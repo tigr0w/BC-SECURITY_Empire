@@ -12,9 +12,12 @@ then
 	cd ./setup
 fi
 
-openssl req -new -x509 -keyout ../empire/server/data/empire-priv.key -out ../empire/server/data/empire-chain.pem -days 365 -nodes -subj "/C=US" >/dev/null 2>&1
+default_path="../empire/server/data/"
+path=${1:-$default_path}
 
-echo -e "\x1b[1;34m[*] Certificate written to ../empire/server/data/empire-chain.pem\x1b[0m"
-echo -e "\x1b[1;34m[*] Private key written to ../empire/server/data/empire-priv.key\x1b[0m"
+openssl req -new -x509 -keyout "${path}/empire-priv.key" -out "${path}/empire-chain.pem" -days 365 -nodes -subj "/C=US" >/dev/null 2>&1
+
+echo -e "\x1b[1;34m[*] Certificate written to ${path}/empire-chain.pem\x1b[0m"
+echo -e "\x1b[1;34m[*] Private key written to ${path}/empire-priv.key\x1b[0m"
 
 cd ..

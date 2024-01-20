@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added secinject module
     - Added tgtdelegation module
     - Added TrustedSec's SA modules
+- Added custom certificate path to server config.yaml (@AaronVigal)
 
 ### Deprecated
 
