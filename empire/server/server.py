@@ -162,9 +162,9 @@ def run(args):
         if main is None:
             main = empire.MainMenu(args=args)
 
-        if not os.path.exists("./empire/server/data/empire-chain.pem"):
+        if not (Path(empire_config.api.cert_path) / "empire-chain.pem").exists():
             log.info("Certificate not found. Generating...")
-            subprocess.call("./setup/cert.sh")
+            subprocess.call(["./setup/cert.sh", empire_config.api.cert_path])
             time.sleep(3)
 
         from empire.server.api import app

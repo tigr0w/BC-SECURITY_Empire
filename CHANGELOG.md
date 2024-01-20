@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.9.0] - 2024-01-20
+
 ### Added
 
 -   Added validation and execution exceptions for modules to raise (@Vinnybod)
@@ -64,11 +66,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added RUF rules to ruff config (@Vinnybod)
 -   Added SIM rules to ruff config (@Vinnybod)
 -   Added BOF modules to Empire as yamls (@Cx01N)
-    - Added ClipBoardWindow-Inject module
-    - Added nanodump module
-    - Added secinject module
-    - Added tgtdelegation module
-    - Added TrustedSec's SA modules
+    -   Added ClipBoardWindow-Inject module
+    -   Added nanodump module
+    -   Added secinject module
+    -   Added tgtdelegation module
+    -   Added TrustedSec's SA modules
+-   Added custom certificate path to server config.yaml (@AaronVigal)
 
 ### Deprecated
 
@@ -784,7 +787,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.0...HEAD
+
+[5.9.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.4...v5.9.0
 
 [5.8.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.3...v5.8.4
 

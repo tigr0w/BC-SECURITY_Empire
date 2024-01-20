@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from json import JSONEncoder
@@ -166,7 +165,7 @@ def initialize(run: bool = True):
     else:
         log.info("Starkiller disabled. Not loading.")
 
-    cert_path = os.path.abspath("./empire/server/data/")
+    cert_path = Path(empire_config.api.cert_path)
 
     if run:
         if not secure:

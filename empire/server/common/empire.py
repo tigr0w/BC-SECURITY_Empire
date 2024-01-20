@@ -27,7 +27,7 @@ from empire.server.core.stager_template_service import StagerTemplateService
 from empire.server.core.tag_service import TagService
 from empire.server.core.user_service import UserService
 
-VERSION = "5.8.4 BC Security Fork"
+VERSION = "5.9.0 BC Security Fork"
 
 log = logging.getLogger(__name__)
 
