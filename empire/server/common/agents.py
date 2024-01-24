@@ -1342,6 +1342,14 @@ class Agents:
                 tasking.original_output = data
                 tasking.output = data
 
+                # Not sure why, but for Python agents these are bytes initially, but
+                # after storing in the database they're strings. So we need to convert
+                # so socketio and other hooks get the right data type.
+                if isinstance(tasking.output, bytes):
+                    tasking.output = tasking.output.decode("UTF-8")
+                if isinstance(tasking.original_output, bytes):
+                    tasking.original_output = tasking.original_output.decode("UTF-8")
+
             hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, db, tasking)
             db, tasking = hooks.run_filters(
                 hooks.BEFORE_TASKING_RESULT_FILTER, db, tasking
@@ -1771,13 +1779,5 @@ class Agents:
 
         else:
             log.warning(f"Unknown response {response_name} from {session_id}")
-
-        # Not sure why, but for Python agents these are bytes initially, but
-        # after storing in the database they're strings. So we need to convert
-        # so socketio and other hooks get the right data type.
-        if isinstance(tasking.output, bytes):
-            tasking.output = tasking.output.decode("UTF-8")
-        if isinstance(tasking.original_output, bytes):
-            tasking.original_output = tasking.original_output.decode("UTF-8")
 
         hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, db, tasking)

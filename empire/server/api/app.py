@@ -86,15 +86,17 @@ def initialize(
     from empire.server.api.v2.user import user_api
     from empire.server.server import main
 
-    v2App = FastAPI()
-
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
-        log.info("Shutting down Empire Server...")
         if main:
-            log.info("Shutting down MainMenu...")
             main.shutdown()
+
+        if sio:
+            log.info("Shutting down SocketIO...")
+            await sio.shutdown()
+
+    v2App = FastAPI(lifespan=lifespan)
 
     v2App.include_router(listener_template_api.router)
     v2App.include_router(listener_api.router)

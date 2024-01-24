@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+-   Convert agent task output to string before the BEFORE_TASKING_RESULT_HOOK (@Vinnybod)
+
+### Fixed
+
+-   Updated Uvicorn to fix issue where an open browser would cause the shutdown to hang (https://github.com/encode/uvicorn/pull/2145) (@Vinnybod)
+-   Fixed the fastapi app lifecycle not being properly called on shutdown (@Vinnybod)
+-   Converted listener threads to daemons so they don't hang the shutdown in Python 3.12 and report `RuntimeError: can't create new thread at interpreter shutdown` (@Vinnybod)
+-   Log warning about ps/ls hooks and filters not being able to parse the JSON output (@Vinnybod)
+
 ## [5.9.0] - 2024-01-20
 
 ### Added
