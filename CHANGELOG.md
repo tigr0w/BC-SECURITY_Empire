@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.9.1] - 2024-01-25
+
 ### Changed
 
 -   Convert agent task output to string before the BEFORE_TASKING_RESULT_HOOK (@Vinnybod)
@@ -21,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
--   Updated Uvicorn to fix issue where an open browser would cause the shutdown to hang (https://github.com/encode/uvicorn/pull/2145) (@Vinnybod)
+-   Updated Uvicorn to fix issue where an open browser would cause the shutdown to hang (<https://github.com/encode/uvicorn/pull/2145>) (@Vinnybod)
 -   Fixed the fastapi app lifecycle not being properly called on shutdown (@Vinnybod)
 -   Converted listener threads to daemons so they don't hang the shutdown in Python 3.12 and report `RuntimeError: can't create new thread at interpreter shutdown` (@Vinnybod)
 -   Log warning about ps/ls hooks and filters not being able to parse the JSON output (@Vinnybod)
@@ -757,7 +759,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.1...HEAD
+
+[5.9.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.0...v5.9.1
 
 [5.9.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.4...v5.9.0
 
