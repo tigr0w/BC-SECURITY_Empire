@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 -   Convert agent task output to string before the BEFORE_TASKING_RESULT_HOOK (@Vinnybod)
+-   Updated tasklist for powershell code to not throw error when GetOwner fails (@Cx01N)
 
 ### Fixed
 
