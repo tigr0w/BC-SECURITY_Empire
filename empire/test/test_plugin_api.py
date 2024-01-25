@@ -1,6 +1,9 @@
 from contextlib import contextmanager
 
-from empire.server.core.exceptions import PluginValidationException
+from empire.server.core.exceptions import (
+    PluginExecutionException,
+    PluginValidationException,
+)
 
 
 @contextmanager
@@ -156,6 +159,23 @@ def test_execute_plugin_raises_plugin_validation_exception(
         )
 
     assert response.status_code == 400
+    assert response.json() == {"detail": "This is the message"}
+
+
+def test_execute_plugin_raises_plugin_execution_exception(
+    client, admin_auth_header, main
+):
+    def raise_():
+        raise PluginExecutionException("This is the message")
+
+    with patch_plugin_execute(main, "basic_reporting", lambda x: raise_()):
+        response = client.post(
+            "/api/v2/plugins/basic_reporting/execute",
+            json={"options": {}},
+            headers=admin_auth_header,
+        )
+
+    assert response.status_code == 500
     assert response.json() == {"detail": "This is the message"}
 
 

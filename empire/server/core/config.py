@@ -19,6 +19,7 @@ class EmpireBaseModel(BaseModel):
 
 class ApiConfig(EmpireBaseModel):
     port: int = 1337
+    cert_path: Path = "empire/server/data"
 
 
 class StarkillerConfig(EmpireBaseModel):

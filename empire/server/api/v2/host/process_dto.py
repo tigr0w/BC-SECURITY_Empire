@@ -4,10 +4,7 @@ from empire.server.core.db import models
 
 
 def domain_to_dto_process(process: models.HostProcess):
-    if process.agent:
-        agent_id = process.agent.session_id
-    else:
-        agent_id = None
+    agent_id = process.agent.session_id if process.agent else None
 
     return Process(
         process_id=process.process_id,

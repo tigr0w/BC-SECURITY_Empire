@@ -1,6 +1,7 @@
 suppress-self-cert-warning: true
 api:
   port: 1337
+  cert_path: empire/server/data/
 database:
   use: mysql
   mysql:

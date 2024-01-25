@@ -1263,7 +1263,19 @@ class MainAgent:
             pipeline.Commands.AddScript(
                 """
                         $owners = @{}
-                        Get-WmiObject win32_process | ForEach-Object {$o = $_.getowner(); if(-not $($o.User)) {$o='N/A'} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
+                        Get-WmiObject win32_process | ForEach-Object {
+                            try {
+                                $o = $_.getowner()
+                                if (-not $($o.User)) {
+                                    $o = 'N/A'
+                                } else {
+                                    $o = "$($o.Domain)\$($o.User)"
+                                }
+                            } catch {
+                                $o = 'N/A'
+                            }
+                            $owners[$_.handle] = $o
+                        }
                         $p = "*";
                         $output = Get-Process $p | ForEach-Object {
                             $arch = 'x64';

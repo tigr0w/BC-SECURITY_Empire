@@ -23,16 +23,16 @@ class Shortcut:
         name: str,
         module: str | None = None,
         shell: str | None = None,
-        params: list[ShortcutParam] = None,
+        params: list[ShortcutParam] | None = None,
     ):
         if not module and not shell:
             log.error("Shortcut must have either a module or shell command")
             raise TypeError
 
         self.name = name
-        self.shell = None if not shell else shell
+        self.shell = shell if shell else None
         self.module = module
-        self.params = [] if not params else params
+        self.params = params if params else []
 
     def get_dynamic_params(self) -> list[ShortcutParam]:
         return list(filter(lambda x: x.dynamic, self.params))

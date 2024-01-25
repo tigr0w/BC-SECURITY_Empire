@@ -92,10 +92,7 @@ def validate_ntlm(data):
     Checks if the passed string is an NTLM hash.
     """
     allowed = re.compile("^[0-9a-f]{32}", re.IGNORECASE)
-    if allowed.match(data):
-        return True
-    else:
-        return False
+    return bool(allowed.match(data))
 
 
 ####################################################################################
@@ -494,11 +491,7 @@ def parse_mimikatz(data):
                     domain = hostDomain
                     sid = domainSid
 
-                if validate_ntlm(password):
-                    credType = "hash"
-
-                else:
-                    credType = "plaintext"
+                credType = "hash" if validate_ntlm(password) else "plaintext"
 
                 # ignore machine account plaintexts
                 if not (credType == "plaintext" and username.endswith("$")):
@@ -540,34 +533,33 @@ def parse_mimikatz(data):
                 except Exception:
                     pass
 
-    if len(creds) == 0:
-        # check if we get lsadump::dcsync output
-        if b"** SAM ACCOUNT **" in lines:
-            domain, user, userHash, dcName, sid = "", "", "", "", ""
-            for line in lines:
-                if line.strip().endswith(b"will be the domain"):
-                    domain = line.split(b"'")[1]
-                elif line.strip().endswith(b"will be the DC server"):
-                    dcName = line.split(b"'")[1].split(b".")[0]
-                elif line.strip().startswith(b"SAM Username"):
-                    user = line.split(b":")[1].strip()
-                elif line.strip().startswith(b"Object Security ID"):
-                    parts = line.split(b":")[1].strip().split(b"-")
-                    sid = b"-".join(parts[0:-1])
-                elif line.strip().startswith(b"Hash NTLM:"):
-                    userHash = line.split(b":")[1].strip()
+    # check if we get lsadump::dcsync output
+    if len(creds) == 0 and b"** SAM ACCOUNT **" in lines:
+        domain, user, userHash, dcName, sid = "", "", "", "", ""
+        for line in lines:
+            if line.strip().endswith(b"will be the domain"):
+                domain = line.split(b"'")[1]
+            elif line.strip().endswith(b"will be the DC server"):
+                dcName = line.split(b"'")[1].split(b".")[0]
+            elif line.strip().startswith(b"SAM Username"):
+                user = line.split(b":")[1].strip()
+            elif line.strip().startswith(b"Object Security ID"):
+                parts = line.split(b":")[1].strip().split(b"-")
+                sid = b"-".join(parts[0:-1])
+            elif line.strip().startswith(b"Hash NTLM:"):
+                userHash = line.split(b":")[1].strip()
 
-            if domain != "" and userHash != "":
-                creds.append(
-                    (
-                        "hash",
-                        domain.decode("UTF-8"),
-                        user.decode("UTF-8"),
-                        userHash.decode("UTF-8"),
-                        dcName.decode("UTF-8"),
-                        sid.decode("UTF-8"),
-                    )
+        if domain != "" and userHash != "":
+            creds.append(
+                (
+                    "hash",
+                    domain.decode("UTF-8"),
+                    user.decode("UTF-8"),
+                    userHash.decode("UTF-8"),
+                    dcName.decode("UTF-8"),
+                    sid.decode("UTF-8"),
                 )
+            )
 
     return uniquify_tuples(creds)
 
@@ -791,9 +783,8 @@ class KThread(threading.Thread):
             return None
 
     def localtrace(self, frame, why, arg):
-        if self.killed:
-            if why == "line":
-                raise SystemExit()
+        if self.killed and why == "line":
+            raise SystemExit()
         return self.localtrace
 
     def kill(self):

@@ -172,7 +172,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -301,7 +301,7 @@ class Listener:
                 if safeChecks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
-                p = f"Error setting LittleSnitch in stager: {str(e)}"
+                p = f"Error setting LittleSnitch in stager: {e!s}"
                 log.error(p)
 
             if userAgent.lower() == "default":
@@ -553,11 +553,11 @@ class Listener:
 
         elif language == "python":
             if version == "ironpython":
-                f = open(self.mainMenu.installPath + "/data/agent/ironpython_agent.py")
+                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
-                f = open(self.mainMenu.installPath + "/data/agent/agent.py")
-            code = f.read()
-            f.close()
+                f = self.mainMenu.installPath + "/data/agent/agent.py"
+            with open(f) as f:
+                code = f.read()
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -1023,6 +1023,7 @@ class Listener:
         """
         listenerOptions = self.options
         self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
+        self.thread.daemon = True
         self.thread.start()
         time.sleep(3)
         # returns True if the listener successfully started, false otherwise

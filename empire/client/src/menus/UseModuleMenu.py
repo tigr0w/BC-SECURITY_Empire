@@ -64,7 +64,7 @@ class UseModuleMenu(UseMenu):
 
         Usage: use <module>
         """
-        if module in state.modules.keys():
+        if module in state.modules:
             self.selected = module
             self.record = state.modules[module]
             self.record_options = state.modules[module]["options"]
@@ -77,34 +77,36 @@ class UseModuleMenu(UseMenu):
         Usage: execute
         """
         # Find file then upload to server
-        if "File" in self.record_options:
+        if (
+            "File" in self.record_options
             # if a full path upload to server, else use file from download directory
-            if pathlib.Path(self.record_options["File"]["value"]).is_file():
-                try:
-                    file_directory = self.record_options["File"]["value"]
-                    filename = file_directory.split("/")[-1]
-                    data = get_data_from_file(file_directory)
-                except Exception:
-                    log.error("Invalid filename or file does not exist")
-                    return
-                response = state.upload_file(filename, data)
-                if "id" in response.keys():
-                    log.info("File uploaded to server successfully")
-                    self.record_options["File"]["value"] = response["id"]
+            and pathlib.Path(self.record_options["File"]["value"]).is_file()
+        ):
+            try:
+                file_directory = self.record_options["File"]["value"]
+                filename = file_directory.split("/")[-1]
+                data = get_data_from_file(file_directory)
+            except Exception:
+                log.error("Invalid filename or file does not exist")
+                return
+            response = state.upload_file(filename, data)
+            if "id" in response:
+                log.info("File uploaded to server successfully")
+                self.record_options["File"]["value"] = response["id"]
 
-                elif "detail" in response.keys():
-                    if response["detail"].startswith("[!]"):
-                        log.info(response["detail"])
-                    else:
-                        log.error(response["detail"])
+            elif "detail" in response:
+                if response["detail"].startswith("[!]"):
+                    log.info(response["detail"])
+                else:
+                    log.error(response["detail"])
 
-                # Save copy off to downloads folder so last value points to the correct file
-                with open(f"{state.directory['downloads']}{filename}", "wb+") as f:
-                    f.write(data)
+            # Save copy off to downloads folder so last value points to the correct file
+            with open(f"{state.directory['downloads']}{filename}", "wb+") as f:
+                f.write(data)
 
         post_body = {"options": {}}
 
-        for key in self.record_options.keys():
+        for key in self.record_options:
             post_body["options"][key] = self.record_options[key]["value"]
 
         post_body["module_id"] = self.record["id"]
@@ -116,8 +118,8 @@ class UseModuleMenu(UseMenu):
             response = state.execute_module(
                 self.record_options["Agent"]["value"], post_body
             )
-            if "status" in response.keys():
-                if "Agent" in post_body["options"].keys():
+            if "status" in response:
+                if "Agent" in post_body["options"]:
                     log.info(
                         "Tasked "
                         + self.record_options["Agent"]["value"]
@@ -126,7 +128,7 @@ class UseModuleMenu(UseMenu):
                     )
                     menu_state.pop()
 
-            elif "detail" in response.keys():
+            elif "detail" in response:
                 if response["detail"].startswith("[!]"):
                     log.info(response["detail"])
                 else:

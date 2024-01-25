@@ -10,7 +10,12 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
         json={"name": "test:tag", "value": "test:value"},
     )
     assert resp.status_code == 422
-    assert resp.json() == {
+
+    actual = resp.json()
+    for detail in actual["detail"]:
+        detail.pop("url")
+
+    assert actual == {
         "detail": [
             {
                 "ctx": {"pattern": "^[^:]+$"},
@@ -18,7 +23,6 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
                 "loc": ["body", "name"],
                 "msg": "String should match pattern '^[^:]+$'",
                 "type": "string_pattern_mismatch",
-                "url": "https://errors.pydantic.dev/2.4/v/string_pattern_mismatch",
             },
             {
                 "ctx": {"pattern": "^[^:]+$"},
@@ -26,7 +30,6 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
                 "loc": ["body", "value"],
                 "msg": "String should match pattern '^[^:]+$'",
                 "type": "string_pattern_mismatch",
-                "url": "https://errors.pydantic.dev/2.4/v/string_pattern_mismatch",
             },
         ]
     }
@@ -121,7 +124,12 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
         json={"name": "test:tag", "value": "test:value"},
     )
     assert resp_bad.status_code == 422
-    assert resp_bad.json() == {
+
+    actual = resp_bad.json()
+    for detail in actual["detail"]:
+        detail.pop("url")
+
+    assert actual == {
         "detail": [
             {
                 "ctx": {"pattern": "^[^:]+$"},
@@ -129,7 +137,6 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
                 "loc": ["body", "name"],
                 "msg": "String should match pattern '^[^:]+$'",
                 "type": "string_pattern_mismatch",
-                "url": "https://errors.pydantic.dev/2.4/v/string_pattern_mismatch",
             },
             {
                 "ctx": {"pattern": "^[^:]+$"},
@@ -137,7 +144,6 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
                 "loc": ["body", "value"],
                 "msg": "String should match pattern '^[^:]+$'",
                 "type": "string_pattern_mismatch",
-                "url": "https://errors.pydantic.dev/2.4/v/string_pattern_mismatch",
             },
         ]
     }

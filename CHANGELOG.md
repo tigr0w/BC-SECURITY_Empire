@@ -14,6 +14,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.9.1] - 2024-01-25
+
+### Changed
+
+-   Convert agent task output to string before the BEFORE_TASKING_RESULT_HOOK (@Vinnybod)
+-   Updated tasklist for powershell code to not throw error when GetOwner fails (@Cx01N)
+
+### Fixed
+
+-   Updated Uvicorn to fix issue where an open browser would cause the shutdown to hang (<https://github.com/encode/uvicorn/pull/2145>) (@Vinnybod)
+-   Fixed the fastapi app lifecycle not being properly called on shutdown (@Vinnybod)
+-   Converted listener threads to daemons so they don't hang the shutdown in Python 3.12 and report `RuntimeError: can't create new thread at interpreter shutdown` (@Vinnybod)
+-   Log warning about ps/ls hooks and filters not being able to parse the JSON output (@Vinnybod)
+
+## [5.9.0] - 2024-01-20
+
+### Added
+
+-   Added validation and execution exceptions for modules to raise (@Vinnybod)
+-   Added decorators for module generate functions to automatically get the module_source and call finalize_module (@Vinnybod)
+-   Added execution exception to plugins (@Vinnybod)
+-   Added RUF rules to ruff config (@Vinnybod)
+-   Added SIM rules to ruff config (@Vinnybod)
+-   Added BOF modules to Empire as yamls (@Cx01N)
+    -   Added ClipBoardWindow-Inject module
+    -   Added nanodump module
+    -   Added secinject module
+    -   Added tgtdelegation module
+    -   Added TrustedSec's SA modules
+-   Added custom certificate path to server config.yaml (@AaronVigal)
+
+### Deprecated
+
+-   Returning tuples from module generate functions is deprecated
+    -   To return a 400, raise a `ModuleValidationException`
+    -   To return a 500, raise a `ModuleExecutionException`
+    -   Stop using `handle_error_message`
+-   Returning tuples from plugin execution functions is deprecated
+    -   To return a 400, raise a `PluginValidationException`
+    -   To return a 500, raise a `PluginExecutionException`
+-   Loading plugins from a `.plugin` file is deprecated
+    -   Use a `.py` file with a `plugin.yaml` instead
+-   Extending the `Plugin` class is deprecated
+    -   Use the `BasePlugin` class instead
+
+### Changed
+
+-   Migrated some Pydantic and FastAPI usage away from deprecated features (@Vinnybod)
+-   Updated the install script and Docker file from Python 3.12.0 to 3.12.1 (@Vinnybod)
+-   Upgraded all dependencies with `poetry up` (@Vinnybod)
+-   Plugin updates (@Vinnybod)
+    -   Plugins have a `plugin.yaml`
+    -   Base plugin class is now `BasePlugin`
+    -   Updated plugin documentation
+-   Upgraded Black to 23.12.0 (@Vinnybod)
+-   Upgraded Ruff to 0.1.9 (@Vinnybod)
+-   Upgraded Seatbelt to 1.2.1 (@Cx01N)
+
 ## [5.8.4] - 2023-12-22
 
 ### Fixed
@@ -710,7 +768,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.1...HEAD
+
+[5.9.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.0...v5.9.1
+
+[5.9.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.4...v5.9.0
 
 [5.8.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.3...v5.8.4
 

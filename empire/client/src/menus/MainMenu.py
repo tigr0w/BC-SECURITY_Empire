@@ -44,9 +44,10 @@ class MainMenu(Menu):
                     word_before_cursor, empire_config.yaml.get("servers", [])
                 ):
                     yield Completion(server, start_position=-len(word_before_cursor))
-            elif position_util(cmd_line, 1, word_before_cursor):
-                if "connect".startswith(word_before_cursor):
-                    yield Completion("connect", start_position=-len(word_before_cursor))
+            elif position_util(
+                cmd_line, 1, word_before_cursor
+            ) and "connect".startswith(word_before_cursor):
+                yield Completion("connect", start_position=-len(word_before_cursor))
 
         yield from super().get_completions(
             document, complete_event, cmd_line, word_before_cursor
@@ -69,8 +70,8 @@ class MainMenu(Menu):
         config: bool = False,
         port: int = 1337,
         socketport: int = 5000,
-        username: str = None,
-        password: str = None,
+        username: str | None = None,
+        password: str | None = None,
     ) -> None:
         """
         Connect to empire instance

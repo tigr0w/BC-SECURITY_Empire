@@ -1,6 +1,20 @@
+import contextlib
+from pathlib import Path
 from textwrap import dedent
+from types import SimpleNamespace
 
 import pytest
+
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
+from empire.server.core.module_models import (
+    EmpireModule,
+    EmpireModuleAdvanced,
+    LanguageEnum,
+)
+from empire.server.utils.module_util import handle_error_message
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -128,7 +142,7 @@ def download(client, admin_auth_header, db, models):
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml").read(),
+                Path("./empire/test/test-upload.yaml").read_bytes(),
             )
         },
     )
@@ -136,10 +150,8 @@ def download(client, admin_auth_header, db, models):
     yield response.json()
 
     # there is no delete endpoint for downloads, so we need to delete the file manually
-    try:
+    with contextlib.suppress(Exception):
         db.query(models.Download).delete()
-    except Exception:
-        pass
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -150,7 +162,7 @@ def bof_download(client, admin_auth_header, db, models):
         files={
             "file": (
                 "whoami.x64.o",
-                open("./empire/test/data/whoami.x64.o", "rb").read(),
+                Path("./empire/test/data/whoami.x64.o").read_bytes(),
             )
         },
     )
@@ -158,10 +170,8 @@ def bof_download(client, admin_auth_header, db, models):
     yield response.json()
 
     # there is no delete endpoint for downloads, so we need to delete the file manually
-    try:
+    with contextlib.suppress(Exception):
         db.query(models.Download).delete()
-    except Exception:
-        pass
 
 
 @pytest.fixture(scope="function")
@@ -176,6 +186,82 @@ def agent_task(client, admin_auth_header, agent):
 
     # No need to delete the task, it will be deleted when the agent is deleted
     # After the test.
+
+
+def raise_exception_wrapper(exception):
+    def raise_exception(*args, **kwargs):
+        raise exception
+
+    return raise_exception
+
+
+def return_handle_error_message_wrapper(message):
+    def return_handle_error_message(*args, **kwargs):
+        return handle_error_message(message)
+
+    return return_handle_error_message
+
+
+@pytest.fixture(scope="module", autouse=True)
+def module_with_validation_exception(main):
+    module_name = "this_module_has_a_validation_exception"
+    main.modulesv2.modules[module_name] = EmpireModule(
+        id=module_name,
+        name=module_name,
+        language=LanguageEnum.powershell,
+        advanced=EmpireModuleAdvanced(
+            custom_generate=True,
+            generate_class=SimpleNamespace(
+                generate=raise_exception_wrapper(ModuleValidationException(module_name))
+            ),
+        ),
+    )
+
+    yield
+
+    del main.modulesv2.modules[module_name]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def module_with_execution_exception(main):
+    module_name = "this_module_has_an_execution_exception"
+    main.modulesv2.modules[module_name] = EmpireModule(
+        id=module_name,
+        name=module_name,
+        language=LanguageEnum.powershell,
+        advanced=EmpireModuleAdvanced(
+            custom_generate=True,
+            generate_class=SimpleNamespace(
+                generate=raise_exception_wrapper(ModuleExecutionException(module_name))
+            ),
+        ),
+    )
+
+    yield
+
+    del main.modulesv2.modules[module_name]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def module_with_legacy_handle_error_message(main):
+    module_name = "this_module_uses_legacy_handle_error_message"
+    main.modulesv2.modules[module_name] = EmpireModule(
+        id=module_name,
+        name=module_name,
+        language=LanguageEnum.powershell,
+        advanced=EmpireModuleAdvanced(
+            custom_generate=True,
+            generate_class=SimpleNamespace(
+                generate=return_handle_error_message_wrapper(
+                    module_name + ": this is the error"
+                )
+            ),
+        ),
+    )
+
+    yield
+
+    del main.modulesv2.modules[module_name]
 
 
 def test_create_task_shell_agent_not_found(client, admin_auth_header):
@@ -444,6 +530,60 @@ def test_create_task_module_ignore_admin_check(
     assert response.json()["id"] > 0
 
 
+def test_create_task_module_validation_exception(
+    client, admin_auth_header, agent_low_integrity
+):
+    response = client.post(
+        f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "this_module_uses_legacy_handle_error_message",
+            "ignore_admin_check": True,
+            "options": {},
+        },
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "this_module_uses_legacy_handle_error_message: this is the error"
+    )
+
+
+def test_create_task_module_execution_exception(
+    client, admin_auth_header, agent_low_integrity
+):
+    response = client.post(
+        f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "this_module_has_an_execution_exception",
+            "ignore_admin_check": True,
+            "options": {},
+        },
+    )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "this_module_has_an_execution_exception"
+
+
+def test_create_task_handle_error_message(
+    client, admin_auth_header, agent_low_integrity
+):
+    response = client.post(
+        f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "this_module_has_an_execution_exception",
+            "ignore_admin_check": True,
+            "options": {},
+        },
+    )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "this_module_has_an_execution_exception"
+
+
 def test_create_task_upload_file_not_found(client, admin_auth_header, agent):
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/upload",
@@ -579,7 +719,7 @@ def test_create_task_script_import_agent_not_found(client, admin_auth_header, ag
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "rb"),
+                Path("./empire/test/test-upload.yaml").read_bytes(),
                 "text/plain",
             )
         },
@@ -596,7 +736,7 @@ def test_create_task_script_import(client, admin_auth_header, agent):
         files={
             "file": (
                 "test-upload.yaml",
-                open("./empire/test/test-upload.yaml", "rb"),
+                Path("./empire/test/test-upload.yaml").read_bytes(),
                 "text/plain",
             )
         },
@@ -691,12 +831,8 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
 
     assert response.status_code == 422
 
-    delay_err = list(filter(lambda x: "delay" in x["loc"], response.json()["detail"]))[
-        0
-    ]
-    jitter_err = list(
-        filter(lambda x: "jitter" in x["loc"], response.json()["detail"])
-    )[0]
+    delay_err = next(filter(lambda x: "delay" in x["loc"], response.json()["detail"]))
+    jitter_err = next(filter(lambda x: "jitter" in x["loc"], response.json()["detail"]))
     assert delay_err["loc"] == ["body", "delay"]
     assert delay_err["msg"] == "Input should be greater than or equal to 0"
     assert jitter_err["loc"] == ["body", "jitter"]

@@ -34,6 +34,7 @@ Most methods utilize self.lock to deal with the concurreny issue of kicking off 
 
 """
 import base64
+import contextlib
 import json
 import logging
 import os
@@ -414,10 +415,9 @@ class Agents:
             self.agent_log_locks[session_id] = threading.Lock()
         lock = self.agent_log_locks[session_id]
 
-        with lock:
-            with open(f"{save_path}/agent.log", "a") as f:
-                f.write("\n" + current_time + " : " + "\n")
-                f.write(data + "\n")
+        with lock, open(f"{save_path}/agent.log", "a") as f:
+            f.write("\n" + current_time + " : " + "\n")
+            f.write(data + "\n")
 
     ###############################################################
     #
@@ -557,10 +557,7 @@ class Agents:
                 autorun_command = ""
 
             results = db.query(models.Config.autorun_data).all()
-            if results[0].autorun_data:
-                autorun_data = results[0].autorun_data
-            else:
-                autorun_data = ""
+            autorun_data = results[0].autorun_data if results[0].autorun_data else ""
 
             autoruns = [autorun_command, autorun_data]
 
@@ -998,10 +995,7 @@ class Agents:
                 language = str(parts[10], "utf-8")
                 language_version = str(parts[11], "utf-8")
                 architecture = str(parts[12], "utf-8")
-                if high_integrity == "True":
-                    high_integrity = 1
-                else:
-                    high_integrity = 0
+                high_integrity = 1 if high_integrity == "True" else 0
 
             except Exception as e:
                 message = (
@@ -1222,10 +1216,8 @@ class Agents:
                     "python",
                     "ironpython",
                 ]:
-                    try:
+                    with contextlib.suppress(Exception):
                         session_key = bytes.fromhex(session_key)
-                    except Exception:
-                        pass
 
                 # encrypt the tasking packets with the agent's session key
                 encrypted_data = encryption.aes_encrypt_then_hmac(
@@ -1258,10 +1250,8 @@ class Agents:
         sessionKey = self.agents[sessionID]["sessionKey"]
 
         if self.agents[sessionID]["language"].lower() in ["python", "ironpython"]:
-            try:
+            with contextlib.suppress(Exception):
                 sessionKey = bytes.fromhex(sessionKey)
-            except Exception:
-                pass
 
         try:
             # verify, decrypt and depad the packet
@@ -1352,6 +1342,14 @@ class Agents:
                 tasking.original_output = data
                 tasking.output = data
 
+                # Not sure why, but for Python agents these are bytes initially, but
+                # after storing in the database they're strings. So we need to convert
+                # so socketio and other hooks get the right data type.
+                if isinstance(tasking.output, bytes):
+                    tasking.output = tasking.output.decode("UTF-8")
+                if isinstance(tasking.original_output, bytes):
+                    tasking.original_output = tasking.original_output.decode("UTF-8")
+
             hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, db, tasking)
             db, tasking = hooks.run_filters(
                 hooks.BEFORE_TASKING_RESULT_FILTER, db, tasking
@@ -1393,10 +1391,7 @@ class Agents:
                 language = parts[10]
                 language_version = parts[11]
                 architecture = parts[12]
-                if high_integrity == "True":
-                    high_integrity = 1
-                else:
-                    high_integrity = 0
+                high_integrity = 1 if high_integrity == "True" else 0
 
                 # username = str(domainname)+"\\"+str(username)
                 username = f"{domainname}\\{username}"
@@ -1456,12 +1451,7 @@ class Agents:
                 time.sleep(1)
                 self.socksthread[session_id].kill()
 
-        elif response_name == "TASK_SHELL":
-            # shell command response
-            # update the agent log
-            self.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_CSHARP":
+        elif response_name in ["TASK_SHELL", "TASK_CSHARP"]:
             # shell command response
             # update the agent log
             self.save_agent_log(session_id, data)
@@ -1756,23 +1746,13 @@ class Agents:
             msg = f"Output saved to .{final_save_path}"
             self.save_agent_log(session_id, msg)
 
-        elif response_name == "TASK_SCRIPT_IMPORT":
-            # update the agent log
-            self.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_IMPORT_MODULE":
-            # update the agent log
-            self.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_VIEW_MODULE":
-            # update the agent log
-            self.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_REMOVE_MODULE":
-            # update the agent log
-            self.save_agent_log(session_id, data)
-
-        elif response_name == "TASK_SCRIPT_COMMAND":
+        elif response_name in [
+            "TASK_SCRIPT_IMPORT",
+            "TASK_IMPORT_MODULE",
+            "TASK_VIEW_MODULE",
+            "TASK_REMOVE_MODULE",
+            "TASK_SCRIPT_COMMAND",
+        ]:
             # update the agent log
             self.save_agent_log(session_id, data)
 
@@ -1799,13 +1779,5 @@ class Agents:
 
         else:
             log.warning(f"Unknown response {response_name} from {session_id}")
-
-        # Not sure why, but for Python agents these are bytes initially, but
-        # after storing in the database they're strings. So we need to convert
-        # so socketio and other hooks get the right data type.
-        if isinstance(tasking.output, bytes):
-            tasking.output = tasking.output.decode("UTF-8")
-        if isinstance(tasking.original_output, bytes):
-            tasking.original_output = tasking.original_output.decode("UTF-8")
 
         hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, db, tasking)

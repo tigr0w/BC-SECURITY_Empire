@@ -65,7 +65,7 @@ class Hooks:
             self.filters[event] = {}
         self.filters[event][name] = filter
 
-    def unregister_hook(self, name: str, event: str = None):
+    def unregister_hook(self, name: str, event: str | None = None):
         """
         Unregister a hook.
         """
@@ -76,7 +76,7 @@ class Hooks:
         if name in self.hooks.get(event, {}):
             self.hooks[event].pop(name)
 
-    def unregister_filter(self, name: str, event: str = None):
+    def unregister_filter(self, name: str, event: str | None = None):
         """
         Unregister a filter.
         """

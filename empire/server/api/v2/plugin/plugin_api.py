@@ -14,7 +14,10 @@ from empire.server.api.v2.plugin.plugin_dto import (
 )
 from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
-from empire.server.core.exceptions import PluginValidationException
+from empire.server.core.exceptions import (
+    PluginExecutionException,
+    PluginValidationException,
+)
 from empire.server.server import main
 
 plugin_service = main.pluginsv2
@@ -67,6 +70,8 @@ async def execute_plugin(
         )
     except PluginValidationException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    except PluginExecutionException as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     if results is False or err:
         raise HTTPException(500, err or "internal plugin error")

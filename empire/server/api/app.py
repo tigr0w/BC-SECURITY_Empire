@@ -1,6 +1,6 @@
 import json
 import logging
-import os
+from contextlib import asynccontextmanager
 from datetime import datetime
 from json import JSONEncoder
 from pathlib import Path
@@ -45,7 +45,7 @@ class MyJsonEncoder(JSONEncoder):
 
 def load_starkiller(v2App, ip, port):
     try:
-        sync_starkiller(empire_config.dict())
+        sync_starkiller(empire_config.model_dump())
     except Exception as e:
         log.warning("Failed to load Starkiller: %s", e, exc_info=True)
         log.warning(
@@ -86,14 +86,17 @@ def initialize(
     from empire.server.api.v2.user import user_api
     from empire.server.server import main
 
-    v2App = FastAPI()
-
-    @v2App.on_event("shutdown")
-    def shutdown_event():
-        log.info("Shutting down Empire Server...")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        yield
         if main:
-            log.info("Shutting down MainMenu...")
             main.shutdown()
+
+        if sio:
+            log.info("Shutting down SocketIO...")
+            await sio.shutdown()
+
+    v2App = FastAPI(lifespan=lifespan)
 
     v2App.include_router(listener_template_api.router)
     v2App.include_router(listener_api.router)
@@ -155,7 +158,7 @@ def initialize(
     else:
         log.info("Starkiller disabled. Not loading.")
 
-    cert_path = os.path.abspath("./empire/server/data/")
+    cert_path = Path(empire_config.api.cert_path)
 
     if run:
         if not secure:

@@ -74,7 +74,7 @@ class EditListenerMenu(UseMenu):
         # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
         temp_record = {}
-        for key in self.record_options.keys():
+        for key in self.record_options:
             post_body[key] = self.record_options[key]["value"]
 
         temp_record["options"] = post_body
@@ -86,9 +86,9 @@ class EditListenerMenu(UseMenu):
         response = state.edit_listener(
             state.listeners[self.selected]["id"], temp_record
         )
-        if "id" in response.keys():
+        if "id" in response:
             log.info("Listener " + temp_record["name"] + " edited")
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error(response["detail"])
 
         # re-enable listener
@@ -96,9 +96,9 @@ class EditListenerMenu(UseMenu):
         response = state.edit_listener(
             state.listeners[self.selected]["id"], temp_record
         )
-        if "id" in response.keys():
+        if "id" in response:
             log.info("Listener " + temp_record["name"] + " enabled")
-        elif "detail" in response.keys():
+        elif "detail" in response:
             log.error("[!] Error: " + response["detail"])
 
 

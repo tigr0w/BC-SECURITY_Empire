@@ -93,7 +93,7 @@ class Listener:
         language=None,
         safeChecks="",
         listenerName=None,
-        bypasses: list[str] = None,
+        bypasses: list[str] | None = None,
     ):
         """
         Generate a basic launcher for the specified listener.
@@ -179,12 +179,11 @@ class Listener:
             listenerOptions = copy.deepcopy(listenerOptions)
             bindIP = listenerOptions["BindIP"]["Value"]
             port = listenerOptions["Port"]["Value"]
-            if ":" in bindIP:
-                if "http" in host:
-                    if "https" in host:
-                        host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
-                    else:
-                        host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
+            if ":" in bindIP and "http" in host:
+                if "https" in host:
+                    host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
+                else:
+                    host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ stagingKey }');"
@@ -259,7 +258,7 @@ class Listener:
                 if safeChecks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
-                p = f"{listenerName}: Error setting LittleSnitch in stager: {str(e)}"
+                p = f"{listenerName}: Error setting LittleSnitch in stager: {e!s}"
                 log.error(p, exc_info=True)
 
             if userAgent.lower() == "default":
@@ -381,7 +380,7 @@ class Listener:
             )
 
             compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
-            if not compiler.status == "ON":
+            if compiler.status != "ON":
                 self.instance_log.error(
                     f"{listenerName} csharpserver plugin not running"
                 )
@@ -584,11 +583,11 @@ class Listener:
 
         elif language == "python":
             if version == "ironpython":
-                f = open(self.mainMenu.installPath + "/data/agent/ironpython_agent.py")
+                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
-                f = open(self.mainMenu.installPath + "/data/agent/agent.py")
-            code = f.read()
-            f.close()
+                f = self.mainMenu.installPath + "/data/agent/agent.py"
+            with open(f) as f:
+                code = f.read()
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -805,7 +804,7 @@ class Listener:
                             )
                             script += " -FirewallName %s" % (session_id)
 
-                            for option in self.options.keys():
+                            for option in self.options:
                                 if option.lower() == "host":
                                     if self.options[option]["Value"].startswith(
                                         "https://"

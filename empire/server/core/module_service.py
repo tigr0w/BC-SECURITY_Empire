@@ -1,7 +1,9 @@
+import base64
 import fnmatch
 import importlib.util
 import logging
 import os
+import warnings
 from pathlib import Path
 
 import yaml
@@ -18,6 +20,10 @@ from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.download_service import DownloadService
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
 from empire.server.core.module_models import EmpireModule, LanguageEnum
 from empire.server.core.obfuscation_service import ObfuscationService
 from empire.server.utils.option_util import convert_module_options, validate_options
@@ -98,7 +104,7 @@ class ModuleService:
         )
 
         if err:
-            return None, err
+            raise ModuleValidationException(err)
 
         module_data = self._generate_script(
             db,
@@ -106,13 +112,21 @@ class ModuleService:
             cleaned_options,
         )
         if isinstance(module_data, tuple):
+            warnings.warn(
+                "Returning a tuple on errors from module generation is deprecated. Raise exceptions instead."
+                "https://bc-security.gitbook.io/empire-wiki/module-development/powershell-modules#custom-generate",
+                DeprecationWarning,
+                stacklevel=5,
+            )
             (module_data, err) = module_data
         else:
             # Not all modules return a tuple. If they just return a single value,
             # we don't want to throw an unpacking error.
             err = None
         if not module_data or module_data == "":
-            return None, err or "module produced an empty script"
+            # This should probably be a ModuleExecutionException, but
+            # for backwards compatability with 5.x, it needs to raise a 400
+            raise ModuleValidationException(err or "module produced an empty script")
         if not module_data.isascii():
             # This previously returned 'None, 'module source contains non-ascii characters'
             # Was changed in 4.3 to print a warning.
@@ -144,7 +158,8 @@ class ModuleService:
                     task_command = "TASK_CMD_JOB_SAVE"
                 else:
                     task_command = "TASK_CMD_JOB"
-
+            elif module.language == LanguageEnum.bof:
+                task_command = "TASK_CSHARP"
             else:
                 # if this module is run in the foreground
                 extension = module.output_extension
@@ -193,6 +208,65 @@ class ModuleService:
 
         return {"command": task_command, "data": module_data}, None
 
+    def generate_bof_data(
+        self,
+        module: EmpireModule,
+        params: dict,
+        obfuscate: bool = False,
+    ) -> tuple[str, str]:
+        bof_module = self.modules["csharp_inject_bof_inject_bof"]
+
+        compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
+        if not compiler.status == "ON":
+            raise ModuleValidationException("csharpserver plugin not running")
+
+        compiler_dict: dict = yaml.safe_load(bof_module.compiler_yaml)
+        del compiler_dict[0]["Empire"]
+
+        if params["Architecture"] == "x64":
+            script_path = empire_config.directories.module_source / module.bof.x64
+            bof_data = script_path.read_bytes()
+            b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
+
+        elif params["Architecture"] == "x86":
+            compiler_dict[0]["ReferenceSourceLibraries"][0]["EmbeddedResources"][0][
+                "Name"
+            ] = "RunOF.beacon_funcs.x64.o"
+            compiler_dict[0]["ReferenceSourceLibraries"][0]["EmbeddedResources"][0][
+                "Location"
+            ] = "RunOF.beacon_funcs.x64.o"
+            compiler_dict[0]["ReferenceSourceLibraries"][0][
+                "Location"
+            ] = "RunOF\\RunOF32\\"
+
+            script_path = empire_config.directories.module_source / module.bof.x86
+            bof_data = script_path.read_bytes()
+            b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
+
+        compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
+
+        file_name = compiler.do_send_message(
+            compiler_yaml, bof_module.name, confuse=obfuscate
+        )
+        if file_name == "failed":
+            raise ModuleExecutionException("module compile failed")
+
+        script_file = (
+            self.main_menu.installPath
+            + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
+            + "net40"
+            + "/"
+            + file_name
+            + ".compiled"
+        )
+
+        script_end = f",-a:{b64_bof_data}"
+
+        if module.bof.entry_point != "":
+            script_end += f" -e:{params['EntryPoint']}"
+
+        return script_file, script_end
+
     def _validate_module_params(
         self,
         db: Session,
@@ -221,15 +295,14 @@ class ModuleService:
             agent_version = parse(agent.language_version or "0")
             # check if the agent/module PowerShell versions are compatible
             if module_version > agent_version:
-                return (
-                    None,
+                raise ModuleValidationException(
                     f"module requires language version {module.min_language_version} but agent running language version {agent.language_version}",
                 )
 
-        if module.needs_admin and not ignore_admin_check:
-            # if we're running this module for all agents, skip this validation
-            if not agent.high_integrity:
-                return None, "module needs to run in an elevated context"
+        if module.needs_admin and not ignore_admin_check and not agent.high_integrity:
+            raise ModuleValidationException(
+                "module needs to run in an elevated context"
+            )
 
         return options, None
 
@@ -269,6 +342,8 @@ class ModuleService:
                     obfuscation_enabled,
                     obfuscation_command,
                 )
+            except (ModuleValidationException, ModuleExecutionException) as e:
+                raise e
             except Exception as e:
                 log.error(f"Error generating script: {e}", exc_info=True)
                 return None, "Error generating script."
@@ -280,13 +355,40 @@ class ModuleService:
             return self._generate_script_python(module, params, obfuscation_config)
         elif module.language == LanguageEnum.csharp:
             return self._generate_script_csharp(module, params, obfuscation_config)
+        elif module.language == LanguageEnum.bof:
+            if not obfuscation_config:
+                obfuscation_config = self.obfuscation_service.get_obfuscation_config(
+                    db, LanguageEnum.csharp
+                )
+            return self._generate_script_bof(module, params, obfuscation_config)
+
+    def _generate_script_bof(
+        self,
+        module: EmpireModule,
+        params: dict,
+        obfuscation_config: models.ObfuscationConfig,
+    ) -> str:
+        script_file, script_end = self.generate_bof_data(
+            module=module, params=params, obfuscate=obfuscation_config.enabled
+        )
+
+        for key, value in params.items():
+            if key in ["Agent", "Architecture"]:
+                continue
+            for option in module.options:
+                if option.name == key:
+                    if value == "":
+                        value = " "
+                    script_end += f" -{option.format}:{value}"
+
+        return f"{script_file}|{script_end}"
 
     def _generate_script_python(
         self,
         module: EmpireModule,
         params: dict,
         obfuscaton_config: models.ObfuscationConfig,
-    ) -> tuple[str | None, str | None]:
+    ) -> str:
         obfuscate = obfuscaton_config.enabled
 
         if module.script_path:
@@ -308,14 +410,14 @@ class ModuleService:
         if obfuscate:
             script = self.obfuscation_service.python_obfuscate(script)
 
-        return script, None
+        return script
 
     def _generate_script_powershell(
         self,
         module: EmpireModule,
         params: dict,
         obfuscaton_config: models.ObfuscationConfig,
-    ) -> tuple[str | None, str | None]:
+    ) -> str:
         obfuscate = obfuscaton_config.enabled
         obfuscate_command = obfuscaton_config.command
 
@@ -327,7 +429,7 @@ class ModuleService:
             )
 
             if err:
-                return None, err
+                raise ModuleValidationException(err)
         else:
             if obfuscate:
                 script = self.obfuscation_service.obfuscate(
@@ -341,28 +443,29 @@ class ModuleService:
 
         # This is where the code goes for all the modules that do not have a custom generate function.
         for key, value in params.items():
-            if key.lower() not in ["agent", "computername", "outputfunction"]:
-                if value and value != "":
-                    if value.lower() == "true":
-                        # if we're just adding a switch
-                        # wannabe mustache templating.
-                        # If we want to get more advanced, we can import a library for it.
-                        this_option = (
-                            module.advanced.option_format_string_boolean.replace(
-                                "{{ KEY }}", str(key)
-                            ).replace("{{KEY}}", str(key))
+            if (
+                key.lower() not in ["agent", "computername", "outputfunction"]
+                and value
+                and value != ""
+            ):
+                if value.lower() == "true":
+                    # if we're just adding a switch
+                    # wannabe mustache templating.
+                    # If we want to get more advanced, we can import a library for it.
+                    this_option = module.advanced.option_format_string_boolean.replace(
+                        "{{ KEY }}", str(key)
+                    ).replace("{{KEY}}", str(key))
+                    option_strings.append(f"{this_option}")
+                else:
+                    this_option = (
+                        module.advanced.option_format_string.replace(
+                            "{{ KEY }}", str(key)
                         )
-                        option_strings.append(f"{this_option}")
-                    else:
-                        this_option = (
-                            module.advanced.option_format_string.replace(
-                                "{{ KEY }}", str(key)
-                            )
-                            .replace("{{KEY}}", str(key))
-                            .replace("{{ VALUE }}", str(value))
-                            .replace("{{VALUE}}", str(value))
-                        )
-                        option_strings.append(f"{this_option}")
+                        .replace("{{KEY}}", str(key))
+                        .replace("{{ VALUE }}", str(value))
+                        .replace("{{VALUE}}", str(value))
+                    )
+                    option_strings.append(f"{this_option}")
 
         script_end = (
             script_end.replace("{{ PARAMS }}", " ".join(option_strings))
@@ -381,23 +484,23 @@ class ModuleService:
             obfuscation_command=obfuscate_command,
         )
 
-        return script, None
+        return script
 
     def _generate_script_csharp(
         self,
         module: EmpireModule,
         params: dict,
         obfuscation_config: models.ObfuscationConfig,
-    ) -> tuple[str | None, str | None]:
+    ) -> str:
         try:
             compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
             if not compiler.status == "ON":
-                return None, "csharpserver plugin not running"
+                raise ModuleValidationException("csharpserver plugin not running")
             file_name = compiler.do_send_message(
                 module.compiler_yaml, module.name, confuse=obfuscation_config.enabled
             )
             if file_name == "failed":
-                return None, "module compile failed"
+                raise ModuleExecutionException("module compile failed")
 
             script_file = (
                 self.main_menu.installPath
@@ -409,21 +512,25 @@ class ModuleService:
             )
             param_string = ""
             for key, value in params.items():
-                if key.lower() not in ["agent", "computername", "dotnetversion"]:
-                    if value and value != "":
-                        param_string += "," + value
+                if (
+                    key.lower() not in ["agent", "computername", "dotnetversion"]
+                    and value
+                    and value != ""
+                ):
+                    param_string += "," + value
 
-            return f"{script_file}|{param_string}", None
-
+            return f"{script_file}|{param_string}"
+        except (ModuleValidationException, ModuleExecutionException) as e:
+            raise e
         except Exception as e:
             log.error(f"dotnet compile error: {e}")
-            return None, "dotnet compile error"
+            raise ModuleExecutionException("dotnet compile error") from e
 
     def _create_modified_module(self, module: EmpireModule, modified_input: str):
         """
         Return a copy of the original module with the input modified.
         """
-        modified_module = module.copy(deep=True)
+        modified_module = module.model_copy(deep=True)
         modified_module.script = modified_input
         modified_module.script_path = None
 
@@ -511,6 +618,15 @@ class ModuleService:
                 )
         elif my_model.script:
             pass
+        elif my_model.language == LanguageEnum.bof:
+            if not (
+                empire_config.directories.module_source / my_model.bof.x86
+            ).exists():
+                raise Exception(f"x86 bof file provided does not exist: {module_name}")
+            if not (
+                empire_config.directories.module_source / my_model.bof.x64
+            ).exists():
+                raise Exception(f"x64 bof file provided does not exist: {module_name}")
         else:
             raise Exception(
                 "Must provide a valid script, script_path, or custom generate function"
@@ -620,3 +736,44 @@ class ModuleService:
                 db.delete(db_module)
             del self.modules[module.id]
         db.flush()
+
+
+def auto_get_source(func):
+    def wrapper(*args, **kwargs):
+        main_menu = args[0]
+        module = args[1]
+        obfuscate = args[3]
+        obfuscation_command = args[4]
+
+        script, err = main_menu.modulesv2.get_module_source(
+            module_name=module.script_path,
+            obfuscate=obfuscate,
+            obfuscate_command=obfuscation_command,
+        )
+
+        if err:
+            raise ModuleValidationException(err)
+
+        return func(*args, script=script, **kwargs)
+
+    return wrapper
+
+
+def auto_finalize(func):
+    def wrapper(*args, **kwargs):
+        script, script_end = func(*args, **kwargs)
+
+        main_menu = args[0]
+        obfuscate = args[3]
+        obfuscation_command = args[4]
+
+        script = main_menu.modulesv2.finalize_module(
+            script=script,
+            script_end=script_end,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )
+
+        return script
+
+    return wrapper

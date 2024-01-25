@@ -1,3 +1,5 @@
+import warnings
+
 from empire.server.common import helpers
 
 
@@ -11,6 +13,12 @@ def handle_error_message(
     :param print_to_server: whether the msg should print to the server
     :return: tuple of None, str
     """
+    warnings.warn(
+        "handle_error_message is deprecated. raise ModuleValidationException or ModuleExecutionException instead."
+        "https://bc-security.gitbook.io/empire-wiki/module-development/powershell-modules#custom-generate",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if print_to_server:
         print(helpers.color(msg))
     return None, msg

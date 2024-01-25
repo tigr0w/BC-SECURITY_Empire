@@ -60,7 +60,7 @@ class Module:
         script_end = '\nInvoke-Shellcode -ProcessID {} -Shellcode $([Convert]::FromBase64String("{}")) -Force'.format(
             proc_id, encoded_sc
         )
-        script_end += f"; shellcode injected into pid {str(proc_id)}"
+        script_end += f"; shellcode injected into pid {proc_id!s}"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

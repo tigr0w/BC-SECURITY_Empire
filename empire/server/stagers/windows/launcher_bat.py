@@ -82,15 +82,9 @@ class Stager:
         listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
         host = listener.options["Host"]["Value"]
 
-        if options["Obfuscate"]["Value"].lower() == "true":
-            obfuscate = True
-        else:
-            obfuscate = False
+        obfuscate = options["Obfuscate"]["Value"].lower() == "true"
 
-        if options["Delete"]["Value"].lower() == "true":
-            delete = True
-        else:
-            delete = False
+        delete = options["Delete"]["Value"].lower() == "true"
 
         if not host:
             log.error("[!] Error in launcher command generation.")

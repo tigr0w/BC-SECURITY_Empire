@@ -36,4 +36,4 @@ class AgentFile(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-AgentFile.update_forward_refs()
+AgentFile.model_rebuild()

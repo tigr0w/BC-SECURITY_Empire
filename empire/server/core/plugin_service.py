@@ -3,8 +3,11 @@ import fnmatch
 import importlib
 import logging
 import os
+import warnings
 from datetime import datetime
+from pathlib import Path
 
+import yaml
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, undefer
 
@@ -15,7 +18,10 @@ from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
-from empire.server.core.exceptions import PluginValidationException
+from empire.server.core.exceptions import (
+    PluginExecutionException,
+    PluginValidationException,
+)
 from empire.server.utils.option_util import validate_options
 
 log = logging.getLogger(__name__)
@@ -40,24 +46,23 @@ class PluginService:
         """
         Autorun plugin commands at server startup.
         """
-        plugins = empire_config.yaml.get("plugins")
-        if plugins:
-            for plugin in plugins:
-                use_plugin = self.loaded_plugins.get(plugin)
-                if not use_plugin:
-                    log.error(f"Plugin {plugin} not found.")
-                    continue
+        plugins = empire_config.yaml.get("plugins", {})
 
-                options = plugins[plugin]
-                req = PluginExecutePostRequest(options=options)
+        for plugin_name, options in plugins.items():
+            use_plugin = self.loaded_plugins.get(plugin_name)
+            if not use_plugin:
+                log.error(f"Plugin {plugin_name} not found.")
+                continue
 
-                with SessionLocal.begin() as db:
-                    results, err = self.execute_plugin(db, use_plugin, req, None)
+            req = PluginExecutePostRequest(options=options)
 
-                if results is False:
-                    log.error(f"Plugin failed to run: {plugin}")
-                else:
-                    log.info(f"Plugin {plugin} ran successfully!")
+            with SessionLocal.begin() as db:
+                results, err = self.execute_plugin(db, use_plugin, req, None)
+
+            if results is False:
+                log.error(f"Plugin failed to run: {plugin_name}")
+            else:
+                log.info(f"Plugin {plugin_name} ran successfully!")
 
     def startup_plugins(self, db: Session):
         """
@@ -66,7 +71,47 @@ class PluginService:
         plugin_path = f"{self.main_menu.installPath}/plugins/"
         log.info(f"Searching for plugins at {plugin_path}")
 
-        # Import old v1 plugins (remove in 5.0)
+        self._legacy_load(plugin_path)
+
+        for directory in os.listdir(plugin_path):
+            plugin_dir = Path(plugin_path) / directory
+
+            if (
+                directory == "example"
+                or not plugin_dir.is_dir()
+                or plugin_dir.name.startswith(".")
+                or plugin_dir.name.startswith("_")
+            ):
+                continue
+
+            plugin_yaml = plugin_dir / "plugin.yaml"
+
+            if not plugin_yaml.exists():
+                log.warning(f"Plugin {plugin_dir.name} does not have a plugin.yaml")
+                continue
+
+            plugin_config = yaml.safe_load(plugin_yaml.read_text())
+            plugin_main = plugin_config.get("main")
+            plugin_file = plugin_dir / plugin_main
+
+            if not plugin_file.is_file():
+                log.warning(f"Plugin {plugin_dir.name} does not have a valid main file")
+                continue
+
+            try:
+                self.load_plugin(plugin_file.name.removesuffix(".py"), plugin_file)
+            except Exception as e:
+                log.error(
+                    f"Failed to load plugin {plugin_file.name}: {e}", exc_info=True
+                )
+
+    def _legacy_load(self, plugin_path):
+        warnings.warn(
+            "Legacy plugin loading will be removed in 6.0",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         plugin_names = os.listdir(plugin_path)
         for plugin_name in plugin_names:
             if not plugin_name.lower().startswith(
@@ -84,17 +129,21 @@ class PluginService:
                 plugin_name = filename.split(".")[0]
 
                 # don't load up any of the templates or examples
-                if fnmatch.fnmatch(filename, "*template.plugin"):
-                    continue
-                elif fnmatch.fnmatch(filename, "*example.plugin"):
+                if fnmatch.fnmatch(filename, "*template.plugin") or fnmatch.fnmatch(
+                    filename, "*example.plugin"
+                ):
                     continue
 
+                warnings.warn(
+                    f"{plugin_name}: Loading plugins from .plugin files is deprecated",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
                 self.load_plugin(plugin_name, file_path)
 
     def load_plugin(self, plugin_name, file_path):
         """Given the name of a plugin and a menu object, load it into the menu"""
-        # note the 'plugins' package so the loader can find our plugin
-        loader = importlib.machinery.SourceFileLoader(plugin_name, file_path)
+        loader = importlib.machinery.SourceFileLoader(plugin_name, str(file_path))
         module = loader.load_module()
         plugin_obj = module.Plugin(self.main_menu)
 
@@ -104,6 +153,7 @@ class PluginService:
             if value.get("Strict") is None:
                 value["Strict"] = False
 
+        plugin_name = plugin_obj.info["Name"]
         self.loaded_plugins[plugin_name] = plugin_obj
 
     def execute_plugin(
@@ -130,7 +180,7 @@ class PluginService:
             log.warning(
                 f"Plugin {plugin.info.get('Name')} does not support db session or user_id, falling back to old method"
             )
-        except PluginValidationException as e:
+        except (PluginValidationException, PluginExecutionException) as e:
             raise e
         except Exception as e:
             log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
@@ -139,9 +189,15 @@ class PluginService:
         try:
             res = plugin.execute(cleaned_options)
             if isinstance(res, tuple):
+                warnings.warn(
+                    "Returning a tuple on errors from plugin execution is deprecated. Raise exceptions instead."
+                    "https://bc-security.gitbook.io/empire-wiki/plugins/plugin-development",
+                    DeprecationWarning,
+                    stacklevel=5,
+                )
                 return res
             return res, None
-        except PluginValidationException as e:
+        except (PluginValidationException, PluginExecutionException) as e:
             raise e
         except Exception as e:
             log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
@@ -195,9 +251,9 @@ class PluginService:
     @staticmethod
     def get_tasks(
         db: Session,
-        plugins: list[str] = None,
-        users: list[int] = None,
-        tags: list[str] = None,
+        plugins: list[str] | None = None,
+        users: list[int] | None = None,
+        tags: list[str] | None = None,
         limit: int = -1,
         offset: int = 0,
         include_full_input: bool = False,

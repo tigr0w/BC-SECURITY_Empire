@@ -16,7 +16,7 @@ class Module:
         b64_bof_data = params["File"].get_base64_file()
 
         compiler = main_menu.pluginsv2.get_by_id("csharpserver")
-        if not compiler.status == "ON":
+        if compiler.status != "ON":
             return None, "csharpserver plugin not running"
 
         # Convert compiler.yaml to python dict
@@ -54,10 +54,7 @@ class Module:
             + file_name
             + ".compiled"
         )
-        if params["File"] != "":
-            script_end = f",-a:{b64_bof_data}"
-        else:
-            script_end = ","
+        script_end = f",-a:{b64_bof_data}" if params["File"] != "" else ","
 
         if params["EntryPoint"] != "":
             script_end += f" -e:{params['EntryPoint']}"

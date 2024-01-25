@@ -29,17 +29,18 @@ class ProxyMenu(UseMenu):
         ):
             for option in filtered_search_list(word_before_cursor, self.record_options):
                 yield Completion(option, start_position=-len(word_before_cursor))
-        elif cmd_line[0] == "set" and position_util(cmd_line, 3, word_before_cursor):
-            if (
-                len(cmd_line) > 1
-                and len(self.suggested_values_for_option(cmd_line[1])) > 0
+        elif (
+            cmd_line[0] == "set"
+            and position_util(cmd_line, 3, word_before_cursor)
+            and len(cmd_line) > 1
+            and len(self.suggested_values_for_option(cmd_line[1])) > 0
+        ):
+            for suggested_value in filtered_search_list(
+                word_before_cursor, self.suggested_values_for_option(cmd_line[1])
             ):
-                for suggested_value in filtered_search_list(
-                    word_before_cursor, self.suggested_values_for_option(cmd_line[1])
-                ):
-                    yield Completion(
-                        suggested_value, start_position=-len(word_before_cursor)
-                    )
+                yield Completion(
+                    suggested_value, start_position=-len(word_before_cursor)
+                )
 
         yield from super().get_completions(
             document, complete_event, cmd_line, word_before_cursor
@@ -64,7 +65,7 @@ class ProxyMenu(UseMenu):
         try:
             self.record = state.get_proxy_info(agent_name)["proxy"]
             self.record_options = self.record["options"]
-            if agent_name in state.agents.keys():
+            if agent_name in state.agents:
                 self.selected = agent_name
                 self.session_id = state.agents[self.selected]["session_id"]
                 self.agent_options = state.agents[

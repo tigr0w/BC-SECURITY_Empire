@@ -19,10 +19,7 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        if (params["Obfuscate"]).lower() == "true":
-            launcher_obfuscate = True
-        else:
-            launcher_obfuscate = False
+        launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
@@ -70,21 +67,25 @@ class Module:
                 )
 
                 for option, values in params.items():
-                    if option.lower() in [
-                        "taskname",
-                        "taskdescription",
-                        "taskauthor",
-                        "gponame",
-                        "gpodisplayname",
-                        "domain",
-                        "domaincontroller",
-                    ]:
-                        if values and values != "":
-                            if values.lower() == "true":
-                                # if we're just adding a switch
-                                script += " -" + str(option)
-                            else:
-                                script += " -" + str(option) + " '" + str(values) + "'"
+                    if (
+                        option.lower()
+                        in [
+                            "taskname",
+                            "taskdescription",
+                            "taskauthor",
+                            "gponame",
+                            "gpodisplayname",
+                            "domain",
+                            "domaincontroller",
+                        ]
+                        and values
+                        and values != ""
+                    ):
+                        if values.lower() == "true":
+                            # if we're just adding a switch
+                            script += " -" + str(option)
+                        else:
+                            script += " -" + str(option) + " '" + str(values) + "'"
 
                 outputf = params.get("OutputFunction", "Out-String")
                 script += (

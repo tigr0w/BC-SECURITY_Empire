@@ -25,12 +25,15 @@ class Module:
         script_end = "Invoke-ShellcodeMSIL"
 
         for option, values in params.items():
-            if option.lower() != "agent":
-                if values and values != "":
-                    if option.lower() == "shellcode":
-                        # transform the shellcode to the correct format
-                        sc = ",0".join(values.split("\\"))[1:]
-                        script_end += " -" + str(option) + " @(" + sc + ")"
+            if (
+                option.lower() != "agent"
+                and values
+                and values != ""
+                and option.lower() == "shellcode"
+            ):
+                # transform the shellcode to the correct format
+                sc = ",0".join(values.split("\\"))[1:]
+                script_end += " -" + str(option) + " @(" + sc + ")"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

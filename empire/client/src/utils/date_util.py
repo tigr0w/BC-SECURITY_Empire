@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import humanize
 
 
-def humanize_datetime(iso_string: str = None):
+def humanize_datetime(iso_string: str | None = None):
     """
     From the iso-8601 formatted timestamp, Get a string representing the local time to the user
     and a time delta like '2020-12-24 15:28:44 MST (28 seconds ago)'
