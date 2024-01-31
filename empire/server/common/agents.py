@@ -569,12 +569,18 @@ class Agents:
         """
         if session_id in self.agents:
             # get existing files/dir that are in this directory.
-            # delete them and their children to keep everything up to date. There's a cascading delete on the table.
+            # delete them and their children to keep everything up to date.
+            # There's a cascading delete on the table.
+            # If there are any linked downloads, the association will be removed.
+            # This function could be updated in the future to do updates instead
+            # of clearing the whole tree on refreshes.
             this_directory = (
                 db.query(models.AgentFile)
                 .filter(
-                    and_(models.AgentFile.session_id == session_id),
-                    models.AgentFile.path == response["directory_path"],
+                    and_(
+                        models.AgentFile.session_id == session_id,
+                        models.AgentFile.path == response["directory_path"],
+                    ),
                 )
                 .first()
             )

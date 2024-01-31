@@ -61,7 +61,7 @@ plugin_task_download_assc = Table(
 agent_file_download_assc = Table(
     "agent_file_download_assc",
     Base.metadata,
-    Column("agent_file_id", Integer, ForeignKey("agent_files.id")),
+    Column("agent_file_id", Integer, ForeignKey("agent_files.id", ondelete="CASCADE")),
     Column("download_id", Integer, ForeignKey("downloads.id")),
 )
 
