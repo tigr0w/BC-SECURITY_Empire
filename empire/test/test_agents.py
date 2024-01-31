@@ -1,9 +1,12 @@
 import logging
 import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+
+from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
 
@@ -220,3 +223,89 @@ def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
         checkin_count = len(db_agent.checkins.all())
 
         assert checkin_count == prev_checkin_count + 1
+
+
+def test_update_dir_list(session_local, models, agent, main: MainMenu):
+    with session_local.begin() as db:
+        message = {
+            "directory_path": "C:\\",
+            "directory_name": "C:\\",
+            "items": [
+                {
+                    "path": "C:\\Users\\vinnybod\\Desktop\\test.txt",
+                    "name": "test.txt",
+                    "is_file": True,
+                },
+                {
+                    "path": "C:\\Users\\vinnybod\\Desktop\\test2.txt",
+                    "name": "test2.txt",
+                    "is_file": True,
+                },
+            ],
+        }
+        main.agents.update_dir_list(agent, message, db)
+
+        file, _ = main.agentfilesv2.get_file_by_path(
+            db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
+        )
+
+        assert file.path == "C:\\Users\\vinnybod\\Desktop\\test.txt"
+        assert file.name == "test.txt"
+        assert file.is_file is True
+        assert file.parent_id is not None
+
+        db.query(models.AgentFile).delete()
+
+
+def test_update_dir_list_with_existing_joined_file(
+    session_local, models, agent, main: MainMenu, empire_config
+):
+    with session_local.begin() as db:
+        message = {
+            "directory_path": "C:\\",
+            "directory_name": "C:\\",
+            "items": [
+                {
+                    "path": "C:\\Users\\vinnybod\\Desktop\\test.txt",
+                    "name": "test.txt",
+                    "is_file": True,
+                },
+                {
+                    "path": "C:\\Users\\vinnybod\\Desktop\\test2.txt",
+                    "name": "test2.txt",
+                    "is_file": True,
+                },
+            ],
+        }
+        main.agents.update_dir_list(agent, message, db)
+
+        file, _ = main.agentfilesv2.get_file_by_path(
+            db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
+        )
+
+        download_path = Path("empire/test/avatar.png")
+        file.downloads.append(
+            models.Download(
+                location=str(download_path.absolute()),
+                filename=download_path.name,
+                size=download_path.stat().st_size,
+            )
+        )
+
+        # This previously raised a Foreign Key Constraint error, but should succeed now.
+        main.agents.update_dir_list(agent, message, db)
+
+        file2, _ = main.agentfilesv2.get_file_by_path(
+            db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
+        )
+
+        if empire_config.database.use != "sqlite":
+            # sqlite reuses ids and apparently doesn't cascade the delete to the
+            # association table. This can result in files being linked to the wrong
+            # download after refreshing a directory for sqlite.
+            assert file.id != file2.id
+            assert len(file2.downloads) == 0
+
+        assert file.name == file2.name
+
+        db.query(models.AgentFile).delete()

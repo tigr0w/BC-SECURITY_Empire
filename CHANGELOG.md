@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.9.2] - 2024-01-31
+-   Updated Starkiller to v2.7.2
+
+### Fixed
+
+-   Fixed the ForeignKeyConstraint error when refreshing a directory that contains a file with a linked Download (@Vinnybod)
+-   Downgraded bcrypt to version 4.0.1 to resolve issue in passlib (@Cx01N)
+
 ## [5.9.1] - 2024-01-25
 
 ### Changed
@@ -768,7 +776,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.2...HEAD
+
+[5.9.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.1...v5.9.2
 
 [5.9.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.0...v5.9.1
 
