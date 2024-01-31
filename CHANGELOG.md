@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+-   Downgraded bcrypt to version 4.0.1 to resolve issue in passlib (@Cx01N)
+
 ## [5.9.1] - 2024-01-25
 
 ### Changed
