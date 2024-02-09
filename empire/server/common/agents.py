@@ -57,6 +57,7 @@ from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
 from empire.server.utils import datetime_util
+from empire.server.utils.string_util import is_valid_session_id
 
 from . import encryption, helpers, packets
 
@@ -263,10 +264,8 @@ class Agents:
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
-            # I'm not really sure if this can actually still be exploited, its gone through
-            # quite a few refactors. But we'll keep it for now.
             safe_path = download_dir.absolute()
-            if not str(save_file.absolute()).startswith(str(safe_path)):
+            if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
                 message = "Agent {} attempted skywalker exploit! Attempted overwrite of {} with data {}".format(
                     sessionID, path, data
                 )
@@ -370,9 +369,7 @@ class Agents:
             safe_path = download_dir.absolute()
 
             # fix for 'skywalker' exploit by @zeroSteiner
-            # I'm not really sure if this can actually still be exploited, its gone through
-            # quite a few refactors. But we'll keep it for now.
-            if not str(save_file.absolute()).startswith(str(safe_path)):
+            if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
                 message = "agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
                     sessionID, path, data
                 )
@@ -1121,7 +1118,11 @@ class Agents:
 
         # process each routing packet
         for sessionID, (language, meta, additional, encData) in routingPacket.items():
-            if meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
+            if not is_valid_session_id(sessionID):
+                message = f"handle_agent_data(): invalid sessionID {sessionID}"
+                log.error(message)
+                dataToReturn.append(("", f"ERROR: invalid sessionID {sessionID}"))
+            elif meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
                 message = f"handle_agent_data(): sessionID {sessionID} issued a {meta} request"
                 log.debug(message)
 
@@ -1642,9 +1643,7 @@ class Agents:
                 save_path = download_dir / session_id / "keystrokes.txt"
 
                 # fix for 'skywalker' exploit by @zeroSteiner
-                # I'm not really sure if this can actually still be exploited, its gone through
-                # quite a few refactors. But we'll keep it for now.
-                if not str(save_path.absolute()).startswith(str(safe_path)):
+                if not str(os.path.normpath(save_path)).startswith(str(safe_path)):
                     message = f"agent {session_id} attempted skywalker exploit!"
                     log.warning(message)
                     return

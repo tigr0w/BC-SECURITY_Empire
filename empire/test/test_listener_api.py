@@ -323,7 +323,7 @@ def test_get_listeners(client, admin_auth_header):
     response = client.get("/api/v2/listeners", headers=admin_auth_header)
 
     assert response.status_code == 200
-    assert len(response.json()["records"]) == 2
+    assert len(response.json()["records"]) == 3
 
 
 def test_delete_listener_while_enabled(client, admin_auth_header, base_listener):

