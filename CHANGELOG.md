@@ -14,14 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.9.3] - 2024-02-09
+
 ### Added
--   Added tests for malleable listeners
+
+-   Added option to windows_macro stager to select Excel or Word and AutoOpen or AutoClose (@Cx01N)
 
 ### Fixed
--   Fixed obfuscation issue in Malleable HTTP listeners
--   Added option to windows_macro stager to select Excel or Word and AutoOpen or AutoClose (@Cx01N)
--   Added test for invalid agent sessionid (@Cx01N)
+
+-   Fixed obfuscation issue in Malleable HTTP listeners and added tests (@Cx01N)
 -   Fixed issue that invalid session IDs were accepted by the server (@Cx01N)
+-   Fixed skywalker exploit (again) and added tests (@Cx01N)
 
 ## [5.9.2] - 2024-01-31
 
@@ -775,7 +778,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.3...HEAD
+
+[5.9.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.2...v5.9.3
 
 [5.9.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.1...v5.9.2
 
