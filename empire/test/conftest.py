@@ -267,6 +267,25 @@ def bat_stager():
 
 
 @pytest.fixture(scope="function")
+def windows_macro_stager():
+    return {
+        "name": "macro_stager",
+        "template": "windows_macro",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "powershell",
+            "DocumentType": "word",
+            "Trigger": "autoopen",
+            "OutFile": "document_macro.txt",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "Bypasses": "mattifestation etw",
+            "SafeChecks": "True",
+        },
+    }
+
+
+@pytest.fixture(scope="function")
 def pyinstaller_stager():
     return {
         "name": "MyStager3",

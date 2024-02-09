@@ -461,6 +461,66 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
+@pytest.mark.parametrize(
+    "document_type, trigger_function, expected_trigger",
+    [
+        ("word", "autoopen", "Sub AutoOpen()"),
+        ("word", "autoclose", "Sub AutoClose()"),
+        ("excel", "autoopen", "Sub Workbook_Open()"),
+        ("excel", "autoclose", "Sub Workbook_BeforeClose(Cancel As Boolean)"),
+    ],
+)
+def test_macro_stager_generation(
+    client,
+    windows_macro_stager,
+    admin_auth_header,
+    document_type,
+    trigger_function,
+    expected_trigger,
+):
+    windows_macro_stager["options"]["DocType"] = document_type
+    windows_macro_stager["options"]["Trigger"] = trigger_function
+
+    response = client.post(
+        "/api/v2/stagers/?save=true",
+        headers=admin_auth_header,
+        json=windows_macro_stager,
+    )
+
+    # Check if the stager is successfully created
+    assert response.status_code == 201
+    assert response.json()["id"] != 0
+
+    stager_id = response.json()["id"]
+
+    response = client.get(
+        f"/api/v2/stagers/{stager_id}",
+        headers=admin_auth_header,
+    )
+
+    # Check if we can successfully retrieve the stager
+    assert response.status_code == 200
+    assert response.json()["id"] == stager_id
+
+    response = client.get(
+        response.json()["downloads"][0]["link"],
+        headers=admin_auth_header,
+    )
+
+    # Check if the file is downloaded successfully
+    assert response.status_code == 200
+    assert response.headers.get("content-type").split(";")[0] in [
+        "text/plain",
+    ]
+    assert isinstance(response.content, bytes)
+
+    # Check if the downloaded file is not empty
+    assert len(response.content) > 0
+    assert expected_trigger in response.content.decode("utf-8")
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
 def _expected_http_bat_launcher():
     return dedent(
         """

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+-   Added option to windows_macro stager to select Excel or Word and AutoOpen or AutoClose (@Cx01N)
 -   Added test for invalid agent sessionid (@Cx01N)
 
 ### Fixed
