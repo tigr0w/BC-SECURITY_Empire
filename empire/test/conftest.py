@@ -158,6 +158,35 @@ def base_listener():
     }
 
 
+@pytest.fixture(scope="function")
+def malleable_listener():
+    return {
+        "name": "malleable_listener_1",
+        "template": "http_malleable",
+        "options": {
+            "Name": "http_malleable",
+            "Host": "http://localhost",
+            "BindIP": "0.0.0.0",
+            "Port": "1338",
+            "Profile": "amazon.profile",
+            "Launcher": "powershell -noP -sta -w 1 -enc ",
+            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
+            "DefaultDelay": "5",
+            "DefaultJitter": "0.0",
+            "DefaultLostLimit": "60",
+            "CertPath": "",
+            "KillDate": "",
+            "WorkingHours": "",
+            "Cookie": "",
+            "UserAgent": "default",
+            "Proxy": "default",
+            "ProxyCreds": "default",
+            "SlackURL": "",
+            "JA3_Evasion": "False",
+        },
+    }
+
+
 def base_listener_non_fixture():
     return {
         "name": "new-listener-1",
@@ -166,7 +195,7 @@ def base_listener_non_fixture():
             "Name": "new-listener-1",
             "Host": "http://localhost:80",
             "BindIP": "0.0.0.0",
-            "Port": "80",
+            "Port": "1336",
             "Launcher": "powershell -noP -sta -w 1 -enc ",
             "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
             "DefaultDelay": "5",
@@ -188,6 +217,34 @@ def base_listener_non_fixture():
     }
 
 
+def malleable_listener_non_fixture():
+    return {
+        "name": "malleable_listener_1",
+        "template": "http_malleable",
+        "options": {
+            "Name": "http_malleable",
+            "Host": "http://localhost",
+            "BindIP": "0.0.0.0",
+            "Port": "1338",
+            "Profile": "amazon.profile",
+            "Launcher": "powershell -noP -sta -w 1 -enc ",
+            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
+            "DefaultDelay": "5",
+            "DefaultJitter": "0.0",
+            "DefaultLostLimit": "60",
+            "CertPath": "",
+            "KillDate": "",
+            "WorkingHours": "",
+            "Cookie": "",
+            "UserAgent": "default",
+            "Proxy": "default",
+            "ProxyCreds": "default",
+            "SlackURL": "",
+            "JA3_Evasion": "False",
+        },
+    }
+
+
 @pytest.fixture(scope="module", autouse=True)
 def listener(client, admin_auth_header):
     # not using fixture because scope issues
@@ -195,6 +252,23 @@ def listener(client, admin_auth_header):
         "/api/v2/listeners/",
         headers=admin_auth_header,
         json=base_listener_non_fixture(),
+    )
+
+    yield response.json()
+
+    with suppress(Exception):
+        client.delete(
+            f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
+        )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def listener_malleable(client, admin_auth_header):
+    # not using fixture because scope issues
+    response = client.post(
+        "/api/v2/listeners/",
+        headers=admin_auth_header,
+        json=malleable_listener_non_fixture(),
     )
 
     yield response.json()
@@ -228,7 +302,7 @@ def base_stager():
 
 
 @pytest.fixture(scope="function")
-def base_stager_2():
+def base_stager_dll():
     return {
         "name": "MyStager2",
         "template": "windows_dll",
@@ -238,6 +312,28 @@ def base_stager_2():
             "StagerRetries": "0",
             "Arch": "x86",
             "OutFile": "my-windows-dll.dll",
+            "Base64": "True",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "SafeChecks": "True",
+            "UserAgent": "default",
+            "Proxy": "default",
+            "ProxyCreds": "default",
+            "Bypasses": "mattifestation etw",
+        },
+    }
+
+
+@pytest.fixture(scope="function")
+def base_stager_malleable():
+    return {
+        "name": "MyStager",
+        "template": "multi_launcher",
+        "options": {
+            "Listener": "malleable_listener_1",
+            "Language": "powershell",
+            "StagerRetries": "0",
+            "OutFile": "",
             "Base64": "True",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",

@@ -15,10 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
--   Added option to windows_macro stager to select Excel or Word and AutoOpen or AutoClose (@Cx01N)
--   Added test for invalid agent sessionid (@Cx01N)
+-   Added tests for malleable listeners
 
 ### Fixed
+-   Fixed obfuscation issue in Malleable HTTP listeners
+-   Added option to windows_macro stager to select Excel or Word and AutoOpen or AutoClose (@Cx01N)
+-   Added test for invalid agent sessionid (@Cx01N)
 -   Fixed issue that invalid session IDs were accepted by the server (@Cx01N)
 
 ## [5.9.2] - 2024-01-31
