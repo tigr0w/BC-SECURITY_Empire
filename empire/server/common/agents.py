@@ -1643,8 +1643,6 @@ class Agents:
                 save_path = download_dir / session_id / "keystrokes.txt"
 
                 # fix for 'skywalker' exploit by @zeroSteiner
-                # I'm not really sure if this can actually still be exploited, its gone through
-                # quite a few refactors. But we'll keep it for now.
                 if not str(os.path.normpath(save_path)).startswith(str(safe_path)):
                     message = f"agent {session_id} attempted skywalker exploit!"
                     log.warning(message)
