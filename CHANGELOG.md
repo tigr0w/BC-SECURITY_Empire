@@ -14,11 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [5.9.3] - 2024-02-09
+## [5.9.4] - 2024-02-17
 
 ### Fixed
 
 -   Fixed downloads for C# agent (@Cx01N)
+
+## [5.9.3] - 2024-02-09
 
 ### Added
 
@@ -782,7 +784,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.4...HEAD
+
+[5.9.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.3...v5.9.4
 
 [5.9.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.2...v5.9.3
 
