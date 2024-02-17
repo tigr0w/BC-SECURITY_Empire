@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.9.3] - 2024-02-09
 
+### Fixed
+
+-   Fixed downloads for C# agent (@Cx01N)
+
 ### Added
 
 -   Added option to windows_macro stager to select Excel or Word and AutoOpen or AutoClose (@Cx01N)
