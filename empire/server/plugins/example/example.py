@@ -1,7 +1,8 @@
 """ An example of a plugin. """
+
 import logging
 
-from empire.server.common.plugins import Plugin
+from empire.server.common.plugins import BasePlugin
 
 # Relative imports don't work in plugins right now.
 # from . import example_helpers
@@ -18,7 +19,7 @@ log.info("Hello from your new plugin!")
 
 
 # this class MUST be named Plugin
-class Plugin(Plugin):
+class Plugin(BasePlugin):
     def onLoad(self):
         """
         Any custom loading behavior - called by init, so any
@@ -29,27 +30,6 @@ class Plugin(Plugin):
         # you can store data here that will persist until the plugin
         # is unloaded (i.e. Empire closes)
         self.calledTimes = 0
-
-        self.info = {
-            # Plugin Name
-            "Name": "example",
-            # List of one or more authors for the plugin
-            "Authors": [
-                {
-                    "Name": "Your Name",
-                    "Handle": "@yourname",
-                    "Link": "https://github.com/yourname",
-                }
-            ],
-            # More verbose multi-line description of the plugin
-            "Description": ("description line 1 " "description line 2"),
-            # Software and tools that from the MITRE ATT&CK framework (https://attack.mitre.org/software/)
-            "Software": "SXXXX",
-            # Techniques that from the MITRE ATT&CK framework (https://attack.mitre.org/techniques/enterprise/)
-            "Techniques": ["TXXXX", "TXXXX"],
-            # List of any references/other comments
-            "Comments": ["comment", "http://link/"],
-        }
 
         # Any options needed by the plugin, settable during runtime
         self.options = {
@@ -68,7 +48,7 @@ class Plugin(Plugin):
             },
         }
 
-    def execute(self, command):
+    def execute(self, command, **kwargs):
         """
         Parses commands from the API
         """
@@ -78,13 +58,13 @@ class Plugin(Plugin):
         except Exception:
             return False
 
-    def register(self, mainMenu):
+    def register(self, main_menu):
         """
-        Any modifications to the mainMenu go here - e.g.
+        Any modifications to the main_menu go here - e.g.
         registering functions to be run by user commands
         """
-        self.installPath = mainMenu.installPath
-        self.main_menu = mainMenu
+        self.installPath = main_menu.installPath
+        self.main_menu = main_menu
 
     def do_test(self, command):
         """

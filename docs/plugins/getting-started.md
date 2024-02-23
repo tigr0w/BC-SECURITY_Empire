@@ -11,12 +11,26 @@ empire/server/plugins/example
 └── plugin.yaml
 ```
 
-The `plugin.yaml` configuration will likely be expanded on in the future, but for now
-it only contains one property: `main`. This is the name of the python file within the
-plugin's directory that contains the plugin class.
-
+## plugin.yaml
 ```yaml
+name: example
+authors:
+  - name: Author 1
+    handle: '@author1'
+    link: https://twitter.com/author1
+description: |
+  A description of what the module does and how it works.
+# Software and tools that from the MITRE ATT&CK framework (https://attack.mitre.org/software/)
+software:
+# Techniques that from the MITRE ATT&CK framework (https://attack.mitre.org/techniques/enterprise/)
+techniques:
+  - TXXXX
+  - TXXXX
+comments:
+  - Any additional comments about the module.
+# The entry point for the plugin. The file that contains the `Plugin` class.
 main: example.py
+
 ```
 
 The `example.py` file contains the plugin class. The class must be named `Plugin`

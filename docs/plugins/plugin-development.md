@@ -179,6 +179,19 @@ This is no different than the way things were pre 5.0.
 * `plugin_socketio_message` was moved from `MainMenu` to `plugin_service`.
 * Example conversion for a 5.0 plugin can be seen in [ChiselServer-Plugin](https://github.com/BC-SECURITY/ChiselServer-Plugin/compare/5.0)
 
+## 5->6 Changes
+* self.info is now an object of type `PluginInfo` instead of a dict
+  * `self.info["Name"]` is now `self.info.name`
+* plugins now require a `plugin.yaml` file (added in 5.9)
+* all `self.info` fields are now in the `plugin.yaml` file
+* `.plugin` files are no longer supported and won't be loaded
+* The `Plugin` class is now called `BasePlugin`
+* Plugin constructors now take a `PluginInfo` object as the second positional argument
+* Removed `Category` from `PluginInfo` which was not used
+* Plugin execute function must take `**kwargs`
+* Plugin name is now based on the name in the `plugin.yaml` file instead of the filename
+* `mainMenu` is now `main_menu`
+
 ## Future Work
 * improved plugin logging -
   Give plugins individual log files like listeners have. Make those logs accessible via Starkiller.

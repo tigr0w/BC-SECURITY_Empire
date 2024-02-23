@@ -31,8 +31,11 @@ def temp_copy_plugin(plugin_path):
     example_plugin_path = plugin_path / "example"
     example_plugin_copy_path = plugin_path / "example_2"
 
-    # copy example plugin to a new location
     shutil.copytree(str(example_plugin_path), str(example_plugin_copy_path))
+
+    config = (example_plugin_copy_path / "plugin.yaml").read_text()
+    config = config.replace("name: example", "name: example_2")
+    (example_plugin_copy_path / "plugin.yaml").write_text(config)
 
     yield
 
@@ -55,26 +58,6 @@ def test_autostart_plugins(
         plugin_service.startup()
 
     assert "This function has been called 1 times." in caplog.text
-
-
-# No kwargs pre 5.2
-def test_plugin_execute_without_kwargs(install_path):
-    from empire.server.core.plugin_service import PluginService
-
-    def execute(options):
-        return f"This function was called with options: {options}"
-
-    main_menu_mock = MagicMock()
-    main_menu_mock.installPath = install_path
-    plugin_service = PluginService(main_menu_mock)
-    plugin_service.startup()
-
-    plugin = plugin_service.get_by_id("basic_reporting")
-    with patch_plugin_execute(plugin, execute):
-        req = PluginExecutePostRequest(options={"report": "session"})
-        res, err = plugin_service.execute_plugin(None, plugin, req, None)
-
-    assert res == execute(req.options)
 
 
 def test_plugin_execute_with_kwargs(install_path):

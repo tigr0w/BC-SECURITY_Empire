@@ -49,13 +49,13 @@ async def get_plugin(plugin_id: str):
 
 
 async def get_task(uid: int, db: CurrentSession, plugin=Depends(get_plugin)):
-    task = plugin_service.get_task(db, plugin.info["Name"], uid)
+    task = plugin_service.get_task(db, plugin.info.name, uid)
 
     if task:
         return task
 
     raise HTTPException(
-        404, f"Task not found for plugin {plugin.info['Name']} and task id {uid}"
+        404, f"Task not found for plugin {plugin.info.name} and task id {uid}"
     )
 
 
@@ -125,7 +125,7 @@ async def read_tasks(
 ):
     tasks, total = plugin_service.get_tasks(
         db,
-        plugins=[plugin.info["Name"]],
+        plugins=[plugin.info.name],
         users=users,
         tags=tags,
         limit=limit,

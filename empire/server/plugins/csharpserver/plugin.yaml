@@ -1,1 +1,10 @@
+name: csharpserver
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: 'https://twitter.com/Cx01N_'
+description: Empire C# server for agents.
+software: ''
+techniques: []
+comments: []
 main: csharpserver.py

@@ -34,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Changed minimum Python version to 3.11
 -   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
 -   `ip_whitelist` and `ip_blacklist` are now `ip_allow_list` and `ip_deny_list` and are lists instead of comma separated strings
+-   Plugins must use a `.py` extension and contain a `plugin.yaml` file in the same directory
+-   Plugins must extend the `BasePlugin` class instead of the `Plugin` class
+-   Plugin "info" is now a class instead of a dictionary and it is automatically set from the `plugin.yaml` file on load
+-   Plugin execute function must take `**kwargs`
+-   Plugin name is now based on the name in the `plugin.yaml` file instead of the filename
+-   Plugins now contain `main_menu` instead of `mainMenu`
 
 ### Deprecated
 

@@ -6,10 +6,10 @@ from empire.server.api.v2.shared_dto import (
     coerced_dict,
     to_value_type,
 )
-from empire.server.common.plugins import Plugin
+from empire.server.common.plugins import BasePlugin
 
 
-def domain_to_dto_plugin(plugin: Plugin, uid: str):
+def domain_to_dto_plugin(plugin: BasePlugin, uid: str):
     options = {
         x[0]: {
             "description": x[1]["Description"],
@@ -22,24 +22,14 @@ def domain_to_dto_plugin(plugin: Plugin, uid: str):
         for x in plugin.options.items()
     }
 
-    authors = [
-        {
-            "name": x["Name"],
-            "handle": x["Handle"],
-            "link": x["Link"],
-        }
-        for x in plugin.info.get("Authors") or []
-    ]
-
     return Plugin(
         id=uid,
-        name=plugin.info.get("Name"),
-        authors=authors,
-        description=plugin.info.get("Description"),
-        category=plugin.info.get("Category"),
-        comments=plugin.info.get("Comments"),
-        techniques=plugin.info.get("Techniques"),
-        software=plugin.info.get("Software"),
+        name=plugin.info.name,
+        authors=[a.model_dump() for a in plugin.info.authors],
+        description=plugin.info.description,
+        comments=plugin.info.comments,
+        techniques=plugin.info.techniques,
+        software=plugin.info.software,
         options=options,
     )
 

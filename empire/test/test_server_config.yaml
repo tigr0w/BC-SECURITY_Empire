@@ -61,7 +61,7 @@ keyword_obfuscation:
   - Invoke-Mimikatz
 plugins:
   # Auto-load plugin with defined settings
-  example:
+  example_2:
     status: start
     message: hello there
 logging:

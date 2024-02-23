@@ -1,1 +1,10 @@
+name: basic_reporting
+authors:
+  - name: Vincent Rose
+    handle: '@vinnybod'
+    link: https://github.com/vinnybod
+description: Generates credentials.csv, sessions.csv, and master.log. Writes to server/data directory.
+software: ''
+techniques: []
+comments: []
 main: basic_reporting.py

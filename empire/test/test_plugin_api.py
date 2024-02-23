@@ -67,7 +67,7 @@ def test_execute_plugin_validation_failed(client, admin_auth_header):
 
 
 def test_execute_plugin_raises_exception(client, admin_auth_header, main):
-    with patch_plugin_execute(main, "basic_reporting", lambda x: 1 / 0):
+    with patch_plugin_execute(main, "basic_reporting", lambda x, **kwargs: 1 / 0):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
             json={"options": {}},
@@ -79,7 +79,7 @@ def test_execute_plugin_raises_exception(client, admin_auth_header, main):
 
 
 def test_execute_plugin_returns_false(client, admin_auth_header, main):
-    with patch_plugin_execute(main, "basic_reporting", lambda x: False):
+    with patch_plugin_execute(main, "basic_reporting", lambda x, **kwargs: False):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
             json={"options": {}},
@@ -92,7 +92,7 @@ def test_execute_plugin_returns_false(client, admin_auth_header, main):
 
 def test_execute_plugin_returns_false_with_string(client, admin_auth_header, main):
     with patch_plugin_execute(
-        main, "basic_reporting", lambda x: (False, "This is the message")
+        main, "basic_reporting", lambda x, **kwargs: (False, "This is the message")
     ):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
@@ -106,7 +106,7 @@ def test_execute_plugin_returns_false_with_string(client, admin_auth_header, mai
 
 def test_execute_plugin_returns_string(client, admin_auth_header, main):
     with patch_plugin_execute(
-        main, "basic_reporting", lambda x: "Successful Execution"
+        main, "basic_reporting", lambda x, **kwargs: "Successful Execution"
     ):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
@@ -119,7 +119,7 @@ def test_execute_plugin_returns_string(client, admin_auth_header, main):
 
 
 def test_execute_plugin_returns_true(client, admin_auth_header, main):
-    with patch_plugin_execute(main, "basic_reporting", lambda x: True):
+    with patch_plugin_execute(main, "basic_reporting", lambda x, **kwargs: True):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
             json={"options": {}},
@@ -133,7 +133,7 @@ def test_execute_plugin_returns_true(client, admin_auth_header, main):
 def test_execute_plugin_returns_true_with_string(client, admin_auth_header, main):
     # Since the second value represents an err, the first value is ignored and this is treated as an error.
     with patch_plugin_execute(
-        main, "basic_reporting", lambda x: (True, "This is the message")
+        main, "basic_reporting", lambda x, **kwargs: (True, "This is the message")
     ):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
@@ -151,7 +151,7 @@ def test_execute_plugin_raises_plugin_validation_exception(
     def raise_():
         raise PluginValidationException("This is the message")
 
-    with patch_plugin_execute(main, "basic_reporting", lambda x: raise_()):
+    with patch_plugin_execute(main, "basic_reporting", lambda x, **kwargs: raise_()):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
             json={"options": {}},
@@ -168,7 +168,7 @@ def test_execute_plugin_raises_plugin_execution_exception(
     def raise_():
         raise PluginExecutionException("This is the message")
 
-    with patch_plugin_execute(main, "basic_reporting", lambda x: raise_()):
+    with patch_plugin_execute(main, "basic_reporting", lambda x, **kwargs: raise_()):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
             json={"options": {}},
@@ -180,7 +180,7 @@ def test_execute_plugin_raises_plugin_execution_exception(
 
 
 def test_execute_plugin_returns_none(client, admin_auth_header, main):
-    with patch_plugin_execute(main, "basic_reporting", lambda x: None):
+    with patch_plugin_execute(main, "basic_reporting", lambda x, **kwargs: None):
         response = client.post(
             "/api/v2/plugins/basic_reporting/execute",
             json={"options": {}},

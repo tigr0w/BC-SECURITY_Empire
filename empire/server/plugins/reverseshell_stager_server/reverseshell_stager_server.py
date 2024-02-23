@@ -3,31 +3,14 @@ import logging
 import socket
 
 import empire.server.common.helpers as helpers
-from empire.server.common.plugins import Plugin
+from empire.server.common.plugins import BasePlugin
 from empire.server.core.plugin_service import PluginService
 
 log = logging.getLogger(__name__)
 
 
-class Plugin(Plugin):
+class Plugin(BasePlugin):
     def onLoad(self):
-        self.info = {
-            "Name": "reverseshell_stager_server",
-            "Authors": [
-                {
-                    "Name": "Anthony Rose",
-                    "Handle": "@Cx01N",
-                    "Link": "https://twitter.com/Cx01N_",
-                }
-            ],
-            "Description": (
-                "Server for reverseshell using msfvenom to act as a stage 0."
-            ),
-            "Software": "",
-            "Techniques": [""],
-            "Comments": [],
-        }
-
         self.options = {
             # format:
             #   value_name : {description, required, default_value}
@@ -131,14 +114,14 @@ class Plugin(Plugin):
     def get_commands(self):
         return self.commands
 
-    def register(self, mainMenu):
+    def register(self, main_menu):
         """
-        any modifications to the mainMenu go here - e.g.
+        any modifications to the main_menu go here - e.g.
         registering functions to be run by user commands
         """
-        self.installPath = mainMenu.installPath
-        self.main_menu = mainMenu
-        self.plugin_service: PluginService = mainMenu.pluginsv2
+        self.installPath = main_menu.installPath
+        self.main_menu = main_menu
+        self.plugin_service: PluginService = main_menu.pluginsv2
 
     def do_server(self, command):
         """

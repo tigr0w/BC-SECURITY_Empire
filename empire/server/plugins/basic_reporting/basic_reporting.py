@@ -2,29 +2,14 @@ import csv
 import io
 
 from empire.server.common.empire import MainMenu
-from empire.server.common.plugins import Plugin
+from empire.server.common.plugins import BasePlugin
 from empire.server.core.db import models
 from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.plugin_service import PluginService
 
 
-class Plugin(Plugin):
+class Plugin(BasePlugin):
     def onLoad(self):
-        self.info = {
-            "Name": "basic_reporting",
-            "Authors": [
-                {
-                    "Name": "Vincent Rose",
-                    "Handle": "@vinnybod",
-                    "Link": "https://github.com/vinnybod",
-                }
-            ],
-            "Description": "Generates credentials.csv, sessions.csv, and master.log. Writes to server/data directory.",
-            "Software": "",
-            "Techniques": [],
-            "Comments": [],
-        }
-
         self.options = {
             "report": {
                 "Description": "Reports to generate.",
@@ -73,14 +58,14 @@ class Plugin(Plugin):
         db.add(plugin_task)
         db.flush()
 
-    def register(self, mainMenu: MainMenu):
+    def register(self, main_menu: MainMenu):
         """
-        Any modifications to the mainMenu go here - e.g.
+        Any modifications to the main_menu go here - e.g.
         registering functions to be run by user commands
         """
-        self.install_path = mainMenu.installPath
-        self.main_menu = mainMenu
-        self.plugin_service: PluginService = mainMenu.pluginsv2
+        self.install_path = main_menu.installPath
+        self.main_menu = main_menu
+        self.plugin_service: PluginService = main_menu.pluginsv2
 
     def session_report(self, db, user):
         out = io.StringIO()

@@ -9,7 +9,7 @@ authors:
     link: https://twitter.com/author1
 
 description: |
-  A discription of what the module does and how it works.
+  A description of what the module does and how it works.
 
 # Software and tools that from the MITRE ATT&CK framework (https://attack.mitre.org/software/)
 software:

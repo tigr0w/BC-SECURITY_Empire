@@ -1,10 +1,8 @@
 import asyncio
-import fnmatch
 import importlib
 import logging
 import os
 import typing
-import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -15,6 +13,7 @@ from sqlalchemy.orm import Session, joinedload, undefer
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
 from empire.server.api.v2.plugin.plugin_task_dto import PluginTaskOrderOptions
 from empire.server.api.v2.shared_dto import OrderDirection
+from empire.server.common.plugins import PluginInfo
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
@@ -75,8 +74,6 @@ class PluginService:
         plugin_path = f"{self.main_menu.installPath}/plugins/"
         log.info(f"Searching for plugins at {plugin_path}")
 
-        self._legacy_load(plugin_path)
-
         for directory in os.listdir(plugin_path):
             plugin_dir = Path(plugin_path) / directory
 
@@ -103,53 +100,19 @@ class PluginService:
                 continue
 
             try:
-                self.load_plugin(plugin_file.name.removesuffix(".py"), plugin_file)
+                self.load_plugin(plugin_file, plugin_config)
             except Exception as e:
                 log.error(
                     f"Failed to load plugin {plugin_file.name}: {e}", exc_info=True
                 )
 
-    def _legacy_load(self, plugin_path):
-        warnings.warn(
-            "Legacy plugin loading will be removed in 6.0",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        plugin_names = os.listdir(plugin_path)
-        for plugin_name in plugin_names:
-            if not plugin_name.lower().startswith(
-                "__init__"
-            ) and plugin_name.lower().endswith(".py"):
-                file_path = os.path.join(plugin_path, plugin_name)
-                self.load_plugin(plugin_name, file_path)
-
-        for root, _dirs, files in os.walk(plugin_path):
-            for filename in files:
-                if not filename.lower().endswith(".plugin"):
-                    continue
-
-                file_path = os.path.join(root, filename)
-                plugin_name = filename.split(".")[0]
-
-                # don't load up any of the templates or examples
-                if fnmatch.fnmatch(filename, "*template.plugin") or fnmatch.fnmatch(
-                    filename, "*example.plugin"
-                ):
-                    continue
-
-                warnings.warn(
-                    f"{plugin_name}: Loading plugins from .plugin files is deprecated",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                self.load_plugin(plugin_name, file_path)
-
-    def load_plugin(self, plugin_name, file_path):
+    def load_plugin(self, file_path: Path, plugin_config: dict):
         """Given the name of a plugin and a menu object, load it into the menu"""
-        loader = importlib.machinery.SourceFileLoader(plugin_name, str(file_path))
+        plugin_file_name = file_path.name.removesuffix(".py")
+        plugin_info = PluginInfo(**plugin_config)
+        loader = importlib.machinery.SourceFileLoader(plugin_file_name, str(file_path))
         module = loader.load_module()
-        plugin_obj = module.Plugin(self.main_menu)
+        plugin_obj = module.Plugin(self.main_menu, plugin_info)
 
         for value in plugin_obj.options.values():
             if value.get("SuggestedValues") is None:
@@ -157,8 +120,7 @@ class PluginService:
             if value.get("Strict") is None:
                 value["Strict"] = False
 
-        plugin_name = plugin_obj.info["Name"]
-        self.loaded_plugins[plugin_name] = plugin_obj
+        self.loaded_plugins[plugin_obj.info.name] = plugin_obj
 
     def execute_plugin(
         self,
@@ -180,31 +142,10 @@ class PluginService:
             if isinstance(res, tuple):
                 return res
             return res, None
-        except TypeError:
-            log.warning(
-                f"Plugin {plugin.info.get('Name')} does not support db session or user_id, falling back to old method"
-            )
         except (PluginValidationException, PluginExecutionException) as e:
             raise e
         except Exception as e:
-            log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
-            return False, str(e)
-
-        try:
-            res = plugin.execute(cleaned_options)
-            if isinstance(res, tuple):
-                warnings.warn(
-                    "Returning a tuple on errors from plugin execution is deprecated. Raise exceptions instead."
-                    "https://bc-security.gitbook.io/empire-wiki/plugins/plugin-development",
-                    DeprecationWarning,
-                    stacklevel=5,
-                )
-                return res
-            return res, None
-        except (PluginValidationException, PluginExecutionException) as e:
-            raise e
-        except Exception as e:
-            log.error(f"Plugin {plugin.info['Name']} failed to run: {e}", exc_info=True)
+            log.error(f"Plugin {plugin.info.name} failed to run: {e}", exc_info=True)
             return False, str(e)
 
     def plugin_socketio_message(self, plugin_name, msg):

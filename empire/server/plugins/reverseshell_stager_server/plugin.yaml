@@ -1,1 +1,10 @@
+name: reverseshell_stager_server
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: 'https://twitter.com/Cx01N_'
+description: Server for reverseshell using msfvenom to act as a stage 0.
+software: ''
+techniques: []
+comments: []
 main: reverseshell_stager_server.py
