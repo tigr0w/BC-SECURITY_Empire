@@ -14,43 +14,43 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
-urllib3 = "^2.1.0"
+urllib3 = "^2.2.0"
 requests = "^2.31.0"
 iptools = "^0.7.0"
 macholib = "^1.16.3"
 dropbox = "^11.36.2"
-pyOpenSSL = "^23.3.0"
+pyOpenSSL = "^24.0.0"
 zlib_wrapper = "^0.1.3"
 netifaces = "^0.11.0"
-jinja2 = "^3.1.2"
+jinja2 = "^3.1.3"
 xlutils = "^2.0.0"
 pyparsing = "^3.1.1"
 PyMySQL = "^1.1.0"
-SQLAlchemy = "^2.0.23"
+SQLAlchemy = "^2.0.27"
 PyYAML = "^6.0.1"
 SQLAlchemy-Utc = "^0.14.0"
 prompt-toolkit = "^3.0.43"
 terminaltables = "^3.1.10"
 humanize = "^4.9.0"
-pycryptodome = "^3.19.0"
-cryptography = "^41.0.7"
-fastapi = "^0.104.1"
-uvicorn = "^0.24.0"
+pycryptodome = "^3.20.0"
+cryptography = "^42.0.3"
+fastapi = "^0.109.2"
+uvicorn = "^0.27.1"
 jq = "^1.6.0"
 aiofiles = "^23.2.1"
-python-multipart = "^0.0.6"
+python-multipart = "^0.0.9"
 python-jose = {version = "^3.3.0", extras = ["cryptography"]}
 passlib = {version = "^1.7.4", extras = ["bcrypt"]}
-websockify = "^0.10.0"
-websockets = "^11.0.3"
+websockify = "^0.11.0"
+websockets = "^12.0"
 pyperclip = "^1.8.2"
 pyvnc = {git = "https://github.com/BC-SECURITY/pyVNC.git"}
-python-socketio = {extras = ["client"], version = "^5.10.0"}
-Flask = "^2.3.3"
+python-socketio = {extras = ["client"], version = "^5.11.1"}
+Flask = "^3.0.2"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev = "da5be0e"}
 donut-shellcode = { version = "^1.0.2", markers = "platform_machine == 'x86_64' or platform_machine == 'amd64'" }
 python-obfuscator = "^0.0.2"
-pyinstaller = "^5.13.2"
+pyinstaller = "^6.4.0"
 md2pdf = {git = "https://github.com/bc-security/md2pdf", rev = "48d5a46"}
 tabulate = "^0.9.0"
 stix2 = "^3.0.1"
@@ -60,11 +60,11 @@ bcrypt = "4.0.1" # Locked to 4.0.1 due to passlib no longer being updated https:
 
 
 [tool.poetry.group.dev.dependencies]
-httpx = "^0.24.1" # For starlette TestClient
-black = "^23.12.0"
-pytest = "^7.4.3"
+httpx = "^0.26.0" # For starlette TestClient
+black = "^24.2.0"
+pytest = "^8.0.1"
 pytest-timeout = "^2.2.0"
-ruff = "^0.1.9"
+ruff = "^0.2.1"
 pytest-cov = "^4.1.0"
 
 [build-system]
@@ -99,6 +99,9 @@ extend-exclude = [
     'empire/client/downloads',
     'empire/server/plugins/Report-Generation-Plugin'
 ]
+target-version = "py310"
+
+[tool.ruff.lint]
 # Will revisit line lengths later. Black won't format the strings and comments
 # by default. And the experimental flag still has some issues.
 # fixes right now: https://github.com/psf/black/issues/2188
@@ -115,9 +118,8 @@ select = [
     "RUF", # ruff
     "SIM", # flake8-simplify
 ]
-target-version = "py310"
 
-[tool.ruff.flake8-bugbear]
+[tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query", "fastapi.File"]
 
 [tool.coverage.run]

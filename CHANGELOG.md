@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+-   Updated all dependencies (@Vinnybod)
+-   Updated Dockerfile and install script to Python 3.12.2 (@Vinnybod)
+
 ## [5.9.4] - 2024-02-17
 
 ### Fixed

@@ -3,6 +3,7 @@ Parse arguments.
 Life saver comment on separating the parser.
 https://stackoverflow.com/a/30217387
 """
+
 import argparse
 
 parent_parser = argparse.ArgumentParser()

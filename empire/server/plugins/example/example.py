@@ -1,4 +1,5 @@
 """ An example of a plugin. """
+
 import logging
 
 from empire.server.common.plugins import Plugin

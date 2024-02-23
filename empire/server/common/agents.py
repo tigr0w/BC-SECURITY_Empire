@@ -33,6 +33,7 @@ handle_agent_data() is the main function that should be used by external listene
 Most methods utilize self.lock to deal with the concurreny issue of kicking off threaded listeners.
 
 """
+
 import base64
 import contextlib
 import json
