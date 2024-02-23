@@ -18,6 +18,7 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
+from empire.server.utils.string_util import is_valid_session_id
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -99,6 +100,15 @@ class AgentCommunicationService:
         save_file = save_path / filename
 
         with self._lock:
+            # fix for 'skywalker' exploit by @zeroSteiner
+            safe_path = download_dir.absolute()
+            if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
+                message = "Agent {} attempted skywalker exploit! Attempted overwrite of {} with data {}".format(
+                    session_id, path, data
+                )
+                log.warning(message)
+                return
+
             # make the recursive directory structure if it doesn't already exist
             if not save_path.exists():
                 os.makedirs(save_path)
@@ -167,6 +177,15 @@ class AgentCommunicationService:
             data = self._decompress_python_data(data, filename, session_id)
 
         with self._lock:
+            # fix for 'skywalker' exploit by @zeroSteiner
+            safe_path = download_dir.absolute()
+            if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
+                message = "agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
+                    session_id, path, data
+                )
+                log.warning(message)
+                return
+
             # make the recursive directory structure if it doesn't already exist
             if not save_path.exists():
                 os.makedirs(save_path)
@@ -211,12 +230,18 @@ class AgentCommunicationService:
         """
         if session_id in self.agents:
             # get existing files/dir that are in this directory.
-            # delete them and their children to keep everything up to date. There's a cascading delete on the table.
+            # delete them and their children to keep everything up to date.
+            # There's a cascading delete on the table.
+            # If there are any linked downloads, the association will be removed.
+            # This function could be updated in the future to do updates instead
+            # of clearing the whole tree on refreshes.
             this_directory = (
                 db.query(models.AgentFile)
                 .filter(
-                    and_(models.AgentFile.session_id == session_id),
-                    models.AgentFile.path == response["directory_path"],
+                    and_(
+                        models.AgentFile.session_id == session_id,
+                        models.AgentFile.path == response["directory_path"],
+                    ),
                 )
                 .first()
             )
@@ -665,7 +690,11 @@ class AgentCommunicationService:
 
         # process each routing packet
         for session_id, (language, meta, additional, encData) in routing_packet.items():
-            if meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
+            if not is_valid_session_id(session_id):
+                message = f"handle_agent_data(): invalid sessionID {session_id}"
+                log.error(message)
+                dataToReturn.append(("", f"ERROR: invalid sessionID {session_id}"))
+            elif meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
                 message = f"handle_agent_data(): session_id {session_id} issued a {meta} request"
                 log.debug(message)
 
@@ -886,6 +915,14 @@ class AgentCommunicationService:
             else:
                 tasking.original_output = data
                 tasking.output = data
+
+                # Not sure why, but for Python agents these are bytes initially, but
+                # after storing in the database they're strings. So we need to convert
+                # so socketio and other hooks get the right data type.
+                if isinstance(tasking.output, bytes):
+                    tasking.output = tasking.output.decode("UTF-8")
+                if isinstance(tasking.original_output, bytes):
+                    tasking.original_output = tasking.original_output.decode("UTF-8")
 
             hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, db, tasking)
             db, tasking = hooks.run_filters(
@@ -1139,9 +1176,7 @@ class AgentCommunicationService:
                 save_path = download_dir / session_id / "keystrokes.txt"
 
                 # fix for 'skywalker' exploit by @zeroSteiner
-                # I'm not really sure if this can actually still be exploited, its gone through
-                # quite a few refactors. But we'll keep it for now.
-                if not str(save_path.absolute()).startswith(str(safe_path)):
+                if not str(os.path.normpath(save_path)).startswith(str(safe_path)):
                     message = f"agent {session_id} attempted skywalker exploit!"
                     log.warning(message)
                     return
@@ -1282,13 +1317,5 @@ class AgentCommunicationService:
 
         else:
             log.warning(f"Unknown response {response_name} from {session_id}")
-
-        # Not sure why, but for Python agents these are bytes initially, but
-        # after storing in the database they're strings. So we need to convert
-        # so socketio and other hooks get the right data type.
-        if isinstance(tasking.output, bytes):
-            tasking.output = tasking.output.decode("UTF-8")
-        if isinstance(tasking.original_output, bytes):
-            tasking.original_output = tasking.original_output.decode("UTF-8")
 
         hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, db, tasking)

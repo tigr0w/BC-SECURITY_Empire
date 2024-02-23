@@ -62,6 +62,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.9.5] - 2024-02-22
+
+## [5.9.4] - 2024-02-17
+
+### Fixed
+
+-   Fixed downloads for C# agent (@Cx01N)
+
+## [5.9.3] - 2024-02-09
+
+### Added
+
+-   Added option to windows_macro stager to select Excel or Word and AutoOpen or AutoClose (@Cx01N)
+
+### Fixed
+
+-   Fixed obfuscation issue in Malleable HTTP listeners and added tests (@Cx01N)
+-   Fixed issue that invalid session IDs were accepted by the server (@Cx01N)
+-   Fixed skywalker exploit (again) and added tests (@Cx01N)
+
+## [5.9.2] - 2024-01-31
+
+### Fixed
+
+-   Fixed the ForeignKeyConstraint error when refreshing a directory that contains a file with a linked Download (@Vinnybod)
+-   Downgraded bcrypt to version 4.0.1 to resolve issue in passlib (@Cx01N)
+
+## [5.9.1] - 2024-01-25
+
+### Changed
+
+-   Convert agent task output to string before the BEFORE_TASKING_RESULT_HOOK (@Vinnybod)
+-   Updated tasklist for powershell code to not throw error when GetOwner fails (@Cx01N)
+
+### Fixed
+
+-   Updated Uvicorn to fix issue where an open browser would cause the shutdown to hang (<https://github.com/encode/uvicorn/pull/2145>) (@Vinnybod)
+-   Fixed the fastapi app lifecycle not being properly called on shutdown (@Vinnybod)
+-   Converted listener threads to daemons so they don't hang the shutdown in Python 3.12 and report `RuntimeError: can't create new thread at interpreter shutdown` (@Vinnybod)
+-   Log warning about ps/ls hooks and filters not being able to parse the JSON output (@Vinnybod)
+
 ## [5.9.0] - 2024-01-20
 
 ### Added
@@ -793,7 +834,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.5...HEAD
+
+[5.9.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.4...v5.9.5
+
+[5.9.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.3...v5.9.4
+
+[5.9.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.2...v5.9.3
+
+[5.9.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.1...v5.9.2
+
+[5.9.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.0...v5.9.1
 
 [5.9.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.8.4...v5.9.0
 

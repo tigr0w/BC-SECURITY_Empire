@@ -1,4 +1,6 @@
 import json
+import logging
+from json.decoder import JSONDecodeError
 
 import jq as jq
 import terminaltables
@@ -7,6 +9,8 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
 from empire.server.core.hooks import hooks
+
+log = logging.getLogger(__name__)
 
 
 def ps_hook(db: Session, task: models.AgentTask):
@@ -29,15 +33,17 @@ def ps_hook(db: Session, task: models.AgentTask):
             jq.compile(
                 """[sub("\n$";"") | splits("\n") | sub("^ +";"") | [splits(" +")]] | .[0] as $header | .[1:] | [.[] | [. as $x | range($header | length) | {"key": $header[.], "value": $x[.]}] | from_entries]"""
             )
-            .input(
-                task.output.decode("utf-8").split(
-                    "\r\n ..Command execution completed."
-                )[0]
-            )
+            .input(task.output.split("\r\n ..Command execution completed.")[0])
             .first()
         )
     else:
-        output = json.loads(task.output)
+        try:
+            output = json.loads(task.output)
+        except JSONDecodeError:
+            log.warning(
+                "Failed to decode JSON output from ps command. Most likely, the command returned an error."
+            )
+            return
 
     existing_processes = (
         db.query(models.HostProcess.process_id)
@@ -108,7 +114,14 @@ def ps_filter(db: Session, task: models.AgentTask):
     ] or task.agent.language not in ["powershell", "ironpython"]:
         return db, task
 
-    output = json.loads(task.output.decode("utf-8"))
+    try:
+        output = json.loads(task.output)
+    except JSONDecodeError:
+        log.warning(
+            "Failed to decode JSON output from ps command. Most likely, the command returned an error."
+        )
+        return db, task
+
     output_list = []
     for rec in output:
         output_list.append(
@@ -146,7 +159,14 @@ def ls_filter(db: Session, task: models.AgentTask):
     ):
         return db, task
 
-    output = json.loads(task.output.decode("utf-8"))
+    try:
+        output = json.loads(task.output)
+    except JSONDecodeError:
+        log.warning(
+            "Failed to decode JSON output from ls command. Most likely, the command returned an error."
+        )
+        return db, task
+
     output_list = []
     for rec in output:
         output_list.append(
@@ -182,7 +202,7 @@ def ipconfig_filter(db: Session, task: models.AgentTask):
     ):
         return db, task
 
-    output = json.loads(task.output.decode("utf-8"))
+    output = json.loads(task.output)
     if isinstance(output, dict):  # if there's only one adapter, it won't be a list.
         output = [output]
 
@@ -211,7 +231,7 @@ def route_filter(db: Session, task: models.AgentTask):
     if task.input.strip() not in ["route"] or task.agent.language != "powershell":
         return db, task
 
-    output = json.loads(task.output.decode("utf-8"))
+    output = json.loads(task.output)
 
     output_list = []
     for rec in output:

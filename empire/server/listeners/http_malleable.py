@@ -555,8 +555,12 @@ class Listener:
             launcherBase += listener_util.python_extract_stager(stagingKey)
 
             if obfuscate:
-                stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                    launcherBase
+                )
+                launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
+                    launcherBase
+                )
 
             if encode:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
@@ -1775,6 +1779,7 @@ class ExtendedPacketHandler(PacketHandler):
         )
         listenerOptions = self.options
         self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
+        self.thread.daemon = True
         self.thread.start()
         time.sleep(1)
         # returns True if the listener successfully started, false otherwise

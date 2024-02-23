@@ -855,6 +855,7 @@ class Listener:
         """
         listenerOptions = self.options
         self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
+        self.thread.daemon = True
         self.thread.start()
         time.sleep(1)
         # returns True if the listener successfully started, false otherwise

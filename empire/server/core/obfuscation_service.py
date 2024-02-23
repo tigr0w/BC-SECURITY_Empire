@@ -194,13 +194,14 @@ class ObfuscationService:
                 os.remove(file)
 
     def obfuscate_keywords(self, data):
-        with SessionLocal.begin() as db:
-            keywords = db.query(models.Keyword).all()
+        if data:
+            with SessionLocal.begin() as db:
+                keywords = db.query(models.Keyword).all()
 
-            for keyword in keywords:
-                data = data.replace(keyword.keyword, keyword.replacement)
+                for keyword in keywords:
+                    data = data.replace(keyword.keyword, keyword.replacement)
 
-            return data
+        return data
 
     def _get_module_source_files(self, language: str):
         """
