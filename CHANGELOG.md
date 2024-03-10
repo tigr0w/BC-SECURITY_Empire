@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 -   Added dependabot for github actions dependencies (@Vinnybod)
+-   Added hook and socket message to receive callback messages for individual agents (@AaronVigal)
 
 ### Changed
 

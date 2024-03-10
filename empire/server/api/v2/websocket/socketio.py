@@ -157,6 +157,9 @@ def setup_socket_events(sio, empire_menu):
     async def agent_socket_hook(db: Session, agent: models.Agent):
         await sio.emit("agents/new", domain_to_dto_agent(agent).model_dump())
 
+    async def agent_callback_hook(db: Session, agent_id: str):
+        await sio.emit("agents/callback", {"agent_id": agent_id})
+
     async def task_socket_hook(db: Session, task: models.AgentTask):
         # temporary tasks come back as None and cause an error here
         if task and "function Get-Keystrokes" not in task.input:
@@ -170,6 +173,9 @@ def setup_socket_events(sio, empire_menu):
 
     hooks.register_hook(
         hooks.AFTER_AGENT_CHECKIN_HOOK, "agent_socket_hook", agent_socket_hook
+    )
+    hooks.register_hook(
+        hooks.AFTER_AGENT_CALLBACK_HOOK, "agent_callback_hook", agent_callback_hook
     )
     hooks.register_hook(
         hooks.AFTER_TASKING_RESULT_HOOK, "task_socket_hook", task_socket_hook
