@@ -1,6 +1,7 @@
 import logging
-import subprocess
 from pathlib import Path
+
+from empire.server.utils.file_util import run_as_user
 
 log = logging.getLogger(__name__)
 
@@ -26,23 +27,18 @@ def sync_starkiller(empire_config):
 
 
 def _clone_starkiller(starkiller_config: dict, starkiller_dir: str):
-    subprocess.run(
-        ["git", "clone", starkiller_config["repo"], starkiller_dir],
-        check=True,
-    )
+    run_as_user(["git", "clone", starkiller_config["repo"], starkiller_dir])
 
 
 def _fetch_checkout_pull(remote_repo, ref, cwd):
-    subprocess.run(
+    run_as_user(
         ["git", "remote", "set-url", "origin", remote_repo],
         cwd=cwd,
-        check=True,
     )
 
-    subprocess.run(["git", "fetch"], cwd=cwd, check=True)
-    subprocess.run(
+    run_as_user(["git", "fetch"], cwd=cwd)
+    run_as_user(
         ["git", "checkout", ref],
         cwd=cwd,
-        check=True,
     )
-    subprocess.run(["git", "pull", "origin", ref], cwd=cwd)
+    run_as_user(["git", "pull", "origin", ref], cwd=cwd)

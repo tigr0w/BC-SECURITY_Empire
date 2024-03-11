@@ -1,2 +1,27 @@
-#! /bin/bash
-sudo -E poetry run python empire.py ${@}
+#!/bin/bash
+
+INSTALL=0
+YES_OPTION=""
+EMPIRE_ARGS=()
+
+# Parse command-line options manually, without using getopts, to allow non-standard options
+for arg in "$@"; do
+  case $arg in
+    install)
+      INSTALL=1
+      ;;
+    -y)
+      YES_OPTION="-y"
+      ;;
+    *)
+      EMPIRE_ARGS+=("$arg")
+      ;;
+  esac
+done
+
+# Check if install option was given
+if [ $INSTALL -eq 1 ]; then
+  ./setup/install.sh $YES_OPTION
+fi
+
+sudo -E poetry run python empire.py "${EMPIRE_ARGS[@]}"

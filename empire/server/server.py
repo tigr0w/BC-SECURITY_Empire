@@ -15,6 +15,7 @@ from empire.server.common import empire
 from empire.server.core.config import empire_config
 from empire.server.core.db import base
 from empire.server.utils import file_util
+from empire.server.utils.file_util import run_as_user
 from empire.server.utils.log_util import LOG_FORMAT, SIMPLE_LOG_FORMAT, ColorFormatter
 
 log = logging.getLogger(__name__)
@@ -124,6 +125,11 @@ def check_submodules():
             exit(1)
 
 
+def fetch_submodules():
+    command = ["git", "submodule", "update", "--init", "--recursive"]
+    run_as_user(command)
+
+
 def check_recommended_configuration():
     log.info(f"Using {empire_config.database.use} database.")
     if empire_config.database.use == "sqlite":
@@ -135,6 +141,13 @@ def check_recommended_configuration():
 
 def run(args):
     setup_logging(args)
+
+    if empire_config.submodules.auto_update:
+        log.info("Submodules auto update enabled. Loading.")
+        fetch_submodules()
+    else:
+        log.info("Submodules auto update disabled. Not fetching.")
+
     check_submodules()
     check_recommended_configuration()
 

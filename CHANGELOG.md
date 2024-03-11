@@ -14,19 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
--   Fixed issue loading `openapi.json` (@Vinnybod)
-
 ### Added
 
 -   Added dependabot for github actions dependencies (@Vinnybod)
+-   Added install option to ./ps-empire file (@Cx01N)
+-   Added auto pull options for submodules on startup (@Cx01N)
 -   Added hook and socket message to receive callback messages for individual agents (@AaronVigal)
 
 ### Changed
 
 -   Updated all dependencies (@Vinnybod)
 -   Updated Dockerfile and install script to Python 3.12.2 (@Vinnybod)
+-   Updated starkiller snyc to no longer require root (@Cx01N)
+
+### Fixed
+
+-   Fixed issue loading `openapi.json` (@Vinnybod)
 
 ## [5.9.5] - 2024-02-22
 
