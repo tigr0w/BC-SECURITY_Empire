@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed issue loading `openapi.json` (@Vinnybod)
 
+### Fixed
+-   Fixed issue when False is given for options and option is appended with 'False' (@Cx01N)
+-   Fixed module generation error in ComputerDetails (@Cx01N)
+
 ## [5.9.5] - 2024-02-22
 
 ## [5.9.4] - 2024-02-17

@@ -32,6 +32,10 @@ options:
     description: Search file contents
     required: false
     value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: keywords
     description: Keywords to search for
     required: false
@@ -55,11 +59,19 @@ options:
   - name: systemdirs
     description: Search in filesystem directories %APPDATA% and %WINDOWS%
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: vbamacrocheck
     description: Check if 2003 Office files (*.doc and *.xls) contain a VBA macro
     required: false
     value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script_path: collection/Invoke-SauronEye.ps1
 script_end: Invoke-SauronEye -Command "{{ PARAMS }}"
 advanced:

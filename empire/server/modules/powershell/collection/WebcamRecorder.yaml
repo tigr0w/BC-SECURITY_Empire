@@ -25,7 +25,7 @@ options:
   - name: RecordTime
     description: Length of time to record in seconds. Defaults to 5.
     required: false
-    value: ''
+    value: '5'
   - name: OutPath
     description: Temporary save path for the .avi file. Defaults to the current users APPDATA\roaming directory
     required: false

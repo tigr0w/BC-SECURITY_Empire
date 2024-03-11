@@ -27,9 +27,13 @@ options:
     required: true
     value: ''
   - name: Remove
-    description: Remove Persistence based on FileName. True/False
+    description: Remove Persistence based on FileName.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: FileName
     description: File name without extension that you would like created in ~/.config/autostart/ folder.
     required: false

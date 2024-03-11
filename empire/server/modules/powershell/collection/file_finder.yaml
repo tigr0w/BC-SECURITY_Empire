@@ -38,13 +38,21 @@ options:
     required: false
     value: ''
   - name: OfficeDocs
-    description: Switch. Return only office documents.
+    description: Return only office documents.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: FreshEXES
-    description: Switch. Find .EXEs accessed in the last week.
+    description: Find .EXEs accessed in the last week.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: LastAccessTime
     description: Only return files with a LastAccessTime greater than this date value.
     required: false
@@ -54,29 +62,45 @@ options:
     required: false
     value: ''
   - name: ExcludeHidden
-    description: Switch. Exclude hidden files and folders from the search results.
+    description: Exclude hidden files and folders from the search results.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: CheckWriteAccess
-    description: Switch. Only returns files the current user has write access to.
+    description: Only returns files the current user has write access to.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: NoPing
-    description: Switch. Don't ping each host to ensure it's up before enumerating.
+    description: Don't ping each host to ensure it's up before enumerating.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Delay
     description: Delay between enumerating hosts, defaults to 0.
     required: false
-    value: ''
+    value: '0'
   - name: Domain
     description: Domain to query for machines.
     required: false
     value: ''
   - name: SearchSYSVOL
-    description: Switch. Search for login scripts on the SYSVOL of the primary DCs for each specified domain.
+    description: Search for login scripts on the SYSVOL of the primary DCs for each specified domain.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Threads
     description: The maximum concurrent threads to execute.
     required: false

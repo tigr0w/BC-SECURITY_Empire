@@ -23,9 +23,13 @@ options:
     required: true
     value: ''
   - name: l
-    description: Switch. Listen for a connection
+    description: Listen for a connection
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: c
     description: Connect to a listener
     required: false
@@ -35,21 +39,33 @@ options:
     required: false
     value: ''
   - name: e
-    description: 'Execute. (GAPING_SECURITY_HOLE) '
+    description: 'Execute. (GAPING_SECURITY_HOLE)'
     required: false
     value: ''
   - name: ep
     description: Switch. Execute Powershell.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: r
-    description: 'Switch. Relay. Format: -r tcp:10.1.1.1:443'
+    description: 'Relay. Format: -r tcp:10.1.1.1:443'
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: u
-    description: Switch. Transfer data over UDP.
+    description: Transfer data over UDP.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: dns
     description: Transfer data over dns (dnscat2).
     required: false
@@ -67,28 +83,49 @@ options:
     required: false
     value: ''
   - name: o
-    description: 'Console Output Type: "Host", "Bytes", or "String" '
+    description: Console Output Type
     required: false
-    value: ''
+    value: 'Host'
+    strict: true
+    suggested_values:
+      - Host
+      - Bytes
+      - Strings
   - name: of
-    description: 'Output File Path.  '
+    description: Output File Path
     required: false
     value: ''
   - name: d
-    description: Switch. Disconnect after connecting.
+    description: Disconnect after connecting.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: rep
-    description: Switch. Repeater. Restart after disconnecting.
+    description: Repeater. Restart after disconnecting.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: g
-    description: Switch. Generate Payload
+    description: Generate Payload
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: ge
-    description: Switch. Generate Encoded Payload
+    description: Generate Encoded Payload
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script_path: management/powercat.ps1
 script_end: powercat {{ PARAMS }}

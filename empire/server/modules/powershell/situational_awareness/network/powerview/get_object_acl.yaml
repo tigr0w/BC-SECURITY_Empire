@@ -30,13 +30,21 @@ options:
     required: false
     value: ''
   - name: ResolveGUIDs
-    description: Switch. Resolve GUIDs to their display names.
+    description: Resolve GUIDs to their display names.
     required: false
     value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Sacl
-    description: Switch. Return the SACL instead of the DACL for the object (default behavior).
+    description: Return the SACL instead of the DACL for the object (default behavior).
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: LDAPFilter
     description: A customized ldap filter string to use, e.g. "(description=*admin*)"
     required: false
@@ -70,9 +78,13 @@ options:
     required: false
     value: ''
   - name: Tombstone
-    description: Switch. Specifies that the search should also return deleted/tombstoned objects.
+    description: Specifies that the search should also return deleted/tombstoned objects.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

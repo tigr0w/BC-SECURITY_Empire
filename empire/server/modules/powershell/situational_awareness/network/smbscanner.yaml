@@ -50,8 +50,12 @@ options:
     required: false
     value: .
   - name: NoPing
-    description: Switch. Don't ping hosts before enumeration.
+    description: Don't ping hosts before enumeration.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script_path: situational_awareness/network/Invoke-SmbScanner.ps1
 script_end: Invoke-SMBScanner {{ PARAMS }}

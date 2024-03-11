@@ -22,13 +22,21 @@ options:
     required: true
     value: ''
   - name: NoLock
-    description: Switch. Don't lock the workstation after registry change.
+    description: Don't lock the workstation after registry change.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Cleanup
     description: Switch. Disable the registry key.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script: |
   function Invoke-LockWorkStation {
       # region define P/Invoke types dynamically

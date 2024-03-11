@@ -36,9 +36,13 @@ options:
     required: true
     value: ''
   - name: Reset
-    description: Switch. Reset security settings to default values.
+    description: Reset security settings to default values.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

@@ -24,13 +24,13 @@ options:
   - name: Hosts
     description: Hosts to scan.
     required: false
-    value: ''
+    value: '127.0.0.1'
   - name: HostFile
     description: Input hosts from file (on the target)
     required: false
     value: ''
   - name: ExcludeHosts
-    description: Exclude thsee comma separated hosts.
+    description: Exclude these comma separated hosts.
     required: false
     value: ''
   - name: Ports
@@ -40,19 +40,36 @@ options:
   - name: TopPorts
     description: Scan for X top ports, default 50.
     required: false
-    value: ''
+    value: '50'
+    strict: false
+    suggested_values:
+      - 10
+      - 25
+      - 50
   - name: SkipDiscovery
-    description: Switch. Treat all hosts as online.
+    description: Treat all hosts as online.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: PingOnly
-    description: Switch. Ping only, don't scan for ports.
+    description: Ping only, don't scan for ports.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Open
-    description: Switch. Only show hosts with open ports.
+    description: Only show hosts with open ports.
     required: false
     value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: GrepOut
     description: Greppable (.gnmap) output file.
     required: false

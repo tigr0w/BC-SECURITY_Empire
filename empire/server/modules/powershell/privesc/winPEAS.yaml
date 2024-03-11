@@ -27,59 +27,114 @@ options:
   - name: +
     description: Full Scan. Default all checks (except CMD checks) are executed
     required: false
-    value: 'True'
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: searchfast
     description: Avoid sleeping while searching files (notable amount of resources).
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: searchall
-    description: Search all known filenames whith possible credentials.
+    description: Search all known filenames with possible credentials.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: cmd
     description: Obtain wifi, cred manager and clipboard information executing CMD commands.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: systeminfo
     description: Search system information.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: userinfo
     description: Search user information.
-    required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: procesinfo
     description: Search processes information.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: servicesinfo
     description: Search services information.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: applicationsinfo
     description: Search installed applications information.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: networkinfo
     description: Search network information.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: windowscreds
     description: Search windows information.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: browserinfo
     description: Search browser information.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: filesinfo
     description: Search files that can contains credentials.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: notansi
     description: Disable colored output.
     required: true
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script_path: privesc/Invoke-winPEAS.ps1
 script_end: Invoke-winPEAS -Command "{{ PARAMS }}"
 advanced:

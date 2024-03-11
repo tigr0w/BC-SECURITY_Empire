@@ -315,10 +315,10 @@ def test_create_task_module(client, admin_auth_header, agent):
             "module_id": "powershell_credentials_invoke_internal_monologue",
             "options": {
                 "Challenge": "1122334455667788",
-                "Downgrade": "",
-                "Impersonate": "",
-                "Restore": "",
-                # "Verbose": "",
+                "Downgrade": "False",
+                "Impersonate": "False",
+                "Restore": "False",
+                "Verbose": "False",
             },
         },
     )
@@ -345,9 +345,10 @@ def test_create_task_module_modified_input(client, admin_auth_header, agent):
             "module_id": "powershell_credentials_invoke_internal_monologue",
             "options": {
                 "Challenge": "1122334455667788",
-                "Downgrade": "",
-                "Impersonate": "",
-                "Restore": "",
+                "Downgrade": "False",
+                "Impersonate": "False",
+                "Restore": "False",
+                "Verbose": "False",
             },
             "modified_input": modified_input,
         },

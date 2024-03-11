@@ -52,13 +52,21 @@ options:
     required: true
     value: System
   - name: VerifyCreds
-    description: Switch. True/False to verify the creds a user provides, and prompt them again until they either click cancel
+    description: True/False to verify the creds a user provides, and prompt them again until they either click cancel
       or enter valid creds (default = false)
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: HideProcess
-    description: Switch. True/False to hide the window of the process we claim launched the prompt (default = false)
+    description: True/False to hide the window of the process we claim launched the prompt (default = false)
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script_path: collection/Invoke-CredentialPhisher.ps1
 script_end: Invoke-CredentialPhisher {{ PARAMS }}
