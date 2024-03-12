@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added install option to ./ps-empire file (@Cx01N)
 -   Added auto pull options for submodules on startup (@Cx01N)
 -   Added hook and socket message to receive callback messages for individual agents (@AaronVigal)
+-   Added sacrificial Spawn Process bof (@Cx01N)
 
 ### Changed
 
@@ -30,8 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 -   Fixed issue loading `openapi.json` (@Vinnybod)
-
-### Fixed
 -   Fixed issue when False is given for options and option is appended with 'False' (@Cx01N)
 -   Fixed module generation error in ComputerDetails (@Cx01N)
 
