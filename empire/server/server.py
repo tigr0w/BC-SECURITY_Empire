@@ -2,6 +2,7 @@
 import logging
 import os
 import pathlib
+import pwd
 import shutil
 import signal
 import subprocess
@@ -50,6 +51,19 @@ def setup_logging(args):
     root_logger_stream_handler.setFormatter(ColorFormatter(stream_format))
     root_logger_stream_handler.setLevel(log_level)
     root_logger.addHandler(root_logger_stream_handler)
+
+    try:
+        user = os.getenv("SUDO_USER")
+        if user:
+            user_info = pwd.getpwnam(user)
+            os.chown(root_log_file, user_info.pw_uid, user_info.pw_gid)
+            log.debug(f"Log file owner changed to {user}.")
+        else:
+            log.warning("Log file owner not changed. SUDO_USER not found.")
+    except KeyError:
+        log.error("User not found. Log file owner not changed.")
+    except PermissionError:
+        log.error("Permission denied. You need root privileges to change file owner.")
 
 
 CSHARP_DIR_BASE = os.path.join(os.path.dirname(__file__), "csharp/Covenant")
