@@ -42,8 +42,12 @@ options:
     required: true
     value: ''
   - name: Domain
-    description: Switch. Check the current domain for the user account.
+    description: Check the current domain for the user account.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 advanced:
   custom_generate: true

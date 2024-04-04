@@ -548,9 +548,9 @@ class Listener:
         redirectListenerOptions = data_util.get_listener_options(redirectListenerName)
 
         if redirectListenerOptions:
-            self.options["RedirectStagingKey"][
-                "Value"
-            ] = redirectListenerOptions.options["StagingKey"]["Value"]
+            self.options["RedirectStagingKey"]["Value"] = (
+                redirectListenerOptions.options["StagingKey"]["Value"]
+            )
             self.options["DefaultProfile"]["Value"] = redirectListenerOptions.options[
                 "DefaultProfile"
             ]["Value"]

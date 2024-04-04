@@ -26,7 +26,7 @@ options:
     required: false
     value: ''
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
+    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
       only.
     required: false
     value: 'False'

@@ -25,10 +25,19 @@ options:
     description: Set this flag to enable extended checks.
     required: true
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Format
     description: 'Select the format of the output file (e.g.: TXT, HTML or CSV).'
     required: true
-    value: TXT
+    value: 'TXT'
+    strict: true
+    suggested_values:
+      - TXT
+      - HTML
+      - CSV
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

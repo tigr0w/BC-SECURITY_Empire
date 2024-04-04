@@ -1,4 +1,6 @@
 import logging
+import os
+import pwd
 from pathlib import Path
 
 from empire.server.core.config import empire_config
@@ -32,6 +34,19 @@ def get_listener_logger(log_name_prefix: str, listener_name: str):
     stream_format = SIMPLE_LOG_FORMAT if simple_console else LOG_FORMAT
     listener_stream_handler.setFormatter(ColorFormatter(stream_format))
     log.addHandler(listener_stream_handler)
+
+    try:
+        user = os.getenv("SUDO_USER")
+        if user:
+            user_info = pwd.getpwnam(user)
+            os.chown(log_file, user_info.pw_uid, user_info.pw_gid)
+            log.debug(f"Log file owner changed to {user}.")
+        else:
+            log.warning("SUDO_USER not set. Log file owner not changed.")
+    except KeyError:
+        log.error("User not found. Log file owner not changed.")
+    except PermissionError:
+        log.error("Permission denied. You need root privileges to change file owner.")
 
     return log
 

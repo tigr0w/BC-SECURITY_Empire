@@ -39,12 +39,20 @@ options:
   - name: NBNS
     description: Enable/Disable NBNS bruteforce spoofing (Y/N).
     required: false
-    value: Y
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Y
+      - N
   - name: NBNSLimit
     description: Enable/Disable NBNS bruteforce spoofer limiting to stop NBNS spoofing while hostname is resolving correctly
       (Y/N).
     required: false
-    value: Y
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Y
+      - N
   - name: Trigger
     description: Trigger type to use in order to trigger HTTP to SMB relay. 0 = None, 1 = Windows Defender Signature Update,
       2 = Windows 10 Webclient/Scheduled Task
@@ -54,7 +62,11 @@ options:
     description: Enable/Disable UDP port exhaustion to force all DNS lookups to fail in order to fallback to NBNS resolution
       (Y/N).
     required: false
-    value: N
+    value: 'N'
+    strict: true
+    suggested_values:
+      - Y
+      - N
   - name: HTTPPort
     description: TCP port for the HTTP listener.
     required: false
@@ -76,7 +88,11 @@ options:
     description: Enable/Disable scheduled task deletion for trigger 2. If enabled, a random string will be added to the taskname
       to avoid failures after multiple trigger 2 runs.
     required: false
-    value: Y
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Y
+      - N
   - name: Taskname
     description: Scheduled task name to use with trigger 2. If you observe that Tater does not work after multiple trigger
       2 runs, try changing the taskname.

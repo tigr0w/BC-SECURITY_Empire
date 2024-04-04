@@ -29,9 +29,13 @@ options:
     required: true
     value: '1'
   - name: Silent
-    description: Switch. Don't output kill messages.
+    description: Don't output kill messages.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script: |
   function Invoke-ProcessKiller {
       [CmdletBinding()]

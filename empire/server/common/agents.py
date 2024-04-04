@@ -33,6 +33,7 @@ handle_agent_data() is the main function that should be used by external listene
 Most methods utilize self.lock to deal with the concurreny issue of kicking off threaded listeners.
 
 """
+
 import base64
 import contextlib
 import json
@@ -1196,6 +1197,12 @@ class Agents:
             # contributes to write contention
             if update_lastseen:
                 self.update_agent_lastseen_db(sessionID, db)
+
+            # Check if the agent has returned sysinfo yet, so that we don't
+            # send out a checkin before stage2 of registration is complete
+            if self.get_agent_from_name_or_session_id(sessionID, db).hostname:
+                # Call the hook to emit a checkin event
+                hooks.run_hooks(hooks.AFTER_AGENT_CALLBACK_HOOK, db, sessionID)
 
             # retrieve all agent taskings from the cache
             taskings = self.get_queued_agent_tasks_db(sessionID, db)

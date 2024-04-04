@@ -29,6 +29,13 @@ options:
     description: Critical, Exclamation, Information, Key, or None
     required: true
     value: Key
+    strict: true
+    suggested_values:
+      - Critical
+      - Exclamation
+      - Information
+      - Key
+      - None
   - name: Title
     description: Title of the message box to display.
     required: true

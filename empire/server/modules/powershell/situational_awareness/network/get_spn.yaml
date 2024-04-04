@@ -26,6 +26,11 @@ options:
     description: "'group', 'user', or 'service'"
     required: false
     value: service
+    strict: true
+    suggested_values:
+      - group
+      - user
+      - service
   - name: Search
     description: Search string for group, username, or service name. Wildcards accepted.
     required: false

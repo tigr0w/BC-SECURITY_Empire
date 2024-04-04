@@ -3,6 +3,7 @@
 Credential handling functionality for Empire.
 
 """
+
 import logging
 import warnings
 

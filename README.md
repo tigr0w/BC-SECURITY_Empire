@@ -53,14 +53,15 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - [ProcessInjection](https://github.com/3xpl01tc0d3r/ProcessInjection)
 - And Many More
 
+<!---
 ## Sponsors
 <div align="center">
 
 [<img src="https://github.com/BC-SECURITY/Empire/assets/9831420/f273f4b0-400c-49ce-b62f-521239a86754" width="100"/>](https://www.cybrary.it/)
 
 [<img src="https://github.com/BC-SECURITY/Empire/assets/9831420/d14af000-80d2-4f67-b70c-b62ac42b6a52" width="100"/>](https://twitter.com/joehelle)
-
 </div>
+--->
 
 ## Release Notes
 
@@ -80,7 +81,7 @@ After cloning the repo, you can checkout the latest stable release by running th
 git clone --recursive https://github.com/BC-SECURITY/Empire.git
 cd Empire
 ./setup/checkout-latest-tag.sh
-./setup/install.sh
+./ps-empire install -y
 ```
 
 If you are using the sponsors version of Empire, it will pull the sponsors version of Starkiller.

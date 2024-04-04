@@ -32,5 +32,9 @@ options:
     description: Enable a find keyword to search for within the iMessage Database.
     required: true
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 advanced:
   custom_generate: true

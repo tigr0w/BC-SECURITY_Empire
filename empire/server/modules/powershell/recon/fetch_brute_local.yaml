@@ -45,7 +45,11 @@ options:
   - name: Verbose
     description: Want to see failed logon attempts? And found users? Set this to any value.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script_path: recon/Fetch-And-Brute-Local-Accounts.ps1
 advanced:
   custom_generate: true

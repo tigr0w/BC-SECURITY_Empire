@@ -46,9 +46,13 @@ options:
     required: false
     value: ''
   - name: ShowWindow
-    description: Switch. Show the window for the created process instead of hiding it.
+    description: Show the window for the created process instead of hiding it.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script_path: management/Invoke-RunAs.ps1
 advanced:
   custom_generate: true

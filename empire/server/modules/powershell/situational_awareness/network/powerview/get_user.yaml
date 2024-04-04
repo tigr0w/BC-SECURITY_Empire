@@ -26,29 +26,53 @@ options:
     required: false
     value: ''
   - name: SPN
-    description: Switch. Only return user objects with non-null service principal names
+    description: Only return user objects with non-null service principal names
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: AdminCount
-    description: Switch. Return users with '(adminCount=1)' (meaning are/were privileged).
+    description: Return users with '(adminCount=1)' (meaning are/were privileged).
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: AllowDelegation
-    description: Switch. Return user accounts that are not marked as 'sensitive and not allowed for delegation'
+    description: Return user accounts that are not marked as 'sensitive and not allowed for delegation'
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: TrustedToAuth
-    description: Switch. Return computer objects that are trusted to authenticate for other principals.
+    description: Return computer objects that are trusted to authenticate for other principals.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: PreauthNotRequired
-    description: Switch. Return user accounts with "Do not require Kerberos preauthentication" set.
+    description: Return user accounts with "Do not require Kerberos preauthentication" set.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: DisallowDelegation
-    description: Switch. Return user accounts that are marked as 'sensitive and not allowed for delegation'
+    description: Return user accounts that are marked as 'sensitive and not allowed for delegation'
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Domain
     description: The domain to use for the query, defaults to the current domain.
     required: false
@@ -87,13 +111,21 @@ options:
     required: false
     value: ''
   - name: Tombstone
-    description: Switch. Specifies that the search should also return deleted/tombstoned objects.
+    description: Specifies that the search should also return deleted/tombstoned objects.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: FindOne
     description: Only return one result object.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

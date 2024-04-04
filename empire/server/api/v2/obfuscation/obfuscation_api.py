@@ -122,7 +122,7 @@ async def update_obfuscation_config(
     language: str,
     obf_req: ObfuscationConfigUpdateRequest,
     db: CurrentSession,
-    db_obf_config: models.Bypass = Depends(get_obfuscation_config),
+    db_obf_config: models.ObfuscationConfig = Depends(get_obfuscation_config),
 ):
     resp, err = obfuscation_service.update_obfuscation_config(
         db, db_obf_config, obf_req
@@ -153,7 +153,7 @@ async def preobfuscate_modules(
         )
 
     background_tasks.add_task(
-        obfuscation_service.preobfuscate_modules, db, db_obf_config, reobfuscate
+        obfuscation_service.preobfuscate_modules, language, reobfuscate
     )
 
 

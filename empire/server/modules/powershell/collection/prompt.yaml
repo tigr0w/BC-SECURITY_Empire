@@ -37,7 +37,13 @@ options:
   - name: IconType
     description: Critical, Question, Exclamation, or Information
     required: true
-    value: Critical
+    value: 'Critical'
+    strict: true
+    suggested_values:
+      - Critical
+      - Question
+      - Exclamation
+      - Information
   - name: Title
     description: Title of the message box to display if not waiting for a process create.
     required: true

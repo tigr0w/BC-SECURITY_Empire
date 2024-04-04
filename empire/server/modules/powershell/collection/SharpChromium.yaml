@@ -24,9 +24,15 @@ options:
     required: true
     value: ''
   - name: Type
-    description: Kind of data to be retrieved, should be "all", "logins", "history" or "cookies".
+    description: Kind of data to be retrieved.
     required: true
-    value: all
+    value: 'all'
+    strict: true
+    suggested_values:
+      - all
+      - logins
+      - history
+      - cookies
   - name: Domains
     description: Set with Type cookies, return only cookies matching those domains. Separate with ","
     required: false
