@@ -35,6 +35,7 @@ namespace Covenant.Core
         public static string CovenantAssemblyReferenceDirectory = CovenantDataDirectory + "AssemblyReferences" + Path.DirectorySeparatorChar;
         public static string CovenantAssemblyReferenceNet35Directory = CovenantAssemblyReferenceDirectory + "net35" + Path.DirectorySeparatorChar;
         public static string CovenantAssemblyReferenceNet40Directory = CovenantAssemblyReferenceDirectory + "net40" + Path.DirectorySeparatorChar;
+        public static string CovenantAssemblyReferenceNet45Directory = CovenantAssemblyReferenceDirectory + "net45" + Path.DirectorySeparatorChar;
         public static string CovenantEmbeddedResourcesDirectory = CovenantDataDirectory + "EmbeddedResources" + Path.DirectorySeparatorChar;
         public static string CovenantReferenceSourceLibraries = CovenantDataDirectory + "ReferenceSourceLibraries" + Path.DirectorySeparatorChar;
         public static string CovenantSharpSploitDirectory = CovenantReferenceSourceLibraries + "SharpSploit" + Path.DirectorySeparatorChar;
@@ -46,6 +47,7 @@ namespace Covenant.Core
         public static string CovenantTaskCSharpCompiledDirectory = CovenantTaskCSharpDirectory + "Compiled" + Path.DirectorySeparatorChar;
         public static string CovenantTaskCSharpCompiledNet35Directory = CovenantTaskCSharpCompiledDirectory + "net35" + Path.DirectorySeparatorChar;
         public static string CovenantTaskCSharpCompiledNet40Directory = CovenantTaskCSharpCompiledDirectory + "net40" + Path.DirectorySeparatorChar;
+        public static string CovenantTaskCSharpCompiledNet45Directory = CovenantTaskCSharpCompiledDirectory + "net45" + Path.DirectorySeparatorChar;
         public static string CovenantTaskCSharpCompiledNetCoreApp30Directory = CovenantTaskCSharpCompiledDirectory + "netcoreapp3.0" + Path.DirectorySeparatorChar;
 
         public static string CovenantLogDirectory = CovenantDataDirectory + "Logs" + Path.DirectorySeparatorChar;
@@ -72,14 +74,24 @@ namespace Covenant.Core
             new Compiler.Reference { File = CovenantAssemblyReferenceNet40Directory + "System.Core.dll", Framework = DotNetVersion.Net40, Enabled = true }
         };
 
+        public static List<Compiler.Reference> DefaultNet45References = new List<Compiler.Reference>
+        {
+            new Compiler.Reference { File = CovenantAssemblyReferenceNet45Directory + "mscorlib.dll", Framework = DotNetVersion.Net45, Enabled = true },
+            new Compiler.Reference { File = CovenantAssemblyReferenceNet45Directory + "System.dll", Framework = DotNetVersion.Net45, Enabled = true },
+            new Compiler.Reference { File = CovenantAssemblyReferenceNet45Directory + "System.Core.dll", Framework = DotNetVersion.Net45, Enabled = true }
+        };
+
         public static List<Compiler.Reference> DefaultNetFrameworkReferences = new List<Compiler.Reference>
         {
             new Compiler.Reference { File = CovenantAssemblyReferenceNet35Directory + "mscorlib.dll", Framework = DotNetVersion.Net35, Enabled = true },
             new Compiler.Reference { File = CovenantAssemblyReferenceNet40Directory + "mscorlib.dll", Framework = DotNetVersion.Net40, Enabled = true },
+            new Compiler.Reference { File = CovenantAssemblyReferenceNet45Directory + "mscorlib.dll", Framework = DotNetVersion.Net45, Enabled = true },
             new Compiler.Reference { File = CovenantAssemblyReferenceNet35Directory + "System.dll", Framework = DotNetVersion.Net35, Enabled = true },
             new Compiler.Reference { File = CovenantAssemblyReferenceNet40Directory + "System.dll", Framework = DotNetVersion.Net40, Enabled = true },
+            new Compiler.Reference { File = CovenantAssemblyReferenceNet45Directory + "System.dll", Framework = DotNetVersion.Net45, Enabled = true },
             new Compiler.Reference { File = CovenantAssemblyReferenceNet35Directory + "System.Core.dll", Framework = DotNetVersion.Net35, Enabled = true },
-            new Compiler.Reference { File = CovenantAssemblyReferenceNet40Directory + "System.Core.dll", Framework = DotNetVersion.Net40, Enabled = true }
+            new Compiler.Reference { File = CovenantAssemblyReferenceNet40Directory + "System.Core.dll", Framework = DotNetVersion.Net40, Enabled = true },
+            new Compiler.Reference { File = CovenantAssemblyReferenceNet45Directory + "System.Core.dll", Framework = DotNetVersion.Net45, Enabled = true }
         };
 
         public static List<Compiler.Reference> DefaultReferencesNetCore { get; set; } = new List<Compiler.Reference>
@@ -95,6 +107,7 @@ namespace Covenant.Core
         {
             Net35,
             Net40,
+            Net45,
             NetCore31
         }
 
