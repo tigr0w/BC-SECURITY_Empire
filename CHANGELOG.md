@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added hook and socket message to receive callback messages for individual agents (@AaronVigal)
 -   Added sacrificial Spawn Process bof (@Cx01N)
 -   Added suggested values to most modules (@Cx01N)
+-   Added continuous, error, and completed tasking statuses (@Cx01N)
+-   Added continuous and error plugin statuses (@Cx01N)
 -   Added Moriary module (@C01N)
 -   Added .NET 4.5 compile option (@C01N)
 

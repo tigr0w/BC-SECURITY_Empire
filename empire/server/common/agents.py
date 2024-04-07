@@ -1339,6 +1339,7 @@ class Agents:
         ):
             # add keystrokes to database
             if "function Get-Keystrokes" in tasking.input:
+                tasking.status = AgentTaskStatus.continuous
                 key_log_task_id = tasking.id
                 if tasking.output is None:
                     tasking.output = ""
@@ -1355,6 +1356,7 @@ class Agents:
             else:
                 tasking.original_output = data
                 tasking.output = data
+                tasking.status = AgentTaskStatus.completed
 
                 # Not sure why, but for Python agents these are bytes initially, but
                 # after storing in the database they're strings. So we need to convert
@@ -1375,6 +1377,8 @@ class Agents:
         #       so this logic is skipped
 
         if response_name == "ERROR":
+            tasking.status = AgentTaskStatus.error
+
             # error code
             message = f"Received error response from {session_id}"
             log.error(message)
