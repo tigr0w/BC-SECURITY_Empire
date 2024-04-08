@@ -57,7 +57,7 @@ jobs:
       # Poetry cache depends on OS, Python version and Poetry version.
       # https://gist.github.com/gh640/233a6daf68e9e937115371c0ecd39c61
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
