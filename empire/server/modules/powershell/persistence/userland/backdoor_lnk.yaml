@@ -59,9 +59,13 @@ options:
     required: false
     value: ''
   - name: Cleanup
-    description: Switch. Restore the original .LNK settings.
+    description: Restore the original .LNK settings.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none, or other).
     required: false

@@ -37,9 +37,13 @@ options:
     required: true
     value: '15'
   - name: Verbose
-    description: Agent to execute module on.
+    description: Run in verbose mode.
     required: true
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script: |-
   import subprocess
   import time

@@ -30,7 +30,11 @@ options:
   - name: Technique
     description: Technique to use, 'NamedPipe' for service named pipe impersonation or 'Token' for adjust token privs.
     required: false
-    value: NamedPipe
+    value: 'NamedPipe'
+    strict: true
+    suggested_values:
+      - NamedPipe
+      - Token
   - name: ServiceName
     description: Optional service name to used for 'NamedPipe' impersonation.
     required: false
@@ -40,13 +44,21 @@ options:
     required: false
     value: ''
   - name: RevToSelf
-    description: Switch. Reverts the current thread privileges.
+    description: Reverts the current thread privileges.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: WhoAmI
-    description: Switch. Display the credentials for the current PowerShell thread.
+    description: Display the credentials for the current PowerShell thread.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

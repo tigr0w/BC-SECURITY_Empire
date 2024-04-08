@@ -34,12 +34,20 @@ options:
     required: true
     value: C:\capture.etl
   - name: Persistent
-    description: Switch. Persist capture across reboots.
+    description: Persist capture across reboots.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: StopTrace
-    description: Switch. Stop trace capture.
+    description: Stop trace capture.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 advanced:
   custom_generate: true

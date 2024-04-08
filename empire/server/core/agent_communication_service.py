@@ -765,6 +765,12 @@ class AgentCommunicationService:
         with SessionLocal.begin() as db:
             self.agent_service.update_agent_lastseen(db, session_id)
 
+            # Check if the agent has returned sysinfo yet, so that we don't
+            # send out a checkin before stage2 of registration is complete
+            if self.agent_service.get_by_id(db, session_id).hostname:
+                # Call the hook to emit a checkin event
+                hooks.run_hooks(hooks.AFTER_AGENT_CALLBACK_HOOK, db, session_id)
+
             tasks = self._get_queued_agent_tasks(db, session_id)
             temp_tasks = self._get_queued_agent_temporary_tasks(session_id)
             tasks.extend(temp_tasks)
@@ -899,6 +905,7 @@ class AgentCommunicationService:
         ):
             # add keystrokes to database
             if "function Get-Keystrokes" in tasking.input:
+                tasking.status = AgentTaskStatus.continuous
                 key_log_task_id = tasking.id
                 if tasking.output is None:
                     tasking.output = ""
@@ -915,6 +922,7 @@ class AgentCommunicationService:
             else:
                 tasking.original_output = data
                 tasking.output = data
+                tasking.status = AgentTaskStatus.completed
 
                 # Not sure why, but for Python agents these are bytes initially, but
                 # after storing in the database they're strings. So we need to convert
@@ -935,6 +943,8 @@ class AgentCommunicationService:
         #       so this logic is skipped
 
         if response_name == "ERROR":
+            tasking.status = AgentTaskStatus.error
+
             # error code
             message = f"Received error response from {session_id}"
             log.error(message)

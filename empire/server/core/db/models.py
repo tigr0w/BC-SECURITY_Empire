@@ -376,6 +376,9 @@ class Download(Base):
 class AgentTaskStatus(str, enum.Enum):
     queued = "queued"
     pulled = "pulled"
+    completed = "completed"
+    error = "error"
+    continuous = "continuous"
 
 
 class AgentTask(Base):
@@ -424,6 +427,8 @@ class PluginTaskStatus(str, enum.Enum):
     queued = "queued"
     started = "started"
     completed = "completed"
+    error = "error"
+    continuous = "continuous"
 
 
 class PluginTask(Base):

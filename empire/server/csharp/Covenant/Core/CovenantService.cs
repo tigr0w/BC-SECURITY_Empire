@@ -55,6 +55,7 @@ namespace Covenant.Core
         Task<IEnumerable<ReferenceAssembly>> GetReferenceAssemblies();
         Task<IEnumerable<ReferenceAssembly>> GetDefaultNet35ReferenceAssemblies();
         Task<IEnumerable<ReferenceAssembly>> GetDefaultNet40ReferenceAssemblies();
+        Task<IEnumerable<ReferenceAssembly>> GetDefaultNet45ReferenceAssemblies();
         Task<ReferenceAssembly> GetReferenceAssembly(int id);
         Task<ReferenceAssembly> GetReferenceAssemblyByName(string name, Common.DotNetVersion version);
         Task<ReferenceAssembly> CreateReferenceAssembly(ReferenceAssembly assembly);
@@ -171,7 +172,7 @@ namespace Covenant.Core
         public byte[] CompileExe(GruntTask task, Common.DotNetVersion version, OutputKind outputKind, Boolean Compress)
         {
             byte[] ILBytes = null;
-            if (version == Common.DotNetVersion.Net35 || version == Common.DotNetVersion.Net40)
+            if (version == Common.DotNetVersion.Net35 || version == Common.DotNetVersion.Net40 || version == Common.DotNetVersion.Net45)
             {
                 List<Compiler.Reference> references = null;
                 switch (version)
@@ -181,6 +182,9 @@ namespace Covenant.Core
                         break;
                     case Common.DotNetVersion.Net40:
                         references = Common.DefaultNet40References;
+                        break;
+                    case Common.DotNetVersion.Net45:
+                        references = Common.DefaultNet45References;
                         break;
                 }
                 ILBytes = Compiler.Compile(new Compiler.CsharpFrameworkCompilationRequest
@@ -932,6 +936,16 @@ public static class Task
                 await this.GetReferenceAssemblyByName("mscorlib.dll", Common.DotNetVersion.Net40),
                 await this.GetReferenceAssemblyByName("System.dll", Common.DotNetVersion.Net40),
                 await this.GetReferenceAssemblyByName("System.Core.dll", Common.DotNetVersion.Net40)
+            };
+        }
+
+        public async Task<IEnumerable<ReferenceAssembly>> GetDefaultNet45ReferenceAssemblies()
+        {
+            return new List<ReferenceAssembly>
+            {
+                await this.GetReferenceAssemblyByName("mscorlib.dll", Common.DotNetVersion.Net45),
+                await this.GetReferenceAssemblyByName("System.dll", Common.DotNetVersion.Net45),
+                await this.GetReferenceAssemblyByName("System.Core.dll", Common.DotNetVersion.Net45)
             };
         }
 

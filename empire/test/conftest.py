@@ -1,3 +1,4 @@
+import asyncio
 import os
 import shutil
 import sys
@@ -54,7 +55,9 @@ def client():
 
     app = initialize(run=False)
 
-    yield TestClient(app)
+    # fix for pycharm debugger
+    # https://stackoverflow.com/a/77926544/5849681
+    yield TestClient(app, backend_options={"loop_factory": asyncio.new_event_loop})
 
     from empire.server.server import main
 

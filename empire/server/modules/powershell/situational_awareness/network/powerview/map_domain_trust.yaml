@@ -22,13 +22,21 @@ options:
     required: true
     value: ''
   - name: API
-    description: Switch. Use an api call (DsEnumerateDomainTrusts) to enumerate the trusts instead of the built-in LDAP method
+    description: Use an api call (DsEnumerateDomainTrusts) to enumerate the trusts instead of the built-in LDAP method
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: NET
-    description: Switch. Use .NET queries to enumerate trusts instead of the default LDAP method
+    description: Use .NET queries to enumerate trusts instead of the default LDAP method
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: LDAPFilter
     description: Specifies an LDAP query string that is used to filter Active Directory objects.
     required: false
@@ -63,9 +71,13 @@ options:
     required: false
     value: ''
   - name: Tombstone
-    description: Switch. Specifies that the search should also return deleted/tombstoned objects.
+    description: Specifies that the search should also return deleted/tombstoned objects.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

@@ -1042,24 +1042,32 @@ class Listener:
                                         stage = hopListener.generate_stager(
                                             language=language,
                                             listenerOptions=hopListener.options,
-                                            obfuscate=False
-                                            if not obf_config
-                                            else obf_config.enabled,
-                                            obfuscation_command=""
-                                            if not obf_config
-                                            else obf_config.command,
+                                            obfuscate=(
+                                                False
+                                                if not obf_config
+                                                else obf_config.enabled
+                                            ),
+                                            obfuscation_command=(
+                                                ""
+                                                if not obf_config
+                                                else obf_config.command
+                                            ),
                                         )
 
                                     else:
                                         stage = self.generate_stager(
                                             language=language,
                                             listenerOptions=listenerOptions,
-                                            obfuscate=False
-                                            if not obf_config
-                                            else obf_config.enabled,
-                                            obfuscation_command=""
-                                            if not obf_config
-                                            else obf_config.command,
+                                            obfuscate=(
+                                                False
+                                                if not obf_config
+                                                else obf_config.enabled
+                                            ),
+                                            obfuscation_command=(
+                                                ""
+                                                if not obf_config
+                                                else obf_config.command
+                                            ),
                                         )
                                 return make_response(stage, 200)
 
@@ -1142,9 +1150,9 @@ class Listener:
                             )
                             tempListenerOptions = copy.deepcopy(listenerOptions)
                             if hopListener is not None:
-                                tempListenerOptions["Host"][
-                                    "Value"
-                                ] = hopListener.options["Host"]["Value"]
+                                tempListenerOptions["Host"]["Value"] = (
+                                    hopListener.options["Host"]["Value"]
+                                )
                                 with SessionLocal.begin() as db:
                                     db_agent = self.mainMenu.agentsv2.get_by_id(
                                         db, sessionID
@@ -1174,12 +1182,12 @@ class Listener:
                                 agentCode = self.generate_agent(
                                     language=language,
                                     listenerOptions=tempListenerOptions,
-                                    obfuscate=False
-                                    if not obf_config
-                                    else obf_config.enabled,
-                                    obfuscation_command=""
-                                    if not obf_config
-                                    else obf_config.command,
+                                    obfuscate=(
+                                        False if not obf_config else obf_config.enabled
+                                    ),
+                                    obfuscation_command=(
+                                        "" if not obf_config else obf_config.command
+                                    ),
                                     version=version,
                                 )
 

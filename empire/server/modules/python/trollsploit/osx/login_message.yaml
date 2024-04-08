@@ -29,6 +29,10 @@ options:
     description: True/False to remove login message.
     required: true
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script: |
   import subprocess
   remove = {{ Remove }}

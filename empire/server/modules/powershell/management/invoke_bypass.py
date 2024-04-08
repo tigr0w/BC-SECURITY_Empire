@@ -24,8 +24,10 @@ class Module:
             script=script,
             script_end="",
             obfuscate=obfuscate or params["Obfuscate"],
-            obfuscation_command=obfuscation_command
-            if obfuscation_command != ""
-            else params["ObfuscateCommand"],
+            obfuscation_command=(
+                obfuscation_command
+                if obfuscation_command != ""
+                else params["ObfuscateCommand"]
+            ),
         )
         return script

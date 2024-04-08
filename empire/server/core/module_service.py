@@ -460,6 +460,9 @@ class ModuleService:
                         "{{ KEY }}", str(key)
                     ).replace("{{KEY}}", str(key))
                     option_strings.append(f"{this_option}")
+                elif value.lower() == "false":
+                    # Have to add a continue for false statements, else it adds -option 'False'
+                    continue
                 else:
                     this_option = (
                         module.advanced.option_format_string.replace(

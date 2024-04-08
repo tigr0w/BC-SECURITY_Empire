@@ -35,7 +35,7 @@ options:
     required: true
     value: ''
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
+    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
       only.
     required: false
     value: 'False'
@@ -76,9 +76,13 @@ options:
     required: false
     value: ''
   - name: Cleanup
-    description: Switch. Cleanup the trigger and any script from specified location.
+    description: Cleanup the trigger and any script from specified location.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none, or other).
     required: false

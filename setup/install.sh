@@ -305,7 +305,7 @@ if ! command_exists pyenv; then
       libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
       lzma lzma-dev tk-dev uuid-dev zlib1g-dev
 
-  pyenv install 3.12.1
+  pyenv install 3.12.2
 fi
 
 if ! command_exists poetry; then

@@ -33,9 +33,13 @@ options:
     required: false
     value: ''
   - name: Repair
-    description: Switch. Unset the reversible encryption flag and force password reset flag.
+    description: Unset the reversible encryption flag and force password reset flag.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

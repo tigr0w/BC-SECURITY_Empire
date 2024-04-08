@@ -116,9 +116,11 @@ class Transform(MalleableObject):
             + list(
                 {
                     "type": self.type,
-                    "arg": self.arg
-                    if self.type != Transform.MASK
-                    else MalleableUtil.to_hex(self.arg[0]),
+                    "arg": (
+                        self.arg
+                        if self.type != Transform.MASK
+                        else MalleableUtil.to_hex(self.arg[0])
+                    ),
                 }.items()
             )
         )

@@ -41,6 +41,10 @@ options:
     description: 'Store binary data in memory, never drop to disk (WARNING: set MaxSize).'
     required: false
     value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: SavePath
     description: Path of the  file to save (Not used if InMemory is True.
     required: true

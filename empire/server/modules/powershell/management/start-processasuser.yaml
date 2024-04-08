@@ -43,6 +43,10 @@ options:
   - name: NetOnly
     description: Start the process using the LOGON_NETCREDENTIALS_ONLY flag (equivalent of running "runas.exe /netonly")
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script_path: management/Start-ProcessAsUser.ps1
 script_end: Start-ProcessAsUser {{ PARAMS }}

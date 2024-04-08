@@ -31,14 +31,39 @@ options:
     required: true
     value: ''
   - name: CollectionMethod
-    description: The method to collect data. Group, LocalGroup, LocalAdmin, RDP, DCOM, PSRemote, Session, SessionLoop, Trusts,
-      ACL, Container, ComputerOnly, GPOLocalGroup, LoggedOn, ObjectProps, SPNTargets, Default, DcOnly, All.
+    description: The method to collect data.
     required: true
     value: Default
+    strict: false
+    suggested_values:
+      - Default
+      - Group
+      - LocalGroup
+      - LocalAdmin
+      - RDP
+      - DCOM
+      - PSRemote
+      - Session
+      - SessionLoop
+      - Trusts
+      - ACL
+      - Container
+      - ComputerOnly
+      - GPOLocalGroup
+      - LoggedOn
+      - ObjectProps
+      - SPNTargets
+      - Default
+      - DcOnly
+      - All
   - name: Stealth
     description: Use stealth collection options, will sacrifice data quality in favor of much reduced network impact.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Domain
     description: Specifies the domain to enumerate. If not specified, will enumerate the current domain your user context
       specifies.
@@ -47,7 +72,11 @@ options:
   - name: WindowsOnly
     description: Limits computer collection to systems that have an operatingssytem attribute that matches *Windows*.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: ComputerFile
     description: 'A file, /!\ ON THE HOST /!\, containing a list of computers to enumerate. This option can only be used with
       the following Collection Methods: Session, SessionLoop, LocalGroup, ComputerOnly, LoggedOn.'
@@ -72,7 +101,11 @@ options:
   - name: PrettyJSON
     description: Output "pretty" json with formatting for readability.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: CacheFilename
     description: 'Name for the cache file dropped to disk (default: unique hash generated per machine).'
     required: false
@@ -88,7 +121,11 @@ options:
   - name: NoSaveCache
     description: Don't write the cache file to disk. Caching will still be performed in memory.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: EncryptZip
     description: Encrypt the zip file with a random password.
     required: false
@@ -96,7 +133,11 @@ options:
   - name: NoZip
     description: Do NOT zip the json files.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: InvalidateCache
     description: Invalidate and rebuild the cache file.
     required: false
@@ -116,7 +157,11 @@ options:
   - name: DisableKerberosSigning
     description: Disables keberos signing/sealing, making LDAP traffic viewable.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: LdapUsername
     description: Username for connecting to LDAP. Use this if you're using a non-domain account for connecting to computers.
     required: false
@@ -148,15 +193,27 @@ options:
   - name: OverrideUserName
     description: Override username to filter for NetSessionEnum.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: NoRegistryLoggedOn
     description: Disable remote registry check in LoggedOn collection.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: DumpComputerStatus
     description: Dumps error codes from attempts to connect to computers.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: RealDNSName
     description: Overrides the DNS name used for API calls.
     required: false
@@ -172,7 +229,11 @@ options:
   - name: Loop
     description: Perform looping for computer collection.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: LoopDuration
     description: Duration to perform looping (Default 02:00:00).
     required: false

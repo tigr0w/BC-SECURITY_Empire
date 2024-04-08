@@ -27,6 +27,10 @@ class ApiConfig(EmpireBaseModel):
     cert_path: Path = "empire/server/data"
 
 
+class SubmodulesConfig(EmpireBaseModel):
+    auto_update: bool = True
+
+
 class StarkillerConfig(EmpireBaseModel):
     repo: str = "bc-security/starkiller"
     directory: Path = "empire/server/api/v2/starkiller"
@@ -116,6 +120,7 @@ class EmpireConfig(EmpireBaseModel):
     supress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig | None = ApiConfig()
     starkiller: StarkillerConfig
+    submodules: SubmodulesConfig
     database: DatabaseConfig
     plugins: dict[str, dict[str, str]] = {}
     directories: DirectoriesConfig

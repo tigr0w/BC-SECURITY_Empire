@@ -26,25 +26,45 @@ options:
     required: false
     value: '100'
   - name: '4648'
-    description: Switch. Only return 4648 logon information (RDP to another machine).
+    description: Only return 4648 logon information (RDP to another machine).
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: '4624'
-    description: Switch. Only return 4624 logon information (logons to this machine).
+    description: Only return 4624 logon information (logons to this machine).
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: AppLocker
-    description: Switch. Only return AppLocker logs.
+    description: Only return AppLocker logs.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: PSScripts
-    description: Switch. Only return PowerShell scripts run from operational log.
+    description: Only return PowerShell scripts run from operational log.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: SavedRDP
-    description: Switch. Only return saved RDP connections.
+    description: Only return saved RDP connections.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

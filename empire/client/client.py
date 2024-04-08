@@ -407,9 +407,11 @@ class EmpireCli:
             func = None
             with contextlib.suppress(Exception):
                 func = getattr(
-                    menu_state.current_menu
-                    if hasattr(menu_state.current_menu, cmd_line[1])
-                    else self,
+                    (
+                        menu_state.current_menu
+                        if hasattr(menu_state.current_menu, cmd_line[1])
+                        else self
+                    ),
                     cmd_line[1],
                 )
 
@@ -419,9 +421,11 @@ class EmpireCli:
             func = None
             with contextlib.suppress(Exception):
                 func = getattr(
-                    menu_state.current_menu
-                    if hasattr(menu_state.current_menu, cmd_line[0])
-                    else self,
+                    (
+                        menu_state.current_menu
+                        if hasattr(menu_state.current_menu, cmd_line[0])
+                        else self
+                    ),
                     cmd_line[0],
                 )
 

@@ -66,6 +66,10 @@ This event is triggered after the tasking results are received and after they ar
 
  This event is triggered after the agent has completed the stage2 of the checkin process, and the sysinfo has been written to the database. Its arguments are (db: Session, agent: models.Agent)
 
+* AFTER\_AGENT\_CALLBACK\_HOOK
+
+This event is triggered each time an agent calls back to the C2 server, after the sysinfo has been written to the database. Its arguments are (db: Session, agent_id: str)
+
 _The number of events at the moment is very minimal. If there's an event that you would like added, open an issue on the GitHub repo, come chat in our Discord, or put up a pull request._
 
 ### Real World Examples

@@ -66,9 +66,13 @@ options:
     required: false
     value: ''
   - name: UserAdminCount
-    description: Switch. Search for users users with '(adminCount=1)' (meaning are/were privileged).
+    description: Search for users users with '(adminCount=1)' (meaning are/were privileged).
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: UserSearchBase
     description: Specifies the LDAP source to search through for target users.
     required: false

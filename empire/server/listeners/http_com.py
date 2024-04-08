@@ -680,12 +680,14 @@ class Listener:
                                     stage = self.generate_stager(
                                         language=language,
                                         listenerOptions=listenerOptions,
-                                        obfuscate=False
-                                        if not obf_config
-                                        else obf_config.enabled,
-                                        obfuscation_command=""
-                                        if not obf_config
-                                        else obf_config.command,
+                                        obfuscate=(
+                                            False
+                                            if not obf_config
+                                            else obf_config.enabled
+                                        ),
+                                        obfuscation_command=(
+                                            "" if not obf_config else obf_config.command
+                                        ),
                                     )
                                 return make_response(base64.b64encode(stage), 200)
 
@@ -769,12 +771,12 @@ class Listener:
                                 agentCode = self.generate_agent(
                                     language=language,
                                     listenerOptions=listenerOptions,
-                                    obfuscate=False
-                                    if not obf_config
-                                    else obf_config.enabled,
-                                    obfuscation_command=""
-                                    if not obf_config
-                                    else obf_config.command,
+                                    obfuscate=(
+                                        False if not obf_config else obf_config.enabled
+                                    ),
+                                    obfuscation_command=(
+                                        "" if not obf_config else obf_config.command
+                                    ),
                                 )
 
                                 if language.lower() in ["python", "ironpython"]:

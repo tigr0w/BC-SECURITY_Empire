@@ -33,7 +33,11 @@ options:
   - name: ExcludeComputers
     description: Exclude computers from the results. ($True or $False)
     required: false
-    value: true
+    value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
