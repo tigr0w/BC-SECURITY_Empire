@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 -   Fixed missing .NET 4.5 DLLs (@Cx01N)
+-   Fixed missing clr package for IronPython standard library (@Cx01N)
 
 
 ## [5.10.0] - 2024-04-08
