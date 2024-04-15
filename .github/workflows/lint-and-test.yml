@@ -85,7 +85,7 @@ jobs:
           DATABASE_USE=sqlite poetry run pytest . -v --runslow
       - name: Pytest coverage comment
         if: ${{ matrix.python-version == '3.12' }}
-        uses: MishaKav/pytest-coverage-comment@v1.1.48
+        uses: MishaKav/pytest-coverage-comment@v1.1.51
         with:
           pytest-coverage-path: ./pytest-coverage.txt
           junitxml-path: ./pytest.xml
