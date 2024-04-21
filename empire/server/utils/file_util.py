@@ -45,7 +45,7 @@ def run_as_user(command, user=None, cwd=None):
 
         subprocess.run(command_with_user, check=True, cwd=cwd)
 
-        log.debug("Command executed successfully: %s", " ".join(command))
+        log.debug("Command executed successfully: %s", " ".join(map(str, command)))
 
     except subprocess.CalledProcessError as e:
         # Log the error details

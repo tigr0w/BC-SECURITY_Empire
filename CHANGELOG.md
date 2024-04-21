@@ -14,12 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+-   Added removal of starkiller directory to server reset (@Cx01N)
 
 ### Fixed
-
 -   Fixed missing .NET 4.5 DLLs (@Cx01N)
+-   Fixed run_as_user issue when dealing with directories (@Cx01N)
 -   Fixed missing clr package for IronPython standard library (@Cx01N)
-
 
 ## [5.10.0] - 2024-04-08
 
