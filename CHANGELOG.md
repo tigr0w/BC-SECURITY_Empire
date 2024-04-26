@@ -14,10 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.10.1] - 2024-04-26
+
 ### Added
+
 -   Added removal of starkiller directory to server reset (@Cx01N)
 
 ### Fixed
+
 -   Fixed missing .NET 4.5 DLLs (@Cx01N)
 -   Fixed run_as_user issue when dealing with directories (@Cx01N)
 -   Fixed missing clr package for IronPython standard library (@Cx01N)
@@ -822,7 +826,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.1...HEAD
+
+[5.10.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.0...v5.10.1
 
 [5.10.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.5...v5.10.0
 
