@@ -48,5 +48,9 @@ options:
     description: Enable to get verbose message status (Dont enable OutputExtension for this).
     required: true
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 advanced:
   custom_generate: true

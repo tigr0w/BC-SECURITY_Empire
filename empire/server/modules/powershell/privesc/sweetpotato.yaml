@@ -40,6 +40,11 @@ options:
   - name: ExploitMethod
     description: 'Exploit mode: [DCOM|WinRM|PrintSpoofer]. Default: PrintSpoofer'
     required: false
-    value: ''
+    value: 'PrintSpoofer'
+    strict: true
+    suggested_values:
+      - PrintSpoofer
+      - DCOM
+      - WinRM
 script_path: privesc/Invoke-SweetPotato.ps1
 script_end: Invoke-SweetPotato {{ PARAMS }}

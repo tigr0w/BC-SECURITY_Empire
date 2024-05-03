@@ -43,9 +43,13 @@ options:
     required: false
     value: TEMP
   - name: AllData
-    description: Switch. Log all data instead of just plaintext.
+    description: Log all data instead of just plaintext.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Datalimit
     description: Data limit capture per request.
     required: false

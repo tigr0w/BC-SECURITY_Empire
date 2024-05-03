@@ -51,6 +51,8 @@ starkiller:
   # for the downstream main branches.
   use_temp_dir: false
   auto_update: true
+submodules:
+  auto_update: true
 directories:
   downloads: empire/test/downloads/
   module_source: empire/server/data/module_source/

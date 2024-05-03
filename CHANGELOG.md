@@ -14,6 +14,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.10.1] - 2024-04-26
+-   Updated Starkiller to v2.8.0
+
+### Added
+
+-   Added removal of starkiller directory to server reset (@Cx01N)
+
+### Fixed
+
+-   Fixed missing .NET 4.5 DLLs (@Cx01N)
+-   Fixed run_as_user issue when dealing with directories (@Cx01N)
+-   Fixed missing clr package for IronPython standard library (@Cx01N)
+
+## [5.10.0] - 2024-04-08
+
+### Added
+
+-   Added dependabot for github actions dependencies (@Vinnybod)
+-   Added install option to ./ps-empire file (@Cx01N)
+-   Added auto pull options for submodules on startup (@Cx01N)
+-   Added hook and socket message to receive callback messages for individual agents (@AaronVigal)
+-   Added sacrificial Spawn Process bof (@Cx01N)
+-   Added suggested values to most modules (@Cx01N)
+-   Added continuous, error, and completed tasking statuses (@Cx01N)
+-   Added continuous and error plugin statuses (@Cx01N)
+-   Added Moriary module (@C01N)
+-   Added .NET 4.5 compile option (@C01N)
+
+### Changed
+
+-   Updated all dependencies (@Vinnybod)
+-   Updated Dockerfile and install script to Python 3.12.2 (@Vinnybod)
+-   Updated starkiller snyc to no longer require root (@Cx01N)
+-   Change file permissions for empire and listener logs to be non-root (@Cx01N)
+
+### Fixed
+
+-   Fixed issue loading `openapi.json` (@Vinnybod)
+-   Fixed issue when False is given for options and option is appended with 'False' (@Cx01N)
+-   Fixed module generation error in ComputerDetails (@Cx01N)
+
 ## [5.9.5] - 2024-02-22
 -   Updated Starkiller to v2.7.3
 
@@ -797,7 +838,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.5...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.1...HEAD
+
+[5.10.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.0...v5.10.1
+
+[5.10.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.5...v5.10.0
 
 [5.9.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.9.4...v5.9.5
 

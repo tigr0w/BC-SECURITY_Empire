@@ -42,6 +42,10 @@ options:
     description: Performs UDP scan of servers managing SQL Server clusters.
     required: false
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: UDPTimeOut
     description: Timeout in seconds for UDP scans of management servers. Longer timeout = more accurate.
     required: false

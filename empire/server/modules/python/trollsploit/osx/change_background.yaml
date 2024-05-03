@@ -29,10 +29,18 @@ options:
     description: True/False to change the desktop background.
     required: false
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Login
     description: True/False to change the login background.
     required: false
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script: |-
   import subprocess
   desktop = {{ Desktop }}

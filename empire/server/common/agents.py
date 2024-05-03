@@ -33,6 +33,7 @@ handle_agent_data() is the main function that should be used by external listene
 Most methods utilize self.lock to deal with the concurreny issue of kicking off threaded listeners.
 
 """
+
 import base64
 import contextlib
 import json
@@ -1197,6 +1198,12 @@ class Agents:
             if update_lastseen:
                 self.update_agent_lastseen_db(sessionID, db)
 
+            # Check if the agent has returned sysinfo yet, so that we don't
+            # send out a checkin before stage2 of registration is complete
+            if self.get_agent_from_name_or_session_id(sessionID, db).hostname:
+                # Call the hook to emit a checkin event
+                hooks.run_hooks(hooks.AFTER_AGENT_CALLBACK_HOOK, db, sessionID)
+
             # retrieve all agent taskings from the cache
             taskings = self.get_queued_agent_tasks_db(sessionID, db)
             temp_taskings = self.get_queued_agent_temporary_tasks(sessionID)
@@ -1332,6 +1339,7 @@ class Agents:
         ):
             # add keystrokes to database
             if "function Get-Keystrokes" in tasking.input:
+                tasking.status = AgentTaskStatus.continuous
                 key_log_task_id = tasking.id
                 if tasking.output is None:
                     tasking.output = ""
@@ -1348,6 +1356,7 @@ class Agents:
             else:
                 tasking.original_output = data
                 tasking.output = data
+                tasking.status = AgentTaskStatus.completed
 
                 # Not sure why, but for Python agents these are bytes initially, but
                 # after storing in the database they're strings. So we need to convert
@@ -1368,6 +1377,8 @@ class Agents:
         #       so this logic is skipped
 
         if response_name == "ERROR":
+            tasking.status = AgentTaskStatus.error
+
             # error code
             message = f"Received error response from {session_id}"
             log.error(message)

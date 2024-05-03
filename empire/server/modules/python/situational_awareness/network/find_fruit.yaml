@@ -34,6 +34,10 @@ options:
     description: True/False to force SSL
     required: false
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script: |-
   import urllib2
   import sys

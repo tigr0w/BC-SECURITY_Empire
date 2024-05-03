@@ -41,7 +41,6 @@ namespace Covenant.Core
             foreach (GruntTask task in tasks)
             {
                 await service.CreateGruntTask(task);
-
             }
 
         }
@@ -61,6 +60,7 @@ namespace Covenant.Core
                         DotNetVersion = Common.DotNetVersion.Net35
                     };
                 }).ToList();
+
                 Directory.GetFiles(Common.CovenantAssemblyReferenceNet40Directory).ToList().ForEach(R =>
                 {
                     FileInfo info = new FileInfo(R);
@@ -69,6 +69,17 @@ namespace Covenant.Core
                         Name = info.Name,
                         Location = info.FullName.Replace(Common.CovenantAssemblyReferenceDirectory, ""),
                         DotNetVersion = Common.DotNetVersion.Net40
+                    });
+                });
+
+                Directory.GetFiles(Common.CovenantAssemblyReferenceNet45Directory).ToList().ForEach(R =>
+                {
+                    FileInfo info = new FileInfo(R);
+                    ReferenceAssemblies.Add(new ReferenceAssembly
+                    {
+                        Name = info.Name,
+                        Location = info.FullName.Replace(Common.CovenantAssemblyReferenceDirectory, ""),
+                        DotNetVersion = Common.DotNetVersion.Net45
                     });
                 });
                 await service.CreateReferenceAssemblies(ReferenceAssemblies.ToArray());

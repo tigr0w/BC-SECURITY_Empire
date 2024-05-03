@@ -23,13 +23,21 @@ options:
     required: true
     value: ''
   - name: Sleep
-    description: Switch. Sleep the agent's normal interval between downloads, otherwise use one blast.
+    description: Sleep the agent's normal interval between downloads, otherwise use one blast.
     required: false
     value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: AllUsers
-    description: Switch. Run for all users (needs root privileges!)
+    description: Run for all users (needs root privileges!)
     required: false
     value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 script: |
   import os
   # custom function to send downloac packets back

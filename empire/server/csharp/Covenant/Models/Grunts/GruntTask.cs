@@ -39,7 +39,7 @@ namespace Covenant.Models.Grunts
         public string Description { get; set; } = "A generic GruntTask.";
         public string Help { get; set; }
         public ImplantLanguage Language { get; set; } = ImplantLanguage.CSharp;
-        public IList<Common.DotNetVersion> CompatibleDotNetVersions { get; set; } = new List<Common.DotNetVersion> { Common.DotNetVersion.Net35, Common.DotNetVersion.Net40 };
+        public IList<Common.DotNetVersion> CompatibleDotNetVersions { get; set; } = new List<Common.DotNetVersion> { Common.DotNetVersion.Net35, Common.DotNetVersion.Net40, Common.DotNetVersion.Net45 };
 
         public string Code { get; set; } = "";
         public bool Compiled { get; set; } = false;
@@ -204,6 +204,11 @@ namespace Covenant.Models.Grunts
             return File.ReadAllBytes(Common.CovenantTaskCSharpCompiledNet40Directory + this.Name + ".compiled");
         }
 
+        public byte[] GetCompressedILAssembly45()
+        {
+            return File.ReadAllBytes(Common.CovenantTaskCSharpCompiledNet45Directory + this.Name + ".compiled");
+        }
+
         public void Compile(Compiler.RuntimeIdentifier runtimeIdentifier = Compiler.RuntimeIdentifier.win_x64)
         {
             if (!this.Compiled)
@@ -217,6 +222,10 @@ namespace Covenant.Models.Grunts
                     else if (version == Common.DotNetVersion.Net40)
                     {
                         this.CompileDotNet40();
+                    }
+                    else if (version == Common.DotNetVersion.Net45)
+                    {
+                        this.CompileDotNet45();
                     }
                     else if (version == Common.DotNetVersion.NetCore31)
                     {
@@ -388,6 +397,92 @@ namespace Covenant.Models.Grunts
                         SourceDirectories = this.ReferenceSourceLibraries.Select(RSL => Common.CovenantReferenceSourceLibraries + RSL.Location).ToList(),
                         TargetDotNetVersion = Common.DotNetVersion.Net40,
                         References = references40,
+                        EmbeddedResources = resources,
+                        UnsafeCompile = this.UnsafeCompile,
+                        Confuse = this.Confuse,
+                        // TODO: Fix optimization to work with GhostPack
+                        Optimize = !this.ReferenceSourceLibraries.Select(RSL => RSL.Name).Contains("Seatbelt")
+                    }))
+                );
+            }
+        }
+
+        private void CompileDotNet45()
+        {
+            List<Compiler.EmbeddedResource> resources = this.EmbeddedResources.Select(ER =>
+            {
+                return new Compiler.EmbeddedResource
+                {
+                    Name = ER.Name,
+                    File = Common.CovenantEmbeddedResourcesDirectory + ER.Location,
+                    Platform = Platform.X64,
+                    Enabled = true
+                };
+            }).ToList();
+            this.ReferenceSourceLibraries.ToList().ForEach(RSL =>
+            {
+                resources.AddRange(
+                    RSL.EmbeddedResources.Select(ER =>
+                    {
+                        return new Compiler.EmbeddedResource
+                        {
+                            Name = ER.Name,
+                            File = Common.CovenantEmbeddedResourcesDirectory + ER.Location,
+                            Platform = Platform.X64,
+                            Enabled = true
+                        };
+                    })
+                );
+            });
+            List<Compiler.Reference> references45 = new List<Compiler.Reference>();
+            this.ReferenceSourceLibraries.ToList().ForEach(RSL =>
+            {
+                references45.AddRange(
+                    RSL.ReferenceAssemblies.Where(RA => RA.DotNetVersion == Common.DotNetVersion.Net45).Select(RA =>
+                    {
+                        return new Compiler.Reference { File = Common.CovenantAssemblyReferenceDirectory + RA.Location, Framework = Common.DotNetVersion.Net45, Enabled = true };
+                    })
+                );
+            });
+            references45.AddRange(
+                this.ReferenceAssemblies.Where(RA => RA.DotNetVersion == Common.DotNetVersion.Net45).Select(RA =>
+                {
+                    return new Compiler.Reference { File = Common.CovenantAssemblyReferenceDirectory + RA.Location, Framework = Common.DotNetVersion.Net45, Enabled = true };
+                })
+            );
+            #region testOutFile
+            if (this.Name.StartsWith("Sharpire") || this.Name.StartsWith("CSharpPS") || this.Name.StartsWith("CSharpPy"))
+            {
+                File.WriteAllBytes(Common.CovenantTaskCSharpCompiledNet45Directory + this.Name + ".exe",
+                    Compiler.Compile(new Compiler.CsharpFrameworkCompilationRequest
+                    {
+                        Language = this.Language,
+                        Source = this.Code,
+                        SourceDirectories = this.ReferenceSourceLibraries.Select(RSL => Common.CovenantReferenceSourceLibraries + RSL.Location).ToList(),
+                        TargetDotNetVersion = Common.DotNetVersion.Net45,
+                        References = references45,
+                        EmbeddedResources = resources,
+                        UnsafeCompile = this.UnsafeCompile,
+                        // TODO: Add debug option
+                        // OutputKind = OutputKind.ConsoleApplication,
+                        OutputKind = OutputKind.WindowsApplication,
+                        Confuse = this.Confuse,
+                        // TODO: Fix optimization to work with GhostPack. It also doesn't work with Sharpire. Not sure if this actuall works with anything...
+                        Optimize = !this.ReferenceSourceLibraries.Select(RSL => RSL.Name).Contains("Seatbelt")
+                    })
+                );
+            }
+            else
+            {
+                #endregion
+                File.WriteAllBytes(Common.CovenantTaskCSharpCompiledNet45Directory + this.Name + ".compiled",
+                    Utilities.Compress(Compiler.Compile(new Compiler.CsharpFrameworkCompilationRequest
+                    {
+                        Language = this.Language,
+                        Source = this.Code,
+                        SourceDirectories = this.ReferenceSourceLibraries.Select(RSL => Common.CovenantReferenceSourceLibraries + RSL.Location).ToList(),
+                        TargetDotNetVersion = Common.DotNetVersion.Net45,
+                        References = references45,
                         EmbeddedResources = resources,
                         UnsafeCompile = this.UnsafeCompile,
                         Confuse = this.Confuse,

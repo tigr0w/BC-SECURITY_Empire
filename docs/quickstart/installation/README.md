@@ -19,7 +19,7 @@ Note: The `main` branch is a reflection of the latest changes and may not always
 git clone --recursive https://github.com/BC-SECURITY/Empire.git
 cd Empire
 ./setup/checkout-latest-tag.sh
-./setup/install.sh
+./ps-empire install -y
 ```
 
 **Sponsors:**
@@ -28,7 +28,7 @@ cd Empire
 git clone --recursive https://github.com/BC-SECURITY/Empire-Sponsors.git
 cd Empire-Sponsors
 ./setup/checkout-latest-tag.sh sponsors
-./setup/install.sh
+./ps-empire install -y
 ```
 
 If you are using the sponsors version of Empire, it will pull the sponsors version of Starkiller.

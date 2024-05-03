@@ -63,9 +63,13 @@ options:
     required: false
     value: ''
   - name: UserAdminCount
-    description: Switch. Search for users with "(adminCount=1)" (meaning are/were privileged)
+    description: Search for users with "(adminCount=1)" (meaning are/were privileged)
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: UserIdentity
     description: Specifies one or more user identities to search for.
     required: false
@@ -79,13 +83,17 @@ options:
     required: false
     value: ''
   - name: StopOnSuccess
-    description: Switch. Stop hunting after finding after finding a target user.
+    description: Stop hunting after finding after finding a target user.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Delay
     description: Delay between enumerating hosts, defaults to 0.
     required: false
-    value: ''
+    value: '0'
   - name: Domain
     description: The domain to use for the query, defaults to the current domain.
     required: false
@@ -107,9 +115,13 @@ options:
     required: false
     value: ''
   - name: Tombstone
-    description: Switch. Specifies that the search should also return deleted/tombstoned objects.
+    description: Specifies that the search should also return deleted/tombstoned objects.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Jitter
     description: Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults to +/- 0.3.
     required: false

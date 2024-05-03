@@ -64,7 +64,18 @@ namespace Covenant.Core.Empire
                 });
             });
             ;
-         
+
+            Directory.GetFiles(Common.CovenantAssemblyReferenceNet45Directory).ToList().ForEach(R =>
+            {
+                FileInfo info = new FileInfo(R);
+                ReferenceAssemblies.Add(new ReferenceAssembly
+                {
+                    Name = info.Name,
+                    Location = info.FullName.Replace(Common.CovenantAssemblyReferenceDirectory, ""),
+                    DotNetVersion = Common.DotNetVersion.Net45
+                });
+            });
+
             service.CreateReferenceAssemblies(ReferenceAssemblies.ToArray());
 
             //Read in Embedded Resources like safetykatz
@@ -230,7 +241,6 @@ new ReferenceSourceLibraryReferenceAssembly { ReferenceSourceLibrary = sd, Refer
 // new ReferenceSourceLibraryReferenceAssembly { ReferenceSourceLibrary = sc, ReferenceAssembly = await service.GetReferenceAssemblyByName("System.XML.dll", Common.DotNetVersion.Net40) },
 // new ReferenceSourceLibraryReferenceAssembly { ReferenceSourceLibrary = sc, ReferenceAssembly = await service.GetReferenceAssemblyByName("System.Security.dll", Common.DotNetVersion.Net35) },
 // new ReferenceSourceLibraryReferenceAssembly { ReferenceSourceLibrary = sc, ReferenceAssembly = await service.GetReferenceAssemblyByName("System.Security.dll", Common.DotNetVersion.Net40) },
-
 
 new ReferenceSourceLibraryReferenceAssembly { ReferenceSourceLibrary = sdu, ReferenceAssembly = await service.GetReferenceAssemblyByName("mscorlib.dll", Common.DotNetVersion.Net35) },
 new ReferenceSourceLibraryReferenceAssembly { ReferenceSourceLibrary = sdu, ReferenceAssembly = await service.GetReferenceAssemblyByName("mscorlib.dll", Common.DotNetVersion.Net40) },

@@ -17,7 +17,7 @@ jobs:
           echo "TARGET_BRANCH=sponsors-main" >> $GITHUB_ENV
           echo "STARKILLER_TAG=${{ github.event.inputs.starkillerVersion }}-sponsors" >> $GITHUB_ENV
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: sponsors-main
           submodules: 'recursive'
@@ -58,7 +58,7 @@ jobs:
       - name: Push new branch
         run: git push origin ${{ env.RELEASE_BRANCH }}
       - name: Create pull request into ${{ env.TARGET_BRANCH }}
-        uses: thomaseizinger/create-pull-request@1.0.0
+        uses: thomaseizinger/create-pull-request@1.3.1
         with:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           head: ${{ env.RELEASE_BRANCH }}

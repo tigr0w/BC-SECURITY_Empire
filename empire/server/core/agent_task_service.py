@@ -355,7 +355,9 @@ class AgentTaskService:
         functions to retrieve tasks.
         """
 
-        id: int = 0  # We don't need an ID for these, but it is used in agents.py:1206, so we just initialize it to 0
+        id: int = (
+            0  # We don't need an ID for these, but it is used in agents.py:1206, so we just initialize it to 0
+        )
         agent_id: str
         task_name: str
         input_full: str

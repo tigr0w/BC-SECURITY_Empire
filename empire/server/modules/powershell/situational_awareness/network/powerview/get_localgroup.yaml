@@ -30,18 +30,30 @@ options:
     required: false
     value: Administrators
   - name: ListGroups
-    description: Switch. List all the local groups instead of their members.
+    description: List all the local groups instead of their members.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Recurse
-    description: Switch. If the local member member is a domain group, recursively try to resolve its members to get a list
+    description: If the local member member is a domain group, recursively try to resolve its members to get a list
       of domain users who can access this machine.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: API
-    description: Switch. Use API calls instead of the WinNT service provider. Less information, but the results are faster.
+    description: Use API calls instead of the WinNT service provider. Less information, but the results are faster.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

@@ -1,7 +1,11 @@
 from enum import Enum
 from typing import Annotated, Any
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+)
 
 from empire.server.core.db import models
 
@@ -22,25 +26,21 @@ class ValueType(str, Enum):
     file = "FILE"
 
 
+# Ensure the functionality of pydantic v1 coercing values to strings
+# https://github.com/pydantic/pydantic/issues/5606
+def coerce_to_string(v: Any):
+    if isinstance(v, list):
+        return [str(value) for value in v]
+    return str(v)
+
+
 class CustomOptionSchema(BaseModel):
     description: str
     required: bool
-    value: str
-    suggested_values: list[str]
+    value: Annotated[str, BeforeValidator(coerce_to_string)]
+    suggested_values: Annotated[list[str], BeforeValidator(coerce_to_string)]
     strict: bool
     value_type: ValueType
-
-    # Ensure the functionality of pydantic v1 coercing values to strings
-    # https://github.com/pydantic/pydantic/issues/5606
-    @field_validator("value", mode="plain")
-    @classmethod
-    def check_value(cls, v):
-        return str(v)
-
-    @field_validator("suggested_values", mode="plain")
-    @classmethod
-    def check_suggested_values(cls, v):
-        return [str(value) for value in v]
 
 
 class OrderDirection(str, Enum):

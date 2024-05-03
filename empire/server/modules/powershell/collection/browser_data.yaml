@@ -22,19 +22,30 @@ options:
     required: true
     value: ''
   - name: Browser
-    description: Which browser to dump data from. IE, Chrome, Firefox, All.
+    description: Which browser to dump data from
     required: false
-    value: All
+    value: 'All'
+    strict: true
+    suggested_values:
+      - All
+      - Chrome
+      - Firefox
+      - IE
   - name: DataType
-    description: Specify to search history or bookmarks. History, Bookmarks.
+    description: Specify to search history or bookmarks.
     required: false
-    value: All
+    value: 'All'
+    strict: true
+    suggested_values:
+      - All
+      - History
+      - Bookmarks
   - name: UserName
     description: Username on the host to search.
     required: false
     value: ''
   - name: Search
-    description: Specific a term to search for.
+    description: Specify a term to search for.
     required: false
     value: ''
   - name: OutputFunction

@@ -21,8 +21,12 @@ options:
     required: true
     value: ''
   - name: AllUsers
-    description: Switch. Log off all current users.
+    description: Log off all current users.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
 advanced:
   custom_generate: true

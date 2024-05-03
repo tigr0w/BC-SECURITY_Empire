@@ -31,9 +31,13 @@ options:
     required: true
     value: password
   - name: ConType
-    description: Connection type, choose "bind" or "reverse".
+    description: Connection type.
     required: true
-    value: bind
+    value: 'bind'
+    strict: true
+    suggested_values:
+      - bind
+      - reverse
   - name: IpAddress
     description: IP Address to use for reverse connection.
     required: false

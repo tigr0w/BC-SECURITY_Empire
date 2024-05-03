@@ -52,3 +52,6 @@
 [submodule "empire/server/plugins/Report-Generation-Plugin"]
 	path = empire/server/plugins/Report-Generation-Plugin
 	url = https://github.com/BC-SECURITY/Report-Generation-Plugin.git
+[submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Moriarty"]
+	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Moriarty
+	url = https://github.com/BC-SECURITY/Moriarty.git

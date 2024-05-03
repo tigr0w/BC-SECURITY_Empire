@@ -48,15 +48,23 @@ options:
   - name: UseSSL
     description: Force SSL useage.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: Threads
     description: The maximum concurrent threads to execute.
     required: false
     value: ''
   - name: NoPing
-    description: Switch. Disable ping check.
+    description: Disable ping check.
     required: false
-    value: ''
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false

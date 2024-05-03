@@ -87,9 +87,7 @@ class ObfuscationService:
 
         return db_obf_config, None
 
-    def preobfuscate_modules(
-        self, db: Session, db_obf_config: models.ObfuscationConfig, reobfuscate=False
-    ):
+    def preobfuscate_modules(self, language: str, reobfuscate=False):
         """
         Preobfuscate PowerShell module_source files
         """
@@ -98,17 +96,19 @@ class ObfuscationService:
             log.error(err)
             return err
 
-        files = self._get_module_source_files(db_obf_config.language)
+        with SessionLocal.begin() as db:
+            db_obf_config = self.get_obfuscation_config(db, language)
+            files = self._get_module_source_files(db_obf_config.language)
 
-        for file in files:
-            if reobfuscate or not self._is_obfuscated(file):
-                message = f"Obfuscating {os.path.basename(file)}..."
-                log.info(message)
-            else:
-                log.warning(
-                    f"{os.path.basename(file)} was already obfuscated. Not reobfuscating."
-                )
-            self.obfuscate_module(file, db_obf_config.command, reobfuscate)
+            for file in files:
+                if reobfuscate or not self._is_obfuscated(file):
+                    message = f"Obfuscating {os.path.basename(file)}..."
+                    log.info(message)
+                else:
+                    log.warning(
+                        f"{os.path.basename(file)} was already obfuscated. Not reobfuscating."
+                    )
+                self.obfuscate_module(file, db_obf_config.command, reobfuscate)
 
     # this is still written in a way that its only used for PowerShell
     # to make it work for other languages, we probably want to just pass in the db_obf_config

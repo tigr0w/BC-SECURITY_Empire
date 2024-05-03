@@ -3,6 +3,7 @@ Parse arguments.
 Life saver comment on separating the parser.
 https://stackoverflow.com/a/30217387
 """
+
 import argparse
 
 parent_parser = argparse.ArgumentParser()
@@ -12,6 +13,12 @@ server_parser = subparsers.add_parser("server", help="Launch Empire Server")
 client_parser = subparsers.add_parser("client", help="Launch Empire CLI")
 sync_starkiller_parser = subparsers.add_parser(
     "sync-starkiller", help="Sync Starkiller submodule with the config"
+)
+install_parser = subparsers.add_parser("install", help="Install the Empire framework")
+install_parser.add_argument(
+    "-y",
+    action="store_true",
+    help="Automatically say yes to all prompts during installation",
 )
 
 # Client Args

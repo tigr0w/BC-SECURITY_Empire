@@ -37,6 +37,10 @@ class Hooks:
     # Its arguments are (db: Session, agent: models.Agent)
     AFTER_AGENT_CHECKIN_HOOK = "after_agent_checkin_hook"
 
+    # This event is triggered each time an agent calls back to the server.
+    # Its arguments are (db: Session, agent_id: str)
+    AFTER_AGENT_CALLBACK_HOOK = "after_agent_callback_hook"
+
     # This event is triggered after a tag is created.
     # Its arguments are (db: Session, tag: models.Tag, taggable: Union[models.Agent, models.Listener, etc])
     AFTER_TAG_CREATED_HOOK = "after_tag_created_hook"
