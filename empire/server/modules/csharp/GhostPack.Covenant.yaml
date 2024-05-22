@@ -365,7 +365,7 @@
   TokenTask: false
   Options:
   - Name: Command
-    Value: ''
+    Value: 'audit'
     DefaultValue: ''
     Description: SharpUp command to execute.
     SuggestedValues:
@@ -610,7 +610,7 @@
   TokenTask: false
   Options:
   - Name: Command
-    Value: ''
+    Value: 'AntiVirus'
     DefaultValue: ''
     Description: Seatbelt command to execute.
     SuggestedValues:
@@ -854,7 +854,7 @@
   TokenTask: false
   Options:
   - Name: Command
-    Value: ''
+    Value: 'action=query'
     DefaultValue: ''
     Description: SharpWMI command to execute.
     SuggestedValues:
