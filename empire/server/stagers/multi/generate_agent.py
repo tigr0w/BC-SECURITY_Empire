@@ -18,10 +18,7 @@ class Stager:
             "Comments": [],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Language": {
                 "Description": "Language of the stager to generate (powershell, csharp).",
                 "Required": True,
@@ -108,13 +105,11 @@ class Stager:
         if not staged:
             launcher = self.mainMenu.stagers.generate_stageless(self.options)
         else:
-            # generate the PowerShell one-liner with all of the proper options set
             launcher = self.mainMenu.stagers.generate_launcher(
                 listener_name,
                 language=language,
                 encode=False,
-                obfuscate=obfuscate_script,
-                obfuscation_command=obfuscate_command,
+                obfuscate=False,
                 userAgent=user_agent,
                 proxy=proxy,
                 proxyCreds=proxy_creds,
@@ -129,5 +124,16 @@ class Stager:
             if not launcher or launcher.lower() == "failed":
                 log.error("[!] Error in launcher command generation.")
                 return ""
+
+        if obfuscate_script:
+            if language == "powershell":
+                launcher = self.mainMenu.obfuscationv2.obfuscate(
+                    launcher,
+                    obfuscation_command=obfuscate_command,
+                )
+                launcher = self.mainMenu.obfuscationv2.obfuscate_keywords(launcher)
+            elif language in ["python", "ironpython"]:
+                launcher = self.mainMenu.obfuscationv2.python_obfuscate(launcher)
+                launcher = self.mainMenu.obfuscationv2.obfuscate_keywords(launcher)
 
         return launcher
