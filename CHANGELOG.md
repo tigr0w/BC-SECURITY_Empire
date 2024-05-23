@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.10.3] - 2024-05-23
+
 ### Changed
 
 -   Updated the default value for Sharpup to audit (@Cx01N)
@@ -30,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed error for PrivExchange with missing System.XML.dll (@Cx01N)
 
 ### Removed
+
 -   Removed BypassUACGrunt due to compatibility with only Covenant (@Cx01N)
 -   Removed BypassUACCommand due to compatibility with only Covenant (@Cx01N) 
 
@@ -847,7 +850,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.3...HEAD
+
+[5.10.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.2...v5.10.3
 
 [5.10.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.1...v5.10.2
 
