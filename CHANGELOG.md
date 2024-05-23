@@ -14,6 +14,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.10.3] - 2024-05-23
+
+### Changed
+
+-   Updated the default value for Sharpup to audit (@Cx01N)
+-   Updated the default value for Seatbelt to AntiVirus (@Cx01N)
+-   Updated the default value for SharpWMI to action=query (@Cx01N)
+-   Updated the default value for SharpSC to action=query service= (@Cx01N)
+-   Updated GetSystem to require admin (@Cx01N)
+-   Updated the default value for Moriarty to --debug (@Cx01N)
+
+### Fixed
+
+-   Fixed issue with generate_agent having a mismatched function name for stageless (@Cx01N)
+-   Fixed parsing issue for C# portscan with commas (@Cx01N)
+-   Fixed error for PrivExchange with missing System.XML.dll (@Cx01N)
+
+### Removed
+
+-   Removed BypassUACGrunt due to compatibility with only Covenant (@Cx01N)
+-   Removed BypassUACCommand due to compatibility with only Covenant (@Cx01N) 
+
 ## [5.10.2] - 2024-05-05
 -   Updated Starkiller to v2.8.1
 
@@ -841,7 +863,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.3...HEAD
+
+[5.10.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.2...v5.10.3
 
 [5.10.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.1...v5.10.2
 

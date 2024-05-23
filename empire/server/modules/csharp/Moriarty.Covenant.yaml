@@ -48,7 +48,7 @@
   TokenTask: false
   Options:
   - Name: Command
-    Value: ''
+    Value: '--debug'
     DefaultValue: ''
     Description: Command to execute.
     SuggestedValues: []

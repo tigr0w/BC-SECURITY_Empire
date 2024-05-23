@@ -1450,7 +1450,7 @@
             try
             {
                 List<int> portList = new List<int>();
-                foreach (string entry in Ports.Split(','))
+                foreach (string entry in Ports.Split(';'))
                 {
                     if (entry.Contains("-"))
                     {
@@ -1485,9 +1485,9 @@
     DisplayInCommand: true
     FileOption: false
   - Name: Ports
-    Value: 80,443-445,3389
+    Value: 80; 443-445; 3389
     DefaultValue: ''
-    Description: Ports to scan. Comma-delimited port list, use hyphens for port ranges
+    Description: Ports to scan. Semicolon delimited port list, use hyphens for port ranges
     SuggestedValues: []
     Optional: false
     DisplayInCommand: true

@@ -441,7 +441,9 @@ class Listener:
                     launcherBase,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
+                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                    launcherBase
+                )
 
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -769,9 +771,6 @@ class Listener:
             # read in agent code
             with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
                 code = f.read()
-
-            # Get the random function name generated at install and patch the stager with the proper function name
-            code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             # strip out the comments and blank lines
             code = helpers.strip_powershell_comments(code)
