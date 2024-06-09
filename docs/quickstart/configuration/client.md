@@ -1,4 +1,7 @@
-# Client
+# CLI Client (LEGACY)
+
+[!NOTE]
+> The CLI Client was the first interface created for the Empire C2 suite but is no longer the recommended method of interacting with the Empire server. Starkiller has replaced the CLI client as a modern interface and is now the recommend method of interacting with the Empire server. 
 
 The Client configuration is managed via [empire/client/config.yaml](https://github.com/BC-SECURITY/Empire/blob/master/empire/client/config.yaml).
 
