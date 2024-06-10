@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+-   Converted C# server plugin to use plugin taskings (@Cx01N)
+
 ## [5.10.3] - 2024-05-23
 
 ### Changed
