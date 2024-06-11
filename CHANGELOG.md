@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+-   Added threaded jobs for powershell tasks using Appdomains (@Cx01N)
+-   Updated agents to track all tasks and removed only tracking jobs (@Cx01N)
+
+### Fixed
+-   Fixed issue in python agents where background jobs were failed due to a missing character (Cx01N)
+
 ### Changed
 -   Converted C# server plugin to use plugin taskings (@Cx01N)
 
