@@ -90,6 +90,9 @@ def reset():
         f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/netcoreapp3.0"
     )
 
+    if os.path.exists(empire_config.starkiller.directory):
+        shutil.rmtree(empire_config.starkiller.directory)
+
     # invoke obfuscation
     if os.path.exists(f"{INVOKE_OBFS_DST_DIR_BASE}"):
         shutil.rmtree(INVOKE_OBFS_DST_DIR_BASE)

@@ -59,7 +59,7 @@
   TokenTask: false
   Options:
   - Name: Command
-    Value: ''
+    Value: 'action=query service='
     DefaultValue: ''
     Description: SharpSC command to execute.
     SuggestedValues:
