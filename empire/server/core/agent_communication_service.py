@@ -48,9 +48,9 @@ class AgentCommunicationService:
         with SessionLocal() as db:
             db_agents = self.agent_service.get_all(db)
             for agent in db_agents:
-                self._add_agent_to_cache(agent)
+                self.add_agent_to_cache(agent)
 
-    def _add_agent_to_cache(self, agent: models.Agent):
+    def add_agent_to_cache(self, agent: models.Agent):
         self.agents[agent.session_id] = {
             "sessionKey": agent.session_key,
             "language": agent.language,
@@ -474,7 +474,7 @@ class AgentCommunicationService:
                             nonce=nonce,
                             listener=listenerName,
                         )
-                        self._add_agent_to_cache(agent)
+                        self.add_agent_to_cache(agent)
 
                         client_session_key = agent.session_key
                         data = f"{nonce}{client_session_key}"
@@ -539,7 +539,7 @@ class AgentCommunicationService:
                         listener=listenerName,
                         language=language,
                     )
-                    self._add_agent_to_cache(agent)
+                    self.add_agent_to_cache(agent)
 
                     # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
                     data = f"{nonce}{serverPub.publicKey}"

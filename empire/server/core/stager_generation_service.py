@@ -733,6 +733,8 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 language=language,
             )
 
+            self.agent_communication_service.add_agent_to_cache(agent)
+
             # update the agent with this new information
             self.agent_communication_service.update_agent_sysinfo(
                 db,
