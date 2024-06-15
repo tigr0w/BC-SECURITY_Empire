@@ -18,21 +18,6 @@ log = logging.getLogger(__name__)
 
 class Plugin(BasePlugin):
     def onLoad(self):
-        self.info = {
-            "Name": "csharpserver",
-            "Authors": [
-                {
-                    "Name": "Anthony Rose",
-                    "Handle": "@Cx01N",
-                    "Link": "https://twitter.com/Cx01N_",
-                }
-            ],
-            "Description": ("Empire C# server for agents."),
-            "Software": "",
-            "Techniques": [""],
-            "Comments": [],
-        }
-
         self.options = {
             "status": {
                 "Description": "Start/stop the Empire C# server.",
@@ -57,7 +42,7 @@ class Plugin(BasePlugin):
             input = "Stopping Empire C# server..."
 
         plugin_task = models.PluginTask(
-            plugin_id=self.info["Name"],
+            plugin_id=self.info.name,
             input=input,
             input_full=input,
             user_id=1,
@@ -151,7 +136,7 @@ class Plugin(BasePlugin):
     def record_task(self, status, task_output, task_input):
         with SessionLocal.begin() as db:
             plugin_task = models.PluginTask(
-                plugin_id=self.info["Name"],
+                plugin_id=self.info.name,
                 input=task_input,
                 input_full=task_input,
                 user_id=1,
@@ -184,7 +169,7 @@ class Plugin(BasePlugin):
             file_name = recv_message.split(":")[1]
         else:
             self.plugin_service.plugin_socketio_message(
-                self.info["Name"], ("[*] " + recv_message)
+                self.info.name, ("[*] " + recv_message)
             )
             file_name = "failed"
         s.close()
@@ -214,7 +199,7 @@ class Plugin(BasePlugin):
             file_name = recv_message.split(":")[1]
         else:
             self.plugin_service.plugin_socketio_message(
-                self.info["Name"], ("[*] " + recv_message)
+                self.info.name, ("[*] " + recv_message)
             )
             file_name = "failed"
         s.close()
