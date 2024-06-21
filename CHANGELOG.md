@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 -   Added threaded jobs for powershell tasks using Appdomains (@Cx01N)
+-   Added job tracking for all tasks in Sharpire (@Cx01N)
 -   Updated agents to track all tasks and removed only tracking jobs (@Cx01N)
 
 ### Fixed
