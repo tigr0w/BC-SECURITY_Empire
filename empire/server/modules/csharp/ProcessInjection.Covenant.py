@@ -64,7 +64,7 @@ class Module:
                 arch_type = 2
             elif arch == "both":
                 arch_type = 3
-            directory = f"{main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
+            directory = f"{main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
 
             if not donut:
                 return handle_error_message(
@@ -104,7 +104,7 @@ class Module:
 
         script_file = (
             main_menu.installPath
-            + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
+            + "/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/"
             + (params["DotNetVersion"]).lower()
             + "/"
             + file_name

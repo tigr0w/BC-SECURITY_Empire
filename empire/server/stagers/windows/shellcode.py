@@ -168,7 +168,7 @@ class Stager:
                     "module donut-shellcode not installed. It is only supported on x86."
                 )
 
-            directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
+            directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
             shellcode = donut.create(file=directory, arch=arch_type)
             return shellcode
 

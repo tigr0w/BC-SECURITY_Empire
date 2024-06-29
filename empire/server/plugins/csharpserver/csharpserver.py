@@ -86,17 +86,21 @@ class Plugin(BasePlugin):
                 # Will need to update this as we finalize the folder structure
                 server_dll = (
                     self.installPath
-                    + "/csharp/Covenant/bin/Debug/net6.0/EmpireCompiler.dll"
+                    + "/Empire-Compiler/EmpireCompiler/bin/Debug/net6.0/EmpireCompiler.dll"
                 )
                 # If dll hasn't been built yet
                 if not os.path.exists(server_dll):
-                    csharp_cmd = ["dotnet", "build", self.installPath + "/csharp/"]
+                    csharp_cmd = [
+                        "dotnet",
+                        "build",
+                        self.installPath + "/Empire-Compiler/EmpireCompiler/",
+                    ]
                     self.csharpserverbuild_proc = subprocess.call(csharp_cmd)
 
                 csharp_cmd = [
                     "dotnet",
                     self.installPath
-                    + "/csharp/Covenant/bin/Debug/net6.0/EmpireCompiler.dll",
+                    + "/Empire-Compiler/EmpireCompiler/bin/Debug/net6.0/EmpireCompiler.dll",
                 ]
 
                 self.csharpserver_proc = subprocess.Popen(

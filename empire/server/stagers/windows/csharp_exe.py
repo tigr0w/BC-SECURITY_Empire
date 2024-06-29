@@ -155,7 +155,7 @@ class Stager:
             return code
 
         elif language.lower() == "csharp":
-            directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
+            directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
             with open(directory, "rb") as f:
                 code = f.read()
             return code

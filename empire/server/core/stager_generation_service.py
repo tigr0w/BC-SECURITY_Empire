@@ -155,7 +155,7 @@ class StagerGenerationService:
         # Write text file to resources to be embedded
         with open(
             self.main_menu.installPath
-            + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
+            + "/Empire-Compiler/EmpireCompiler/Data/EmbeddedResources/launcher.txt",
             "w",
         ) as f:
             f.write(posh_code)
@@ -168,7 +168,7 @@ class StagerGenerationService:
                 stager_yaml, "CSharpPS", confuse=obfuscate
             )
 
-        directory = f"{self.main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
+        directory = f"{self.main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
         return directory
 
     def generate_powershell_shellcode(
@@ -252,7 +252,7 @@ class StagerGenerationService:
         # Write text file to resources to be embedded
         with open(
             self.main_menu.installPath
-            + "/csharp/Covenant/Data/EmbeddedResources/launcher.txt",
+            + "/Empire-Compiler/EmpireCompiler/Data/EmbeddedResources/launcher.txt",
             "w",
         ) as f:
             f.write(python_code)
@@ -265,7 +265,7 @@ class StagerGenerationService:
                 stager_yaml, "CSharpPy", confuse=obfuscate
             )
 
-        directory = f"{self.main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
+        directory = f"{self.main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
         return directory
 
     def generate_python_shellcode(

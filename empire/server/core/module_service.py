@@ -257,7 +257,7 @@ class ModuleService:
 
         script_file = (
             self.main_menu.installPath
-            + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
+            + "/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/"
             + "net40"
             + "/"
             + file_name
@@ -511,7 +511,7 @@ class ModuleService:
 
             script_file = (
                 self.main_menu.installPath
-                + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
+                + "/csharp/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/"
                 + (params["DotNetVersion"]).lower()
                 + "/"
                 + file_name

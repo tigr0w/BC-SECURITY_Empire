@@ -37,7 +37,7 @@ class Module:
 
         script_file = (
             main_menu.installPath
-            + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
+            + "/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/"
             + (params["DotNetVersion"]).lower()
             + "/"
             + file_name

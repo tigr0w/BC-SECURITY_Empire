@@ -66,7 +66,9 @@ def setup_logging(args):
         log.error("Permission denied. You need root privileges to change file owner.")
 
 
-CSHARP_DIR_BASE = os.path.join(os.path.dirname(__file__), "csharp/Covenant")
+CSHARP_DIR_BASE = os.path.join(
+    os.path.dirname(__file__), "Empire-Compiler/EmpireCompiler"
+)
 INVOKE_OBFS_SRC_DIR_BASE = os.path.join(
     os.path.dirname(__file__), "data/Invoke-Obfuscation"
 )

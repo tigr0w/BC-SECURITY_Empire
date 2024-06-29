@@ -909,7 +909,7 @@ class Listener:
                     proxy=proxy,
                     proxy_creds=proxyCreds,
                 )
-                directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
+                directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
                 with open(directory, "rb") as f:
                     code = f.read()
                 return code
