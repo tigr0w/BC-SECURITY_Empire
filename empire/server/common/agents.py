@@ -267,9 +267,7 @@ class Agents:
             # fix for 'skywalker' exploit by @zeroSteiner
             safe_path = download_dir.absolute()
             if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
-                message = "Agent {} attempted skywalker exploit! Attempted overwrite of {} with data {}".format(
-                    sessionID, path, data
-                )
+                message = f"Agent {sessionID} attempted skywalker exploit! Attempted overwrite of {path} with data {data}"
                 log.warning(message)
                 return
 
@@ -371,9 +369,7 @@ class Agents:
 
             # fix for 'skywalker' exploit by @zeroSteiner
             if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
-                message = "agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
-                    sessionID, path, data
-                )
+                message = f"agent {sessionID} attempted skywalker exploit!\n[!] attempted overwrite of {path} with data {data}"
                 log.warning(message)
                 return
 
@@ -896,7 +892,7 @@ class Agents:
                 if (len(message) < 1000) or (len(message) > 2500):
                     message = f"Invalid Python key post format from {sessionID}"
                     log.error(message)
-                    return "Error: Invalid Python key post format from %s" % (sessionID)
+                    return f"Error: Invalid Python key post format from {sessionID}"
                 else:
                     try:
                         int(message)
@@ -1033,14 +1029,7 @@ class Agents:
 
             slack_webhook_url = listenerOptions["SlackURL"]["Value"]
             if slack_webhook_url != "":
-                slack_text = ":biohazard_sign: NEW AGENT :biohazard_sign:\r\n```Machine Name: {}\r\nInternal IP: {}\r\nExternal IP: {}\r\nUser: {}\r\nOS Version: {}\r\nAgent ID: {}```".format(
-                    hostname,
-                    internal_ip,
-                    external_ip,
-                    username,
-                    os_details,
-                    sessionID,
-                )
+                slack_text = f":biohazard_sign: NEW AGENT :biohazard_sign:\r\n```Machine Name: {hostname}\r\nInternal IP: {internal_ip}\r\nExternal IP: {external_ip}\r\nUser: {username}\r\nOS Version: {os_details}\r\nAgent ID: {sessionID}```"
                 helpers.slackMessage(slack_webhook_url, slack_text)
 
             # signal everyone that this agent is now active
@@ -1622,11 +1611,8 @@ class Agents:
             file_data = helpers.decode_base64(data[20:])
 
             # save the file off to the appropriate path
-            save_path = "{}/{}_{}.{}".format(
-                prefix,
-                agent.hostname,
-                helpers.get_file_datetime(),
-                extension,
+            save_path = (
+                f"{prefix}/{agent.hostname}_{helpers.get_file_datetime()}.{extension}"
             )
             final_save_path = self.save_module_file(
                 session_id, save_path, file_data, agent.language
@@ -1748,11 +1734,8 @@ class Agents:
             file_data = helpers.decode_base64(data[20:])
 
             # save the file off to the appropriate path
-            save_path = "{}/{}_{}.{}".format(
-                prefix,
-                agent.hostname,
-                helpers.get_file_datetime(),
-                extension,
+            save_path = (
+                f"{prefix}/{agent.hostname}_{helpers.get_file_datetime()}.{extension}"
             )
             final_save_path = self.save_module_file(
                 session_id, save_path, file_data, agent.language

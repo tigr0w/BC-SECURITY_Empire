@@ -20,7 +20,7 @@ class Module:
         )
         if not active_listener:
             return handle_error_message(
-                "[!] Listener '%s' doesn't exist!" % (listener_name)
+                f"[!] Listener '{listener_name}' doesn't exist!"
             )
 
         listener_options = active_listener.options
@@ -30,12 +30,7 @@ class Module:
         ).generate_comms(listenerOptions=listener_options, language="powershell")
 
         # signal the existing listener that we're switching listeners, and the new comms code
-        script = (
-            "Send-Message -Packets $(Encode-Packet -Type 130 -Data '{}');\n{}".format(
-                listener_name,
-                script,
-            )
-        )
+        script = f"Send-Message -Packets $(Encode-Packet -Type 130 -Data '{listener_name}');\n{script}"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

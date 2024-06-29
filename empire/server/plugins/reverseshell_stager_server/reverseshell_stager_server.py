@@ -236,7 +236,7 @@ class Plugin(Plugin):
             return f"[!] Can't bind at {host}:{port}"
 
         self.plugin_service.plugin_socketio_message(
-            self.info["Name"], "[*] Listening on %s ..." % port
+            self.info["Name"], f"[*] Listening on {port} ..."
         )
         server.listen(5)
 

@@ -39,7 +39,7 @@ class Listener:
             "Host": {
                 "Description": "Hostname/IP for staging.",
                 "Required": True,
-                "Value": "http://%s" % (helpers.lhost()),
+                "Value": f"http://{helpers.lhost()}",
             },
             "BindIP": {
                 "Description": "The IP to bind to on the control server.",
@@ -260,9 +260,9 @@ class Listener:
         if language:
             if language.lower() == "powershell":
                 updateServers = """
-                    $Script:ControlServers = @("%s");
+                    $Script:ControlServers = @("{}");
                     $Script:ServerIndex = 0;
-                """ % (
+                """.format(
                     listenerOptions["Host"]["Value"]
                 )
 

@@ -151,7 +151,7 @@ class Stager:
                 launcher = imports_str + "\n" + launcher
 
                 with open(binary_file_str + ".py", "w") as text_file:
-                    text_file.write("%s" % launcher)
+                    text_file.write(f"{launcher}")
 
                 output_str = subprocess.run(
                     [

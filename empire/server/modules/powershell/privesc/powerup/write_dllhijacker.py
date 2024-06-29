@@ -54,8 +54,8 @@ class Module:
 
         else:
             out_file = params["DllPath"]
-            script_end += ' -Command "%s"' % (launcher)
-            script_end += " -DllPath %s" % (out_file)
+            script_end += f' -Command "{launcher}"'
+            script_end += f" -DllPath {out_file}"
 
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (

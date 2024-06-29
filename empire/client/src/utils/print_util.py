@@ -64,8 +64,7 @@ def title(version, server, modules, listeners, agents):
         "========================================================================================"
     )
     print(
-        " [\x1b[1;32mVersion\x1b[0m] %s | [Web] https://github.com/BC-SECURITY/Empire"
-        % version
+        f" [\x1b[1;32mVersion\x1b[0m] {version} | [Web] https://github.com/BC-SECURITY/Empire"
     )
     print(
         "========================================================================================"

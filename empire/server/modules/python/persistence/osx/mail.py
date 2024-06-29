@@ -28,7 +28,7 @@ class Module:
         )
         launcher = launcher.replace('"', '\\"')
         launcher = launcher.replace('"', '\\"')
-        launcher = 'do shell script "%s"' % (launcher)
+        launcher = f'do shell script "{launcher}"'
         hex = "0123456789ABCDEF"
 
         def UUID():

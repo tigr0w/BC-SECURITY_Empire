@@ -20,10 +20,10 @@ class Module:
             script = "netsh trace stop"
 
         else:
-            script = "netsh trace start capture=yes traceFile=%s" % (trace_file)
+            script = f"netsh trace start capture=yes traceFile={trace_file}"
 
             if max_size != "":
-                script += " maxSize=%s" % (max_size)
+                script += f" maxSize={max_size}"
 
             if persistent != "":
                 script += " persistent=yes"

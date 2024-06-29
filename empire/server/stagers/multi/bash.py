@@ -86,7 +86,7 @@ class Stager:
 
         else:
             script = "#!/bin/bash\n"
-            script += "%s\n" % (launcher)
+            script += f"{launcher}\n"
             script += 'rm -f "$0"\n'
             script += "exit\n"
             return script

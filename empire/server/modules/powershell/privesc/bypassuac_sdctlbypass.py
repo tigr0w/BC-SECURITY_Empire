@@ -51,7 +51,7 @@ class Module:
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")
             else:
-                script_end = 'Invoke-SDCLTBypass -Command "%s"' % (enc_script)
+                script_end = f'Invoke-SDCLTBypass -Command "{enc_script}"'
                 script = main_menu.modulesv2.finalize_module(
                     script=script,
                     script_end=script_end,

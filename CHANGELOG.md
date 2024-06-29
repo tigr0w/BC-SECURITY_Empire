@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 -   Converted C# server plugin to use plugin taskings (@Cx01N)
+-   Upgraded Ruff to 0.5.0 and Black to 24.4.2 (@Vinnybod)
 
 ## [5.10.3] - 2024-05-23
 
