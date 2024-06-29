@@ -71,9 +71,7 @@ class Module:
                 launcher_code = launcher.split(" ")[-1]
 
                 script_end += (
-                    "Invoke-ReflectivePEInjection -PEPath {} -ProcName {} ".format(
-                        full_upload_path, proc_name
-                    )
+                    f"Invoke-ReflectivePEInjection -PEPath {full_upload_path} -ProcName {proc_name} "
                 )
                 dll = main_menu.stagergenv2.generate_dll(launcher_code, arch)
                 upload_script = main_menu.stagergenv2.generate_upload(

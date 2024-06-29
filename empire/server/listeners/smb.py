@@ -159,10 +159,7 @@ class Listener:
                         headerKey = header.split(":")[0]
                         headerValue = header.split(":")[1]
                         # launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
-                        launcherBase += 'req.add_header("{}","{}");\n'.format(
-                            headerKey,
-                            headerValue,
-                        )
+                        launcherBase += f'req.add_header("{headerKey}","{headerValue}");\n'
 
                 if proxy.lower() != "none":
                     if proxy.lower() == "default":
