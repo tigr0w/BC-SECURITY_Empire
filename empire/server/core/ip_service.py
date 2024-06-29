@@ -67,10 +67,7 @@ class IpService:
         if self.deny_list and self._ip_is_in(ip_address, self.deny_list):
             return False
 
-        if self.allow_list and not self._ip_is_in(ip_address, self.allow_list):
-            return False
-
-        return True
+        return not (self.allow_list and not self._ip_is_in(ip_address, self.allow_list))
 
     def _ip_is_in(self, ip_address: str | netaddr.IPAddress, ip_list: IPSet):
         if isinstance(ip_address, str):

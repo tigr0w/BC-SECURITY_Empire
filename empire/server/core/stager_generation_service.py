@@ -113,12 +113,12 @@ class StagerGenerationService:
 
         # read in original DLL and patch the bytes based on arch
         if arch.lower() == "x86":
-            origPath = "%s/data/misc/ReflectivePick_x86_orig.dll" % (
-                self.main_menu.installPath
+            origPath = (
+                f"{self.main_menu.installPath}/data/misc/ReflectivePick_x86_orig.dll"
             )
         else:
-            origPath = "%s/data/misc/ReflectivePick_x64_orig.dll" % (
-                self.main_menu.installPath
+            origPath = (
+                f"{self.main_menu.installPath}/data/misc/ReflectivePick_x64_orig.dll"
             )
 
         if os.path.isfile(origPath):
@@ -297,9 +297,7 @@ class StagerGenerationService:
 
         MH_EXECUTE = 2
         # with open(self.installPath + "/data/misc/machotemplate", 'rb') as f:
-        with open(
-            "%s/data/misc/machotemplate" % (self.main_menu.installPath), "rb"
-        ) as f:
+        with open(f"{self.main_menu.installPath}/data/misc/machotemplate", "rb") as f:
             macho = macholib.MachO.MachO(f.name)
 
             if int(macho.headers[0].header.filetype) != MH_EXECUTE:
@@ -463,7 +461,7 @@ class StagerGenerationService:
             if app_name == "":
                 app_name = "launcher"
 
-            tmpdir = "/tmp/application/%s.app/" % app_name
+            tmpdir = f"/tmp/application/{app_name}.app/"
             shutil.copytree(directory, tmpdir)
             with open(tmpdir + "Contents/MacOS/launcher", "wb") as f:
                 if disarm is not True:
@@ -479,9 +477,9 @@ class StagerGenerationService:
 
             os.rename(
                 tmpdir + "Contents/MacOS/launcher",
-                tmpdir + "Contents/MacOS/%s" % app_name,
+                tmpdir + f"Contents/MacOS/{app_name}",
             )
-            os.chmod(tmpdir + "Contents/MacOS/%s" % app_name, 0o755)
+            os.chmod(tmpdir + f"Contents/MacOS/{app_name}", 0o755)
 
             if icon != "":
                 iconfile = os.path.splitext(icon)[0].split("/")[-1]

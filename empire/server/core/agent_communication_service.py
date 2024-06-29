@@ -1266,7 +1266,9 @@ class AgentCommunicationService:
             file_data = helpers.decode_base64(data[20:])
 
             # save the file off to the appropriate path
-            save_path = f"{prefix}/{agent.hostname}_{helpers.get_file_datetime()}.{extension}"
+            save_path = (
+                f"{prefix}/{agent.hostname}_{helpers.get_file_datetime()}.{extension}"
+            )
             final_save_path = self.save_module_file(
                 session_id, save_path, file_data, agent.language
             )

