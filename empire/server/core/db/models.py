@@ -143,7 +143,7 @@ class User(Base):
     avatar_id = Column(Integer, ForeignKey("downloads.id"), nullable=True)
 
     def __repr__(self):
-        return "<User(username='%s')>" % (self.username)
+        return f"<User(username='{self.username}')>"
 
 
 class Listener(Base):
@@ -159,7 +159,7 @@ class Listener(Base):
     tags = relationship("Tag", secondary=listener_tag_assc)
 
     def __repr__(self):
-        return "<Listener(name='%s')>" % (self.name)
+        return f"<Listener(name='{self.name}')>"
 
 
 class Host(Base):
@@ -343,7 +343,7 @@ class Credential(Base):
     tags = relationship("Tag", secondary=credential_tag_assc)
 
     def __repr__(self):
-        return "<Credential(id='%s')>" % (self.id)
+        return f"<Credential(id='{self.id}')>"
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -414,7 +414,7 @@ class AgentTask(Base):
     tags = relationship("Tag", secondary=agent_task_tag_assc)
 
     def __repr__(self):
-        return "<AgentTask(id='%s')>" % (self.id)
+        return f"<AgentTask(id='{self.id}')>"
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -452,7 +452,7 @@ class PluginTask(Base):
     tags = relationship("Tag", secondary=plugin_task_tag_assc)
 
     def __repr__(self):
-        return "<PluginTask(id='%s')>" % (self.id)
+        return f"<PluginTask(id='{self.id}')>"
 
 
 class Reporting(Base):
@@ -465,7 +465,7 @@ class Reporting(Base):
     taskID = Column(Integer, ForeignKey("agent_tasks.id"))
 
     def __repr__(self):
-        return "<Reporting(id='%s')>" % (self.id)
+        return f"<Reporting(id='{self.id}')>"
 
 
 class Keyword(Base):
@@ -479,7 +479,7 @@ class Keyword(Base):
     )
 
     def __repr__(self):
-        return "<KeywordReplacement(id='%s')>" % (self.id)
+        return f"<KeywordReplacement(id='{self.id}')>"
 
 
 class Module(Base):

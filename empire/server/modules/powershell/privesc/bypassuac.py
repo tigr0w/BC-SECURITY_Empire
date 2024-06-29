@@ -50,7 +50,7 @@ class Module:
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")
             else:
-                script_end = 'Invoke-BypassUAC -Command "%s"' % (launcher)
+                script_end = f'Invoke-BypassUAC -Command "{launcher}"'
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

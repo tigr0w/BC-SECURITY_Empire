@@ -13,12 +13,10 @@ bindings = KeyBindings()
 
 @Condition
 def ctrl_c_filter():
-    if (
+    return bool(
         menu_state.current_menu_name == "ChatMenu"
         or menu_state.current_menu_name == "ShellMenu"
-    ):
-        return True
-    return False
+    )
 
 
 @bindings.add("c-c", filter=ctrl_c_filter)

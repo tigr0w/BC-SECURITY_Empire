@@ -164,7 +164,7 @@ class Stager:
         return shell
 
     def generate_shellcode(self, msf_format, arch, launcher):
-        print("[*] Generating Shellcode %s" % arch)
+        print(f"[*] Generating Shellcode {arch}")
 
         if arch == "x64":
             msf_payload = "windows/x64/exec"

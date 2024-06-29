@@ -75,11 +75,7 @@ class Module:
         else:
             Cmd = "%COMSPEC% /C start /b " + command.replace('"', '\\"')
 
-        script_end = "Invoke-DCOM -ComputerName {} -Method {} -Command '{}'".format(
-            computer_name,
-            method,
-            Cmd,
-        )
+        script_end = f"Invoke-DCOM -ComputerName {computer_name} -Method {method} -Command '{Cmd}'"
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

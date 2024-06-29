@@ -177,7 +177,7 @@ Process p=Runtime.getRuntime().exec("'''
 
             zip_data.writestr("META-INF/MANIFEST.MF", manifest)
             zip_data.writestr("WEB-INF/web.xml", wxml_code)
-            zip_data.writestr("%s.jsp" % (app_name), jsp_code)
+            zip_data.writestr(f"{app_name}.jsp", jsp_code)
             zip_data.close()
 
             return war_file.getvalue()

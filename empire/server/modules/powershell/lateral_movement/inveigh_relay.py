@@ -55,9 +55,7 @@ class Module:
                     return handle_error_message("[!] Error in launcher generation.")
 
         # set defaults for Empire
-        script_end = "\n" + 'Invoke-InveighRelay -Tool "2" -Command \\"%s\\"' % (
-            command
-        )
+        script_end = "\n" + f'Invoke-InveighRelay -Tool "2" -Command \\"{command}\\"'
 
         for option, values in params.items():
             if (

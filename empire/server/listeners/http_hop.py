@@ -560,7 +560,7 @@ class Listener:
                 self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
             )
 
-            hopCodeLocation = "%s/data/misc/hop.php" % (self.mainMenu.installPath)
+            hopCodeLocation = f"{self.mainMenu.installPath}/data/misc/hop.php"
             with open(hopCodeLocation) as f:
                 hopCode = f.read()
 

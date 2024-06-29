@@ -534,7 +534,7 @@ class Listener:
             headers = s.headers.copy()
             headers["Authorization"] = "Bearer " + token
 
-            request = s.get("%s/drive" % base_url, headers=headers)
+            request = s.get(f"{base_url}/drive", headers=headers)
 
             return request.ok
 
@@ -553,7 +553,7 @@ class Listener:
                     "name": base_folder,
                 }
                 base_object = s.post(
-                    "%s/drive/items/root/children" % base_url, json=params
+                    f"{base_url}/drive/items/root/children", json=params
                 )
             else:
                 message = f"{listener_name}: {base_folder} folder already exists"
@@ -608,8 +608,9 @@ class Listener:
                     headers={"Content-Type": "application/json"},
                 )
                 _launcher_url = (
-                    "https://api.onedrive.com/v1.0/shares/%s/driveitem/content"
-                    % r.json()["shareId"]
+                    "https://api.onedrive.com/v1.0/shares/{}/driveitem/content".format(
+                        r.json()["shareId"]
+                    )
                 )
 
         def upload_stager():
@@ -633,8 +634,9 @@ class Listener:
                     headers={"Content-Type": "application/json"},
                 )
                 stager_url = (
-                    "https://api.onedrive.com/v1.0/shares/%s/driveitem/content"
-                    % r.json()["shareId"]
+                    "https://api.onedrive.com/v1.0/shares/{}/driveitem/content".format(
+                        r.json()["shareId"]
+                    )
                 )
                 # Different domain for some reason?
                 self.stager_url = stager_url
@@ -717,9 +719,7 @@ class Listener:
                     self.token["update"] = False
 
                 search = s.get(
-                    "{}/drive/root:/{}/{}?expand=children".format(
-                        base_url, base_folder, staging_folder
-                    )
+                    f"{base_url}/drive/root:/{base_folder}/{staging_folder}?expand=children"
                 )
                 for item in search.json()[
                     "children"
@@ -746,9 +746,7 @@ class Listener:
                             message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {len(return_val)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
-                                "{}/drive/root:/{}/{}/{}_2.txt:/content".format(
-                                    base_url, base_folder, staging_folder, agent_name
-                                ),
+                                f"{base_url}/drive/root:/{base_folder}/{staging_folder}/{agent_name}_2.txt:/content",
                                 data=return_val,
                             )
                             message = f"{listener_name} Deleting {base_folder}/{staging_folder}/{item['name']}"
@@ -795,9 +793,7 @@ class Listener:
                             message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_4.txt, {len(enc_code)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
-                                "{}/drive/root:/{}/{}/{}_4.txt:/content".format(
-                                    base_url, base_folder, staging_folder, agent_name
-                                ),
+                                f"{base_url}/drive/root:/{base_folder}/{staging_folder}/{agent_name}_4.txt:/content",
                                 data=enc_code,
                             )
                             message = f"{listener_name}: Deleting {base_folder}/{staging_folder}/{item['name']}"
@@ -822,9 +818,7 @@ class Listener:
                     if task_data:
                         try:
                             r = s.get(
-                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
-                                    base_url, base_folder, taskings_folder, agent_id
-                                )
+                                f"{base_url}/drive/root:/{base_folder}/{taskings_folder}/{agent_id}.txt:/content"
                             )
                             if (
                                 r.status_code == 200
@@ -835,9 +829,7 @@ class Listener:
                             self.instance_log.info(message)
 
                             r = s.put(
-                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
-                                    base_url, base_folder, taskings_folder, agent_id
-                                ),
+                                f"{base_url}/drive/root:/{base_folder}/{taskings_folder}/{agent_id}.txt:/content",
                                 data=task_data,
                             )
                         except Exception as e:
@@ -845,9 +837,7 @@ class Listener:
                             self.instance_log.error(message, exc_info=True)
 
                 search = s.get(
-                    "{}/drive/root:/{}/{}?expand=children".format(
-                        base_url, base_folder, results_folder
-                    )
+                    f"{base_url}/drive/root:/{base_folder}/{results_folder}?expand=children"
                 )
                 for item in search.json()[
                     "children"
@@ -862,9 +852,7 @@ class Listener:
                                 f"{listener_name}: Invalid agent, deleting {results_folder}/{item['name']} and restaging"
                             )
                             s.put(
-                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
-                                    base_url, base_folder, taskings_folder, agent_id
-                                ),
+                                f"{base_url}/drive/root:/{base_folder}/{taskings_folder}/{agent_id}.txt:/content",
                                 data="RESTAGE",
                             )
                             s.delete("{}/drive/items/{}".format(base_url, item["id"]))

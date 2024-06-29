@@ -53,7 +53,7 @@ class Listener:
             "Host": {
                 "Description": "Hostname/IP for staging.",
                 "Required": True,
-                "Value": "http://%s" % (helpers.lhost()),
+                "Value": f"http://{helpers.lhost()}",
             },
             "BindIP": {
                 "Description": "The IP to bind to on the control server.",
@@ -1241,8 +1241,8 @@ class Listener:
 
                 context = ssl.SSLContext(proto)
                 context.load_cert_chain(
-                    "%s/empire-chain.pem" % (certPath),
-                    "%s/empire-priv.key" % (certPath),
+                    f"{certPath}/empire-chain.pem",
+                    f"{certPath}/empire-priv.key",
                 )
 
                 if ja3_evasion:

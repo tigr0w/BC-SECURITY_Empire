@@ -51,7 +51,7 @@ class Module:
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")
             else:
-                script_end = 'Invoke-EventVwrBypass -Command "%s"' % (encScript)
+                script_end = f'Invoke-EventVwrBypass -Command "{encScript}"'
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

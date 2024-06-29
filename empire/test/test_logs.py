@@ -25,7 +25,7 @@ def test_simple_log_format(monkeypatch):
         filter(lambda h: type(h) == logging.StreamHandler, logging.getLogger().handlers)
     )
 
-    assert type(stream_handler.formatter) == ColorFormatter
+    assert isinstance(stream_handler.formatter, ColorFormatter)
     assert stream_handler.formatter._fmt == SIMPLE_LOG_FORMAT
 
 
@@ -53,7 +53,7 @@ def test_extended_log_format(monkeypatch):
         filter(lambda h: type(h) == logging.StreamHandler, logging.getLogger().handlers)
     )
 
-    assert type(stream_handler.formatter) == ColorFormatter
+    assert isinstance(stream_handler.formatter, ColorFormatter)
     assert stream_handler.formatter._fmt == LOG_FORMAT
 
 

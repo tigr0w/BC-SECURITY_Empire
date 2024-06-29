@@ -13,21 +13,21 @@ class Module:
     ) -> str:
         script = "\n"
         for item in ["ctypes", "threading", "sys", "os", "errno", "base64"]:
-            script += "import %s \n" % item
+            script += f"import {item} \n"
         savePath = params["SavePath"]
         Debug = params["Debug"]
         maxPackets = params["MaxPackets"]
         libcPath = params["LibcDylib"]
         pcapPath = params["PcapDylib"]
         if params["CaptureInterface"]:
-            script += "INTERFACE = '%s' \n" % params["CaptureInterface"]
+            script += "INTERFACE = '{}' \n".format(params["CaptureInterface"])
         else:
             script += "INTERFACE = '' \n"
-        script += "DEBUG = %s \n" % Debug
-        script += "PCAP_FILENAME = '%s' \n" % savePath
-        script += "PCAP_CAPTURE_COUNT = %s \n" % maxPackets
-        script += "OSX_PCAP_DYLIB = '%s' \n" % pcapPath
-        script += "OSX_LIBC_DYLIB = '%s' \n" % libcPath
+        script += f"DEBUG = {Debug} \n"
+        script += f"PCAP_FILENAME = '{savePath}' \n"
+        script += f"PCAP_CAPTURE_COUNT = {maxPackets} \n"
+        script += f"OSX_PCAP_DYLIB = '{pcapPath}' \n"
+        script += f"OSX_LIBC_DYLIB = '{libcPath}' \n"
 
         script += R"""
 IN_MEMORY = False

@@ -36,14 +36,9 @@ print(os.popen('osascript -e \\\'display dialog "Software Update requires that y
 
             else:
                 # osascript prompt for the specific application
-                script = """
+                script = f"""
 import os
-print(os.popen('osascript -e \\\'tell app "{}" to activate\\\' -e \\\'tell app "{}" to display dialog "{} requires your password to continue." & return  default answer "" with icon 1 with hidden answer with title "{} Alert"\\\'').read())
-""".format(
-                    appName,
-                    appName,
-                    appName,
-                    appName,
-                )
+print(os.popen('osascript -e \\\'tell app "{appName}" to activate\\\' -e \\\'tell app "{appName}" to display dialog "{appName} requires your password to continue." & return  default answer "" with icon 1 with hidden answer with title "{appName} Alert"\\\'').read())
+"""
 
         return script
