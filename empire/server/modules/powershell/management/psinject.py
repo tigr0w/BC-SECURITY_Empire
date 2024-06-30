@@ -54,9 +54,10 @@ class Module:
                 proxyCreds=proxy_creds,
                 bypasses=params["Bypasses"],
             )
+            MAX_LAUNCHER_LEN = 5952
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")
-            elif len(launcher) > 5952:
+            elif len(launcher) > MAX_LAUNCHER_LEN:
                 return handle_error_message("[!] Launcher string is too long!")
             else:
                 launcher_code = launcher.split(" ")[-1]

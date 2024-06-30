@@ -121,7 +121,7 @@ class Credentials:
 
             return results
 
-    def add_credential(
+    def add_credential(  # noqa: PLR0913
         self, credtype, domain, username, password, host, os="", sid="", notes=""
     ):
         """

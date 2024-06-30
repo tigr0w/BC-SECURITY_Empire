@@ -3,7 +3,7 @@ import logging
 
 import websockify
 
-import empire.server.common.helpers as helpers
+from empire.server.common import helpers
 from empire.server.common.plugins import Plugin
 from empire.server.core.plugin_service import PluginService
 
@@ -129,4 +129,3 @@ class Plugin(Plugin):
     def shutdown(self):
         with contextlib.suppress(Exception):
             self.websockify_proc.kill()
-        return

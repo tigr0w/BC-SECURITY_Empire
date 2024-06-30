@@ -1,6 +1,7 @@
 from textwrap import dedent
 
 import pytest
+from starlette import status
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -15,12 +16,13 @@ def cleanup_stagers(session_local, models):
 
 
 def test_get_stager_templates(client, admin_auth_header):
+    min_stagers = 36
     response = client.get(
         "/api/v2/stager-templates/",
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
-    assert len(response.json()["records"]) == 36
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["records"]) == min_stagers
 
 
 def test_get_stager_template(client, admin_auth_header):
@@ -28,7 +30,7 @@ def test_get_stager_template(client, admin_auth_header):
         "/api/v2/stager-templates/multi_launcher",
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["name"] == "Launcher"
     assert response.json()["id"] == "multi_launcher"
     assert isinstance(response.json()["options"], dict)
@@ -41,7 +43,7 @@ def test_create_stager_validation_fails_required_field(
     response = client.post(
         "/api/v2/stagers/", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "required option missing: Listener"
 
 
@@ -52,7 +54,7 @@ def test_create_stager_validation_fails_strict_field(
     response = client.post(
         "/api/v2/stagers/", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
         == "Language must be set to one of the suggested values."
@@ -63,7 +65,7 @@ def test_create_stager_validation_fails_strict_field(
 #     stager = get_base_stager()
 #     stager['options']['Language'] = 'powershell'
 #     response = client.post("/api/v2/stagers/", json=stager)
-#     assert response.status_code == 400
+#     assert response.status_code == status.HTTP_400_BAD_REQUEST
 #     assert response.json()['detail'] == 'Error generating'
 
 
@@ -73,7 +75,7 @@ def test_create_stager_template_not_found(client, base_stager, admin_auth_header
     response = client.post(
         "/api/v2/stagers/", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "Stager Template qwerty not found"
 
 
@@ -84,7 +86,7 @@ def test_create_stager_one_liner(client, base_stager, admin_auth_header):
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
@@ -105,7 +107,7 @@ def test_create_malleable_stager_one_liner(
         headers=admin_auth_header,
         json=base_stager_malleable,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
@@ -125,7 +127,7 @@ def test_create_obfuscated_stager_one_liner(client, base_stager, admin_auth_head
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
@@ -149,7 +151,7 @@ def test_create_obfuscated_malleable_stager_one_liner(
         headers=admin_auth_header,
         json=base_stager_malleable,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
@@ -166,7 +168,7 @@ def test_create_stager_file(client, base_stager_dll, admin_auth_header):
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager_dll
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
@@ -180,13 +182,13 @@ def test_create_stager_name_conflict(client, base_stager, admin_auth_header):
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
 
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
         == f'Stager with name {base_stager["name"]} already exists.'
@@ -199,7 +201,7 @@ def test_create_stager_save_false(client, base_stager, admin_auth_header):
     response = client.post(
         "/api/v2/stagers/?save=false", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] == 0
     assert len(response.json().get("downloads", [])) > 0
     assert (
@@ -213,13 +215,13 @@ def test_get_stager(client, admin_auth_header, base_stager):
     )
     stager_id = response.json()["id"]
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == stager_id
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
@@ -230,7 +232,7 @@ def test_get_stager_not_found(client, admin_auth_header):
         "/api/v2/stagers/9999",
         headers=admin_auth_header,
     )
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Stager not found for id 9999"
 
 
@@ -238,7 +240,7 @@ def test_update_stager_not_found(client, base_stager, admin_auth_header):
     response = client.put(
         "/api/v2/stagers/9999", headers=admin_auth_header, json=base_stager
     )
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Stager not found for id 9999"
 
 
@@ -248,7 +250,7 @@ def test_download_stager_one_liner(client, admin_auth_header, base_stager):
         headers=admin_auth_header,
         json=base_stager,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
 
     response = client.get(
@@ -259,7 +261,7 @@ def test_download_stager_one_liner(client, admin_auth_header, base_stager):
         response.json()["downloads"][0]["link"],
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.headers.get("content-type").split(";")[0] == "text/plain"
     assert response.text.startswith("powershell -noP -sta")
 
@@ -272,7 +274,7 @@ def test_download_stager_file(client, admin_auth_header, base_stager_dll):
         headers=admin_auth_header,
         json=base_stager_dll,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
 
     response = client.get(
@@ -283,7 +285,7 @@ def test_download_stager_file(client, admin_auth_header, base_stager_dll):
         response.json()["downloads"][0]["link"],
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.headers.get("content-type").split(";")[0] in [
         "application/x-msdownload",
         "application/x-msdos-program",
@@ -301,14 +303,14 @@ def test_update_stager_allows_edits_and_generates_new_file(
         headers=admin_auth_header,
         json=base_stager,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     stager = response.json()
     original_name = stager["name"]
@@ -320,7 +322,7 @@ def test_update_stager_allows_edits_and_generates_new_file(
         headers=admin_auth_header,
         json=stager,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["options"]["Base64"] == "False"
     assert response.json()["name"] == original_name + "_updated!"
 
@@ -333,14 +335,14 @@ def test_update_stager_name_conflict(client, admin_auth_header, base_stager):
         headers=admin_auth_header,
         json=base_stager,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     base_stager_2 = base_stager.copy()
     base_stager_2["name"] = "test_stager_2"
@@ -349,14 +351,14 @@ def test_update_stager_name_conflict(client, admin_auth_header, base_stager):
         headers=admin_auth_header,
         json=base_stager_2,
     )
-    assert response2.status_code == 201
+    assert response2.status_code == status.HTTP_201_CREATED
     stager_id_2 = response2.json()["id"]
 
     response2 = client.get(
         f"/api/v2/stagers/{stager_id_2}",
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     stager_1 = response.json()
     stager_2 = response2.json()
 
@@ -367,7 +369,7 @@ def test_update_stager_name_conflict(client, admin_auth_header, base_stager):
         json=stager_1,
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
         == f"Stager with name {stager_2['name']} already exists."
@@ -383,7 +385,7 @@ def test_get_stagers(client, admin_auth_header, base_stager):
         headers=admin_auth_header,
         json=base_stager,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
 
     base_stager_2 = base_stager.copy()
@@ -393,7 +395,7 @@ def test_get_stagers(client, admin_auth_header, base_stager):
         headers=admin_auth_header,
         json=base_stager_2,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     stager_id_2 = response.json()["id"]
 
     response = client.get(
@@ -401,8 +403,9 @@ def test_get_stagers(client, admin_auth_header, base_stager):
         headers=admin_auth_header,
     )
 
-    assert response.status_code == 200
-    assert len(response.json()["records"]) == 2
+    stager_count = 2
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["records"]) == stager_count
     assert response.json()["records"][0]["id"] == stager_id
     assert response.json()["records"][1]["id"] == stager_id_2
 
@@ -416,17 +419,17 @@ def test_delete_stager(client, admin_auth_header, base_stager):
         headers=admin_auth_header,
         json=base_stager,
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
 
     response = client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     response = client.get(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
     response = client.get("/api/v2/stagers", headers=admin_auth_header)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert stager_id not in [stager["id"] for stager in response.json()["records"]]
 
 
@@ -436,7 +439,7 @@ def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_head
     )
 
     # Check if the stager is successfully created
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] != 0
 
     stager_id = response.json()["id"]
@@ -447,7 +450,7 @@ def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_head
     )
 
     # Check if we can successfully retrieve the stager
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == stager_id
 
     response = client.get(
@@ -456,7 +459,7 @@ def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_head
     )
 
     # Check if the file is downloaded successfully
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.headers.get("content-type").split(";")[0] == "text/plain"
     assert isinstance(response.content, bytes)
 
@@ -472,7 +475,7 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
     )
 
     # Check if the stager is successfully created
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] != 0
 
     stager_id = response.json()["id"]
@@ -483,7 +486,7 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
     )
 
     # Check if we can successfully retrieve the stager
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == stager_id
 
     response = client.get(
@@ -492,7 +495,7 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
     )
 
     # Check if the file is downloaded successfully
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.headers.get("content-type").split(";")[0] in [
         "application/x-msdownload",
         "application/x-msdos-program",
@@ -533,7 +536,7 @@ def test_macro_stager_generation(
     )
 
     # Check if the stager is successfully created
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] != 0
 
     stager_id = response.json()["id"]
@@ -544,7 +547,7 @@ def test_macro_stager_generation(
     )
 
     # Check if we can successfully retrieve the stager
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == stager_id
 
     response = client.get(
@@ -553,7 +556,7 @@ def test_macro_stager_generation(
     )
 
     # Check if the file is downloaded successfully
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.headers.get("content-type").split(";")[0] in [
         "text/plain",
     ]

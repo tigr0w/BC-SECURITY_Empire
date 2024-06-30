@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
+from starlette import status
 
 from empire.test.conftest import patch_config
 
@@ -11,14 +12,14 @@ def test_get_keyword_not_found(client, admin_auth_header):
         "/api/v2/obfuscation/keywords/9999", headers=admin_auth_header
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Keyword not found for id 9999"
 
 
 def test_get_keyword(client, admin_auth_header):
     response = client.get("/api/v2/obfuscation/keywords/1", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == 1
     assert len(response.json()["replacement"]) > 0
 
@@ -26,7 +27,7 @@ def test_get_keyword(client, admin_auth_header):
 def test_get_keywords(client, admin_auth_header):
     response = client.get("/api/v2/obfuscation/keywords", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 0
 
 
@@ -37,7 +38,7 @@ def test_create_keyword_name_conflict(client, admin_auth_header):
         json={"keyword": "Invoke-Mimikatz", "replacement": "Invoke-Hax"},
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"] == "Keyword with name Invoke-Mimikatz already exists."
     )
@@ -50,7 +51,7 @@ def test_create_keyword_validate_length(client, admin_auth_header):
         json={"keyword": "a", "replacement": "b"},
     )
 
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert (
         response.json()["detail"][0]["msg"]
         == "String should have at least 3 characters"
@@ -64,7 +65,7 @@ def test_create_keyword(client, admin_auth_header):
         json={"keyword": "Invoke-Things", "replacement": "Invoke-sgnihT;"},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["keyword"] == "Invoke-Things"
     assert response.json()["replacement"] == "Invoke-sgnihT;"
 
@@ -76,7 +77,7 @@ def test_update_keyword_not_found(client, admin_auth_header):
         json={"keyword": "thiswontwork", "replacement": "x=0;"},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Keyword not found for id 9999"
 
 
@@ -87,7 +88,7 @@ def test_update_keyword_name_conflict(client, admin_auth_header):
         json={"keyword": "Invoke-Mimikatz", "replacement": "Invoke-Whatever"},
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"] == "Keyword with name Invoke-Mimikatz already exists."
     )
@@ -109,17 +110,17 @@ def test_delete_keyword(client, admin_auth_header):
         "/api/v2/obfuscation/keywords/1", headers=admin_auth_header
     )
 
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     response = client.get("/api/v2/obfuscation/keywords/1", headers=admin_auth_header)
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_obfuscation_configs(client, admin_auth_header):
     response = client.get("/api/v2/obfuscation/global", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 1
 
     assert any(x["language"] == "powershell" for x in response.json()["records"])
@@ -132,7 +133,7 @@ def test_get_obfuscation_config_not_found(client, admin_auth_header):
         "/api/v2/obfuscation/global/madeup", headers=admin_auth_header
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert (
         response.json()["detail"]
         == "Obfuscation config not found for language madeup. Only powershell is supported."
@@ -144,7 +145,7 @@ def test_get_obfuscation_config(client, admin_auth_header):
         "/api/v2/obfuscation/global/powershell", headers=admin_auth_header
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["language"] == "powershell"
     assert response.json()["enabled"] is False
     assert response.json()["command"] == r"Token\All\1"
@@ -163,7 +164,7 @@ def test_update_obfuscation_config_not_found(client, admin_auth_header):
         },
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert (
         response.json()["detail"]
         == "Obfuscation config not found for language madeup. Only powershell is supported."
@@ -195,7 +196,7 @@ def test_preobfuscate_post_not_preobfuscatable(
         "/api/v2/obfuscation/global/csharp/preobfuscate", headers=admin_auth_header
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
         == "Obfuscation language csharp is not preobfuscatable."
@@ -211,7 +212,7 @@ def test_preobfuscate_post(client, admin_auth_header, empire_config):
         )
 
         # It is run as a background task, but in tests it runs synchronously.
-        assert response.status_code == 202
+        assert response.status_code == status.HTTP_202_ACCEPTED
 
         module_dir = empire_config.directories.module_source
         obf_module_dir = empire_config.directories.obfuscated_module_source
@@ -235,7 +236,7 @@ def test_preobfuscate_delete_not_preobfuscatable(
         "/api/v2/obfuscation/global/csharp/preobfuscate", headers=admin_auth_header
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
         == "Obfuscation language csharp is not preobfuscatable."
@@ -249,7 +250,7 @@ def test_preobfuscate_delete(client, admin_auth_header, empire_config):
             headers=admin_auth_header,
         )
 
-        assert response.status_code == 204
+        assert response.status_code == status.HTTP_204_NO_CONTENT
 
         module_dir = empire_config.directories.module_source
         obf_module_dir = empire_config.directories.obfuscated_module_source

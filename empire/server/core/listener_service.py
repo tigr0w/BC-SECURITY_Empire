@@ -232,7 +232,7 @@ class ListenerService:
         return template_instance, None
 
     @staticmethod
-    def _normalize_listener_options(instance) -> None:
+    def _normalize_listener_options(instance) -> None:  # noqa: PLR0912 PLR0915
         """
         This is adapted from the old set_listener_option which does some coercions on the http fields.
         """
@@ -320,7 +320,7 @@ class ListenerService:
             elif option_name == "StagingKey":
                 # if the staging key isn't 32 characters, assume we're md5 hashing it
                 value = str(value).strip()
-                if len(value) != 32:
+                if len(value) != 32:  # noqa: PLR2004
                     staging_key_hash = hashlib.md5(value.encode("UTF-8")).hexdigest()
                     log.warning(
                         f"Warning: staging key not 32 characters, using hash of staging key instead: {staging_key_hash}"

@@ -73,12 +73,11 @@ class Module:
                 if values.lower() == "true":
                     # if we're just adding a switch
                     script_end += " -" + str(option)
+                elif "," in str(values):
+                    quoted = '"' + str(values).replace(",", '","') + '"'
+                    script_end += " -" + str(option) + " " + quoted
                 else:
-                    if "," in str(values):
-                        quoted = '"' + str(values).replace(",", '","') + '"'
-                        script_end += " -" + str(option) + " " + quoted
-                    else:
-                        script_end += " -" + str(option) + ' "' + str(values) + '"'
+                    script_end += " -" + str(option) + ' "' + str(values) + '"'
 
         script = main_menu.modulesv2.finalize_module(
             script=script,

@@ -222,7 +222,7 @@ def parse_result_packet(packet, offset=0):
 
         # todo: agent returns resultpacket in big endian instead of little for type 44 with outpipe in powershell.
         # This should be fixed and removed at some point.
-        if responseID == 10240:
+        if responseID == 10240:  # noqa: PLR2004
             responseID = int.from_bytes(
                 packet[0 + offset : 2 + offset], byteorder="big"
             )
@@ -322,9 +322,9 @@ def parse_routing_packet(stagingKey, data):
         results = {}
         offset = 0
         # ensure we have at least the 20 bytes for a routing packet
-        if len(data) >= 20:
+        if len(data) >= 20:  # noqa: PLR2004
             while True:
-                if len(data) - offset < 20:
+                if len(data) - offset < 20:  # noqa: PLR2004
                     break
 
                 RC4IV = data[0 + offset : 4 + offset]
@@ -375,7 +375,7 @@ def parse_routing_packet(stagingKey, data):
         return None
 
 
-def build_routing_packet(
+def build_routing_packet(  # noqa: PLR0913
     stagingKey, sessionID, language, meta="NONE", additional="NONE", encData=""
 ):
     """

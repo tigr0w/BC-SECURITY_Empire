@@ -169,7 +169,7 @@ def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
         ).exists()
 
     import empire.arguments
-    import empire.client.client as client
+    from empire.client import client
 
     reload(empire.arguments)
     from empire.arguments import args

@@ -131,7 +131,7 @@ def get_file_options(db, download_service, options, params):
     return files, None
 
 
-def _parse_type(type_str: str = "", value: str = ""):
+def _parse_type(type_str: str = "", value: str = ""):  # noqa: PLR0911
     if not type_str:
         return type(value)
 

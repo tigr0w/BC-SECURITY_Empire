@@ -2,13 +2,13 @@
 
 import sys
 
-import empire.arguments as arguments
+from empire import arguments
 
 if __name__ == "__main__":
     args = arguments.args
 
     if args.subparser_name == "server":
-        import empire.server.server as server
+        from empire.server import server
 
         server.run(args)
     elif args.subparser_name == "sync-starkiller":
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
         sync_starkiller(config)
     elif args.subparser_name == "client":
-        import empire.client.client as client
+        from empire.client import client
 
         client.start(args)
 

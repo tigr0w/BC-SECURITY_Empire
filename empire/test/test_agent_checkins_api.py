@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from starlette import status
 
 log = logging.getLogger(__name__)
 
@@ -118,7 +119,7 @@ def test_database_performance_checkins(models, host, agents, session_local):
             query = db.query(models.AgentCheckIn).limit(50000)
             query.all()
         log.info(f"Time to query {checkins} checkins: {t():0.4f} seconds")
-        assert t() < 6
+        assert t() < 6  # noqa: PLR2004
 
         agents = db.query(models.Agent).all()
 
@@ -135,7 +136,7 @@ def test_database_performance_checkins(models, host, agents, session_local):
 def test_get_agent_checkins_agent_not_found(client, admin_auth_header):
     response = client.get("/api/v2/agents/XYZ123/checkins", headers=admin_auth_header)
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id XYZ123"
 
 
@@ -149,8 +150,9 @@ def test_get_agent_checkins_with_limit_and_page(
         f"/api/v2/agents/{agent}/checkins?limit=10&page=1", headers=admin_auth_header
     )
 
-    assert response.status_code == 200
-    assert len(response.json()["records"]) == 10
+    checkin_count = 10
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["records"]) == checkin_count
     assert response.json()["total"] > days_back * 17280
     assert response.json()["page"] == 1
 
@@ -160,10 +162,12 @@ def test_get_agent_checkins_with_limit_and_page(
         f"/api/v2/agents/{agent}/checkins?limit=10&page=2", headers=admin_auth_header
     )
 
-    assert response.status_code == 200
-    assert len(response.json()["records"]) == 10
+    checkin_count = 10
+    page_count = 2
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["records"]) == checkin_count
     assert response.json()["total"] > days_back * 17280
-    assert response.json()["page"] == 2
+    assert response.json()["page"] == page_count
 
     page2 = response.json()["records"]
 
@@ -183,7 +187,7 @@ def test_get_agent_checkins_multiple_agents(
         params={"agents": with_checkins[:2], "limit": 400000},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) == days_back * 17280 * 2
     assert {r["agent_id"] for r in response.json()["records"]} == set(with_checkins[:2])
 
@@ -202,8 +206,8 @@ def test_agent_checkins_aggregate(
         headers=admin_auth_header,
     )
 
-    assert response.status_code == 200
-    assert response.elapsed.total_seconds() < 5
+    assert response.status_code == status.HTTP_200_OK
+    assert response.elapsed.total_seconds() < 5  # noqa: PLR2004
     assert response.json()["bucket_size"] == "day"
     assert response.json()["records"][1]["count"] == 17280 * 3
 
@@ -213,8 +217,8 @@ def test_agent_checkins_aggregate(
         params={"bucket_size": "hour"},
     )
 
-    assert response.status_code == 200
-    assert response.elapsed.total_seconds() < 5
+    assert response.status_code == status.HTTP_200_OK
+    assert response.elapsed.total_seconds() < 5  # noqa: PLR2004
     assert response.json()["bucket_size"] == "hour"
     assert response.json()["records"][1]["count"] == 720 * 3
 
@@ -224,8 +228,8 @@ def test_agent_checkins_aggregate(
         params={"bucket_size": "minute"},
     )
 
-    assert response.status_code == 200
-    assert response.elapsed.total_seconds() < 5
+    assert response.status_code == status.HTTP_200_OK
+    assert response.elapsed.total_seconds() < 5  # noqa: PLR2004
     assert response.json()["bucket_size"] == "minute"
     assert response.json()["records"][1]["count"] == 12 * 3
 
@@ -239,8 +243,8 @@ def test_agent_checkins_aggregate(
         },
     )
 
-    assert response.status_code == 200
-    assert response.elapsed.total_seconds() < 5
+    assert response.status_code == status.HTTP_200_OK
+    assert response.elapsed.total_seconds() < 5  # noqa: PLR2004
     assert response.json()["bucket_size"] == "second"
     assert response.json()["records"][1]["count"] == 1 * 3
 
@@ -251,7 +255,7 @@ def test_agent_checkins_aggregate(
         params={"bucket_size": "hour", "start_date": start_time + timedelta(days=3)},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["bucket_size"] == "hour"
     checkin_time_string = response.json()["records"][0]["checkin_time"]
     checkin_time = datetime.strptime(checkin_time_string, "%Y-%m-%dT%H:%M:%S%z")
@@ -263,7 +267,7 @@ def test_agent_checkins_aggregate(
         params={"bucket_size": "hour", "end_date": start_time + timedelta(days=3)},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["bucket_size"] == "hour"
     checkin_time_string = response.json()["records"][-1]["checkin_time"]
     checkin_time = datetime.strptime(checkin_time_string, "%Y-%m-%dT%H:%M:%S%z")
@@ -279,7 +283,7 @@ def test_agent_checkins_aggregate(
         params={"bucket_size": "hour", "start_date": with_tz},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["bucket_size"] == "hour"
     checkin_time_string = response.json()["records"][0]["checkin_time"]
     checkin_time = datetime.strptime(checkin_time_string, "%Y-%m-%dT%H:%M:%S%z")

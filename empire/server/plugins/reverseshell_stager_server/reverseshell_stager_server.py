@@ -2,7 +2,7 @@ import contextlib
 import logging
 import socket
 
-import empire.server.common.helpers as helpers
+from empire.server.common import helpers
 from empire.server.common.plugins import Plugin
 from empire.server.core.plugin_service import PluginService
 
@@ -213,8 +213,6 @@ class Plugin(Plugin):
         with contextlib.suppress(Exception):
             self.reverseshell_proc.kill()
             self.thread.kill()
-
-        return
 
     def client_handler(self, client_socket):
         self.thread = helpers.KThread(target=self.o, args=[client_socket])

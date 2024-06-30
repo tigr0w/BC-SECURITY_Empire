@@ -71,7 +71,7 @@ class ModuleService:
         for db_module in db_modules:
             self.modules.get(db_module.id).enabled = module_req.enabled
 
-    def execute_module(
+    def execute_module(  # noqa: PLR0913 PLR0912 PLR0915
         self,
         db: Session,
         agent: models.Agent,
@@ -267,7 +267,7 @@ class ModuleService:
 
         return script_file, script_end
 
-    def _validate_module_params(
+    def _validate_module_params(  # noqa: PLR0913
         self,
         db: Session,
         module: EmpireModule,
@@ -372,7 +372,8 @@ class ModuleService:
             module=module, params=params, obfuscate=obfuscation_config.enabled
         )
 
-        for key, value in params.items():
+        for key, v in params.items():
+            value = v
             if key in ["Agent", "Architecture"]:
                 continue
             for option in module.options:
@@ -430,13 +431,12 @@ class ModuleService:
 
             if err:
                 raise ModuleValidationException(err)
+        elif obfuscate:
+            script = self.obfuscation_service.obfuscate(
+                module.script, obfuscate_command
+            )
         else:
-            if obfuscate:
-                script = self.obfuscation_service.obfuscate(
-                    module.script, obfuscate_command
-                )
-            else:
-                script = module.script
+            script = module.script
 
         script_end = f" {module.script_end} "
         option_strings = []

@@ -1649,48 +1649,45 @@ class ExtendedPacketHandler(PacketHandler):
                                             malleableResponse.headers,
                                         )
 
+                                    elif request.method == b"POST":
+                                        # step 4 of negotiation -> server returns RSA(nonce+AESsession))
+
+                                        message = f"{listenerName}: Sending session key to {clientIP}"
+                                        self.instance_log.info(message)
+                                        log.info(message)
+
+                                        # note: stage 1 negotiation comms are hard coded, so we can't use malleable
+                                        return Response(
+                                            results,
+                                            200,
+                                            implementation.server.headers,
+                                        )
+
                                     else:
-                                        if request.method == b"POST":
-                                            # step 4 of negotiation -> server returns RSA(nonce+AESsession))
+                                        # agent requested taskings
+                                        message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                                        self.instance_log.info(message)
 
-                                            message = f"{listenerName}: Sending session key to {clientIP}"
-                                            self.instance_log.info(message)
-                                            log.info(message)
-
-                                            # note: stage 1 negotiation comms are hard coded, so we can't use malleable
-                                            return Response(
-                                                results,
-                                                200,
-                                                implementation.server.headers,
+                                        # build malleable response with results
+                                        malleableResponse = (
+                                            implementation.construct_server(results)
+                                        )
+                                        if isinstance(malleableResponse.body, str):
+                                            malleableResponse.body = (
+                                                malleableResponse.body.encode("latin-1")
                                             )
 
-                                        else:
-                                            # agent requested taskings
-                                            message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
-                                            self.instance_log.info(message)
-
-                                            # build malleable response with results
-                                            malleableResponse = (
-                                                implementation.construct_server(results)
+                                        if "Server" in malleableResponse.headers:
+                                            WSGIRequestHandler.server_version = (
+                                                malleableResponse.headers["Server"]
                                             )
-                                            if isinstance(malleableResponse.body, str):
-                                                malleableResponse.body = (
-                                                    malleableResponse.body.encode(
-                                                        "latin-1"
-                                                    )
-                                                )
+                                            WSGIRequestHandler.sys_version = ""
 
-                                            if "Server" in malleableResponse.headers:
-                                                WSGIRequestHandler.server_version = (
-                                                    malleableResponse.headers["Server"]
-                                                )
-                                                WSGIRequestHandler.sys_version = ""
-
-                                            return Response(
-                                                malleableResponse.body,
-                                                malleableResponse.code,
-                                                malleableResponse.headers,
-                                            )
+                                        return Response(
+                                            malleableResponse.body,
+                                            malleableResponse.code,
+                                            malleableResponse.headers,
+                                        )
 
                                 else:
                                     # no tasking for agent

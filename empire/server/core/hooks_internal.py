@@ -2,7 +2,7 @@ import json
 import logging
 from json.decoder import JSONDecodeError
 
-import jq as jq
+import jq
 import terminaltables
 from sqlalchemy import and_
 from sqlalchemy.orm import Session

@@ -163,7 +163,7 @@ def aes_decrypt(key, data):
     Generate an AES cipher object, pull out the IV from the data
     and return the unencrypted data.
     """
-    if len(data) > 16:
+    if len(data) > 16:  # noqa: PLR2004
         backend = default_backend()
         IV = data[0:16]
         cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
@@ -179,7 +179,7 @@ def verify_hmac(key, data):
     if isinstance(key, str):
         key = bytes(key, "latin-1")
 
-    if len(data) > 20:
+    if len(data) > 20:  # noqa: PLR2004
         mac = data[-10:]
         data = data[:-10]
         expected = hmac.new(key, data, digestmod=hashlib.sha256).digest()[0:10]
@@ -197,7 +197,7 @@ def aes_decrypt_and_verify(key, data):
     """
     Decrypt the data, but only if it has a valid MAC.
     """
-    if len(data) > 32 and verify_hmac(key, data):
+    if len(data) > 32 and verify_hmac(key, data):  # noqa: PLR2004
         if isinstance(key, str):
             key = bytes(key, "latin-1")
         return aes_decrypt(key, data[:-10])
@@ -239,7 +239,7 @@ def rc4(key, data):
         j = (j + S[i]) % 256
         S[i], S[j] = S[j], S[i]
         if sys.version[0] == "2":
-            char = ord(char)
+            char = ord(char)  # noqa: PLW2901
         out.append(chr(char ^ S[(S[i] + S[j]) % 256]).encode("latin-1"))
     # out = str(out)
     tmp = b"".join(out)
@@ -343,7 +343,7 @@ class DiffieHellman:
         Since a safe prime is used, verify that the Legendre symbol == 1
         """
         return bool(
-            otherKey > 2
+            otherKey > 2  # noqa: PLR2004
             and otherKey < self.prime - 1
             and pow(otherKey, (self.prime - 1) // 2, self.prime) == 1
         )

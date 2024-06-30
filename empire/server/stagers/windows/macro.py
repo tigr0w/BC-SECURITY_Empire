@@ -145,11 +145,10 @@ class Stager:
                 macro_sub_name = "Workbook_Open()"
             else:
                 macro_sub_name = "Workbook_BeforeClose(Cancel As Boolean)"
+        elif trigger.lower() == "autoopen":
+            macro_sub_name = "AutoOpen()"
         else:
-            if trigger.lower() == "autoopen":
-                macro_sub_name = "AutoOpen()"
-            else:
-                macro_sub_name = "AutoClose()"
+            macro_sub_name = "AutoClose()"
 
         encode = False
         if base64.lower() == "true":

@@ -600,7 +600,7 @@ class Listener:
                 headers={"Content-Type": "text/plain"},
             )
 
-            if r.status_code == 201 or r.status_code == 200:
+            if r.status_code in (201, 200):
                 item = r.json()
                 r = s.post(
                     "{}/drive/items/{}/createLink".format(base_url, item["id"]),
@@ -626,7 +626,7 @@ class Listener:
                 data=ps_stager,
                 headers={"Content-Type": "application/octet-stream"},
             )
-            if r.status_code == 201 or r.status_code == 200:
+            if r.status_code in (201, 200):
                 item = r.json()
                 r = s.post(
                     "{}/drive/items/{}/createLink".format(base_url, item["id"]),

@@ -1,6 +1,7 @@
 import copy
 
 import pytest
+from starlette import status
 
 
 @pytest.fixture(scope="function")
@@ -19,7 +20,7 @@ def test_create_credential(client, admin_auth_header, base_credential):
         "/api/v2/credentials/", headers=admin_auth_header, json=base_credential
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
     assert response.json()["credtype"] == "hash"
     assert response.json()["domain"] == "the-domain"
@@ -35,7 +36,7 @@ def test_create_credential_unique_constraint_failure(
         "/api/v2/credentials/", headers=admin_auth_header, json=base_credential
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "Credential not created. Duplicate detected."
 
 
@@ -44,7 +45,7 @@ def test_update_credential_not_found(client, admin_auth_header, base_credential)
         "/api/v2/credentials/9999", headers=admin_auth_header, json=base_credential
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Credential not found for id 9999"
 
 
@@ -56,7 +57,7 @@ def test_update_credential_unique_constraint_failure(
     response = client.post(
         "/api/v2/credentials/", headers=admin_auth_header, json=credential_2
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
 
     response = client.put(
         f"/api/v2/credentials/{credential}",
@@ -64,7 +65,7 @@ def test_update_credential_unique_constraint_failure(
         json=base_credential,
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "Credential not updated. Duplicate detected."
 
 
@@ -81,7 +82,7 @@ def test_update_credential(client, admin_auth_header, credential):
         json=updated_credential,
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["domain"] == "new-domain"
     assert response.json()["password"] == "password3"
 
@@ -89,7 +90,7 @@ def test_update_credential(client, admin_auth_header, credential):
 def test_get_credential_not_found(client, admin_auth_header):
     response = client.get("/api/v2/credentials/9999", headers=admin_auth_header)
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Credential not found for id 9999"
 
 
@@ -98,14 +99,14 @@ def test_get_credential(client, admin_auth_header, credential):
         f"/api/v2/credentials/{credential}", headers=admin_auth_header
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] > 0
 
 
 def test_get_credentials(client, admin_auth_header):
     response = client.get("/api/v2/credentials", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 0
 
 
@@ -118,7 +119,7 @@ def test_get_credentials_search(client, admin_auth_header, credential):
         f"/api/v2/credentials?search={password[:3]}", headers=admin_auth_header
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) == 1
     assert response.json()["records"][0]["password"] == password
 
@@ -126,7 +127,7 @@ def test_get_credentials_search(client, admin_auth_header, credential):
         "/api/v2/credentials?search=qwerty", headers=admin_auth_header
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) == 0
 
 
@@ -135,10 +136,10 @@ def test_delete_credential(client, admin_auth_header, credential):
         f"/api/v2/credentials/{credential}", headers=admin_auth_header
     )
 
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     response = client.get(
         f"/api/v2/credentials/{credential}", headers=admin_auth_header
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND

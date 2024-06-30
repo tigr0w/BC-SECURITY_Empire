@@ -87,7 +87,7 @@ def get_staging_key():
         choice = input(
             "\n [>] Enter server negotiation password, enter for random generation: "
         )
-        if choice != "" and choice != "RANDOM":
+        if choice not in ("", "RANDOM"):
             return hashlib.md5(choice.encode("utf-8")).hexdigest()
 
     elif staging_key == "RANDOM":

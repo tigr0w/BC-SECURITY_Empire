@@ -134,15 +134,15 @@ class Stager:
                 imports_list = []
                 for code in [agent_code, comms_code, stager_code]:
                     for line in code.splitlines():
-                        line = line.strip()
-                        if line.startswith("from System"):
+                        _line = line.strip()
+                        if _line.startswith("from System"):
                             # Skip Ironpython imports
                             pass
-                        elif line.startswith("import sslzliboff"):
+                        elif _line.startswith("import sslzliboff"):
                             # Sockschain checks to import this, so we will just skip it
                             pass
-                        elif line.startswith("import ") or line.startswith("from "):
-                            imports_list.append(line)
+                        elif _line.startswith("import ") or _line.startswith("from "):
+                            imports_list.append(_line)
 
                 imports_list.append("import trace")
                 imports_list.append("import json")
@@ -166,7 +166,8 @@ class Stager:
                         "/tmp/" + str(time.time()) + "-build/",
                         "--onefile",
                         binary_file_str + ".py",
-                    ]
+                    ],
+                    check=False,
                 )
 
                 with open(binary_file_str, "rb") as f:

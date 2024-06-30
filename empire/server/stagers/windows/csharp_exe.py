@@ -142,9 +142,8 @@ class Stager:
 
         if launcher == "":
             return "[!] Error in launcher generation."
-        else:
-            if not launcher or launcher.lower() == "failed":
-                return "[!] Error in launcher command generation."
+        elif not launcher or launcher.lower() == "failed":
+            return "[!] Error in launcher command generation."
 
         if language.lower() == "powershell":
             directory = self.mainMenu.stagers.generate_powershell_exe(

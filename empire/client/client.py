@@ -194,7 +194,7 @@ class EmpireCli:
                     except CliExitException:
                         return
                     except Exception:
-                        log.error("Error parsing resource command: ", text)
+                        log.error(f"Error parsing resource command: {text}")
 
         log.info(f"Finished executing resource file: {resource}")
 

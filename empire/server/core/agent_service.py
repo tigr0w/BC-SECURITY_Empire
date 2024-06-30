@@ -62,7 +62,7 @@ class AgentService:
         return db_agent, None
 
     @staticmethod
-    def get_agent_checkins(
+    def get_agent_checkins(  # noqa: PLR0913
         db: Session,
         agents: list[str] | None = None,
         limit: int = -1,

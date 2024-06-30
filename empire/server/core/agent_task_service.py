@@ -39,7 +39,7 @@ class AgentTaskService:
         self.last_task_lock = threading.Lock()
 
     @staticmethod
-    def get_tasks(
+    def get_tasks(  # noqa: PLR0913 PLR0912
         db: Session,
         agents: list[str] | None = None,
         users: list[int] | None = None,
@@ -145,7 +145,7 @@ class AgentTaskService:
 
         return tasks
 
-    def create_task_shell(
+    def create_task_shell(  # noqa: PLR0913
         self,
         db: Session,
         agent: models.Agent,
@@ -157,7 +157,7 @@ class AgentTaskService:
             command = f"shell {command}"
         return self.add_task(db, agent, "TASK_SHELL", command, user_id=user_id)
 
-    def create_task_upload(
+    def create_task_upload(  # noqa: PLR0913
         self, db: Session, agent: models.Agent, file_data: str, directory: str, user_id
     ):
         data = f"{directory}|{file_data}"
@@ -252,7 +252,7 @@ class AgentTaskService:
             db, agent, "TASK_SWITCH_LISTENER", new_comms, user_id=user_id
         )
 
-    def create_task_update_sleep(
+    def create_task_update_sleep(  # noqa: PLR0913
         self, db: Session, agent: models.Agent, delay: int, jitter: float, user_id: int
     ):
         agent.delay = delay
@@ -380,7 +380,7 @@ class AgentTaskService:
 
         return task, None
 
-    def add_task(
+    def add_task(  # noqa: PLR0913
         self,
         db: Session,
         agent: models.Agent,

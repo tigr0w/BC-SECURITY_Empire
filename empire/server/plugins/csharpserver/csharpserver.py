@@ -5,7 +5,7 @@ import os
 import socket
 import subprocess
 
-import empire.server.common.helpers as helpers
+from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.common.plugins import BasePlugin
 from empire.server.core.db import models
@@ -235,5 +235,3 @@ class Plugin(BasePlugin):
             self.csharpserverbuild_proc.kill()
             self.csharpserver_proc.kill()
             self.thread.kill()
-
-        return

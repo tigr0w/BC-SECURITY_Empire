@@ -142,7 +142,7 @@ class Agents:
         )
         return sessionID in self.agents
 
-    def add_agent(
+    def add_agent(  # noqa: PLR0913
         self,
         sessionID,
         externalIP,
@@ -239,7 +239,7 @@ class Agents:
         else:
             return True
 
-    def save_file(
+    def save_file(  # noqa: PLR0913
         self,
         sessionID,
         path,
@@ -506,7 +506,7 @@ class Agents:
             stacklevel=2,
         )
         # db is optional for backwards compatibility until this function is phased out
-        with db or SessionLocal() as db:
+        with db or SessionLocal() as db:  # noqa: PLR1704
             agent = db.query(models.Agent).filter(models.Agent.name == name).first()
 
         if agent:
@@ -615,7 +615,7 @@ class Agents:
                     )
                 )
 
-    def update_agent_sysinfo_db(
+    def update_agent_sysinfo_db(  # noqa: PLR0913
         self,
         db,
         session_id,
@@ -793,7 +793,7 @@ class Agents:
     #
     ###############################################################
 
-    def handle_agent_staging(
+    def handle_agent_staging(  # noqa: PLR0912 PLR0915 PLR0913 PLR0911
         self,
         sessionID,
         language,
@@ -837,7 +837,9 @@ class Agents:
                 )
 
                 # client posts RSA key
-                if (len(message) < 400) or (not message.endswith("</RSAKeyValue>")):
+                if (len(message) < 400) or (  # noqa: PLR2004
+                    not message.endswith("</RSAKeyValue>")
+                ):
                     message = f"Invalid PowerShell key post format from {sessionID}"
                     log.error(message)
                     return "ERROR: Invalid PowerShell key post format"
@@ -889,7 +891,7 @@ class Agents:
                         return "ERROR: Invalid PowerShell public key"
 
             elif language.lower() == "python":
-                if (len(message) < 1000) or (len(message) > 2500):
+                if (len(message) < 1000) or (len(message) > 2500):  # noqa: PLR2004
                     message = f"Invalid Python key post format from {sessionID}"
                     log.error(message)
                     return f"Error: Invalid Python key post format from {sessionID}"
@@ -965,7 +967,7 @@ class Agents:
                 message = encryption.aes_decrypt_and_verify(session_key, encData)
                 parts = message.split(b"|")
 
-                if len(parts) < 12:
+                if len(parts) < 12:  # noqa: PLR2004
                     message = f"Agent {sessionID} posted invalid sysinfo checkin format: {message}"
                     log.info(message)
                     # remove the agent from the cache/database
@@ -1077,7 +1079,7 @@ class Agents:
             message = f"Invalid staging request packet from {sessionID} at {clientIP} : {meta}"
             log.error(message)
 
-    def handle_agent_data(
+    def handle_agent_data(  # noqa: PLR0913
         self,
         stagingKey,
         routingPacket,
@@ -1091,7 +1093,7 @@ class Agents:
 
         Abstracted out sufficiently for any listener module to use.
         """
-        if len(routingPacket) < 20:
+        if len(routingPacket) < 20:  # noqa: PLR2004
             message = (
                 f"handle_agent_data(): routingPacket wrong length: {len(routingPacket)}"
             )
@@ -1112,7 +1114,7 @@ class Agents:
                 message = f"handle_agent_data(): invalid sessionID {sessionID}"
                 log.error(message)
                 dataToReturn.append(("", f"ERROR: invalid sessionID {sessionID}"))
-            elif meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
+            elif meta in ("STAGE0", "STAGE1", "STAGE2"):
                 message = f"handle_agent_data(): sessionID {sessionID} issued a {meta} request"
                 log.debug(message)
 
@@ -1292,7 +1294,7 @@ class Agents:
             log.error(message, exc_info=True)
             return None
 
-    def process_agent_packet(
+    def process_agent_packet(  # noqa: PLR0912 PLR0915 PLR0913
         self, session_id, response_name, task_id, data, db: Session
     ):
         """
@@ -1381,7 +1383,7 @@ class Agents:
             # sys info response -> update the host info
             data = data.decode("utf-8")
             parts = data.split("|")
-            if len(parts) < 12:
+            if len(parts) < 12:  # noqa: PLR2004
                 message = f"Invalid sysinfo response from {session_id}"
                 log.error(message)
             else:
@@ -1498,7 +1500,7 @@ class Agents:
                 data = data.decode("UTF-8")
 
             parts = data.split("|")
-            if len(parts) != 4:
+            if len(parts) != 4:  # noqa: PLR2004
                 message = f"Received invalid file download response from {session_id}"
                 log.error(message)
             else:
@@ -1694,7 +1696,7 @@ class Agents:
             if isinstance(data, str):
                 data = data.encode("UTF-8")
             parts = data.split(b"\n")
-            if len(parts) > 10:
+            if len(parts) > 10:  # noqa: PLR2004
                 date_time = helpers.get_datetime()
                 if parts[0].startswith(b"Hostname:"):
                     # if we get Invoke-Mimikatz output, try to parse it and add

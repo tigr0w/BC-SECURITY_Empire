@@ -16,7 +16,7 @@ from empire.server.core.hooks import hooks
 log = logging.getLogger(__name__)
 
 
-def setup_socket_events(sio, empire_menu):
+def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
     empire_menu.socketio = sio
 
     # A socketio user is in the general channel if they join the chat.

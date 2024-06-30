@@ -12,10 +12,10 @@ def remove_lines_comments(lines):
     """
     code = ""
     for line in lines.split("\n"):
-        line = line.strip()
+        _line = line.strip()
         # skip commented line
-        if not line.startswith("#"):
-            code += line
+        if not _line.startswith("#"):
+            code += _line
     return code
 
 

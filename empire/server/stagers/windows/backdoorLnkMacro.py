@@ -187,7 +187,7 @@ class Stager:
             .replace(" ", "")
             .split("/")
         )
-        if int(kill_date[2]) < 100:
+        if int(kill_date[2]) < 100:  # noqa: PLR2004
             kill_date[2] = int(kill_date[2]) + 2000
         target_exe = target_exe.split(",")
         target_exe = [_f for _f in target_exe if _f]
@@ -356,9 +356,7 @@ class Stager:
             for i, _item in enumerate(target_exe):
                 if i:
                     macro += " or "
-                active_sheet.write(
-                    input_row, input_col, target_exe[i].strip().lower() + "."
-                )
+                active_sheet.write(input_row, input_col, _item.strip().lower() + ".")
                 macro += (
                     "InStr(Lcase("
                     + lnk_var

@@ -62,7 +62,7 @@ class Stagers:
         else:
             return stager
 
-    def generate_launcher(
+    def generate_launcher(  # noqa: PLR0913
         self,
         listenerName,
         language=None,
@@ -83,14 +83,14 @@ class Stagers:
         with SessionLocal.begin() as db:
             bypasses_parsed = []
             for bypass in bypasses.split(" "):
-                bypass = (
+                db_bypass = (
                     db.query(models.Bypass).filter(models.Bypass.name == bypass).first()
                 )
-                if bypass:
-                    if bypass.language == language:
-                        bypasses_parsed.append(bypass.code)
+                if db_bypass:
+                    if db_bypass.language == language:
+                        bypasses_parsed.append(db_bypass.code)
                     else:
-                        log.warning(f"Invalid bypass language: {bypass.language}")
+                        log.warning(f"Invalid bypass language: {db_bypass.language}")
 
             db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
             active_listener = self.mainMenu.listenersv2.get_active_listener(
@@ -204,7 +204,7 @@ class Stagers:
         shellcode = donut.create(file=directory, arch=arch_type)
         return shellcode, None
 
-    def generate_exe_oneliner(
+    def generate_exe_oneliner(  # noqa: PLR0913
         self, language, obfuscate, obfuscation_command, encode, listener_name
     ):
         """
@@ -351,7 +351,7 @@ class Stagers:
         else:
             log.error("Unable to patch MachO binary")
 
-    def generate_dylib(self, launcherCode, arch, hijacker):
+    def generate_dylib(self, launcherCode, arch, hijacker):  # noqa: PLR0912
         """
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """
@@ -363,11 +363,10 @@ class Stagers:
                 f = f"{self.mainMenu.installPath}/data/misc/hijackers/template.dylib"
             else:
                 f = f"{self.mainMenu.installPath}/data/misc/hijackers/template64.dylib"
+        elif arch == "x86":
+            f = f"{self.mainMenu.installPath}/data/misc/templateLauncher.dylib"
         else:
-            if arch == "x86":
-                f = f"{self.mainMenu.installPath}/data/misc/templateLauncher.dylib"
-            else:
-                f = f"{self.mainMenu.installPath}/data/misc/templateLauncher64.dylib"
+            f = f"{self.mainMenu.installPath}/data/misc/templateLauncher64.dylib"
 
         with open(f, "rb") as f:
             macho = macholib.MachO.MachO(f.name)
@@ -408,7 +407,9 @@ class Stagers:
         else:
             log.error("Unable to patch dylib")
 
-    def generate_appbundle(self, launcherCode, Arch, icon, AppName, disarm):
+    def generate_appbundle(  # noqa: PLR0915 PLR0912 PLR0913
+        self, launcherCode, Arch, icon, AppName, disarm
+    ):
         """
         Generates an application. The embedded executable is a macho binary with the python interpreter.
         """
