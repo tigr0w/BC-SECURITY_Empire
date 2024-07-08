@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 -   Fixed issue in python agents where background jobs were failed due to a missing character (Cx01N)
+-   Fixed NET45 missing folder causing a compilation error (Cx01N)
+-   Fixed NET45 files not being removed on server reset (Cx01N)
 
 ### Changed
 -   Converted C# server plugin to use plugin taskings (@Cx01N)

@@ -407,7 +407,7 @@ class Stagers:
         else:
             log.error("Unable to patch dylib")
 
-    def generate_appbundle(  # noqa: PLR0915 PLR0912 PLR0913
+    def generate_appbundle(  # noqa: PLR0915, PLR0913, PLR0912
         self, launcherCode, Arch, icon, AppName, disarm
     ):
         """
