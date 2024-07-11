@@ -4,6 +4,7 @@ import logging
 import os
 import socket
 import subprocess
+import time
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
@@ -69,18 +70,11 @@ class Plugin(BasePlugin):
         db.flush()
 
     def register(self, main_menu: MainMenu):
-        """
-        any modifications to the main_menu go here - e.g.
-        registering functions to be run by user commands
-        """
         self.installPath = main_menu.installPath
         self.main_menu = main_menu
         self.plugin_service: PluginService = main_menu.pluginsv2
 
     def toggle_csharpserver(self, command):
-        """
-        Check if the Empire C# server is already running.
-        """
         self.start = command["status"]
 
         if not self.csharpserver_proc or self.csharpserver_proc.poll():
@@ -98,12 +92,10 @@ class Plugin(BasePlugin):
 
         elif self.start == "start":
             if self.status == "OFF":
-                # Will need to update this as we finalize the folder structure
                 server_dll = (
                     self.installPath
                     + "/csharp/Covenant/bin/Debug/net6.0/EmpireCompiler.dll"
                 )
-                # If dll hasn't been built yet
                 if not os.path.exists(server_dll):
                     csharp_cmd = ["dotnet", "build", self.installPath + "/csharp/"]
                     self.csharpserverbuild_proc = subprocess.call(csharp_cmd)
@@ -132,21 +124,34 @@ class Plugin(BasePlugin):
 
     def thread_csharp_responses(self):
         task_input = "Collecting Empire C# server output stream..."
+        batch_timeout = 5  # seconds
+        response_batch = []
+        last_batch_time = time.time()
 
         while True:
             response = self.csharpserver_proc.stdout.readline().rstrip()
-
             if response:
-                output = response.decode("UTF-8")
+                response_batch.append(response.decode("UTF-8"))
+
+            if (time.time() - last_batch_time) >= batch_timeout:
+                output = "\n".join(response_batch)
                 log.debug(output)
                 status = PluginTaskStatus.completed
                 self.record_task(status, output, task_input)
+                response_batch.clear()
+                last_batch_time = time.time()
 
-            elif not response:
+            if not response:
+                if response_batch:
+                    output = "\n".join(response_batch)
+                    log.debug(output)
+                    status = PluginTaskStatus.completed
+                    self.record_task(status, output, task_input)
                 output = "Empire C# server output stream closed"
                 status = PluginTaskStatus.error
                 log.warning(output)
                 self.record_task(status, output, task_input)
+                break
 
     def record_task(self, status, task_output, task_input):
         with SessionLocal.begin() as db:
@@ -168,7 +173,6 @@ class Plugin(BasePlugin):
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
 
-        # check for confuse bool and convert to string
         bytes_confuse = b"true" if confuse else b"false"
         b64_confuse = base64.b64encode(bytes_confuse)
 
@@ -196,9 +200,7 @@ class Plugin(BasePlugin):
         b64_yaml = base64.b64encode(bytes_yaml)
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
-        # compiler only checks for true and ignores otherwise
 
-        # check for confuse bool and convert to string
         bytes_confuse = b"true" if confuse else b"false"
         b64_confuse = base64.b64encode(bytes_confuse)
 
