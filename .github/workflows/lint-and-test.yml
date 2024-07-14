@@ -23,11 +23,11 @@ jobs:
       - id: release
         if: ${{ startsWith(github.head_ref, 'release/') || contains( github.event.pull_request.labels.*.name, 'run-all-versions') }}
         run: |
-          echo "config={\"python-version\": [\"3.11\", \"3.12\"]}" >> $GITHUB_OUTPUT
+          echo "config={\"python-version\": [\"3.12\"]}" >> $GITHUB_OUTPUT
       - id: not-release
         if: ${{ !startsWith(github.head_ref, 'release/') }}
         run: |
-          echo "config={\"python-version\": [\"3.11\", \"3.12\"]}" >> $GITHUB_OUTPUT
+          echo "config={\"python-version\": [\"3.12\"]}" >> $GITHUB_OUTPUT
     outputs:
         config: ${{ steps.release.outputs.config || steps.not-release.outputs.config }}
   test:

@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Removed autorun config options which haven't been used since Empire 3
 -   Removed install support for Debian 10
+-   Removed Python 3.11 as a supported Python version
+-   Removed unused `iptools` dependency
 
 #### Breaking
 

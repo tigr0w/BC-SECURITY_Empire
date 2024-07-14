@@ -32,6 +32,7 @@ empire/test/downloads
 empire/test/data/obfuscated_module_source
 .coverage
 htmlcov/
+empire/server/plugins/example_2/
 
 # misc
 *.log

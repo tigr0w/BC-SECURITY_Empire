@@ -13,10 +13,9 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.13"
+python = ">=3.12,<3.13"
 urllib3 = "^2.2.0"
 requests = "^2.31.0"
-iptools = "^0.7.0"
 macholib = "^1.16.3"
 dropbox = "^11.36.2"
 pyOpenSSL = "^24.0.0"
@@ -101,7 +100,7 @@ extend-exclude = [
     'empire/client/downloads',
     'empire/server/plugins/Report-Generation-Plugin'
 ]
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
 # Will revisit line lengths later. Black won't format the strings and comments
