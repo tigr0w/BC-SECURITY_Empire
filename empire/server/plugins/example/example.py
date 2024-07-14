@@ -2,7 +2,7 @@
 
 import logging
 
-from empire.server.common.plugins import BasePlugin
+from empire.server.core.plugins import BasePlugin
 
 # Relative imports don't work in plugins right now.
 # from . import example_helpers

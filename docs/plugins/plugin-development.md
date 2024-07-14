@@ -191,6 +191,7 @@ This is no different than the way things were pre 5.0.
 * Plugin execute function must take `**kwargs`
 * Plugin name is now based on the name in the `plugin.yaml` file instead of the filename
 * `mainMenu` is now `main_menu`
+* BasePlugin moved from common to core
 
 ## Future Work
 * improved plugin logging -

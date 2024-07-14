@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session, joinedload, undefer
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
 from empire.server.api.v2.plugin.plugin_task_dto import PluginTaskOrderOptions
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.common.plugins import PluginInfo
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
@@ -22,6 +21,7 @@ from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
 )
+from empire.server.core.plugins import PluginInfo
 from empire.server.utils.option_util import validate_options
 
 if typing.TYPE_CHECKING:

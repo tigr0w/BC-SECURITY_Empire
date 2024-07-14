@@ -3,8 +3,8 @@ import logging
 import socket
 
 import empire.server.common.helpers as helpers
-from empire.server.common.plugins import BasePlugin
 from empire.server.core.plugin_service import PluginService
+from empire.server.core.plugins import BasePlugin
 
 log = logging.getLogger(__name__)
 

@@ -13,7 +13,6 @@ def domain_to_dto_module(module: EmpireModule, uid: str):
             "value": x[1].value,
             "strict": x[1].strict,
             "suggested_values": x[1].suggested_values,
-            # todo expand to listener, stager, etc
             "value_type": to_value_type(x[1].value, x[1].type),
         }
         for x in options.items()

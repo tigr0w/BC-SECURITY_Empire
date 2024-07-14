@@ -6,7 +6,7 @@ from empire.server.api.v2.shared_dto import (
     coerced_dict,
     to_value_type,
 )
-from empire.server.common.plugins import BasePlugin
+from empire.server.core.plugins import BasePlugin
 
 
 def domain_to_dto_plugin(plugin: BasePlugin, uid: str):

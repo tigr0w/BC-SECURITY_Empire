@@ -2,10 +2,10 @@ import csv
 import io
 
 from empire.server.common.empire import MainMenu
-from empire.server.common.plugins import BasePlugin
 from empire.server.core.db import models
 from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.plugin_service import PluginService
+from empire.server.core.plugins import BasePlugin
 
 
 class Plugin(BasePlugin):
