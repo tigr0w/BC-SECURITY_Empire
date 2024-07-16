@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.11.0] - 2024-07-14
+
 ### Added
+
 -   Added threaded jobs for powershell tasks using Appdomains (@Cx01N)
 -   Added job tracking for all tasks in Sharpire (@Cx01N)
 -   Updated agents to track all tasks and removed only tracking jobs (@Cx01N)
@@ -22,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added ThreadlessInject module (@Cx01N)
 
 ### Fixed
+
 -   Fixed issue in python agents where background jobs were failed due to a missing character (@Cx01N)
 -   Fixed task bundling for the c# server plugin (@Cx01N)
 -   Fixed issue in python agents where background jobs were failed due to a missing character (@Cx01N)
@@ -31,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed NET45 files not being removed on server reset (@Cx01N)
 
 ### Changed
+
 -   Converted C# server plugin to use plugin taskings (@Cx01N)
 -   Upgraded Ruff to 0.5.0 and Black to 24.4.2 (@Vinnybod)
 -   Added pylint-convention (PLC), pylint-error (PLE), pylint-warning (PLW), and pylint-refactor (PLR) to ruff config (@Vinnybod)
@@ -871,7 +876,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.0...HEAD
+
+[5.11.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.3...v5.11.0
 
 [5.10.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.2...v5.10.3
 
