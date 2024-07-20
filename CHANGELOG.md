@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-
+-   Removed duplicate code for ironpython agent for loading path resetting (@Cx01N)
 -   Fixed issue of Sharpire taskings not getting assigned correct id (@Cx01N)
 
 ## [5.11.0] - 2024-07-14
