@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+-   Fixed issue of Sharpire taskings not getting assigned correct id (@Cx01N)
+
 ## [5.11.0] - 2024-07-14
 
 ### Added
@@ -28,9 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed issue in python agents where background jobs were failed due to a missing character (@Cx01N)
 -   Fixed task bundling for the c# server plugin (@Cx01N)
--   Fixed issue in python agents where background jobs were failed due to a missing character (@Cx01N)
 -   Fixed missing New-GPOImmediateTask in powerview (@Cx01N)
--   Fixed issue in python agents where background jobs were failed due to a missing character (@Cx01N)
 -   Fixed NET45 missing folder causing a compilation error (@Cx01N)
 -   Fixed NET45 files not being removed on server reset (@Cx01N)
 
