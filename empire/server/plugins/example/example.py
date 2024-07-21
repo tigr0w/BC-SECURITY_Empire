@@ -1,6 +1,7 @@
 """ An example of a plugin. """
 
 import logging
+from typing import override
 
 from empire.server.core.plugins import BasePlugin
 
@@ -20,7 +21,8 @@ log.info("Hello from your new plugin!")
 
 # this class MUST be named Plugin
 class Plugin(BasePlugin):
-    def onLoad(self):
+    @override
+    def on_load(self, db):
         """
         Any custom loading behavior - called by init, so any
         behavior you'd normally put in __init__ goes here
@@ -29,14 +31,13 @@ class Plugin(BasePlugin):
 
         # you can store data here that will persist until the plugin
         # is unloaded (i.e. Empire closes)
-        self.calledTimes = 0
+        self.called_times = 0
 
         # Any options needed by the plugin, settable during runtime
         self.options = {
             # Format:
             #   value_name : {description, required, default_value}
             "Status": {
-                # The 'Agent' option is the only one that MUST be in a module
                 "Description": "Example Status update",
                 "Required": True,
                 "Value": "start",
@@ -48,6 +49,7 @@ class Plugin(BasePlugin):
             },
         }
 
+    @override
     def execute(self, command, **kwargs):
         """
         Parses commands from the API
@@ -57,14 +59,6 @@ class Plugin(BasePlugin):
             return results
         except Exception:
             return False
-
-    def register(self, main_menu):
-        """
-        Any modifications to the main_menu go here - e.g.
-        registering functions to be run by user commands
-        """
-        self.installPath = main_menu.installPath
-        self.main_menu = main_menu
 
     def do_test(self, command):
         """
@@ -76,14 +70,15 @@ class Plugin(BasePlugin):
         self.status = command["Status"]
 
         if self.status == "start":
-            self.calledTimes += 1
-            log.info(f"This function has been called {self.calledTimes} times.")
+            self.called_times += 1
+            log.info(f"This function has been called {self.called_times} times.")
             log.info("Message: " + command["Message"])
 
         else:
             log.info("Usage: example <start|stop> <message>")
 
-    def shutdown(self):
+    @override
+    def on_stop(self, db):
         """
         Kills additional processes that were spawned
         """

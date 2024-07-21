@@ -53,7 +53,7 @@ agent_task_download_assc = Table(
 plugin_task_download_assc = Table(
     "plugin_task_download_assc",
     Base.metadata,
-    Column("plugin_task_id", Integer),
+    Column("plugin_task_id", Integer, ForeignKey("plugin_tasks.id")),
     Column("download_id", Integer, ForeignKey("downloads.id")),
     ForeignKeyConstraint(("plugin_task_id",), ("plugin_tasks.id",)),
 )
@@ -423,6 +423,13 @@ class AgentTask(Base):
         self.__dict__[key] = value
 
 
+class Plugin(Base):
+    __tablename__ = "plugins"
+    id = Column(String(255), primary_key=True)
+    name = Column(String(255), nullable=False)
+    enabled = Column(Boolean, nullable=False)
+
+
 class PluginTaskStatus(str, enum.Enum):
     queued = "queued"
     started = "started"
@@ -434,7 +441,7 @@ class PluginTaskStatus(str, enum.Enum):
 class PluginTask(Base):
     __tablename__ = "plugin_tasks"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    plugin_id = Column(String(255))
+    plugin_id = Column(String(255), ForeignKey("plugins.id"), nullable=False)
     input = Column(Text)
     input_full = deferred(Column(Text().with_variant(mysql.LONGTEXT, "mysql")))
     output = deferred(

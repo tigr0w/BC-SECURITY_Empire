@@ -18,124 +18,145 @@ from empire.server.utils.module_util import handle_error_message
 
 
 @pytest.fixture(scope="module", autouse=True)
-def agent_low_version(db, models, main):
-    agent = db.query(models.Agent).filter(models.Agent.session_id == "WEAK").first()
-    if not agent:
-        agent = models.Agent(
-            name="WEAK",
-            session_id="WEAK",
-            delay=1,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="1",
-            high_integrity=True,
-            archived=False,
-        )
-        db.add(agent)
-        db.flush()
+def agent_low_version(session_local, models, main):
+    with session_local.begin() as db:
+        agent = db.query(models.Agent).filter(models.Agent.session_id == "WEAK").first()
+        if not agent:
+            agent = models.Agent(
+                name="WEAK",
+                session_id="WEAK",
+                delay=1,
+                jitter=0.1,
+                external_ip="1.1.1.1",
+                session_key="qwerty",
+                nonce="nonce",
+                profile="profile",
+                kill_date="killDate",
+                working_hours="workingHours",
+                lost_limit=60,
+                listener="http",
+                language="powershell",
+                language_version="1",
+                high_integrity=True,
+                archived=False,
+            )
+            db.add(agent)
+            db.flush()
+
+        main.agentcommsv2.agents["WEAK"] = {
+            "sessionKey": agent.session_key,
+            "functions": agent.functions,
+        }
+
+        session_id = agent.session_id
+
+    yield session_id
+
+    with session_local.begin() as db:
+        db.query(models.AgentTask).filter(
+            models.AgentTask.agent_id == session_id
+        ).delete()
+        db.query(models.Agent).filter(models.Agent.session_id == session_id).delete()
         db.commit()
-
-    main.agentcommsv2.agents["WEAK"] = {
-        "sessionKey": agent.session_key,
-        "functions": agent.functions,
-    }
-
-    yield agent
-
-    db.query(models.AgentTask).filter(
-        models.AgentTask.agent_id == agent.session_id
-    ).delete()
-    db.delete(agent)
-    db.commit()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def agent_archived(db, models, main):
-    agent = db.query(models.Agent).filter(models.Agent.session_id == "WEAK").first()
-    if not agent:
-        agent = models.Agent(
-            name="iamarchived",
-            session_id="iamarchived",
-            delay=1,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="1",
-            high_integrity=True,
-            archived=True,
+def agent_archived(session_local, models, main):
+    with session_local.begin() as db:
+        agent = (
+            db.query(models.Agent)
+            .filter(models.Agent.session_id == "iamarchived")
+            .first()
         )
-        db.add(agent)
-        db.flush()
+        if not agent:
+            agent = models.Agent(
+                name="iamarchived",
+                session_id="iamarchived",
+                delay=1,
+                jitter=0.1,
+                external_ip="1.1.1.1",
+                session_key="qwerty",
+                nonce="nonce",
+                profile="profile",
+                kill_date="killDate",
+                working_hours="workingHours",
+                lost_limit=60,
+                listener="http",
+                language="powershell",
+                language_version="1",
+                high_integrity=True,
+                archived=True,
+            )
+            db.add(agent)
+            db.flush()
+
+        main.agentcommsv2.agents["iamarchived"] = {
+            "sessionKey": agent.session_key,
+            "functions": agent.functions,
+        }
+
+        session_id = agent.session_id
+
+    yield session_id
+
+    with session_local.begin() as db:
+        db.query(models.AgentTask).filter(
+            models.AgentTask.agent_id == session_id
+        ).delete()
+        db.query(models.Agent).filter(models.Agent.session_id == session_id).delete()
         db.commit()
-
-    main.agentcommsv2.agents["iamarchived"] = {
-        "sessionKey": agent.session_key,
-        "functions": agent.functions,
-    }
-
-    yield agent
-
-    db.delete(agent)
-    db.commit()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def agent_low_integrity(db, models, main):
-    agent = db.query(models.Agent).filter(models.Agent.session_id == "WEAK2").first()
-    if not agent:
-        agent = models.Agent(
-            name="WEAK2",
-            session_id="WEAK2",
-            delay=1,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            archived=False,
+def agent_low_integrity(session_local, models, main):
+    with session_local.begin() as db:
+        agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == "WEAK2").first()
         )
-        db.add(agent)
-        db.flush()
+        if not agent:
+            agent = models.Agent(
+                name="WEAK2",
+                session_id="WEAK2",
+                delay=1,
+                jitter=0.1,
+                external_ip="1.1.1.1",
+                session_key="qwerty",
+                nonce="nonce",
+                profile="profile",
+                kill_date="killDate",
+                working_hours="workingHours",
+                lost_limit=60,
+                listener="http",
+                language="powershell",
+                language_version="5",
+                high_integrity=False,
+                archived=False,
+            )
+            db.add(agent)
+            db.flush()
+
+        main.agentcommsv2.agents["WEAK2"] = {
+            "sessionKey": agent.session_key,
+            "functions": agent.functions,
+        }
+
+        session_id = agent.session_id
+
+    yield session_id
+
+    with session_local.begin() as db:
+        db.query(models.AgentTask).filter(
+            models.AgentTask.agent_id == session_id
+        ).delete()
+        db.query(models.Agent).filter(models.Agent.session_id == session_id).delete()
         db.commit()
 
-    main.agentcommsv2.agents["WEAK2"] = {
-        "sessionKey": agent.session_key,
-        "functions": agent.functions,
-    }
 
-    yield agent
-
-    db.query(models.AgentTask).filter(
-        models.AgentTask.agent_id == agent.session_id
-    ).delete()
-    db.delete(agent)
-    db.commit()
-
-
+#
+# TODO: I think the source of the issues is the db fixture. Should replace with
+# session_local fixture. I'm not sure why the issue is just now popping up though.
 @pytest.fixture(scope="module", autouse=True)
-def download(client, admin_auth_header, db, models):
+def download(client, admin_auth_header, session_local, models):
     response = client.post(
         "/api/v2/downloads",
         headers=admin_auth_header,
@@ -150,12 +171,12 @@ def download(client, admin_auth_header, db, models):
     yield response.json()
 
     # there is no delete endpoint for downloads, so we need to delete the file manually
-    with contextlib.suppress(Exception):
+    with contextlib.suppress(Exception), session_local.begin() as db:
         db.query(models.Download).delete()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def bof_download(client, admin_auth_header, db, models):
+def bof_download(client, admin_auth_header, session_local, models):
     response = client.post(
         "/api/v2/downloads",
         headers=admin_auth_header,
@@ -170,7 +191,7 @@ def bof_download(client, admin_auth_header, db, models):
     yield response.json()
 
     # there is no delete endpoint for downloads, so we need to delete the file manually
-    with contextlib.suppress(Exception):
+    with contextlib.suppress(Exception), session_local.begin() as db:
         db.query(models.Download).delete()
 
 
@@ -360,25 +381,33 @@ def test_create_task_module_modified_input(client, admin_auth_header, agent):
     assert response.json()["agent_id"] == agent
 
 
-def test_create_task_bof_module_disabled_csharpserver(
-    client, admin_auth_header, agent, bof_download
-):
-    response = client.post(
-        f"/api/v2/agents/{agent}/tasks/module",
-        headers=admin_auth_header,
-        json={
-            "module_id": "csharp_inject_bof_inject_bof",
-            "options": {
-                "File": bof_download["id"],
-                "EntryPoint": "",
-                "ArgumentList": "",
-                "Architecture": "x64",
-            },
-        },
-    )
+@contextlib.contextmanager
+def disable_csharpserver(main):
+    main.pluginsv2.loaded_plugins["csharpserver"].enabled = False
+    yield
+    main.pluginsv2.loaded_plugins["csharpserver"].enabled = True
 
-    assert response.status_code == 400
-    assert response.json()["detail"] == "csharpserver plugin not running"
+
+def test_create_task_bof_module_disabled_csharpserver(
+    client, admin_auth_header, agent, bof_download, main
+):
+    with disable_csharpserver(main):
+        response = client.post(
+            f"/api/v2/agents/{agent}/tasks/module",
+            headers=admin_auth_header,
+            json={
+                "module_id": "csharp_inject_bof_inject_bof",
+                "options": {
+                    "File": bof_download["id"],
+                    "EntryPoint": "",
+                    "ArgumentList": "",
+                    "Architecture": "x64",
+                },
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "csharpserver plugin not running"
 
 
 def test_create_task_module_with_file_option_not_found(
@@ -460,7 +489,7 @@ def test_create_task_module_language_version_check(
     client, admin_auth_header, agent_low_version
 ):
     response = client.post(
-        f"/api/v2/agents/{agent_low_version.session_id}/tasks/module",
+        f"/api/v2/agents/{agent_low_version}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "powershell_trollsploit_message",
@@ -483,7 +512,7 @@ def test_create_task_module_ignore_language_version_check(
     client, admin_auth_header, agent_low_version
 ):
     response = client.post(
-        f"/api/v2/agents/{agent_low_version.session_id}/tasks/module",
+        f"/api/v2/agents/{agent_low_version}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "powershell_trollsploit_message",
@@ -502,7 +531,7 @@ def test_create_task_module_ignore_language_version_check(
 
 def test_create_task_module_admin_check(client, admin_auth_header, agent_low_integrity):
     response = client.post(
-        f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
+        f"/api/v2/agents/{agent_low_integrity}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "powershell_credentials_mimikatz_logonpasswords",
@@ -518,7 +547,7 @@ def test_create_task_module_ignore_admin_check(
     client, admin_auth_header, agent_low_integrity
 ):
     response = client.post(
-        f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
+        f"/api/v2/agents/{agent_low_integrity}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "powershell_credentials_mimikatz_logonpasswords",
@@ -535,7 +564,7 @@ def test_create_task_module_validation_exception(
     client, admin_auth_header, agent_low_integrity
 ):
     response = client.post(
-        f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
+        f"/api/v2/agents/{agent_low_integrity}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "this_module_uses_legacy_handle_error_message",
@@ -555,7 +584,7 @@ def test_create_task_module_execution_exception(
     client, admin_auth_header, agent_low_integrity
 ):
     response = client.post(
-        f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
+        f"/api/v2/agents/{agent_low_integrity}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "this_module_has_an_execution_exception",
@@ -572,7 +601,7 @@ def test_create_task_handle_error_message(
     client, admin_auth_header, agent_low_integrity
 ):
     response = client.post(
-        f"/api/v2/agents/{agent_low_integrity.session_id}/tasks/module",
+        f"/api/v2/agents/{agent_low_integrity}/tasks/module",
         headers=admin_auth_header,
         json={
             "module_id": "this_module_has_an_execution_exception",
@@ -1004,15 +1033,12 @@ def test_get_task_for_agent(client, admin_auth_header, agent, agent_task):
 
 def test_create_task_archived_agent(client, admin_auth_header, agent_archived):
     response = client.post(
-        f"/api/v2/agents/{agent_archived.session_id}/tasks/shell",
+        f"/api/v2/agents/{agent_archived}/tasks/shell",
         headers=admin_auth_header,
         json={"command": 'echo "HELLO WORLD"'},
     )
     assert response.status_code == 400
-    assert (
-        response.json()["detail"]
-        == f"[!] Agent {agent_archived.session_id} is archived."
-    )
+    assert response.json()["detail"] == f"[!] Agent {agent_archived} is archived."
 
 
 def test_delete_task(client, admin_auth_header, agent, agent_task):

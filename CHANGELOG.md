@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 -   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs
+-   Plugins refactored - see the `plugin-development` wiki page
 
 #### Breaking
 -   Moved `Agents` class to `AgentCommunicationService`
@@ -40,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Plugin execute function must take `**kwargs`
 -   Plugin name is now based on the name in the `plugin.yaml` file instead of the filename
 -   Plugins now contain `main_menu` instead of `mainMenu`
+-   Plugin `onLoad` renamed to `on_load` and takes a `db` object
 -   Moved C# compiler to a submodule.
 -   All C# module code has been moved as submodules of Empire-Compiler
 

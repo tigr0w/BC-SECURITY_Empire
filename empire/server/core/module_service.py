@@ -221,7 +221,7 @@ class ModuleService:
         bof_module = self.modules["csharp_inject_bof_inject_bof"]
 
         compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
-        if not compiler.status == "ON":
+        if not compiler.enabled:
             raise ModuleValidationException("csharpserver plugin not running")
 
         compiler_dict: dict = yaml.safe_load(bof_module.compiler_yaml)
@@ -501,7 +501,7 @@ class ModuleService:
     ) -> str:
         try:
             compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
-            if not compiler.status == "ON":
+            if not compiler.enabled:
                 raise ModuleValidationException("csharpserver plugin not running")
             file_name = compiler.do_send_message(
                 module.compiler_yaml, module.name, confuse=obfuscation_config.enabled

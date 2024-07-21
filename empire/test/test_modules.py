@@ -61,6 +61,9 @@ def main_menu_mock(models):
     )
     main_menu.obfuscationv2.obfuscate = Mock(side_effect=fake_obfuscate)
     main_menu.obfuscationv2.obfuscate_keywords = Mock(side_effect=lambda x: x)
+    main_menu.pluginsv2.get_by_id = Mock(
+        side_effect=lambda x: Mock(enabled=False) if x == "csharpserver" else None
+    )
 
     yield main_menu
 

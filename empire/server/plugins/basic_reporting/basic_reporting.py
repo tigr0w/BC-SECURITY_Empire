@@ -1,15 +1,15 @@
 import csv
 import io
+from typing import override
 
-from empire.server.common.empire import MainMenu
 from empire.server.core.db import models
 from empire.server.core.db.models import PluginTaskStatus
-from empire.server.core.plugin_service import PluginService
 from empire.server.core.plugins import BasePlugin
 
 
 class Plugin(BasePlugin):
-    def onLoad(self):
+    @override
+    def on_load(self, db):
         self.options = {
             "report": {
                 "Description": "Reports to generate.",
@@ -19,8 +19,8 @@ class Plugin(BasePlugin):
                 "Strict": True,
             }
         }
-        self.install_path = ""
 
+    @override
     def execute(self, command, **kwargs):
         """
         Parses commands from the API
@@ -57,15 +57,6 @@ class Plugin(BasePlugin):
         plugin_task.downloads = db_downloads
         db.add(plugin_task)
         db.flush()
-
-    def register(self, main_menu: MainMenu):
-        """
-        Any modifications to the main_menu go here - e.g.
-        registering functions to be run by user commands
-        """
-        self.install_path = main_menu.installPath
-        self.main_menu = main_menu
-        self.plugin_service: PluginService = main_menu.pluginsv2
 
     def session_report(self, db, user):
         out = io.StringIO()
@@ -117,13 +108,6 @@ class Plugin(BasePlugin):
         )
 
         return db_download
-
-    def shutdown(self):
-        """
-        Kills additional processes that were spawned
-        """
-        # If the plugin spawns a process provide a shutdown method for when Empire exits else leave it as pass
-        pass
 
 
 def xstr(s):

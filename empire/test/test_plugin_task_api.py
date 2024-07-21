@@ -18,6 +18,7 @@ def plugin_task_1(main, session_local, models, plugin_name):
     yield task_id
 
     with session_local.begin() as db:
+        db.query(models.plugin_task_download_assc).delete()
         db.query(models.PluginTask).delete()
 
 

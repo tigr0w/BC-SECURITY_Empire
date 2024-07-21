@@ -161,7 +161,7 @@ class StagerGenerationService:
             f.write(posh_code)
 
         compiler = self.plugin_service.get_by_id("csharpserver")
-        if compiler.status != "ON":
+        if not compiler.enabled:
             log.error("csharpserver plugin not running")
         else:
             file_name = compiler.do_send_stager(
@@ -258,7 +258,7 @@ class StagerGenerationService:
             f.write(python_code)
 
         compiler = self.plugin_service.get_by_id("csharpserver")
-        if compiler.status != "ON":
+        if not compiler.enabled:
             log.error("csharpserver plugin not running")
         else:
             file_name = compiler.do_send_stager(

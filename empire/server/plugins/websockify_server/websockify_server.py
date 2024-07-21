@@ -1,18 +1,18 @@
 import contextlib
 import logging
+from typing import override
 
 import websockify
 
 import empire.server.common.helpers as helpers
-from empire.server.core.plugin_service import PluginService
 from empire.server.core.plugins import BasePlugin
 
 log = logging.getLogger(__name__)
 
 
 class Plugin(BasePlugin):
-    def onLoad(self):
-        self.main_menu = None
+    @override
+    def on_load(self, db):
         self.csharpserver_proc = None
 
         self.options = {
@@ -45,31 +45,20 @@ class Plugin(BasePlugin):
             },
         }
 
-    def execute(self, command):
+    @override
+    def execute(self, command, **kwargs):
         # This is for parsing commands through the api
         try:
             self.websockify_proc = None
             # essentially switches to parse the proper command to execute
             self.status = command["Status"]
-            results = self.do_websockify(command)
+            results = self.do_websockify(command, kwargs["db"])
             return results
         except Exception as e:
             log.error(e)
             return False, f"[!] {e}"
 
-    def get_commands(self):
-        return self.commands
-
-    def register(self, main_menu):
-        """
-        any modifications to the main_menu go here - e.g.
-        registering functions to be run by user commands
-        """
-        self.installPath = main_menu.installPath
-        self.main_menu = main_menu
-        self.plugin_service: PluginService = main_menu.pluginsv2
-
-    def do_websockify(self, command):
+    def do_websockify(self, command, db):
         """
         Check if the Empire C# server is already running.
         """
@@ -86,7 +75,7 @@ class Plugin(BasePlugin):
 
         elif self.status == "stop":
             if self.enabled:
-                self.shutdown()
+                self.on_stop(db)
                 return "[!] Stopped Websockify server"
             else:
                 return "[!] Websockify server is already stopped"
@@ -109,7 +98,7 @@ class Plugin(BasePlugin):
             self.websockify_proc.start()
             return "[+] Websockify server successfully started"
 
-    def shutdown(self):
+    @override
+    def on_stop(self, db):
         with contextlib.suppress(Exception):
             self.websockify_proc.kill()
-        return

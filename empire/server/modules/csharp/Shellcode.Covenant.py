@@ -19,7 +19,7 @@ class Module:
             return None, f"Failed to get base64 encoded shellcode: {e}"
 
         compiler = main_menu.pluginsv2.get_by_id("csharpserver")
-        if compiler.status != "ON":
+        if not compiler.enabled:
             return None, "csharpserver plugin not running"
 
         # Convert compiler.yaml to python dict

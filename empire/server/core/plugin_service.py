@@ -42,10 +42,26 @@ class PluginService:
         This way plugin_service is fully initialized on MainMenu before plugins are loaded.
         """
         with SessionLocal.begin() as db:
-            self.startup_plugins(db)
-            self.autostart_plugins()
+            self.load_plugins(db)
+            self.auto_execute_plugins(db)
 
-    def autostart_plugins(self):
+    def get_plugin_db(self, db: Session, plugin_id: str):
+        return db.query(models.Plugin).filter(models.Plugin.id == plugin_id).first()
+
+    def update_plugin_enabled(self, db: Session, plugin, enabled: bool):
+        db_plugin = self.get_plugin_db(db, plugin.info.name)
+        if db_plugin.enabled == enabled:
+            return
+        elif enabled:
+            plugin.on_start(db)
+            db_plugin.enabled = True
+            plugin.enabled = True
+        else:
+            plugin.on_stop(db)
+            db_plugin.enabled = False
+            plugin.enabled = False
+
+    def auto_execute_plugins(self, db):
         """
         Autorun plugin commands at server startup.
         """
@@ -59,15 +75,14 @@ class PluginService:
 
             req = PluginExecutePostRequest(options=options)
 
-            with SessionLocal.begin() as db:
-                results, err = self.execute_plugin(db, use_plugin, req, None)
+            results, err = self.execute_plugin(db, use_plugin, req, None)
 
             if results is False:
                 log.error(f"Plugin failed to run: {plugin_name}")
             else:
                 log.info(f"Plugin {plugin_name} ran successfully!")
 
-    def startup_plugins(self, db: Session):
+    def load_plugins(self, db: Session):
         """
         Load plugins at the start of Empire
         """
@@ -100,27 +115,56 @@ class PluginService:
                 continue
 
             try:
-                self.load_plugin(plugin_file, plugin_config)
+                self.load_plugin(db, plugin_file, plugin_config)
             except Exception as e:
                 log.error(
                     f"Failed to load plugin {plugin_file.name}: {e}", exc_info=True
                 )
 
-    def load_plugin(self, file_path: Path, plugin_config: dict):
+    def load_plugin(self, db: Session, file_path: Path, plugin_config: dict):
         """Given the name of a plugin and a menu object, load it into the menu"""
+        plugin_obj = self._create_plugin_obj(db, file_path, plugin_config)
+
+        self.loaded_plugins[plugin_obj.info.name] = plugin_obj
+        db_plugin = self.get_plugin_db(db, plugin_obj.info.name)
+
+        if not db_plugin:
+            auto_start = self._determine_auto_start(plugin_obj, empire_config)
+
+            db_plugin = models.Plugin(
+                id=plugin_obj.info.name,
+                name=plugin_obj.info.name,
+                enabled=auto_start,
+            )
+            db.add(db_plugin)
+            db.flush()
+
+        try:
+            if db_plugin.enabled:
+                plugin_obj.on_start(db)
+        except Exception as e:
+            log.error(
+                f"Failed to start plugin {plugin_obj.info.name}: {e}", exc_info=True
+            )
+            plugin_obj.enabled = False
+            db_plugin.enabled = False
+
+        plugin_obj.enabled = db_plugin.enabled
+
+    def _create_plugin_obj(self, db, file_path, plugin_config):
         plugin_file_name = file_path.name.removesuffix(".py")
         plugin_info = PluginInfo(**plugin_config)
         loader = importlib.machinery.SourceFileLoader(plugin_file_name, str(file_path))
         module = loader.load_module()
-        plugin_obj = module.Plugin(self.main_menu, plugin_info)
+        plugin_obj = module.Plugin(self.main_menu, plugin_info, db)
+        return plugin_obj
 
-        for value in plugin_obj.options.values():
-            if value.get("SuggestedValues") is None:
-                value["SuggestedValues"] = []
-            if value.get("Strict") is None:
-                value["Strict"] = False
-
-        self.loaded_plugins[plugin_obj.info.name] = plugin_obj
+    @staticmethod
+    def _determine_auto_start(plugin_obj, empire_config) -> bool:
+        # Server Config -> Plugin Config -> Default (True)
+        # Every plugin will auto start.
+        # A subsequent PR will add the configuration.
+        return True
 
     def execute_plugin(
         self,
@@ -129,6 +173,12 @@ class PluginService:
         plugin_req: PluginExecutePostRequest,
         user: models.User | None = None,
     ) -> tuple[bool | str | None, str | None]:
+        # Since some plugins are enabled/disabled via execution, we still have to allow
+        # the execution to continue even if the plugin is disabled.
+        # In a subsequent PR, this will be uncommented.
+        # if plugin.enabled is False:
+        #     raise PluginValidationException("Plugin is not running")
+
         cleaned_options, err = validate_options(
             plugin.options, plugin_req.options, db, self.download_service
         )
@@ -137,8 +187,8 @@ class PluginService:
             raise PluginValidationException(err)
 
         try:
-            # As of 5.2, plugins should now be executed with a user_id and db session
             res = plugin.execute(cleaned_options, db=db, user=user)
+            # Tuple is deprecated. Will be removed in 7.x
             if isinstance(res, tuple):
                 return res
             return res, None
@@ -280,5 +330,7 @@ class PluginService:
         return results, total
 
     def shutdown(self):
-        for plugin in self.loaded_plugins.values():
-            plugin.shutdown()
+        with SessionLocal.begin() as db:
+            for plugin in self.loaded_plugins.values():
+                plugin.on_stop(db)
+                plugin.on_unload(db)

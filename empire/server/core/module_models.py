@@ -45,9 +45,9 @@ class EmpireModuleOption(BaseModel):
 
 
 class EmpireAuthor(BaseModel):
-    name: str
-    handle: str
-    link: str
+    name: str | None = ""
+    handle: str | None = ""
+    link: str | None = ""
 
 
 class BofModuleOption(BaseModel):

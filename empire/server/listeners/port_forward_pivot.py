@@ -377,7 +377,7 @@ class Listener:
             )
 
             compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
-            if compiler.status != "ON":
+            if not compiler.enabled:
                 self.instance_log.error(
                     f"{listener_name} csharpserver plugin not running"
                 )

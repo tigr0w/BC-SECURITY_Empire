@@ -1,7 +1,6 @@
 import logging
-import shutil
 from contextlib import contextmanager
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
 
@@ -23,41 +22,27 @@ def patch_plugin_options(plugin, options):
 
 
 @contextmanager
-def temp_copy_plugin(plugin_path):
-    """
-    Copy the example plugin to a temporary location. Since plugin_service
-    won't load a plugin called "example".
-    """
-    example_plugin_path = plugin_path / "example"
-    example_plugin_copy_path = plugin_path / "example_2"
-
-    shutil.copytree(str(example_plugin_path), str(example_plugin_copy_path))
-
-    config = (example_plugin_copy_path / "plugin.yaml").read_text()
-    config = config.replace("name: example", "name: example_2")
-    (example_plugin_copy_path / "plugin.yaml").write_text(config)
-
-    yield
-
-    shutil.rmtree(str(example_plugin_copy_path))
+def patch_plugin_class_on_start_on_stop(plugin_class, on_start=None, on_stop=None):
+    with patch.object(plugin_class, "on_start", new=on_start), patch.object(
+        plugin_class, "on_stop", new=on_stop
+    ):
+        yield
 
 
-def test_autostart_plugins(
+def test_auto_execute_plugins(
     caplog, monkeypatch, db, models, empire_config, install_path
 ):
     caplog.set_level(logging.DEBUG)
 
     from empire.server.core.plugin_service import PluginService
 
-    plugin_path = install_path / "plugins"
-
-    with temp_copy_plugin(plugin_path):
-        main_menu_mock = MagicMock()
-        main_menu_mock.installPath = str(install_path)
-        plugin_service = PluginService(main_menu_mock)
-        plugin_service.startup()
+    main_menu_mock = MagicMock()
+    main_menu_mock.installPath = str(install_path)
+    plugin_service = PluginService(main_menu_mock)
+    plugin_service.startup()
 
     assert "This function has been called 1 times." in caplog.text
+    assert "Message: Hello World!" in caplog.text
 
 
 def test_plugin_execute_with_kwargs(install_path):
@@ -151,3 +136,32 @@ def test_execute_plugin_file_option(install_path, db, models):
         mocked_execute.assert_called_once_with(
             {"file_option": download}, db=db, user=None
         )
+
+
+def test_on_start_on_stop_called(install_path):
+    from empire.server.core.plugin_service import PluginService
+    from empire.server.core.plugins import BasePlugin
+
+    main_menu_mock = MagicMock()
+    main_menu_mock.installPath = install_path
+
+    plugin_service = PluginService(main_menu_mock)
+    plugin_service.startup()
+
+    on_start_mock = Mock()
+    on_stop_mock = Mock()
+
+    # Need to patch the class itself, not the instance
+    # To capture the on_start.
+    with patch_plugin_class_on_start_on_stop(
+        BasePlugin, on_start=on_start_mock, on_stop=on_stop_mock
+    ):
+        plugin_service.startup()
+        assert on_start_mock.call_count > 0
+
+        plugin_service.shutdown()
+        assert on_stop_mock.call_count > 0
+
+
+def test_on_load_on_unload_called(install_path):
+    pass

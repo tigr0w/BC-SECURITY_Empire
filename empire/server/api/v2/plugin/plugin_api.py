@@ -10,6 +10,7 @@ from empire.server.api.v2.plugin.plugin_dto import (
     PluginExecutePostRequest,
     PluginExecuteResponse,
     Plugins,
+    PluginUpdateRequest,
     domain_to_dto_plugin,
 )
 from empire.server.api.v2.shared_dependencies import CurrentSession
@@ -18,6 +19,7 @@ from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
 )
+from empire.server.core.plugins import BasePlugin
 from empire.server.server import main
 
 plugin_service = main.pluginsv2
@@ -33,7 +35,7 @@ router = APIRouter(
 )
 
 
-async def get_plugin(uid: str):
+async def get_plugin(uid: str) -> BasePlugin:
     plugin = plugin_service.get_by_id(uid)
 
     if plugin:
@@ -43,17 +45,15 @@ async def get_plugin(uid: str):
 
 
 @router.get("/", response_model=Plugins)
-async def read_plugins():
-    plugins = [
-        domain_to_dto_plugin(x[1], x[0]) for x in plugin_service.get_all().items()
-    ]
+async def read_plugins(db: CurrentSession):
+    plugins = [domain_to_dto_plugin(x[1], db) for x in plugin_service.get_all().items()]
 
     return {"records": plugins}
 
 
 @router.get("/{uid}")
-async def read_plugin(uid: str, plugin=Depends(get_plugin)):
-    return domain_to_dto_plugin(plugin, uid)
+async def read_plugin(uid: str, db: CurrentSession, plugin=Depends(get_plugin)):
+    return domain_to_dto_plugin(plugin, db)
 
 
 @router.post("/{uid}/execute", response_model=PluginExecuteResponse)
@@ -82,7 +82,18 @@ async def execute_plugin(
     return {"detail": results}
 
 
+@router.put("/{uid}", status_code=200)
+async def update_plugin(
+    uid: str,
+    plugin_update_req: PluginUpdateRequest,
+    db: CurrentSession,
+    plugin=Depends(get_plugin),
+):
+    plugin_service.update_plugin_enabled(db, plugin, plugin_update_req.enabled)
+    return domain_to_dto_plugin(plugin, db)
+
+
 @router.post("/reload", status_code=204, response_class=Response)
 async def reload_plugins(db: CurrentSession):
     plugin_service.shutdown()
-    plugin_service.startup_plugins(db)
+    plugin_service.load_plugins(db)

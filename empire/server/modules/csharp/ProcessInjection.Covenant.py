@@ -86,7 +86,7 @@ class Module:
         base64_shellcode = helpers.encode_base64(shellcode).decode("UTF-8")
 
         compiler = main_menu.pluginsv2.get_by_id("csharpserver")
-        if compiler.status != "ON":
+        if not compiler.enabled:
             return None, "csharpserver plugin not running"
 
         # Convert compiler.yaml to python dict

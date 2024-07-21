@@ -5,8 +5,6 @@ from pathlib import Path
 
 import pytest
 
-from empire.test.conftest import CLIENT_CONFIG_LOC
-
 
 # These tests are run last since they reset the server and can cause other tests to fail
 @pytest.fixture(scope="module", autouse=True)
@@ -127,73 +125,6 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
 
     if server_config_dict.get("database", {}).get("type") == "sqlite":
         assert not Path(server_config_dict["database"]["location"]).exists()
-
-    sys.argv = default_argv
-
-
-# TODO: At the moment, this is the only client test we have.
-#  It probably makes sense to split the tests into server and client directories, but
-#  I'm hesitant to do that just yet because it could cause some merge pain with 5.x
-@pytest.mark.slow
-@pytest.mark.timeout(30)
-def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
-    monkeypatch.setattr("builtins.input", lambda _: "y")
-    sys.argv = ["", "client", "--config", CLIENT_CONFIG_LOC, "--reset"]
-
-    download_files = [
-        ("file1.txt", "TEST"),
-        ("file2.txt", "TESTTEST"),
-        ("file3.txt", "TESTTESTTEST"),
-        (".keep", ""),
-    ]
-    for f in download_files:
-        write_to_file(client_config_dict["directories"]["downloads"] + f[0], f[1])
-
-    for f in download_files:
-        assert Path(client_config_dict["directories"]["downloads"] + f[0]).exists()
-
-    stager_files = [
-        ("file1.ps1", "TEST"),
-        ("file2.ps1", "TESTTEST"),
-        ("file3.ps1", "TESTTESTTEST"),
-        (".keep", ""),
-    ]
-    for f in stager_files:
-        write_to_file(
-            client_config_dict["directories"]["generated_stagers"] + f[0], f[1]
-        )
-
-    for f in stager_files:
-        assert Path(
-            client_config_dict["directories"]["generated_stagers"] + f[0]
-        ).exists()
-
-    import empire.arguments
-    import empire.client.client as client
-
-    reload(empire.arguments)
-    from empire.arguments import args
-
-    with pytest.raises(SystemExit):
-        client.start(args)
-
-    for f in download_files:
-        if f[0] != ".keep":
-            assert not Path(
-                client_config_dict["directories"]["downloads"] + f[0]
-            ).exists()
-        else:
-            assert Path(client_config_dict["directories"]["downloads"] + f[0]).exists()
-
-    for f in stager_files:
-        if f[0] != ".keep":
-            assert not Path(
-                client_config_dict["directories"]["generated_stagers"] + f[0]
-            ).exists()
-        else:
-            assert Path(
-                client_config_dict["directories"]["generated_stagers"] + f[0]
-            ).exists()
 
     sys.argv = default_argv
 

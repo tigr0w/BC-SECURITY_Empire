@@ -206,3 +206,44 @@ def test_reload_plugins(client, admin_auth_header):
 
     # The initial and final list of plugins should be the same after reload
     assert len(initial_plugins) == len(final_plugins)
+
+
+def test_toggle_plugin_enabled(client, admin_auth_header, main, session_local):
+    response = client.get("/api/v2/plugins/basic_reporting", headers=admin_auth_header)
+    assert response.json()["enabled"] is True
+
+    # Execute should work
+    response = client.post(
+        "/api/v2/plugins/basic_reporting/execute",
+        json={"options": {}},
+        headers=admin_auth_header,
+    )
+    assert response.status_code == 200
+
+    # Stop the plugin
+    response = client.put(
+        "/api/v2/plugins/basic_reporting",
+        json={"enabled": False},
+        headers=admin_auth_header,
+    )
+    assert response.status_code == 200
+
+    # Execute should fail
+    # TODO: This will be enabled in a future PR.
+    # response = client.post(
+    #     "/api/v2/plugins/basic_reporting/execute",
+    #     json={"options": {}},
+    #     headers=admin_auth_header,
+    # )
+    # assert response.status_code == 400
+
+    # Start the plugin
+    response = client.put(
+        "/api/v2/plugins/basic_reporting",
+        json={"enabled": True},
+        headers=admin_auth_header,
+    )
+    assert response.status_code == 200
+
+    response = client.get("/api/v2/plugins/basic_reporting", headers=admin_auth_header)
+    assert response.json()["enabled"] is True

@@ -1,19 +1,18 @@
 import contextlib
 import logging
 import socket
+from typing import override
 
 import empire.server.common.helpers as helpers
-from empire.server.core.plugin_service import PluginService
 from empire.server.core.plugins import BasePlugin
 
 log = logging.getLogger(__name__)
 
 
 class Plugin(BasePlugin):
-    def onLoad(self):
+    @override
+    def on_load(self, db):
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -101,29 +100,18 @@ class Plugin(BasePlugin):
             },
         }
 
-    def execute(self, command):
+    @override
+    def execute(self, command, **kwargs):
         try:
             self.reverseshell_proc = None
             self.status = command["Status"]
-            results = self.do_server(command)
+            results = self.do_server(command, kwargs["db"])
             return results
         except Exception as e:
             log.error(e)
             return False, f"[!] {e}"
 
-    def get_commands(self):
-        return self.commands
-
-    def register(self, main_menu):
-        """
-        any modifications to the main_menu go here - e.g.
-        registering functions to be run by user commands
-        """
-        self.installPath = main_menu.installPath
-        self.main_menu = main_menu
-        self.plugin_service: PluginService = main_menu.pluginsv2
-
-    def do_server(self, command):
+    def do_server(self, command, db):
         """
         Check if the Empire C# server is already running.
         """
@@ -140,7 +128,7 @@ class Plugin(BasePlugin):
 
         elif self.status == "stop":
             if self.enabled:
-                self.shutdown()
+                self.on_stop(db)
                 return "[!] Stopped reverseshell server"
             else:
                 return "[!] Reverseshell server is already stopped"
@@ -192,12 +180,11 @@ class Plugin(BasePlugin):
             self.reverseshell_proc.daemon = True
             self.reverseshell_proc.start()
 
-    def shutdown(self):
+    @override
+    def on_stop(self, db):
         with contextlib.suppress(Exception):
             self.reverseshell_proc.kill()
             self.thread.kill()
-
-        return
 
     def client_handler(self, client_socket):
         self.thread = helpers.KThread(target=self.o, args=[client_socket])
@@ -218,13 +205,11 @@ class Plugin(BasePlugin):
         except Exception:
             return f"[!] Can't bind at {host}:{port}"
 
-        self.plugin_service.plugin_socketio_message(
-            self.info["Name"], f"[*] Listening on {port} ..."
-        )
+        self.send_socketio_message(f"Listening on {port} ...")
         server.listen(5)
 
         try:
-            while self.status == "start":
+            while self.enabled:
                 client_socket, addr = server.accept()
                 self.client_handler(client_socket)
         except KeyboardInterrupt:

@@ -4,120 +4,82 @@ import logging
 import os
 import socket
 import subprocess
+from typing import override
+
+from sqlalchemy.orm import Session
 
 import empire.server.common.helpers as helpers
-from empire.server.common.empire import MainMenu
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import PluginTaskStatus
-from empire.server.core.plugin_service import PluginService
 from empire.server.core.plugins import BasePlugin
 
 log = logging.getLogger(__name__)
 
 
 class Plugin(BasePlugin):
-    def onLoad(self):
-        self.options = {
-            "status": {
-                "Description": "Start/stop the Empire C# server.",
-                "Required": True,
-                "Value": "start",
-                "SuggestedValues": ["start", "stop"],
-                "Strict": True,
-            }
-        }
 
+    @override
+    def on_load(self, db):
         self.csharpserver_proc = None
         self.thread = None
         self.tcp_ip = "127.0.0.1"
         self.tcp_port = 2012
-        self.status = "OFF"
 
-    def execute(self, command, **kwargs):
-        db = kwargs["db"]
-        if command["status"] == "start":
-            input = "Starting Empire C# server..."
-        else:
-            input = "Stopping Empire C# server..."
-
-        plugin_task = models.PluginTask(
-            plugin_id=self.info.name,
-            input=input,
-            input_full=input,
-            user_id=1,
-            status=PluginTaskStatus.completed,
+    @override
+    def on_start(self, db):
+        compiler_path = (
+            "/Empire-Compiler/EmpireCompiler/bin/Debug/net6.0/EmpireCompiler.dll"
         )
-        output = self.toggle_csharpserver(command)
-        plugin_task.output = output
-        db.add(plugin_task)
-        db.flush()
+        server_dll = self.install_path + compiler_path
 
-    def register(self, main_menu: MainMenu):
-        """
-        any modifications to the main_menu go here - e.g.
-        registering functions to be run by user commands
-        """
-        self.installPath = main_menu.installPath
-        self.main_menu = main_menu
-        self.plugin_service: PluginService = main_menu.pluginsv2
+        # If dll hasn't been built yet
+        if not os.path.exists(server_dll):
+            csharp_cmd = ["dotnet", "build", self.install_path + "/csharp/"]
+            self.csharpserverbuild_proc = subprocess.call(csharp_cmd)
 
-    def toggle_csharpserver(self, command):
-        """
-        Check if the Empire C# server is already running.
-        """
-        self.start = command["status"]
+        csharp_cmd = [
+            "dotnet",
+            self.install_path + compiler_path,
+        ]
 
-        if not self.csharpserver_proc or self.csharpserver_proc.poll():
-            self.status = "OFF"
-        else:
-            self.status = "ON"
+        self.csharpserver_proc = subprocess.Popen(
+            csharp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
-        if self.start == "stop":
-            if self.status == "ON":
-                self.shutdown()
-                self.status = "OFF"
-                return "[*] Stopping Empire C# server"
-            else:
-                return "[!] Empire C# server is already stopped"
+        self.thread = helpers.KThread(target=self.thread_csharp_responses, args=())
+        self.thread.daemon = True
+        self.thread.start()
 
-        elif self.start == "start":
-            if self.status == "OFF":
-                # Will need to update this as we finalize the folder structure
-                server_dll = (
-                    self.installPath
-                    + "/Empire-Compiler/EmpireCompiler/bin/Debug/net6.0/EmpireCompiler.dll"
-                )
-                # If dll hasn't been built yet
-                if not os.path.exists(server_dll):
-                    csharp_cmd = [
-                        "dotnet",
-                        "build",
-                        self.installPath + "/Empire-Compiler/EmpireCompiler/",
-                    ]
-                    self.csharpserverbuild_proc = subprocess.call(csharp_cmd)
+        self.record_task(
+            PluginTaskStatus.completed,
+            "Starting Empire C# server",
+            "Toggled Empire C# server on",
+            db,
+        )
 
-                csharp_cmd = [
-                    "dotnet",
-                    self.installPath
-                    + "/Empire-Compiler/EmpireCompiler/bin/Debug/net6.0/EmpireCompiler.dll",
-                ]
+    @override
+    def on_stop(self, db):
+        with contextlib.suppress(Exception):
+            b64_yaml = base64.b64encode(b"dummy data")
+            b64_confuse = base64.b64encode(b"false")
+            b64_task_name = base64.b64encode(b"close")
+            deliminator = b","
+            message = b64_task_name + deliminator + b64_confuse + deliminator + b64_yaml
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.tcp_ip, self.tcp_port))
+            s.send(message)
+            s.close()
+            self.csharpserverbuild_proc.kill()
+            self.csharpserver_proc.kill()
+            self.thread.kill()
 
-                self.csharpserver_proc = subprocess.Popen(
-                    csharp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                )
-
-                self.thread = helpers.KThread(
-                    target=self.thread_csharp_responses, args=()
-                )
-                self.thread.daemon = True
-                self.thread.start()
-
-                self.status = "ON"
-
-                return "[*] Starting Empire C# server"
-            else:
-                return "[!] Empire C# server is already started"
+        self.record_task(
+            PluginTaskStatus.completed,
+            "Stopping Empire C# server",
+            "Toggled Empire C# server off",
+            db,
+        )
 
     def thread_csharp_responses(self):
         task_input = "Collecting Empire C# server output stream..."
@@ -129,27 +91,22 @@ class Plugin(BasePlugin):
                 output = response.decode("UTF-8")
                 log.debug(output)
                 status = PluginTaskStatus.completed
-                self.record_task(status, output, task_input)
 
-            elif not response:
-                output = "Empire C# server output stream closed"
-                status = PluginTaskStatus.error
-                log.warning(output)
-                self.record_task(status, output, task_input)
+                with SessionLocal() as db:
+                    self.record_task(status, output, task_input, db)
 
-    def record_task(self, status, task_output, task_input):
-        with SessionLocal.begin() as db:
-            plugin_task = models.PluginTask(
-                plugin_id=self.info.name,
-                input=task_input,
-                input_full=task_input,
-                user_id=1,
-                status=status,
-            )
+    def record_task(self, status, task_output, task_input, db: Session):
+        plugin_task = models.PluginTask(
+            plugin_id=self.info.name,
+            input=task_input,
+            input_full=task_input,
+            user_id=1,
+            status=status,
+        )
 
-            plugin_task.output = task_output
-            db.add(plugin_task)
-            db.flush()
+        plugin_task.output = task_output
+        db.add(plugin_task)
+        db.flush()
 
     def do_send_message(self, compiler_yaml, task_name, confuse=False):
         bytes_yaml = compiler_yaml.encode("UTF-8")
@@ -172,9 +129,7 @@ class Plugin(BasePlugin):
         if recv_message.startswith("FileName:"):
             file_name = recv_message.split(":")[1]
         else:
-            self.plugin_service.plugin_socketio_message(
-                self.info.name, ("[*] " + recv_message)
-            )
+            self.send_socketio_message(recv_message)
             file_name = "failed"
         s.close()
 
@@ -202,27 +157,8 @@ class Plugin(BasePlugin):
         if recv_message.startswith("FileName:"):
             file_name = recv_message.split(":")[1]
         else:
-            self.plugin_service.plugin_socketio_message(
-                self.info.name, ("[*] " + recv_message)
-            )
+            self.send_socketio_message(recv_message)
             file_name = "failed"
         s.close()
 
         return file_name
-
-    def shutdown(self):
-        with contextlib.suppress(Exception):
-            b64_yaml = base64.b64encode(b"dummy data")
-            b64_confuse = base64.b64encode(b"false")
-            b64_task_name = base64.b64encode(b"close")
-            deliminator = b","
-            message = b64_task_name + deliminator + b64_confuse + deliminator + b64_yaml
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self.tcp_ip, self.tcp_port))
-            s.send(message)
-            s.close()
-            self.csharpserverbuild_proc.kill()
-            self.csharpserver_proc.kill()
-            self.thread.kill()
-
-        return

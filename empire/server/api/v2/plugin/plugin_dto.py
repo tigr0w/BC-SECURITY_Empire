@@ -9,7 +9,7 @@ from empire.server.api.v2.shared_dto import (
 from empire.server.core.plugins import BasePlugin
 
 
-def domain_to_dto_plugin(plugin: BasePlugin, uid: str):
+def domain_to_dto_plugin(plugin: BasePlugin, db):
     options = {
         x[0]: {
             "description": x[1]["Description"],
@@ -23,7 +23,7 @@ def domain_to_dto_plugin(plugin: BasePlugin, uid: str):
     }
 
     return Plugin(
-        id=uid,
+        id=plugin.info.name,
         name=plugin.info.name,
         authors=[a.model_dump() for a in plugin.info.authors],
         description=plugin.info.description,
@@ -31,6 +31,7 @@ def domain_to_dto_plugin(plugin: BasePlugin, uid: str):
         techniques=plugin.info.techniques,
         software=plugin.info.software,
         options=options,
+        enabled=plugin.enabled,
     )
 
 
@@ -43,6 +44,7 @@ class Plugin(BaseModel):
     software: str | None = None
     comments: list[str]
     options: dict[str, CustomOptionSchema]
+    enabled: bool
 
 
 class Plugins(BaseModel):
@@ -55,3 +57,7 @@ class PluginExecutePostRequest(BaseModel):
 
 class PluginExecuteResponse(BaseModel):
     detail: str = ""
+
+
+class PluginUpdateRequest(BaseModel):
+    enabled: bool

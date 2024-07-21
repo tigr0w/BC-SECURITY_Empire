@@ -386,30 +386,32 @@ def test_is_valid_session_id(session_id, expected):
     ), f"Test failed for session_id: {session_id}"
 
 
-def test_skywalker_exploit_protection(caplog, agent, db, main: MainMenu):
-    # Malicious file path attempting directory traversal
-    malicious_directory = (
-        main.installPath + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
-    )
-    encodedPart = b"test"
-    c = compress()
-    start_crc32 = c.crc32_data(encodedPart)
-    comp_data = c.comp_data(encodedPart)
-    encodedPart = c.build_header(comp_data, start_crc32)
-    encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
+def test_skywalker_exploit_protection(caplog, agent, session_local, main: MainMenu):
+    with session_local.begin() as db:
+        # Malicious file path attempting directory traversal
+        malicious_directory = (
+            main.installPath + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
+        )
+        encodedPart = b"test"
+        c = compress()
+        start_crc32 = c.crc32_data(encodedPart)
+        comp_data = c.comp_data(encodedPart)
+        encodedPart = c.build_header(comp_data, start_crc32)
+        encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
 
-    malicious_data = "|".join(
-        [
-            "0",
-            malicious_directory,
-            "6",
-            encodedPart,
-        ]
-    )
+        malicious_data = "|".join(
+            [
+                "0",
+                malicious_directory,
+                "6",
+                encodedPart,
+            ]
+        )
 
-    main.agentcommsv2._process_agent_packet(
-        db, agent, "TASK_DOWNLOAD", "1", malicious_data
-    )
+        main.agentcommsv2._process_agent_packet(
+            db, agent, "TASK_DOWNLOAD", "1", malicious_data
+        )
 
-    expected_message_part = "attempted skywalker exploit!"
+        expected_message_part = "attempted skywalker exploit!"
+
     assert any(expected_message_part in message for message in caplog.messages)

@@ -2,6 +2,8 @@ import logging
 
 from pydantic import BaseModel
 
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireAuthor
 
 log = logging.getLogger(__name__)
@@ -18,33 +20,61 @@ class PluginInfo(BaseModel):
 
 
 class BasePlugin:
-    def __init__(self, main_menu, plugin_info: PluginInfo):
-        # having these multiple messages should be helpful for debugging
-        # user-reported errors (can narrow down where they happen)
-        # any future init stuff goes here
-        self.info = plugin_info
+    def __init__(self, main_menu, plugin_info: PluginInfo, db: SessionLocal):
+        self.main_menu = main_menu
+        self.info: PluginInfo = plugin_info
+
+        log.info(f"Initializing plugin: {self.info.name}")
+
+        self.enabled: bool = False
+        self.install_path: str = self.main_menu.installPath
+        self.options: dict = {}
+
         try:
-            # do custom user stuff
-            self.onLoad()
-            log.info(f"Initializing plugin: {self.info.name}")
-
-            # Register functions to the main menu
-            self.register(main_menu)
-
-            # Give access to main menu
-            self.main_menu = main_menu
+            self.on_load(db)
+            self._set_options_defaults()
         except Exception as e:
             if self.info.name:
                 log.error(f"{self.info.name} failed to initialize: {e}")
             else:
                 log.error(f"Error initializing plugin: {e}")
 
-    def onLoad(self):
+    def _set_options_defaults(self):
+        for value in self.options.values():
+            if value.get("SuggestedValues") is None:
+                value["SuggestedValues"] = []
+            if value.get("Strict") is None:
+                value["Strict"] = False
+
+    def on_load(self, db):
         """Things to do during init: meant to be overridden by
         the inheriting plugin."""
         pass
 
-    def register(self, main_menu):
-        """Any modifications made to the main menu are done here
-        (meant to be overriden by child)"""
+    def on_unload(self, db):
+        """Things to do when the plugin is unloaded: meant to be overridden by
+        the inheriting plugin."""
         pass
+
+    def on_start(self, db):
+        """Things to do when the plugin is started: meant to be overridden by
+        the inheriting plugin."""
+        pass
+
+    def on_stop(self, db):
+        """Things to do when the plugin is stopped: meant to be overridden by
+        the inheriting plugin."""
+        pass
+
+    def execute(self, command, **kwargs):
+        """Execute a command: meant to be overridden by the inheriting plugin."""
+        pass
+
+    def get_db_plugin(self, db) -> models.Plugin | None:
+        return (
+            db.query(models.Plugin).filter(models.Plugin.id == self.info.name).first()
+        )
+
+    def send_socketio_message(self, message):
+        """Send a message to the socketio server"""
+        self.main_menu.plugin_service.plugin_socketio_message(self.info.name, message)

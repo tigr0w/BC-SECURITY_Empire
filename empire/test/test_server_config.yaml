@@ -64,8 +64,8 @@ keyword_obfuscation:
 plugins:
   # Auto-load plugin with defined settings
   example_2:
-    status: start
-    message: hello there
+    Status: start
+    Message: Hello World!
 logging:
   level: INFO
   directory: empire/test/downloads/logs/

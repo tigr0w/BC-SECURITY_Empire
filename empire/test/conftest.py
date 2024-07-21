@@ -27,11 +27,11 @@ def default_argv():
 
 @pytest.fixture(scope="session")
 def install_path():
-    return Path(os.path.realpath(__file__)).parent.parent / "server"
+    return str(Path(os.path.realpath(__file__)).parent.parent / "server")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def client():
+def client(example_2_plugin):
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
 
@@ -61,8 +61,27 @@ def client():
 
     from empire.server.server import main
 
-    main.shutdown()
-    reset_db()
+    with suppress(Exception):
+        main.shutdown()
+        reset_db()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def example_2_plugin(install_path):
+    example_plugin_path = Path(install_path) / "plugins" / "example"
+    example_plugin_copy_path = Path(install_path) / "plugins" / "example_2"
+
+    shutil.copytree(
+        str(example_plugin_path), str(example_plugin_copy_path), dirs_exist_ok=True
+    )
+
+    config = (example_plugin_copy_path / "plugin.yaml").read_text()
+    config = config.replace("name: example", "name: example_2")
+    (example_plugin_copy_path / "plugin.yaml").write_text(config)
+
+    yield
+
+    shutil.rmtree(str(example_plugin_copy_path), ignore_errors=True)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -116,6 +135,7 @@ def regular_auth_token(client, admin_auth_token):
     yield response.json()["access_token"]
 
 
+# TODO: Remove this. Use session_local
 @pytest.fixture(scope="module")
 def db():
     from empire.server.core.db.base import SessionLocal
