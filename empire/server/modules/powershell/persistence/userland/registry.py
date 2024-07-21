@@ -69,13 +69,12 @@ class Module:
                 + ";"
             )
             script += "'Registry Persistence removed.'"
-            script = main_menu.modulesv2.finalize_module(
+            return main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
                 obfuscation_command=obfuscation_command,
             )
-            return script
 
         if ext_file != "":
             # read in an external file as the payload and build a
@@ -195,10 +194,9 @@ class Module:
 
         script += "'Registry persistence established " + status_msg + "'"
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

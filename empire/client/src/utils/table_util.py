@@ -37,11 +37,11 @@ def print_table(
         table.inner_footing_row_border = False
         table.inner_heading_row_border = False
 
-    print("")
+    print()
     print(table.table)
 
     if end_space:
-        print("")
+        print()
 
 
 def print_agent_table(
@@ -86,6 +86,6 @@ def print_agent_table(
         table.inner_footing_row_border = False
         table.inner_heading_row_border = False
 
-    print("")
+    print()
     print(table.table)
-    print("")
+    print()

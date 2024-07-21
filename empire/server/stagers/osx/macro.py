@@ -93,8 +93,7 @@ class Stager:
                 )
                 str2 = '"\r\n'.join(holder)
             str2 = str2 + '"'
-            str1 = str1 + "\r\n" + str2
-            return str1
+            return str1 + "\r\n" + str2
 
         # extract all of our options
         listener_name = self.options["Listener"]["Value"]

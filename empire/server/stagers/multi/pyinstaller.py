@@ -171,6 +171,4 @@ class Stager:
                 )
 
                 with open(binary_file_str, "rb") as f:
-                    exe = f.read()
-
-                return exe
+                    return f.read()

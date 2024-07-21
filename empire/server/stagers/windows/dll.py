@@ -157,5 +157,4 @@ class Stager:
                 return ""
             else:
                 launcher_code = launcher.split(" ")[-1]
-                dll = self.mainMenu.stagers.generate_dll(launcher_code, arch)
-                return dll
+                return self.mainMenu.stagers.generate_dll(launcher_code, arch)

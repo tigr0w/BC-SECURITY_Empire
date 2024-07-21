@@ -100,10 +100,9 @@ class Module:
 
         script += ";'Invoke-Wmi executed on " + computer_names + "'"
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

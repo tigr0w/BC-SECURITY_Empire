@@ -97,7 +97,6 @@ class Stager:
             launcher = removeprefix(launcher, "echo ")
             launcher = removesuffix(launcher, " | python3 &")
             launcher = launcher.strip('"')
-            dylib = self.mainMenu.stagers.generate_dylib(
+            return self.mainMenu.stagers.generate_dylib(
                 launcherCode=launcher, arch=arch, hijacker=hijacker
             )
-            return dylib

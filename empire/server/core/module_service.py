@@ -306,7 +306,7 @@ class ModuleService:
 
         return options, None
 
-    def _generate_script(
+    def _generate_script(  # noqa: PLR0911
         self,
         db: Session,
         module: EmpireModule,
@@ -361,6 +361,7 @@ class ModuleService:
                     db, LanguageEnum.csharp
                 )
             return self._generate_script_bof(module, params, obfuscation_config)
+        return None
 
     def _generate_script_bof(
         self,
@@ -480,14 +481,12 @@ class ModuleService:
         )
 
         # obfuscate the invoke command and append to script
-        script = self.finalize_module(
+        return self.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscate_command,
         )
-
-        return script
 
     def _generate_script_csharp(
         self,
@@ -686,23 +685,21 @@ class ModuleService:
                     return obfuscated_module_code, None
 
                 # If pre-obfuscated module does not exist then generate obfuscated code and return it
-                else:
-                    module_source = empire_config.directories.module_source
-                    module_path = os.path.join(module_source, module_name)
-                    with open(module_path) as f:
-                        module_code = f.read()
-                    obfuscated_module_code = self.obfuscation_service.obfuscate(
-                        module_code, obfuscate_command
-                    )
-                    return obfuscated_module_code, None
-
-            # Use regular/unobfuscated code
-            else:
                 module_source = empire_config.directories.module_source
                 module_path = os.path.join(module_source, module_name)
                 with open(module_path) as f:
                     module_code = f.read()
-                return module_code, None
+                obfuscated_module_code = self.obfuscation_service.obfuscate(
+                    module_code, obfuscate_command
+                )
+                return obfuscated_module_code, None
+
+            # Use regular/unobfuscated code
+            module_source = empire_config.directories.module_source
+            module_path = os.path.join(module_source, module_name)
+            with open(module_path) as f:
+                module_code = f.read()
+            return module_code, None
         except Exception:
             return None, f"[!] Could not read module source path at: {module_source}"
 
@@ -723,8 +720,7 @@ class ModuleService:
         script += script_end
         if obfuscate:
             script = self.obfuscation_service.obfuscate(script, obfuscation_command)
-        script = self.obfuscation_service.obfuscate_keywords(script)
-        return script
+        return self.obfuscation_service.obfuscate_keywords(script)
 
     @staticmethod
     def slugify(module_name: str):
@@ -770,13 +766,11 @@ def auto_finalize(func):
         obfuscate = args[3]
         obfuscation_command = args[4]
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-
-        return script
 
     return wrapper

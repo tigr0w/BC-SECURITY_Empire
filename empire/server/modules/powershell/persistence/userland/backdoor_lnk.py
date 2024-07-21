@@ -110,10 +110,9 @@ class Module:
             script_end += f" -EncScript '{encScript}'"
             script_end += f"; \"Invoke-BackdoorLNK run on path '{lnk_path}' with stager for listener '{listener_name}'\""
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

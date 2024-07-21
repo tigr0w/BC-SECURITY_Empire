@@ -225,19 +225,14 @@ class Agents:
         """
         if self.ipBlackList:
             if self.ipWhiteList:
-                results = (
+                return (
                     ip_address in self.ipWhiteList
                     and ip_address not in self.ipBlackList
                 )
-                return results
-            else:
-                results = ip_address not in self.ipBlackList
-                return results
+            return ip_address not in self.ipBlackList
         if self.ipWhiteList:
-            results = ip_address in self.ipWhiteList
-            return results
-        else:
-            return True
+            return ip_address in self.ipWhiteList
+        return True
 
     def save_file(  # noqa: PLR0913
         self,
@@ -371,7 +366,7 @@ class Agents:
             if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
                 message = f"agent {sessionID} attempted skywalker exploit!\n[!] attempted overwrite of {path} with data {data}"
                 log.warning(message)
-                return
+                return None
 
             # make the recursive directory structure if it doesn't already exist
             if not save_path.exists():
@@ -444,9 +439,7 @@ class Agents:
         Return all active agents from the database.
         """
         with SessionLocal() as db:
-            results = db.query(models.Agent).all()
-
-        return results
+            return db.query(models.Agent).all()
 
     def get_agent_nonce_db(self, session_id, db: Session):
         """
@@ -467,8 +460,8 @@ class Agents:
         if nonce and nonce is not None:
             if isinstance(nonce, str):
                 return nonce
-            else:
-                return nonce[0]
+            return nonce[0]
+        return None
 
     def get_language_db(self, session_id):
         """
@@ -486,13 +479,11 @@ class Agents:
             if name_id:
                 session_id = name_id
 
-            language = (
+            return (
                 db.query(models.Agent.language)
                 .filter(models.Agent.session_id == session_id)
                 .scalar()
             )
-
-        return language
 
     def get_agent_id_db(self, name, db: Session = None):
         """
@@ -553,9 +544,7 @@ class Agents:
             results = db.query(models.Config.autorun_data).all()
             autorun_data = results[0].autorun_data if results[0].autorun_data else ""
 
-            autoruns = [autorun_command, autorun_data]
-
-        return autoruns
+            return [autorun_command, autorun_data]
 
     def update_dir_list(self, session_id, response, db: Session):
         """ "
@@ -753,22 +742,22 @@ class Agents:
         if session_id not in self.agents:
             log.error(f"Agent {session_id} not active.")
             return []
-        else:
-            try:
-                tasks, total = self.mainMenu.agenttasksv2.get_tasks(
-                    db=db,
-                    agents=[session_id],
-                    include_full_input=True,
-                    status=AgentTaskStatus.queued,
-                )
 
-                for task in tasks:
-                    task.status = AgentTaskStatus.pulled
+        try:
+            tasks, total = self.mainMenu.agenttasksv2.get_tasks(
+                db=db,
+                agents=[session_id],
+                include_full_input=True,
+                status=AgentTaskStatus.queued,
+            )
 
-                return tasks
-            except AttributeError:
-                log.warning("Agent checkin during initialization.")
-                return []
+            for task in tasks:
+                task.status = AgentTaskStatus.pulled
+
+            return tasks
+        except AttributeError:
+            log.warning("Agent checkin during initialization.")
+            return []
 
     def get_queued_agent_temporary_tasks(self, session_id):
         """
@@ -777,15 +766,11 @@ class Agents:
         if session_id not in self.agents:
             log.error(f"Agent {session_id} not active.")
             return []
-        else:
-            try:
-                tasks = self.mainMenu.agenttasksv2.get_temporary_tasks_for_agent(
-                    session_id
-                )
-                return tasks
-            except AttributeError:
-                log.warning("Agent checkin during initialization.")
-                return []
+        try:
+            return self.mainMenu.agenttasksv2.get_temporary_tasks_for_agent(session_id)
+        except AttributeError:
+            log.warning("Agent checkin during initialization.")
+            return []
 
     ###############################################################
     #
@@ -816,7 +801,7 @@ class Agents:
             # step 1 of negotiation -> client requests staging code
             return "STAGE0"
 
-        elif meta == "STAGE1":
+        if meta == "STAGE1":
             # step 3 of negotiation -> client posts public key
             message = f"Agent {sessionID} from {clientIP} posted public key"
             log.info(message)
@@ -880,10 +865,8 @@ class Agents:
                         data = data.encode("ascii", "ignore")
 
                         # step 4 of negotiation -> server returns RSA(nonce+AESsession))
-                        encrypted_msg = encryption.rsa_encrypt(rsa_key, data)
+                        return encryption.rsa_encrypt(rsa_key, data)
                         # TODO: wrap this in a routing packet!
-
-                        return encrypted_msg
 
                     else:
                         message = f"Agent {sessionID} returned an invalid PowerShell public key!"
@@ -942,10 +925,8 @@ class Agents:
 
                     # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
                     data = f"{nonce}{serverPub.publicKey}"
-                    encrypted_msg = encryption.aes_encrypt_then_hmac(stagingKey, data)
+                    return encryption.aes_encrypt_then_hmac(stagingKey, data)
                     # TODO: wrap this in a routing packet?
-
-                    return encrypted_msg
 
             else:
                 message = f"Agent {sessionID} from {clientIP} using an invalid language specification: {language}"
@@ -1078,8 +1059,9 @@ class Agents:
         else:
             message = f"Invalid staging request packet from {sessionID} at {clientIP} : {meta}"
             log.error(message)
+            return None
 
-    def handle_agent_data(  # noqa: PLR0913
+    def handle_agent_data(
         self,
         stagingKey,
         routingPacket,
@@ -1294,7 +1276,7 @@ class Agents:
             log.error(message, exc_info=True)
             return None
 
-    def process_agent_packet(  # noqa: PLR0912 PLR0915 PLR0913
+    def process_agent_packet(  # noqa: PLR0912 PLR0915
         self, session_id, response_name, task_id, data, db: Session
     ):
         """

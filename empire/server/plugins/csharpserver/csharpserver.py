@@ -87,10 +87,9 @@ class Plugin(BasePlugin):
                 self.shutdown()
                 self.status = "OFF"
                 return "[*] Stopping Empire C# server"
-            else:
-                return "[!] Empire C# server is already stopped"
+            return "[!] Empire C# server is already stopped"
 
-        elif self.start == "start":
+        if self.start == "start":
             if self.status == "OFF":
                 server_dll = (
                     self.installPath
@@ -119,8 +118,8 @@ class Plugin(BasePlugin):
                 self.status = "ON"
 
                 return "[*] Starting Empire C# server"
-            else:
-                return "[!] Empire C# server is already started"
+            return "[!] Empire C# server is already started"
+        return None
 
     def thread_csharp_responses(self):
         task_input = "Collecting Empire C# server output stream..."

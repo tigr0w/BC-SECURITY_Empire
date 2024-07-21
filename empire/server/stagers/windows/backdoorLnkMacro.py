@@ -155,8 +155,7 @@ class Stager:
             coords = coords + chr(((col + 1) % 26) + 64)
         else:
             coords = coords + "Z"
-        coords = coords + str(row + 1)
-        return coords
+        return coords + str(row + 1)
 
     def generate(self):
         # default booleans to false

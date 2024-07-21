@@ -294,6 +294,7 @@ class Listener:
                 "listeners/onedrive generate_launcher(): Python agent not implemented yet"
             )
             return "Python not implemented yet"
+        return None
 
     def generate_stager(
         self,
@@ -372,6 +373,7 @@ class Listener:
 
         else:
             log.error("Python agent not available for Onedrive")
+            return None
 
     def generate_comms(
         self,
@@ -407,15 +409,16 @@ class Listener:
                     "taskings_folder": taskings_folder,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             else:
                 log.error(
                     "listeners/onedrive generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
                 )
+                return None
         else:
             log.error("listeners/onedrive generate_comms(): no language specified!")
+            return None
 
     def generate_agent(
         self,
@@ -431,7 +434,7 @@ class Listener:
 
         if not language:
             log.error("listeners/onedrive generate_agent(): No language specified")
-            return
+            return None
 
         language = language.lower()
         delay = listener_options["DefaultDelay"]["Value"]
@@ -473,6 +476,7 @@ class Listener:
                 agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
 
             return agent_code
+        return None
 
     def start_server(self, listenerOptions):
         self.instance_log = log_util.get_listener_logger(

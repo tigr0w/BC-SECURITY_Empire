@@ -31,13 +31,12 @@ class Module:
         if cleanup.lower() == "true":
             # the registry command to disable the debugger for Utilman.exe
             script = f"Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\{target_binary}';'{target_binary} debugger removed.'"
-            script = main_menu.modulesv2.finalize_module(
+            return main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
                 obfuscation_command=obfuscation_command,
             )
-            return script
 
         if listener_name != "":
             # if there's a listener specified, generate a stager and store it
@@ -107,10 +106,9 @@ class Module:
                 + "'"
             )
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

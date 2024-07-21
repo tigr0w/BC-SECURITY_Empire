@@ -25,6 +25,4 @@ class Module:
             return handle_error_message("[!] Error in launcher command generation.")
         else:
             launcher = launcher.replace('"', '\\"')
-            script = f'import os; os.system("{launcher}")'
-
-            return script
+            return f'import os; os.system("{launcher}")'

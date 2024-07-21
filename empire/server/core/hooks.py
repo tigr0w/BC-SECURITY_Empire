@@ -121,7 +121,7 @@ class Hooks:
         The output of each filter is passed into the next filter.
         """
         if event not in self.filters:
-            return
+            return None
         for filter in self.filters.get(event, {}).values():
             if not isinstance(args, tuple):
                 args = (args,)

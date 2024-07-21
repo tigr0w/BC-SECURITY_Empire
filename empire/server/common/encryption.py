@@ -101,9 +101,8 @@ def rsa_xml_to_key(xml):
             rsa_key_value.getElementsByTagName("Exponent")[0].childNodes
         )
 
-        key = RSA.construct((modulus, exponent))
+        return RSA.construct((modulus, exponent))
 
-        return key
     # if there's an XML parsing error, return None
     except Exception:
         return None
@@ -123,8 +122,7 @@ def rsa_encrypt(key, data):
     Take a key object and use it to encrypt the passed data.
     """
     pubkey = PKCS1_v1_5.new(key)
-    enc_data = pubkey.encrypt(data)
-    return enc_data
+    return pubkey.encrypt(data)
 
 
 def aes_encrypt(key, data):
@@ -168,8 +166,8 @@ def aes_decrypt(key, data):
         IV = data[0:16]
         cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
         decryptor = cipher.decryptor()
-        pt = depad(decryptor.update(data[16:]) + decryptor.finalize())
-        return pt
+        return depad(decryptor.update(data[16:]) + decryptor.finalize())
+    return None
 
 
 def verify_hmac(key, data):
@@ -189,8 +187,8 @@ def verify_hmac(key, data):
             hmac.new(key, expected, digestmod=hashlib.sha256).digest()
             == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
         )
-    else:
-        return False
+
+    return False
 
 
 def aes_decrypt_and_verify(key, data):
@@ -242,8 +240,7 @@ def rc4(key, data):
             char = ord(char)  # noqa: PLW2901
         out.append(chr(char ^ S[(S[i] + S[j]) % 256]).encode("latin-1"))
     # out = str(out)
-    tmp = b"".join(out)
-    return tmp
+    return b"".join(out)
 
 
 class DiffieHellman:
@@ -304,9 +301,9 @@ class DiffieHellman:
 
         if group in list(primes.keys()):
             return primes[group]
-        else:
-            log.error(f"Error: No prime with group {group:d}. Using default.")
-            return primes[default_group]
+
+        log.error(f"Error: No prime with group {group:d}. Using default.")
+        return primes[default_group]
 
     def genRandom(self, bits):
         """
@@ -354,10 +351,8 @@ class DiffieHellman:
         private key to generate a shared secret.
         """
         if self.checkPublicKey(otherKey) is True:
-            sharedSecret = pow(otherKey, privateKey, self.prime)
-            return sharedSecret
-        else:
-            raise Exception("Invalid public key.")
+            return pow(otherKey, privateKey, self.prime)
+        raise Exception("Invalid public key.")
 
     def genKey(self, otherKey):
         """

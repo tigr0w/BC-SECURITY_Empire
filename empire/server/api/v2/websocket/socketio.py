@@ -52,7 +52,7 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
                 user = await get_user_from_token(sid, auth["token"], db)
                 if user:
                     log.info(f"{user.username} connected to socketio")
-                    return
+                    return None
         except HTTPException:
             # If a server is restarted and clients are still connected, there are
             #  sometimes token handling errors. We want to reject these since they fail

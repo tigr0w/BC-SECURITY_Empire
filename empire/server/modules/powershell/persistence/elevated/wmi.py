@@ -74,13 +74,12 @@ class Module:
             )
             script = main_menu.obfuscationv2.obfuscate_keywords(script)
 
-            script = main_menu.modulesv2.finalize_module(
+            return main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
                 obfuscation_command=obfuscation_command,
             )
-            return script
 
         if ext_file != "":
             # read in an external file as the payload and build a
@@ -249,10 +248,9 @@ class Module:
 
         script += "'WMI persistence established " + status_msg + "'"
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

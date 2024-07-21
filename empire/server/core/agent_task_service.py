@@ -145,7 +145,7 @@ class AgentTaskService:
 
         return tasks
 
-    def create_task_shell(  # noqa: PLR0913
+    def create_task_shell(
         self,
         db: Session,
         agent: models.Agent,
@@ -157,7 +157,7 @@ class AgentTaskService:
             command = f"shell {command}"
         return self.add_task(db, agent, "TASK_SHELL", command, user_id=user_id)
 
-    def create_task_upload(  # noqa: PLR0913
+    def create_task_upload(
         self, db: Session, agent: models.Agent, file_data: str, directory: str, user_id
     ):
         data = f"{directory}|{file_data}"
@@ -252,7 +252,7 @@ class AgentTaskService:
             db, agent, "TASK_SWITCH_LISTENER", new_comms, user_id=user_id
         )
 
-    def create_task_update_sleep(  # noqa: PLR0913
+    def create_task_update_sleep(
         self, db: Session, agent: models.Agent, delay: int, jitter: float, user_id: int
     ):
         agent.delay = delay
@@ -265,7 +265,7 @@ class AgentTaskService:
                 f"Set-Delay {delay!s} {jitter!s}",
                 user_id=user_id,
             )
-        elif agent.language in ["python", "ironpython"]:
+        if agent.language in ["python", "ironpython"]:
             return self.add_task(
                 db,
                 agent,
@@ -273,7 +273,7 @@ class AgentTaskService:
                 f"global delay; global jitter; delay={delay}; jitter={jitter}; print('delay/jitter set to {delay}/{jitter}')",
                 user_id=user_id,
             )
-        elif agent.language == "csharp":
+        if agent.language == "csharp":
             return self.add_task(
                 db,
                 agent,
@@ -281,8 +281,8 @@ class AgentTaskService:
                 f"Set-Delay {delay!s} {jitter!s}",
                 user_id=user_id,
             )
-        else:
-            return None, "Unsupported language."
+
+        return None, "Unsupported language."
 
     def create_task_update_kill_date(
         self, db: Session, agent: models.Agent, kill_date: str, user_id: int

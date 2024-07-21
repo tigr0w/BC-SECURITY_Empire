@@ -122,8 +122,7 @@ class Plugin(Plugin):
         try:
             self.reverseshell_proc = None
             self.status = command["Status"]
-            results = self.do_server(command)
-            return results
+            return self.do_server(command)
         except Exception as e:
             log.error(e)
             return False, f"[!] {e}"
@@ -140,7 +139,7 @@ class Plugin(Plugin):
         self.main_menu = mainMenu
         self.plugin_service: PluginService = mainMenu.pluginsv2
 
-    def do_server(self, command):
+    def do_server(self, command):  # noqa: PLR0911
         """
         Check if the Empire C# server is already running.
         """
@@ -152,17 +151,15 @@ class Plugin(Plugin):
         if self.status == "status":
             if self.enabled:
                 return "[+] Reverseshell server is currently running"
-            else:
-                return "[!] Reverseshell server is currently stopped"
+            return "[!] Reverseshell server is currently stopped"
 
-        elif self.status == "stop":
+        if self.status == "stop":
             if self.enabled:
                 self.shutdown()
                 return "[!] Stopped reverseshell server"
-            else:
-                return "[!] Reverseshell server is already stopped"
+            return "[!] Reverseshell server is already stopped"
 
-        elif self.status == "start":
+        if self.status == "start":
             # extract all of our options
             language = command["Language"]
             listener_name = command["Listener"]
@@ -208,6 +205,8 @@ class Plugin(Plugin):
             )
             self.reverseshell_proc.daemon = True
             self.reverseshell_proc.start()
+            return None
+        return None
 
     def shutdown(self):
         with contextlib.suppress(Exception):

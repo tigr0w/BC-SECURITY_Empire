@@ -365,10 +365,10 @@ class Listener:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
                     "UTF-8"
                 )
-                launcher = f"echo \"import sys,base64;exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
-                return launcher
+                return f"echo \"import sys,base64;exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
             else:
                 return launcherBase
+        return None
 
     def generate_stager(
         self,
@@ -491,6 +491,7 @@ class Listener:
             log.error(
                 "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
+            return None
 
     def generate_agent(
         self,
@@ -591,6 +592,7 @@ class Listener:
             log.error(
                 "[!] listeners/dbx generate_agent(): invalid language specification,  only 'powershell' and 'python' are currently supported for this module."
             )
+            return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -626,8 +628,7 @@ class Listener:
                     "results_folder": resultsFolder,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             elif language.lower() == "python":
                 template_path = [
@@ -643,15 +644,16 @@ class Listener:
                     "results_folder": resultsFolder,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             else:
                 log.error(
                     "listeners/dbx generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
                 )
+                return None
         else:
             log.error("listeners/dbx generate_comms(): no language specified!")
+            return None
 
     def start_server(self, listenerOptions):
         """
@@ -811,7 +813,7 @@ class Listener:
                 f"{listenerName}: Error uploading stager to '{stagingFolder}/stager'"
             )
             self.instance_log.error(message, exc_info=True)
-            return
+            return None
 
         while True:
             time.sleep(int(pollInterval))

@@ -150,22 +150,19 @@ class Stager:
                 launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
-                code = f.read()
-            return code
+                return f.read()
 
         elif language.lower() == "csharp":
             directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
             with open(directory, "rb") as f:
-                code = f.read()
-            return code
+                return f.read()
 
         elif language.lower() == "ironpython":
             directory = self.mainMenu.stagers.generate_python_exe(
                 launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
-                code = f.read()
-            return code
+                return f.read()
 
         else:
             return "[!] Invalid launcher language."

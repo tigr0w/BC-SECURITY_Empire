@@ -115,7 +115,7 @@ class DownloadService:
 
         return results, total
 
-    def create_download_from_text(  # noqa: PLR0913
+    def create_download_from_text(
         self,
         db: Session,
         user: models.User,

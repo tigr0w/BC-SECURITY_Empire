@@ -38,8 +38,7 @@ class compress:
         data = string wanting compression
         cvalue = 0-9 comp value (default 6)
         """
-        cdata = zlib.compress(data, cvalue)
-        return cdata
+        return zlib.compress(data, cvalue)
 
     def crc32_data(self, data):
         """
@@ -48,8 +47,7 @@ class compress:
         returns:
         HEX bytes of data
         """
-        crc = zlib.crc32(data) & 0xFFFFFFFF
-        return crc
+        return zlib.crc32(data) & 0xFFFFFFFF
 
     def build_header(self, data, crc):
         """
@@ -59,8 +57,7 @@ class compress:
         crc = crc32 value
         """
         header = struct.pack("!I", crc)
-        built_data = header + data
-        return built_data
+        return header + data
 
 
 @pytest.fixture(scope="function", autouse=True)

@@ -103,7 +103,6 @@ class Stager:
                 AppName=app_name,
                 disarm=disarm,
             )
-            pkginstaller = self.mainMenu.stagers.generate_pkg(
+            return self.mainMenu.stagers.generate_pkg(
                 launcher=launcher, bundleZip=application_zip, AppName=app_name
             )
-            return pkginstaller

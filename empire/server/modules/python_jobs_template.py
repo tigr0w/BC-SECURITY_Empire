@@ -46,7 +46,7 @@ class Module:
         self.mainMenu = mainMenu
 
     def generate(self):
-        script = """
+        return """
 x = 0
 while True:
     import time
@@ -58,5 +58,3 @@ while True:
     except Exception as e:
         print(e)
 """
-
-        return script

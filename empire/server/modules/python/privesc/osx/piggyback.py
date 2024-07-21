@@ -32,7 +32,7 @@ class Module:
             launcher = launcher.replace("echo", "")
             parts = launcher.split("|")
             launcher = f"sudo python -c {parts[0]}"
-            script = f"""
+            return f"""
 import os
 import time
 import subprocess
@@ -49,5 +49,3 @@ while exitLoop is False:
         except:
             pass
             """
-
-            return script

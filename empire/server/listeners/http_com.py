@@ -323,6 +323,7 @@ class Listener:
             log.error(
                 "listeners/http_com generate_launcher(): invalid language specification: only 'powershell' is currently supported for this module."
             )
+            return None
 
     def generate_stager(
         self,
@@ -423,6 +424,7 @@ class Listener:
             log.error(
                 "listeners/http_com generate_stager(): invalid language specification, only 'powershell' is current supported for this module."
             )
+            return None
 
     def generate_agent(
         self,
@@ -481,6 +483,7 @@ class Listener:
             log.error(
                 "listeners/http_com generate_agent(): invalid language specification, only 'powershell' is currently supported for this module."
             )
+            return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -506,15 +509,16 @@ class Listener:
                     "request_headers": requestHeader,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             else:
                 log.error(
                     "listeners/http_com generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
                 )
+                return None
         else:
             log.error("listeners/http_com generate_comms(): no language specified!")
+            return None
 
     def start_server(self, listenerOptions):
         """
@@ -552,14 +556,13 @@ class Listener:
                 obfuscation_command = obfuscation_config.command
 
             if stager == "powershell":
-                launcher = self.mainMenu.stagers.generate_launcher(
+                return self.mainMenu.stagers.generate_launcher(
                     listenerName=listenerName,
                     language="powershell",
                     encode=False,
                     obfuscate=obfuscation,
                     obfuscation_command=obfuscation_command,
                 )
-                return launcher
 
             else:
                 return make_response(self.default_response(), 404)
@@ -576,6 +579,7 @@ class Listener:
                 log.debug(message)
 
                 return make_response(self.default_response(), 404)
+            return None
 
         @app.after_request
         def change_header(response):
@@ -716,6 +720,7 @@ class Listener:
                                 f"{listenerName}: Results are None..."
                             )
                             return make_response(self.default_response(), 404)
+                    return None
                 else:
                     return make_response(self.default_response(), 404)
 
@@ -809,6 +814,7 @@ class Listener:
                             return make_response(base64.b64encode(results), 200)
                     else:
                         return make_response(self.default_response(), 404)
+                return None
             else:
                 return make_response(self.default_response(), 404)
 

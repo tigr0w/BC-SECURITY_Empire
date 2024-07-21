@@ -79,5 +79,4 @@ class Stager:
 
         else:
             launcher = launcher.replace('"', '\\"')
-            applescript = f'do shell script "{launcher}"'
-            return applescript
+            return f'do shell script "{launcher}"'

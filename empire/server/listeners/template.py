@@ -216,6 +216,7 @@ class Listener:
                     "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
             )
+            return None
 
     def generate_stager(
         self,
@@ -293,18 +294,21 @@ class Listener:
             elif language.lower() == "python":
                 # send_message()
                 pass
+                return None
             else:
                 print(
                     helpers.color(
                         "[!] listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
                     )
                 )
+                return None
         else:
             print(
                 helpers.color(
                     "[!] listeners/template generate_comms(): no language specified!"
                 )
             )
+            return None
 
     def start_server(self):
         pass

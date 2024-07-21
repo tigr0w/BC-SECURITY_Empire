@@ -163,8 +163,7 @@ class Stager:
 
             try:
                 with open(directory, "rb") as f:
-                    code = f.read()
-                return code
+                    return f.read()
             except OSError:
                 log.error("Could not read file at " + str(directory))
                 return ""

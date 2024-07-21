@@ -33,12 +33,11 @@ def get_listener_options(listener_name):
     """
     try:
         with SessionLocal() as db:
-            listener_options = (
+            return (
                 db.query(models.Listener.options)
                 .filter(models.Listener.name == listener_name)
                 .first()
             )
-        return listener_options
 
     except Exception:
         return None
@@ -78,9 +77,7 @@ def ps_convert_to_oneliner(psscript):
     psscript = psscript.replace('@"', '"')
     psscript = psscript.replace('"@', '"')
     psscript = psscript.replace("\n", "")
-    psscript = psscript.replace("    ", "")
-
-    return psscript
+    return psscript.replace("    ", "")
 
 
 def is_port_in_use(port: int) -> bool:

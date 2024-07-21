@@ -417,8 +417,7 @@ def build_routing_packet(  # noqa: PLR0913
     if isinstance(encData, str) and sys.version[0] != "2":
         encData = encData.encode("Latin-1")
 
-    packet = RC4IV + rc4EncData + encData
-    return packet
+    return RC4IV + rc4EncData + encData
 
 
 def resolve_id(PacketID):

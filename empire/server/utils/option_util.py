@@ -137,16 +137,15 @@ def _parse_type(type_str: str = "", value: str = ""):  # noqa: PLR0911
 
     if type_str.lower() in ["int", "integer"]:
         return int
-    elif type_str.lower() in ["bool", "boolean"]:
+    if type_str.lower() in ["bool", "boolean"]:
         return bool
-    elif type_str.lower() in ["str", "string"]:
+    if type_str.lower() in ["str", "string"]:
         return str
-    elif type_str.lower() == "float":
+    if type_str.lower() == "float":
         return float
-    elif type_str.lower() == "file":
+    if type_str.lower() == "file":
         return "file"
-    else:
-        return None
+    return None
 
 
 def _safe_cast_option(
@@ -167,5 +166,4 @@ def _safe_cast_option(
             None,
             f"incorrect type for option {param_name}. Expected {expected_option_type} but got {option_type}",
         )
-    else:
-        return casted, None
+    return casted, None

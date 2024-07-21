@@ -560,11 +560,11 @@ async def create_task_socks(
 ):
     if is_port_in_use(socks.port):
         raise HTTPException(status_code=400, detail="Socks port is in use")
-    else:
-        resp, err = agent_task_service.create_task_socks(
-            db, db_agent, socks.port, current_user.id
-        )
-        if err:
-            raise HTTPException(status_code=400, detail=err)
 
-        return domain_to_dto_task(resp)
+    resp, err = agent_task_service.create_task_socks(
+        db, db_agent, socks.port, current_user.id
+    )
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    return domain_to_dto_task(resp)

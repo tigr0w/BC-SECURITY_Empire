@@ -75,5 +75,4 @@ class Stager:
             return ""
         else:
             launcher = launcher.replace('"', '\\"')
-            jar_bytes = self.mainMenu.stagers.generate_jar(launcherCode=launcher)
-            return jar_bytes
+            return self.mainMenu.stagers.generate_jar(launcherCode=launcher)
