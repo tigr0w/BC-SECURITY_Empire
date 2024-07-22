@@ -36,9 +36,9 @@ class Module:
 
         if launcher == "":
             return handle_error_message("[!] Error in launcher command generation.")
-        else:
-            # Cmd = launcher
-            print(helpers.color("Agent Launcher code: " + launcher))
+
+        # Cmd = launcher
+        print(helpers.color("Agent Launcher code: " + launcher))
 
         # read in the common module source code
         script, err = main_menu.modulesv2.get_module_source(

@@ -51,7 +51,7 @@ class Module:
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
-        elif listener_name:
+        if listener_name:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
                 listenerName=listener_name,

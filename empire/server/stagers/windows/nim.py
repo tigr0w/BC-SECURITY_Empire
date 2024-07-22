@@ -97,12 +97,12 @@ class Stager:
             # not a valid listener, return nothing for the script
             log.error("[!] Invalid listener: " + listener_name)
             return ""
-        else:
-            obfuscate_script = obfuscate.lower() == "true"
+
+        obfuscate_script = obfuscate.lower() == "true"
 
         if language in ["csharp", "ironpython"]:
             if (
-                self.mainMenu.listenersv2.get_active_listener_by_name(
+                self.main_menu.listenersv2.get_active_listener_by_name(
                     listener_name
                 ).info["Name"]
                 != "HTTP[S]"
@@ -112,7 +112,7 @@ class Stager:
                 )
                 return ""
 
-            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+            launcher = self.main_menu.stagers.generate_exe_oneliner(
                 language=language,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
@@ -139,31 +139,30 @@ class Stager:
             log.error("[!] Error in launcher command generation.")
             return ""
 
-        else:
-            # Generate nim launcher from template
-            with open(
-                self.main_menu.installPath
-                + "/data/module_source/nim/execute_powershell_bin.nim",
-                "rb",
-            ) as f:
-                nim_source = f.read()
-            nim_source = nim_source.decode("UTF-8")
-            nim_source = nim_source.replace("{{ script }}", launcher)
-            with open("/tmp/launcher.nim", "w") as f:
-                f.write(nim_source)
+        # Generate nim launcher from template
+        with open(
+            self.main_menu.installPath
+            + "/data/module_source/nim/execute_powershell_bin.nim",
+            "rb",
+        ) as f:
+            nim_source = f.read()
+        nim_source = nim_source.decode("UTF-8")
+        nim_source = nim_source.replace("{{ script }}", launcher)
+        with open("/tmp/launcher.nim", "w") as f:
+            f.write(nim_source)
 
-            currdir = os.getcwd()
-            os.chdir("/tmp/")
-            os.system("nim c -d=mingw --app=console --cpu=amd64 launcher.nim")
-            os.chdir(currdir)
-            os.remove("/tmp/launcher.nim")
+        currdir = os.getcwd()
+        os.chdir("/tmp/")
+        os.system("nim c -d=mingw --app=console --cpu=amd64 launcher.nim")
+        os.chdir(currdir)
+        os.remove("/tmp/launcher.nim")
 
-            # Create exe and send to client
-            directory = "/tmp/launcher.exe"
+        # Create exe and send to client
+        directory = "/tmp/launcher.exe"
 
-            try:
-                with open(directory, "rb") as f:
-                    return f.read()
-            except OSError:
-                log.error("Could not read file at " + str(directory))
-                return ""
+        try:
+            with open(directory, "rb") as f:
+                return f.read()
+        except OSError:
+            log.error("Could not read file at " + str(directory))
+            return ""

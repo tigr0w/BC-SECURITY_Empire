@@ -146,11 +146,9 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 
 # PLR, PLW: Each individual stager, listener, and module lacks tests, so it is not worth the
 # risk to manually refactor them until there are tests in place for them.
-# RET: I want to refactor these with more inverted conditions in a follow-up PR.
-"empire/server/listeners/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901", "RET505", "RET508"]
-"empire/server/stagers/*" = ["PLR0911", "PLR0912", "PLR0915", "RET505"]
-"empire/server/modules/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915", "RET505"]
-"empire/server/common/*" = ["RET505"]
+"empire/server/listeners/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901"]
+"empire/server/stagers/*" = ["PLR0911", "PLR0912", "PLR0915"]
+"empire/server/modules/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915"]
 
 # It's hard to limit arguments on the endpoint functions.
 "empire/server/api/*" = ["PLR0913"]

