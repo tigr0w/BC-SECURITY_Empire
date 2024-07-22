@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added job tracking for all tasks in Sharpire (@Cx01N)
 -   Updated agents to track all tasks and removed only tracking jobs (@Cx01N)
 -   Added Invoke-BSOD modules (@Cx01N)
+-   Added ticketdumper ironpython module (@Hubbl3)
 -   Added ThreadlessInject module (@Cx01N)
 
 ### Fixed
