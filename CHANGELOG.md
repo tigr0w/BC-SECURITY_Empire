@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.11.1] - 2024-07-23
+
 ### Changed
 
 -   Updated Ruff to 0.5.3 and added additional Ruff rules (@Vinnybod)
@@ -884,7 +886,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.1...HEAD
+
+[5.11.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.0...v5.11.1
 
 [5.11.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.10.3...v5.11.0
 
