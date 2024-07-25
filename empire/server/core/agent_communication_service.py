@@ -447,7 +447,7 @@ class AgentCommunicationService:
 
                 if not rsa_key:
                     message = (
-                        f"Agent {sessionID} returned an invalid PowerShell public key!"
+                        f"Agent {session_id} returned an invalid PowerShell public key!"
                     )
                     log.error(message)
                     return "ERROR: Invalid PowerShell public key"
@@ -467,7 +467,7 @@ class AgentCommunicationService:
 
                 # add the agent to the database now that it's "checked in"
                 agent = self.agent_service.create_agent(
-                            db,
+                    db,
                     session_id,
                     client_ip,
                     delay,
@@ -492,7 +492,7 @@ class AgentCommunicationService:
 
             if language.lower() == "python":
                 if (len(message) < 1000) or (len(message) > 2500):  # noqa: PLR2004
-                    message = f"Invalid Python key post format from {sessionID}"
+                    message = f"Invalid Python key post format from {session_id}"
                     log.error(message)
                     return f"Error: Invalid Python key post format from {session_id}"
 
