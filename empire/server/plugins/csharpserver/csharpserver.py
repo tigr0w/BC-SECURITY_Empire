@@ -4,10 +4,10 @@ import logging
 import os
 import socket
 import subprocess
+import time
 from typing import override
 
 from sqlalchemy.orm import Session
-import time
 
 from empire.server.common import helpers
 from empire.server.core.db import models

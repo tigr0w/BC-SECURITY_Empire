@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 
 from starlette import status
+from starlette.status import HTTP_200_OK
 
 from empire.server.core.exceptions import (
     PluginExecutionException,
@@ -220,7 +221,7 @@ def test_toggle_plugin_enabled(client, admin_auth_header, main, session_local):
         json={"options": {}},
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTP_200_OK
 
     # Stop the plugin
     response = client.put(
@@ -228,7 +229,7 @@ def test_toggle_plugin_enabled(client, admin_auth_header, main, session_local):
         json={"enabled": False},
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTP_200_OK
 
     # Execute should fail
     # TODO: This will be enabled in a future PR.
@@ -245,7 +246,7 @@ def test_toggle_plugin_enabled(client, admin_auth_header, main, session_local):
         json={"enabled": True},
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTP_200_OK
 
     response = client.get("/api/v2/plugins/basic_reporting", headers=admin_auth_header)
     assert response.json()["enabled"] is True

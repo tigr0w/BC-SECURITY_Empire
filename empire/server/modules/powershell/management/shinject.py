@@ -49,7 +49,9 @@ class Module:
             return handle_error_message("[!] Error in launcher generation.")
 
         launcher_code = launcher.split(" ")[-1]
-        sc, err = main_menu.stagergenv2.generate_powershell_shellcode(launcher_code, arch)
+        sc, err = main_menu.stagergenv2.generate_powershell_shellcode(
+            launcher_code, arch
+        )
         if err:
             return handle_error_message(err)
 

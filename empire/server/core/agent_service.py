@@ -65,7 +65,7 @@ class AgentService:
     def get_by_name(db: Session, name: str):
         return db.query(models.Agent).filter(models.Agent.name == name).first()
 
-    def create_agent(
+    def create_agent(  # noqa: PLR0913
         self,
         db: Session,
         session_id,

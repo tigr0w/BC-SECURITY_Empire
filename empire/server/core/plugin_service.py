@@ -52,7 +52,7 @@ class PluginService:
         db_plugin = self.get_plugin_db(db, plugin.info.name)
         if db_plugin.enabled == enabled:
             return
-        elif enabled:
+        if enabled:
             plugin.on_start(db)
             db_plugin.enabled = True
             plugin.enabled = True
@@ -156,8 +156,7 @@ class PluginService:
         plugin_info = PluginInfo(**plugin_config)
         loader = importlib.machinery.SourceFileLoader(plugin_file_name, str(file_path))
         module = loader.load_module()
-        plugin_obj = module.Plugin(self.main_menu, plugin_info, db)
-        return plugin_obj
+        return module.Plugin(self.main_menu, plugin_info, db)
 
     @staticmethod
     def _determine_auto_start(plugin_obj, empire_config) -> bool:

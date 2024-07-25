@@ -120,7 +120,7 @@ def test__update_dir_list(agent_communication_service, agent, session_local, mod
             .all()
         )
 
-        assert len(files) == 3
+        assert len(files) == 3  # noqa: PLR2004
 
         root = files[0]
         assert root.name == "Desktop"

@@ -1,4 +1,11 @@
 import pytest
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_404_NOT_FOUND,
+    HTTP_422_UNPROCESSABLE_ENTITY,
+)
 
 
 def test_create_ip_validates(client, admin_auth_header):
@@ -14,7 +21,7 @@ def test_create_ip_validates(client, admin_auth_header):
             },
         )
 
-        assert resp.status_code == 422
+        assert resp.status_code == HTTP_422_UNPROCESSABLE_ENTITY
         assert (
             resp.json()["detail"][0]["msg"]
             == f"Value error, Invalid IP address {invalid}. Must be a valid IP Address, Range, or CIDR."
@@ -31,7 +38,7 @@ def test_create_ip_allow(client, admin_auth_header):
         },
     )
 
-    assert resp.status_code == 201
+    assert resp.status_code == HTTP_201_CREATED
     assert resp.json()["ip_address"] == "192.168.0.1"
     assert resp.json()["list"] == "allow"
 
@@ -51,7 +58,7 @@ def test_create_ip_deny(client, admin_auth_header):
         },
     )
 
-    assert resp.status_code == 201
+    assert resp.status_code == HTTP_201_CREATED
     assert resp.json()["ip_address"] == "192.168.0.1"
     assert resp.json()["list"] == "deny"
 
@@ -71,7 +78,7 @@ def test_delete_ip(client, admin_auth_header):
         },
     )
 
-    assert resp.status_code == 201
+    assert resp.status_code == HTTP_201_CREATED
     uid = resp.json()["id"]
 
     resp = client.delete(
@@ -79,14 +86,14 @@ def test_delete_ip(client, admin_auth_header):
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 204
+    assert resp.status_code == HTTP_204_NO_CONTENT
 
     resp = client.get(
         f"/api/v2/ips/{uid}",
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 404
+    assert resp.status_code == HTTP_404_NOT_FOUND
 
 
 @pytest.fixture(scope="function")
@@ -103,7 +110,7 @@ def setup_ip_list(client, admin_auth_header):
             },
         )
 
-        assert resp.status_code == 201
+        assert resp.status_code == HTTP_201_CREATED
 
     for ip in block:
         resp = client.post(
@@ -115,7 +122,7 @@ def setup_ip_list(client, admin_auth_header):
             },
         )
 
-        assert resp.status_code == 201
+        assert resp.status_code == HTTP_201_CREATED
 
     yield
 
@@ -132,16 +139,16 @@ def test_get_ip_list(client, admin_auth_header, setup_ip_list):
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
-    assert len(resp.json()["records"]) == 4
+    assert resp.status_code == HTTP_200_OK
+    assert len(resp.json()["records"]) == 4  # noqa: PLR2004
 
     resp = client.get(
         "/api/v2/ips/?ip_list=allow",
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
-    assert len(resp.json()["records"]) == 3
+    assert resp.status_code == HTTP_200_OK
+    assert len(resp.json()["records"]) == 3  # noqa: PLR2004
     assert all(x["list"] == "allow" for x in resp.json()["records"])
 
     resp = client.get(
@@ -149,7 +156,7 @@ def test_get_ip_list(client, admin_auth_header, setup_ip_list):
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == HTTP_200_OK
     assert len(resp.json()["records"]) == 1
     assert all(x["list"] == "deny" for x in resp.json()["records"])
 
@@ -164,7 +171,7 @@ def test_get_ip(client, admin_auth_header):
         },
     )
 
-    assert resp.status_code == 201
+    assert resp.status_code == HTTP_201_CREATED
 
     uid = resp.json()["id"]
 
@@ -173,6 +180,6 @@ def test_get_ip(client, admin_auth_header):
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == HTTP_200_OK
     assert resp.json()["ip_address"] == "1.1.1.1"
     assert resp.json()["list"] == "allow"

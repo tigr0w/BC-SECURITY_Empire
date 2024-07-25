@@ -1115,7 +1115,9 @@ class Listener:
                     if ":" in clientIP:
                         clientIP = "[" + str(clientIP) + "]"
                     sessionID = results.split(b" ")[1].strip().decode("UTF-8")
-                    sessionKey = self.mainMenu.agentcommsv2.agents[sessionID]["sessionKey"]
+                    sessionKey = self.mainMenu.agentcommsv2.agents[sessionID][
+                        "sessionKey"
+                    ]
 
                     listenerName = self.options["Name"]["Value"]
                     message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"

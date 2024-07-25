@@ -98,7 +98,9 @@ extend-exclude = [
     'empire/server/common/malleable',
     'empire/client/generated-stagers',
     'empire/client/downloads',
-    'empire/server/plugins/Report-Generation-Plugin'
+    'empire/server/plugins/Report-Generation-Plugin',
+    "empire/server/plugins/ChiselServer-Plugin",
+    "empire/server/plugins/SocksProxyServer-Plugin",
 ]
 target-version = "py312"
 

@@ -73,8 +73,7 @@ class AgentCommunicationService:
         if not dec_data["crc32_check"]:
             message = f"File agent {session_id} failed crc32 check during decompression!\n[!] HEADER: Start crc32: {dec_data['header_crc32']} -- Received crc32: {dec_data['dec_crc32']} -- Crc32 pass: {dec_data['crc32_check']}!"
             log.warning(message)
-        data = dec_data["data"]
-        return data
+        return dec_data["data"]
 
     def save_file(  # noqa: PLR0913
         self,
@@ -219,6 +218,7 @@ class AgentCommunicationService:
 
         if agent:
             return agent.nonce
+        return None
 
     def _update_dir_list(self, db: Session, session_id: str, response):
         """ "
@@ -452,9 +452,7 @@ class AgentCommunicationService:
                     log.error(message)
                     return "ERROR: Invalid PowerShell public key"
 
-                message = (
-                    f"Agent {session_id} from {client_ip} posted valid PowerShell RSA key"
-                )
+                message = f"Agent {session_id} from {client_ip} posted valid PowerShell RSA key"
                 log.info(message)
 
                 nonce = helpers.random_string(16, charset=string.digits)
@@ -511,7 +509,9 @@ class AgentCommunicationService:
 
                 nonce = helpers.random_string(16, charset=string.digits)
 
-                message = f"Agent {session_id} from {client_ip} posted valid Python PUB key"
+                message = (
+                    f"Agent {session_id} from {client_ip} posted valid Python PUB key"
+                )
                 log.info(message)
 
                 delay = listener_options["DefaultDelay"]["Value"]
