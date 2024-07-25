@@ -90,12 +90,12 @@ async def update_listener(
             raise HTTPException(status_code=400, detail=err)
 
         return domain_to_dto_listener(resp)
-    elif listener_req.enabled and db_listener.enabled:
+    if listener_req.enabled and db_listener.enabled:
         # err already running / cannot update
         raise HTTPException(
             status_code=400, detail="Listener must be disabled before modifying"
         )
-    elif not listener_req.enabled and db_listener.enabled:
+    if not listener_req.enabled and db_listener.enabled:
         # disable and update
         listener_service.stop_listener(db_listener)
         resp, err = listener_service.update_listener(db, db_listener, listener_req)
@@ -104,7 +104,7 @@ async def update_listener(
             raise HTTPException(status_code=400, detail=err)
 
         return domain_to_dto_listener(resp)
-    elif not listener_req.enabled and not db_listener.enabled:
+    if not listener_req.enabled and not db_listener.enabled:
         # update
         resp, err = listener_service.update_listener(db, db_listener, listener_req)
 
@@ -112,8 +112,8 @@ async def update_listener(
             raise HTTPException(status_code=400, detail=err)
 
         return domain_to_dto_listener(resp)
-    else:
-        raise HTTPException(status_code=500, detail="This Shouldn't Happen")
+
+    raise HTTPException(status_code=500, detail="This Shouldn't Happen")
 
 
 @router.delete(

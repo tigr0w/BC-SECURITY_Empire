@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "5.10.3"
+version = "5.11.1"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -64,7 +64,7 @@ httpx = "^0.26.0" # For starlette TestClient
 black = "^24.4.2"
 pytest = "^8.0.1"
 pytest-timeout = "^2.2.0"
-ruff = "^0.5.0"
+ruff = "^0.5.3"
 pytest-cov = "^4.1.0"
 coverage = {version = "^7.3.4", extras = ["toml"]}
 
@@ -109,19 +109,59 @@ target-version = "py312"
 extend-ignore = ["E501"]
 
 select = [
-    "E", # pycodestyle
-    "W", # pycodestyle
-    "F", # pyflakes
-    "I", # isort
-    "UP", # pyupgrade
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "RUF", # ruff
+    "F",   # pyflakes
+    "E",   # pycodestyle
+    "W",   # pycodestyle
+#    "C90", # mccabe
+    "I",   # isort
+    "UP",  # pyupgrade
+#    "S",   # flake8-bandit
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+#    "PT", # flake8-pytest-style
+    "RET", # flake8-return
+    "SLF", # flake8-self
     "SIM", # flake8-simplify
+#    "TCH", # flake8-type-checking
+#    "ARG", # flake8-unused-arguments
+#    "PTH", # flake8-use-pathlib
+#    "ERA", # eradicate
+    "PLC", # pylint-convention
+    "PLE", # pylint-error
+    "PLW", # pylint-warning
+    "PLR", # pylint-refactor
+#    "TRY", # tryceratops
+#    "PERF", # perflint
+    "FURB", # refurb
+    "RUF", # ruff
 ]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query", "fastapi.File"]
+
+[tool.ruff.lint.per-file-ignores]
+# client doesn't have tests and is not being actively developed,
+# so I don't want to spend time on code quality and unintentionally
+# breaking things.
+"empire/client/*" = ["PLW", "PLR", "SLF001", "RET"]
+
+# PLR, PLW: Each individual stager, listener, and module lacks tests, so it is not worth the
+# risk to manually refactor them until there are tests in place for them.
+"empire/server/listeners/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901"]
+"empire/server/stagers/*" = ["PLR0911", "PLR0912", "PLR0915"]
+"empire/server/modules/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915"]
+
+# It's hard to limit arguments on the endpoint functions.
+"empire/server/api/*" = ["PLR0913"]
+
+"empire/server/listeners/http_malleable.py" = ["SLF"]
+
+# Can't control how many fixtures are needed for the tests.
+"empire/test/*" = ["PLR0913", "S", "SLF"]
+"empire/server/modules/powershell/persistence/elevated/schtasks.py" = ["PLR2004"]
+"empire/server/modules/powershell/persistence/elevated/wmi.py" = ["PLR2004"]
+"empire/server/modules/powershell/persistence/elevated/wmi_updater.py" = ["PLR2004"]
+"empire/server/plugins/reverseshell_stager_server/reverseshell_stager_server.py" = ["PLR2004"]
 
 [tool.coverage.run]
 omit = [

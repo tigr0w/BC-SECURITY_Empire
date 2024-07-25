@@ -51,17 +51,16 @@ class Module:
 
         if launcher_code == "":
             return handle_error_message("[!] Error in launcher .bat generation.")
-        else:
-            script_end += (
-                '\nInstall-ServiceBinary -ServiceName "'
-                + str(service_name)
-                + '" -Command "C:\\Windows\\System32\\cmd.exe /C $tempLoc"'
-            )
 
-        script = main_menu.modulesv2.finalize_module(
+        script_end += (
+            '\nInstall-ServiceBinary -ServiceName "'
+            + str(service_name)
+            + '" -Command "C:\\Windows\\System32\\cmd.exe /C $tempLoc"'
+        )
+
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

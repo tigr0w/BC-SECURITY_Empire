@@ -7,8 +7,9 @@ import subprocess
 from typing import override
 
 from sqlalchemy.orm import Session
+import time
 
-import empire.server.common.helpers as helpers
+from empire.server.common import helpers
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import PluginTaskStatus
@@ -83,17 +84,37 @@ class Plugin(BasePlugin):
 
     def thread_csharp_responses(self):
         task_input = "Collecting Empire C# server output stream..."
+        batch_timeout = 5  # seconds
+        response_batch = []
+        last_batch_time = time.time()
 
         while True:
             response = self.csharpserver_proc.stdout.readline().rstrip()
-
             if response:
-                output = response.decode("UTF-8")
+                response_batch.append(response.decode("UTF-8"))
+
+            if (time.time() - last_batch_time) >= batch_timeout:
+                output = "\n".join(response_batch)
                 log.debug(output)
                 status = PluginTaskStatus.completed
-
-                with SessionLocal() as db:
+                with SessionLocal.begin() as db:
                     self.record_task(status, output, task_input, db)
+                response_batch.clear()
+                last_batch_time = time.time()
+
+            if not response:
+                if response_batch:
+                    output = "\n".join(response_batch)
+                    log.debug(output)
+                    status = PluginTaskStatus.completed
+                    with SessionLocal.begin() as db:
+                        self.record_task(status, output, task_input, db)
+                output = "Empire C# server output stream closed"
+                status = PluginTaskStatus.error
+                log.warning(output)
+                with SessionLocal.begin() as db:
+                    self.record_task(status, output, task_input, db)
+                break
 
     def record_task(self, status, task_output, task_input, db: Session):
         plugin_task = models.PluginTask(
@@ -114,7 +135,6 @@ class Plugin(BasePlugin):
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
 
-        # check for confuse bool and convert to string
         bytes_confuse = b"true" if confuse else b"false"
         b64_confuse = base64.b64encode(bytes_confuse)
 
@@ -140,9 +160,7 @@ class Plugin(BasePlugin):
         b64_yaml = base64.b64encode(bytes_yaml)
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
-        # compiler only checks for true and ignores otherwise
 
-        # check for confuse bool and convert to string
         bytes_confuse = b"true" if confuse else b"false"
         b64_confuse = base64.b64encode(bytes_confuse)
 

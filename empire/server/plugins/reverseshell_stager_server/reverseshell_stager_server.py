@@ -3,7 +3,7 @@ import logging
 import socket
 from typing import override
 
-import empire.server.common.helpers as helpers
+from empire.server.common import helpers
 from empire.server.core.plugins import BasePlugin
 
 log = logging.getLogger(__name__)
@@ -105,13 +105,12 @@ class Plugin(BasePlugin):
         try:
             self.reverseshell_proc = None
             self.status = command["Status"]
-            results = self.do_server(command, kwargs["db"])
-            return results
+            return self.do_server(command, kwargs["db"])
         except Exception as e:
             log.error(e)
             return False, f"[!] {e}"
 
-    def do_server(self, command, db):
+    def do_server(self, command, db):  # noqa: PLR0911
         """
         Check if the Empire C# server is already running.
         """
@@ -123,17 +122,15 @@ class Plugin(BasePlugin):
         if self.status == "status":
             if self.enabled:
                 return "[+] Reverseshell server is currently running"
-            else:
-                return "[!] Reverseshell server is currently stopped"
+            return "[!] Reverseshell server is currently stopped"
 
-        elif self.status == "stop":
+        if self.status == "stop":
             if self.enabled:
                 self.on_stop(db)
                 return "[!] Stopped reverseshell server"
-            else:
-                return "[!] Reverseshell server is already stopped"
+            return "[!] Reverseshell server is already stopped"
 
-        elif self.status == "start":
+        if self.status == "start":
             # extract all of our options
             language = command["Language"]
             listener_name = command["Listener"]
@@ -179,6 +176,8 @@ class Plugin(BasePlugin):
             )
             self.reverseshell_proc.daemon = True
             self.reverseshell_proc.start()
+            return None
+        return None
 
     @override
     def on_stop(self, db):

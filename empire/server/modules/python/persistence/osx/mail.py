@@ -128,7 +128,7 @@ class Module:
         </plist>
             """
         )
-        script = f"""
+        return f"""
 import os
 home =  os.getenv("HOME")
 AppleScript = '{apple_script}'
@@ -186,5 +186,3 @@ os.system("/usr/libexec/PlistBuddy -c 'Merge " + RulesActiveState + "' "+ home +
 os.system("rm " + SyncedRules)
 os.system("rm " + RulesActiveState)
         """
-
-        return script

@@ -113,6 +113,7 @@ class ObfuscationService:
                         f"{os.path.basename(file)} was already obfuscated. Not reobfuscating."
                     )
                 self.obfuscate_module(file, db_obf_config.command, reobfuscate)
+            return None
 
     # this is still written in a way that its only used for PowerShell
     # to make it work for other languages, we probably want to just pass in the db_obf_config
@@ -121,7 +122,7 @@ class ObfuscationService:
         self, module_source, obfuscation_command="", force_reobfuscation=False
     ):
         if self._is_obfuscated(module_source) and not force_reobfuscation:
-            return
+            return None
 
         try:
             with open(module_source) as f:
@@ -180,9 +181,7 @@ class ObfuscationService:
 
             # Obfuscation writes a newline character to the end of the file, ignoring that character
             obfuscatedFile.seek(0)
-            ps_script = obfuscatedFile.read()[0:-1]
-
-        return ps_script
+            return obfuscatedFile.read()[0:-1]
 
     def remove_preobfuscated_modules(self, language: str):
         """
@@ -254,8 +253,4 @@ class ObfuscationService:
         Obfuscate Python scripts using python-obfuscator
         """
         obfuscator = python_obfuscator.obfuscator()
-        obfuscated_code = obfuscator.obfuscate(
-            module_source, [one_liner, variable_renamer]
-        )
-
-        return obfuscated_code
+        return obfuscator.obfuscate(module_source, [one_liner, variable_renamer])

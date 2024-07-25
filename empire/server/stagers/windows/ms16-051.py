@@ -146,8 +146,7 @@ class Stager:
             log.error("[!] Error in launcher command generation.")
             return ""
 
-        else:
-            code = f"""
+        return f"""
 <html>
 <head>
 <meta http-equiv="x-ua-compatible" content="IE=10">
@@ -279,5 +278,3 @@ class Stager:
 </body>
 </html>
 """
-
-        return code

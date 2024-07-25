@@ -99,8 +99,9 @@ def test_load_modules(main_menu_mock, models, db):
     if messages:
         pytest.fail(f"warning messages encountered during testing: {messages}")
 
-    assert len(module_service.modules) > 300
-    assert len(db.query(models.Module).all()) > 300
+    min_modules = 300
+    assert len(module_service.modules) > min_modules
+    assert len(db.query(models.Module).all()) > min_modules
 
     for key, module in module_service.modules.items():
         if not module.advanced.custom_generate:

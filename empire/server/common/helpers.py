@@ -109,8 +109,7 @@ def random_string(length=-1, charset=string.ascii_letters):
     """
     if length == -1:
         length = random.randrange(6, 16)
-    random_string = "".join(random.choice(charset) for x in range(length))
-    return random_string
+    return "".join(random.choice(charset) for x in range(length))
 
 
 def obfuscate_call_home_address(data):
@@ -172,11 +171,10 @@ def enc_powershell(raw):
     """
     Encode a PowerShell command into a form usable by powershell.exe -enc ...
     """
-    tmp = base64.b64encode(raw.encode("UTF-16LE"))
+    return base64.b64encode(raw.encode("UTF-16LE"))
     # tmp = raw
     # tmp = bytes("".join([str(char) + "\x00" for char in raw]), "UTF-16LE")
     # tmp = base64.b64encode(tmp)
-    return tmp
 
 
 def powershell_launcher(raw, modifiable_launcher):
@@ -207,7 +205,7 @@ def strip_powershell_comments(data):
     strippedCode = re.sub(re.compile("<#.*?#>", re.DOTALL), "\n", data)
 
     # strip blank lines, lines starting with #, and verbose/debug statements
-    strippedCode = "\n".join(
+    return "\n".join(
         [
             line
             for line in strippedCode.split("\n")
@@ -219,8 +217,6 @@ def strip_powershell_comments(data):
             )
         ]
     )
-
-    return strippedCode
 
 
 ####################################################################################
@@ -400,9 +396,9 @@ def parse_credentials(data):
         return parse_mimikatz(data)
 
     # powershell/collection/prompt output
-    elif parts[0].startswith(b"[+] Prompted credentials:"):
+    if parts[0].startswith(b"[+] Prompted credentials:"):
         parts = parts[0].split(b"->")
-        if len(parts) == 2:
+        if len(parts) == 2:  # noqa: PLR2004
             username = parts[1].split(b":", 1)[0].strip()
             password = parts[1].split(b":", 1)[1].strip()
 
@@ -414,22 +410,21 @@ def parse_credentials(data):
 
             return [("plaintext", domain, username, password, "", "")]
 
-        else:
-            log.error("Error in parsing prompted credential output.")
-            return None
-
-    # python/collection/prompt (Mac OS)
-    elif b"text returned:" in parts[0]:
-        parts2 = parts[0].split(b"text returned:")
-        if len(parts2) >= 2:
-            password = parts2[-1]
-            return [("plaintext", "", "", password, "", "")]
-
-    else:
+        log.error("Error in parsing prompted credential output.")
         return None
 
+    # python/collection/prompt (Mac OS)
+    if b"text returned:" in parts[0]:
+        parts2 = parts[0].split(b"text returned:")
+        if len(parts2) >= 2:  # noqa: PLR2004
+            password = parts2[-1]
+            return [("plaintext", "", "", password, "", "")]
+        return None
 
-def parse_mimikatz(data):
+    return None
+
+
+def parse_mimikatz(data):  # noqa: PLR0912 PLR0915
     """
     Parse the output from Invoke-Mimikatz to return credential sets.
     """
@@ -484,7 +479,7 @@ def parse_mimikatz(data):
                 except Exception:
                     pass
 
-            if username != "" and password != "" and password != "(null)":
+            if password not in ("", "(null)"):
                 sid = ""
 
                 # substitute the FQDN in if it matches
@@ -498,7 +493,7 @@ def parse_mimikatz(data):
                 if not (credType == "plaintext" and username.endswith("$")):
                     creds.append((credType, domain, username, password, hostName, sid))
 
-    if len(creds) == 0 and len(lines) >= 13:
+    if len(creds) == 0 and len(lines) >= 13:  # noqa: PLR2004
         # check if we have lsadump output to check for krbtgt
         #   happens on domain controller hashdumps
         for x in range(8, 13):
@@ -515,7 +510,7 @@ def parse_mimikatz(data):
                         domain = hostDomain
                         sid = domainSid
 
-                    for x in range(0, len(lines)):
+                    for x in range(0, len(lines)):  # noqa: PLW2901
                         if lines[x].startswith(b"User : krbtgt"):
                             krbtgtHash = lines[x + 2].split(b":")[1].strip()
                             break
@@ -593,16 +588,13 @@ def get_file_size(file):
     byte_size = sys.getsizeof(file)
     kb_size = old_div(byte_size, 1024)
     if kb_size == 0:
-        byte_size = f"{byte_size} Bytes"
-        return byte_size
+        return f"{byte_size} Bytes"
     mb_size = old_div(kb_size, 1024)
     if mb_size == 0:
-        kb_size = f"{kb_size} KB"
-        return kb_size
+        return f"{kb_size} KB"
     gb_size = old_div(mb_size, 1024) % (mb_size)
     if gb_size == 0:
-        mb_size = f"{mb_size} MB"
-        return mb_size
+        return f"{mb_size} MB"
     return f"{gb_size} GB"
 
 
@@ -671,21 +663,19 @@ def color(string, color=None):
             attr.append("34")
         return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
 
-    else:
-        if string.strip().startswith("[!]"):
-            attr.append("31")
-            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
-        elif string.strip().startswith("[+]"):
-            attr.append("32")
-            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
-        elif string.strip().startswith("[*]"):
-            attr.append("34")
-            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
-        elif string.strip().startswith("[>]"):
-            attr.append("33")
-            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
-        else:
-            return string
+    if string.strip().startswith("[!]"):
+        attr.append("31")
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
+    if string.strip().startswith("[+]"):
+        attr.append("32")
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
+    if string.strip().startswith("[*]"):
+        attr.append("34")
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
+    if string.strip().startswith("[>]"):
+        attr.append("33")
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
+    return string
 
 
 def unique(seq, idfun=None):
@@ -741,8 +731,7 @@ def decode_base64(data):
         data += b"=" * missing_padding
 
     try:
-        result = base64.decodebytes(data)
-        return result
+        return base64.decodebytes(data)
     except binascii.Error:
         # if there's a decoding error, just return the data
         return data
@@ -780,8 +769,7 @@ class KThread(threading.Thread):
     def globaltrace(self, frame, why, arg):
         if why == "call":
             return self.localtrace
-        else:
-            return None
+        return None
 
     def localtrace(self, frame, why, arg):
         if self.killed and why == "line":

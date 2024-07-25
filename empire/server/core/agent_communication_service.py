@@ -76,7 +76,7 @@ class AgentCommunicationService:
         data = dec_data["data"]
         return data
 
-    def save_file(
+    def save_file(  # noqa: PLR0913
         self,
         db: Session,
         session_id,
@@ -180,7 +180,7 @@ class AgentCommunicationService:
             if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
                 message = f"agent {session_id} attempted skywalker exploit!\n[!] attempted overwrite of {path} with data {data}"
                 log.warning(message)
-                return
+                return None
 
             # make the recursive directory structure if it doesn't already exist
             if not save_path.exists():
@@ -279,7 +279,7 @@ class AgentCommunicationService:
                 )
 
     # TODO listener and external_ip not used?
-    def update_agent_sysinfo(
+    def update_agent_sysinfo(  # noqa: PLR0913
         self,
         db: Session,
         session_id,
@@ -387,13 +387,12 @@ class AgentCommunicationService:
             return []
 
         try:
-            tasks = self.agent_task_service.get_temporary_tasks_for_agent(session_id)
-            return tasks
+            return self.agent_task_service.get_temporary_tasks_for_agent(session_id)
         except AttributeError:
             log.warning("Agent checkin during initialization.")
             return []
 
-    def _handle_agent_staging(
+    def _handle_agent_staging(  # noqa: PLR0912 PLR0915 PLR0913 PLR0911
         self,
         db: Session,
         session_id,
@@ -415,7 +414,7 @@ class AgentCommunicationService:
             # step 1 of negotiation -> client requests staging code
             return "STAGE0"
 
-        elif meta == "STAGE1":
+        if meta == "STAGE1":
             # step 3 of negotiation -> client posts public key
             message = f"Agent {session_id} from {client_ip} posted public key"
             log.info(message)
@@ -436,120 +435,120 @@ class AgentCommunicationService:
                 )
 
                 # client posts RSA key
-                if (len(message) < 400) or (not message.endswith("</RSAKeyValue>")):
+                if (len(message) < 400) or (  # noqa: PLR2004
+                    not message.endswith("</RSAKeyValue>")
+                ):
                     message = f"Invalid PowerShell key post format from {session_id}"
                     log.error(message)
                     return "ERROR: Invalid PowerShell key post format"
-                else:
-                    # convert the RSA key from the stupid PowerShell export format
-                    rsa_key = encryption.rsa_xml_to_key(message)
 
-                    if rsa_key:
-                        message = f"Agent {session_id} from {client_ip} posted valid PowerShell RSA key"
-                        log.info(message)
+                # convert the RSA key from the stupid PowerShell export format
+                rsa_key = encryption.rsa_xml_to_key(message)
 
-                        nonce = helpers.random_string(16, charset=string.digits)
-                        delay = listener_options["DefaultDelay"]["Value"]
-                        jitter = listener_options["DefaultJitter"]["Value"]
-                        profile = listener_options["DefaultProfile"]["Value"]
-                        killDate = listener_options["KillDate"]["Value"]
-                        workingHours = listener_options["WorkingHours"]["Value"]
-                        lostLimit = listener_options["DefaultLostLimit"]["Value"]
+                if not rsa_key:
+                    message = (
+                        f"Agent {sessionID} returned an invalid PowerShell public key!"
+                    )
+                    log.error(message)
+                    return "ERROR: Invalid PowerShell public key"
 
-                        # add the agent to the database now that it's "checked in"
-                        agent = self.agent_service.create_agent(
+                message = (
+                    f"Agent {session_id} from {client_ip} posted valid PowerShell RSA key"
+                )
+                log.info(message)
+
+                nonce = helpers.random_string(16, charset=string.digits)
+                delay = listener_options["DefaultDelay"]["Value"]
+                jitter = listener_options["DefaultJitter"]["Value"]
+                profile = listener_options["DefaultProfile"]["Value"]
+                killDate = listener_options["KillDate"]["Value"]
+                workingHours = listener_options["WorkingHours"]["Value"]
+                lostLimit = listener_options["DefaultLostLimit"]["Value"]
+
+                # add the agent to the database now that it's "checked in"
+                agent = self.agent_service.create_agent(
                             db,
-                            session_id,
-                            client_ip,
-                            delay,
-                            jitter,
-                            profile,
-                            killDate,
-                            workingHours,
-                            lostLimit,
-                            nonce=nonce,
-                            listener=listenerName,
-                        )
-                        self.add_agent_to_cache(agent)
+                    session_id,
+                    client_ip,
+                    delay,
+                    jitter,
+                    profile,
+                    killDate,
+                    workingHours,
+                    lostLimit,
+                    nonce=nonce,
+                    listener=listenerName,
+                )
+                self.add_agent_to_cache(agent)
 
-                        client_session_key = agent.session_key
-                        data = f"{nonce}{client_session_key}"
+                client_session_key = agent.session_key
+                data = f"{nonce}{client_session_key}"
 
-                        data = data.encode("ascii", "ignore")
+                data = data.encode("ascii", "ignore")
 
-                        # step 4 of negotiation -> server returns RSA(nonce+AESsession))
-                        encrypted_msg = encryption.rsa_encrypt(rsa_key, data)
-                        # TODO: wrap this in a routing packet!
+                # step 4 of negotiation -> server returns RSA(nonce+AESsession))
+                return encryption.rsa_encrypt(rsa_key, data)
+                # TODO: wrap this in a routing packet!
 
-                        return encrypted_msg
-
-                    else:
-                        message = f"Agent {session_id} returned an invalid PowerShell public key!"
-                        log.error(message)
-                        return "ERROR: Invalid PowerShell public key"
-
-            elif language.lower() == "python":
-                if (len(message) < 1000) or (len(message) > 2500):
-                    message = f"Invalid Python key post format from {session_id}"
+            if language.lower() == "python":
+                if (len(message) < 1000) or (len(message) > 2500):  # noqa: PLR2004
+                    message = f"Invalid Python key post format from {sessionID}"
                     log.error(message)
                     return f"Error: Invalid Python key post format from {session_id}"
-                else:
-                    try:
-                        int(message)
-                    except Exception:
-                        message = f"Invalid Python key post format from {session_id}"
-                        log.error(message)
-                        return message
 
-                    # client posts PUBc key
-                    clientPub = int(message)
-                    serverPub = encryption.DiffieHellman()
-                    serverPub.genKey(clientPub)
-                    # serverPub.key == the negotiated session key
+                try:
+                    int(message)
+                except Exception:
+                    message = f"Invalid Python key post format from {session_id}"
+                    log.error(message)
+                    return message
 
-                    nonce = helpers.random_string(16, charset=string.digits)
+                # client posts PUBc key
+                clientPub = int(message)
+                serverPub = encryption.DiffieHellman()
+                serverPub.genKey(clientPub)
+                # serverPub.key == the negotiated session key
 
-                    message = f"Agent {session_id} from {client_ip} posted valid Python PUB key"
-                    log.info(message)
+                nonce = helpers.random_string(16, charset=string.digits)
 
-                    delay = listener_options["DefaultDelay"]["Value"]
-                    jitter = listener_options["DefaultJitter"]["Value"]
-                    profile = listener_options["DefaultProfile"]["Value"]
-                    killDate = listener_options["KillDate"]["Value"]
-                    workingHours = listener_options["WorkingHours"]["Value"]
-                    lostLimit = listener_options["DefaultLostLimit"]["Value"]
-
-                    # add the agent to the database now that it's "checked in"
-                    agent = self.agent_service.create_agent(
-                        db,
-                        session_id,
-                        client_ip,
-                        delay,
-                        jitter,
-                        profile,
-                        killDate,
-                        workingHours,
-                        lostLimit,
-                        session_key=serverPub.key.hex(),
-                        nonce=nonce,
-                        listener=listenerName,
-                        language=language,
-                    )
-                    self.add_agent_to_cache(agent)
-
-                    # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
-                    data = f"{nonce}{serverPub.publicKey}"
-                    encrypted_msg = encryption.aes_encrypt_then_hmac(staging_key, data)
-                    # TODO: wrap this in a routing packet?
-
-                    return encrypted_msg
-
-            else:
-                message = f"Agent {session_id} from {client_ip} using an invalid language specification: {language}"
+                message = f"Agent {session_id} from {client_ip} posted valid Python PUB key"
                 log.info(message)
-                return f"ERROR: invalid language: {language}"
 
-        elif meta == "STAGE2":
+                delay = listener_options["DefaultDelay"]["Value"]
+                jitter = listener_options["DefaultJitter"]["Value"]
+                profile = listener_options["DefaultProfile"]["Value"]
+                killDate = listener_options["KillDate"]["Value"]
+                workingHours = listener_options["WorkingHours"]["Value"]
+                lostLimit = listener_options["DefaultLostLimit"]["Value"]
+
+                # add the agent to the database now that it's "checked in"
+                agent = self.agent_service.create_agent(
+                    db,
+                    session_id,
+                    client_ip,
+                    delay,
+                    jitter,
+                    profile,
+                    killDate,
+                    workingHours,
+                    lostLimit,
+                    session_key=serverPub.key.hex(),
+                    nonce=nonce,
+                    listener=listenerName,
+                    language=language,
+                )
+                self.add_agent_to_cache(agent)
+
+                # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
+                data = f"{nonce}{serverPub.publicKey}"
+                return encryption.aes_encrypt_then_hmac(staging_key, data)
+                # TODO: wrap this in a routing packet?
+
+            message = f"Agent {session_id} from {client_ip} using an invalid language specification: {language}"
+            log.info(message)
+            return f"ERROR: invalid language: {language}"
+
+        if meta == "STAGE2":
             # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
             try:
                 session_key = self.agents[session_id]["sessionKey"]
@@ -564,7 +563,7 @@ class AgentCommunicationService:
                 message = encryption.aes_decrypt_and_verify(session_key, enc_data)
                 parts = message.split(b"|")
 
-                if len(parts) < 12:
+                if len(parts) < 12:  # noqa: PLR2004
                     message = f"Agent {session_id} posted invalid sysinfo checkin format: {message}"
                     log.info(message)
                     # remove the agent from the cache/database
@@ -646,9 +645,11 @@ class AgentCommunicationService:
 
             return f"STAGE2: {session_id}"
 
-        else:
-            message = f"Invalid staging request packet from {session_id} at {client_ip} : {meta}"
-            log.error(message)
+        message = (
+            f"Invalid staging request packet from {session_id} at {client_ip} : {meta}"
+        )
+        log.error(message)
+        return None
 
     def handle_agent_data(
         self,
@@ -664,7 +665,7 @@ class AgentCommunicationService:
 
         Abstracted out sufficiently for any listener module to use.
         """
-        if len(routing_packet) < 20:
+        if len(routing_packet) < 20:  # noqa: PLR2004
             message = f"handle_agent_data(): routingPacket wrong length: {len(routing_packet)}"
             log.error(message)
             return None
@@ -683,7 +684,7 @@ class AgentCommunicationService:
                 message = f"handle_agent_data(): invalid sessionID {session_id}"
                 log.error(message)
                 dataToReturn.append(("", f"ERROR: invalid sessionID {session_id}"))
-            elif meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
+            elif meta in ("STAGE0", "STAGE1", "STAGE2"):
                 message = f"handle_agent_data(): session_id {session_id} issued a {meta} request"
                 log.debug(message)
 
@@ -858,7 +859,7 @@ class AgentCommunicationService:
             log.error(message, exc_info=True)
             return None
 
-    def _process_agent_packet(
+    def _process_agent_packet(  # noqa: PLR0912 PLR0915
         self, db: Session, session_id, response_name, task_id, data
     ):
         """
@@ -947,7 +948,7 @@ class AgentCommunicationService:
             # sys info response -> update the host info
             data = data.decode("utf-8")
             parts = data.split("|")
-            if len(parts) < 12:
+            if len(parts) < 12:  # noqa: PLR2004
                 message = f"Invalid sysinfo response from {session_id}"
                 log.error(message)
             else:
@@ -1040,7 +1041,7 @@ class AgentCommunicationService:
                 data = data.decode("UTF-8")
 
             parts = data.split("|")
-            if len(parts) != 4:
+            if len(parts) != 4:  # noqa: PLR2004
                 message = f"Received invalid file download response from {session_id}"
                 log.error(message)
             else:
@@ -1226,7 +1227,7 @@ class AgentCommunicationService:
             if isinstance(data, str):
                 data = data.encode("UTF-8")
             parts = data.split(b"\n")
-            if len(parts) > 10:
+            if len(parts) > 10:  # noqa: PLR2004
                 date_time = helpers.get_datetime()
                 if parts[0].startswith(b"Hostname:"):
                     # if we get Invoke-Mimikatz output, try to parse it and add

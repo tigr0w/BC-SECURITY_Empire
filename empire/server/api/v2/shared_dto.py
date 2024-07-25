@@ -78,16 +78,16 @@ def to_value_type(value: Any, type: str = "") -> ValueType:
     type = type or ""
     if type.lower() == "file":
         return ValueType.file
-    elif type.lower() in ["string", "str"] or isinstance(value, str):
+    if type.lower() in ["string", "str"] or isinstance(value, str):
         return ValueType.string
-    elif type.lower() in ["boolean", "bool"] or isinstance(value, bool):
+    if type.lower() in ["boolean", "bool"] or isinstance(value, bool):
         return ValueType.boolean
-    elif type.lower() == "float" or isinstance(value, float):
+    if type.lower() == "float" or isinstance(value, float):
         return ValueType.float
-    elif type.lower() in ["integer", "int"] or isinstance(value, int):
+    if type.lower() in ["integer", "int"] or isinstance(value, int):
         return ValueType.integer
-    else:
-        return ValueType.string
+
+    return ValueType.string
 
 
 def to_string(value):

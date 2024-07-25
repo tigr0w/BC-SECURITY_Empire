@@ -8,7 +8,7 @@ commandTests:
   - name: "pyenv version"
     command: "pyenv"
     args: ["--version"]
-    expectedOutput: ["pyenv 2.3.*"]
+    expectedOutput: ["pyenv 2.*"]
   # poetry
   - name: "poetry python"
     command: "poetry"

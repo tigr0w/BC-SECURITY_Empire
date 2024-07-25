@@ -35,6 +35,6 @@ class EmpireCORSMiddleware(CORSMiddleware):
         if not scope.get("path", "").startswith("/socket.io"):
             await super().__call__(scope, receive, send)
             return
-        else:
-            await self.app(scope, receive, send)
-            return
+
+        await self.app(scope, receive, send)
+        return

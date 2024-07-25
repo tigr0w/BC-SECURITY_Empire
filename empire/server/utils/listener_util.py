@@ -12,10 +12,10 @@ def remove_lines_comments(lines):
     """
     code = ""
     for line in lines.split("\n"):
-        line = line.strip()
+        _line = line.strip()
         # skip commented line
-        if not line.startswith("#"):
-            code += line
+        if not _line.startswith("#"):
+            code += _line
     return code
 
 
@@ -87,9 +87,7 @@ def generate_cookie():
     """
 
     chars = string.ascii_letters
-    cookie = helpers.random_string(random.randint(6, 16), charset=chars)
-
-    return cookie
+    return helpers.random_string(random.randint(6, 16), charset=chars)
 
 
 def generate_random_cipher():
@@ -107,6 +105,4 @@ def generate_random_cipher():
     tls12 = random.choice(random_tls12)
 
     tls10 = "ECDHE-RSA-AES256-SHA"
-    cipher = f"{tls12}:{tls10}"
-
-    return cipher
+    return f"{tls12}:{tls10}"

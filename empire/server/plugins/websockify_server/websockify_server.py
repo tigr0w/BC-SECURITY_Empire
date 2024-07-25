@@ -4,7 +4,7 @@ from typing import override
 
 import websockify
 
-import empire.server.common.helpers as helpers
+from empire.server.common import helpers
 from empire.server.core.plugins import BasePlugin
 
 log = logging.getLogger(__name__)
@@ -52,8 +52,7 @@ class Plugin(BasePlugin):
             self.websockify_proc = None
             # essentially switches to parse the proper command to execute
             self.status = command["Status"]
-            results = self.do_websockify(command, kwargs["db"])
-            return results
+            return self.do_websockify(command, kwargs["db"])
         except Exception as e:
             log.error(e)
             return False, f"[!] {e}"
@@ -70,17 +69,15 @@ class Plugin(BasePlugin):
         if self.status == "status":
             if self.enabled:
                 return "[+] Websockify server is currently running"
-            else:
-                return "[!] Websockify server is currently stopped"
+            return "[!] Websockify server is currently stopped"
 
-        elif self.status == "stop":
+        if self.status == "stop":
             if self.enabled:
                 self.on_stop(db)
                 return "[!] Stopped Websockify server"
-            else:
-                return "[!] Websockify server is already stopped"
+            return "[!] Websockify server is already stopped"
 
-        elif self.status == "start":
+        if self.status == "start":
             source_host = command["SourceHost"]
             source_port = int(command["SourcePort"])
             target_host = command["TargetHost"]
@@ -97,6 +94,7 @@ class Plugin(BasePlugin):
             self.websockify_proc.daemon = True
             self.websockify_proc.start()
             return "[+] Websockify server successfully started"
+        return None
 
     @override
     def on_stop(self, db):

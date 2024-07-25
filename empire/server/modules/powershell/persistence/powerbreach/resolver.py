@@ -65,19 +65,17 @@ Invoke-ResolverBackdoor"""
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
-        else:
-            # set the listener value for the launcher
-            stager = main_menu.stagertemplatesv2.new_instance("multi_launcher")
-            stager.options["Listener"] = listener_name
-            stager.options["Base64"] = "False"
+        # set the listener value for the launcher
+        stager = main_menu.stagertemplatesv2.new_instance("multi_launcher")
+        stager.options["Listener"] = listener_name
+        stager.options["Base64"] = "False"
 
-            # and generate the code
-            stager_code = stager.generate()
+        # and generate the code
+        stager_code = stager.generate()
 
-            if stager_code == "":
-                return handle_error_message("[!] Error creating stager")
-            else:
-                script = script.replace("REPLACE_LAUNCHER", stager_code)
+        if stager_code == "":
+            return handle_error_message("[!] Error creating stager")
+        script = script.replace("REPLACE_LAUNCHER", stager_code)
 
         for option, values in params.items():
             if (
@@ -123,10 +121,9 @@ Invoke-ResolverBackdoor"""
             parts[0], " ".join(parts[1:])
         )
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

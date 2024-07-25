@@ -244,7 +244,7 @@ class PluginService:
         return None
 
     @staticmethod
-    def get_tasks(
+    def get_tasks(  # noqa: PLR0913 PLR0912
         db: Session,
         plugins: list[str] | None = None,
         users: list[int] | None = None,

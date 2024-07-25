@@ -27,12 +27,12 @@ class Module:
 
         if launcher == "":
             return handle_error_message("[!] Error in launcher command generation.")
-        else:
-            launcher = launcher.replace("'", "\\'")
-            launcher = launcher.replace("echo", "")
-            parts = launcher.split("|")
-            launcher = f"sudo python -c {parts[0]}"
-            script = f"""
+
+        launcher = launcher.replace("'", "\\'")
+        launcher = launcher.replace("echo", "")
+        parts = launcher.split("|")
+        launcher = f"sudo python -c {parts[0]}"
+        return f"""
 import os
 import time
 import subprocess
@@ -49,5 +49,3 @@ while exitLoop is False:
         except:
             pass
             """
-
-            return script

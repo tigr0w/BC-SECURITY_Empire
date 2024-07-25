@@ -264,12 +264,12 @@ class Agent(Base):
                 func.julianday(utcnow()) - func.julianday(cls.lastseen_time)
             ) * 86400.0
             return seconds_elapsed > threshold
-        else:
-            diff = func.timestampdiff(
-                text("SECOND"), cls.lastseen_time, func.utc_timestamp()
-            )
-            threshold = 30 + cls.delay + cls.delay * cls.jitter
-            return diff > threshold
+
+        diff = func.timestampdiff(
+            text("SECOND"), cls.lastseen_time, func.utc_timestamp()
+        )
+        threshold = 30 + cls.delay + cls.delay * cls.jitter
+        return diff > threshold
 
     def __repr__(self):
         return f"<Agent(name='{self.name}')>"

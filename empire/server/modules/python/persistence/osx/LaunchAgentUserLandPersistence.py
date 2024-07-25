@@ -44,7 +44,7 @@ class Module:
 </plist>
 """
 
-        script = f"""
+        return f"""
 import subprocess
 import sys
 import base64
@@ -74,5 +74,3 @@ os.chmod(plistPath, 0644)
 print("\\n[+] Persistence has been installed: /Library/LaunchAgents/{plist_name}")
 
 """
-
-        return script

@@ -120,10 +120,9 @@ class Stager:
         if launcher == "":
             log.error("[!] Error in launcher generation.")
             return ""
-        else:
-            if not launcher or launcher.lower() == "failed":
-                log.error("[!] Error in launcher command generation.")
-                return ""
+        if not launcher or launcher.lower() == "failed":
+            log.error("[!] Error in launcher command generation.")
+            return ""
 
         if obfuscate_script:
             if language == "powershell":

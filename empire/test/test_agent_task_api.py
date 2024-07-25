@@ -4,6 +4,7 @@ from textwrap import dedent
 from types import SimpleNamespace
 
 import pytest
+from starlette import status
 
 from empire.server.core.exceptions import (
     ModuleExecutionException,
@@ -291,7 +292,7 @@ def test_create_task_shell_agent_not_found(client, admin_auth_header):
         headers=admin_auth_header,
         json={"command": 'echo "HELLO WORLD"'},
     )
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -301,7 +302,7 @@ def test_create_task_shell(client, admin_auth_header, agent):
         headers=admin_auth_header,
         json={"command": 'echo "HELLO WORLD"'},
     )
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["input"] == 'echo "HELLO WORLD"'
     assert response.json()["id"] > 0
 
@@ -313,7 +314,7 @@ def test_create_task_module_agent_not_found(client, admin_auth_header):
         json={"module_id": "some_module", "options": {}},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -324,7 +325,7 @@ def test_create_task_module_not_found(client, admin_auth_header, agent):
         json={"module_id": "some_module", "options": {}},
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "Module not found for id some_module"
 
 
@@ -344,7 +345,7 @@ def test_create_task_module(client, admin_auth_header, agent):
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith("function Invoke-InternalMonologue")
     assert response.json()["agent_id"] == agent
@@ -375,7 +376,7 @@ def test_create_task_module_modified_input(client, admin_auth_header, agent):
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith(modified_input)
     assert response.json()["agent_id"] == agent
@@ -406,7 +407,7 @@ def test_create_task_bof_module_disabled_csharpserver(
             },
         )
 
-        assert response.status_code == 400
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json()["detail"] == "csharpserver plugin not running"
 
 
@@ -424,7 +425,7 @@ def test_create_task_module_with_file_option_not_found(
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "File not found for 'File' id 999"
 
 
@@ -442,7 +443,7 @@ def test_create_task_module_with_file_option(
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -462,7 +463,7 @@ def test_create_task_module_validates_required_options(
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "required option missing: MsgText"
 
 
@@ -478,7 +479,7 @@ def test_create_task_module_validates_options_strict(client, admin_auth_header, 
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
         == "OutputFunction must be set to one of the suggested values."
@@ -501,7 +502,7 @@ def test_create_task_module_language_version_check(
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
         == "module requires language version 2 but agent running language version 1"
@@ -525,7 +526,7 @@ def test_create_task_module_ignore_language_version_check(
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -539,7 +540,7 @@ def test_create_task_module_admin_check(client, admin_auth_header, agent_low_int
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "module needs to run in an elevated context"
 
 
@@ -556,7 +557,7 @@ def test_create_task_module_ignore_admin_check(
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -573,7 +574,7 @@ def test_create_task_module_validation_exception(
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
         == "this_module_uses_legacy_handle_error_message: this is the error"
@@ -593,7 +594,7 @@ def test_create_task_module_execution_exception(
         },
     )
 
-    assert response.status_code == 500
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json()["detail"] == "this_module_has_an_execution_exception"
 
 
@@ -610,7 +611,7 @@ def test_create_task_handle_error_message(
         },
     )
 
-    assert response.status_code == 500
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json()["detail"] == "this_module_has_an_execution_exception"
 
 
@@ -624,7 +625,7 @@ def test_create_task_upload_file_not_found(client, admin_auth_header, agent):
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "Download not found for id 9999"
 
 
@@ -638,7 +639,7 @@ def test_create_task_upload_agent_not_found(client, admin_auth_header, agent):
         },
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -652,7 +653,7 @@ def test_create_task_upload(client, admin_auth_header, agent, download):
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith("/tmp")
 
@@ -664,7 +665,7 @@ def test_create_task_download_agent_not_found(client, admin_auth_header):
         json={"path_to_file": "/tmp/downloadme.zip"},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -675,7 +676,7 @@ def test_create_task_download(client, admin_auth_header, agent):
         json={"path_to_file": "/tmp/downloadme.zip"},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -686,7 +687,7 @@ def test_create_socks_agent_not_found(client, admin_auth_header, agent):
         json={},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_create_task_socks(client, admin_auth_header, agent):
@@ -696,7 +697,7 @@ def test_create_task_socks(client, admin_auth_header, agent):
         json={"port": 1080},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -707,7 +708,7 @@ def test_create_task_jobs_agent_not_found(client, admin_auth_header, agent):
         json={},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -718,7 +719,7 @@ def test_create_task_jobs(client, admin_auth_header, agent):
         json={},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
 
 def test_kill_task_jobs(client, admin_auth_header, agent):
@@ -728,7 +729,7 @@ def test_kill_task_jobs(client, admin_auth_header, agent):
         json={"id": 0},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
 
 def test_kill_task_jobs_agent_not_found(client, admin_auth_header, agent):
@@ -738,7 +739,7 @@ def test_kill_task_jobs_agent_not_found(client, admin_auth_header, agent):
         json={"id": 0},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -755,7 +756,7 @@ def test_create_task_script_import_agent_not_found(client, admin_auth_header, ag
         },
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -772,7 +773,7 @@ def test_create_task_script_import(client, admin_auth_header, agent):
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -783,7 +784,7 @@ def test_create_task_script_command_agent_not_found(client, admin_auth_header):
         json={"command": "run command"},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -794,7 +795,7 @@ def test_create_task_script_command(client, admin_auth_header, agent):
         json={"command": "run command"},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
     assert response.json()["input"] == "run command"
 
@@ -804,7 +805,7 @@ def test_create_task_sysinfo_agent_not_found(client, admin_auth_header):
         "/api/v2/agents/abc/tasks/sysinfo", headers=admin_auth_header
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -815,7 +816,7 @@ def test_create_task_sysinfo(client, admin_auth_header, agent):
         json={},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -826,7 +827,7 @@ def test_create_task_update_comms_agent_not_found(client, admin_auth_header, lis
         json={"new_listener_id": listener["id"]},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -837,7 +838,7 @@ def test_create_task_update_comms(client, admin_auth_header, agent, listener):
         json={"new_listener_id": listener["id"]},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -848,7 +849,7 @@ def test_create_task_update_sleep_agent_not_found(client, admin_auth_header, lis
         json={"new_listener_id": listener["id"]},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -859,7 +860,7 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
         json={"delay": -1, "jitter": 5},
     )
 
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     delay_err = next(filter(lambda x: "delay" in x["loc"], response.json()["detail"]))
     jitter_err = next(filter(lambda x: "jitter" in x["loc"], response.json()["detail"]))
@@ -876,7 +877,7 @@ def test_create_task_update_sleep(client, admin_auth_header, agent):
         json={"delay": 30, "jitter": 0.5},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -887,7 +888,7 @@ def test_create_task_update_kill_date_agent_not_found(client, admin_auth_header)
         json={"kill_date": "2021-05-06T00:00Z"},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -898,7 +899,7 @@ def test_create_task_update_kill_date(client, admin_auth_header, agent):
         json={"kill_date": "2021-05-06T00:00Z"},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -909,7 +910,7 @@ def test_create_task_update_working_hours_agent_not_found(client, admin_auth_hea
         json={"working_hours": "05:00-12:00"},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -920,7 +921,7 @@ def test_create_task_update_working_hours(client, admin_auth_header, agent):
         json={"working_hours": "05:00-12:00"},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -931,7 +932,7 @@ def test_create_task_directory_list_agent_not_found(client, admin_auth_header):
         json={"path": "/"},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -942,7 +943,7 @@ def test_create_task_directory_list(client, admin_auth_header, agent):
         json={"path": "/"},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
 
@@ -968,31 +969,31 @@ def test_create_task_proxy_list(client, admin_auth_header, agent):
         json=proxy_body,
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
 
     response = client.get(f"/api/v2/agents/{agent}", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["proxies"] == proxy_body
 
 
 def test_create_task_exit_agent_not_found(client, admin_auth_header):
     response = client.post("/api/v2/agents/abc/tasks/exit", headers=admin_auth_header)
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
 def test_get_tasks_for_agent_agent_not_found(client, admin_auth_header):
     response = client.get("/api/v2/agents/abc/tasks", headers=admin_auth_header)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
 def test_get_tasks_for_agent(client, admin_auth_header, agent, agent_task):
     response = client.get(f"/api/v2/agents/{agent}/tasks", headers=admin_auth_header)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 0
     assert (
         len(
@@ -1009,7 +1010,7 @@ def test_get_tasks_for_agent(client, admin_auth_header, agent, agent_task):
 
 def test_get_task_for_agent_agent_not_found(client, admin_auth_header, agent):
     response = client.get("/api/v2/agents/abc/tasks/1", headers=admin_auth_header)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -1017,7 +1018,7 @@ def test_get_task_for_agent_not_found(client, admin_auth_header, agent):
     response = client.get(
         f"/api/v2/agents/{agent}/tasks/9999", headers=admin_auth_header
     )
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert (
         response.json()["detail"]
         == f"Task not found for agent {agent} and task id 9999"
@@ -1026,7 +1027,7 @@ def test_get_task_for_agent_not_found(client, admin_auth_header, agent):
 
 def test_get_task_for_agent(client, admin_auth_header, agent, agent_task):
     response = client.get(f"/api/v2/agents/{agent}/tasks/1", headers=admin_auth_header)
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == 1
     assert response.json()["agent_id"] == agent
 
@@ -1037,7 +1038,7 @@ def test_create_task_archived_agent(client, admin_auth_header, agent_archived):
         headers=admin_auth_header,
         json={"command": 'echo "HELLO WORLD"'},
     )
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == f"[!] Agent {agent_archived} is archived."
 
 
@@ -1046,7 +1047,7 @@ def test_delete_task(client, admin_auth_header, agent, agent_task):
         f"/api/v2/agents/{agent}/tasks/1", headers=admin_auth_header
     )
 
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
 def test_last_task(client, admin_auth_header, agent, empire_config):
@@ -1056,7 +1057,7 @@ def test_last_task(client, admin_auth_header, agent, empire_config):
         json={"command": 'echo "HELLO WORLD"'},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
 
     location = empire_config.yaml["debug"]["last_task"]["file"]
     with open(location) as f:
@@ -1075,5 +1076,5 @@ def test_create_task_exit(client, admin_auth_header, agent):
         json={},
     )
 
-    assert response.status_code == 201
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0

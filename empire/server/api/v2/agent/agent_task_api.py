@@ -308,7 +308,8 @@ async def create_task_upload(
     #  At the moment the data is expected as a string of "filename|filedata"
     #  We could instead take a larger file, store it as a file on the server and store a reference to it in the db.
     #  And then change the way the agents pull down the file.
-    if len(raw_data) > 1048576:
+    MAX_BYTES = 1048576
+    if len(raw_data) > MAX_BYTES:
         raise HTTPException(
             status_code=400, detail="file size too large. Maximum file size of 1MB"
         )
@@ -559,11 +560,11 @@ async def create_task_socks(
 ):
     if is_port_in_use(socks.port):
         raise HTTPException(status_code=400, detail="Socks port is in use")
-    else:
-        resp, err = agent_task_service.create_task_socks(
-            db, db_agent, socks.port, current_user.id
-        )
-        if err:
-            raise HTTPException(status_code=400, detail=err)
 
-        return domain_to_dto_task(resp)
+    resp, err = agent_task_service.create_task_socks(
+        db, db_agent, socks.port, current_user.id
+    )
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    return domain_to_dto_task(resp)

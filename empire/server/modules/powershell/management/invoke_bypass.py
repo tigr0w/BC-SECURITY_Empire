@@ -20,7 +20,7 @@ class Module:
                 if bypass:
                     script += bypass.code
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate or params["Obfuscate"],
@@ -30,4 +30,3 @@ class Module:
                 else params["ObfuscateCommand"]
             ),
         )
-        return script
