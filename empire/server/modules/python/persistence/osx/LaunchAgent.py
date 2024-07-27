@@ -50,7 +50,7 @@ class Module:
 </dict>
 </plist>"""
 
-        script = f"""
+        return f"""
 import subprocess
 import sys
 import base64
@@ -93,5 +93,3 @@ print("\\n[+] Persistence has been installed: "+launchPath+"{plist_filename}")
 print("\\n[+] Empire daemon has been written to "+daemonPath+"{program_name}")
 
 """
-
-        return script

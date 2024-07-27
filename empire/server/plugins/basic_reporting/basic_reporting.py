@@ -68,11 +68,9 @@ class Plugin(BasePlugin):
             )
 
         output_str = out.getvalue()
-        db_download = self.main_menu.downloadsv2.create_download_from_text(
+        return self.main_menu.downloadsv2.create_download_from_text(
             db, user, output_str, "sessions.csv", "basic_reporting"
         )
-
-        return db_download
 
     def credential_report(self, db, user):
         out = io.StringIO()
@@ -84,11 +82,9 @@ class Plugin(BasePlugin):
             )
 
         output_str = out.getvalue()
-        db_download = self.main_menu.downloadsv2.create_download_from_text(
+        return self.main_menu.downloadsv2.create_download_from_text(
             db, user, output_str, "credentials.csv", "basic_reporting"
         )
-
-        return db_download
 
     def generate_report(self, db, user):
         out = io.StringIO()
@@ -103,11 +99,9 @@ class Plugin(BasePlugin):
             )
 
         output_str = out.getvalue()
-        db_download = self.main_menu.downloadsv2.create_download_from_text(
+        return self.main_menu.downloadsv2.create_download_from_text(
             db, user, output_str, "master.log", "basic_reporting"
         )
-
-        return db_download
 
 
 def xstr(s):

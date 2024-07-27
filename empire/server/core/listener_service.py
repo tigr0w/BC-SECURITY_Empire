@@ -68,6 +68,7 @@ class ListenerService:
         for listener in self._active_listeners.values():
             if listener.options["Name"]["Value"] == name:
                 return listener
+        return None
 
     def update_listener(self, db: Session, db_listener: models.Listener, listener_req):
         if listener_req.name != db_listener.name:
@@ -146,8 +147,7 @@ class ListenerService:
             self._active_listeners[listener.id] = template_instance
             log.info(f'Listener "{listener.name}" successfully started')
             return listener, None
-        else:
-            return None, f'Listener "{listener.name}" failed to start'
+        return None, f'Listener "{listener.name}" failed to start'
 
     def start_existing_listeners(self):
         with SessionLocal.begin() as db:
@@ -166,31 +166,31 @@ class ListenerService:
             log.info(f"v2: Starting listener '{name}'")
             success = template_instance.start()
 
-            if success:
-                listener_options = copy.deepcopy(template_instance.options)
-
-                # in a breaking change we could just store a str,str dict for the options.
-                # we don't add the listener to the db unless it successfully starts. Makes it a problem when trying
-                # to split this out.
-                db_listener = models.Listener(
-                    name=name,
-                    module=template_name,
-                    listener_category=category,
-                    enabled=True,
-                    options=listener_options,
-                )
-
-                db.add(db_listener)
-                db.flush()
-
-                log.info(f'Listener "{name}" successfully started')
-                self._active_listeners[db_listener.id] = template_instance
-
-                return db_listener, None
-            else:
+            if not success:
                 msg = f"Failed to start listener '{name}'"
                 log.error(msg)
                 return None, msg
+
+            listener_options = copy.deepcopy(template_instance.options)
+
+            # in a breaking change we could just store a str,str dict for the options.
+            # we don't add the listener to the db unless it successfully starts. Makes it a problem when trying
+            # to split this out.
+            db_listener = models.Listener(
+                name=name,
+                module=template_name,
+                listener_category=category,
+                enabled=True,
+                options=listener_options,
+            )
+
+            db.add(db_listener)
+            db.flush()
+
+            log.info(f'Listener "{name}" successfully started')
+            self._active_listeners[db_listener.id] = template_instance
+
+            return db_listener, None
 
         except Exception as e:
             msg = f"Failed to start listener '{name}': {e}"
@@ -236,7 +236,7 @@ class ListenerService:
         return template_instance, None
 
     @staticmethod
-    def _normalize_listener_options(instance) -> None:
+    def _normalize_listener_options(instance) -> None:  # noqa: PLR0912 PLR0915
         """
         This is adapted from the old set_listener_option which does some coercions on the http fields.
         """
@@ -324,7 +324,7 @@ class ListenerService:
             elif option_name == "StagingKey":
                 # if the staging key isn't 32 characters, assume we're md5 hashing it
                 value = str(value).strip()
-                if len(value) != 32:
+                if len(value) != 32:  # noqa: PLR2004
                     staging_key_hash = hashlib.md5(value.encode("UTF-8")).hexdigest()
                     log.warning(
                         f"Warning: staging key not 32 characters, using hash of staging key instead: {staging_key_hash}"

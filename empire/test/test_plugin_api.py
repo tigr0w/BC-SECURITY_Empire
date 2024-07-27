@@ -1,5 +1,8 @@
 from contextlib import contextmanager
 
+from starlette import status
+from starlette.status import HTTP_200_OK
+
 from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
@@ -17,14 +20,14 @@ def patch_plugin_execute(main, plugin_name, execute_func):
 def test_get_plugin_not_found(client, admin_auth_header):
     response = client.get("/api/v2/plugins/some_plugin", headers=admin_auth_header)
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Plugin not found for id some_plugin"
 
 
 def test_get_plugin(client, admin_auth_header):
     response = client.get("/api/v2/plugins/basic_reporting", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["name"] == "basic_reporting"
     assert (
         response.json()["description"]
@@ -35,7 +38,7 @@ def test_get_plugin(client, admin_auth_header):
 def test_get_plugins(client, admin_auth_header):
     response = client.get("/api/v2/plugins", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 0
 
 
@@ -44,7 +47,7 @@ def test_execute_plugin_not_found(client, admin_auth_header):
         "/api/v2/plugins/some_plugin/execute", headers=admin_auth_header
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Plugin not found for id some_plugin"
 
 
@@ -62,7 +65,7 @@ def test_execute_plugin_validation_failed(client, admin_auth_header):
         headers=admin_auth_header,
     )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "required option missing: TargetHost"
 
 
@@ -74,7 +77,7 @@ def test_execute_plugin_raises_exception(client, admin_auth_header, main):
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 500
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json()["detail"] == "division by zero"
 
 
@@ -86,7 +89,7 @@ def test_execute_plugin_returns_false(client, admin_auth_header, main):
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 500
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json()["detail"] == "internal plugin error"
 
 
@@ -100,7 +103,7 @@ def test_execute_plugin_returns_false_with_string(client, admin_auth_header, mai
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 500
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json()["detail"] == "This is the message"
 
 
@@ -114,7 +117,7 @@ def test_execute_plugin_returns_string(client, admin_auth_header, main):
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"detail": "Successful Execution"}
 
 
@@ -126,7 +129,7 @@ def test_execute_plugin_returns_true(client, admin_auth_header, main):
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"detail": "Plugin executed successfully"}
 
 
@@ -141,7 +144,7 @@ def test_execute_plugin_returns_true_with_string(client, admin_auth_header, main
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 500
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json() == {"detail": "This is the message"}
 
 
@@ -158,7 +161,7 @@ def test_execute_plugin_raises_plugin_validation_exception(
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 400
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json() == {"detail": "This is the message"}
 
 
@@ -175,7 +178,7 @@ def test_execute_plugin_raises_plugin_execution_exception(
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 500
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json() == {"detail": "This is the message"}
 
 
@@ -187,7 +190,7 @@ def test_execute_plugin_returns_none(client, admin_auth_header, main):
             headers=admin_auth_header,
         )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"detail": "Plugin executed successfully"}
 
 
@@ -198,7 +201,7 @@ def test_reload_plugins(client, admin_auth_header):
 
     # Call the reload plugins endpoint
     response = client.post("/api/v2/plugins/reload", headers=admin_auth_header)
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Get the list of plugins after reloading
     final_response = client.get("/api/v2/plugins", headers=admin_auth_header)
@@ -218,7 +221,7 @@ def test_toggle_plugin_enabled(client, admin_auth_header, main, session_local):
         json={"options": {}},
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTP_200_OK
 
     # Stop the plugin
     response = client.put(
@@ -226,7 +229,7 @@ def test_toggle_plugin_enabled(client, admin_auth_header, main, session_local):
         json={"enabled": False},
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTP_200_OK
 
     # Execute should fail
     # TODO: This will be enabled in a future PR.
@@ -243,7 +246,7 @@ def test_toggle_plugin_enabled(client, admin_auth_header, main, session_local):
         json={"enabled": True},
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTP_200_OK
 
     response = client.get("/api/v2/plugins/basic_reporting", headers=admin_auth_header)
     assert response.json()["enabled"] is True

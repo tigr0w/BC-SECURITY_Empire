@@ -1,4 +1,5 @@
 import pytest
+from starlette import status
 
 from empire.server.core.db.models import PluginTaskStatus
 
@@ -9,7 +10,7 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
         headers=admin_auth_header,
         json={"name": "test:tag", "value": "test:value"},
     )
-    assert resp.status_code == 422
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     actual = resp.json()
     for detail in actual["detail"]:
@@ -47,13 +48,13 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
         "label": "test_tag:test_value",
     }
 
-    assert resp.status_code == 201
+    assert resp.status_code == status.HTTP_201_CREATED
     actual_tag_1 = resp.json()
     actual_tag_1.pop("id")
     assert actual_tag_1 == expected_tag_1
 
     resp = client.get(f"{path}/{taggable_id}", headers=admin_auth_header)
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
 
     actual_tags = resp.json()["tags"]
     assert len(actual_tags) == 1
@@ -78,16 +79,17 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
         "label": "test_tag:test_value",
     }
 
-    assert resp.status_code == 201
+    assert resp.status_code == status.HTTP_201_CREATED
     actual_tag_2 = resp.json()
     actual_tag_2.pop("id")
     assert actual_tag_2 == expected_tag_2
 
     resp = client.get(f"{path}/{taggable_id}", headers=admin_auth_header)
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
 
     actual_tags = resp.json()["tags"]
-    assert len(actual_tags) == 2
+    tag_count = 2
+    assert len(actual_tags) == tag_count
 
     for tag in actual_tags:
         tag.pop("id")
@@ -99,7 +101,7 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
             f"{path}/{taggable_id}/tags/{tag['id']}",
             headers=admin_auth_header,
         )
-        assert resp.status_code == 204
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
 def _test_update_tag(client, admin_auth_header, path, taggable_id):
@@ -109,7 +111,7 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
         json={"name": "test_tag", "value": "test_value"},
     )
 
-    assert resp.status_code == 201
+    assert resp.status_code == status.HTTP_201_CREATED
 
     expected_tag = {
         "name": "test_tag_updated",
@@ -123,7 +125,7 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
         headers=admin_auth_header,
         json={"name": "test:tag", "value": "test:value"},
     )
-    assert resp_bad.status_code == 422
+    assert resp_bad.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     actual = resp_bad.json()
     for detail in actual["detail"]:
@@ -154,7 +156,7 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
         json=expected_tag,
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
 
     actual_tag = resp.json()
     actual_tag.pop("id")
@@ -164,7 +166,7 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
         f"{path}/{taggable_id}/tags/{resp.json()['id']}",
         headers=admin_auth_header,
     )
-    assert resp.status_code == 204
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
 def _test_delete_tag(client, admin_auth_header, path, taggable_id):
@@ -174,16 +176,16 @@ def _test_delete_tag(client, admin_auth_header, path, taggable_id):
         json={"name": "test_tag", "value": "test_value"},
     )
 
-    assert resp.status_code == 201
+    assert resp.status_code == status.HTTP_201_CREATED
 
     resp = client.delete(
         f"{path}/{taggable_id}/tags/{resp.json()['id']}",
         headers=admin_auth_header,
     )
-    assert resp.status_code == 204
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
 
     resp = client.get(f"{path}/{taggable_id}", headers=admin_auth_header)
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
     assert resp.json()["tags"] == []
 
 
@@ -324,7 +326,7 @@ def _create_tags(
             headers=admin_auth_header,
             json={"name": f"test_tag_{taggable[1]}", "value": "test_value"},
         )
-        assert resp.status_code == 201
+        assert resp.status_code == status.HTTP_201_CREATED
 
         res = resp.json()
         cleanup.append(f"{taggable[1]}/{taggable_id}/tags/{res['id']}")
@@ -335,13 +337,13 @@ def _create_tags(
 
     for tag in cleanup:
         resp = client.delete(tag, headers=admin_auth_header)
-        assert resp.status_code == 204
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
 def test_get_tags(client, admin_auth_header, _create_tags):
     expected_tags = _create_tags
     resp = client.get("/api/v2/tags?order_by=name", headers=admin_auth_header)
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
 
     actual_tags = resp.json()["records"]
     for tag in actual_tags:
@@ -367,7 +369,7 @@ def _create_agent_tasks_with_tags(
             headers=admin_auth_header,
             json={"command": f"whoami_{i}"},
         )
-        assert resp.status_code == 201
+        assert resp.status_code == status.HTTP_201_CREATED
         agent_tasks.append(resp.json())
 
     for i, agent_task in enumerate(agent_tasks):
@@ -376,7 +378,7 @@ def _create_agent_tasks_with_tags(
             headers=admin_auth_header,
             json={"name": f"test_tag_{i}", "value": f"test_value_{i}"},
         )
-        assert resp.status_code == 201
+        assert resp.status_code == status.HTTP_201_CREATED
         tags.append((agent_task, resp.json()))
 
     yield agent_tasks
@@ -386,14 +388,14 @@ def _create_agent_tasks_with_tags(
             f"/api/v2/agents/{agent_id}/tasks/{task['id']}/tags/{tag['id']}",
             headers=admin_auth_header,
         )
-        assert resp.status_code == 204
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
 
     for agent_task in agent_tasks:
         resp = client.delete(
             f"/api/v2/agents/{agent_id}/tasks/{agent_task['id']}",
             headers=admin_auth_header,
         )
-        assert resp.status_code == 204
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
 def test_get_agent_tasks_tag_filter(
@@ -401,15 +403,16 @@ def test_get_agent_tasks_tag_filter(
 ):
     resp = client.get(f"/api/v2/agents/{agent}/tasks", headers=admin_auth_header)
 
-    assert resp.status_code == 200
-    assert len(resp.json()["records"]) == 3
+    task_count = 3
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.json()["records"]) == task_count
 
     resp = client.get(
         f"/api/v2/agents/{agent}/tasks?tags=test_tag_0:test_value_0",
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
     assert len(resp.json()["records"]) == 1
     assert resp.json()["records"][0]["input"] == "whoami_0"
     assert resp.json()["records"][0]["tags"][0]["name"] == "test_tag_0"
@@ -419,8 +422,9 @@ def test_get_agent_tasks_tag_filter(
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
-    assert len(resp.json()["records"]) == 2
+    task_count = 2
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.json()["records"]) == task_count
     assert resp.json()["records"][1]["input"] == "whoami_0"
     assert resp.json()["records"][1]["tags"][0]["name"] == "test_tag_0"
     assert resp.json()["records"][0]["input"] == "whoami_1"
@@ -431,7 +435,7 @@ def test_get_agent_tasks_tag_filter(
         f"/api/v2/agents/{agent}/tasks?tags=test_tag_0", headers=admin_auth_header
     )
 
-    assert resp.status_code == 422
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert (
         resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )
@@ -462,7 +466,7 @@ def _create_plugin_tasks_with_tags(
             headers=admin_auth_header,
             json={"name": f"test_tag_{i}", "value": f"test_value_{i}"},
         )
-        assert resp.status_code == 201
+        assert resp.status_code == status.HTTP_201_CREATED
         tags.append((plugin_task, resp.json()))
 
     yield plugin_tasks
@@ -472,7 +476,7 @@ def _create_plugin_tasks_with_tags(
             f"/api/v2/plugins/{plugin_name}/tasks/{task['id']}/tags/{tag['id']}",
             headers=admin_auth_header,
         )
-        assert resp.status_code == 204
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
 
     with session_local.begin() as db:
         db.query(models.PluginTask).delete()
@@ -483,15 +487,16 @@ def test_get_plugin_tasks_tag_filter(
 ):
     resp = client.get(f"/api/v2/plugins/{plugin_name}/tasks", headers=admin_auth_header)
 
-    assert resp.status_code == 200
-    assert len(resp.json()["records"]) == 3
+    task_count = 3
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.json()["records"]) == task_count
 
     resp = client.get(
         f"/api/v2/plugins/{plugin_name}/tasks?tags=test_tag_0:test_value_0",
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == status.HTTP_200_OK
     assert len(resp.json()["records"]) == 1
     assert resp.json()["records"][0]["input"] == "input 0"
     assert resp.json()["records"][0]["tags"][0]["name"] == "test_tag_0"
@@ -501,8 +506,9 @@ def test_get_plugin_tasks_tag_filter(
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
-    assert len(resp.json()["records"]) == 2
+    task_count = 2
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.json()["records"]) == task_count
     assert resp.json()["records"][1]["input"] == "input 0"
     assert resp.json()["records"][1]["tags"][0]["name"] == "test_tag_0"
     assert resp.json()["records"][0]["input"] == "input 1"
@@ -514,7 +520,7 @@ def test_get_plugin_tasks_tag_filter(
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 422
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert (
         resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )
@@ -545,7 +551,7 @@ def _create_downloads_with_tags(models, session_local, client, admin_auth_header
             headers=admin_auth_header,
             json={"name": f"test_tag_{i}", "value": f"test_value_{i}"},
         )
-        assert resp.status_code == 201
+        assert resp.status_code == status.HTTP_201_CREATED
         tags.append(resp.json())
 
     yield downloads
@@ -555,7 +561,7 @@ def _create_downloads_with_tags(models, session_local, client, admin_auth_header
             f"/api/v2/downloads/{downloads[0]['id']}/tags/{tag['id']}",
             headers=admin_auth_header,
         )
-        assert resp.status_code == 204
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
 
     with session_local.begin() as db:
         db.query(models.download_tag_assc).delete()
@@ -567,17 +573,18 @@ def test_get_downloads_tag_filter(
 ):
     resp = client.get("/api/v2/downloads/", headers=admin_auth_header)
 
-    assert resp.status_code == 200
-
-    assert len(resp.json()["records"]) == 3
+    download_count = 3
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.json()["records"]) == download_count
 
     resp = client.get(
         "/api/v2/downloads?tags=test_tag_0:test_value_0",
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
-    assert len(resp.json()["records"]) == 1
+    tag_count = 1
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.json()["records"]) == tag_count
     assert resp.json()["records"][0]["location"] == "path/0"
     assert resp.json()["records"][0]["tags"][0]["name"] == "test_tag_0"
 
@@ -586,8 +593,9 @@ def test_get_downloads_tag_filter(
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
-    assert len(resp.json()["records"]) == 2
+    download_count = 2
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.json()["records"]) == download_count
 
     record_0 = next(filter(lambda x: x["location"] == "path/0", resp.json()["records"]))
     record_1 = next(filter(lambda x: x["location"] == "path/1", resp.json()["records"]))
@@ -603,7 +611,7 @@ def test_get_downloads_tag_filter(
     # Test tag value bad
     resp = client.get("/api/v2/downloads?tags=test_tag_0", headers=admin_auth_header)
 
-    assert resp.status_code == 422
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert (
         resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )

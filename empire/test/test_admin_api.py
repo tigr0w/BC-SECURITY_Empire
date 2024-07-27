@@ -1,4 +1,5 @@
 import pytest
+from starlette.status import HTTP_200_OK
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -14,7 +15,7 @@ def test_toggle_ip_filtering(client, admin_auth_header, main):
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == HTTP_200_OK
     assert main.ipsv2.ip_filtering is True
 
     resp = client.put(
@@ -22,5 +23,5 @@ def test_toggle_ip_filtering(client, admin_auth_header, main):
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == HTTP_200_OK
     assert main.ipsv2.ip_filtering is False

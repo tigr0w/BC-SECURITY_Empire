@@ -77,7 +77,5 @@ class Stager:
             log.error("Error in launcher command generation.")
             return ""
 
-        else:
-            launcher = launcher.replace('"', '\\"')
-            applescript = f'do shell script "{launcher}"'
-            return applescript
+        launcher = launcher.replace('"', '\\"')
+        return f'do shell script "{launcher}"'

@@ -27,11 +27,7 @@ class Module:
             if (
                 values
                 and values != ""
-                and (
-                    option != "Agent"
-                    and option != "ProcessName"
-                    and option != "ProcessId"
-                )
+                and (option not in ("Agent", "ProcessName", "ProcessId"))
             ):
                 script_end += " -" + str(option) + " " + str(values)
 

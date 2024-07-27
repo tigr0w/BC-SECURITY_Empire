@@ -32,7 +32,7 @@ class TagService:
     def get_by_id(self, db: Session, tag_id: int):
         return db.query(models.Tag).filter(models.Tag.id == tag_id).first()
 
-    def get_all(
+    def get_all(  # noqa: PLR0913 PLR0912
         self,
         db: Session,
         tag_types: list[TagSourceFilter] | None,

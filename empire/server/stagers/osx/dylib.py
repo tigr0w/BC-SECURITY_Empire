@@ -93,11 +93,9 @@ class Stager:
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
 
-        else:
-            launcher = removeprefix(launcher, "echo ")
-            launcher = removesuffix(launcher, " | python3 &")
-            launcher = launcher.strip('"')
-            dylib = self.mainMenu.stagergenv2.generate_dylib(
-                launcher_code=launcher, arch=arch, hijacker=hijacker
-            )
-            return dylib
+        launcher = removeprefix(launcher, "echo ")
+        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.strip('"')
+        return self.mainMenu.stagergenv2.generate_dylib(
+            launcher_code=launcher, arch=arch, hijacker=hijacker
+        )

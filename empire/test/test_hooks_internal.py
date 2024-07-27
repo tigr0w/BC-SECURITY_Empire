@@ -80,7 +80,8 @@ def test_ps_hook(client, session_local, models, host, agent, existing_processes)
         db.flush()
         processes = db.query(models.HostProcess).all()
 
-        assert len(processes) == 4
+        expected_processes = 4
+        assert len(processes) == expected_processes
         assert processes[0].process_name == "should_be_stale"
         assert processes[0].stale is True
         assert processes[1].process_name == "has_been_updated"

@@ -69,7 +69,7 @@ def load_starkiller(app, ip, port):
         log.info(f"Starkiller served at http://localhost:{port}/")
 
 
-def initialize(run: bool = True):
+def initialize(run: bool = True):  # noqa: PLR0915
     ip = empire_config.api.ip
     port = empire_config.api.port
     secure = empire_config.api.secure

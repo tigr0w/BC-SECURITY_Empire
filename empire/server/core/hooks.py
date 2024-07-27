@@ -74,8 +74,8 @@ class Hooks:
         Unregister a hook.
         """
         if event is None:
-            for event in self.hooks:
-                self.hooks[event].pop(name)
+            for ev in self.hooks:
+                self.hooks[ev].pop(name)
             return
         if name in self.hooks.get(event, {}):
             self.hooks[event].pop(name)
@@ -85,8 +85,8 @@ class Hooks:
         Unregister a filter.
         """
         if event is None:
-            for event in self.filters:
-                self.filters[event].pop(name)
+            for ev in self.filters:
+                self.filters[ev].pop(name)
             return
         if name in self.filters.get(event, {}):
             self.filters[event].pop(name)
@@ -121,7 +121,7 @@ class Hooks:
         The output of each filter is passed into the next filter.
         """
         if event not in self.filters:
-            return
+            return None
         for filter in self.filters.get(event, {}).values():
             if not isinstance(args, tuple):
                 args = (args,)

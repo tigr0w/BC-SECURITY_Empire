@@ -55,8 +55,7 @@ class Plugin(BasePlugin):
         Parses commands from the API
         """
         try:
-            results = self.do_test(command)
-            return results
+            return self.do_test(command)
         except Exception:
             return False
 

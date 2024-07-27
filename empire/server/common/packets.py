@@ -222,7 +222,7 @@ def parse_result_packet(packet, offset=0):
 
         # todo: agent returns resultpacket in big endian instead of little for type 44 with outpipe in powershell.
         # This should be fixed and removed at some point.
-        if responseID == 10240:
+        if responseID == 10240:  # noqa: PLR2004
             responseID = int.from_bytes(
                 packet[0 + offset : 2 + offset], byteorder="big"
             )
@@ -318,64 +318,59 @@ def parse_routing_packet(stagingKey, data):
 
     """
 
-    if data:
-        results = {}
-        offset = 0
-        # ensure we have at least the 20 bytes for a routing packet
-        if len(data) >= 20:
-            while True:
-                if len(data) - offset < 20:
-                    break
-
-                RC4IV = data[0 + offset : 4 + offset]
-                RC4data = data[4 + offset : 20 + offset]
-
-                routingPacket = encryption.rc4(
-                    RC4IV + stagingKey.encode("UTF-8"), RC4data
-                )
-                try:
-                    sessionID = routingPacket[0:8].decode("UTF-8")
-                except Exception:
-                    sessionID = routingPacket[0:8].decode("latin-1")
-
-                # B == 1 byte unsigned char, H == 2 byte unsigned short, L == 4 byte unsigned long
-                (language, meta, additional, length) = struct.unpack(
-                    "=BBHL", routingPacket[8:]
-                )
-                if length < 0:
-                    message = "parse_agent_data(): length in decoded rc4 packet is < 0"
-                    log.warning(message)
-                    encData = None
-                else:
-                    encData = data[(20 + offset) : (20 + offset + length)]
-
-                results[sessionID] = (
-                    LANGUAGE_IDS.get(language, "NONE"),
-                    META_IDS.get(meta, "NONE"),
-                    ADDITIONAL_IDS.get(additional, "NONE"),
-                    encData,
-                )
-
-                # check if we're at the end of the packet processing
-                remainingData = data[20 + offset + length :]
-                if not remainingData or remainingData == "":
-                    break
-
-                offset += 20 + length
-            return results
-
-        else:
-            message = f"parse_agent_data() data length incorrect: {len(data)}"
-            log.warning(message)
-            return None
-
-    else:
+    if not data:
         message = "parse_agent_data() data is None"
         log.warning(message)
         return None
 
+    results = {}
+    offset = 0
 
-def build_routing_packet(
+    # ensure we have at least the 20 bytes for a routing packet
+    if len(data) < 20:  # noqa: PLR2004
+        message = f"parse_agent_data() data length incorrect: {len(data)}"
+        log.warning(message)
+        return None
+
+    while True:
+        if len(data) - offset < 20:  # noqa: PLR2004
+            break
+
+        RC4IV = data[0 + offset : 4 + offset]
+        RC4data = data[4 + offset : 20 + offset]
+
+        routingPacket = encryption.rc4(RC4IV + stagingKey.encode("UTF-8"), RC4data)
+        try:
+            sessionID = routingPacket[0:8].decode("UTF-8")
+        except Exception:
+            sessionID = routingPacket[0:8].decode("latin-1")
+
+        # B == 1 byte unsigned char, H == 2 byte unsigned short, L == 4 byte unsigned long
+        (language, meta, additional, length) = struct.unpack("=BBHL", routingPacket[8:])
+        if length < 0:
+            message = "parse_agent_data(): length in decoded rc4 packet is < 0"
+            log.warning(message)
+            encData = None
+        else:
+            encData = data[(20 + offset) : (20 + offset + length)]
+
+        results[sessionID] = (
+            LANGUAGE_IDS.get(language, "NONE"),
+            META_IDS.get(meta, "NONE"),
+            ADDITIONAL_IDS.get(additional, "NONE"),
+            encData,
+        )
+
+        # check if we're at the end of the packet processing
+        remainingData = data[20 + offset + length :]
+        if not remainingData or remainingData == "":
+            break
+
+        offset += 20 + length
+    return results
+
+
+def build_routing_packet(  # noqa: PLR0913
     stagingKey, sessionID, language, meta="NONE", additional="NONE", encData=""
 ):
     """
@@ -417,8 +412,7 @@ def build_routing_packet(
     if isinstance(encData, str) and sys.version[0] != "2":
         encData = encData.encode("Latin-1")
 
-    packet = RC4IV + rc4EncData + encData
-    return packet
+    return RC4IV + rc4EncData + encData
 
 
 def resolve_id(PacketID):

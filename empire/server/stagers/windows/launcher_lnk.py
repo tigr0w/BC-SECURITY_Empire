@@ -173,10 +173,8 @@ class Stager:
         if launcher == "":
             log.error("[!] Error in launcher command generation.")
             return ""
-        else:
-            link = pylnk.for_file(
-                powershell_path, launcher, lnk_name, lnk_icon, lnk_comment
-            )
-            code = link.ret()
 
-        return code
+        link = pylnk.for_file(
+            powershell_path, launcher, lnk_name, lnk_icon, lnk_comment
+        )
+        return link.ret()

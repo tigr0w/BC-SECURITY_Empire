@@ -29,7 +29,7 @@ class Module:
         launcher = launcher.replace('"', '\\"')
         if launcher == "":
             return handle_error_message("[!] Error in launcher command generation.")
-        script = f"""
+        return f"""
 import os
 import pty
 
@@ -63,5 +63,3 @@ print(status)
 print(output)
 
 """
-
-        return script

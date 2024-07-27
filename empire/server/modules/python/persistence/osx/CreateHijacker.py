@@ -41,7 +41,7 @@ class Module:
         dylib = params["LegitimateDylibPath"]
         vrpath = params["VulnerableRPATH"]
 
-        script = f"""
+        return f"""
 from ctypes import *
 def run(attackerDYLIB):
 
@@ -476,5 +476,3 @@ temp.write(decodedDylib)
 temp.close()
 run(path)
 """
-
-        return script

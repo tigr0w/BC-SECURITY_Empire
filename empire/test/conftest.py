@@ -606,5 +606,4 @@ def patch_config(empire_config):
 
 def load_test_config():
     with open(SERVER_CONFIG_LOC) as f:
-        loaded = yaml.safe_load(f)
-    return loaded
+        return yaml.safe_load(f)

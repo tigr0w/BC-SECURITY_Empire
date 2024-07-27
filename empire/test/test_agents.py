@@ -38,8 +38,7 @@ class compress:
         data = string wanting compression
         cvalue = 0-9 comp value (default 6)
         """
-        cdata = zlib.compress(data, cvalue)
-        return cdata
+        return zlib.compress(data, cvalue)
 
     def crc32_data(self, data):
         """
@@ -48,8 +47,7 @@ class compress:
         returns:
         HEX bytes of data
         """
-        crc = zlib.crc32(data) & 0xFFFFFFFF
-        return crc
+        return zlib.crc32(data) & 0xFFFFFFFF
 
     def build_header(self, data, crc):
         """
@@ -59,8 +57,7 @@ class compress:
         crc = crc32 value
         """
         header = struct.pack("!I", crc)
-        built_data = header + data
-        return built_data
+        return header + data
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -194,23 +191,26 @@ def test_stale_expression(empire_config):
     db = SessionLocal()
 
     # assert all 4 agents are in the database
+    expected_agents = 4
     agents = db.query(models.Agent).all()
-    assert len(agents) == 4
+    assert len(agents) == expected_agents
 
     # assert one of the agents is stale via its hybrid property
     assert any(agent.stale for agent in agents)
 
-    # assert we can filter on stale via the hybrid expression
+    # assert we can filter on stale via the hybrid expressions
+    expected_stale = 1
     stale = (
         db.query(models.Agent).filter(models.Agent.stale == True).all()  # noqa: E712
     )
-    assert len(stale) == 1
+    assert len(stale) == expected_stale
 
     # assert we can filter on stale via the hybrid expression
+    expected_not_stale = 3
     not_stale = (
         db.query(models.Agent).filter(models.Agent.stale == False).all()  # noqa: E712
     )
-    assert len(not_stale) == 3
+    assert len(not_stale) == expected_not_stale
 
 
 def test_large_internal_ip_works(session_local, host, models, agent):

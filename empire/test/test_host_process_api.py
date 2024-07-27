@@ -1,4 +1,5 @@
 import pytest
+from starlette import status
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -37,7 +38,7 @@ def processes(db, host, agent, models):
 def test_get_process_host_not_found(client, admin_auth_header):
     response = client.get("/api/v2/hosts/9999/processes", headers=admin_auth_header)
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Host not found for id 9999"
 
 
@@ -46,7 +47,7 @@ def test_get_process_not_found(client, admin_auth_header, host):
         f"/api/v2/hosts/{host}/processes/8888", headers=admin_auth_header
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert (
         response.json()["detail"]
         == f"Process not found for host id {host} and process id 8888"
@@ -59,7 +60,7 @@ def test_get_process(client, admin_auth_header, host, processes):
         headers=admin_auth_header,
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["process_id"] == processes[0].process_id
     assert response.json()["process_name"] == processes[0].process_name
     assert response.json()["host_id"] == processes[0].host_id
@@ -68,14 +69,14 @@ def test_get_process(client, admin_auth_header, host, processes):
 def test_get_processes(client, admin_auth_header, host):
     response = client.get(f"/api/v2/hosts/{host}/processes/", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 0
 
 
 def test_agent_join(client, admin_auth_header, host, agent):
     response = client.get(f"/api/v2/hosts/{host}/processes/", headers=admin_auth_header)
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert (
         len(
             list(

@@ -16,7 +16,7 @@ from empire.server.core.hooks import hooks
 log = logging.getLogger(__name__)
 
 
-def setup_socket_events(sio, empire_menu):
+def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
     empire_menu.socketio = sio
 
     # A socketio user is in the general channel if they join the chat.
@@ -52,7 +52,7 @@ def setup_socket_events(sio, empire_menu):
                 user = await get_user_from_token(sid, auth["token"], db)
                 if user:
                     log.info(f"{user.username} connected to socketio")
-                    return
+                    return None
         except HTTPException:
             # If a server is restarted and clients are still connected, there are
             #  sometimes token handling errors. We want to reject these since they fail

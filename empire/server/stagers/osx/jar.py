@@ -73,7 +73,6 @@ class Stager:
         if launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
-        else:
-            launcher = launcher.replace('"', '\\"')
-            jar_bytes = self.mainMenu.stagergenv2.generate_jar(launcher_code=launcher)
-            return jar_bytes
+
+        launcher = launcher.replace('"', '\\"')
+        return self.mainMenu.stagergenv2.generate_jar(launcher_code=launcher)
