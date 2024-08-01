@@ -14,8 +14,7 @@ class Plugin(BasePlugin):
     @override
     def on_load(self, db):
         self.csharpserver_proc = None
-
-        self.options = {
+        self.settings_options = {
             "SourceHost": {
                 "Description": "Address of the source host.",
                 "Required": True,
@@ -36,65 +35,26 @@ class Plugin(BasePlugin):
                 "Required": True,
                 "Value": "5900",
             },
-            "Status": {
-                "Description": "Start/stop the Empire C# server.",
-                "Required": True,
-                "Value": "start",
-                "SuggestedValues": ["start", "stop"],
-                "Strict": True,
-            },
         }
 
     @override
-    def execute(self, command, **kwargs):
-        # This is for parsing commands through the api
-        try:
-            self.websockify_proc = None
-            # essentially switches to parse the proper command to execute
-            self.status = command["Status"]
-            return self.do_websockify(command, kwargs["db"])
-        except Exception as e:
-            log.error(e)
-            return False, f"[!] {e}"
+    def on_start(self, db):
+        current_settings = self.current_settings(db)
+        source_host = current_settings["SourceHost"]
+        source_port = int(current_settings["SourcePort"])
+        target_host = current_settings["TargetHost"]
+        target_port = int(current_settings["TargetPort"])
 
-    def do_websockify(self, command, db):
-        """
-        Check if the Empire C# server is already running.
-        """
-        if self.websockify_proc:
-            self.enabled = True
-        else:
-            self.enabled = False
+        server = websockify.LibProxyServer(
+            target_host=target_host,
+            target_port=target_port,
+            listen_host=source_host,
+            listen_port=source_port,
+        )
 
-        if self.status == "status":
-            if self.enabled:
-                return "[+] Websockify server is currently running"
-            return "[!] Websockify server is currently stopped"
-
-        if self.status == "stop":
-            if self.enabled:
-                self.on_stop(db)
-                return "[!] Stopped Websockify server"
-            return "[!] Websockify server is already stopped"
-
-        if self.status == "start":
-            source_host = command["SourceHost"]
-            source_port = int(command["SourcePort"])
-            target_host = command["TargetHost"]
-            target_port = int(command["TargetPort"])
-
-            server = websockify.LibProxyServer(
-                target_host=target_host,
-                target_port=target_port,
-                listen_host=source_host,
-                listen_port=source_port,
-            )
-
-            self.websockify_proc = helpers.KThread(target=server.serve_forever)
-            self.websockify_proc.daemon = True
-            self.websockify_proc.start()
-            return "[+] Websockify server successfully started"
-        return None
+        self.websockify_proc = helpers.KThread(target=server.serve_forever)
+        self.websockify_proc.daemon = True
+        self.websockify_proc.start()
 
     @override
     def on_stop(self, db):

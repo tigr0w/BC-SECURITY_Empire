@@ -177,6 +177,23 @@ def test_validate_options_missing_optional_field_with_default_and_strict():
     assert cleaned_options == {"Command": "Test"}
 
 
+def test_validate_options_with_uneditable_field():
+    instance_options = {
+        "UneditableField": {
+            "Description": "Uneditable Field",
+            "Required": False,
+            "Value": "DEFAULT_VALUE",
+            "Editable": False,
+        }
+    }
+
+    options = {"UneditableField": "Test"}
+
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert cleaned_options == {}
+
+
 def test_validate_options_with_file_not_found(db):
     instance_options = {
         "File": {

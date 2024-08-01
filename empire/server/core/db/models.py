@@ -428,6 +428,8 @@ class Plugin(Base):
     id = Column(String(255), primary_key=True)
     name = Column(String(255), nullable=False)
     enabled = Column(Boolean, nullable=False)
+    settings = Column(JSON)
+    internal_state = Column(JSON)
 
 
 class PluginTaskStatus(str, enum.Enum):

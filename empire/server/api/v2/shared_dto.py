@@ -40,6 +40,7 @@ class CustomOptionSchema(BaseModel):
     value: Annotated[str, BeforeValidator(coerce_to_string)]
     suggested_values: Annotated[list[str], BeforeValidator(coerce_to_string)]
     strict: bool
+    editable: bool = True
     value_type: ValueType
 
 

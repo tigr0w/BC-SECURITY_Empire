@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 class Profile(BaseModel):
     id: int
     name: str
-    file_path: str | None = None  # todo vr needed?
+    file_path: str | None = None
     category: str
     data: str
     created_at: datetime

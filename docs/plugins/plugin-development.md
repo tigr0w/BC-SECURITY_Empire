@@ -192,6 +192,47 @@ from empire.server.plugins.example import example_helpers
 **Note**: Relative imports will not work. For example, the example plugin cannot
 import `example_helpers.py` with `from . import example_helpers`.
 
+## Settings/State Management
+
+Plugins can have state that persists through database restarts.
+There are different types of state.
+
+### Settings
+
+There are values that are defined in the same format as execution options.
+These options can be modified by the user and are persisted in the database.
+
+"Settings" supports one extra option that execution options don't. "Editable" is a boolean
+that determines if the user can modify the value. If "Editable" is set to False, the
+value can be seen via the API, but not modified.
+
+When getting the settings from within the plugin, use `self.current_settings(db)`, which will
+return the current settings values from the database.
+
+```python
+@override
+def on_start(self, db):
+    settings = self.current_settings(db)
+    print(settings)
+```
+
+To set settings values, use `self.set_settings(db, settings)` where `settings` is a dict of
+the values you want to set, or `self.state_settings_option(db, key, value)` to set a single
+value.
+
+```python
+@override
+def on_start(self, db):
+    self.set_settings(db, {"key": "value"})
+    self.set_settings_option(db, "key", "value")
+```
+
+### Internal State
+
+Internal state is state that is defined by the plugin and is not exposed via the API,
+but is persisted in the database. It can be accessed via `self.internal_state(db)`,
+and can be set via `self.set_internal_state(db, state)` or `self.set_internal_state_option(db, key, value)`.
+
 ## 4->5 Changes
 Not a lot has changed for plugins in Empire 5.0. We've just added a few guard rails for better
 stability between Empire versions.
@@ -235,6 +276,9 @@ This is no different than the way things were pre 5.0.
   * `on_stop` - When the plugin is stopped
 * `register` function was removed
 * `install_path` is automatically set on `BasePlugin` constructor
+* Plugins have an internal state that can be defined in a similar way to execution and module options
+  * Internal state persists through database restarts
+* `options` is now `execution_options`
 
 ## Future Work
 * improved plugin logging -

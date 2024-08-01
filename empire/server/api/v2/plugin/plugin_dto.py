@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel
 
 from empire.server.api.v2.shared_dto import (
@@ -10,7 +12,7 @@ from empire.server.core.plugins import BasePlugin
 
 
 def domain_to_dto_plugin(plugin: BasePlugin, db):
-    options = {
+    execution_options = {
         x[0]: {
             "description": x[1]["Description"],
             "required": x[1]["Required"],
@@ -19,7 +21,20 @@ def domain_to_dto_plugin(plugin: BasePlugin, db):
             "suggested_values": x[1]["SuggestedValues"],
             "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
         }
-        for x in plugin.options.items()
+        for x in plugin.execution_options.items()
+    }
+
+    settings_options = {
+        x[0]: {
+            "description": x[1]["Description"],
+            "editable": x[1].get("Editable", True),
+            "required": x[1]["Required"],
+            "value": x[1]["Value"],
+            "strict": x[1]["Strict"],
+            "suggested_values": x[1]["SuggestedValues"],
+            "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+        }
+        for x in plugin.settings_options.items()
     }
 
     return Plugin(
@@ -30,7 +45,9 @@ def domain_to_dto_plugin(plugin: BasePlugin, db):
         comments=plugin.info.comments,
         techniques=plugin.info.techniques,
         software=plugin.info.software,
-        options=options,
+        execution_options=execution_options,
+        settings_options=settings_options,
+        current_settings=plugin.current_settings(db),
         enabled=plugin.enabled,
     )
 
@@ -43,7 +60,9 @@ class Plugin(BaseModel):
     techniques: list[str] = []
     software: str | None = None
     comments: list[str]
-    options: dict[str, CustomOptionSchema]
+    execution_options: dict[str, CustomOptionSchema]
+    settings_options: dict[str, CustomOptionSchema]
+    current_settings: dict[str, Any]
     enabled: bool
 
 

@@ -10,7 +10,7 @@ from empire.server.core.plugins import BasePlugin
 class Plugin(BasePlugin):
     @override
     def on_load(self, db):
-        self.options = {
+        self.execution_options = {
             "report": {
                 "Description": "Reports to generate.",
                 "Required": True,

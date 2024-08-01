@@ -45,14 +45,17 @@ def validate_options(
     (options, None).
 
     Will also attempt to cast the options to the correct type using safe_cast.
-
     Options of type "file" are not validated.
+    If an option has "Editable" set to False, it will be skipped (Only applies to
+    plugins for now).
     """
     options = {}
     # make a copy so that the original options are not modified
     params = params.copy()
 
     for instance_key, option_meta in instance_options.items():
+        if option_meta.get("Editable", True) is False:
+            continue
         if _lower_default(option_meta.get("Type")) == "file":
             db_download = download_service.get_by_id(db, params[instance_key])
             if not db_download:
@@ -69,7 +72,7 @@ def validate_options(
             params[instance_key] = option_meta["Value"]
 
         # If the required option still isn't set, return an error
-        if option_meta["Required"] and (
+        if option_meta.get("Required") and (
             instance_key not in params
             or params[instance_key] == ""
             or params[instance_key] is None
@@ -77,10 +80,9 @@ def validate_options(
             return None, f"required option missing: {instance_key}"
 
         # If strict, check that the option is one of the suggested values
-        if (
-            option_meta["Strict"]
-            and params.get(instance_key, "") not in option_meta["SuggestedValues"]
-        ):
+        if option_meta.get("Strict") and params.get(
+            instance_key, ""
+        ) not in option_meta.get("SuggestedValues"):
             return (
                 None,
                 f"{instance_key} must be set to one of the suggested values.",
@@ -103,7 +105,7 @@ def validate_options(
 
 def set_options(instance, options: dict):
     """
-    Sets the options for the listener/stager/plugin instance.
+    Sets the options for the listener/stager instance.
     """
     for option_name, option_value in options.items():
         instance.options[option_name]["Value"] = option_value

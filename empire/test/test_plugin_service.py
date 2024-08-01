@@ -15,10 +15,10 @@ def patch_plugin_execute(plugin, execute_func):
 
 @contextmanager
 def patch_plugin_options(plugin, options):
-    old_options = plugin.options
-    plugin.options = options
+    old_options = plugin.execution_options
+    plugin.execution_options = options
     yield
-    plugin.options = old_options
+    plugin.execution_options = old_options
 
 
 @contextmanager

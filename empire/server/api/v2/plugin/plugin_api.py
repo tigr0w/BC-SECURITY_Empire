@@ -89,8 +89,26 @@ async def update_plugin(
     db: CurrentSession,
     plugin=Depends(get_plugin),
 ):
-    plugin_service.update_plugin_enabled(db, plugin, plugin_update_req.enabled)
-    return domain_to_dto_plugin(plugin, db)
+    try:
+        plugin_service.update_plugin_enabled(db, plugin, plugin_update_req.enabled)
+        return domain_to_dto_plugin(plugin, db)
+    except PluginValidationException as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except PluginExecutionException as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.put("/{uid}/settings", status_code=200)
+async def update_plugin_settings(
+    uid: str,
+    plugin_settings: dict,
+    db: CurrentSession,
+    plugin=Depends(get_plugin),
+):
+    try:
+        plugin_service.update_plugin_settings(db, plugin, plugin_settings)
+    except PluginValidationException as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/reload", status_code=204, response_class=Response)

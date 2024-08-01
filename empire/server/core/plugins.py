@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -28,7 +29,8 @@ class BasePlugin:
 
         self.enabled: bool = False
         self.install_path: str = self.main_menu.installPath
-        self.options: dict = {}
+        self.execution_options: dict = {}
+        self.settings_options: dict = {}
 
         try:
             self.on_load(db)
@@ -40,11 +42,30 @@ class BasePlugin:
                 log.error(f"Error initializing plugin: {e}")
 
     def _set_options_defaults(self):
-        for value in self.options.values():
+        for value in self.execution_options.values():
             if value.get("SuggestedValues") is None:
                 value["SuggestedValues"] = []
             if value.get("Strict") is None:
                 value["Strict"] = False
+
+        for value in self.settings_options.values():
+            if value.get("SuggestedValues") is None:
+                value["SuggestedValues"] = []
+            if value.get("Strict") is None:
+                value["Strict"] = False
+
+    def set_initial_options(self, db):
+        """
+        Set the initial uneditable options for the plugin, based on
+        the state_options. This is only used to initialize the fields in
+        the database. Future updates should be done through the state functions
+        or plugin_service.
+        """
+        settings = {}
+        for key, value in self.settings_options.items():
+            settings[key] = value["Value"]
+
+        self.set_settings(db, settings)
 
     def on_load(self, db):
         """Things to do during init: meant to be overridden by
@@ -74,6 +95,32 @@ class BasePlugin:
         return (
             db.query(models.Plugin).filter(models.Plugin.id == self.info.name).first()
         )
+
+    def current_settings(self, db) -> dict[str, Any]:
+        return self.get_db_plugin(db).settings
+
+    def current_internal_state(self, db) -> dict[str, Any]:
+        return self.get_db_plugin(db).internal_state
+
+    def set_settings(self, db, settings: dict[str, Any]):
+        db_plugin = self.get_db_plugin(db)
+        db_plugin.settings = settings
+        db.flush()
+
+    def set_internal_state(self, db, state: dict[str, Any]):
+        db_plugin = self.get_db_plugin(db)
+        db_plugin.internal_state = state
+        db.flush()
+
+    def set_settings_option(self, db, key, value):
+        settings = self.current_settings(db)
+        settings[key] = value
+        self.set_settings(db, settings)
+
+    def set_internal_state_option(self, db, key, value):
+        state = self.current_internal_state(db)
+        state[key] = value
+        self.set_internal_state(db, state)
 
     def send_socketio_message(self, message):
         """Send a message to the socketio server"""

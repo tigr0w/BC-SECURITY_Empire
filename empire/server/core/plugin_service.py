@@ -61,6 +61,26 @@ class PluginService:
             db_plugin.enabled = False
             plugin.enabled = False
 
+    def update_plugin_settings(self, db: Session, plugin, settings: dict):
+        """
+        Will skip any options that are not editable.
+        """
+        cleaned_options, err = validate_options(
+            plugin.settings_options, settings, db, self.download_service
+        )
+
+        if err:
+            raise PluginValidationException(err)
+
+        # Add the uneditable settings back to the dict.
+        current_settings = plugin.current_settings(db)
+        cleaned_options = {**current_settings, **cleaned_options}
+
+        db_plugin = self.get_plugin_db(db, plugin.info.name)
+        db_plugin.settings = cleaned_options
+
+        return cleaned_options
+
     def auto_execute_plugins(self, db):
         """
         Autorun plugin commands at server startup.
@@ -135,9 +155,11 @@ class PluginService:
                 id=plugin_obj.info.name,
                 name=plugin_obj.info.name,
                 enabled=auto_start,
+                settings={},
             )
             db.add(db_plugin)
             db.flush()
+            plugin_obj.set_initial_options(db)
 
         try:
             if db_plugin.enabled:
@@ -179,7 +201,7 @@ class PluginService:
         #     raise PluginValidationException("Plugin is not running")
 
         cleaned_options, err = validate_options(
-            plugin.options, plugin_req.options, db, self.download_service
+            plugin.execution_options, plugin_req.options, db, self.download_service
         )
 
         if err:
