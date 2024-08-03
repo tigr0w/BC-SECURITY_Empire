@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Security** in case of vulnerabilities.
 
 ## [Unreleased]
+- Added Route4Me to sponsor page on Empire
 
 ## [5.11.1] - 2024-07-23
 
