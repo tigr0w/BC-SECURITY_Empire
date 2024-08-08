@@ -101,9 +101,8 @@ def rsa_xml_to_key(xml):
             rsa_key_value.getElementsByTagName("Exponent")[0].childNodes
         )
 
-        key = RSA.construct((modulus, exponent))
+        return RSA.construct((modulus, exponent))
 
-        return key
     # if there's an XML parsing error, return None
     except Exception:
         return None
@@ -123,8 +122,7 @@ def rsa_encrypt(key, data):
     Take a key object and use it to encrypt the passed data.
     """
     pubkey = PKCS1_v1_5.new(key)
-    enc_data = pubkey.encrypt(data)
-    return enc_data
+    return pubkey.encrypt(data)
 
 
 def aes_encrypt(key, data):
@@ -163,13 +161,13 @@ def aes_decrypt(key, data):
     Generate an AES cipher object, pull out the IV from the data
     and return the unencrypted data.
     """
-    if len(data) > 16:
+    if len(data) > 16:  # noqa: PLR2004
         backend = default_backend()
         IV = data[0:16]
         cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
         decryptor = cipher.decryptor()
-        pt = depad(decryptor.update(data[16:]) + decryptor.finalize())
-        return pt
+        return depad(decryptor.update(data[16:]) + decryptor.finalize())
+    return None
 
 
 def verify_hmac(key, data):
@@ -179,7 +177,7 @@ def verify_hmac(key, data):
     if isinstance(key, str):
         key = bytes(key, "latin-1")
 
-    if len(data) > 20:
+    if len(data) > 20:  # noqa: PLR2004
         mac = data[-10:]
         data = data[:-10]
         expected = hmac.new(key, data, digestmod=hashlib.sha256).digest()[0:10]
@@ -189,15 +187,15 @@ def verify_hmac(key, data):
             hmac.new(key, expected, digestmod=hashlib.sha256).digest()
             == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
         )
-    else:
-        return False
+
+    return False
 
 
 def aes_decrypt_and_verify(key, data):
     """
     Decrypt the data, but only if it has a valid MAC.
     """
-    if len(data) > 32 and verify_hmac(key, data):
+    if len(data) > 32 and verify_hmac(key, data):  # noqa: PLR2004
         if isinstance(key, str):
             key = bytes(key, "latin-1")
         return aes_decrypt(key, data[:-10])
@@ -239,11 +237,10 @@ def rc4(key, data):
         j = (j + S[i]) % 256
         S[i], S[j] = S[j], S[i]
         if sys.version[0] == "2":
-            char = ord(char)
+            char = ord(char)  # noqa: PLW2901
         out.append(chr(char ^ S[(S[i] + S[j]) % 256]).encode("latin-1"))
     # out = str(out)
-    tmp = b"".join(out)
-    return tmp
+    return b"".join(out)
 
 
 class DiffieHellman:
@@ -304,9 +301,9 @@ class DiffieHellman:
 
         if group in list(primes.keys()):
             return primes[group]
-        else:
-            log.error(f"Error: No prime with group {group:d}. Using default.")
-            return primes[default_group]
+
+        log.error(f"Error: No prime with group {group:d}. Using default.")
+        return primes[default_group]
 
     def genRandom(self, bits):
         """
@@ -342,13 +339,11 @@ class DiffieHellman:
         Check the other party's public key to make sure it's valid.
         Since a safe prime is used, verify that the Legendre symbol == 1
         """
-        if (
-            otherKey > 2
+        return bool(
+            otherKey > 2  # noqa: PLR2004
             and otherKey < self.prime - 1
             and pow(otherKey, (self.prime - 1) // 2, self.prime) == 1
-        ):
-            return True
-        return False
+        )
 
     def genSecret(self, privateKey, otherKey):
         """
@@ -356,10 +351,8 @@ class DiffieHellman:
         private key to generate a shared secret.
         """
         if self.checkPublicKey(otherKey) is True:
-            sharedSecret = pow(otherKey, privateKey, self.prime)
-            return sharedSecret
-        else:
-            raise Exception("Invalid public key.")
+            return pow(otherKey, privateKey, self.prime)
+        raise Exception("Invalid public key.")
 
     def genKey(self, otherKey):
         """

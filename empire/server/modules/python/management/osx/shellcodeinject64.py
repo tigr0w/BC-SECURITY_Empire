@@ -133,6 +133,4 @@ def run():
 run()
 """
         script = script.replace("[SC]", shellcode)
-        script = script.replace("[PID]", processID)
-
-        return script
+        return script.replace("[PID]", processID)

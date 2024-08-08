@@ -159,12 +159,10 @@ class Stager:
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
 
-        shell = self.generate_shellcode(msf_format, arch, self.launcher)
-
-        return shell
+        return self.generate_shellcode(msf_format, arch, self.launcher)
 
     def generate_shellcode(self, msf_format, arch, launcher):
-        print("[*] Generating Shellcode %s" % arch)
+        print(f"[*] Generating Shellcode {arch}")
 
         if arch == "x64":
             msf_payload = "windows/x64/exec"

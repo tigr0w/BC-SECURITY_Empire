@@ -25,7 +25,7 @@ class DownloadService:
         return db.query(models.Download).filter(models.Download.id == uid).first()
 
     @staticmethod
-    def get_all(
+    def get_all(  # noqa: PLR0913 PLR0912
         db: Session,
         download_types: list[DownloadSourceFilter] | None,
         tags: list[str] | None = None,

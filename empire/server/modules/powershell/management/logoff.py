@@ -18,10 +18,9 @@ class Module:
         else:
             script = "'Logging off current user.'; Start-Sleep -s 3; shutdown /l /f"
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

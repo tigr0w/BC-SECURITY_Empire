@@ -39,7 +39,7 @@ class AgentTaskService:
         self.last_task_lock = threading.Lock()
 
     @staticmethod
-    def get_tasks(
+    def get_tasks(  # noqa: PLR0913 PLR0912
         db: Session,
         agents: list[str] | None = None,
         users: list[int] | None = None,
@@ -265,7 +265,7 @@ class AgentTaskService:
                 f"Set-Delay {delay!s} {jitter!s}",
                 user_id=user_id,
             )
-        elif agent.language in ["python", "ironpython"]:
+        if agent.language in ["python", "ironpython"]:
             return self.add_task(
                 db,
                 agent,
@@ -273,7 +273,7 @@ class AgentTaskService:
                 f"global delay; global jitter; delay={delay}; jitter={jitter}; print('delay/jitter set to {delay}/{jitter}')",
                 user_id=user_id,
             )
-        elif agent.language == "csharp":
+        if agent.language == "csharp":
             return self.add_task(
                 db,
                 agent,
@@ -281,8 +281,8 @@ class AgentTaskService:
                 f"Set-Delay {delay!s} {jitter!s}",
                 user_id=user_id,
             )
-        else:
-            return None, "Unsupported language."
+
+        return None, "Unsupported language."
 
     def create_task_update_kill_date(
         self, db: Session, agent: models.Agent, kill_date: str, user_id: int
@@ -380,7 +380,7 @@ class AgentTaskService:
 
         return task, None
 
-    def add_task(
+    def add_task(  # noqa: PLR0913
         self,
         db: Session,
         agent: models.Agent,

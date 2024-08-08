@@ -55,3 +55,6 @@
 [submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Moriarty"]
 	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Moriarty
 	url = https://github.com/BC-SECURITY/Moriarty.git
+[submodule "empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/ThreadlessInject"]
+	path = empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/ThreadlessInject
+	url = https://github.com/CCob/ThreadlessInject.git

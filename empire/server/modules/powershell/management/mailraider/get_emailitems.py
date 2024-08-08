@@ -26,12 +26,7 @@ class Module:
             return handle_error_message(err)
 
         script = script + "\n"
-        script_end = (
-            "Get-OutlookFolder -Name '{}' | Get-EmailItems -MaxEmails {}".format(
-                folder_name,
-                max_emails,
-            )
-        )
+        script_end = f"Get-OutlookFolder -Name '{folder_name}' | Get-EmailItems -MaxEmails {max_emails}"
 
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (
@@ -41,10 +36,9 @@ class Module:
             + ' completed!"'
         )
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

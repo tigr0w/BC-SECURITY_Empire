@@ -34,21 +34,20 @@ def color(string_name, color_name=None):
         else:
             return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
 
+    elif string_name.strip().startswith("[!]"):
+        attr.append("31")
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
+    elif string_name.strip().startswith("[+]"):
+        attr.append("32")
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
+    elif string_name.strip().startswith("[*]"):
+        attr.append("34")
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
+    elif string_name.strip().startswith("[>]"):
+        attr.append("33")
+        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
     else:
-        if string_name.strip().startswith("[!]"):
-            attr.append("31")
-            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
-        elif string_name.strip().startswith("[+]"):
-            attr.append("32")
-            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
-        elif string_name.strip().startswith("[*]"):
-            attr.append("34")
-            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
-        elif string_name.strip().startswith("[>]"):
-            attr.append("33")
-            return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string_name)
-        else:
-            return string_name
+        return string_name
 
 
 def title(version, server, modules, listeners, agents):
@@ -64,8 +63,7 @@ def title(version, server, modules, listeners, agents):
         "========================================================================================"
     )
     print(
-        " [\x1b[1;32mVersion\x1b[0m] %s | [Web] https://github.com/BC-SECURITY/Empire"
-        % version
+        f" [\x1b[1;32mVersion\x1b[0m] {version} | [Web] https://github.com/BC-SECURITY/Empire"
     )
     print(
         "========================================================================================"
@@ -94,15 +92,15 @@ def title(version, server, modules, listeners, agents):
 """
     )
     print("              " + color(str(modules), "green") + " modules currently loaded")
-    print("")
+    print()
     print(
         "              "
         + color(str(listeners), "green")
         + " listeners currently active"
     )
-    print("")
+    print()
     print("              " + color(str(agents), "green") + " agents currently active")
-    print("")
+    print()
     print(color("Starkiller is now the recommended way to use Empire.", "green"))
     print(color(f"Try it out at {server}/index.html", "green"))
 

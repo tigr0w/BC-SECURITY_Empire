@@ -77,7 +77,4 @@ class Stager:
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
 
-        else:
-            # launcher = launcher.strip('echo')
-            macho = self.mainMenu.stagers.generate_macho(launcher)
-            return macho
+        return self.mainMenu.stagers.generate_macho(launcher)

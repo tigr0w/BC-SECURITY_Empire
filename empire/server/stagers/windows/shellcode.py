@@ -122,10 +122,9 @@ class Stager:
             # not a valid listener, return nothing for the script
             return "[!] Invalid listener: " + listener_name
 
-        else:
-            obfuscate_script = False
-            if obfuscate.lower() == "true":
-                obfuscate_script = True
+        obfuscate_script = False
+        if obfuscate.lower() == "true":
+            obfuscate_script = True
 
         # generate the PowerShell one-liner with all of the proper options set
         launcher = self.mainMenu.stagers.generate_launcher(
@@ -142,9 +141,8 @@ class Stager:
         )
         if launcher == "":
             return "[!] Error in launcher generation."
-        else:
-            if not launcher or launcher.lower() == "failed":
-                return "[!] Error in launcher command generation."
+        if not launcher or launcher.lower() == "failed":
+            return "[!] Error in launcher command generation."
 
         if language.lower() == "powershell":
             shellcode, err = self.mainMenu.stagers.generate_powershell_shellcode(
@@ -155,7 +153,7 @@ class Stager:
 
             return shellcode
 
-        elif language.lower() == "csharp":
+        if language.lower() == "csharp":
             if arch == "x86":
                 arch_type = 1
             elif arch == "x64":
@@ -169,10 +167,9 @@ class Stager:
                 )
 
             directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
-            shellcode = donut.create(file=directory, arch=arch_type)
-            return shellcode
+            return donut.create(file=directory, arch=arch_type)
 
-        elif language.lower() == "python":
+        if language.lower() == "python":
             shellcode, err = self.mainMenu.stagers.generate_python_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
@@ -181,5 +178,4 @@ class Stager:
 
             return shellcode
 
-        else:
-            return "[!] Invalid launcher language."
+        return "[!] Invalid launcher language."

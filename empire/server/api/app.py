@@ -66,7 +66,7 @@ def load_starkiller(v2App, ip, port):
         log.info(f"Starkiller served at http://localhost:{port}/index.html")
 
 
-def initialize(
+def initialize(  # noqa: PLR0915
     secure: bool = False, ip: str = "0.0.0.0", port: int = 1337, run: bool = True
 ):
     # Not pretty but allows us to use main_menu by delaying the import

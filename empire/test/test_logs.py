@@ -22,10 +22,13 @@ def test_simple_log_format(monkeypatch):
     setup_logging(args)
 
     stream_handler = next(
-        filter(lambda h: type(h) == logging.StreamHandler, logging.getLogger().handlers)
+        filter(
+            lambda h: type(h) == logging.StreamHandler,  # noqa: E721
+            logging.getLogger().handlers,
+        )
     )
 
-    assert type(stream_handler.formatter) == ColorFormatter
+    assert isinstance(stream_handler.formatter, ColorFormatter)
     assert stream_handler.formatter._fmt == SIMPLE_LOG_FORMAT
 
 
@@ -50,10 +53,13 @@ def test_extended_log_format(monkeypatch):
     setup_logging(args)
 
     stream_handler = next(
-        filter(lambda h: type(h) == logging.StreamHandler, logging.getLogger().handlers)
+        filter(
+            lambda h: type(h) == logging.StreamHandler,  # noqa: E721
+            logging.getLogger().handlers,
+        )
     )
 
-    assert type(stream_handler.formatter) == ColorFormatter
+    assert isinstance(stream_handler.formatter, ColorFormatter)
     assert stream_handler.formatter._fmt == LOG_FORMAT
 
 
@@ -77,7 +83,10 @@ def test_log_level_by_config(monkeypatch):
     setup_logging(args)
 
     stream_handler = next(
-        filter(lambda h: type(h) == logging.StreamHandler, logging.getLogger().handlers)
+        filter(
+            lambda h: type(h) == logging.StreamHandler,  # noqa: E721
+            logging.getLogger().handlers,
+        )
     )
 
     assert stream_handler.level == logging.WARNING
@@ -107,7 +116,10 @@ def test_log_level_by_arg():
     setup_logging(args)
 
     stream_handler = next(
-        filter(lambda h: type(h) == logging.StreamHandler, logging.getLogger().handlers)
+        filter(
+            lambda h: type(h) == logging.StreamHandler,  # noqa: E721
+            logging.getLogger().handlers,
+        )
     )
 
     assert stream_handler.level == logging.ERROR

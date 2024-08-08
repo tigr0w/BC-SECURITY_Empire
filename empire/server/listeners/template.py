@@ -39,7 +39,7 @@ class Listener:
             "Host": {
                 "Description": "Hostname/IP for staging.",
                 "Required": True,
-                "Value": "http://%s" % (helpers.lhost()),
+                "Value": f"http://{helpers.lhost()}",
             },
             "BindIP": {
                 "Description": "The IP to bind to on the control server.",
@@ -210,12 +210,12 @@ class Listener:
             # Python
             return ""
 
-        else:
-            print(
-                helpers.color(
-                    "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-                )
+        print(
+            helpers.color(
+                "[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
             )
+        )
+        return None
 
     def generate_stager(
         self,
@@ -257,54 +257,56 @@ class Listener:
         This should be implemented for the module.
         """
 
-        if language:
-            if language.lower() == "powershell":
-                updateServers = """
-                    $Script:ControlServers = @("%s");
-                    $Script:ServerIndex = 0;
-                """ % (
-                    listenerOptions["Host"]["Value"]
-                )
-
-                getTask = """
-                    $script:GetTask = {
-
-
-                    }
-                """
-
-                sendMessage = """
-                    $script:SendMessage = {
-                        param($Packets)
-
-                        if($Packets) {
-
-                        }
-                    }
-                """
-
-                return (
-                    updateServers
-                    + getTask
-                    + sendMessage
-                    + "\n'New agent comms registered!'"
-                )
-
-            elif language.lower() == "python":
-                # send_message()
-                pass
-            else:
-                print(
-                    helpers.color(
-                        "[!] listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
-                    )
-                )
-        else:
+        if not language:
             print(
                 helpers.color(
                     "[!] listeners/template generate_comms(): no language specified!"
                 )
             )
+            return None
+
+        if language.lower() == "powershell":
+            updateServers = """
+                $Script:ControlServers = @("{}");
+                $Script:ServerIndex = 0;
+            """.format(
+                listenerOptions["Host"]["Value"]
+            )
+
+            getTask = """
+                $script:GetTask = {
+
+
+                }
+            """
+
+            sendMessage = """
+                $script:SendMessage = {
+                    param($Packets)
+
+                    if($Packets) {
+
+                    }
+                }
+            """
+
+            return (
+                updateServers
+                + getTask
+                + sendMessage
+                + "\n'New agent comms registered!'"
+            )
+
+        if language.lower() == "python":
+            # send_message()
+            return None
+
+        print(
+            helpers.color(
+                "[!] listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
+            )
+        )
+        return None
 
     def start_server(self):
         pass

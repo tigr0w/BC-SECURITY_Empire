@@ -140,7 +140,8 @@ class Stager:
                 obfuscation_command=obfuscate_command,
             )
 
-        if len(launcher) > 8192:
+        MAX_CHARACTERS = 8192
+        if len(launcher) > MAX_CHARACTERS:
             log.error("[!] Error: launcher code is greater than 8192 characters.")
             return ""
 

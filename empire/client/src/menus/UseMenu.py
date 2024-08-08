@@ -146,7 +146,7 @@ class UseMenu(Menu):
         """
         if key in self.record_options:
             self.record_options[key]["Value"] = ""
-            log.info("[*] Unset %s" % key)
+            log.info(f"[*] Unset {key}")
         else:
             log.error(f"Could not find field: {key}")
 

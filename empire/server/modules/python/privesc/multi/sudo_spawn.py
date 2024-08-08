@@ -27,15 +27,11 @@ class Module:
 
         if launcher == "":
             return handle_error_message("[!] Error in launcher command generation.")
-        else:
-            password = params["Password"]
 
-            launcher = launcher.replace('"', '\\"')
-            launcher = launcher.replace("echo", "")
-            parts = launcher.split("|")
-            launcher = "python3 -c %s" % (parts[0])
-            script = 'import subprocess; subprocess.Popen("echo \\"{}\\" | sudo -S {}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)'.format(
-                password, launcher
-            )
+        password = params["Password"]
 
-            return script
+        launcher = launcher.replace('"', '\\"')
+        launcher = launcher.replace("echo", "")
+        parts = launcher.split("|")
+        launcher = f"python3 -c {parts[0]}"
+        return f'import subprocess; subprocess.Popen("echo \\"{password}\\" | sudo -S {launcher}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)'

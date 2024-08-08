@@ -4,19 +4,21 @@ import logging
 import os
 import socket
 import subprocess
+import time
 
-import empire.server.common.helpers as helpers
-from empire.server.common.plugins import Plugin
+from empire.server.common import helpers
+from empire.server.common.empire import MainMenu
+from empire.server.common.plugins import BasePlugin
+from empire.server.core.db import models
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.plugin_service import PluginService
 
 log = logging.getLogger(__name__)
 
 
-class Plugin(Plugin):
+class Plugin(BasePlugin):
     def onLoad(self):
-        self.main_menu = None
-        self.csharpserver_proc = None
-        self.thread = None
         self.info = {
             "Name": "csharpserver",
             "Authors": [
@@ -41,34 +43,38 @@ class Plugin(Plugin):
                 "Strict": True,
             }
         }
+
+        self.csharpserver_proc = None
+        self.thread = None
         self.tcp_ip = "127.0.0.1"
         self.tcp_port = 2012
         self.status = "OFF"
 
     def execute(self, command, **kwargs):
-        try:
-            results = self.do_csharpserver(command)
-            return results
-        except Exception as e:
-            log.error(e)
-            return False, f"[!] {e}"
+        db = kwargs["db"]
+        if command["status"] == "start":
+            input = "Starting Empire C# server..."
+        else:
+            input = "Stopping Empire C# server..."
 
-    def get_commands(self):
-        return self.commands
+        plugin_task = models.PluginTask(
+            plugin_id=self.info["Name"],
+            input=input,
+            input_full=input,
+            user_id=1,
+            status=PluginTaskStatus.completed,
+        )
+        output = self.toggle_csharpserver(command)
+        plugin_task.output = output
+        db.add(plugin_task)
+        db.flush()
 
-    def register(self, mainMenu):
-        """
-        any modifications to the mainMenu go here - e.g.
-        registering functions to be run by user commands
-        """
-        self.installPath = mainMenu.installPath
-        self.main_menu = mainMenu
-        self.plugin_service: PluginService = mainMenu.pluginsv2
+    def register(self, main_menu: MainMenu):
+        self.installPath = main_menu.installPath
+        self.main_menu = main_menu
+        self.plugin_service: PluginService = main_menu.pluginsv2
 
-    def do_csharpserver(self, command):
-        """
-        Check if the Empire C# server is already running.
-        """
+    def toggle_csharpserver(self, command):
         self.start = command["status"]
 
         if not self.csharpserver_proc or self.csharpserver_proc.poll():
@@ -81,17 +87,14 @@ class Plugin(Plugin):
                 self.shutdown()
                 self.status = "OFF"
                 return "[*] Stopping Empire C# server"
-            else:
-                return "[!] Empire C# server is already stopped"
+            return "[!] Empire C# server is already stopped"
 
-        elif self.start == "start":
+        if self.start == "start":
             if self.status == "OFF":
-                # Will need to update this as we finalize the folder structure
                 server_dll = (
                     self.installPath
                     + "/csharp/Covenant/bin/Debug/net6.0/EmpireCompiler.dll"
                 )
-                # If dll hasn't been built yet
                 if not os.path.exists(server_dll):
                     csharp_cmd = ["dotnet", "build", self.installPath + "/csharp/"]
                     self.csharpserverbuild_proc = subprocess.call(csharp_cmd)
@@ -101,6 +104,7 @@ class Plugin(Plugin):
                     self.installPath
                     + "/csharp/Covenant/bin/Debug/net6.0/EmpireCompiler.dll",
                 ]
+
                 self.csharpserver_proc = subprocess.Popen(
                     csharp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
@@ -114,18 +118,53 @@ class Plugin(Plugin):
                 self.status = "ON"
 
                 return "[*] Starting Empire C# server"
-            else:
-                return "[!] Empire C# server is already started"
+            return "[!] Empire C# server is already started"
+        return None
 
     def thread_csharp_responses(self):
+        task_input = "Collecting Empire C# server output stream..."
+        batch_timeout = 5  # seconds
+        response_batch = []
+        last_batch_time = time.time()
+
         while True:
-            output = self.csharpserver_proc.stdout.readline()
-            if not output:
-                log.warning("csharpserver output stream closed")
-                return
-            output = output.rstrip()
-            if output:
-                log.info(output.decode("UTF-8"))
+            response = self.csharpserver_proc.stdout.readline().rstrip()
+            if response:
+                response_batch.append(response.decode("UTF-8"))
+
+            if (time.time() - last_batch_time) >= batch_timeout:
+                output = "\n".join(response_batch)
+                log.debug(output)
+                status = PluginTaskStatus.completed
+                self.record_task(status, output, task_input)
+                response_batch.clear()
+                last_batch_time = time.time()
+
+            if not response:
+                if response_batch:
+                    output = "\n".join(response_batch)
+                    log.debug(output)
+                    status = PluginTaskStatus.completed
+                    self.record_task(status, output, task_input)
+                output = "Empire C# server output stream closed"
+                status = PluginTaskStatus.error
+                log.warning(output)
+                self.record_task(status, output, task_input)
+                break
+
+    def record_task(self, status, task_output, task_input):
+        with SessionLocal.begin() as db:
+            plugin_task = models.PluginTask(
+                plugin_id=self.info["Name"],
+                input=task_input,
+                input_full=task_input,
+                user_id=1,
+                status=status,
+            )
+
+            plugin_task.output = task_output
+            db.add(plugin_task)
+            db.flush()
 
     def do_send_message(self, compiler_yaml, task_name, confuse=False):
         bytes_yaml = compiler_yaml.encode("UTF-8")
@@ -133,7 +172,6 @@ class Plugin(Plugin):
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
 
-        # check for confuse bool and convert to string
         bytes_confuse = b"true" if confuse else b"false"
         b64_confuse = base64.b64encode(bytes_confuse)
 
@@ -161,9 +199,7 @@ class Plugin(Plugin):
         b64_yaml = base64.b64encode(bytes_yaml)
         bytes_task_name = task_name.encode("UTF-8")
         b64_task_name = base64.b64encode(bytes_task_name)
-        # compiler only checks for true and ignores otherwise
 
-        # check for confuse bool and convert to string
         bytes_confuse = b"true" if confuse else b"false"
         b64_confuse = base64.b64encode(bytes_confuse)
 
@@ -200,5 +236,3 @@ class Plugin(Plugin):
             self.csharpserverbuild_proc.kill()
             self.csharpserver_proc.kill()
             self.thread.kill()
-
-        return

@@ -24,7 +24,11 @@ def test_bypass_loader(monkeypatch):
 
     BypassService(main_menu)
 
-    assert session_mock.begin.return_value.__enter__.return_value.add.call_count > 4
+    min_call_count = 4
+    assert (
+        session_mock.begin.return_value.__enter__.return_value.add.call_count
+        > min_call_count
+    )
 
 
 def test_listener_template_loader(monkeypatch):
@@ -45,7 +49,8 @@ def test_listener_template_loader(monkeypatch):
 
     listener_template_service = ListenerTemplateService(main_menu)
 
-    assert len(listener_template_service.get_listener_templates()) > 7
+    min_template_count = 7
+    assert len(listener_template_service.get_listener_templates()) > min_template_count
 
 
 def test_stager_template_loader(monkeypatch):
@@ -66,7 +71,8 @@ def test_stager_template_loader(monkeypatch):
 
     stager_template_service = StagerTemplateService(main_menu)
 
-    assert len(stager_template_service.get_stager_templates()) > 10
+    min_template_count = 10
+    assert len(stager_template_service.get_stager_templates()) > min_template_count
 
 
 def test_profile_loader(monkeypatch):
@@ -89,4 +95,8 @@ def test_profile_loader(monkeypatch):
 
     ProfileService(main_menu)
 
-    assert session_mock.begin.return_value.__enter__.return_value.add.call_count > 20
+    min_call_count = 20
+    assert (
+        session_mock.begin.return_value.__enter__.return_value.add.call_count
+        > min_call_count
+    )

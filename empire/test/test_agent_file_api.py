@@ -1,4 +1,5 @@
 import pytest
+from starlette import status
 
 
 @pytest.fixture(scope="function")
@@ -96,7 +97,7 @@ def files(session_local, models, agent):
 
 def test_get_root_agent_not_found(client, admin_auth_header):
     response = client.get("/api/v2/agents/abc/files/root", headers=admin_auth_header)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -105,7 +106,7 @@ def test_get_root_not_found(client, admin_auth_header, agent_no_files):
         f"/api/v2/agents/{agent_no_files}/files/root",
         headers=admin_auth_header,
     )
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert (
         response.json()["detail"]
         == f'File not found for agent {agent_no_files} and file path "/"'
@@ -113,20 +114,21 @@ def test_get_root_not_found(client, admin_auth_header, agent_no_files):
 
 
 def test_get_root(client, admin_auth_header, agent):
+    expected_children = 2
     response = client.get(
         f"/api/v2/agents/{agent}/files/root", headers=admin_auth_header
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["name"] == "/"
     assert response.json()["path"] == "/"
     assert response.json()["is_file"] is False
     assert response.json()["parent_id"] is None
-    assert len(response.json()["children"]) == 2
+    assert len(response.json()["children"]) == expected_children
 
 
 def test_get_file_agent_not_found(client, admin_auth_header):
     response = client.get("/api/v2/agents/abc/files/root", headers=admin_auth_header)
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
@@ -134,7 +136,7 @@ def test_get_file_not_found(client, admin_auth_header, agent):
     response = client.get(
         f"/api/v2/agents/{agent}/files/9999", headers=admin_auth_header
     )
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert (
         response.json()["detail"]
         == f"File not found for agent {agent} and file id 9999"
@@ -142,16 +144,17 @@ def test_get_file_not_found(client, admin_auth_header, agent):
 
 
 def test_get_file_with_children(client, admin_auth_header, agent, files):
+    expected_children = 2
     response = client.get(
         f"/api/v2/agents/{agent}/files/{files[1]}",
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["name"] == "C:\\"
     assert response.json()["path"] == "/C:\\"
     assert response.json()["is_file"] is False
     assert response.json()["parent_id"] == files[0]
-    assert len(response.json()["children"]) == 2
+    assert len(response.json()["children"]) == expected_children
 
 
 def test_get_file_no_children(client, admin_auth_header, agent, files):
@@ -159,7 +162,7 @@ def test_get_file_no_children(client, admin_auth_header, agent, files):
         f"/api/v2/agents/{agent}/files/{files[3]}",
         headers=admin_auth_header,
     )
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["name"] == "photo.png"
     assert response.json()["path"] == "/C:\\photo.png"
     assert response.json()["is_file"] is True

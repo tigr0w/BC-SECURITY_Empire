@@ -131,29 +131,30 @@ def get_file_options(db, download_service, options, params):
     return files, None
 
 
-def _parse_type(type_str: str = "", value: str = ""):
+def _parse_type(type_str: str = "", value: str = ""):  # noqa: PLR0911
     if not type_str:
         return type(value)
 
     if type_str.lower() in ["int", "integer"]:
         return int
-    elif type_str.lower() in ["bool", "boolean"]:
+    if type_str.lower() in ["bool", "boolean"]:
         return bool
-    elif type_str.lower() in ["str", "string"]:
+    if type_str.lower() in ["str", "string"]:
         return str
-    elif type_str.lower() == "float":
+    if type_str.lower() == "float":
         return float
-    elif type_str.lower() == "file":
+    if type_str.lower() == "file":
         return "file"
-    else:
-        return None
+    return None
 
 
 def _safe_cast_option(
     param_name, param_value, option_meta
 ) -> tuple[typing.Any, str | None]:
     option_type = type(param_value)
-    if option_meta.get("Type") is not None and type(option_meta.get("Type")) == type:
+    if option_meta.get("Type") is not None and isinstance(
+        option_meta.get("Type"), type
+    ):
         expected_option_type = option_meta.get("Type")
     else:
         expected_option_type = _parse_type(
@@ -165,5 +166,4 @@ def _safe_cast_option(
             None,
             f"incorrect type for option {param_name}. Expected {expected_option_type} but got {option_type}",
         )
-    else:
-        return casted, None
+    return casted, None

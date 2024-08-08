@@ -86,6 +86,7 @@ def reset():
 
     file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net35")
     file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net40")
+    file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net45")
     file_util.remove_dir_contents(
         f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/netcoreapp3.0"
     )
@@ -119,7 +120,7 @@ def shutdown_handler(signum, frame):
         log.info("Shutting down MainMenu...")
         main.shutdown()
 
-    exit(0)
+    sys.exit(0)
 
 
 signal.signal(signal.SIGINT, shutdown_handler)
@@ -132,14 +133,14 @@ def check_submodules():
         return
 
     result = subprocess.run(
-        ["git", "submodule", "status"], stdout=subprocess.PIPE, text=True
+        ["git", "submodule", "status"], stdout=subprocess.PIPE, text=True, check=False
     )
     for line in result.stdout.splitlines():
         if line[0] == "-":
             log.error(
                 "Some git submodules are not initialized. Please run 'git submodule update --init --recursive'"
             )
-            exit(1)
+            sys.exit(1)
 
 
 def fetch_submodules():
@@ -194,7 +195,7 @@ def run(args):
 
     else:
         base.startup_db()
-        global main
+        global main  # noqa: PLW0603
 
         # Calling run more than once, such as in the test suite
         # Will generate more instances of MainMenu, which then

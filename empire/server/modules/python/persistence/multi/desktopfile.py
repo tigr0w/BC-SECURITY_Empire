@@ -25,7 +25,7 @@ Exec=python -c {launcher}
 Type=Application
 NoDisplay=True
 """
-        script = f"""
+        return f"""
 import subprocess
 import sys
 import os
@@ -55,5 +55,3 @@ else:
     print("\\n[+] Empire daemon has been written to {file_name}")
 
 """
-
-        return script

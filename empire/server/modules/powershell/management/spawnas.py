@@ -60,19 +60,18 @@ class Module:
         script_end += '"Launcher bat written to $tempLoc `n";\n'
 
         script_end += "\nInvoke-RunAs "
-        script_end += "-UserName %s " % (params["UserName"])
-        script_end += "-Password '%s' " % (params["Password"])
+        script_end += "-UserName {} ".format(params["UserName"])
+        script_end += "-Password '{}' ".format(params["Password"])
 
         domain = params["Domain"]
         if domain and domain != "":
-            script_end += "-Domain %s " % (domain)
+            script_end += f"-Domain {domain} "
 
         script_end += r'-Cmd "$env:public\debug.bat"'
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

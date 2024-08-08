@@ -26,24 +26,18 @@ print("\\nAvailable applications:\\n")
 print('\\n'.join(choices))
 """
 
-        else:
-            if sandboxMode != "":
-                # osascript prompt for the current application with System Preferences icon
-                script = """
+        elif sandboxMode != "":
+            # osascript prompt for the current application with System Preferences icon
+            script = """
 import os
 print(os.popen('osascript -e \\\'display dialog "Software Update requires that you type your password to apply changes." & return & return default answer "" with hidden answer with title "Software Update"\\\'').read())
 """
 
-            else:
-                # osascript prompt for the specific application
-                script = """
+        else:
+            # osascript prompt for the specific application
+            script = f"""
 import os
-print(os.popen('osascript -e \\\'tell app "{}" to activate\\\' -e \\\'tell app "{}" to display dialog "{} requires your password to continue." & return  default answer "" with icon 1 with hidden answer with title "{} Alert"\\\'').read())
-""".format(
-                    appName,
-                    appName,
-                    appName,
-                    appName,
-                )
+print(os.popen('osascript -e \\\'tell app "{appName}" to activate\\\' -e \\\'tell app "{appName}" to display dialog "{appName} requires your password to continue." & return  default answer "" with icon 1 with hidden answer with title "{appName} Alert"\\\'').read())
+"""
 
         return script

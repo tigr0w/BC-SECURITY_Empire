@@ -43,10 +43,9 @@ class Module:
         script_end = 'Invoke-MS16-032 "' + launcher_code + '"'
         script_end += ';"`nInvoke-MS16032 completed."'
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

@@ -87,15 +87,15 @@ def get_staging_key():
         choice = input(
             "\n [>] Enter server negotiation password, enter for random generation: "
         )
-        if choice != "" and choice != "RANDOM":
+        if choice not in ("", "RANDOM"):
             return hashlib.md5(choice.encode("utf-8")).hexdigest()
+        return None
 
-    elif staging_key == "RANDOM":
+    if staging_key == "RANDOM":
         log.info("Generating random staging key")
         return "".join(
             random.sample(string.ascii_letters + string.digits + punctuation, 32)
         )
 
-    else:
-        log.info("Using configured staging key: {staging_key}")
-        return staging_key
+    log.info("Using configured staging key: {staging_key}")
+    return staging_key

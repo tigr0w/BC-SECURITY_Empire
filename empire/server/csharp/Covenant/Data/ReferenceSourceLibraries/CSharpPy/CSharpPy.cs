@@ -32,11 +32,6 @@ namespace CSharpPy
                 sysScope.meta_path.append(importer);
                 sysScope.path.append(importer);
 
-                // Clear search paths (if they exist) and add our library
-                sysScope.path.clear();
-                sysScope.meta_path.append(importer);
-                sysScope.path.append(importer);
-
                 //execute ironpython code
                 var script = engine.CreateScriptSourceFromString(PyCode, SourceCodeKind.Statements);
                 script.Execute();
