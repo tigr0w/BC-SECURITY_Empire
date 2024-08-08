@@ -44,10 +44,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 * And Many More
 
 ## Sponsors
-
-&#x20;      [<img src="https://user-images.githubusercontent.com/20302208/185246508-56f4f574-5a06-4a2c-ac62-320922588dcf.png" alt="" data-size="original">](https://www.sans.org/cyber-security-courses/red-team-operations-adversary-emulation/)&#x20;
-
-&#x20;     [![](https://user-images.githubusercontent.com/20302208/208271681-235c914b-5359-426e-8a3d-903bbd018847.png)](https://www.cybrary.it/)   &#x20;
+&#x20;      [<img src="https://github.com/user-attachments/assets/604fbb97-4641-4a15-a6ba-039f67694f15" alt="" data-size="original">](https://www.route4me.com)&#x20;
 
 ## Help us Improve!
 
