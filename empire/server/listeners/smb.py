@@ -206,9 +206,6 @@ class Listener:
                 launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
                     launcherBase
                 )
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
 
             if encode:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
@@ -284,7 +281,6 @@ class Listener:
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode:
@@ -358,7 +354,6 @@ class Listener:
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
 

@@ -223,7 +223,6 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode and (
@@ -314,9 +313,6 @@ class Listener:
                 launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
                     launcherBase
                 )
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
 
             if encode:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
@@ -386,10 +382,6 @@ class Listener:
             }
             stager = template.render(template_options)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            if obfuscate:
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
@@ -414,7 +406,6 @@ class Listener:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
                     stager, obfuscation_command=obfuscation_command
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
@@ -455,7 +446,6 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return base64.b64encode(stager)

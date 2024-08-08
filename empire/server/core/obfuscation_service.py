@@ -249,4 +249,6 @@ class ObfuscationService:
         Obfuscate Python scripts using python-obfuscator
         """
         obfuscator = python_obfuscator.obfuscator()
-        return obfuscator.obfuscate(module_source, [one_liner, variable_renamer])
+        obf_script = obfuscator.obfuscate(module_source, [one_liner, variable_renamer])
+
+        return self.obfuscate_keywords(obf_script)
