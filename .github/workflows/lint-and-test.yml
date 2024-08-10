@@ -91,7 +91,7 @@ jobs:
           junitxml-path: ./pytest.xml
   test_image:
     # To save CI time, only run these tests on the release PRs
-    if: ${{ startsWith(github.head_ref, 'release/') }}
+    if: ${{ startsWith(github.head_ref, 'release/') || contains( github.event.pull_request.labels.*.name, 'docker') }}
     timeout-minutes: 30
     runs-on: ubuntu-latest
     name: Test Docker Image
@@ -109,9 +109,9 @@ jobs:
                 sed -i 's|ref: sponsors-main|ref: main|g' empire/server/config.yaml
             fi
       - name: Build docker image
-        run: docker-compose -f .github/docker-compose.yml build
+        run: docker compose -f .github/docker-compose.yml build
       - name: Run tests on docker image
-        run: docker-compose -f .github/docker-compose.yml run test
+        run: docker compose -f .github/docker-compose.yml run test
       - name: run structure tests docker
         uses: plexsystems/container-structure-test-action@v0.3.0
         with:
