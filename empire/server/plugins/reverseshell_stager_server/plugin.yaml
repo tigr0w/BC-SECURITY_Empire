@@ -8,3 +8,4 @@ software: ''
 techniques: []
 comments: []
 main: reverseshell_stager_server.py
+auto_start: false

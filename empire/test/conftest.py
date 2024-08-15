@@ -4,12 +4,16 @@ import shutil
 import sys
 from contextlib import contextmanager, suppress
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 import yaml
 from starlette.testclient import TestClient
 
 from empire.client.src.utils.data_util import get_random_string
+
+if TYPE_CHECKING:
+    from empire.server.core.config import EmpireConfig
 
 SERVER_CONFIG_LOC = "empire/test/test_server_config.yaml"
 CLIENT_CONFIG_LOC = "empire/test/test_client_config.yaml"
@@ -85,7 +89,7 @@ def example_2_plugin(install_path):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def empire_config():
+def empire_config() -> "EmpireConfig":
     from empire.server.core.config import empire_config
 
     yield empire_config

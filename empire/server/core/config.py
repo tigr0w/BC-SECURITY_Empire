@@ -116,13 +116,23 @@ class DebugConfig(EmpireBaseModel):
     last_task: LastTaskConfig
 
 
+class PluginAutoExecuteConfig(EmpireBaseModel):
+    enabled: bool = False
+    options: dict[str, str] = {}
+
+
+class PluginConfig(EmpireBaseModel):
+    auto_start: bool | None = None
+    auto_execute: PluginAutoExecuteConfig | None = None
+
+
 class EmpireConfig(EmpireBaseModel):
     supress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig | None = ApiConfig()
     starkiller: StarkillerConfig
     submodules: SubmodulesConfig
     database: DatabaseConfig
-    plugins: dict[str, dict[str, str]] = {}
+    plugins: dict[str, PluginConfig] = {}
     directories: DirectoriesConfig
     logging: LoggingConfig
     debug: DebugConfig

@@ -49,6 +49,7 @@ def domain_to_dto_plugin(plugin: BasePlugin, db):
         settings_options=settings_options,
         current_settings=plugin.current_settings(db),
         enabled=plugin.enabled,
+        execution_enabled=plugin.execution_enabled,
     )
 
 
@@ -64,6 +65,7 @@ class Plugin(BaseModel):
     settings_options: dict[str, CustomOptionSchema]
     current_settings: dict[str, Any]
     enabled: bool
+    execution_enabled: bool
 
 
 class Plugins(BaseModel):

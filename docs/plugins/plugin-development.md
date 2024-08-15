@@ -279,9 +279,15 @@ This is no different than the way things were pre 5.0.
 * Plugins have an internal state that can be defined in a similar way to execution and module options
   * Internal state persists through database restarts
 * `options` is now `execution_options`
+* New config options -
+  * `auto_start` - Automatically start the plugin when Empire starts
+    * If using `auto_start`, the default settings should be valid
+  * `auto_execute` - Automatically execute the plugin when Empire starts
+* Execution can be disabled by setting `self.execution_enabled = False`
 
 ## Future Work
 * improved plugin logging -
   Give plugins individual log files like listeners have. Make those logs accessible via Starkiller.
 * endpoint for installing plugins -
   A user would be able to provide the URL to a git repository and Empire would download and install the plugin.
+* Add an option to override the default settings via the server config.yaml

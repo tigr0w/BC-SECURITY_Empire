@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from empire.server.core.config import PluginAutoExecuteConfig
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireAuthor
@@ -18,6 +19,8 @@ class PluginInfo(BaseModel):
     techniques: list[str] | None = []
     tactics: list[str] | None = []
     comments: list[str] | None = []
+    auto_start: bool = True
+    auto_execute: PluginAutoExecuteConfig | None = None
 
 
 class BasePlugin:
@@ -28,6 +31,7 @@ class BasePlugin:
         log.info(f"Initializing plugin: {self.info.name}")
 
         self.enabled: bool = False
+        self.execution_enabled: bool = True
         self.install_path: str = self.main_menu.installPath
         self.execution_options: dict = {}
         self.settings_options: dict = {}

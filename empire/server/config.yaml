@@ -50,9 +50,8 @@ starkiller:
 submodules:
   auto_update: true
 plugins:
-  # Auto-load plugin with defined settings
   csharpserver:
-    status: start
+    auto_start: true
 directories:
   downloads: empire/server/downloads/
   module_source: empire/server/data/module_source/

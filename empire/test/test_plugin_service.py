@@ -1,8 +1,15 @@
 import logging
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
+from empire.server.core.config import PluginAutoExecuteConfig
+
+if TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 
 @contextmanager
@@ -25,6 +32,14 @@ def patch_plugin_options(plugin, options):
 def patch_plugin_class_on_start_on_stop(plugin_class, on_start=None, on_stop=None):
     with patch.object(plugin_class, "on_start", new=on_start), patch.object(
         plugin_class, "on_stop", new=on_stop
+    ):
+        yield
+
+
+@contextmanager
+def patch_plugin_class_on_load_on_unload(plugin_class, on_load=None, on_unload=None):
+    with patch.object(plugin_class, "on_load", new=on_load), patch.object(
+        plugin_class, "on_unload", new=on_unload
     ):
         yield
 
@@ -164,4 +179,81 @@ def test_on_start_on_stop_called(install_path):
 
 
 def test_on_load_on_unload_called(install_path):
-    pass
+    from empire.server.core.plugin_service import PluginService
+    from empire.server.core.plugins import BasePlugin
+
+    main_menu_mock = MagicMock()
+    main_menu_mock.installPath = install_path
+
+    plugin_service = PluginService(main_menu_mock)
+    plugin_service.startup()
+
+    on_load_mock = Mock()
+    on_unload_mock = Mock()
+
+    # Need to patch the class itself, not the instance
+    # To capture the on_load.
+    with patch_plugin_class_on_load_on_unload(
+        BasePlugin, on_load=on_load_mock, on_unload=on_unload_mock
+    ):
+        plugin_service.startup()
+        assert on_load_mock.call_count > 0
+
+        plugin_service.shutdown()
+        assert on_unload_mock.call_count > 0
+
+
+@pytest.fixture(scope="module")
+def plugin_service(main: "MainMenu"):
+    yield main.pluginsv2
+
+
+def test__determine_auto_start(empire_config, plugin_service):
+    from empire.server.core.config import PluginConfig
+    from empire.server.core.plugins import PluginInfo
+
+    plugin_obj = Mock()
+    plugin_obj.info = PluginInfo(name="TestAutoStart", auto_start=False)
+
+    empire_config_tmp = empire_config.model_copy()
+    empire_config_tmp.plugins["TestAutoStart"] = PluginConfig()
+
+    # Test with plugin obj False and server config empty
+    # Should use plugin_obj value
+    assert plugin_service._determine_auto_start(plugin_obj, empire_config_tmp) is False
+
+    # Test with plugin obj false and server config true
+    # Should use server config value
+    empire_config_tmp.plugins["TestAutoStart"].auto_start = True
+    assert plugin_service._determine_auto_start(plugin_obj, empire_config_tmp) is True
+
+
+def test__determine_auto_execute(empire_config, plugin_service):
+    from empire.server.core.config import PluginConfig
+    from empire.server.core.plugins import PluginInfo
+
+    plugin_obj = Mock()
+    plugin_obj.info = PluginInfo(name="TestAutoExecute", auto_execute=None)
+
+    # Test with plugin obj None and server config None
+    # Should use default value (None)
+    assert plugin_service._determine_auto_execute(plugin_obj, empire_config) is None
+
+    # Test with plugin obj None and server config true
+    # Should use server config value
+    empire_config.plugins["TestAutoExecute"] = PluginConfig(
+        auto_execute=PluginAutoExecuteConfig(enabled=True)
+    )
+    assert (
+        plugin_service._determine_auto_execute(plugin_obj, empire_config)
+        is empire_config.plugins["TestAutoExecute"].auto_execute
+    )
+
+    # Test with plugin_obj true and server_config None
+    # Should use plugin_obj value
+    plugin_obj.info.auto_execute = PluginAutoExecuteConfig(enabled=True)
+    empire_config.plugins["TestAutoExecute"] = PluginConfig(auto_execute=None)
+    assert (
+        plugin_service._determine_auto_execute(plugin_obj, empire_config)
+        is plugin_obj.info.auto_execute
+    )

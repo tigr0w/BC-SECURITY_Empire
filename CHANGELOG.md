@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Renamed socks properties on `AgentSocksService` to use plural naming
 -   Remove `update_lastseen` parameter from `handle_agent_request`
 -   Renamed all config properties in client and server yamls to use snake_case
--   Changed minimum Python version to 3.11
+-   Changed minimum Python version to 3.12
 -   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
 -   `ip_whitelist` and `ip_blacklist` are now `ip_allow_list` and `ip_deny_list` and are lists instead of comma separated strings
 -   Plugins must use a `.py` extension and contain a `plugin.yaml` file in the same directory
@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Plugin name is now based on the name in the `plugin.yaml` file instead of the filename
 -   Plugins now contain `main_menu` instead of `mainMenu`
 -   Plugin `onLoad` renamed to `on_load` and takes a `db` object
+-   New config options -
+   -   `auto_start` - Automatically start the plugin when Empire starts
+   -   If using `auto_start`, the default settings should be valid
+   -   `auto_execute` - Automatically execute the plugin when Empire starts
+* Execution can be disabled by setting `self.execution_enabled = False`
 -   Moved C# compiler to a submodule.
 -   All C# module code has been moved as submodules of Empire-Compiler
 

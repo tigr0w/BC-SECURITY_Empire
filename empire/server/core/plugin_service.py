@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, joinedload, undefer
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
 from empire.server.api.v2.plugin.plugin_task_dto import PluginTaskOrderOptions
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.core.config import empire_config
+from empire.server.core.config import PluginConfig, empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
@@ -85,18 +85,15 @@ class PluginService:
         """
         Autorun plugin commands at server startup.
         """
-        plugins = empire_config.yaml.get("plugins", {})
+        plugins = self.loaded_plugins
+        for plugin_name, plugin in plugins.items():
+            auto_execute = self._determine_auto_execute(plugin, empire_config)
 
-        for plugin_name, options in plugins.items():
-            use_plugin = self.loaded_plugins.get(plugin_name)
-            if not use_plugin:
-                log.error(f"Plugin {plugin_name} not found.")
+            if auto_execute is None or auto_execute.enabled is False:
                 continue
 
-            req = PluginExecutePostRequest(options=options)
-
-            results, err = self.execute_plugin(db, use_plugin, req, None)
-
+            req = PluginExecutePostRequest(options=auto_execute.options)
+            results, err = self.execute_plugin(db, plugin, req, None)
             if results is False:
                 log.error(f"Plugin failed to run: {plugin_name}")
             else:
@@ -182,10 +179,25 @@ class PluginService:
 
     @staticmethod
     def _determine_auto_start(plugin_obj, empire_config) -> bool:
-        # Server Config -> Plugin Config -> Default (True)
-        # Every plugin will auto start.
-        # A subsequent PR will add the configuration.
-        return True
+        # Server Config -> Plugin Config (Default True)
+        server_config = empire_config.plugins.get(plugin_obj.info.name, PluginConfig())
+
+        if server_config.auto_start is not None:
+            return server_config.auto_start
+
+        return plugin_obj.info.auto_start
+
+    @staticmethod
+    def _determine_auto_execute(plugin_obj, empire_config) -> PluginConfig | None:
+        # Server Config -> Plugin Config -> Default (None)
+        server_config = empire_config.plugins.get(plugin_obj.info.name)
+
+        if server_config is not None and server_config.auto_execute is not None:
+            return server_config.auto_execute
+        if plugin_obj.info.auto_execute is not None:
+            return plugin_obj.info.auto_execute
+
+        return None
 
     def execute_plugin(
         self,
@@ -194,11 +206,10 @@ class PluginService:
         plugin_req: PluginExecutePostRequest,
         user: models.User | None = None,
     ) -> tuple[bool | str | None, str | None]:
-        # Since some plugins are enabled/disabled via execution, we still have to allow
-        # the execution to continue even if the plugin is disabled.
-        # In a subsequent PR, this will be uncommented.
-        # if plugin.enabled is False:
-        #     raise PluginValidationException("Plugin is not running")
+        if plugin.enabled is False:
+            raise PluginValidationException("Plugin is not running")
+        if not plugin.execution_enabled:
+            raise PluginValidationException("Plugin execution is disabled")
 
         cleaned_options, err = validate_options(
             plugin.execution_options, plugin_req.options, db, self.download_service

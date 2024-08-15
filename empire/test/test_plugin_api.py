@@ -242,13 +242,12 @@ def test_toggle_plugin_enabled(client, admin_auth_header, main, session_local):
     assert response.status_code == HTTP_200_OK
 
     # Execute should fail
-    # TODO: This will be enabled in a future PR.
-    # response = client.post(
-    #     "/api/v2/plugins/basic_reporting/execute",
-    #     json={"options": {}},
-    #     headers=admin_auth_header,
-    # )
-    # assert response.status_code == HTTP_400_BAD_REQUEST
+    response = client.post(
+        "/api/v2/plugins/basic_reporting/execute",
+        json={"options": {}},
+        headers=admin_auth_header,
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
 
     # Start the plugin
     response = client.put(
@@ -372,7 +371,6 @@ def test_plugin_settings(client, admin_auth_header, main):
     )
 
     # Settings should be updated
-    # todo plugins should have to do validation when on_start is called.
     assert response.status_code == HTTP_200_OK
     assert response.json()["current_settings"] == {
         "SourceHost": "0.0.0.0",
@@ -428,3 +426,14 @@ def test_plugin_state_internal(client, admin_auth_header, main, session_local):
         assert internal_plugin.current_internal_state(db) == {
             "SomeInternalSetting": "internal_state_value"
         }
+
+
+def test_plugin_disabled_execution(client, admin_auth_header):
+    response = client.post(
+        "/api/v2/plugins/csharpserver/execute",
+        json={"options": {}},
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "Plugin execution is disabled"}

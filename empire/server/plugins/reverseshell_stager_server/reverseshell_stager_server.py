@@ -12,6 +12,8 @@ log = logging.getLogger(__name__)
 class Plugin(BasePlugin):
     @override
     def on_load(self, db):
+        self.execution_enabled = False
+
         self.settings_options = {
             "Listener": {
                 "Description": "Listener to generate stager for.",

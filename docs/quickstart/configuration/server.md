@@ -71,13 +71,18 @@ database:
       - Invoke-Mimikatz
 ```
 
-* **plugins** - Auto runs plugins with defined settings. This tells Empire to run a set of commands with the plugin at server startup.
-
+* **plugins** - Config related to plugins
+auto_start - boolean, whether the plugin should start automatically. If this is not set, Empire will defer to the plugin's own configuration.
+auto_execute - run an execute command on the plugin at startup. If this is not set, Empire will defer to the plugin's own configuration.
 ```
 plugins:
   # Auto-execute plugin with defined settings
-  csharpserver:
-    status: start
+  basic_reporting:
+    auto_start: true
+    auto_execute:
+      enabled: true
+      options:
+        report: all
 ```
 
 * **directories** - Control where Empire should read and write specific data.

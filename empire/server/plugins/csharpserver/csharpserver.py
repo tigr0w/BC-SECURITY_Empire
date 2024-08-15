@@ -22,6 +22,7 @@ class Plugin(BasePlugin):
 
     @override
     def on_load(self, db):
+        self.execution_enabled = False
         self.csharpserver_proc = None
         self.thread = None
         self.tcp_ip = "127.0.0.1"
