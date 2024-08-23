@@ -41,11 +41,31 @@ RUN unameOut="$(uname -m)" && \
     rm /tmp/powershell.tar.gz
 
 
-RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
-    chmod +x ./dotnet-install.sh && \
-    ./dotnet-install.sh --channel 6.0 && \
-    ln -s /root/.dotnet/dotnet /usr/bin/dotnet && \
-    rm dotnet-install.sh
+# Define environment variables
+ENV EMPIRE_COMPILER_VERSION="v0.1.0"
+ENV PARENT_PATH="/empire"
+
+# Function to download and place Empire-Compiler
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        ARCH="linux-x64"; \
+    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then \
+        ARCH="linux-arm64"; \
+    else \
+        echo -e "[!] Unsupported architecture: $ARCH. Exiting." && exit 1; \
+    fi && \
+    DOWNLOAD_URL="https://github.com/BC-SECURITY/Empire-Compiler/releases/download/${EMPIRE_COMPILER_VERSION}/EmpireCompiler-${ARCH}" && \
+    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler/EmpireCompiler" && \
+    echo -e "[*] Downloading from: $DOWNLOAD_URL" && \
+    mkdir -p "$TARGET_DIR" && \
+    wget -O "${TARGET_DIR}/EmpireCompiler" "$DOWNLOAD_URL" && \
+    if [ $? -eq 0 ]; then \
+        echo -e "[*] Setting execute permissions" && \
+        chmod 777 "${TARGET_DIR}/EmpireCompiler" && \
+        echo -e "[+] Download and placement complete!"; \
+    else \
+        echo -e "[!] Download failed. Exiting." && exit 1; \
+    fi
 
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
     ln -s /root/.local/bin/poetry /usr/bin

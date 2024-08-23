@@ -52,7 +52,7 @@ fileExistenceTests:
     path: '/usr/local/share/powershell/Modules/Invoke-Obfuscation/'
     shouldExist: true
   - name: 'sharpire'
-    path: '/empire/empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Sharpire'
+    path: '/empire/empire/server/Empire-Compiler/Empire-Compiler/Data/ReferenceSourceLibraries/Sharpire'
     shouldExist: true
   - name: 'starkiller'
     path: '/empire/empire/server/api/v2/starkiller/index.html'

@@ -506,13 +506,9 @@ class Listener:
                 .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
             )
 
-            compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
-            if not compiler.enabled:
-                self.instance_log.error(
-                    f"{listener_name} csharpserver plugin not running"
-                )
-                return None
-            return compiler.do_send_stager(stager_yaml, "Sharpire", confuse=obfuscate)
+            return self.mainMenu.dotnet_compiler.compile_stager(
+                stager_yaml, "Sharpire", confuse=obfuscate
+            )
 
         self.instance_log.error(
             f"{listener_name}: listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."

@@ -428,12 +428,16 @@ def test_plugin_state_internal(client, admin_auth_header, main, session_local):
         }
 
 
-def test_plugin_disabled_execution(client, admin_auth_header):
+def test_plugin_disabled_execution(client, admin_auth_header, main):
+    internal_plugin = main.pluginsv2.loaded_plugins["basic_reporting"]
+    internal_plugin.execution_enabled = False
+
     response = client.post(
-        "/api/v2/plugins/csharpserver/execute",
+        "/api/v2/plugins/basic_reporting/execute",
         json={"options": {}},
         headers=admin_auth_header,
     )
 
+    # Assert that the plugin execution is disabled and returns the expected response
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response.json() == {"detail": "Plugin execution is disabled"}

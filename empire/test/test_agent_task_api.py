@@ -389,28 +389,6 @@ def disable_csharpserver(main):
     main.pluginsv2.loaded_plugins["csharpserver"].enabled = True
 
 
-def test_create_task_bof_module_disabled_csharpserver(
-    client, admin_auth_header, agent, bof_download, main
-):
-    with disable_csharpserver(main):
-        response = client.post(
-            f"/api/v2/agents/{agent}/tasks/module",
-            headers=admin_auth_header,
-            json={
-                "module_id": "csharp_inject_bof_inject_bof",
-                "options": {
-                    "File": bof_download["id"],
-                    "EntryPoint": "",
-                    "ArgumentList": "",
-                    "Architecture": "x64",
-                },
-            },
-        )
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json()["detail"] == "csharpserver plugin not running"
-
-
 def test_create_task_module_with_file_option_not_found(
     client, admin_auth_header, agent, bof_download
 ):

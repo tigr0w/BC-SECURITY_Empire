@@ -1,15 +1,20 @@
 #!/bin/bash
 
+EMPIRE_COMPILER_VERSION="v0.1.0"
+COMPILE_FROM_SOURCE=0
+
 function usage() {
 	echo "Powershell Empire installer"
 	echo "USAGE: ./install.sh"
 	echo "OPTIONS:"
 	echo "  -y    Assume Yes to all questions (install all optional dependencies)"
+	echo "  -c    Compile Empire-Compiler from source instead of downloading"
 	echo "  -h    Displays this help text"
 }
 
-while getopts "hy" option; do
+while getopts "hcy" option; do
 	case "${option}" in
+	c) COMPILE_FROM_SOURCE=1 ;;
 	y) ASSUME_YES=1 ;;
 	h)
 		usage
@@ -23,6 +28,7 @@ done
 function command_exists() {
   command -v "$1" >/dev/null 2>&1;
 }
+
 function install_powershell() {
   echo -e "\x1b[1;34m[*] Installing PowerShell\x1b[0m"
   if [ "$OS_NAME" == "DEBIAN" ]; then
@@ -53,6 +59,105 @@ function install_powershell() {
   sudo mkdir -p /usr/local/share/powershell/Modules
   sudo cp -r "$PARENT_PATH"/empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
   rm -f packages-microsoft-prod.deb*
+}
+
+function get_architecture() {
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)
+            echo "linux-x64"
+            ;;
+        aarch64 | arm64)
+            echo "linux-arm64"
+            ;;
+        *)
+            echo "unsupported"
+            ;;
+    esac
+}
+
+function install_dotnet() {
+  echo -e "\x1b[1;34m[*] Installing dotnet for C# agents and modules\x1b[0m"
+  if [ $OS_NAME == "UBUNTU" ]; then
+    wget https://packages.microsoft.com/config/ubuntu/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    rm packages-microsoft-prod.deb
+    # If version is 22.04, we need to write an /etc/apt/preferences file
+    # https://github.com/dotnet/core/issues/7699
+    if [ "$VERSION_ID" == "22.04" ]; then
+      echo -e "\x1b[1;34m[*] Detected Ubuntu 22.04, writing /etc/apt/preferences file\x1b[0m"
+      sudo tee -a /etc/apt/preferences <<EOT
+Package: *
+Pin: origin "packages.microsoft.com"
+Pin-Priority: 100
+EOT
+    fi
+    sudo apt-get update
+    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
+  elif [ $OS_NAME == "DEBIAN" ]; then
+    wget https://packages.microsoft.com/config/debian/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    sudo apt-get update
+    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
+  else
+    wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    sudo apt-get update
+    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
+  fi
+}
+
+function compile_empire_compiler() {
+    install_dotnet
+    echo -e "\x1b[1;34m[*] Compiling Empire-Compiler from source\x1b[0m"
+
+    # Compile the project
+    dotnet publish empire/server/Empire-Compiler/ -c Release -r $(get_architecture) --self-contained -p:PublishTrimmed=true  -p:PublishSingleFile=true -o ./publish/$(get_architecture)
+
+    # Move the compiled binary to the target directory
+    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler/EmpireCompiler"
+    mkdir -p "$TARGET_DIR"
+    mv ./publish/$(get_architecture)/* "$TARGET_DIR"
+
+    if [ $? -eq 0 ]; then
+        echo -e "\x1b[1;34m[*] Setting execute permissions\x1b[0m"
+        chmod +x "${TARGET_DIR}/EmpireCompiler"
+
+        echo -e "\x1b[1;32m[+] Compilation and placement complete!\x1b[0m"
+    else
+        echo -e "\x1b[1;31m[!] Compilation failed. Exiting.\x1b[0m"
+        exit 1
+    fi
+    rm -rf publish
+}
+
+function download_empire_compiler() {
+    echo -e "\x1b[1;34m[*] Downloading Empire-Compiler version ${EMPIRE_COMPILER_VERSION}\x1b[0m"
+
+    ARCH=$(get_architecture)
+    if [ "$ARCH" == "unsupported" ]; then
+        echo -e "\x1b[1;31m[!] Unsupported architecture: $ARCH. Exiting.\x1b[0m"
+        exit 1
+    fi
+
+    DOWNLOAD_URL="https://github.com/BC-SECURITY/Empire-Compiler/releases/download/${EMPIRE_COMPILER_VERSION}/EmpireCompiler-${ARCH}"  # Adjust the file extension if needed
+
+    echo -e "\x1b[1;34m[*] Downloading from: $DOWNLOAD_URL\x1b[0m"
+
+    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler/EmpireCompiler"
+    mkdir -p "$TARGET_DIR"
+
+    wget -O "${TARGET_DIR}/EmpireCompiler" "$DOWNLOAD_URL"
+
+    if [ $? -eq 0 ]; then
+        echo -e "\x1b[1;34m[*] Setting execute permissions\x1b[0m"
+        chmod 777 "${TARGET_DIR}/EmpireCompiler"  # Ensure the correct file name after extraction
+
+        echo -e "\x1b[1;32m[+] Download and placement complete!\x1b[0m"
+    else
+        echo -e "\x1b[1;31m[!] Download failed. Exiting.\x1b[0m"
+        exit 1
+    fi
 }
 
 function install_mysql() {
@@ -122,39 +227,6 @@ function install_bomutils() {
   (cd bomutils && sudo make install)
   chmod 755 bomutils/build/bin/mkbom && sudo cp bomutils/build/bin/mkbom /usr/local/bin/.
   rm -rf bomutils
-}
-
-function install_dotnet() {
-  echo -e "\x1b[1;34m[*] Installing dotnet for C# agents and modules\x1b[0m"
-  if [ $OS_NAME == "UBUNTU" ]; then
-    wget https://packages.microsoft.com/config/ubuntu/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    rm packages-microsoft-prod.deb
-
-    # If version is 22.04, we need to write an /etc/apt/preferences file
-    # https://github.com/dotnet/core/issues/7699
-    if [ "$VERSION_ID" == "22.04" ]; then
-      echo -e "\x1b[1;34m[*] Detected Ubuntu 22.04, writing /etc/apt/preferences file\x1b[0m"
-      sudo tee -a /etc/apt/preferences <<EOT
-Package: *
-Pin: origin "packages.microsoft.com"
-Pin-Priority: 100
-EOT
-    fi
-
-    sudo apt-get update
-    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
-  elif [ $OS_NAME == "DEBIAN" ]; then
-    wget https://packages.microsoft.com/config/debian/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    sudo apt-get update
-    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
-  else
-    wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    sudo apt-get update
-    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
-  fi
 }
 
 function install_nim() {
@@ -234,10 +306,6 @@ if ! command_exists pwsh; then
   install_powershell
 fi
 
-if ! command_exists dotnet; then
-  install_dotnet
-fi
-
 if ! command_exists nim; then
   install_nim
 fi
@@ -247,6 +315,12 @@ if ! command_exists mysql; then
 fi
 
 start_mysql
+
+if [ "$COMPILE_FROM_SOURCE" -eq 1 ]; then
+  compile_empire_compiler
+else
+  download_empire_compiler
+fi
 
 if [ "$ASSUME_YES" == "1" ] ;then
   answer="Y"

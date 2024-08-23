@@ -38,7 +38,7 @@ class Module:
         dll = params["dll"]
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
-            raise ModuleValidationException("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         launcher = main_menu.stagers.generate_launcher(
             listener_name,
@@ -52,7 +52,7 @@ class Module:
         )
 
         if not launcher or launcher == "" or launcher.lower() == "failed":
-            raise ModuleValidationException("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid launcher")
 
         if language.lower() == "powershell":
             shellcode, err = main_menu.stagers.generate_powershell_shellcode(
@@ -88,30 +88,15 @@ class Module:
 
         base64_shellcode = helpers.encode_base64(shellcode).decode("UTF-8")
 
-        compiler = main_menu.pluginsv2.get_by_id("csharpserver")
-        if compiler.status != "ON":
-            raise ModuleValidationException("csharpserver plugin not running")
-
-        # Convert compiler.yaml to python dict
         compiler_dict: dict = yaml.safe_load(module.compiler_yaml)
-        # delete the 'Empire' key
         del compiler_dict[0]["Empire"]
-        # convert back to yaml string
         compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
 
-        file_name = compiler.do_send_message(
-            compiler_yaml, module.name, confuse=obfuscate
-        )
-        if file_name == "failed":
-            raise ModuleValidationException("module compile failed")
-
-        script_file = (
-            main_menu.installPath
-            + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
-            + (params["DotNetVersion"]).lower()
-            + "/"
-            + file_name
-            + ".compiled"
+        script_file = main_menu.dotnet_compiler.compile_task(
+            compiler_yaml,
+            module.name,
+            dotnet=params["DotNetVersion"].lower(),
+            confuse=obfuscate,
         )
 
         script_end = (

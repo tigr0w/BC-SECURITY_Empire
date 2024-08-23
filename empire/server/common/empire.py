@@ -11,6 +11,7 @@ from empire.server.core.agent_socks_service import AgentSocksService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.bypass_service import BypassService
 from empire.server.core.credential_service import CredentialService
+from empire.server.core.dotnet import DotnetCompiler
 from empire.server.core.download_service import DownloadService
 from empire.server.core.host_process_service import HostProcessService
 from empire.server.core.host_service import HostService
@@ -41,6 +42,7 @@ class MainMenu:
 
         self.socketio: SocketIO | None = None
 
+        self.dotnet_compiler = DotnetCompiler(self.installPath)
         self.listenertemplatesv2 = ListenerTemplateService(self)
         self.stagertemplatesv2 = StagerTemplateService(self)
         self.bypassesv2 = BypassService(self)

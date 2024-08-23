@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Typehinting for MainMenu object in services
 -   Added `api.ip` and `api.secure` as server options
 -   API endpoints for adding/removing ip allow/deny list entries
+-   Added tests for stager compilation using `DotnetCompiler`
 
 ### Changed
 -   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs
@@ -58,6 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed install support for Debian 10
 -   Removed Python 3.11 as a supported Python version
 -   Removed unused `iptools` dependency
+-   Replaced csharpserver plugin with `DotnetCompiler` class in `empire.server.common`
+-   Downloads pre-compiled Empire-Compiler to eliminate `dotnet` as an OS dependency
+-   Removed dotnet install in Docker
 
 #### Breaking
 

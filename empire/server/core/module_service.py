@@ -220,10 +220,6 @@ class ModuleService:
     ) -> tuple[str, str]:
         bof_module = self.modules["csharp_inject_bof_inject_bof"]
 
-        compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
-        if not compiler.enabled:
-            raise ModuleValidationException("csharpserver plugin not running")
-
         compiler_dict: dict = yaml.safe_load(bof_module.compiler_yaml)
         del compiler_dict[0]["Empire"]
 
@@ -249,19 +245,8 @@ class ModuleService:
 
         compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
 
-        file_name = compiler.do_send_message(
-            compiler_yaml, bof_module.name, confuse=obfuscate
-        )
-        if file_name == "failed":
-            raise ModuleExecutionException("module compile failed")
-
-        script_file = (
-            self.main_menu.installPath
-            + "/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/"
-            + "net40"
-            + "/"
-            + file_name
-            + ".compiled"
+        script_file = self.main_menu.dotnet_compiler.compile_task(
+            compiler_yaml, bof_module.name, dotnet="net40", confuse=obfuscate
         )
 
         script_end = f",-a:{b64_bof_data}"
@@ -499,22 +484,11 @@ class ModuleService:
         obfuscation_config: models.ObfuscationConfig,
     ) -> str:
         try:
-            compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
-            if not compiler.enabled:
-                raise ModuleValidationException("csharpserver plugin not running")
-            file_name = compiler.do_send_message(
-                module.compiler_yaml, module.name, confuse=obfuscation_config.enabled
-            )
-            if file_name == "failed":
-                raise ModuleExecutionException("module compile failed")
-
-            script_file = (
-                self.main_menu.installPath
-                + "/csharp/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/"
-                + (params["DotNetVersion"]).lower()
-                + "/"
-                + file_name
-                + ".compiled"
+            script_file = self.main_menu.dotnet_compiler.compile_task(
+                module.compiler_yaml,
+                module.name,
+                dotnet=params["DotNetVersion"].lower(),
+                confuse=obfuscation_config.enabled,
             )
             param_string = ""
             for key, value in params.items():

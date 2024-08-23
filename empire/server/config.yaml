@@ -49,9 +49,6 @@ starkiller:
   auto_update: true
 submodules:
   auto_update: true
-plugins:
-  csharpserver:
-    auto_start: true
 directories:
   downloads: empire/server/downloads/
   module_source: empire/server/data/module_source/

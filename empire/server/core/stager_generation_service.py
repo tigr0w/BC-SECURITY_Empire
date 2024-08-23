@@ -160,14 +160,9 @@ class StagerGenerationService:
         ) as f:
             f.write(posh_code)
 
-        compiler = self.plugin_service.get_by_id("csharpserver")
-        if not compiler.enabled:
-            log.error("csharpserver plugin not running")
-        else:
-            file_name = compiler.do_send_stager(
-                stager_yaml, "CSharpPS", confuse=obfuscate
-            )
-
+        file_name = self.main_menu.dotnet_compiler.compile_stager(
+            stager_yaml, "CSharpPS", confuse=obfuscate
+        )
         return f"{self.main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
 
     def generate_powershell_shellcode(
@@ -255,14 +250,9 @@ class StagerGenerationService:
         ) as f:
             f.write(python_code)
 
-        compiler = self.plugin_service.get_by_id("csharpserver")
-        if not compiler.enabled:
-            log.error("csharpserver plugin not running")
-        else:
-            file_name = compiler.do_send_stager(
-                stager_yaml, "CSharpPy", confuse=obfuscate
-            )
-
+        file_name = self.main_menu.dotnet_compiler.compile_stager(
+            stager_yaml, "CSharpPy", confuse=obfuscate
+        )
         return f"{self.main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
 
     def generate_python_shellcode(
