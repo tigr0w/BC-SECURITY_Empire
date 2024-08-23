@@ -229,29 +229,6 @@ function install_bomutils() {
   rm -rf bomutils
 }
 
-function install_nim() {
-  if [ "$ASSUME_YES" == "1" ] ;then
-    answer="Y"
-  else
-    echo -n -e "\x1b[1;33m[>] Do you want to install Nim and MinGW? It is only needed to generate a Nim stager (y/N)? \x1b[0m"
-    read -r answer
-  fi
-  if [ "$answer" != "${answer#[Yy]}" ]; then
-    sudo apt-get install -y curl git gcc xz-utils
-    export CHOOSENIM_CHOOSE_VERSION=1.6.12
-    curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
-    echo "export PATH=$HOME/.nimble/bin:$PATH" >> ~/.bashrc
-    echo "export PATH=$HOME/.nimble/bin:$PATH" >> ~/.zshrc
-    export PATH=$HOME/.nimble/bin:$PATH
-    sudo ln -s $HOME/.nimble/bin/* /usr/bin/
-    nimble install -y nimble@0.14.2
-    nimble install -y winim zippy nimcrypto
-    sudo apt-get install -y mingw-w64
-  else
-    echo -e "\x1b[1;34m[*] Skipping Nim\x1b[0m"
-  fi
-}
-
 set -e
 
 if [ "$EUID" -eq 0 ]; then
@@ -304,10 +281,6 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 if ! command_exists pwsh; then
   install_powershell
-fi
-
-if ! command_exists nim; then
-  install_nim
 fi
 
 if ! command_exists mysql; then

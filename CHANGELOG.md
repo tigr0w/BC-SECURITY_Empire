@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 -   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs
 -   Plugins refactored - see the `plugin-development` wiki page
+-   Updated install base test remove nim and dotnet
 
 #### Breaking
 -   Moved `Agents` class to `AgentCommunicationService`
@@ -62,6 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Replaced csharpserver plugin with `DotnetCompiler` class in `empire.server.common`
 -   Downloads pre-compiled Empire-Compiler to eliminate `dotnet` as an OS dependency
 -   Removed dotnet install in Docker
+-   Removed `nim` stager from Empire
+-   Removed nim from installation script
 
 #### Breaking
 

@@ -26,15 +26,6 @@ commandTests:
     command: "poetry"
     args: ["run", "python3", "--version"]
     expectedOutput: ["Python 3.12.*"]
-  # dotnet
-  - name: "dotnet which"
-    command: "which"
-    args: ["dotnet"]
-    expectedOutput: ["/usr/bin/dotnet"]
-  - name: "dotnet version"
-    command: "dotnet"
-    args: [ "--version" ]
-    expectedOutput: ["6.0.*"]
   # powershell
   - name: "powershell which"
     command: "which"
@@ -49,15 +40,6 @@ commandTests:
     command: "which"
     args: ["mysql"]
     expectedOutput: ["/usr/bin/mysql"]
-  # nim
-  - name: "nim which"
-    command: "which"
-    args: ["nim"]
-    expectedOutput: ["/usr/bin/nim"]
-  - name: "nim version"
-    command: "nim"
-    args: ["--version"]
-    expectedOutput: ["Nim Compiler Version 1.6.*"]
   # run
   - name: "ps-empire help"
     command: "./ps-empire"
@@ -75,5 +57,5 @@ fileExistenceTests:
     path: '/usr/local/share/powershell/Modules/Invoke-Obfuscation/'
     shouldExist: true
   - name: 'sharpire'
-    path: '/empire/empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Sharpire'
+    path: '/empire/empire/server/Empire-Compiler/EmpireCompiler/Data/ReferenceSourceLibraries/Sharpire'
     shouldExist: true
