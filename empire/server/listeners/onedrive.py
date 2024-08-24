@@ -280,7 +280,6 @@ class Listener:
                     launcher,
                     obfuscation_command=obfuscation_command,
                 )
-                launcher = self.mainMenu.obfuscationv2.obfuscate_keywords(launcher)
 
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -357,7 +356,6 @@ class Listener:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
                     stager, obfuscation_command=obfuscation_command
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return helpers.enc_powershell(stager)
@@ -469,7 +467,6 @@ class Listener:
                 agent_code = self.mainMenu.obfuscationv2.obfuscate(
                     agent_code, obfuscation_command=obfuscation_command
                 )
-                agent_code = self.mainMenu.obfuscationv2.obfuscate_keywords(agent_code)
 
             return agent_code
         return None

@@ -308,7 +308,6 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode and (
@@ -404,7 +403,6 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             # base64 encode the stager and return it
             if encode:
@@ -471,7 +469,6 @@ class Listener:
                     code,
                     obfuscation_command=obfuscation_command,
                 )
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
 

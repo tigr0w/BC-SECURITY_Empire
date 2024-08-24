@@ -441,9 +441,6 @@ class Listener:
                     launcherBase,
                     obfuscation_command=obfuscation_command,
                 )
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
 
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
@@ -554,9 +551,6 @@ class Listener:
             launcherBase += listener_util.python_extract_stager(stagingKey)
 
             if obfuscate:
-                launcherBase = self.mainMenu.obfuscationv2.obfuscate_keywords(
-                    launcherBase
-                )
                 launcherBase = self.mainMenu.obfuscationv2.python_obfuscate(
                     launcherBase
                 )
@@ -632,9 +626,6 @@ class Listener:
             }
             stager = template.render(template_options)
 
-            # Get the random function name generated at install and patch the stager with the proper function name
-            stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
-
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
@@ -663,7 +654,6 @@ class Listener:
                     stager,
                     obfuscation_command=obfuscation_command,
                 )
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return helpers.enc_powershell(stager)
@@ -702,7 +692,6 @@ class Listener:
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
-                stager = self.mainMenu.obfuscationv2.obfuscate_keywords(stager)
 
             if encode:
                 return base64.b64encode(stager)
@@ -777,7 +766,6 @@ class Listener:
                     code,
                     obfuscation_command=obfuscation_command,
                 )
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
 
@@ -807,7 +795,6 @@ class Listener:
 
             if obfuscate:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
-                code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
 
             return code
 

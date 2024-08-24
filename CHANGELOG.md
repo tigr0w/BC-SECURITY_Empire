@@ -80,6 +80,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.11.2] - 2024-08-08
+
+-   Added Route4Me to sponsor page on Empire (@Cx01N)
+-   Fixed global obfuscation bug in listener staging (@Cx01N)
+
 ## [5.11.1] - 2024-07-23
 
 ### Changed
@@ -952,7 +957,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.2...HEAD
+
+[5.11.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.1...v5.11.2
 
 [5.11.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.0...v5.11.1
 
