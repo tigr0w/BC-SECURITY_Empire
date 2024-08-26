@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 class DotnetCompiler:
     def __init__(self, install_path):
+        self.install_path = install_path
         self.compiler = Path(install_path) / "Empire-Compiler/EmpireCompiler/"
 
     def compile_task(self, compiler_yaml, task_name, dotnet="net35", confuse=False):
@@ -38,13 +39,12 @@ class DotnetCompiler:
             )
 
         output = result.stdout.strip()
+
         if "Final Task Name:" not in output:
             raise ModuleExecutionException("Module compile failed")
 
         file_name = output.split("Final Task Name:")[1].strip()
-        compiled_dir = self.compiler / "EmpireCompiler/Data/Tasks/CSharp/Compiled/"
-        compiled_name = file_name + ".compiled"
-        return str(compiled_dir / dotnet / compiled_name)
+        return f"{self.install_path}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dotnet}/{file_name}.compiled"
 
     def compile_stager(self, compiler_yaml, task_name, confuse=False):
         args = [
