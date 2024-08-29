@@ -196,7 +196,7 @@ def bof_download(client, admin_auth_header, session_local, models):
         db.query(models.Download).delete()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def agent_task(client, admin_auth_header, agent):
     resp = client.post(
         f"/api/v2/agents/{agent}/tasks/shell",
@@ -204,7 +204,7 @@ def agent_task(client, admin_auth_header, agent):
         json={"command": 'echo "HELLO WORLD"'},
     )
 
-    yield resp.json()
+    return resp.json()
 
     # No need to delete the task, it will be deleted when the agent is deleted
     # After the test.
@@ -225,7 +225,7 @@ def return_handle_error_message_wrapper(message):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def module_with_validation_exception(main):
+def _module_with_validation_exception(main):
     module_name = "this_module_has_a_validation_exception"
     main.modulesv2.modules[module_name] = EmpireModule(
         id=module_name,
@@ -245,7 +245,7 @@ def module_with_validation_exception(main):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def module_with_execution_exception(main):
+def _module_with_execution_exception(main):
     module_name = "this_module_has_an_execution_exception"
     main.modulesv2.modules[module_name] = EmpireModule(
         id=module_name,
@@ -265,7 +265,7 @@ def module_with_execution_exception(main):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def module_with_legacy_handle_error_message(main):
+def _module_with_legacy_handle_error_message(main):
     module_name = "this_module_uses_legacy_handle_error_message"
     main.modulesv2.modules[module_name] = EmpireModule(
         id=module_name,

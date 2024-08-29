@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `api.ip` and `api.secure` as server options
 -   API endpoints for adding/removing ip allow/deny list entries
 -   Added tests for stager compilation using `DotnetCompiler`
+-   Added PT, TCH rules to ruff config
 
 ### Changed
 -   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs

@@ -15,7 +15,7 @@ jobs:
       - uses: psf/black@24.4.2
       - name: Run ruff
         run: |
-          pip install ruff==0.5.5
+          pip install ruff==0.6.2
           ruff check .
   matrix-prep-config:
     runs-on: ubuntu-latest

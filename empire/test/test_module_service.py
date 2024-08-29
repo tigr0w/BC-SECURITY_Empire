@@ -16,16 +16,14 @@ def main_menu_mock(db, models, install_path):
         )
     )
     main_menu.obfuscationv2.obfuscate_keywords = Mock(side_effect=lambda x: x)
-    yield main_menu
+    return main_menu
 
 
 @pytest.fixture(scope="module")
 def module_service(main_menu_mock):
     from empire.server.core.module_service import ModuleService
 
-    module_service = ModuleService(main_menu=main_menu_mock)
-
-    yield module_service
+    return ModuleService(main_menu=main_menu_mock)
 
 
 @pytest.fixture(scope="module")
@@ -33,7 +31,7 @@ def agent_mock():
     agent_mock = Mock()
     agent_mock.session_id = "ABC123"
 
-    yield agent_mock
+    return agent_mock
 
 
 def test_execute_module_script_in_yaml(module_service, agent_mock):

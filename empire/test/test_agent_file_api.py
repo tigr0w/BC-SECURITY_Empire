@@ -2,7 +2,7 @@ import pytest
 from starlette import status
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def agent_no_files(session_local, models, main):
     with session_local.begin() as db:
         agent = models.Agent(
@@ -39,7 +39,7 @@ def agent_no_files(session_local, models, main):
         db.query(models.Agent).delete()
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def files(session_local, models, agent):
     with session_local.begin() as db:
         root_file = models.AgentFile(

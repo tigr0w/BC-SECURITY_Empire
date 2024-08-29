@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from socket import SocketIO
+from typing import TYPE_CHECKING
 
 from empire.server.core import hooks_internal
 from empire.server.core.agent_communication_service import AgentCommunicationService
@@ -27,6 +27,9 @@ from empire.server.core.stager_service import StagerService
 from empire.server.core.stager_template_service import StagerTemplateService
 from empire.server.core.tag_service import TagService
 from empire.server.core.user_service import UserService
+
+if TYPE_CHECKING:
+    from socket import SocketIO
 
 VERSION = "5.11.2 BC Security Fork"
 

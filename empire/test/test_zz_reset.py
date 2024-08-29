@@ -8,7 +8,7 @@ import pytest
 
 # These tests are run last since they reset the server and can cause other tests to fail
 @pytest.fixture(scope="module", autouse=True)
-def wrap_reset(server_config_dict):
+def _wrap_reset(server_config_dict):
     """
     This wraps the reset tests by backing up the db and restoring it.
     """

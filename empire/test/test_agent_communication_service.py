@@ -6,17 +6,17 @@ from empire.server.core.db.models import AgentTaskStatus
 
 @pytest.fixture(scope="module")
 def agent_communication_service(main: MainMenu):
-    yield main.agentcommsv2
+    return main.agentcommsv2
 
 
 @pytest.fixture(scope="module")
 def agent_task_service(main: MainMenu):
-    yield main.agenttasksv2
+    return main.agenttasksv2
 
 
 @pytest.fixture(scope="module")
 def agent_service(main: MainMenu):
-    yield main.agentsv2
+    return main.agentsv2
 
 
 def test_save_file_non_python(

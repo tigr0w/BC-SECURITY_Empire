@@ -60,7 +60,7 @@ class compress:
         return header + data
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def agents(session_local, models, host):
     with session_local.begin() as db:
         db_host = db.query(models.Host).filter(models.Host.id == host).first()
@@ -229,16 +229,17 @@ def test_large_internal_ip_works(session_local, host, models, agent):
 
 
 def test_duplicate_host(session_local, models, host):
-    with pytest.raises(IntegrityError), session_local.begin() as db:
+    with session_local.begin() as db:
         db_host = db.query(models.Host).filter(models.Host.id == host).first()
         host2 = models.Host(name=db_host.name, internal_ip=db_host.internal_ip)
-
         db.add(host2)
-        db.flush()
+
+        with pytest.raises(IntegrityError):
+            db.flush()
 
 
 def test_duplicate_checkin_raises_exception(session_local, models, agent):
-    with pytest.raises(IntegrityError), session_local.begin() as db:
+    with session_local.begin() as db:
         db_agent = (
             db.query(models.Agent).filter(models.Agent.session_id == agent).first()
         )
@@ -252,7 +253,9 @@ def test_duplicate_checkin_raises_exception(session_local, models, agent):
 
         db.add(checkin)
         db.add(checkin2)
-        db.flush()
+
+        with pytest.raises(IntegrityError):
+            db.flush()
 
 
 def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
@@ -364,7 +367,7 @@ def test_update_dir_list_with_existing_joined_file(
 
 
 @pytest.mark.parametrize(
-    "session_id,expected",
+    ("session_id", "expected"),
     [
         ("ABCDEFGH", True),
         ("12345678", True),

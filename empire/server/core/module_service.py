@@ -20,17 +20,17 @@ from empire.server.common.converter.load_covenant import _convert_covenant_to_em
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.download_service import DownloadService
 from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
 )
 from empire.server.core.module_models import EmpireModule, LanguageEnum
-from empire.server.core.obfuscation_service import ObfuscationService
 from empire.server.utils.option_util import convert_module_options, validate_options
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
+    from empire.server.core.download_service import DownloadService
+    from empire.server.core.obfuscation_service import ObfuscationService
 
 log = logging.getLogger(__name__)
 

@@ -166,9 +166,10 @@ class ObfuscationService:
         ps_script = self.obfuscate_keywords(ps_script)
 
         # When obfuscating large scripts, command line length is too long. Need to save to temp file
-        with tempfile.NamedTemporaryFile(
-            "r+"
-        ) as toObfuscateFile, tempfile.NamedTemporaryFile("r+") as obfuscatedFile:
+        with (
+            tempfile.NamedTemporaryFile("r+") as toObfuscateFile,
+            tempfile.NamedTemporaryFile("r+") as obfuscatedFile,
+        ):
             toObfuscateFile.write(ps_script)
 
             # Obfuscate using Invoke-Obfuscation w/ PowerShell

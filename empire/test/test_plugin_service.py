@@ -7,6 +7,7 @@ import pytest
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
 from empire.server.core.config import PluginAutoExecuteConfig
+from empire.server.core.exceptions import PluginValidationException
 
 if TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -30,16 +31,18 @@ def patch_plugin_options(plugin, options):
 
 @contextmanager
 def patch_plugin_class_on_start_on_stop(plugin_class, on_start=None, on_stop=None):
-    with patch.object(plugin_class, "on_start", new=on_start), patch.object(
-        plugin_class, "on_stop", new=on_stop
+    with (
+        patch.object(plugin_class, "on_start", new=on_start),
+        patch.object(plugin_class, "on_stop", new=on_stop),
     ):
         yield
 
 
 @contextmanager
 def patch_plugin_class_on_load_on_unload(plugin_class, on_load=None, on_unload=None):
-    with patch.object(plugin_class, "on_load", new=on_load), patch.object(
-        plugin_class, "on_unload", new=on_unload
+    with (
+        patch.object(plugin_class, "on_load", new=on_load),
+        patch.object(plugin_class, "on_unload", new=on_unload),
     ):
         yield
 
@@ -107,10 +110,9 @@ def test_execute_plugin_file_option_not_found(install_path, db):
     ):
         req = PluginExecutePostRequest(options={"file_option": 9999})
 
-        try:
+        with pytest.raises(PluginValidationException) as e:
             plugin_service.execute_plugin(db, plugin, req, None)
-        except Exception as e:
-            assert str(e) == "File not found for 'file_option' id 9999"
+        assert str(e.value) == "File not found for 'file_option' id 9999"
 
 
 def test_execute_plugin_file_option(install_path, db, models):
@@ -131,18 +133,21 @@ def test_execute_plugin_file_option(install_path, db, models):
     mocked_execute = MagicMock()
     mocked_execute.return_value = "success"
 
-    with patch_plugin_options(
-        plugin,
-        {
-            "file_option": {
-                "Name": "file_option",
-                "Description": "File option",
-                "Type": "File",
-                "Strict": False,
-                "Required": True,
-            }
-        },
-    ), patch_plugin_execute(plugin, mocked_execute):
+    with (
+        patch_plugin_options(
+            plugin,
+            {
+                "file_option": {
+                    "Name": "file_option",
+                    "Description": "File option",
+                    "Type": "File",
+                    "Strict": False,
+                    "Required": True,
+                }
+            },
+        ),
+        patch_plugin_execute(plugin, mocked_execute),
+    ):
         req = PluginExecutePostRequest(options={"file_option": "9999"})
         res, err = plugin_service.execute_plugin(db, plugin, req, None)
 
@@ -205,7 +210,7 @@ def test_on_load_on_unload_called(install_path):
 
 @pytest.fixture(scope="module")
 def plugin_service(main: "MainMenu"):
-    yield main.pluginsv2
+    return main.pluginsv2
 
 
 def test__determine_auto_start(empire_config, plugin_service):

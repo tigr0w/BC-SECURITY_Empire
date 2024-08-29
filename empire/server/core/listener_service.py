@@ -8,15 +8,15 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.download_service import DownloadService
 from empire.server.core.hooks import hooks
-from empire.server.core.listener_template_service import ListenerTemplateService
 from empire.server.utils.option_util import set_options, validate_options
 
 log = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
+    from empire.server.core.download_service import DownloadService
+    from empire.server.core.listener_template_service import ListenerTemplateService
 
 
 class ListenerService:

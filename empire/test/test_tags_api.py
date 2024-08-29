@@ -291,8 +291,8 @@ def test_download_delete_tag(client, admin_auth_header, download):
     _test_delete_tag(client, admin_auth_header, "/api/v2/downloads", download)
 
 
-@pytest.fixture(scope="function")
-def _create_tags(
+@pytest.fixture
+def create_tags(
     client,
     admin_auth_header,
     listener,
@@ -340,8 +340,8 @@ def _create_tags(
         assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_get_tags(client, admin_auth_header, _create_tags):
-    expected_tags = _create_tags
+def test_get_tags(client, admin_auth_header, create_tags):
+    expected_tags = create_tags
     resp = client.get("/api/v2/tags?order_by=name", headers=admin_auth_header)
     assert resp.status_code == status.HTTP_200_OK
 
@@ -353,8 +353,8 @@ def test_get_tags(client, admin_auth_header, _create_tags):
     assert actual_tags == expected_tags
 
 
-@pytest.fixture(scope="function")
-def _create_agent_tasks_with_tags(
+@pytest.fixture
+def create_agent_tasks_with_tags(
     client, admin_auth_header, agent, session_local, models
 ):
     with session_local.begin() as db:
@@ -399,7 +399,7 @@ def _create_agent_tasks_with_tags(
 
 
 def test_get_agent_tasks_tag_filter(
-    client, admin_auth_header, agent, _create_agent_tasks_with_tags
+    client, admin_auth_header, agent, create_agent_tasks_with_tags
 ):
     resp = client.get(f"/api/v2/agents/{agent}/tasks", headers=admin_auth_header)
 
@@ -441,8 +441,8 @@ def test_get_agent_tasks_tag_filter(
     )
 
 
-@pytest.fixture(scope="function")
-def _create_plugin_tasks_with_tags(
+@pytest.fixture
+def create_plugin_tasks_with_tags(
     models, session_local, client, admin_auth_header, plugin_name
 ):
     plugin_tasks = []
@@ -483,7 +483,7 @@ def _create_plugin_tasks_with_tags(
 
 
 def test_get_plugin_tasks_tag_filter(
-    client, admin_auth_header, plugin_name, _create_plugin_tasks_with_tags
+    client, admin_auth_header, plugin_name, create_plugin_tasks_with_tags
 ):
     resp = client.get(f"/api/v2/plugins/{plugin_name}/tasks", headers=admin_auth_header)
 
@@ -526,8 +526,8 @@ def test_get_plugin_tasks_tag_filter(
     )
 
 
-@pytest.fixture(scope="function")
-def _create_downloads_with_tags(models, session_local, client, admin_auth_header):
+@pytest.fixture
+def create_downloads_with_tags(models, session_local, client, admin_auth_header):
     downloads = []
     tags = []
     with session_local.begin() as db:
@@ -569,7 +569,7 @@ def _create_downloads_with_tags(models, session_local, client, admin_auth_header
 
 
 def test_get_downloads_tag_filter(
-    client, admin_auth_header, _create_downloads_with_tags
+    client, admin_auth_header, create_downloads_with_tags
 ):
     resp = client.get("/api/v2/downloads/", headers=admin_auth_header)
 

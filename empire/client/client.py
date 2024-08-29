@@ -6,7 +6,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import get_type_hints
+from typing import TYPE_CHECKING, get_type_hints
 
 import urllib3
 from docopt import docopt
@@ -19,7 +19,6 @@ from empire.arguments import args
 from empire.client.src.bindings import bindings
 from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.EmpireCliState import state
-from empire.client.src.menus import Menu
 from empire.client.src.menus.AdminMenu import admin_menu
 from empire.client.src.menus.AgentMenu import agent_menu
 from empire.client.src.menus.ChatMenu import chat_menu
@@ -45,6 +44,9 @@ from empire.client.src.utils.autocomplete_util import (
     filtered_search_list,
 )
 from empire.client.src.utils.log_util import FileFormatter, MyFormatter
+
+if TYPE_CHECKING:
+    from empire.client.src.menus import Menu
 
 log = logging.getLogger(__name__)
 

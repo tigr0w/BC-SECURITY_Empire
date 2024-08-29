@@ -44,7 +44,7 @@ def catch_logs(level: int, logger: logging.Logger) -> LogCaptureHandler:
         logger.removeHandler(handler)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def main_menu_mock(models):
     main_menu = Mock()
     main_menu.installPath = "empire/server"
@@ -65,17 +65,17 @@ def main_menu_mock(models):
         side_effect=lambda x: Mock(enabled=False) if x == "csharpserver" else None
     )
 
-    yield main_menu
+    return main_menu
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def module_service(main_menu_mock):
     from empire.server.core.module_service import ModuleService
 
     module_service = ModuleService(main_menu_mock)
     main_menu_mock.modulesv2 = module_service
 
-    yield module_service
+    return module_service
 
 
 @pytest.mark.slow
@@ -116,9 +116,8 @@ def test_load_modules(main_menu_mock, models, db):
 
                 if err != "csharpserver plugin not running":
                     # fail if a module fails to generate a script.
-                    assert (
-                        resp is not None and len(resp) > 0
-                    ), f"No generated script for module {key}"
+                    assert resp is not None, f"No generated script for module {key}"
+                    assert len(resp) > 0, f"No generated script for module {key}"
 
             except ModuleValidationException as e:
                 # not gonna bother mocking out the csharp server right now.

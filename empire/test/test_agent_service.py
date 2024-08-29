@@ -7,7 +7,7 @@ from empire.server.common.empire import MainMenu
 
 @pytest.fixture(scope="module")
 def agent_service(main: MainMenu):
-    yield main.agentsv2
+    return main.agentsv2
 
 
 def test_save_agent_log(agent_service, agent, empire_config):

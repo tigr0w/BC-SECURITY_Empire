@@ -3,7 +3,7 @@ from starlette.status import HTTP_200_OK
 
 
 @pytest.fixture(scope="module", autouse=True)
-def set_ip_filtering(main):
+def _set_ip_filtering(main):
     main.ipsv2.ip_filtering = False
     yield
     main.ipsv2.ip_filtering = True

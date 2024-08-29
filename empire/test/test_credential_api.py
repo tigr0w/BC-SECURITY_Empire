@@ -4,7 +4,7 @@ import pytest
 from starlette import status
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_credential():
     return {
         "credtype": "hash",

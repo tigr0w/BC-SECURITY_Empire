@@ -8,13 +8,13 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
-from empire.server.core.download_service import DownloadService
-from empire.server.core.listener_service import ListenerService
-from empire.server.core.stager_template_service import StagerTemplateService
 from empire.server.utils.option_util import set_options, validate_options
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
+    from empire.server.core.download_service import DownloadService
+    from empire.server.core.listener_service import ListenerService
+    from empire.server.core.stager_template_service import StagerTemplateService
 
 
 class StagerService:

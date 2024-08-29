@@ -3,13 +3,13 @@ import pathlib
 import subprocess
 import textwrap
 import time
+from typing import TYPE_CHECKING
 
 from prompt_toolkit import HTML
 from prompt_toolkit.completion import Completion
 
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.Menu import Menu
-from empire.client.src.Shortcut import Shortcut
 from empire.client.src.ShortcutHandler import shortcut_handler
 from empire.client.src.utils import print_util, table_util
 from empire.client.src.utils.autocomplete_util import (
@@ -19,6 +19,9 @@ from empire.client.src.utils.autocomplete_util import (
 )
 from empire.client.src.utils.cli_util import command, register_cli_commands
 from empire.client.src.utils.data_util import get_data_from_file
+
+if TYPE_CHECKING:
+    from empire.client.src.Shortcut import Shortcut
 
 log = logging.getLogger(__name__)
 

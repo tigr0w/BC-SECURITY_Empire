@@ -7,21 +7,20 @@ from empire.server.common import helpers
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_staging_key(db, models):
+def _setup_staging_key(db, models):
     config = db.query(models.Config).first()
     config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
     db.add(config)
     db.commit()
-    yield
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def main_menu_mock(db, models):
     main_menu = Mock()
     main_menu.installPath = ""
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}
-    yield main_menu
+    return main_menu
 
 
 def test_dbx_generate_launcher(monkeypatch, main_menu_mock):

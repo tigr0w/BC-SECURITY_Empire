@@ -16,7 +16,7 @@ def timer():
     yield lambda: time.perf_counter() - start
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def agents(session_local, host, models):
     agent_ids = []
     with session_local.begin() as db:

@@ -95,7 +95,7 @@ def test_generate_launcher(stager_generation_service):
 
 
 @pytest.mark.parametrize(
-    "obfuscate, encode, expected_launcher",
+    ("obfuscate", "encode", "expected_launcher"),
     [
         (
             False,
@@ -123,7 +123,7 @@ def test_generate_exe_oneliner(
 
 
 @pytest.mark.parametrize(
-    "obfuscate, encode",
+    ("obfuscate", "encode"),
     [
         (True, False),
         (True, True),
@@ -146,7 +146,7 @@ def test_generate_dll(stager_generation_service):
 
 
 @pytest.mark.parametrize(
-    "dot_net_version, obfuscate",
+    ("dot_net_version", "obfuscate"),
     [
         ("net40", False),
         ("net35", False),
@@ -171,7 +171,7 @@ def test_generate_powershell_exe(stager_generation_service, dot_net_version, obf
 
 
 @pytest.mark.parametrize(
-    "arch, dot_net_version",
+    ("arch", "dot_net_version"),
     [
         ("x86", "net40"),
         ("x64", "net40"),
@@ -204,7 +204,7 @@ def test_generate_powershell_shellcode(
 
 
 @pytest.mark.parametrize(
-    "dot_net_version, obfuscate",
+    ("dot_net_version", "obfuscate"),
     [
         ("net40", False),
         ("net40", True),
@@ -227,7 +227,7 @@ def test_generate_python_exe(stager_generation_service, dot_net_version, obfusca
 
 
 @pytest.mark.parametrize(
-    "arch, dot_net_version",
+    ("arch", "dot_net_version"),
     [
         ("x86", "net40"),
         ("x64", "net40"),

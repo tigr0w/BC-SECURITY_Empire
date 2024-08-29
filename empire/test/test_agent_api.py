@@ -7,7 +7,7 @@ from empire.server.common.empire import MainMenu
 
 
 @pytest.fixture(scope="module", autouse=True)
-def agent(session_local, models, main):
+def _agent(session_local, models, main):
     with session_local.begin() as db:
         hosts = db.query(models.Host).all()
         if len(hosts) == 0:

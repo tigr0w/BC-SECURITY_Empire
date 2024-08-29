@@ -2,7 +2,7 @@ import pytest
 from starlette import status
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def processes(db, host, agent, models):
     db_agent = db.query(models.Agent).filter(models.Agent.session_id == agent).first()
     db_agent.process_id = "11"

@@ -35,7 +35,7 @@ def install_path():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def client(example_2_plugin):
+def client(_example_2_plugin):
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
 
@@ -71,7 +71,7 @@ def client(example_2_plugin):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def example_2_plugin(install_path):
+def _example_2_plugin(install_path):
     example_plugin_path = Path(install_path) / "plugins" / "example"
     example_plugin_copy_path = Path(install_path) / "plugins" / "example_2"
 
@@ -92,14 +92,14 @@ def example_2_plugin(install_path):
 def empire_config() -> "EmpireConfig":
     from empire.server.core.config import empire_config
 
-    yield empire_config
+    return empire_config
 
 
 @pytest.fixture(scope="session")
 def models():
     from empire.server.core.db import models
 
-    yield models
+    return models
 
 
 @pytest.fixture(scope="session")
@@ -114,7 +114,7 @@ def admin_auth_token(client):
         },
     )
 
-    yield response.json()["access_token"]
+    return response.json()["access_token"]
 
 
 @pytest.fixture(scope="session")
@@ -136,7 +136,7 @@ def regular_auth_token(client, admin_auth_token):
         data={"grant_type": "password", "username": "vinnybod", "password": "hunter2"},
     )
 
-    yield response.json()["access_token"]
+    return response.json()["access_token"]
 
 
 # TODO: Remove this. Use session_local
@@ -144,17 +144,17 @@ def regular_auth_token(client, admin_auth_token):
 def db():
     from empire.server.core.db.base import SessionLocal
 
-    yield SessionLocal()
+    return SessionLocal()
 
 
 @pytest.fixture(scope="session")
 def main():
     from empire.server.server import main
 
-    yield main
+    return main
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_listener():
     return {
         "name": "new-listener-1",
@@ -185,7 +185,7 @@ def base_listener():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def malleable_listener():
     return {
         "name": "malleable_listener_1",
@@ -306,7 +306,7 @@ def listener_malleable(client, admin_auth_header):
         )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_stager():
     return {
         "name": "MyStager",
@@ -328,7 +328,7 @@ def base_stager():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_stager_dll():
     return {
         "name": "MyStager2",
@@ -351,7 +351,7 @@ def base_stager_dll():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_stager_malleable():
     return {
         "name": "MyStager",
@@ -373,7 +373,7 @@ def base_stager_malleable():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def bat_stager():
     return {
         "name": "bat_stager",
@@ -389,7 +389,7 @@ def bat_stager():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def windows_macro_stager():
     return {
         "name": "macro_stager",
@@ -408,7 +408,7 @@ def windows_macro_stager():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def pyinstaller_stager():
     return {
         "name": "MyStager3",
@@ -427,10 +427,10 @@ def pyinstaller_stager():
 def session_local(client):
     from empire.server.core.db.base import SessionLocal
 
-    yield SessionLocal
+    return SessionLocal
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def host(session_local, models):
     with session_local.begin() as db:
         host = models.Host(name="host1", internal_ip="192.168.0.1")
@@ -445,7 +445,7 @@ def host(session_local, models):
         db.query(models.Host).filter(models.Host.id == host_id).delete()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def agent(session_local, models, host, main):
     with session_local.begin() as db:
         name = f'agent_{__name__.split(".")[-1]}'
@@ -491,7 +491,7 @@ def agent(session_local, models, host, main):
         db.query(models.Agent).filter(models.Agent.session_id == agent_id).delete()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def agent_task(client, admin_auth_header, agent, session_local, main):
     resp = client.post(
         f"/api/v2/agents/{agent}/tasks/shell",
@@ -515,7 +515,7 @@ def plugin_name():
     return "basic_reporting"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def plugin_task(main, session_local, models, plugin_name):
     with session_local.begin() as db:
         plugin_task = models.PluginTask(
@@ -534,7 +534,7 @@ def plugin_task(main, session_local, models, plugin_name):
         db.query(models.PluginTask).delete()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def credential(client, admin_auth_header):
     resp = client.post(
         "/api/v2/credentials/",
@@ -556,7 +556,7 @@ def credential(client, admin_auth_header):
         )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def download(client, admin_auth_header):
     response = client.post(
         "/api/v2/downloads",
@@ -569,7 +569,7 @@ def download(client, admin_auth_header):
         },
     )
 
-    yield response.json()["id"]
+    return response.json()["id"]
 
 
 @pytest.fixture(scope="session")
@@ -578,9 +578,7 @@ def server_config_dict():
     import yaml
 
     with open(SERVER_CONFIG_LOC) as f:
-        config_dict = yaml.safe_load(f)
-
-    yield config_dict
+        return yaml.safe_load(f)
 
 
 @pytest.fixture(scope="session")
@@ -588,9 +586,7 @@ def client_config_dict():
     import yaml
 
     with open(CLIENT_CONFIG_LOC) as f:
-        config_dict = yaml.safe_load(f)
-
-    yield config_dict
+        return yaml.safe_load(f)
 
 
 @contextmanager

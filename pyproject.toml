@@ -61,10 +61,10 @@ bcrypt = "4.0.1" # Locked to 4.0.1 due to passlib no longer being updated https:
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.26.0" # For starlette TestClient
-black = "^24.4.2"
+black = "^24.8.0"
 pytest = "^8.0.1"
 pytest-timeout = "^2.2.0"
-ruff = "^0.5.5"
+ruff = "^0.6.2"
 pytest-cov = "^4.1.0"
 coverage = {version = "^7.3.4", extras = ["toml"]}
 
@@ -73,6 +73,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
+target-version = ['py312']
 extend-exclude = '''
     (empire/server/data*)
     | (empire/server/downloads*)
@@ -120,11 +121,11 @@ select = [
 #    "S",   # flake8-bandit
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
-#    "PT", # flake8-pytest-style
+    "PT", # flake8-pytest-style
     "RET", # flake8-return
     "SLF", # flake8-self
     "SIM", # flake8-simplify
-#    "TCH", # flake8-type-checking
+    "TCH", # flake8-type-checking
 #    "ARG", # flake8-unused-arguments
 #    "PTH", # flake8-use-pathlib
 #    "ERA", # eradicate

@@ -96,8 +96,8 @@ def test_delete_ip(client, admin_auth_header):
     assert resp.status_code == HTTP_404_NOT_FOUND
 
 
-@pytest.fixture(scope="function")
-def setup_ip_list(client, admin_auth_header):
+@pytest.fixture
+def _setup_ip_list(client, admin_auth_header):
     allow = ["192.168.0.1", "10.0.0.0/8", "192.168.1.0-192.168.5.0"]
     block = ["192.168.10.0"]
     for ip in allow:
@@ -133,7 +133,8 @@ def setup_ip_list(client, admin_auth_header):
         )
 
 
-def test_get_ip_list(client, admin_auth_header, setup_ip_list):
+@pytest.mark.usefixtures("_setup_ip_list")
+def test_get_ip_list(client, admin_auth_header):
     resp = client.get(
         "/api/v2/ips/",
         headers=admin_auth_header,
