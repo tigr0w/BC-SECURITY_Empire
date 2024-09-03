@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed Rubeus error where only first arg was being used (@Cx01N)
 -   Fixed background jobs checking in continuously (@Cx01N)
 -   Fixed Rubeus killing agent when certain options were given that use System.Environment.Exit (@Cx01N) 
+-   Fixed option parsing error in credential/tokens module (@Cx01N)
+-   Removed requirement for credid for mimikatz/pth (@Cx01N)
 
 ## [5.11.2] - 2024-08-08
 
