@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Added nameserver check for linux hosts (@0x636f646f)
+
+
 ## [5.11.2] - 2024-08-08
 
 -   Added Route4Me to sponsor page on Empire (@Cx01N)
