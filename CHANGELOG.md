@@ -14,10 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.11.3] - 2024-09-04
+
 ### Changed
+
 -   Updated Rubeus to v2.3.2 (@Cx01N)
 
 ### Fixed
+
 -   Fixed Rubeus error where only first arg was being used (@Cx01N)
 -   Fixed background jobs checking in continuously (@Cx01N)
 -   Fixed Rubeus killing agent when certain options were given that use System.Environment.Exit (@Cx01N) 
@@ -27,9 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.11.2] - 2024-08-08
 
 ### Added
+
 -   Added Route4Me to sponsor page on Empire (@Cx01N)
 
 ### Fixed
+
 -   Fixed global obfuscation bug in listener staging (@Cx01N)
 
 ## [5.11.1] - 2024-07-23
@@ -904,7 +910,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.3...HEAD
+
+[5.11.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.2...v5.11.3
 
 [5.11.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.1...v5.11.2
 
