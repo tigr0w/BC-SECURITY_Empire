@@ -44,10 +44,10 @@ database:
     ip-blacklist: ""
 starkiller:
   enabled: true
-  repo: https://github.com/BC-SECURITY/Starkiller.git
+  repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
   directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
-  ref: v2.8.1
+  ref: sponsors-main
   auto_update: true
 submodules:
   auto_update: true
