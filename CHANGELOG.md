@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Added nameserver check for linux hosts (@0x636f646f)
+
 ## [5.11.3] - 2024-09-04
 
 ### Changed
