@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.11.4] - 2024-09-04
+
 ### Added
 
 -   Added nameserver check for linux hosts (@0x636f646f)
@@ -914,7 +916,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.4...HEAD
+
+[5.11.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.3...v5.11.4
 
 [5.11.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.2...v5.11.3
 
