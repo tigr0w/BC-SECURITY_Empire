@@ -53,10 +53,10 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 <div align="center">
 
 [<img src="https://github.com/user-attachments/assets/604fbb97-4641-4a15-a6ba-039f67694f15" width="200"/>](https://www.route4me.com//)
+
+
+[<img src="https://github.com/user-attachments/assets/8685f8de-ad66-46d3-8751-8f2bdddc4ac1" width="100"/>](https://www.instagram.com/purpl3_cult/)
 </div>
-<!---https://github-production-user-asset-6210df.s3.amazonaws.com/20302208/354655875-3497ee72-324a-4b8a-a14b-37748115997d.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20240802%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240802T160658Z&X-Amz-Expires=300&X-Amz-Signature=68f78dde4457cc5bc6642dce601e1fd439252e2796b3ebe8d8d47e17625acd9a&X-Amz-SignedHeaders=host&actor_id=20302208&key_id=0&repo_id=276544505" width="100"/>](https://twitter.com/joehelle)
-</div>
---->
 
 ## Release Notes
 
