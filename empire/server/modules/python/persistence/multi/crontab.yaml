@@ -33,10 +33,10 @@ options:
     description: Remove the cron job.
     required: false
     value: 'False'
-    suggested_values:
-      - 'True'
-      - 'False'
     strict: true
+    suggested_values:
+      - True
+      - False
 script: |-
   import subprocess
   

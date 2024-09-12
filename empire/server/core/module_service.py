@@ -272,6 +272,7 @@ class ModuleService:
         :return: tuple with options and the error message (if applicable)
         """
         converted_options = convert_module_options(module.options)
+
         options, err = validate_options(
             converted_options, params, db, self.download_service
         )

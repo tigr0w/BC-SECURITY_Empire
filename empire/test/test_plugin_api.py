@@ -309,6 +309,8 @@ def test_plugin_settings(client, admin_auth_header, main):
             "strict": False,
             "suggested_values": [],
             "value_type": "STRING",
+            "internal": False,
+            "depends_on": [],
         },
         "SourcePort": {
             "description": "Port on source host.",
@@ -318,6 +320,8 @@ def test_plugin_settings(client, admin_auth_header, main):
             "strict": False,
             "suggested_values": [],
             "value_type": "STRING",
+            "internal": False,
+            "depends_on": [],
         },
         "TargetHost": {
             "description": "Address of the target host.",
@@ -327,6 +331,8 @@ def test_plugin_settings(client, admin_auth_header, main):
             "strict": False,
             "suggested_values": [],
             "value_type": "STRING",
+            "internal": False,
+            "depends_on": [],
         },
         "TargetPort": {
             "description": "Port on target host.",
@@ -336,6 +342,8 @@ def test_plugin_settings(client, admin_auth_header, main):
             "strict": False,
             "suggested_values": [],
             "value_type": "STRING",
+            "internal": False,
+            "depends_on": [],
         },
     }
 

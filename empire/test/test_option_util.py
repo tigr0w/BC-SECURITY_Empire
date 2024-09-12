@@ -1,6 +1,10 @@
 from unittest.mock import MagicMock
 
-from empire.server.utils.option_util import safe_cast, validate_options
+from empire.server.utils.option_util import (
+    evaluate_dependencies,
+    safe_cast,
+    validate_options,
+)
 
 
 def test_validate_options_required_strict_success():
@@ -282,3 +286,146 @@ def test_safe_cast_boolean_from_string_false():
     assert safe_cast("False", bool) is False
     assert safe_cast("false", bool) is False
     assert safe_cast("FALSE", bool) is False
+
+
+def test_evaluate_dependencies_no_depends_on():
+    option = {"name": "Option1", "Value": "Test"}
+    params = {"Option1": "Test"}
+    assert evaluate_dependencies(option, params) is True
+
+
+def test_evaluate_dependencies_single_dependency_met():
+    option = {
+        "name": "Option1",
+        "Value": "Test",
+        "depends_on": [{"name": "Option2", "values": ["True"]}],
+    }
+    params = {"Option1": "Test", "Option2": "True"}
+    assert evaluate_dependencies(option, params) is True
+
+
+def test_evaluate_dependencies_single_dependency_not_met():
+    option = {
+        "name": "Option1",
+        "Value": "Test",
+        "depends_on": [{"name": "Option2", "values": ["True"]}],
+    }
+    params = {"Option1": "Test", "Option2": "False"}
+    assert evaluate_dependencies(option, params) is False
+
+
+def test_evaluate_dependencies_multiple_dependencies_met():
+    option = {
+        "name": "Option1",
+        "Value": "Test",
+        "depends_on": [
+            {"name": "Option2", "values": ["True"]},
+            {"name": "Option3", "values": ["Enabled"]},
+        ],
+    }
+    params = {"Option1": "Test", "Option2": "True", "Option3": "Enabled"}
+    assert evaluate_dependencies(option, params) is True
+
+
+def test_evaluate_dependencies_multiple_dependencies_not_met():
+    option = {
+        "name": "Option1",
+        "Value": "Test",
+        "depends_on": [
+            {"name": "Option2", "values": ["True"]},
+            {"name": "Option3", "values": ["Enabled"]},
+        ],
+    }
+    params = {"Option1": "Test", "Option2": "False", "Option3": "Enabled"}
+    assert evaluate_dependencies(option, params) is False
+
+
+def test_evaluate_dependencies_dependency_not_present_in_params():
+    option = {
+        "name": "Option1",
+        "Value": "Test",
+        "depends_on": [{"name": "Option2", "values": ["True"]}],
+    }
+    params = {"Option1": "Test"}
+    assert evaluate_dependencies(option, params) is False
+
+
+def test_validate_options_internal_option_skipped():
+    instance_options = {
+        "internal_option": {
+            "Description": "An internal option",
+            "Required": True,
+            "Value": "Test",
+            "Internal": True,
+        },
+    }
+    options = {"internal_option": "Test"}
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert "internal_option" not in cleaned_options
+    assert err is None
+
+
+def test_validate_options_type_cast_failure():
+    instance_options = {
+        "Port": {
+            "Description": "Port to listen on",
+            "Required": True,
+            "Type": "int",
+        }
+    }
+    options = {"Port": "NotANumber"}
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert cleaned_options is None
+    assert (
+        err
+        == "incorrect type for option Port. Expected <class 'int'> but got <class 'str'>"
+    )
+
+
+def test_validate_options_dependency_not_met():
+    instance_options = {
+        "DependentOption": {
+            "Description": "An option with dependencies",
+            "Required": True,
+            "depends_on": [{"name": "AnotherOption", "values": ["True"]}],
+        }
+    }
+    options = {"AnotherOption": "False"}
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert "DependentOption" not in cleaned_options
+    assert err is None
+
+
+def test_validate_options_dependency_met(db):
+    instance_options = {
+        "DependentOption": {
+            "Description": "An option with dependencies",
+            "Required": True,
+            "depends_on": [{"name": "AnotherOption", "values": ["True"]}],
+            "Value": "SomeValue",
+        }
+    }
+    options = {"AnotherOption": "True"}
+    cleaned_options, err = validate_options(instance_options, options, db, None)
+
+    assert "DependentOption" in cleaned_options
+    assert err is None
+
+
+def test_validate_options_with_name_in_code():
+    instance_options = {
+        "OriginalName": {
+            "Description": "An option with NameInCode",
+            "Required": True,
+            "Value": "SomeValue",
+            "NameInCode": "CodeName",
+        }
+    }
+    options = {"OriginalName": "SomeValue"}
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert cleaned_options == {"CodeName": "SomeValue"}
+    assert err is None

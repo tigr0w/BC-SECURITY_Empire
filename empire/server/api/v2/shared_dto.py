@@ -34,6 +34,11 @@ def coerce_to_string(v: Any):
     return str(v)
 
 
+class DependentOption(BaseModel):
+    name: str
+    values: list[str] | None
+
+
 class CustomOptionSchema(BaseModel):
     description: str
     required: bool
@@ -42,6 +47,8 @@ class CustomOptionSchema(BaseModel):
     strict: bool
     editable: bool = True
     value_type: ValueType
+    internal: bool
+    depends_on: list[DependentOption] = []
 
 
 class OrderDirection(str, Enum):

@@ -51,12 +51,20 @@ class BasePlugin:
                 value["SuggestedValues"] = []
             if value.get("Strict") is None:
                 value["Strict"] = False
+            if value.get("Internal") is None:
+                value["Internal"] = False
+            if value.get("Depends_on") is None:
+                value["Depends_on"] = []
 
         for value in self.settings_options.values():
             if value.get("SuggestedValues") is None:
                 value["SuggestedValues"] = []
             if value.get("Strict") is None:
                 value["Strict"] = False
+            if value.get("Internal") is None:
+                value["Internal"] = False
+            if value.get("Depends_on") is None:
+                value["Depends_on"] = []
 
     def set_initial_options(self, db):
         """

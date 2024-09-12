@@ -22,6 +22,9 @@ def convert_module_options(options: list[EmpireModuleOption]) -> dict:
     converted_options = {}
 
     for option in options:
+        if option.internal:
+            continue
+
         converted_options[option.name] = {
             "Description": option.description,
             "Required": option.required,
@@ -30,6 +33,7 @@ def convert_module_options(options: list[EmpireModuleOption]) -> dict:
             "Strict": option.strict,
             "Type": option.type,
             "NameInCode": option.name_in_code,
+            "Internal": option.internal,
         }
 
     return converted_options
@@ -54,8 +58,15 @@ def validate_options(
     params = params.copy()
 
     for instance_key, option_meta in instance_options.items():
+        if option_meta.get("Internal", False):
+            continue
+
+        if not evaluate_dependencies(option_meta, params):
+            continue
+
         if option_meta.get("Editable", True) is False:
             continue
+
         if _lower_default(option_meta.get("Type")) == "file":
             db_download = download_service.get_by_id(db, params[instance_key])
             if not db_download:
@@ -101,6 +112,29 @@ def validate_options(
             options[instance_key] = casted
 
     return options, None
+
+
+def evaluate_dependencies(option, params):
+    """
+    Evaluate the depends_on conditions for a given option.
+    :param option: The option being validated.
+    :param params: The current parameters provided by the user.
+    :return: Boolean indicating if the dependencies are met.
+    """
+    if "depends_on" not in option:
+        return True
+
+    for dependency in option["depends_on"]:
+        dependent_option = dependency["name"]
+        if dependent_option not in params:
+            return False
+        if (
+            "values" in dependency
+            and params[dependent_option] not in dependency["values"]
+        ):
+            return False
+
+    return True
 
 
 def set_options(instance, options: dict):

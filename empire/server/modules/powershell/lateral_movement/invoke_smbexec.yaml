@@ -19,14 +19,31 @@ min_language_version: '2'
 comments:
   - https://raw.githubusercontent.com/Kevin-Robertson/Invoke-TheHash/master/Invoke-SMBExec.ps1
 options:
-  - name: Agent
-    description: Agent to run module on.
+  - name: Credentials
+    description: Manually enter credentials or credential ID.
     required: true
-    value: ''
+    value: 'Manual'
+    strict: true
+    internal: true
+    suggested_values:
+      - Manual
+      - CredID
+  - name: Payload
+    description: Manually build command or use Empire.
+    required: true
+    value: 'Empire'
+    strict: true
+    internal: true
+    suggested_values:
+      - Manual
+      - Empire
   - name: CredID
     description: CredID from the store to use.
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'CredID' ]
   - name: ComputerName
     description: Host[s] to execute the stager on, comma separated.
     required: true
@@ -35,6 +52,9 @@ options:
     description: Username.
     required: true
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'Manual' ]
   - name: Domain
     description: Domain.
     required: true
@@ -43,6 +63,9 @@ options:
     description: NTLM Hash in LM:NTLM or NTLM format.
     required: true
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'Manual' ]
   - name: Service
     description: Name of service to create and delete. Defaults to 20 char random.
     required: false
@@ -51,10 +74,16 @@ options:
     description: Listener to use.
     required: false
     value: ''
+    depends_on:
+      - name: Payload
+        values: [ 'Empire' ]
   - name: Command
     description: Custom command to run.
     required: false
     value: ''
+    depends_on:
+      - name: Payload
+        values: [ 'Manual' ]
   - name: Obfuscate
     description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
       only.
@@ -68,6 +97,9 @@ options:
     description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
     required: false
     value: Token\All\1
+    depends_on:
+      - name: Obfuscate
+        values: [ 'True' ]
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false

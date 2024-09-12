@@ -72,6 +72,10 @@ class ListenerTemplateService:
                         value["SuggestedValues"] = []
                     if value.get("Strict") is None:
                         value["Strict"] = False
+                    if value.get("Internal") is None:
+                        value["Internal"] = False
+                    if value.get("Depends_on") is None:
+                        value["Depends_on"] = []
 
                 self._loaded_listener_templates[slugify(listener_name)] = listener
 

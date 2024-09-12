@@ -20,6 +20,8 @@ def domain_to_dto_template(listener, uid: str):
             "strict": x[1]["Strict"],
             "suggested_values": x[1]["SuggestedValues"],
             "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+            "depends_on": x[1]["Depends_on"] if x[1]["Depends_on"] is not None else [],
+            "internal": x[1]["Internal"] if x[1]["Internal"] is not None else False,
         }
         for x in listener.options.items()
     }
@@ -97,6 +99,8 @@ class ListenerTemplate(BaseModel):
                         "value": "http",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Host": {
                         "description": "Hostname/IP for staging.",
@@ -104,6 +108,8 @@ class ListenerTemplate(BaseModel):
                         "value": "http://192.168.0.20",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "BindIP": {
                         "description": "The IP to bind to on the control server.",
@@ -111,6 +117,8 @@ class ListenerTemplate(BaseModel):
                         "value": "0.0.0.0",
                         "suggested_values": ["0.0.0.0"],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Port": {
                         "description": "Port for the listener.",
@@ -118,6 +126,8 @@ class ListenerTemplate(BaseModel):
                         "value": "",
                         "suggested_values": ["1335", "1336"],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Launcher": {
                         "description": "Launcher string.",
@@ -125,6 +135,8 @@ class ListenerTemplate(BaseModel):
                         "value": "powershell -noP -sta -w 1 -enc ",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "StagingKey": {
                         "description": "Staging key for initial agent negotiation.",
@@ -132,6 +144,8 @@ class ListenerTemplate(BaseModel):
                         "value": "}q)jFnDKw&px/7QBhE9Y<6~[Z1>{+Ps@",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "DefaultDelay": {
                         "description": "Agent delay/reach back interval (in seconds).",
@@ -139,6 +153,8 @@ class ListenerTemplate(BaseModel):
                         "value": "5",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "DefaultJitter": {
                         "description": "Jitter in agent reachback interval (0.0-1.0).",
@@ -146,6 +162,8 @@ class ListenerTemplate(BaseModel):
                         "value": "0.0",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "DefaultLostLimit": {
                         "description": "Number of missed checkins before exiting",
@@ -153,6 +171,8 @@ class ListenerTemplate(BaseModel):
                         "value": "60",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "DefaultProfile": {
                         "description": "Default communication profile for the agent.",
@@ -160,6 +180,8 @@ class ListenerTemplate(BaseModel):
                         "value": "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "CertPath": {
                         "description": "Certificate path for https listeners.",
@@ -167,6 +189,8 @@ class ListenerTemplate(BaseModel):
                         "value": "",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "KillDate": {
                         "description": "Date for the listener to exit (MM/dd/yyyy).",
@@ -174,6 +198,8 @@ class ListenerTemplate(BaseModel):
                         "value": "",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "WorkingHours": {
                         "description": "Hours for the agent to operate (09:00-17:00).",
@@ -181,6 +207,8 @@ class ListenerTemplate(BaseModel):
                         "value": "",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Headers": {
                         "description": "Headers for the control server.",
@@ -188,6 +216,8 @@ class ListenerTemplate(BaseModel):
                         "value": "Server:Microsoft-IIS/7.5",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Cookie": {
                         "description": "Custom Cookie Name",
@@ -195,6 +225,8 @@ class ListenerTemplate(BaseModel):
                         "value": "xNQsvLdAysjkonT",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "StagerURI": {
                         "description": "URI for the stager. Must use /download/. Example: /download/stager.php",
@@ -202,6 +234,8 @@ class ListenerTemplate(BaseModel):
                         "value": "",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "UserAgent": {
                         "description": "User-agent string to use for the staging request (default, none, or other).",
@@ -209,6 +243,8 @@ class ListenerTemplate(BaseModel):
                         "value": "default",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Proxy": {
                         "description": "Proxy to use for request (default, none, or other).",
@@ -216,6 +252,8 @@ class ListenerTemplate(BaseModel):
                         "value": "default",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "ProxyCreds": {
                         "description": "Proxy credentials ([domain\\]username:password) to use for request (default, none, or other).",
@@ -223,6 +261,8 @@ class ListenerTemplate(BaseModel):
                         "value": "default",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "SlackURL": {
                         "description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
@@ -230,6 +270,8 @@ class ListenerTemplate(BaseModel):
                         "value": "",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                 },
             }

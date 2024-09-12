@@ -134,7 +134,7 @@
         required: false
         value: ''
       - name: TypeName
-        description: The name of the Type that contains the method to execute (Typicall takes the format of <Namespace>.<Class>).
+        description: The name of the Type that contains the method to execute (Typically takes the format of <Namespace>.<Class>).
         required: true
         value: ''
       - name: MethodName

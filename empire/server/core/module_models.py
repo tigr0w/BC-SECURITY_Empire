@@ -29,6 +29,8 @@ class EmpireModuleOption(BaseModel):
     strict: bool = False
     type: str | None = None
     format: str | None = None
+    internal: bool = False
+    depends_on: list[dict[str, str | list[str]]] | None = None
 
     # Ensure the functionality of pydantic v1 coercing values to strings
     # https://github.com/pydantic/pydantic/issues/5606

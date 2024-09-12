@@ -20,10 +20,6 @@ min_language_version: '2'
 comments:
   - https://github.com/leechristensen/Random/blob/master/PowerShellScripts/Start-ProcessAsUser.ps1
 options:
-  - name: Agent
-    description: Agent to run module on.
-    required: true
-    value: ''
   - name: Domain
     description: Specifies the domain.
     required: false

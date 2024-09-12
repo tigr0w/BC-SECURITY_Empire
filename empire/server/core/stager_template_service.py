@@ -33,6 +33,10 @@ class StagerTemplateService:
                 value["SuggestedValues"] = []
             if value.get("Strict") is None:
                 value["Strict"] = False
+            if value.get("Internal") is None:
+                value["Internal"] = False
+            if value.get("Depends_on") is None:
+                value["Depends_on"] = []
 
         return instance
 
@@ -75,6 +79,10 @@ class StagerTemplateService:
                         value["SuggestedValues"] = []
                     if value.get("Strict") is None:
                         value["Strict"] = False
+                    if value.get("Internal") is None:
+                        value["Internal"] = False
+                    if value.get("Depends_on") is None:
+                        value["Depends_on"] = []
 
                 self._loaded_stager_templates[slugify(stager_name)] = stager
 

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `api.ip` and `api.secure` as server options
 -   API endpoints for adding/removing ip allow/deny list entries
 -   Added tests for stager compilation using `DotnetCompiler`
+-   Added dynamic options to modules
 -   Added PT, TCH rules to ruff config
 
 ### Changed
@@ -52,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Execution can be disabled by setting `self.execution_enabled = False`
 -   Moved C# compiler to a submodule.
 -   All C# module code has been moved as submodules of Empire-Compiler
+-   Update module validation to not include the internal and depends_on options
 
 ### Deprecated
 
