@@ -16,7 +16,7 @@ language: powershell
 min_language_version: '2'
 comments:
   - comment
-  - https://github.com/xorrior/RandomPS-Scripts/blob/master/Start-WebcamRecorder.ps1
+  - https://github.com/xorrior/RandomPS-Scripts/blob/master/Get-DXWebcamVideo.ps1
 options:
   - name: Agent
     description: Agent to run the module on.
