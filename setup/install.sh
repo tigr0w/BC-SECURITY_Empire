@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EMPIRE_COMPILER_VERSION="v0.1.0"
+EMPIRE_COMPILER_VERSION="v0.1.1"
 COMPILE_FROM_SOURCE=0
 
 function usage() {
