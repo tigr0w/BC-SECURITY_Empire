@@ -86,3 +86,9 @@ class PluginExecuteResponse(BaseModel):
 
 class PluginUpdateRequest(BaseModel):
     enabled: bool
+
+
+class PluginInstallGitRequest(BaseModel):
+    url: str
+    ref: str | None = None
+    subdirectory: str | None = None

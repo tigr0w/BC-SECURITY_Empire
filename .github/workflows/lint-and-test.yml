@@ -51,6 +51,10 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
+      - name: Initialize mandatory git config
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email noreply@github.com
       - name: Install Poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y

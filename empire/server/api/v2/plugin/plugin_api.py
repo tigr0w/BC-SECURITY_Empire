@@ -9,6 +9,7 @@ from empire.server.api.jwt_auth import (
 from empire.server.api.v2.plugin.plugin_dto import (
     PluginExecutePostRequest,
     PluginExecuteResponse,
+    PluginInstallGitRequest,
     Plugins,
     PluginUpdateRequest,
     domain_to_dto_plugin,
@@ -21,6 +22,7 @@ from empire.server.core.exceptions import (
 )
 from empire.server.core.plugins import BasePlugin
 from empire.server.server import main
+from empire.server.utils.git_util import GitOperationException
 
 plugin_service = main.pluginsv2
 
@@ -115,3 +117,15 @@ async def update_plugin_settings(
 async def reload_plugins(db: CurrentSession):
     plugin_service.shutdown()
     plugin_service.load_plugins(db)
+
+
+@router.post("/install/git")
+async def install_plugin(req: PluginInstallGitRequest, db: CurrentSession):
+    try:
+        plugin_service.install_plugin_from_git(db, req.url, req.subdirectory, req.ref)
+    except GitOperationException as e:
+        raise HTTPException(
+            status_code=400, detail=f"Failed to install plugin from git: {e}"
+        ) from e
+    except PluginValidationException as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e

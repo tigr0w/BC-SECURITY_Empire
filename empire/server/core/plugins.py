@@ -21,6 +21,7 @@ class PluginInfo(BaseModel):
     comments: list[str] | None = []
     auto_start: bool = True
     auto_execute: PluginAutoExecuteConfig | None = None
+    main: str
 
 
 class BasePlugin:

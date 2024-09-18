@@ -1,27 +1,23 @@
 import asyncio
 import importlib
 import logging
-import os
+import shutil
 import typing
-from datetime import datetime
 from pathlib import Path
 
 import yaml
-from sqlalchemy import and_, func, or_
-from sqlalchemy.orm import Session, joinedload, undefer
+from sqlalchemy.orm import Session
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
-from empire.server.api.v2.plugin.plugin_task_dto import PluginTaskOrderOptions
-from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.core.config import PluginConfig, empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
 )
 from empire.server.core.plugins import PluginInfo
+from empire.server.utils import git_util
 from empire.server.utils.option_util import validate_options
 
 if typing.TYPE_CHECKING:
@@ -35,6 +31,7 @@ class PluginService:
         self.main_menu = main_menu
         self.download_service = main_menu.downloadsv2
         self.loaded_plugins = {}
+        self.plugin_path = Path(self.main_menu.installPath) / "plugins/"
 
     def startup(self):
         """
@@ -103,43 +100,25 @@ class PluginService:
         """
         Load plugins at the start of Empire
         """
-        plugin_path = f"{self.main_menu.installPath}/plugins/"
-        log.info(f"Searching for plugins at {plugin_path}")
+        log.info(f"Searching for plugins at {self.plugin_path}")
 
-        for directory in os.listdir(plugin_path):
-            plugin_dir = Path(plugin_path) / directory
-
-            if (
-                directory == "example"
-                or not plugin_dir.is_dir()
-                or plugin_dir.name.startswith(".")
-                or plugin_dir.name.startswith("_")
-            ):
-                continue
-
-            plugin_yaml = plugin_dir / "plugin.yaml"
-
-            if not plugin_yaml.exists():
-                log.warning(f"Plugin {plugin_dir.name} does not have a plugin.yaml")
-                continue
-
-            plugin_config = yaml.safe_load(plugin_yaml.read_text())
-            plugin_main = plugin_config.get("main")
-            plugin_file = plugin_dir / plugin_main
-
-            if not plugin_file.is_file():
-                log.warning(f"Plugin {plugin_dir.name} does not have a valid main file")
+        for plugin_dir in self._list_plugin_directories(self.plugin_path):
+            try:
+                plugin_config = self._validate_plugin(plugin_dir)
+            except PluginValidationException as e:
+                log.error(f"Failed to load plugin {plugin_dir.name}: {e}")
                 continue
 
             try:
-                self.load_plugin(db, plugin_file, plugin_config)
+                self.load_plugin(db, plugin_dir, plugin_config)
             except Exception as e:
                 log.error(
-                    f"Failed to load plugin {plugin_file.name}: {e}", exc_info=True
+                    f"Failed to load plugin {plugin_config.name}: {e}", exc_info=True
                 )
 
-    def load_plugin(self, db: Session, file_path: Path, plugin_config: dict):
+    def load_plugin(self, db: Session, plugin_dir: Path, plugin_config: PluginInfo):
         """Given the name of a plugin and a menu object, load it into the menu"""
+        file_path = plugin_dir / plugin_config.main
         plugin_obj = self._create_plugin_obj(db, file_path, plugin_config)
 
         self.loaded_plugins[plugin_obj.info.name] = plugin_obj
@@ -170,34 +149,18 @@ class PluginService:
 
         plugin_obj.enabled = db_plugin.enabled
 
-    def _create_plugin_obj(self, db, file_path, plugin_config):
-        plugin_file_name = file_path.name.removesuffix(".py")
-        plugin_info = PluginInfo(**plugin_config)
-        loader = importlib.machinery.SourceFileLoader(plugin_file_name, str(file_path))
-        module = loader.load_module()
-        return module.Plugin(self.main_menu, plugin_info, db)
+    def install_plugin_from_git(
+        self,
+        db: Session,
+        git_url: str,
+        subdir: str | None = None,
+        ref: str | None = None,
+    ):
+        temp_dir = git_util.clone_git_repo(git_url, ref)
+        temp_dir = temp_dir / subdir if subdir else temp_dir
+        plugin_dir, plugin_config = self._validate_temp_plugin(db, temp_dir)
 
-    @staticmethod
-    def _determine_auto_start(plugin_obj, empire_config) -> bool:
-        # Server Config -> Plugin Config (Default True)
-        server_config = empire_config.plugins.get(plugin_obj.info.name, PluginConfig())
-
-        if server_config.auto_start is not None:
-            return server_config.auto_start
-
-        return plugin_obj.info.auto_start
-
-    @staticmethod
-    def _determine_auto_execute(plugin_obj, empire_config) -> PluginConfig | None:
-        # Server Config -> Plugin Config -> Default (None)
-        server_config = empire_config.plugins.get(plugin_obj.info.name)
-
-        if server_config is not None and server_config.auto_execute is not None:
-            return server_config.auto_execute
-        if plugin_obj.info.auto_execute is not None:
-            return plugin_obj.info.auto_execute
-
-        return None
+        self.load_plugin(db, plugin_dir, plugin_config)
 
     def execute_plugin(
         self,
@@ -232,7 +195,8 @@ class PluginService:
 
     def plugin_socketio_message(self, plugin_name, msg):
         """
-        Send socketio message to the socket address
+        Send socketio message to the socket address.
+        Note: Use BasePlugin.send_socketio_message for easier use.
         """
         log.info(f"{plugin_name}: {msg}")
         if self.main_menu.socketio:
@@ -262,107 +226,88 @@ class PluginService:
     def get_by_id(self, uid: str):
         return self.loaded_plugins.get(uid)
 
-    def get_task(self, db: SessionLocal, plugin_id: str, task_id: int):
-        plugin = self.get_by_id(plugin_id)
-        if plugin:
-            task = (
-                db.query(models.PluginTask)
-                .filter(models.PluginTask.id == task_id)
-                .first()
-            )
-            if task:
-                return task
-
-        return None
-
-    @staticmethod
-    def get_tasks(  # noqa: PLR0913 PLR0912
-        db: Session,
-        plugins: list[str] | None = None,
-        users: list[int] | None = None,
-        tags: list[str] | None = None,
-        limit: int = -1,
-        offset: int = 0,
-        include_full_input: bool = False,
-        include_output: bool = True,
-        since: datetime | None = None,
-        order_by: PluginTaskOrderOptions = PluginTaskOrderOptions.id,
-        order_direction: OrderDirection = OrderDirection.desc,
-        status: AgentTaskStatus | None = None,
-        q: str | None = None,
-    ):
-        query = db.query(
-            models.PluginTask, func.count(models.PluginTask.id).over().label("total")
-        )
-
-        if plugins:
-            query = query.filter(models.PluginTask.plugin_id.in_(plugins))
-
-        if users:
-            user_filters = [models.PluginTask.user_id.in_(users)]
-            if 0 in users:
-                user_filters.append(models.PluginTask.user_id.is_(None))
-            query = query.filter(or_(*user_filters))
-
-        if tags:
-            tags_split = [tag.split(":", 1) for tag in tags]
-            query = query.join(models.PluginTask.tags).filter(
-                and_(
-                    models.Tag.name.in_([tag[0] for tag in tags_split]),
-                    models.Tag.value.in_([tag[1] for tag in tags_split]),
-                )
-            )
-
-        query_options = [
-            joinedload(models.PluginTask.user),
-        ]
-
-        if include_full_input:
-            query_options.append(undefer(models.PluginTask.input_full))
-        if include_output:
-            query_options.append(undefer(models.PluginTask.output))
-        query = query.options(*query_options)
-
-        if since:
-            query = query.filter(models.PluginTask.updated_at > since)
-
-        if status:
-            query = query.filter(models.AgentTask.status == status)
-
-        if q:
-            query = query.filter(
-                or_(
-                    models.PluginTask.input.like(f"%{q}%"),
-                    models.PluginTask.output.like(f"%{q}%"),
-                )
-            )
-
-        if order_by == PluginTaskOrderOptions.status:
-            order_by_prop = models.PluginTask.status
-        elif order_by == PluginTaskOrderOptions.updated_at:
-            order_by_prop = models.PluginTask.updated_at
-        elif order_by == PluginTaskOrderOptions.plugin:
-            order_by_prop = models.PluginTask.plugin_id
-        else:
-            order_by_prop = models.PluginTask.id
-
-        if order_direction == OrderDirection.asc:
-            query = query.order_by(order_by_prop.asc())
-        else:
-            query = query.order_by(order_by_prop.desc())
-
-        if limit > 0:
-            query = query.limit(limit).offset(offset)
-
-        results = query.all()
-
-        total = 0 if len(results) == 0 else results[0].total
-        results = [x[0] for x in results]
-
-        return results, total
-
     def shutdown(self):
         with SessionLocal.begin() as db:
             for plugin in self.loaded_plugins.values():
                 plugin.on_stop(db)
                 plugin.on_unload(db)
+
+    def _validate_plugin(self, plugin_dir: Path) -> PluginInfo:
+        plugin_yaml = plugin_dir / "plugin.yaml"
+        if not plugin_yaml.exists():
+            raise PluginValidationException("plugin.yaml not found")
+
+        plugin_config = PluginInfo(**yaml.safe_load(plugin_yaml.read_text()))
+        plugin_file = plugin_dir / plugin_config.main
+
+        if not plugin_file.is_file():
+            raise PluginValidationException(
+                f"Plugin {plugin_config.name} does not have a valid main file"
+            )
+
+        return plugin_config
+
+    def _validate_temp_plugin(
+        self, db: Session, temp_dir: Path
+    ) -> tuple[Path, PluginInfo]:
+        """Validate the plugin in the temp directory
+        and move it to the plugin directory."""
+        plugin_config = self._validate_plugin(temp_dir)
+
+        if self.get_plugin_db(db, plugin_config.name):
+            raise PluginValidationException("Plugin already exists")
+
+        plugin_dir = self.plugin_path / "marketplace" / plugin_config.name
+        shutil.move(temp_dir, plugin_dir)
+        shutil.rmtree(plugin_dir / ".git", ignore_errors=True)
+
+        return plugin_dir, plugin_config
+
+    def _create_plugin_obj(self, db, file_path, plugin_config: PluginInfo):
+        plugin_file_name = file_path.name.removesuffix(".py")
+        loader = importlib.machinery.SourceFileLoader(plugin_file_name, str(file_path))
+        module = loader.load_module()
+        return module.Plugin(self.main_menu, plugin_config, db)
+
+    @staticmethod
+    def _determine_auto_start(plugin_obj, empire_config) -> bool:
+        # Server Config -> Plugin Config (Default True)
+        server_config = empire_config.plugins.get(plugin_obj.info.name, PluginConfig())
+
+        if server_config.auto_start is not None:
+            return server_config.auto_start
+
+        return plugin_obj.info.auto_start
+
+    @staticmethod
+    def _determine_auto_execute(plugin_obj, empire_config) -> PluginConfig | None:
+        # Server Config -> Plugin Config -> Default (None)
+        server_config = empire_config.plugins.get(plugin_obj.info.name)
+
+        if server_config is not None and server_config.auto_execute is not None:
+            return server_config.auto_execute
+        if plugin_obj.info.auto_execute is not None:
+            return plugin_obj.info.auto_execute
+
+        return None
+
+    @staticmethod
+    def _list_plugin_directories(plugin_path: Path):
+        def _ignore_plugin(plugin_dir):
+            return (
+                plugin_dir.name in ("example", "marketplace")
+                or not plugin_dir.is_dir()
+                or plugin_dir.name.startswith(".")
+                or plugin_dir.name.startswith("_")
+            )
+
+        main_dirs = [
+            d for d in plugin_path.iterdir() if d.is_dir() and not _ignore_plugin(d)
+        ]
+        marketplace_dirs = [
+            d
+            for d in (plugin_path / "marketplace").iterdir()
+            if d.is_dir() and not _ignore_plugin(d)
+        ]
+
+        return main_dirs + marketplace_dirs

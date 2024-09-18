@@ -1,5 +1,9 @@
+import shutil
+import subprocess
 from contextlib import contextmanager
+from pathlib import Path
 
+import pytest
 from starlette.status import (
     HTTP_200_OK,
     HTTP_204_NO_CONTENT,
@@ -12,6 +16,7 @@ from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
 )
+from empire.server.core.plugin_service import PluginService
 
 
 @contextmanager
@@ -449,3 +454,158 @@ def test_plugin_disabled_execution(client, admin_auth_header, main):
     # Assert that the plugin execution is disabled and returns the expected response
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response.json() == {"detail": "Plugin execution is disabled"}
+
+
+def _git_commands(cwd, commands: list[list[str]]):
+    for c in commands:
+        subprocess.run(["git", *c], cwd=cwd, check=True)
+
+
+@pytest.fixture
+def foo_plugin():
+    """Creates a FooPlugin directory with a git repository for testing git plugin installation."""
+    template_path = Path(__file__).parent / "plugin_install/FooPluginTemplate"
+    foo_plugin_path = template_path.parent / "FooPlugin"
+
+    shutil.rmtree(foo_plugin_path, ignore_errors=True)
+    shutil.copytree(template_path, foo_plugin_path)
+
+    _git_commands(
+        foo_plugin_path,
+        [
+            ["init"],
+            ["reset", "--soft"],
+            ["commit", "--allow-empty", "-m", "Initial commit"],
+            ["checkout", "-b", "6.0"],
+            ["add", "."],
+            ["commit", "-m", "6.0 file structure"],
+            ["checkout", "master"],
+        ],
+    )
+
+    yield foo_plugin_path
+
+    shutil.rmtree(foo_plugin_path, ignore_errors=True)
+
+
+@pytest.fixture(scope="session")
+def plugin_service(main) -> PluginService:
+    return main.pluginsv2
+
+
+@pytest.fixture
+def _cleanup_foo_plugin(plugin_service, session_local, models):
+    plugin_service.loaded_plugins.pop("foo", None)
+    shutil.rmtree(plugin_service.plugin_path / "marketplace/foo", ignore_errors=True)
+    with session_local.begin() as db:
+        db.query(models.Plugin).filter(models.Plugin.name == "foo").delete()
+
+    yield
+
+    plugin_service.loaded_plugins.pop("foo", None)
+    shutil.rmtree(plugin_service.plugin_path / "marketplace/foo", ignore_errors=True)
+    with session_local.begin() as db:
+        db.query(models.Plugin).filter(models.Plugin.name == "foo").delete()
+
+
+@pytest.mark.usefixtures("_cleanup_foo_plugin")
+def test_install_plugin_git_invalid(
+    client,
+    admin_auth_header,
+    main,
+    foo_plugin,
+):
+    invalid_url = "file:///some/invalid/git/url"
+    response = client.post(
+        "/api/v2/plugins/install/git",
+        json={
+            "url": invalid_url,
+            "ref": "master",
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json() == {
+        "detail": f"Failed to install plugin from git: Failed to clone git repository: {invalid_url}"
+    }
+
+    response = client.post(
+        "/api/v2/plugins/install/git",
+        json={
+            "url": "file://" + str(foo_plugin.absolute()),
+            "ref": "master",
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "plugin.yaml not found"}
+
+
+@pytest.mark.usefixtures("_cleanup_foo_plugin")
+def test_install_plugin_git(client, admin_auth_header, main, foo_plugin):
+    response = client.post(
+        "/api/v2/plugins/install/git",
+        json={
+            "url": "file://" + str(foo_plugin.absolute()),
+            "ref": "6.0",
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_200_OK
+    assert main.pluginsv2.loaded_plugins.get("foo") is not None
+
+    # Test duplicate install
+    response = client.post(
+        "/api/v2/plugins/install/git",
+        json={
+            "url": "file://" + str(foo_plugin.absolute()),
+            "ref": "6.0",
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "Plugin already exists"}
+
+
+@pytest.mark.usefixtures("_cleanup_foo_plugin")
+def test_install_plugin_git_subdirectory(
+    client,
+    admin_auth_header,
+    main,
+    foo_plugin,
+):
+    # TODO: this passes when run individually but fails when run with other tests
+    subdir = foo_plugin / "sub"
+    _git_commands(foo_plugin, [["checkout", "6.0"]])
+    subdir.mkdir()
+    for f in foo_plugin.iterdir():
+        if f.name not in ("sub", ".git"):
+            f.rename(subdir / f.name)
+
+    assert (subdir / "plugin.yaml").exists()
+
+    _git_commands(
+        foo_plugin,
+        [
+            ["add", "."],
+            ["commit", "-m", "6.0 subdirectory"],
+            ["checkout", "master"],
+        ],
+    )
+
+    response = client.post(
+        "/api/v2/plugins/install/git",
+        json={
+            "url": "file://" + str(foo_plugin.absolute()),
+            "ref": "6.0",
+            "subdirectory": "sub",
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_200_OK
+    assert main.pluginsv2.loaded_plugins.get("foo") is not None

@@ -23,10 +23,12 @@ from empire.server.core.db import models
 from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.download_service import DownloadService
 from empire.server.core.plugin_service import PluginService
+from empire.server.core.plugin_task_service import PluginTaskService
 from empire.server.server import main
 
 download_service: DownloadService = main.downloadsv2
 plugin_service: PluginService = main.pluginsv2
+plugin_task_service: PluginTaskService = main.plugintasksv2
 
 router = APIRouter(
     prefix="/api/v2/plugins",
@@ -49,7 +51,7 @@ async def get_plugin(plugin_id: str):
 
 
 async def get_task(uid: int, db: CurrentSession, plugin=Depends(get_plugin)):
-    task = plugin_service.get_task(db, plugin.info.name, uid)
+    task = plugin_task_service.get_task(db, plugin.info.name, uid)
 
     if task:
         return task
@@ -78,7 +80,7 @@ async def read_tasks_all_plugins(
     tags: list[TagStr] | None = Query(None),
     query: str | None = None,
 ):
-    tasks, total = plugin_service.get_tasks(
+    tasks, total = plugin_task_service.get_tasks(
         db,
         plugins=plugins,
         users=users,
@@ -123,7 +125,7 @@ async def read_tasks(
     plugin=Depends(get_plugin),
     query: str | None = None,
 ):
-    tasks, total = plugin_service.get_tasks(
+    tasks, total = plugin_task_service.get_tasks(
         db,
         plugins=[plugin.info.name],
         users=users,

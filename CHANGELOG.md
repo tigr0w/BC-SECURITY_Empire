@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `-f` flag for install script to force install as root
 -   Added dynamic options to modules
 -   Added PT, TCH rules to ruff config
+-   Added endpoint for installing plugins from a git repository
 
 ### Changed
 -   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Refactored many of the functions and parameter names
 -   Moved `Stagers` class to `StagerGenerationService`
    -    Refactored many of the funtions and parameter names
+-   Moved Plugin Task handling from `PluginService` to `PluginTaskService`
 -   Moved socks management to `AgentSocksService`
 -   Renamed socks properties on `AgentSocksService` to use plural naming
 -   Remove `update_lastseen` parameter from `handle_agent_request`

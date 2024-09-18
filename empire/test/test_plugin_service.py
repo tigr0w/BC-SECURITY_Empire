@@ -218,7 +218,7 @@ def test__determine_auto_start(empire_config, plugin_service):
     from empire.server.core.plugins import PluginInfo
 
     plugin_obj = Mock()
-    plugin_obj.info = PluginInfo(name="TestAutoStart", auto_start=False)
+    plugin_obj.info = PluginInfo(name="TestAutoStart", auto_start=False, main="")
 
     empire_config_tmp = empire_config.model_copy()
     empire_config_tmp.plugins["TestAutoStart"] = PluginConfig()
@@ -238,7 +238,7 @@ def test__determine_auto_execute(empire_config, plugin_service):
     from empire.server.core.plugins import PluginInfo
 
     plugin_obj = Mock()
-    plugin_obj.info = PluginInfo(name="TestAutoExecute", auto_execute=None)
+    plugin_obj.info = PluginInfo(name="TestAutoExecute", auto_execute=None, main="")
 
     # Test with plugin obj None and server config None
     # Should use default value (None)
