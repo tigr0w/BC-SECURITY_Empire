@@ -3,7 +3,6 @@
 * [Empire](README.md)
 * [Quickstart](quickstart/README.md)
   * [Installation](quickstart/installation/README.md)
-    * [Empire 3 Migration](quickstart/installation/empire-3-migration.md)
   * [Staging](quickstart/staging.md)
   * [Configuration](quickstart/configuration/README.md)
     * [Server](quickstart/configuration/server.md)

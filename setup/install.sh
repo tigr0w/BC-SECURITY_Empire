@@ -2,6 +2,7 @@
 
 EMPIRE_COMPILER_VERSION="v0.1.1"
 COMPILE_FROM_SOURCE=0
+FORCE_ROOT=0
 
 function usage() {
 	echo "Powershell Empire installer"
@@ -9,13 +10,15 @@ function usage() {
 	echo "OPTIONS:"
 	echo "  -y    Assume Yes to all questions (install all optional dependencies)"
 	echo "  -c    Compile Empire-Compiler from source instead of downloading"
+	echo "  -f    Force install as root (not recommended)"
 	echo "  -h    Displays this help text"
 }
 
-while getopts "hcy" option; do
+while getopts "hcyf" option; do
 	case "${option}" in
 	c) COMPILE_FROM_SOURCE=1 ;;
 	y) ASSUME_YES=1 ;;
+	f) FORCE_ROOT=1 ;;
 	h)
 		usage
 		exit
@@ -234,11 +237,14 @@ set -e
 if [ "$EUID" -eq 0 ]; then
   if grep -q docker /proc/1/cgroup; then
     echo "This script is being run in a Docker build context."
+  elif [ "$FORCE_ROOT" -eq 1 ]; then
+    echo -e "\x1b[1;33m[!] Warning: Running as root is not recommended.\x1b[0m"
   else
-    echo "This script should not be run as root."
+    echo -e "\x1b[1;31m[!] This script should not be run as root. Use the -f option to force installation as root (not recommended).\x1b[0m"
     exit 1
   fi
 fi
+
 sudo apt-get update && sudo apt-get install -y wget git lsb-release curl
 
 sudo -v
