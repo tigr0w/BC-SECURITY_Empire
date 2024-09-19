@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fixed various Python 3.12 SyntaxWarning
+
 ## [5.11.4] - 2024-09-04
 
 ### Added
