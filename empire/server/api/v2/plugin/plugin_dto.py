@@ -92,3 +92,8 @@ class PluginInstallGitRequest(BaseModel):
     url: str
     ref: str | None = None
     subdirectory: str | None = None
+
+
+class PluginInstallTarRequest(BaseModel):
+    url: str
+    subdirectory: str | None = None

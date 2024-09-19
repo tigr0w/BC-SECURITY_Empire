@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+import tarfile
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -463,12 +464,19 @@ def _git_commands(cwd, commands: list[list[str]]):
 
 @pytest.fixture
 def foo_plugin():
-    """Creates a FooPlugin directory with a git repository for testing git plugin installation."""
+    """Creates a FooPlugin directory with a git repository and a tar for testing git plugin installation."""
     template_path = Path(__file__).parent / "plugin_install/FooPluginTemplate"
     foo_plugin_path = template_path.parent / "FooPlugin"
 
     shutil.rmtree(foo_plugin_path, ignore_errors=True)
     shutil.copytree(template_path, foo_plugin_path)
+
+    with tarfile.open(str(foo_plugin_path.parent / "FooPlugin.tar"), "w") as tar:
+        tar.add(str(foo_plugin_path), arcname="FooPlugin")
+
+    # Verify the tar archive was created
+    if not (foo_plugin_path.parent / "FooPlugin.tar").exists():
+        raise FileNotFoundError(f"Tar archive {foo_plugin_path} was not created")
 
     _git_commands(
         foo_plugin_path,
@@ -486,6 +494,7 @@ def foo_plugin():
     yield foo_plugin_path
 
     shutil.rmtree(foo_plugin_path, ignore_errors=True)
+    (foo_plugin_path.parent / "FooPlugin.tar").unlink(missing_ok=True)
 
 
 @pytest.fixture(scope="session")
@@ -578,7 +587,6 @@ def test_install_plugin_git_subdirectory(
     main,
     foo_plugin,
 ):
-    # TODO: this passes when run individually but fails when run with other tests
     subdir = foo_plugin / "sub"
     _git_commands(foo_plugin, [["checkout", "6.0"]])
     subdir.mkdir()
@@ -609,3 +617,71 @@ def test_install_plugin_git_subdirectory(
 
     assert response.status_code == HTTP_200_OK
     assert main.pluginsv2.loaded_plugins.get("foo") is not None
+
+
+@pytest.mark.usefixtures("_cleanup_foo_plugin")
+def test_install_plugin_tar_invalid(
+    client,
+    admin_auth_header,
+    main,
+    foo_plugin,
+):
+    invalid_url = "file:///some/invalid/tar/url"
+    response = client.post(
+        "/api/v2/plugins/install/tar",
+        json={
+            "url": invalid_url,
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json() == {
+        "detail": "Failed to download plugin: [Errno 2] No such file or directory: '/some/invalid/tar/url'"
+    }
+
+    # Create an empty tar
+    empty_tar = foo_plugin.parent / "Empty.tar"
+    with tarfile.open(str(empty_tar), "w"):
+        pass
+
+    response = client.post(
+        "/api/v2/plugins/install/tar",
+        json={
+            "url": "file://" + str(empty_tar.absolute()),
+        },
+        headers=admin_auth_header,
+    )
+    empty_tar.unlink(missing_ok=True)
+
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "plugin.yaml not found"}
+
+
+@pytest.mark.usefixtures("_cleanup_foo_plugin")
+def test_install_plugin_tar_subirectory(client, admin_auth_header, main, foo_plugin):
+    tar_path = foo_plugin.parent / "FooPlugin.tar"
+    response = client.post(
+        "/api/v2/plugins/install/tar",
+        json={
+            "url": f"file://{tar_path.absolute()}",
+            "subdirectory": "FooPlugin",
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_200_OK
+    assert main.pluginsv2.loaded_plugins.get("foo") is not None
+
+    # Test duplicate install
+    response = client.post(
+        "/api/v2/plugins/install/tar",
+        json={
+            "url": f"file://{tar_path.absolute()}",
+            "subdirectory": "FooPlugin",
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "Plugin already exists"}

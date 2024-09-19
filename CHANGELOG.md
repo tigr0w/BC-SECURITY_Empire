@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added dynamic options to modules
 -   Added PT, TCH rules to ruff config
 -   Added endpoint for installing plugins from a git repository
+-   Added endpoint for installing plugins from a tar
 
 ### Changed
 -   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs

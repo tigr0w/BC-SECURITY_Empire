@@ -10,6 +10,7 @@ from empire.server.api.v2.plugin.plugin_dto import (
     PluginExecutePostRequest,
     PluginExecuteResponse,
     PluginInstallGitRequest,
+    PluginInstallTarRequest,
     Plugins,
     PluginUpdateRequest,
     domain_to_dto_plugin,
@@ -120,12 +121,20 @@ async def reload_plugins(db: CurrentSession):
 
 
 @router.post("/install/git")
-async def install_plugin(req: PluginInstallGitRequest, db: CurrentSession):
+async def install_plugin_git(req: PluginInstallGitRequest, db: CurrentSession):
     try:
         plugin_service.install_plugin_from_git(db, req.url, req.subdirectory, req.ref)
     except GitOperationException as e:
         raise HTTPException(
             status_code=400, detail=f"Failed to install plugin from git: {e}"
         ) from e
+    except PluginValidationException as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/install/tar")
+async def install_plugin_tar(req: PluginInstallTarRequest, db: CurrentSession):
+    try:
+        plugin_service.install_plugin_from_tar(db, req.url, req.subdirectory)
     except PluginValidationException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

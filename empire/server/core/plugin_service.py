@@ -2,11 +2,16 @@ import asyncio
 import importlib
 import logging
 import shutil
+import tarfile
+import tempfile
 import typing
 from pathlib import Path
 
+import requests
 import yaml
+from requests_file import FileAdapter
 from sqlalchemy.orm import Session
+from starlette.status import HTTP_200_OK
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
 from empire.server.core.config import PluginConfig, empire_config
@@ -24,6 +29,9 @@ if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
+
+s = requests.Session()
+s.mount("file://", FileAdapter())
 
 
 class PluginService:
@@ -160,6 +168,29 @@ class PluginService:
         temp_dir = temp_dir / subdir if subdir else temp_dir
         plugin_dir, plugin_config = self._validate_temp_plugin(db, temp_dir)
 
+        self.load_plugin(db, plugin_dir, plugin_config)
+
+    def install_plugin_from_tar(
+        self,
+        db: Session,
+        tar_url: str,
+        subdir: str | None = None,
+    ):
+        temp_dir = Path(tempfile.gettempdir()) / tar_url.split("/")[-1].split(".")[0]
+
+        response = s.get(tar_url, stream=True)
+
+        if response.status_code != HTTP_200_OK:
+            raise PluginValidationException(
+                f"Failed to download plugin: {response.text}"
+            )
+
+        with tarfile.open(fileobj=response.raw, mode="r|*") as tar:
+            tar.extractall(path=temp_dir)
+
+        temp_dir = temp_dir / subdir if subdir else temp_dir
+
+        plugin_dir, plugin_config = self._validate_temp_plugin(db, temp_dir)
         self.load_plugin(db, plugin_dir, plugin_config)
 
     def execute_plugin(
