@@ -479,7 +479,6 @@ def agent(session_local, models, host, main):
         main.agentcommsv2.agents[name] = {
             "sessionKey": agent.session_key,
             "language": agent.language,
-            "functions": agent.functions,
         }
 
         agent_id = agent.session_id

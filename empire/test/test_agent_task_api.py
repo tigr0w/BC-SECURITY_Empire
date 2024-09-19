@@ -46,7 +46,6 @@ def agent_low_version(session_local, models, main):
 
         main.agentcommsv2.agents["WEAK"] = {
             "sessionKey": agent.session_key,
-            "functions": agent.functions,
         }
 
         session_id = agent.session_id
@@ -93,7 +92,6 @@ def agent_archived(session_local, models, main):
 
         main.agentcommsv2.agents["iamarchived"] = {
             "sessionKey": agent.session_key,
-            "functions": agent.functions,
         }
 
         session_id = agent.session_id
@@ -138,7 +136,6 @@ def agent_low_integrity(session_local, models, main):
 
         main.agentcommsv2.agents["WEAK2"] = {
             "sessionKey": agent.session_key,
-            "functions": agent.functions,
         }
 
         session_id = agent.session_id
@@ -721,63 +718,6 @@ def test_kill_task_jobs_agent_not_found(client, admin_auth_header, agent):
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
-def test_create_task_script_import_agent_not_found(client, admin_auth_header, agent):
-    response = client.post(
-        "/api/v2/agents/abc/tasks/script_import",
-        headers=admin_auth_header,
-        files={
-            "file": (
-                "test-upload.yaml",
-                Path("./empire/test/test-upload.yaml").read_bytes(),
-                "text/plain",
-            )
-        },
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json()["detail"] == "Agent not found for id abc"
-
-
-def test_create_task_script_import(client, admin_auth_header, agent):
-    response = client.post(
-        f"/api/v2/agents/{agent}/tasks/script_import",
-        headers=admin_auth_header,
-        files={
-            "file": (
-                "test-upload.yaml",
-                Path("./empire/test/test-upload.yaml").read_bytes(),
-                "text/plain",
-            )
-        },
-    )
-
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] > 0
-
-
-def test_create_task_script_command_agent_not_found(client, admin_auth_header):
-    response = client.post(
-        "/api/v2/agents/abc/tasks/script_command",
-        headers=admin_auth_header,
-        json={"command": "run command"},
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json()["detail"] == "Agent not found for id abc"
-
-
-def test_create_task_script_command(client, admin_auth_header, agent):
-    response = client.post(
-        f"/api/v2/agents/{agent}/tasks/script_command",
-        headers=admin_auth_header,
-        json={"command": "run command"},
-    )
-
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] > 0
-    assert response.json()["input"] == "run command"
-
-
 def test_create_task_sysinfo_agent_not_found(client, admin_auth_header):
     response = client.post(
         "/api/v2/agents/abc/tasks/sysinfo", headers=admin_auth_header
@@ -923,37 +863,6 @@ def test_create_task_directory_list(client, admin_auth_header, agent):
 
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
-
-
-def test_create_task_proxy_list(client, admin_auth_header, agent):
-    proxy_body = {
-        "proxies": [
-            {
-                "proxy_type": "HTTP",
-                "host": "proxy.com",
-                "port": 8080,
-            },
-            {
-                "proxy_type": "SOCKS5",
-                "host": "proxy2.com",
-                "port": 8081,
-            },
-        ]
-    }
-
-    response = client.post(
-        f"/api/v2/agents/{agent}/tasks/proxy_list",
-        headers=admin_auth_header,
-        json=proxy_body,
-    )
-
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] > 0
-
-    response = client.get(f"/api/v2/agents/{agent}", headers=admin_auth_header)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json()["proxies"] == proxy_body
 
 
 def test_create_task_exit_agent_not_found(client, admin_auth_header):

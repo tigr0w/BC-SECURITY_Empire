@@ -205,6 +205,7 @@ def test_validate_options_with_file_not_found(db):
             "Required": True,
             "Strict": False,
             "Type": "file",
+            "DependsOn": None,
         }
     }
 
@@ -230,6 +231,7 @@ def test_validate_options_with_file(db, models):
             "Required": True,
             "Strict": False,
             "Type": "file",
+            "DependsOn": None,
         }
     }
 
@@ -429,3 +431,124 @@ def test_validate_options_with_name_in_code():
 
     assert cleaned_options == {"CodeName": "SomeValue"}
     assert err is None
+
+
+def test_validate_options_file_with_correct_script_type(db, models):
+    instance_options = {
+        "ScriptType": {
+            "Description": "Type of script to execute",
+            "Required": True,
+            "Internal": True,
+            "Value": "File",
+            "SuggestedValues": ["File", "URL"],
+            "Strict": True,
+        },
+        "File": {
+            "Description": "A PowerShell script to load",
+            "Required": False,
+            "Value": "",
+            "Type": "file",
+            "DependsOn": [{"name": "ScriptType", "values": ["File"]}],
+        },
+        "ScriptUrl": {
+            "Description": "URL to download a Python script from.",
+            "Required": False,
+            "Value": "https://test.com/",
+            "DependsOn": [{"name": "ScriptType", "values": ["URL"]}],
+        },
+    }
+
+    options = {
+        "ScriptType": "File",
+        "File": "9999",
+        "ScriptUrl": "https://test.com/",
+    }
+
+    download = models.Download(
+        id=9999, filename="test_file.ps1", location="/tmp/test_file.ps1"
+    )
+    download_service_mock = MagicMock()
+    download_service_mock.get_by_id.return_value = download
+
+    cleaned_options, err = validate_options(
+        instance_options, options, db, download_service_mock
+    )
+
+    assert "File" in cleaned_options
+    assert cleaned_options["File"] == download
+    assert err is None
+
+
+def test_validate_options_file_skipped_with_url_script_type():
+    instance_options = {
+        "ScriptType": {
+            "Description": "Type of script to execute",
+            "Required": True,
+            "Value": "URL",
+            "Internal": True,
+            "SuggestedValues": ["File", "URL"],
+            "Strict": True,
+        },
+        "File": {
+            "Description": "A PowerShell script to load",
+            "Required": False,
+            "Value": "",
+            "Type": "file",
+            "DependsOn": [{"name": "ScriptType", "values": ["File"]}],
+        },
+        "ScriptUrl": {
+            "Description": "URL to download a Python script from.",
+            "Required": False,
+            "Value": "https://test.com/",
+            "DependsOn": [{"name": "ScriptType", "values": ["URL"]}],
+        },
+    }
+
+    options = {
+        "ScriptType": "URL",
+        "File": "",
+        "ScriptUrl": "https://test.com/",
+    }
+
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert cleaned_options["File"] == ""
+    assert cleaned_options["ScriptUrl"] == "https://test.com/"
+    assert err is None
+
+
+def test_validate_options_file_missing_with_file_script_type():
+    instance_options = {
+        "ScriptType": {
+            "Description": "Type of script to execute",
+            "Required": True,
+            "Internal": True,
+            "Value": "File",
+            "SuggestedValues": ["File", "URL"],
+            "Strict": True,
+        },
+        "File": {
+            "Description": "A PowerShell script to load",
+            "Required": False,
+            "Value": "",
+            "Type": "file",
+            "DependsOn": [{"name": "ScriptType", "values": ["File"]}],
+        },
+        "ScriptUrl": {
+            "Description": "URL to download a Python script from.",
+            "Required": False,
+            "Value": "https://test.com/",
+            "DependsOn": [{"name": "ScriptType", "values": ["URL"]}],
+        },
+    }
+
+    options = {
+        "ScriptType": "File",
+        "File": "",
+        "ScriptUrl": "https://test.com/",
+    }
+
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert cleaned_options is None
+    assert err == "required option missing: File"

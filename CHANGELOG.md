@@ -22,8 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `-f` flag for install script to force install as root
 -   Added dynamic options to modules
 -   Added PT, TCH rules to ruff config
+-   Added module code_execution/invoke-script for remote ps1 script execution
+-   Added module python/code_execution/invoke-script for remote py script execution
+-   Added tests for files being dependent options
 -   Added endpoint for installing plugins from a git repository
 -   Added endpoint for installing plugins from a tar
+
 
 ### Changed
 -   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs
@@ -72,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed dotnet install in Docker
 -   Removed `nim` stager from Empire
 -   Removed nim from installation script
+-   Removed module management/invoke-script for local ps1 script execution
 -   Removed migration docs to Empire 5.0
 
 #### Breaking
@@ -81,6 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed functions from `Agents` class that were marked as deprecated in 5.x
 -   Removed `--restip` and `--restport` options from the command line. Use the config file instead.
 -   Removed `socketport` config option on the client which was no longer being used
+-   Removed script and module upload to memory in favor of modules with same functionality
+
 
 ### Fixed
 

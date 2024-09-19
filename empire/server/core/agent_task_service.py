@@ -1,4 +1,3 @@
-import json
 import logging
 import threading
 import typing
@@ -15,7 +14,6 @@ from empire.server.api.v2.agent.agent_task_dto import (
     ModulePostRequest,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.common import helpers
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
@@ -171,24 +169,6 @@ class AgentTaskService:
     ):
         return self.add_task(db, agent, "TASK_DOWNLOAD", path_to_file, user_id=user_id)
 
-    def create_task_script_import(
-        self, db: Session, agent: models.Agent, file_data: str, user_id: int
-    ):
-        if agent.language != "powershell":
-            return None, "Only PowerShell agents support script imports"
-
-        # strip out comments and blank lines from the imported script
-        file_data = helpers.strip_powershell_comments(file_data)
-
-        return self.add_task(
-            db, agent, "TASK_SCRIPT_IMPORT", file_data, user_id=user_id
-        )
-
-    def create_task_script_command(
-        self, db: Session, agent: models.Agent, command: str, user_id: int
-    ):
-        return self.add_task(db, agent, "TASK_SCRIPT_COMMAND", command, user_id=user_id)
-
     def create_task_sysinfo(self, db: Session, agent: models.Agent, user_id: int):
         return self.add_task(db, agent, "TASK_SYSINFO", user_id=user_id)
 
@@ -268,7 +248,7 @@ class AgentTaskService:
             return self.add_task(
                 db,
                 agent,
-                "TASK_CMD_WAIT",
+                "TASK_PYTHON_CMD_WAIT",
                 f"global delay; global jitter; delay={delay}; jitter={jitter}; print('delay/jitter set to {delay}/{jitter}')",
                 user_id=user_id,
             )
@@ -339,14 +319,6 @@ class AgentTaskService:
         self, db: Session, agent: models.Agent, path: str, user_id: int
     ):
         return self.add_task(db, agent, "TASK_DIR_LIST", path, user_id=user_id)
-
-    def create_task_proxy_list(
-        self, db: Session, agent: models.Agent, body: dict, user_id: int
-    ):
-        agent.proxies = body
-        return self.add_task(
-            db, agent, "TASK_SET_PROXY", json.dumps(body), user_id=user_id
-        )
 
     class TemporaryTask(BaseModel):
         """

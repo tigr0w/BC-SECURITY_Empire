@@ -133,16 +133,6 @@ class ProxyEnum(str, Enum):
     https_connect = "HTTPS_CONNECT"
 
 
-class ProxyItem(BaseModel):
-    proxy_type: ProxyEnum
-    host: str
-    port: int
-
-
-class ProxyListPostRequest(BaseModel):
-    proxies: list[ProxyItem]
-
-
 class ExitPostRequest(BaseModel):
     pass
 

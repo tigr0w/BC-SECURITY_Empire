@@ -38,7 +38,6 @@ def domain_to_dto_agent(agent: models.Agent):
         children=agent.children,
         servers=agent.servers,
         profile=agent.profile,
-        functions=agent.functions,
         kill_date=agent.kill_date,
         working_hours=agent.working_hours,
         lost_limit=agent.lost_limit,

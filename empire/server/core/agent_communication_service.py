@@ -54,7 +54,6 @@ class AgentCommunicationService:
         self.agents[agent.session_id] = {
             "sessionKey": agent.session_key,
             "language": agent.language,
-            "functions": agent.functions,
         }
 
     def is_ip_allowed(self, ip_address):
@@ -771,7 +770,7 @@ class AgentCommunicationService:
                 # build tasking packets for everything we have
                 for tasking in tasks:
                     input_full = tasking.input_full
-                    if tasking.task_name == "TASK_CSHARP":
+                    if tasking.task_name == "TASK_CSHARP_CMD_JOB":
                         with open(tasking.input_full.split("|")[0], "rb") as f:
                             input_full = f.read()
                         input_full = base64.b64encode(input_full).decode("UTF-8")
@@ -890,7 +889,11 @@ class AgentCommunicationService:
         if (
             task_id != 0
             and response_name
-            not in ["TASK_DOWNLOAD", "TASK_CMD_JOB_SAVE", "TASK_CMD_WAIT_SAVE"]
+            not in [
+                "TASK_DOWNLOAD",
+                "TASK_POWERSHELL_CMD_WAIT_SAVE",
+                "TASK_PYTHON_CMD_WAIT_SAVE",
+            ]
             and data is not None
         ):
             # add keystrokes to database
@@ -1021,7 +1024,7 @@ class AgentCommunicationService:
             # Close socks client
             self.agent_socks_service.close_socks_client(agent)
 
-        elif response_name in ["TASK_SHELL", "TASK_CSHARP"]:
+        elif response_name in ["TASK_SHELL"]:
             # shell command response
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)
@@ -1101,7 +1104,7 @@ class AgentCommunicationService:
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)
 
-        elif response_name == "TASK_CMD_WAIT":
+        elif response_name in ["TASK_POWERSHELL_CMD_WAIT", "TASK_PYTHON_CMD_WAIT"]:
             # dynamic script output -> blocking
 
             # see if there are any credentials to parse
@@ -1135,7 +1138,10 @@ class AgentCommunicationService:
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)
 
-        elif response_name == "TASK_CMD_WAIT_SAVE":
+        elif response_name in [
+            "TASK_POWERSHELL_CMD_WAIT_SAVE",
+            "TASK_PYTHON_CMD_WAIT_SAVE",
+        ]:
             # dynamic script output -> blocking, save data
 
             # extract the file save prefix and extension
@@ -1165,7 +1171,11 @@ class AgentCommunicationService:
             db.flush()
             tasking.downloads.append(download)
 
-        elif response_name == "TASK_CMD_JOB":
+        elif response_name in [
+            "TASK_POWERSHELL_CMD_JOB",
+            "TASK_PYTHON_CMD_JOB",
+            "TASK_CSHARP_CMD_JOB",
+        ]:
             # check if this is the powershell keylogging task, if so, write output to file instead of screen
             if key_log_task_id and key_log_task_id == task_id:
                 download_dir = empire_config.directories.downloads
@@ -1258,35 +1268,6 @@ class AgentCommunicationService:
                                 notes=date_time,
                             ),
                         )
-
-        elif response_name == "TASK_CMD_JOB_SAVE":
-            # dynamic script output -> non-blocking, save data
-            # extract the file save prefix and extension
-            prefix = data[0:15].strip()
-            extension = data[15:20].strip()
-            file_data = helpers.decode_base64(data[20:])
-
-            # save the file off to the appropriate path
-            save_path = (
-                f"{prefix}/{agent.hostname}_{helpers.get_file_datetime()}.{extension}"
-            )
-            final_save_path = self.save_module_file(
-                session_id, save_path, file_data, agent.language
-            )
-
-            # update the agent log
-            msg = f"Output saved to .{final_save_path}"
-            self.agent_service.save_agent_log(session_id, msg)
-
-        elif response_name in [
-            "TASK_SCRIPT_IMPORT",
-            "TASK_IMPORT_MODULE",
-            "TASK_VIEW_MODULE",
-            "TASK_REMOVE_MODULE",
-            "TASK_SCRIPT_COMMAND",
-        ]:
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_SWITCH_LISTENER":
             # update the agent listener

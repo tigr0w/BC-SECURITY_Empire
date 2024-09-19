@@ -147,23 +147,14 @@ class ModuleService:
             agent.language == "ironpython" and module.language == "python"
         ):
             if module.language == LanguageEnum.csharp:
-                task_command = "TASK_CSHARP"
+                task_command = "TASK_CSHARP_CMD_JOB"
             # build the appropriate task command and module data blob
-            elif module.background:
-                # if this module should be run in the background
-                extension = module.output_extension
-                if extension and extension != "":
-                    # if this module needs to save its file output to the server
-                    #   format- [15 chars of prefix][5 chars extension][data]
-                    save_file_prefix = module.name.split("/")[-1]
-                    module_data = (
-                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                    )
-                    task_command = "TASK_CMD_JOB_SAVE"
-                else:
-                    task_command = "TASK_CMD_JOB"
+            elif module.background and module.language == "python":
+                task_command = "TASK_PYTHON_CMD_JOB"
+            elif module.background and module.language == "powershell":
+                task_command = "TASK_POWERSHELL_CMD_JOB"
             elif module.language == LanguageEnum.bof:
-                task_command = "TASK_CSHARP"
+                task_command = "TASK_CSHARP_CMD_JOB"
             else:
                 # if this module is run in the foreground
                 extension = module.output_extension
@@ -174,24 +165,13 @@ class ModuleService:
                     module_data = (
                         save_file_prefix.rjust(15) + extension.rjust(5) + module_data
                     )
-                    task_command = "TASK_CMD_WAIT_SAVE"
+                    task_command = "TASK_PYTHON_CMD_WAIT_SAVE"
                 else:
-                    task_command = "TASK_CMD_WAIT"
+                    task_command = "TASK_PYTHON_CMD_WAIT"
 
         elif agent.language == "ironpython" and module.language == "powershell":
             if module.background:
-                # if this module should be run in the background
-                extension = module.output_extension
-                if extension and extension != "":
-                    # if this module needs to save its file output to the server
-                    #   format- [15 chars of prefix][5 chars extension][data]
-                    save_file_prefix = module.name.split("/")[-1]
-                    module_data = (
-                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                    )
-                    task_command = "TASK_POWERSHELL_CMD_JOB_SAVE"
-                else:
-                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                task_command = "TASK_POWERSHELL_CMD_JOB"
 
             else:
                 # if this module is run in the foreground
@@ -208,7 +188,7 @@ class ModuleService:
                     task_command = "TASK_POWERSHELL_CMD_WAIT"
 
         elif agent.language == "ironpython" and module.language == "csharp":
-            task_command = "TASK_CSHARP"
+            task_command = "TASK_CSHARP_CMD_JOB"
 
         return {"command": task_command, "data": module_data}, None
 

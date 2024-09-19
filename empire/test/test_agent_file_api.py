@@ -28,7 +28,6 @@ def agent_no_files(session_local, models, main):
 
         main.agentcommsv2.agents["EMPTY"] = {
             "sessionKey": agent.session_key,
-            "functions": agent.functions,
         }
 
         agent_id = agent.session_id

@@ -105,6 +105,7 @@ def test_execute_plugin_file_option_not_found(install_path, db):
                 "Type": "File",
                 "Strict": False,
                 "Required": True,
+                "DependsOn": None,
             }
         },
     ):
@@ -143,6 +144,7 @@ def test_execute_plugin_file_option(install_path, db, models):
                     "Type": "File",
                     "Strict": False,
                     "Required": True,
+                    "DependsOn": None,
                 }
             },
         ),

