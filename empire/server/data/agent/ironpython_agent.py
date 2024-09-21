@@ -1393,7 +1393,7 @@ class MainAgent:
                                 if (-not $($o.User)) {
                                     $o = 'N/A'
                                 } else {
-                                    $o = "$($o.Domain)\$($o.User)"
+                                    $o = "$($o.Domain)\\$($o.User)"
                                 }
                             } catch {
                                 $o = 'N/A'
