@@ -41,6 +41,7 @@ class DotnetCompiler:
         output = result.stdout.strip()
 
         if "Final Task Name:" not in output:
+            log.error(result.stdout)
             raise ModuleExecutionException("Module compile failed")
 
         file_name = output.split("Final Task Name:")[1].strip()
@@ -74,6 +75,7 @@ class DotnetCompiler:
         output = result.stdout.strip()
 
         if "Final Task Name:" not in output:
+            log.error(result.stdout)
             raise ModuleExecutionException("Stager compile failed")
 
         return output.split("Final Task Name:")[1].strip()
