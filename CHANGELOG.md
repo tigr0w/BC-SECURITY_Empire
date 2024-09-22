@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.11.5] - 2024-09-22
+
 -   Fixed various Python 3.12 SyntaxWarning
 
 ## [5.11.4] - 2024-09-04
@@ -918,7 +920,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.4...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.5...HEAD
+
+[5.11.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.4...v5.11.5
 
 [5.11.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.3...v5.11.4
 
