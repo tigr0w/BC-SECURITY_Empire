@@ -1001,7 +1001,7 @@ function Invoke-Empire {
                 Encode-Packet -data $output -type $type -ResultID $ResultID;
                 $script:tasks[$ResultID]['status'] = 'completed'
             }
-            elseif($type -eq 116){
+            elseif($type -eq 122){
                 try{
                     $parts = $data.split(",");
                     $params = $parts[1..$parts.length];
