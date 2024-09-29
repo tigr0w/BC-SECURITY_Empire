@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-  Fixed extra character in nanodump.x64.o
+
 ## [5.11.5] - 2024-09-22
 
 -   Fixed various Python 3.12 SyntaxWarning
