@@ -93,6 +93,8 @@ def reset():
         f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/netcoreapp3.0"
     )
 
+    file_util.remove_file(f"{CSHARP_DIR_BASE}/Data/EmbeddedResources/launcher.txt")
+
     if os.path.exists(empire_config.starkiller.directory):
         shutil.rmtree(empire_config.starkiller.directory)
 

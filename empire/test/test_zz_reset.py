@@ -31,7 +31,9 @@ def _wrap_reset(server_config_dict):
 
 @pytest.mark.slow
 @pytest.mark.timeout(30)
-def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
+def test_reset_server(  # noqa: PLR0915
+    monkeypatch, tmp_path, default_argv, server_config_dict
+):
     """
     Test for
      1. Deletes the sqlite db. Don't need to test mysql atm.
@@ -58,13 +60,13 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     for f in download_files:
         write_to_file(downloads_dir + f[0], f[1])
 
-    # check they wrote properly
     for f in download_files:
         assert Path(downloads_dir + f[0]).exists()
 
     # Change the csharp and Invoke-Obfuscation dir so we don't delete real files.
-    csharp_dir = tmp_path / "empire/server/data/csharp"
-    invoke_obfs_dir = tmp_path / "powershell/Modules/Invoke-Obfuscation"
+    csharp_dir = tmp_path / "Empire-Compiler/EmpireCompiler"
+    invoke_obfs_src_dir = tmp_path / "data/Invoke-Obfuscation"
+    invoke_obfs_dst_dir = tmp_path / "powershell/Modules/Invoke-Obfuscation"
 
     # Write files to csharp_dir
     csharp_files = [
@@ -93,6 +95,17 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
 
+    invoke_obfs_src_dir.mkdir(parents=True, exist_ok=True)
+    (invoke_obfs_src_dir / "Invoke-Obfuscation.ps1").write_text("Test content")
+    assert (invoke_obfs_src_dir / "Invoke-Obfuscation.ps1").exists()
+
+    launcher_file = (
+        tmp_path / "Empire-Compiler/EmpireCompiler/Data/EmbeddedResources/launcher.txt"
+    )
+    launcher_file.parent.mkdir(parents=True, exist_ok=True)
+    launcher_file.write_text("Test content")
+    assert launcher_file.exists()
+
     import empire.arguments
 
     reload(empire.arguments)
@@ -102,8 +115,9 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     if server_config_dict.get("database", {}).get("type") == "sqlite":
         assert Path(server_config_dict["database"]["location"]).exists()
 
-    server.CSHARP_DIR_BASE = csharp_dir
-    server.INVOKE_OBFS_DST_DIR_BASE = invoke_obfs_dir
+    server.CSHARP_DIR_BASE = tmp_path / "Empire-Compiler/EmpireCompiler"
+    server.INVOKE_OBFS_SRC_DIR_BASE = invoke_obfs_src_dir
+    server.INVOKE_OBFS_DST_DIR_BASE = invoke_obfs_dst_dir
 
     with pytest.raises(SystemExit):
         server.run(args)
@@ -124,7 +138,9 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
 
-    assert Path(invoke_obfs_dir / "Invoke-Obfuscation.ps1").exists()
+    assert Path(invoke_obfs_dst_dir / "Invoke-Obfuscation.ps1").exists()
+
+    assert not launcher_file.exists()
 
     if server_config_dict.get("database", {}).get("type") == "sqlite":
         assert not Path(server_config_dict["database"]["location"]).exists()
