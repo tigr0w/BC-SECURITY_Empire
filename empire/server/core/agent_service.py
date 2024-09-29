@@ -256,7 +256,10 @@ class AgentService:
         Save the agent console output to the agent's log file.
         """
         if isinstance(data, bytes):
-            data = data.decode("UTF-8")
+            try:
+                data = data.decode("UTF-8")
+            except UnicodeDecodeError:
+                data = data.decode("latin-1")
 
         save_path = empire_config.directories.downloads / session_id
 

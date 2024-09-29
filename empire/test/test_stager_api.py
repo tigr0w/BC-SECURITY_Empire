@@ -16,7 +16,7 @@ def _cleanup_stagers(session_local, models):
 
 
 def test_get_stager_templates(client, admin_auth_header):
-    min_stagers = 35
+    min_stagers = 36
     response = client.get(
         "/api/v2/stager-templates/",
         headers=admin_auth_header,

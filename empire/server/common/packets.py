@@ -110,6 +110,7 @@ PACKET_NAMES = {
     "TASK_PYTHON_CMD_JOB_SAVE": 113,
     "TASK_CSHARP_CMD_JOB": 122,
     "TASK_CSHARP_CMD_JOB_SAVE": 123,
+    "TASK_GO_CMD_WAIT": 130,
     # Listener Options
     "TASK_SWITCH_LISTENER": 220,
     "TASK_UPDATE_LISTENERNAME": 221,
@@ -125,6 +126,7 @@ LANGUAGE = {
     "POWERSHELL": 1,
     "PYTHON": 2,
     "CSHARP": 3,
+    "GO": 4,
 }
 LANGUAGE_IDS = {}
 for name, ID in list(LANGUAGE.items()):

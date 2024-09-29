@@ -921,9 +921,19 @@ class AgentCommunicationService:
                 # after storing in the database they're strings. So we need to convert
                 # so socketio and other hooks get the right data type.
                 if isinstance(tasking.output, bytes):
-                    tasking.output = tasking.output.decode("UTF-8")
+                    try:
+                        tasking.output = tasking.output.decode("UTF-8")
+                    except UnicodeDecodeError:
+                        tasking.output = tasking.output.decode("latin-1")
                 if isinstance(tasking.original_output, bytes):
-                    tasking.original_output = tasking.original_output.decode("UTF-8")
+                    try:
+                        tasking.original_output = tasking.original_output.decode(
+                            "UTF-8"
+                        )
+                    except UnicodeDecodeError:
+                        tasking.original_output = tasking.original_output.decode(
+                            "latin-1"
+                        )
 
             hooks.run_hooks(hooks.BEFORE_TASKING_RESULT_HOOK, db, tasking)
             db, tasking = hooks.run_filters(

@@ -50,4 +50,8 @@
     * [Stage Class](agents/python/stageclass.md)
     * [Packet Handler Class](agents/python/packethandlerclass.md)
     * [Extended Packet Handler Class](agents/python/extendedpackethandlerclass.md)
+  * [Go](agents/go/README.md)
+    * [Main Agent Class](agents/go/mainagentclass.md)
+    * [Packet Handler Class](agents/go/packethandlerclass.md)
+    * [Main.go Tempalte](agents/go/template.md)
 * [Release Notes](release-notes.md)

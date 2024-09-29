@@ -1,3 +1,4 @@
+import base64
 import os
 import platform
 import re
@@ -243,6 +244,62 @@ def test_generate_python_shellcode(stager_generation_service, arch, dot_net_vers
     assert shellcode is not None, "Shellcode was not generated"
     assert isinstance(shellcode, bytes), "Generated shellcode is not in bytes format"
     assert len(shellcode) > 0, "Generated shellcode is empty"
+
+
+def test_generate_go_stageless(stager_generation_service):
+    """
+    Test the generate_go_stageless function using a real listener (new-listener-1).
+    """
+    options = {"Listener": {"Value": "new-listener-1"}}
+
+    result = stager_generation_service.generate_go_stageless(options)
+
+    assert result is not None, "Stager generation failed, result is None."
+
+    generated_executable_path = result
+    assert os.path.exists(
+        generated_executable_path
+    ), f"Generated executable not found: {generated_executable_path}"
+
+    generated_dir = os.path.dirname(generated_executable_path)
+    generated_main_go_path = os.path.join(generated_dir, "main.go")
+
+    assert os.path.exists(
+        generated_main_go_path
+    ), f"Generated main.go not found: {generated_main_go_path}"
+
+    with open(generated_main_go_path) as f:
+        main_go_content = f.read()
+
+    aes_key_base64_match = re.search(r'aesKeyBase64\s*:=\s*"([^"]+)"', main_go_content)
+    staging_key_base64_match = re.search(
+        r'stagingKeyBase64\s*:=\s*"([^"]+)"', main_go_content
+    )
+
+    assert aes_key_base64_match, "aesKeyBase64 not found in main.go"
+    assert staging_key_base64_match, "stagingKeyBase64 not found in main.go"
+
+    extracted_aes_key_base64 = aes_key_base64_match.group(1)
+    extracted_staging_key_base64 = staging_key_base64_match.group(1)
+
+    active_listener = (
+        stager_generation_service.listener_service.get_active_listener_by_name(
+            "new-listener-1"
+        )
+    )
+    staging_key = active_listener.options["StagingKey"]["Value"]
+
+    expected_staging_key_base64 = base64.b64encode(staging_key.encode("UTF-8")).decode(
+        "UTF-8"
+    )
+    assert (
+        extracted_staging_key_base64 == expected_staging_key_base64
+    ), f"StagingKeyBase64 mismatch: expected {expected_staging_key_base64}, got {extracted_staging_key_base64}"
+
+    aes_key = base64.b64decode(extracted_aes_key_base64)
+    assert (
+        len(aes_key) == 32  # noqa: PLR2004
+    ), f"AES key length mismatch: expected 32 bytes, got {len(aes_key)} bytes"
 
 
 def test_generate_dylib(stager_generation_service):
