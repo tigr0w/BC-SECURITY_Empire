@@ -78,11 +78,6 @@ class Listener:
                 "Required": True,
                 "Value": "/tmp/http_hop/",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
         }
 
         # required:

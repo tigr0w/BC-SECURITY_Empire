@@ -264,15 +264,6 @@ class ListenerTemplate(BaseModel):
                         "depends_on:": [],
                         "internal": False,
                     },
-                    "SlackURL": {
-                        "description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                        "required": False,
-                        "value": "",
-                        "suggested_values": [],
-                        "strict": False,
-                        "depends_on:": [],
-                        "internal": False,
-                    },
                 },
             }
         }
@@ -329,7 +320,6 @@ class ListenerPostRequest(BaseModel):
                     "UserAgent": "default",
                     "Proxy": "default",
                     "ProxyCreds": "default",
-                    "SlackURL": "",
                 },
             }
         }

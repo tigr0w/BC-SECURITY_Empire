@@ -582,7 +582,6 @@ class AgentCommunicationService:
                 domainname = str(parts[2], "utf-8")
                 username = str(parts[3], "utf-8")
                 hostname = str(parts[4], "utf-8")
-                external_ip = client_ip
                 internal_ip = str(parts[5], "utf-8")
                 os_details = str(parts[6], "utf-8")
                 high_integrity = str(parts[7], "utf-8")
@@ -621,15 +620,8 @@ class AgentCommunicationService:
                 architecture=architecture,
             )
 
-            # signal to Slack that this agent is now active
-
-            slack_webhook_url = listener_options["SlackURL"]["Value"]
-            if slack_webhook_url != "":
-                slack_text = f":biohazard_sign: NEW AGENT :biohazard_sign:\r\n```Machine Name: {hostname}\r\nInternal IP: {internal_ip}\r\nExternal IP: {external_ip}\r\nUser: {username}\r\nOS Version: {os_details}\r\nAgent ID: {session_id}```"
-                helpers.slackMessage(slack_webhook_url, slack_text)
-
             # signal everyone that this agent is now active
-            message = f"Initial agent {session_id} from {client_ip} now active (Slack)"
+            message = f"Initial agent {session_id} from {client_ip} now active"
             log.info(message)
 
             hooks.run_hooks(

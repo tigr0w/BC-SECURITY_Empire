@@ -136,11 +136,6 @@ class Listener:
                 "Required": True,
                 "Value": "https://login.live.com/oauth20_desktop.srf",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
         }
 
         self.stager_url = ""

@@ -81,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed nim from installation script
 -   Removed module management/invoke-script for local ps1 script execution
 -   Removed migration docs to Empire 5.0
+-   Removed slack notifications from listener in favor for hooks and filters in plugins
 
 #### Breaking
 

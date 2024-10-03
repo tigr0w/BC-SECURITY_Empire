@@ -181,7 +181,6 @@ def base_listener():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": "",
             "JA3_Evasion": "False",
         },
     }
@@ -210,7 +209,6 @@ def malleable_listener():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": "",
             "JA3_Evasion": "False",
         },
     }
@@ -240,7 +238,6 @@ def base_listener_non_fixture():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": "",
             "JA3_Evasion": "False",
         },
     }
@@ -268,7 +265,6 @@ def malleable_listener_non_fixture():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": "",
             "JA3_Evasion": "False",
         },
     }

@@ -122,11 +122,6 @@ class Listener:
                 "Required": True,
                 "Value": "Server:Microsoft-IIS/7.5",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
             "JA3_Evasion": {
                 "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
                 "Required": False,
