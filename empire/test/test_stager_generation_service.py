@@ -9,7 +9,7 @@ import requests
 
 from empire.server.common.empire import MainMenu
 
-EMPIRE_COMPILER_VERSION = "v0.1.0"
+EMPIRE_COMPILER_VERSION = "v0.1.1"
 base_download_url = "https://github.com/BC-SECURITY/Empire-Compiler/releases/download"
 target_dir = "empire/server/Empire-Compiler/EmpireCompiler"
 target_compiler_path = os.path.join(target_dir, "EmpireCompiler")

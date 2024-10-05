@@ -32,6 +32,36 @@ function command_exists() {
   command -v "$1" >/dev/null 2>&1;
 }
 
+function install_goenv() {
+    echo -e "\x1b[1;34m[*] Installing goenv\x1b[0m"
+
+    git clone https://github.com/go-nv/goenv.git ~/.goenv
+
+    export GOENV_ROOT="$HOME/.goenv"
+    export PATH="$GOENV_ROOT/bin:$PATH"
+    eval "$(goenv init -)"
+
+    echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.bashrc
+    echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.bashrc
+    echo 'eval "$(goenv init -)"' >> ~/.bashrc
+
+    echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.zshrc
+    echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.zshrc
+    echo 'eval "$(goenv init -)"' >> ~/.zshrc
+
+    # These are for the Docker builds since
+    # the bashrc and zshrc files are not sourced
+    sudo ln -s $HOME/.goenv/shims/go /usr/bin/go
+    sudo ln -s $HOME/.goenv/shims/gofmt /usr/bin/gofmt
+    sudo ln -s $HOME/.goenv/bin/goenv /usr/bin/goenv
+}
+
+function install_go() {
+  echo -e "\x1b[1;34m[*] Installing Go\x1b[0m"
+
+  goenv install $(cat .go-version)
+}
+
 function install_powershell() {
   echo -e "\x1b[1;34m[*] Installing PowerShell\x1b[0m"
   if [ "$OS_NAME" == "DEBIAN" ]; then
@@ -287,6 +317,14 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 if ! command_exists pwsh; then
   install_powershell
+fi
+
+if ! command_exists goenv; then
+  install_goenv
+fi
+
+if ! command_exists go; then
+  install_go
 fi
 
 if ! command_exists mysql; then

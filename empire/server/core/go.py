@@ -36,7 +36,6 @@ class GoCompiler:
             str(source_path),
         ]
 
-        # Set environment variables for GOOS and GOARCH
         env = {"GOOS": goos, "GOARCH": goarch}
 
         result = subprocess.run(
@@ -74,7 +73,7 @@ class GoCompiler:
         source_file = Path(self.install_path) / "data/agent/gopire/"
         output_file = (
             Path(self.install_path)
-            / f"data/agent/gopire/{task_name}_stager_{random_suffix}.exe"
+            / f"data/agent/gopire/{task_name}_{random_suffix}.exe"
         )
 
         template_path = "main.template"

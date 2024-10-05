@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from empire.test.conftest import SERVER_CONFIG_LOC, load_test_config
 
 
@@ -144,6 +146,7 @@ def test_log_level_by_debug_arg():
     assert logging.getLogger().level == logging.DEBUG
 
 
+@pytest.mark.no_docker
 def test_log_file_not_owned_by_root(monkeypatch):
     logging.getLogger().handlers.clear()
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)

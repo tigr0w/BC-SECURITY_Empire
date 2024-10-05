@@ -40,6 +40,15 @@ commandTests:
     command: "which"
     args: ["mysql"]
     expectedOutput: ["/usr/bin/mysql"]
+  # go
+  - name: "go which"
+    command: "which"
+    args: [ "go" ]
+    expectedOutput: [ "/usr/bin/go" ]
+  - name: "go version"
+    command: "go"
+    args: [ "version" ]
+    expectedOutput: [ "go version go1.23.* linux/*" ]
   # run
   - name: "ps-empire help"
     command: "./ps-empire"

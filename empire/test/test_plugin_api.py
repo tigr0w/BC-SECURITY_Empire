@@ -517,6 +517,7 @@ def _cleanup_foo_plugin(plugin_service, session_local, models):
         db.query(models.Plugin).filter(models.Plugin.name == "foo").delete()
 
 
+@pytest.mark.no_docker
 @pytest.mark.usefixtures("_cleanup_foo_plugin")
 def test_install_plugin_git_invalid(
     client,
@@ -552,6 +553,7 @@ def test_install_plugin_git_invalid(
     assert response.json() == {"detail": "plugin.yaml not found"}
 
 
+@pytest.mark.no_docker
 @pytest.mark.usefixtures("_cleanup_foo_plugin")
 def test_install_plugin_git(client, admin_auth_header, main, foo_plugin):
     response = client.post(
@@ -580,6 +582,7 @@ def test_install_plugin_git(client, admin_auth_header, main, foo_plugin):
     assert response.json() == {"detail": "Plugin already exists"}
 
 
+@pytest.mark.no_docker
 @pytest.mark.usefixtures("_cleanup_foo_plugin")
 def test_install_plugin_git_subdirectory(
     client,
@@ -619,6 +622,7 @@ def test_install_plugin_git_subdirectory(
     assert main.pluginsv2.loaded_plugins.get("foo") is not None
 
 
+@pytest.mark.no_docker
 @pytest.mark.usefixtures("_cleanup_foo_plugin")
 def test_install_plugin_tar_invalid(
     client,
@@ -658,6 +662,7 @@ def test_install_plugin_tar_invalid(
     assert response.json() == {"detail": "plugin.yaml not found"}
 
 
+@pytest.mark.no_docker
 @pytest.mark.usefixtures("_cleanup_foo_plugin")
 def test_install_plugin_tar_subirectory(client, admin_auth_header, main, foo_plugin):
     tar_path = foo_plugin.parent / "FooPlugin.tar"

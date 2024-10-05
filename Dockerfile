@@ -40,12 +40,12 @@ RUN unameOut="$(uname -m)" && \
     ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh && \
     rm /tmp/powershell.tar.gz
 
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    ln -s /root/.local/bin/poetry /usr/bin
 
-# Define environment variables
-ENV EMPIRE_COMPILER_VERSION="v0.1.0"
+ENV EMPIRE_COMPILER_VERSION="v0.1.1"
 ENV PARENT_PATH="/empire"
 
-# Function to download and place Empire-Compiler
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
         ARCH="linux-x64"; \
@@ -56,19 +56,22 @@ RUN ARCH=$(uname -m) && \
     fi && \
     DOWNLOAD_URL="https://github.com/BC-SECURITY/Empire-Compiler/releases/download/${EMPIRE_COMPILER_VERSION}/EmpireCompiler-${ARCH}" && \
     TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler/EmpireCompiler" && \
-    echo -e "[*] Downloading from: $DOWNLOAD_URL" && \
     mkdir -p "$TARGET_DIR" && \
     wget -O "${TARGET_DIR}/EmpireCompiler" "$DOWNLOAD_URL" && \
-    if [ $? -eq 0 ]; then \
-        echo -e "[*] Setting execute permissions" && \
-        chmod 777 "${TARGET_DIR}/EmpireCompiler" && \
-        echo -e "[+] Download and placement complete!"; \
-    else \
-        echo -e "[!] Download failed. Exiting." && exit 1; \
-    fi
+    chmod 777 "${TARGET_DIR}/EmpireCompiler"
 
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/bin
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        ARCH="linux-amd64"; \
+    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then \
+        ARCH="linux-arm64"; \
+    else \
+        echo -e "[!] Unsupported architecture: $ARCH. Exiting." && exit 1; \
+    fi && \
+    curl -L -o /tmp/go.tar.gz https://go.dev/dl/go1.23.2.$ARCH.tar.gz && \
+    tar zxf /tmp/go.tar.gz -C /opt && \
+    ln -s /opt/go/bin/go /usr/bin/go && \
+    rm /tmp/go.tar.gz
 
 WORKDIR /empire
 
@@ -86,7 +89,7 @@ RUN mkdir -p /usr/local/share/powershell/Modules && \
 RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml && \
     sed -i 's/auto_update: true/auto_update: false/g' empire/server/config.yaml
 
-RUN ./ps-empire sync-starkiller
+RUN ./ps-empire -f sync-starkiller
 
 ENTRYPOINT ["./ps-empire"]
-CMD ["server"]
+CMD ["-f", "server"]

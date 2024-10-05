@@ -132,7 +132,8 @@ jobs:
         images:
           - ['debian11', 'debian12']
           - ['ubuntu2004', 'ubuntu2204']
-          - ['kalirolling'] # 'parrotrolling'
+          # Kali disabled for now because donut is failing to build.
+          # - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
           # Install is running up way too many minutes.
     steps:
