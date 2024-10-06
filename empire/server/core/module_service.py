@@ -143,54 +143,65 @@ class ModuleService:
             module_data = helpers.strip_python_comments(module_data)
 
         task_command = ""
-        if agent.language != "ironpython" or (
-            agent.language == "ironpython" and module.language == "python"
-        ):
-            if module.language == LanguageEnum.csharp:
-                task_command = "TASK_CSHARP_CMD_JOB"
-            # build the appropriate task command and module data blob
-            elif module.background and module.language == "python":
-                task_command = "TASK_PYTHON_CMD_JOB"
-            elif module.background and module.language == "powershell":
-                task_command = "TASK_POWERSHELL_CMD_JOB"
-            elif module.language == LanguageEnum.bof:
+        extension = module.output_extension.rjust(5) if module.output_extension else ""
+
+        if agent.language in ("ironpython", "python"):
+            if module.language == "python":
+                task_command, module_data = self._handle_save_file_command(
+                    "TASK_PYTHON", module.name, extension, module_data
+                )
+            elif module.language == "powershell":
+                if module.background:
+                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                else:
+                    task_command, module_data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data
+                    )
+            elif module.language in ("csharp", "bof"):
                 task_command = "TASK_CSHARP_CMD_JOB"
             else:
-                # if this module is run in the foreground
-                extension = module.output_extension
-                if module.output_extension and module.output_extension != "":
-                    # if this module needs to save its file output to the server
-                    #   format- [15 chars of prefix][5 chars extension][data]
-                    save_file_prefix = module.name.split("/")[-1][:15]
-                    module_data = (
-                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                    )
-                    task_command = "TASK_PYTHON_CMD_WAIT_SAVE"
-                else:
-                    task_command = "TASK_PYTHON_CMD_WAIT"
+                log.error(
+                    f"Unsupported module language {module.language} for agent {agent.language}"
+                )
 
-        elif agent.language == "ironpython" and module.language == "powershell":
-            if module.background:
+        elif agent.language == "csharp":
+            if module.language in ("csharp", "bof"):
+                task_command = "TASK_CSHARP_CMD_JOB"
+            elif module.language == "powershell":
                 task_command = "TASK_POWERSHELL_CMD_JOB"
-
             else:
-                # if this module is run in the foreground
-                extension = module.output_extension
-                if module.output_extension and module.output_extension != "":
-                    # if this module needs to save its file output to the server
-                    #   format- [15 chars of prefix][5 chars extension][data]
-                    save_file_prefix = module.name.split("/")[-1][:15]
-                    module_data = (
-                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                    )
-                    task_command = "TASK_POWERSHELL_CMD_WAIT_SAVE"
-                else:
-                    task_command = "TASK_POWERSHELL_CMD_WAIT"
+                log.error(
+                    f"Unsupported module language {module.language} for agent {agent.language}"
+                )
 
-        elif agent.language == "ironpython" and module.language == "csharp":
-            task_command = "TASK_CSHARP_CMD_JOB"
+        elif agent.language == "powershell":
+            if module.language == "powershell":
+                if module.background:
+                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                else:
+                    task_command, module_data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data
+                    )
+            elif module.language in ("csharp", "bof"):
+                task_command = "TASK_CSHARP_CMD_JOB"
+            else:
+                log.error(
+                    f"Unsupported module language {module.language} for agent {agent.language}"
+                )
+
+        else:
+            log.error(f"Unsupported agent language {agent.language}")
+            return None, f"Unsupported agent language: {agent.language}"
 
         return {"command": task_command, "data": module_data}, None
+
+    @staticmethod
+    def _handle_save_file_command(cmd_type, module_name, extension, module_data):
+        if extension:
+            save_file_prefix = module_name.split("/")[-1][:15]
+            module_data = save_file_prefix.rjust(15) + extension + module_data
+            return f"{cmd_type}_WAIT_SAVE", module_data
+        return f"{cmd_type}_WAIT", module_data
 
     def generate_bof_data(
         self,
@@ -359,9 +370,11 @@ class ModuleService:
         self,
         module: EmpireModule,
         params: dict,
-        obfuscaton_config: models.ObfuscationConfig,
+        obfuscation_config: models.ObfuscationConfig,
     ) -> str:
-        obfuscate = obfuscaton_config.enabled
+        obfuscate = (
+            obfuscation_config.enabled if obfuscation_config is not None else False
+        )
 
         if module.script_path:
             script_path = os.path.join(
@@ -388,10 +401,14 @@ class ModuleService:
         self,
         module: EmpireModule,
         params: dict,
-        obfuscaton_config: models.ObfuscationConfig,
+        obfuscation_config: models.ObfuscationConfig,
     ) -> str:
-        obfuscate = obfuscaton_config.enabled
-        obfuscate_command = obfuscaton_config.command
+        obfuscate = (
+            obfuscation_config.enabled if obfuscation_config is not None else False
+        )
+        obfuscate_command = (
+            obfuscation_config.command if obfuscation_config is not None else ""
+        )
 
         if module.script_path:
             script, err = self.get_module_source(
@@ -465,11 +482,14 @@ class ModuleService:
         obfuscation_config: models.ObfuscationConfig,
     ) -> str:
         try:
+            obfuscate = (
+                obfuscation_config.enabled if obfuscation_config is not None else False
+            )
             script_file = self.main_menu.dotnet_compiler.compile_task(
                 module.compiler_yaml,
                 module.name,
                 dotnet=params["DotNetVersion"].lower(),
-                confuse=obfuscation_config.enabled,
+                confuse=obfuscate,
             )
             param_string = ""
             for key, value in params.items():
