@@ -227,13 +227,25 @@ def on_start(self, db):
     self.set_settings_option(db, "key", "value")
 ```
 
+#### `on_settings_change`
+
+When settings are updated, the `on_settings_change` function is called. This allows your plugin
+to react to changes in settings without needing to be restarted or continuously check the database.
+
+```python
+@override
+def on_settings_change(self, db, settings):
+    print(settings)
+```
+
+
 ### Internal State
 
 Internal state is state that is defined by the plugin and is not exposed via the API,
 but is persisted in the database. It can be accessed via `self.internal_state(db)`,
 and can be set via `self.set_internal_state(db, state)` or `self.set_internal_state_option(db, key, value)`.
 
-## 4->5 Changes
+## 4->5 Migration
 Not a lot has changed for plugins in Empire 5.0. We've just added a few guard rails for better
 stability between Empire versions.
 
@@ -252,7 +264,7 @@ This is no different than the way things were pre 5.0.
 * `plugin_socketio_message` was moved from `MainMenu` to `plugin_service`.
 * Example conversion for a 5.0 plugin can be seen in [ChiselServer-Plugin](https://github.com/BC-SECURITY/ChiselServer-Plugin/compare/5.0)
 
-## 5->6 Changes
+## 5->6 Migration
 * self.info is now an object of type `PluginInfo` instead of a dict
   * `self.info["Name"]` is now `self.info.name`
 * plugins now require a `plugin.yaml` file (added in 5.9)

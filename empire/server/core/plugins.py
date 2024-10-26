@@ -119,6 +119,12 @@ class BasePlugin:
         db_plugin = self.get_db_plugin(db)
         db_plugin.settings = settings
         db.flush()
+        self.on_settings_change(db, settings)
+
+    def on_settings_change(self, db, settings: dict[str, Any]):
+        """Things to do when the settings change: meant to be overridden by
+        the inheriting plugin."""
+        pass
 
     def set_internal_state(self, db, state: dict[str, Any]):
         db_plugin = self.get_db_plugin(db)
