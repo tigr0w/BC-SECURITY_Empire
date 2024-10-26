@@ -464,6 +464,14 @@ class PluginTask(Base):
         return f"<PluginTask(id='{self.id}')>"
 
 
+class PluginRegistry(Base):
+    __tablename__ = "plugin_registry"
+    name = Column(String(255), nullable=False, primary_key=True)
+    location = Column(Text, nullable=True)
+    url = Column(Text, nullable=True)
+    data = Column(JSON, nullable=False)
+
+
 class Reporting(Base):
     __tablename__ = "reporting"
     id = Column(Integer, Sequence("reporting_id_seq"), primary_key=True)

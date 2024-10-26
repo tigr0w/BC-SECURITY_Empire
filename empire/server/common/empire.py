@@ -21,6 +21,7 @@ from empire.server.core.listener_service import ListenerService
 from empire.server.core.listener_template_service import ListenerTemplateService
 from empire.server.core.module_service import ModuleService
 from empire.server.core.obfuscation_service import ObfuscationService
+from empire.server.core.plugin_registry_service import PluginRegistryService
 from empire.server.core.plugin_service import PluginService
 from empire.server.core.plugin_task_service import PluginTaskService
 from empire.server.core.profile_service import ProfileService
@@ -71,6 +72,7 @@ class MainMenu:
         self.pluginsv2 = PluginService(self)
         self.tagsv2 = TagService(self)
         self.stagergenv2 = StagerGenerationService(self)
+        self.pluginregistriesv2 = PluginRegistryService(self)
         self.plugintasksv2 = PluginTaskService(self)
 
         self.pluginsv2.startup()

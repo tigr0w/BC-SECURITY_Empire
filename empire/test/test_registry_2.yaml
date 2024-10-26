@@ -1,0 +1,19 @@
+schema_version: 1
+plugins:
+  - name: slack
+    url: https://github.com/bc-security/slack-other
+    authors:
+      - name: Example
+        handle: "@Example"
+        link: github.com/example
+    versions:
+      - name: 1.0.0
+        tar_url: https://github.com/bc-security/slack-other/releases/download/v1.0.0/slack.tar.gz
+        # TODO: checksum ?
+        subdirectory:
+      - name: 1.0.1
+        tar_url: https://github.com/bc-security/slack-other/releases/download/v1.0.1/slack.tar.gz
+        subdirectory:
+      - name: 2.0.0
+        tar_url: https://github.com/bc-security/slack-other/releases/download/v2.0.0/slack.tar.gz
+        subdirectory:

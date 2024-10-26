@@ -1,0 +1,21 @@
+schema_version: 1
+plugins:
+  - name: slack
+    url: https://github.com/bc-security/slack-plugin
+    authors:
+      - name: Example
+        handle: "@Example"
+        link: github.com/example
+    versions:
+      - name: main
+        git_url: https://github.com/bc-security/slack-plugin
+        ref: main
+        subdirectory:
+      - name: 1.0.0
+        git_url: https://github.com/bc-security/slack-plugin
+        ref: v1.0.0
+        subdirectory:
+      - name: 1.0.1
+        git_url: https://github.com/bc-security/slack-plugin
+        ref: v1.0.1
+        subdirectory:

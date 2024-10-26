@@ -86,7 +86,11 @@ def initialize(run: bool = True):  # noqa: PLR0915
     from empire.server.api.v2.meta import meta_api
     from empire.server.api.v2.module import module_api
     from empire.server.api.v2.obfuscation import obfuscation_api
-    from empire.server.api.v2.plugin import plugin_api, plugin_task_api
+    from empire.server.api.v2.plugin import (
+        plugin_api,
+        plugin_registry_api,
+        plugin_task_api,
+    )
     from empire.server.api.v2.profile import profile_api
     from empire.server.api.v2.stager import stager_api, stager_template_api
     from empire.server.api.v2.tag import tag_api
@@ -124,6 +128,7 @@ def initialize(run: bool = True):  # noqa: PLR0915
     app.include_router(meta_api.router)
     app.include_router(plugin_task_api.router)
     app.include_router(plugin_api.router)
+    app.include_router(plugin_registry_api.router)
     app.include_router(tag_api.router)
     app.include_router(ip_api.router)
     app.include_router(admin_api.router)

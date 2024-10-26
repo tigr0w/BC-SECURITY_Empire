@@ -42,6 +42,11 @@ database:
     # an IP black list to reject accept clients from
     #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
     ip-blacklist: ""
+plugin_registries:
+  - name: BC-SECURITY
+    location: empire/test/test_registry_1.yaml
+  - name: BC-SECURITY-TEST
+    location: empire/test/test_registry_2.yaml
 starkiller:
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
   # Can be a branch, tag, or commit hash

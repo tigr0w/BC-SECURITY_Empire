@@ -6,7 +6,14 @@ from typing import Annotated
 import netaddr
 import yaml
 from netaddr.core import AddrFormatError
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 log = logging.getLogger(__name__)
 
@@ -126,6 +133,19 @@ class PluginConfig(EmpireBaseModel):
     auto_execute: PluginAutoExecuteConfig | None = None
 
 
+class PluginRegistryConfig(EmpireBaseModel):
+    name: str
+    location: Path | None = None
+    url: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_location_or_url(cls, values):
+        if not values.get("location") and not values.get("url"):
+            raise ValueError("Either location or url must be set")
+        return values
+
+
 class EmpireConfig(EmpireBaseModel):
     supress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig | None = ApiConfig()
@@ -133,6 +153,7 @@ class EmpireConfig(EmpireBaseModel):
     submodules: SubmodulesConfig
     database: DatabaseConfig
     plugins: dict[str, PluginConfig] = {}
+    plugin_registries: list[PluginRegistryConfig] = []
     directories: DirectoriesConfig
     logging: LoggingConfig
     debug: DebugConfig
