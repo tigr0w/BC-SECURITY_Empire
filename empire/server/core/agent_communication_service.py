@@ -7,10 +7,12 @@ import string
 import threading
 import typing
 
+from pydantic import ValidationError
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
+from empire.server.api.v2.agent.agent_task_dto import ModulePostRequest
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
 from empire.server.common import encryption, helpers, packets
 from empire.server.core.config import empire_config
@@ -34,6 +36,7 @@ class AgentCommunicationService:
         self.agent_task_service = main_menu.agenttasksv2
         self.agent_socks_service = main_menu.agentsocksv2
         self.credential_service = main_menu.credentialsv2
+        self.listener_service = main_menu.listenersv2
         self.ip_service = main_menu.ipsv2
 
         # internal agent dictionary for the client's session key, funcions, and URI sets
@@ -407,7 +410,7 @@ class AgentCommunicationService:
         Handles agent staging/key-negotiation.
         """
 
-        listenerName = listener_options["Name"]["Value"]
+        listener_name = listener_options["Name"]["Value"]
 
         if meta == "STAGE0":
             # step 1 of negotiation -> client requests staging code
@@ -474,7 +477,7 @@ class AgentCommunicationService:
                     workingHours,
                     lostLimit,
                     nonce=nonce,
-                    listener=listenerName,
+                    listener=listener_name,
                 )
                 self.add_agent_to_cache(agent)
 
@@ -533,7 +536,7 @@ class AgentCommunicationService:
                     lostLimit,
                     session_key=serverPub.key.hex(),
                     nonce=nonce,
-                    listener=listenerName,
+                    listener=listener_name,
                     language=language,
                 )
                 self.add_agent_to_cache(agent)
@@ -607,7 +610,7 @@ class AgentCommunicationService:
             self.update_agent_sysinfo(
                 db,
                 session_id,
-                listener=listenerName,
+                listener=listener_name,
                 internal_ip=internal_ip,
                 username=username,
                 hostname=hostname,
@@ -619,6 +622,8 @@ class AgentCommunicationService:
                 language=language,
                 architecture=architecture,
             )
+
+            self.autorun_tasks(db, session_id)
 
             # signal everyone that this agent is now active
             message = f"Initial agent {session_id} from {client_ip} now active"
@@ -1296,3 +1301,20 @@ class AgentCommunicationService:
             log.warning(f"Unknown response {response_name} from {session_id}")
 
         hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, db, tasking)
+
+    def autorun_tasks(self, db: Session, session_id):
+        agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
+        )
+
+        listener = self.listener_service.get_by_name(db, agent.listener)
+
+        if listener.autorun_tasks:
+            for module_req in listener.autorun_tasks:
+                try:
+                    module_request = ModulePostRequest.parse_obj(module_req)
+                    self.agent_task_service.create_task_module(
+                        db, agent, module_request
+                    )
+                except ValidationError as e:
+                    log.error(f"Error parsing module request: {e}")

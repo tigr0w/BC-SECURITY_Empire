@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from empire.server.api.v2.agent.agent_task_dto import ModulePostRequest
 from empire.server.api.v2.shared_dto import (
     Author,
     CustomOptionSchema,
@@ -286,6 +287,10 @@ class Listener(BaseModel):
 
 class Listeners(BaseModel):
     records: list[Listener]
+
+
+class AutorunConfig(BaseModel):
+    records: list[ModulePostRequest]
 
 
 class ListenerPostRequest(BaseModel):

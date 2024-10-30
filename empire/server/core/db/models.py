@@ -157,6 +157,7 @@ class Listener(Base):
     options = Column(JSON)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
     tags = relationship("Tag", secondary=listener_tag_assc)
+    autorun_tasks = Column(JSON, nullable=True)
 
     def __repr__(self):
         return f"<Listener(name='{self.name}')>"

@@ -242,3 +242,46 @@ def test__handle_agent_response():
 
 def test__process_agent_packet():
     pass
+
+
+def _test_autorun_task(
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    session_local,
+    db,
+    listener,
+    agent_service,
+    main: MainMenu,
+):
+    mock_autorun_task = [
+        {
+            "module_id": "powershell_code_execution_invoke_boolang",
+            "ignore_language_version_check": False,
+            "ignore_admin_check": False,
+            "options": {"BooSource": "Hello World"},
+            "modified_input": "",
+        },
+        {
+            "module_id": "powershell_code_execution_invoke_ironpython",
+            "ignore_language_version_check": False,
+            "ignore_admin_check": False,
+            "options": {"ipyscript": "Hello World"},
+            "modified_input": "",
+        },
+    ]
+
+    db_listener = main.listenersv2.get_by_name(db, "new-listener-1")
+    db_listener.autorun_tasks = mock_autorun_task
+
+    db_agent = agent_service.get_by_name(db, agent)
+    db_agent.listener = "new-listener-1"
+
+    agent_communication_service.autorun_tasks(db, agent)
+
+    tasks, total = agent_task_service.get_tasks(db, agents=[agent])
+
+    assert len(tasks) == 2  # noqa: PLR2004
+    assert tasks[0].task_name == "TASK_POWERSHELL_CMD_JOB"
+    assert tasks[0].module_name == mock_autorun_task[1]["module_id"]
+    assert tasks[0].status == "queued"

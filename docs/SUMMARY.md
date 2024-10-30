@@ -39,6 +39,7 @@
 * [IP Filtering](ip-filtering.md)
 * [C#](csharp.md)
 * [Modules](modules/README.md)
+    * [Autorun Modules](modules/autorun_modules.md)
     * [Module Development](module-development/README.md)
       * [PowerShell Modules](module-development/powershell-modules.md)
       * [Python Modules](module-development/python-modules.md)
