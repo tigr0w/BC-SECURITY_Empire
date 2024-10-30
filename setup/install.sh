@@ -35,7 +35,11 @@ function command_exists() {
 function install_goenv() {
     echo -e "\x1b[1;34m[*] Installing goenv\x1b[0m"
 
-    git clone https://github.com/go-nv/goenv.git ~/.goenv
+    if [ -d "$HOME/.goenv" ]; then
+        echo -e "\x1b[1;32m[+] goenv is already installed in $HOME/.goenv, skipping clone\x1b[0m"
+    else
+        git clone https://github.com/go-nv/goenv.git ~/.goenv
+    fi
 
     export GOENV_ROOT="$HOME/.goenv"
     export PATH="$GOENV_ROOT/bin:$PATH"
@@ -51,9 +55,9 @@ function install_goenv() {
 
     # These are for the Docker builds since
     # the bashrc and zshrc files are not sourced
-    sudo ln -s $HOME/.goenv/shims/go /usr/bin/go
-    sudo ln -s $HOME/.goenv/shims/gofmt /usr/bin/gofmt
-    sudo ln -s $HOME/.goenv/bin/goenv /usr/bin/goenv
+    sudo ln -s $HOME/.goenv/shims/go /usr/bin/go || true
+    sudo ln -s $HOME/.goenv/shims/gofmt /usr/bin/gofmt || true
+    sudo ln -s $HOME/.goenv/bin/goenv /usr/bin/goenv || true
 }
 
 function install_go() {
