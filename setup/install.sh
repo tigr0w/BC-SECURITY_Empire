@@ -60,10 +60,64 @@ function install_goenv() {
     sudo ln -s $HOME/.goenv/bin/goenv /usr/bin/goenv || true
 }
 
+function update_goenv() {
+  echo -e "\x1b[1;34m[*] Updating goenv\x1b[0m"
+
+  cd $GOENV_ROOT && git fetch --all && git pull && cd -
+}
+
 function install_go() {
   echo -e "\x1b[1;34m[*] Installing Go\x1b[0m"
 
   goenv install $(cat .go-version)
+}
+
+function install_pyenv() {
+  echo -e "\x1b[1;34m[*] Installing pyenv\x1b[0m"
+
+  curl https://pyenv.run | bash
+
+  export PYENV_ROOT="$HOME/.pyenv"
+  command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init -)"
+
+  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+  echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+  echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+
+  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
+  echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
+  echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+
+  sudo ln -s $HOME/.pyenv/bin/pyenv /usr/bin/pyenv
+}
+
+function update_pyenv() {
+  echo -e "\x1b[1;34m[*] Updating pyenv\x1b[0m"
+
+  cd $PYENV_ROOT && git fetch --all && git pull && cd -
+}
+
+function install_python() {
+  echo -e "\x1b[1;34m[*] Installing Python\x1b[0m"
+
+  sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC \
+  apt-get -y install build-essential gdb lcov pkg-config \
+    libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
+    libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
+    lzma lzma-dev tk-dev uuid-dev zlib1g-dev
+
+  pyenv install $(cat .python-version)
+}
+
+function install_poetry() {
+  echo -e "\x1b[1;34m[*] Installing Poetry\x1b[0m"
+
+  curl -sSL https://install.python-poetry.org | python3 -
+  export PATH="$HOME/.local/bin:$PATH"
+  echo "export PATH=$HOME/.local/bin:$PATH" >> ~/.bashrc
+  echo "export PATH=$HOME/.local/bin:$PATH" >> ~/.zshrc
+  sudo ln -s $HOME/.local/bin/poetry /usr/bin
 }
 
 function install_powershell() {
@@ -325,11 +379,11 @@ fi
 
 if ! command_exists goenv; then
   install_goenv
+else
+  update_goenv
 fi
 
-if ! command_exists go; then
-  install_go
-fi
+install_go
 
 if ! command_exists mysql; then
   install_mysql
@@ -378,37 +432,15 @@ echo -e "\x1b[1;34m[*] Checking Python version\x1b[0m"
 # Debian 10 - 3.7, 11 - 3.9, 12 - 3.11
 # Kali and Parrot do not have a reliable version
 if ! command_exists pyenv; then
-  curl https://pyenv.run | bash
-
-  export PYENV_ROOT="$HOME/.pyenv"
-  command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init -)"
-
-  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-  echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-  echo 'eval "$(pyenv init -)"' >> ~/.bashrc
-
-  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
-  echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
-  echo 'eval "$(pyenv init -)"' >> ~/.zshrc
-
-  sudo ln -s $HOME/.pyenv/bin/pyenv /usr/bin/pyenv
-
-  sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC \
-    apt-get -y install build-essential gdb lcov pkg-config \
-      libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
-      libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
-      lzma lzma-dev tk-dev uuid-dev zlib1g-dev
-
-  pyenv install 3.12.2
+  install_pyenv
+else
+  update_pyenv
 fi
 
+install_python
+
 if ! command_exists poetry; then
-  curl -sSL https://install.python-poetry.org | python3 -
-  export PATH="$HOME/.local/bin:$PATH"
-  echo "export PATH=$HOME/.local/bin:$PATH" >> ~/.bashrc
-  echo "export PATH=$HOME/.local/bin:$PATH" >> ~/.zshrc
-  sudo ln -s $HOME/.local/bin/poetry /usr/bin
+  install_poetry
 fi
 
 echo -e "\x1b[1;34m[*] Installing Packages\x1b[0m"

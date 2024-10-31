@@ -13,9 +13,6 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
     assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     actual = resp.json()
-    for detail in actual["detail"]:
-        detail.pop("url")
-
     assert actual == {
         "detail": [
             {
@@ -128,9 +125,6 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
     assert resp_bad.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     actual = resp_bad.json()
-    for detail in actual["detail"]:
-        detail.pop("url")
-
     assert actual == {
         "detail": [
             {

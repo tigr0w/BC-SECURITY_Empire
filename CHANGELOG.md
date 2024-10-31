@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Renamed socks properties on `AgentSocksService` to use plural naming
 -   Remove `update_lastseen` parameter from `handle_agent_request`
 -   Renamed all config properties in client and server yamls to use snake_case
--   Changed minimum Python version to 3.12
+-   Changed minimum Python version to 3.13
 -   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
 -   `ip_whitelist` and `ip_blacklist` are now `ip_allow_list` and `ip_deny_list` and are lists instead of comma separated strings
 -   Plugins must use a `.py` extension and contain a `plugin.yaml` file in the same directory

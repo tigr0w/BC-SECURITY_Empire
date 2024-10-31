@@ -7,7 +7,7 @@ commandTests:
   - name: "python3 version"
     command: "python3"
     args: ["--version"]
-    expectedOutput: ["Python 3.12.*"]
+    expectedOutput: ["Python 3.13.*"]
   - name: "poetry"
     command: "which"
     args: ["poetry"]
@@ -19,7 +19,7 @@ commandTests:
   - name: "poetry python version"
     command: "poetry"
     args: ["run", "python3", "--version"]
-    expectedOutput: ["Python 3.12.*"]
+    expectedOutput: ["Python 3.13.*"]
   - name: "powershell which"
     command: "which"
     args: ["pwsh"]
