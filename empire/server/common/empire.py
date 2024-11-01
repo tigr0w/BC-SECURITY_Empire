@@ -34,7 +34,7 @@ from empire.server.core.user_service import UserService
 if TYPE_CHECKING:
     from socket import SocketIO
 
-VERSION = "5.11.4 BC Security Fork"
+VERSION = "5.11.5 BC Security Fork"
 
 log = logging.getLogger(__name__)
 

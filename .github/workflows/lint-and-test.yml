@@ -144,7 +144,7 @@ jobs:
       # To save CI time, only run these tests when the install script or deps changed
       - name: Get changed files using defaults
         id: changed-files
-        uses: tj-actions/changed-files@v44.5.5
+        uses: tj-actions/changed-files@v45.0.3
       - name: Build images
         if: contains(steps.changed-files.outputs.modified_files, 'setup/install.sh') || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
         run: docker compose -f .github/install_tests/docker-compose-install-tests.yml build --parallel ${{ join(matrix.images, ' ') }}

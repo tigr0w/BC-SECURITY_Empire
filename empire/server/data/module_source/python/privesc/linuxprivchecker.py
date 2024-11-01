@@ -333,22 +333,22 @@ def search_file_perms():
 
     fdperms = {
         "WWDIRSROOT": {
-            "cmd": "find / \( -wholename '/home/homedir*' -prune \) -o \( -type d -perm -0002 \) -exec ls -ld '{}' ';' 2>/dev/null | grep root",
+            "cmd": r"find / \( -wholename '/home/homedir*' -prune \) -o \( -type d -perm -0002 \) -exec ls -ld '{}' ';' 2>/dev/null | grep root",
             "msg": "World Writeable Directories for User/Group 'Root'",
             "results": [],
         },
         "WWDIRS": {
-            "cmd": "find / \( -wholename '/home/homedir*' -prune \) -o \( -type d -perm -0002 \) -exec ls -ld '{}' ';' 2>/dev/null | grep -v root",
+            "cmd": r"find / \( -wholename '/home/homedir*' -prune \) -o \( -type d -perm -0002 \) -exec ls -ld '{}' ';' 2>/dev/null | grep -v root",
             "msg": "World Writeable Directories for Users other than Root",
             "results": [],
         },
         "WWFILES": {
-            "cmd": "find / \( -wholename '/home/homedir/*' -prune -o -wholename '/proc/*' -prune \) -o \( -type f -perm -0002 \) -exec ls -l '{}' ';' 2>/dev/null",
+            "cmd": r"find / \( -wholename '/home/homedir/*' -prune -o -wholename '/proc/*' -prune \) -o \( -type f -perm -0002 \) -exec ls -l '{}' ';' 2>/dev/null",
             "msg": "World Writable Files",
             "results": [],
         },
         "SUID": {
-            "cmd": "find / \( -perm -2000 -o -perm -4000 \) -exec ls -ld {} \; 2>/dev/null",
+            "cmd": r"find / \( -perm -2000 -o -perm -4000 \) -exec ls -ld {} \; 2>/dev/null",
             "msg": "SUID/SGID Files and Directories",
             "results": [],
         },
@@ -1171,7 +1171,7 @@ def run_check():
     bigline = "======================================================================================="
     print(bigline)
     print(
-        """
+        r"""
         __    _                  ____       _       ________              __
        / /   (_)___  __  ___  __/ __ \_____(_)   __/ ____/ /_  ___  _____/ /_____  _____
       / /   / / __ \/ / / / |/_/ /_/ / ___/ / | / / /   / __ \/ _ \/ ___/ //_/ _ \/ ___/

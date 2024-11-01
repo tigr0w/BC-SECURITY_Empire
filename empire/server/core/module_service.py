@@ -205,6 +205,9 @@ class ModuleService:
                     f"Unsupported module language {module.language} for agent {agent.language}"
                 )
 
+        elif agent.language == "ironpython" and module.language in ("csharp", "bof"):
+            task_command = "TASK_CSHARP"
+
         else:
             log.error(f"Unsupported agent language {agent.language}")
             return None, f"Unsupported agent language: {agent.language}"
