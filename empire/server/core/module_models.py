@@ -58,6 +58,15 @@ class BofModuleOption(BaseModel):
     entry_point: str | None = None
 
 
+class CSharpOption(BaseModel):
+    UnsafeCompile: bool = False
+    CompatibleDotNetVersions: list[str] = []
+    Code: str = ""
+    ReferenceSourceLibraries: list[dict] | None = []
+    ReferenceAssemblies: list[dict] | None = []
+    EmbeddedResources: list[dict] | None = []
+
+
 class EmpireModule(BaseModel):
     id: str
     name: str
@@ -81,3 +90,4 @@ class EmpireModule(BaseModel):
     enabled: bool = True
     advanced: EmpireModuleAdvanced = EmpireModuleAdvanced()
     compiler_yaml: str | None = None
+    csharp: CSharpOption | None = None

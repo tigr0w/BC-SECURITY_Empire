@@ -43,7 +43,7 @@ RUN unameOut="$(uname -m)" && \
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
     ln -s /root/.local/bin/poetry /usr/bin
 
-ENV EMPIRE_COMPILER_VERSION="v0.1.1"
+ENV EMPIRE_COMPILER_VERSION="v0.2.0"
 ENV PARENT_PATH="/empire"
 
 RUN ARCH=$(uname -m) && \
@@ -54,6 +54,8 @@ RUN ARCH=$(uname -m) && \
     else \
         echo -e "[!] Unsupported architecture: $ARCH. Exiting." && exit 1; \
     fi && \
+    SOURCE_DIR="$PARENT_PATH/empire/server/Empire-Compiler" && \
+    git clone --branch "$EMPIRE_COMPILER_VERSION" --recursive --depth 1 https://github.com/BC-SECURITY/Empire-Compiler.git "$SOURCE_DIR" && \
     DOWNLOAD_URL="https://github.com/BC-SECURITY/Empire-Compiler/releases/download/${EMPIRE_COMPILER_VERSION}/EmpireCompiler-${ARCH}" && \
     TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler/EmpireCompiler" && \
     mkdir -p "$TARGET_DIR" && \

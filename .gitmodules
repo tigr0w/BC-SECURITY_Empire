@@ -10,6 +10,3 @@
 [submodule "empire/server/plugins/Report-Generation-Plugin"]
 	path = empire/server/plugins/Report-Generation-Plugin
 	url = https://github.com/BC-SECURITY/Report-Generation-Plugin.git
-[submodule "empire/server/Empire-Compiler"]
-	path = empire/server/Empire-Compiler
-	url = https://github.com/BC-SECURITY/Empire-Compiler.git

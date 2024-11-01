@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EMPIRE_COMPILER_VERSION="v0.1.1"
+EMPIRE_COMPILER_VERSION="v0.2.0"
 COMPILE_FROM_SOURCE=0
 FORCE_ROOT=0
 
@@ -200,19 +200,36 @@ EOT
 
 function compile_empire_compiler() {
     install_dotnet
+
+    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler"
+
+    if [ -d "$TARGET_DIR" ] && [ "$(ls -A "$TARGET_DIR")" ]; then
+        echo "[*] Empire-Compiler directory already exists and is not empty. Skipping download."
+    else
+        echo "[*] Downloading Empire-Compiler"
+
+        mkdir -p "$TARGET_DIR"
+        git clone --recursive --branch $EMPIRE_COMPILER_VERSION https://github.com/BC-SECURITY/Empire-Compiler.git "$TARGET_DIR"
+
+        if [ $? -eq 0 ]; then
+            echo "[*] Empire-Compiler downloaded successfully."
+        else
+            echo "[!] Failed to download Empire-Compiler. Please check the path and permissions."
+            exit 1
+        fi
+    fi
+
     echo -e "\x1b[1;34m[*] Compiling Empire-Compiler from source\x1b[0m"
 
-    # Compile the project
-    dotnet publish empire/server/Empire-Compiler/ -c Release -r $(get_architecture) --self-contained -p:PublishTrimmed=true  -p:PublishSingleFile=true -o ./publish/$(get_architecture)
+    dotnet publish "$TARGET_DIR" -c Release -r $(get_architecture) --self-contained -p:PublishTrimmed=true -p:PublishSingleFile=true -o ./publish/$(get_architecture)
 
-    # Move the compiled binary to the target directory
-    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler/EmpireCompiler"
-    mkdir -p "$TARGET_DIR"
-    mv ./publish/$(get_architecture)/* "$TARGET_DIR"
+    BIN_DIR="$TARGET_DIR/EmpireCompiler"
+    mkdir -p "$BIN_DIR"
+    mv ./publish/$(get_architecture)/* "$BIN_DIR"
 
     if [ $? -eq 0 ]; then
         echo -e "\x1b[1;34m[*] Setting execute permissions\x1b[0m"
-        chmod +x "${TARGET_DIR}/EmpireCompiler"
+        chmod +x "${BIN_DIR}/EmpireCompiler"
 
         echo -e "\x1b[1;32m[+] Compilation and placement complete!\x1b[0m"
     else
@@ -231,18 +248,31 @@ function download_empire_compiler() {
         exit 1
     fi
 
-    DOWNLOAD_URL="https://github.com/BC-SECURITY/Empire-Compiler/releases/download/${EMPIRE_COMPILER_VERSION}/EmpireCompiler-${ARCH}"  # Adjust the file extension if needed
+    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler"
+    if [ -d "$TARGET_DIR" ] && [ "$(ls -A "$TARGET_DIR")" ]; then
+        echo "[*] Empire-Compiler directory already exists and is not empty. Skipping download."
+    else
+        mkdir -p "$TARGET_DIR"
 
-    echo -e "\x1b[1;34m[*] Downloading from: $DOWNLOAD_URL\x1b[0m"
+        git clone --recursive --branch $EMPIRE_COMPILER_VERSION https://github.com/BC-SECURITY/Empire-Compiler.git "$TARGET_DIR"
 
-    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler/EmpireCompiler"
-    mkdir -p "$TARGET_DIR"
+        if [ $? -eq 0 ]; then
+            echo "[*] Empire-Compiler downloaded successfully."
+        else
+            echo "[!] Failed to download Empire-Compiler. Please check the path and permissions."
+            exit 1
+        fi
+    fi
 
-    wget -O "${TARGET_DIR}/EmpireCompiler" "$DOWNLOAD_URL"
+    DOWNLOAD_URL="https://github.com/BC-SECURITY/Empire-Compiler/releases/download/${EMPIRE_COMPILER_VERSION}/EmpireCompiler-${ARCH}"
+    BIN_DIR="$TARGET_DIR/EmpireCompiler"
+    mkdir -p "$BIN_DIR"
+
+    wget -O "${BIN_DIR}/EmpireCompiler" "$DOWNLOAD_URL"
 
     if [ $? -eq 0 ]; then
         echo -e "\x1b[1;34m[*] Setting execute permissions\x1b[0m"
-        chmod 777 "${TARGET_DIR}/EmpireCompiler"  # Ensure the correct file name after extraction
+        chmod 777 "${BIN_DIR}/EmpireCompiler"
 
         echo -e "\x1b[1;32m[+] Download and placement complete!\x1b[0m"
     else

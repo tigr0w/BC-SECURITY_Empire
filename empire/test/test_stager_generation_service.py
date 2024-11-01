@@ -3,15 +3,17 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 
 import pytest
 import requests
 
 from empire.server.common.empire import MainMenu
 
-EMPIRE_COMPILER_VERSION = "v0.1.1"
+EMPIRE_COMPILER_VERSION = "v0.2.0"
+repo_path = "empire/server/Empire-Compiler"
 base_download_url = "https://github.com/BC-SECURITY/Empire-Compiler/releases/download"
-target_dir = "empire/server/Empire-Compiler/EmpireCompiler"
+target_dir = os.path.join(repo_path, "EmpireCompiler")
 target_compiler_path = os.path.join(target_dir, "EmpireCompiler")
 
 
@@ -45,6 +47,30 @@ def download_file(url, target_path):
         response.raise_for_status()
 
 
+def clone_repository_if_needed():
+    """
+    Clone the repository if it doesn't already exist.
+    """
+    if not os.path.exists(repo_path):
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "--branch",
+                EMPIRE_COMPILER_VERSION,
+                "--recursive",
+                "--depth",
+                "1",
+                "https://github.com/BC-SECURITY/Empire-Compiler.git",
+                repo_path,
+            ],
+            check=True,
+        )
+        print("Repository cloned successfully.")
+    else:
+        print("Repository already cloned.")
+
+
 def ensure_empire_compiler_exists():
     """
     Ensure that the EmpireCompiler binary is in the target directory.
@@ -63,9 +89,7 @@ def ensure_empire_compiler_exists():
             f"{base_download_url}/{EMPIRE_COMPILER_VERSION}/EmpireCompiler-{arch}"
         )
 
-        temp_download_path = os.path.join(
-            "/tmp", "EmpireCompiler"
-        )  # Temporary download location
+        temp_download_path = os.path.join("/tmp", "EmpireCompiler")
         download_file(download_url, temp_download_path)
         shutil.move(temp_download_path, target_compiler_path)
         os.chmod(target_compiler_path, 0o755)
@@ -74,6 +98,7 @@ def ensure_empire_compiler_exists():
         print("EmpireCompiler already exists.")
 
 
+clone_repository_if_needed()
 ensure_empire_compiler_exists()
 
 

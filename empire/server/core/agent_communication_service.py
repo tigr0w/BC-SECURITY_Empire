@@ -767,7 +767,10 @@ class AgentCommunicationService:
                 # build tasking packets for everything we have
                 for tasking in tasks:
                     input_full = tasking.input_full
-                    if tasking.task_name == "TASK_CSHARP_CMD_JOB":
+                    if tasking.task_name in [
+                        "TASK_CSHARP_CMD_JOB",
+                        "TASK_CSHARP_CMD_WAIT",
+                    ]:
                         with open(tasking.input_full.split("|")[0], "rb") as f:
                             input_full = f.read()
                         input_full = base64.b64encode(input_full).decode("UTF-8")
@@ -1111,7 +1114,11 @@ class AgentCommunicationService:
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)
 
-        elif response_name in ["TASK_POWERSHELL_CMD_WAIT", "TASK_PYTHON_CMD_WAIT"]:
+        elif response_name in [
+            "TASK_POWERSHELL_CMD_WAIT",
+            "TASK_PYTHON_CMD_WAIT",
+            "TASK_CSHARP_CMD_WAIT",
+        ]:
             # dynamic script output -> blocking
 
             # see if there are any credentials to parse

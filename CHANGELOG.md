@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Plugins refactored - see the `plugin-development` wiki page
 -   Updated install base test remove nim and dotnet
 -   Updated module_service logic for tasking types
+-   Updated shortened task results to show the C# command ran and full input to show directory of the file
+-   Updated C# tasks into folders and split yamls to be 1 per a file
 
 #### Breaking
 -   Moved `Agents` class to `AgentCommunicationService`
@@ -68,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Moved C# compiler to a submodule.
 -   All C# module code has been moved as submodules of Empire-Compiler
 -   Update module validation to not include the internal and depends_on options
+-   Moved EmpireCompiler from a submodule to be downloaded instead
+-   Migrated all C# modules to Empire yaml format
+-   Moved EmpireCompiler compression from application to the server
 
 ### Deprecated
 
