@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Query
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
+from empire.server.api.v2.plugin.plugin_api import CurrentPlugin
 from empire.server.api.v2.plugin.plugin_task_dto import (
     PluginTask,
     PluginTaskOrderOptions,
@@ -41,23 +42,14 @@ router = APIRouter(
 )
 
 
-async def get_plugin(plugin_id: str):
-    plugin = plugin_service.get_by_id(plugin_id)
-
-    if plugin:
-        return plugin
-
-    raise HTTPException(404, f"Plugin not found for id {plugin_id}")
-
-
-async def get_task(uid: int, db: CurrentSession, plugin=Depends(get_plugin)):
-    task = plugin_task_service.get_task(db, plugin.info.name, uid)
+async def get_task(uid: int, db: CurrentSession, plugin: CurrentPlugin):
+    task = plugin_task_service.get_task(db, plugin.db_plugin.name, uid)
 
     if task:
         return task
 
     raise HTTPException(
-        404, f"Task not found for plugin {plugin.info.name} and task id {uid}"
+        404, f"Task not found for plugin {plugin.db_plugin.name} and task id {uid}"
     )
 
 
@@ -112,6 +104,7 @@ async def read_tasks_all_plugins(
 @router.get("/{plugin_id}/tasks", response_model=PluginTasks)
 async def read_tasks(
     db: CurrentSession,
+    plugin: CurrentPlugin,
     limit: int = -1,
     page: int = 1,
     include_full_input: bool = False,
@@ -122,12 +115,11 @@ async def read_tasks(
     status: PluginTaskStatus | None = None,
     users: list[int] | None = Query(None),
     tags: list[TagStr] | None = Query(None),
-    plugin=Depends(get_plugin),
     query: str | None = None,
 ):
     tasks, total = plugin_task_service.get_tasks(
         db,
-        plugins=[plugin.info.name],
+        plugins=[plugin.db_plugin.name],
         users=users,
         tags=tags,
         limit=limit,
@@ -157,8 +149,6 @@ async def read_tasks(
 @router.get("/{plugin_id}/tasks/{uid}", response_model=PluginTask)
 async def read_task(
     uid: int,
-    db: CurrentSession,
-    plugin=Depends(get_plugin),
     db_task: models.PluginTask = Depends(get_task),
 ):
     if not db_task:

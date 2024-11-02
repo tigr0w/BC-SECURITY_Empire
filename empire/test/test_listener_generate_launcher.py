@@ -7,15 +7,14 @@ from empire.server.common import helpers
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_staging_key(db, models):
-    config = db.query(models.Config).first()
-    config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
-    db.add(config)
-    db.commit()
+def _setup_staging_key(session_local, models):
+    with session_local.begin() as db:
+        config = db.query(models.Config).first()
+        config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
 
 
 @pytest.fixture
-def main_menu_mock(db, models):
+def main_menu_mock(models):
     main_menu = Mock()
     main_menu.installPath = ""
     main_menu.listeners.activeListeners = {}

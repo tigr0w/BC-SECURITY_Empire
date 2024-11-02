@@ -109,7 +109,8 @@ class PluginTaskService:
         return results, total
 
     def get_task(self, db: SessionLocal, plugin_id: str, task_id: int):
-        plugin = self.plugin_service.get_by_id(plugin_id)
+        # TODO: Check all the uses of get_by_id
+        plugin = self.plugin_service.get_by_id(db, plugin_id)
         if plugin:
             task = (
                 db.query(models.PluginTask)

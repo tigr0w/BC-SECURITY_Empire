@@ -45,18 +45,20 @@ def test_install_plugin_plugin_not_found(client, admin_auth_header):
 
 
 @contextmanager
-def patch_installed_plugin(plugin_service, plugin_name):
-    plugin_service.loaded_plugins[plugin_name] = Mock()
+def patch_installed_plugin(plugin_name, session_local, models):
+    with session_local.begin() as db:
+        db.add(models.Plugin(id=plugin_name, name=plugin_name, enabled=True))
 
     yield
 
-    del plugin_service.loaded_plugins[plugin_name]
+    with session_local.begin() as db:
+        db.query(models.Plugin).filter(models.Plugin.id == plugin_name).delete()
 
 
 def test_install_plugin_plugin_already_installed(
-    client, admin_auth_header, plugin_service
+    client, admin_auth_header, plugin_name, session_local, models
 ):
-    with patch_installed_plugin(plugin_service, "slack"):
+    with patch_installed_plugin("slack", session_local, models):
         response = client.post(
             "/api/v2/plugin-registries/marketplace/install",
             json={"name": "slack", "version": "1.0.0", "registry": "BC-SECURITY"},

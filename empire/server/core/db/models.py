@@ -2,6 +2,9 @@ import base64
 import enum
 import os
 
+import sqlalchemy
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -20,11 +23,13 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects import mysql
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declarative_base, deferred, relationship
 from sqlalchemy_utc import UtcDateTime, utcnow
 
-from empire.server.core.config import empire_config
+from empire.server.core.config import PluginAutoExecuteConfig, empire_config
+from empire.server.core.module_models import EmpireAuthor
 from empire.server.utils.datetime_util import is_stale
 
 Base = declarative_base()
@@ -124,6 +129,60 @@ download_tag_assc = Table(
     Column("download_id", Integer, ForeignKey("downloads.id")),
     Column("tag_id", Integer, ForeignKey("tags.id")),
 )
+
+
+# https://roman.pt/posts/pydantic-in-sqlalchemy-fields/
+class PydanticType(sqlalchemy.types.TypeDecorator):
+    """Pydantic type.
+    SAVING:
+    - Uses SQLAlchemy JSON type under the hood.
+    - Acceps the pydantic model and converts it to a dict on save.
+    - SQLAlchemy engine JSON-encodes the dict to a string.
+    RETRIEVING:
+    - Pulls the string from the database.
+    - SQLAlchemy engine JSON-decodes the string to a dict.
+    - Uses the dict to create a pydantic model.
+    """
+
+    # If you work with PostgreSQL, you can consider using
+    # sqlalchemy.dialects.postgresql.JSONB instead of a
+    # generic sa.types.JSON
+    #
+    # Ref: https://www.postgresql.org/docs/13/datatype-json.html
+    impl = sqlalchemy.types.JSON
+
+    def __init__(self, pydantic_type):
+        super().__init__()
+        self.pydantic_type = pydantic_type
+
+    def load_dialect_impl(self, dialect):
+        # Use JSONB for PostgreSQL and JSON for other databases.
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(JSONB())
+        return dialect.type_descriptor(sqlalchemy.JSON())
+
+    def process_bind_param(self, value, dialect):
+        return jsonable_encoder(value) if value else None
+
+    def process_result_value(self, value, dialect):
+        if self.pydantic_type and value:
+            return self.pydantic_type.model_validate(value)
+
+        return None
+
+
+class PluginInfo(BaseModel):
+    name: str
+    authors: list[EmpireAuthor] = []
+    description: str | None = ""
+    software: str | None = ""
+    techniques: list[str] | None = []
+    tactics: list[str] | None = []
+    comments: list[str] | None = []
+    auto_start: bool = True
+    auto_execute: PluginAutoExecuteConfig | None = None
+    main: str
+    python_deps: list[str] | None = []
 
 
 class User(Base):
@@ -430,7 +489,9 @@ class Plugin(Base):
     name = Column(String(255), nullable=False)
     enabled = Column(Boolean, nullable=False)
     settings = Column(JSON)
+    settings_initialized = Column(Boolean, nullable=False, default=False)
     internal_state = Column(JSON)
+    info = Column(PydanticType(PluginInfo), nullable=False)
 
 
 class PluginTaskStatus(str, enum.Enum):

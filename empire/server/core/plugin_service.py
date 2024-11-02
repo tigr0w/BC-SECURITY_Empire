@@ -9,6 +9,7 @@ from pathlib import Path
 
 import requests
 import yaml
+from pydantic import BaseModel
 from requests_file import FileAdapter
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_200_OK
@@ -17,11 +18,12 @@ from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
 from empire.server.core.config import PluginConfig, empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.db.models import PluginInfo
 from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
 )
-from empire.server.core.plugins import PluginInfo
+from empire.server.core.plugins import BasePlugin
 from empire.server.utils import git_util
 from empire.server.utils.option_util import validate_options
 
@@ -32,6 +34,14 @@ log = logging.getLogger(__name__)
 
 s = requests.Session()
 s.mount("file://", FileAdapter())
+
+
+class PluginHolder(BaseModel):
+    loaded_plugin: BasePlugin | None
+    db_plugin: models.Plugin | None
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class PluginService:
@@ -50,11 +60,11 @@ class PluginService:
             self.load_plugins(db)
             self.auto_execute_plugins(db)
 
-    def get_plugin_db(self, db: Session, plugin_id: str):
-        return db.query(models.Plugin).filter(models.Plugin.id == plugin_id).first()
-
-    def update_plugin_enabled(self, db: Session, plugin, enabled: bool):
-        db_plugin = self.get_plugin_db(db, plugin.info.name)
+    def update_plugin_enabled(
+        self, db: Session, plugin_holder: PluginHolder, enabled: bool
+    ):
+        db_plugin = plugin_holder.db_plugin
+        plugin = plugin_holder.loaded_plugin
         if db_plugin.enabled == enabled:
             return
         if enabled:
@@ -66,10 +76,14 @@ class PluginService:
             db_plugin.enabled = False
             plugin.enabled = False
 
-    def update_plugin_settings(self, db: Session, plugin, settings: dict):
+    def update_plugin_settings(
+        self, db: Session, plugin_holder: PluginHolder, settings: dict
+    ):
         """
         Will skip any options that are not editable.
         """
+        plugin = plugin_holder.loaded_plugin
+        db_plugin = plugin_holder.db_plugin
         cleaned_options, err = validate_options(
             plugin.settings_options, settings, db, self.download_service
         )
@@ -80,8 +94,6 @@ class PluginService:
         # Add the uneditable settings back to the dict.
         current_settings = plugin.current_settings(db)
         cleaned_options = {**current_settings, **cleaned_options}
-
-        db_plugin = self.get_plugin_db(db, plugin.info.name)
         db_plugin.settings = cleaned_options
 
         return cleaned_options
@@ -92,7 +104,7 @@ class PluginService:
         """
         plugins = self.loaded_plugins
         for plugin_name, plugin in plugins.items():
-            auto_execute = self._determine_auto_execute(plugin, empire_config)
+            auto_execute = self._determine_auto_execute(plugin.info, empire_config)
 
             if auto_execute is None or auto_execute.enabled is False:
                 continue
@@ -126,24 +138,38 @@ class PluginService:
 
     def load_plugin(self, db: Session, plugin_dir: Path, plugin_config: PluginInfo):
         """Given the name of a plugin and a menu object, load it into the menu"""
-        file_path = plugin_dir / plugin_config.main
-        plugin_obj = self._create_plugin_obj(db, file_path, plugin_config)
+        name = plugin_config.name
+        plugin_holder = self.get_by_id(db, name)
 
-        self.loaded_plugins[plugin_obj.info.name] = plugin_obj
-        db_plugin = self.get_plugin_db(db, plugin_obj.info.name)
-
-        if not db_plugin:
-            auto_start = self._determine_auto_start(plugin_obj, empire_config)
+        if not plugin_holder:
+            auto_start = self._determine_auto_start(plugin_config, empire_config)
 
             db_plugin = models.Plugin(
-                id=plugin_obj.info.name,
-                name=plugin_obj.info.name,
+                id=name,
+                name=name,
                 enabled=auto_start,
                 settings={},
+                settings_initialized=False,
+                info=plugin_config,
             )
             db.add(db_plugin)
             db.flush()
+        else:
+            db_plugin = plugin_holder.db_plugin
+
+        file_path = plugin_dir / plugin_config.main
+        try:
+            plugin_obj = self._create_plugin_obj(db, file_path, plugin_config)
+        except ImportError as e:
+            db_plugin.enabled = False
+            log.warning(f"Failed to load plugin {name}: {e}")
+            return
+
+        if not db_plugin.settings_initialized:
             plugin_obj.set_initial_options(db)
+            db_plugin.settings_initialized = True
+
+        self.loaded_plugins[name] = plugin_obj
 
         try:
             if db_plugin.enabled:
@@ -251,11 +277,25 @@ class PluginService:
                     )
                 )
 
-    def get_all(self):
-        return self.loaded_plugins
+    def get_all(self, db):
+        loaded_plugins = self.loaded_plugins
+        db_plugins = db.query(models.Plugin).all()
 
-    def get_by_id(self, uid: str):
-        return self.loaded_plugins.get(uid)
+        ret = []
+        for db_plugin in db_plugins:
+            loaded_plugin = loaded_plugins.get(db_plugin.id)
+            ret.append(PluginHolder(loaded_plugin=loaded_plugin, db_plugin=db_plugin))
+
+        return ret
+
+    def get_by_id(self, db: SessionLocal, uid: str) -> PluginHolder | None:
+        loaded_plugin = self.loaded_plugins.get(uid)
+        db_plugin = db.query(models.Plugin).filter(models.Plugin.id == uid).first()
+
+        if not db_plugin:
+            return None
+
+        return PluginHolder(loaded_plugin=loaded_plugin, db_plugin=db_plugin)
 
     def shutdown(self):
         with SessionLocal.begin() as db:
@@ -285,7 +325,7 @@ class PluginService:
         and move it to the plugin directory."""
         plugin_config = self._validate_plugin(temp_dir)
 
-        if self.get_plugin_db(db, plugin_config.name):
+        if self.get_by_id(db, plugin_config.name):
             raise PluginValidationException("Plugin already exists")
 
         plugin_dir = self.plugin_path / "marketplace" / plugin_config.name
@@ -301,24 +341,24 @@ class PluginService:
         return module.Plugin(self.main_menu, plugin_config, db)
 
     @staticmethod
-    def _determine_auto_start(plugin_obj, empire_config) -> bool:
+    def _determine_auto_start(plugin_config: PluginInfo, empire_config) -> bool:
         # Server Config -> Plugin Config (Default True)
-        server_config = empire_config.plugins.get(plugin_obj.info.name, PluginConfig())
+        server_config = empire_config.plugins.get(plugin_config.name, PluginConfig())
 
         if server_config.auto_start is not None:
             return server_config.auto_start
 
-        return plugin_obj.info.auto_start
+        return plugin_config.auto_start
 
     @staticmethod
-    def _determine_auto_execute(plugin_obj, empire_config) -> PluginConfig | None:
+    def _determine_auto_execute(plugin_config, empire_config) -> PluginConfig | None:
         # Server Config -> Plugin Config -> Default (None)
-        server_config = empire_config.plugins.get(plugin_obj.info.name)
+        server_config = empire_config.plugins.get(plugin_config.name)
 
         if server_config is not None and server_config.auto_execute is not None:
             return server_config.auto_execute
-        if plugin_obj.info.auto_execute is not None:
-            return plugin_obj.info.auto_execute
+        if plugin_config.auto_execute is not None:
+            return plugin_config.auto_execute
 
         return None
 

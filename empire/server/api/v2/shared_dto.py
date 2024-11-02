@@ -1,3 +1,4 @@
+import typing
 from enum import Enum
 from typing import Annotated, Any
 
@@ -7,7 +8,8 @@ from pydantic import (
     ConfigDict,
 )
 
-from empire.server.core.db import models
+if typing.TYPE_CHECKING:
+    from empire.server.core.db import models
 
 
 class BadRequestResponse(BaseModel):
@@ -69,7 +71,7 @@ class Author(BaseModel):
     link: str | None = None
 
 
-def domain_to_dto_download_description(download: models.Download):
+def domain_to_dto_download_description(download: "models.Download"):
     if download.filename:
         filename = download.filename
     else:

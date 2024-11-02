@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from empire.server.core.plugins import BasePlugin, PluginInfo
+from empire.server.core.db.models import PluginInfo
+from empire.server.core.plugins import BasePlugin
 
 
 class Plugin(BasePlugin):

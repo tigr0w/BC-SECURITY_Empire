@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 import tarfile
+import typing
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -17,7 +18,9 @@ from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
 )
-from empire.server.core.plugin_service import PluginService
+
+if typing.TYPE_CHECKING:
+    from empire.server.core.plugin_service import PluginService
 
 
 @contextmanager
@@ -498,7 +501,7 @@ def foo_plugin():
 
 
 @pytest.fixture(scope="session")
-def plugin_service(main) -> PluginService:
+def plugin_service(main) -> "PluginService":
     return main.pluginsv2
 
 
@@ -555,6 +558,42 @@ def test_install_plugin_git_invalid(
 
 @pytest.mark.no_docker
 @pytest.mark.usefixtures("_cleanup_foo_plugin")
+def test_install_plugin_with_python_deps(
+    client, admin_auth_header, main, foo_plugin, session_local
+):
+    # Add a twilio import to the plugin so that it triggers the import error
+    _git_commands(foo_plugin, [["checkout", "6.0"]])
+    foo_py = (foo_plugin / "foo.py").read_text()
+    foo_py_lines = foo_py.split("\n")
+    last_import_index = max(
+        i for i, line in enumerate(foo_py_lines) if line.startswith("import ")
+    )
+    foo_py_lines.insert(last_import_index + 1, "import twilio")
+    (foo_plugin / "foo.py").write_text("\n".join(foo_py_lines))
+    _git_commands(foo_plugin, [["add", "."], ["commit", "-m", "Add twilio import"]])
+
+    response = client.post(
+        "/api/v2/plugins/install/git",
+        json={
+            "url": "file://" + str(foo_plugin.absolute()),
+            "ref": "6.0",
+        },
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == HTTP_200_OK
+
+    response = client.get("/api/v2/plugins/foo", headers=admin_auth_header)
+    assert response.status_code == HTTP_200_OK
+    assert response.json()["loaded"] is False
+
+    assert main.pluginsv2.loaded_plugins.get("foo") is None
+    with session_local.begin() as db:
+        assert main.pluginsv2.get_by_id(db, "foo") is not None
+
+
+@pytest.mark.no_docker
+@pytest.mark.usefixtures("_cleanup_foo_plugin")
 def test_install_plugin_git(client, admin_auth_header, main, foo_plugin):
     response = client.post(
         "/api/v2/plugins/install/git",
@@ -567,6 +606,10 @@ def test_install_plugin_git(client, admin_auth_header, main, foo_plugin):
 
     assert response.status_code == HTTP_200_OK
     assert main.pluginsv2.loaded_plugins.get("foo") is not None
+
+    response = client.get("/api/v2/plugins/foo", headers=admin_auth_header)
+    assert response.status_code == HTTP_200_OK
+    assert response.json()["python_deps"] == ["requests>=2.25.1", "twilio"]
 
     # Test duplicate install
     response = client.post(

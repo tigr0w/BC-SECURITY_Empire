@@ -47,9 +47,7 @@ def patch_plugin_class_on_load_on_unload(plugin_class, on_load=None, on_unload=N
         yield
 
 
-def test_auto_execute_plugins(
-    caplog, monkeypatch, db, models, empire_config, install_path
-):
+def test_auto_execute_plugins(caplog, monkeypatch, models, empire_config, install_path):
     caplog.set_level(logging.DEBUG)
 
     from empire.server.core.plugin_service import PluginService
@@ -63,7 +61,7 @@ def test_auto_execute_plugins(
     assert "Message: Hello World!" in caplog.text
 
 
-def test_plugin_execute_with_kwargs(install_path):
+def test_plugin_execute_with_kwargs(session_local, install_path):
     from empire.server.core.plugin_service import PluginService
 
     def execute(options, **kwargs):
@@ -74,15 +72,17 @@ def test_plugin_execute_with_kwargs(install_path):
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
 
-    plugin = plugin_service.get_by_id("basic_reporting")
-    with patch_plugin_execute(plugin, execute):
-        req = PluginExecutePostRequest(options={"report": "session"})
-        res, err = plugin_service.execute_plugin("db_session", plugin, req, 1)
+    with session_local.begin() as db:
+        plugin_holder = plugin_service.get_by_id(db, "basic_reporting")
+        plugin = plugin_holder.loaded_plugin
+        with patch_plugin_execute(plugin, execute):
+            req = PluginExecutePostRequest(options={"report": "session"})
+            res, err = plugin_service.execute_plugin("db_session", plugin, req, 1)
 
     assert res == execute(req.options, db="db_session", user=1)
 
 
-def test_execute_plugin_file_option_not_found(install_path, db):
+def test_execute_plugin_file_option_not_found(install_path, session_local):
     from empire.server.core.plugin_service import PluginService
 
     main_menu_mock = MagicMock()
@@ -94,7 +94,9 @@ def test_execute_plugin_file_option_not_found(install_path, db):
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
 
-    plugin = plugin_service.get_by_id("basic_reporting")
+    with session_local.begin() as db:
+        plugin_holder = plugin_service.get_by_id(db, "basic_reporting")
+        plugin = plugin_holder.loaded_plugin
 
     with patch_plugin_options(
         plugin,
@@ -116,7 +118,7 @@ def test_execute_plugin_file_option_not_found(install_path, db):
         assert str(e.value) == "File not found for 'file_option' id 9999"
 
 
-def test_execute_plugin_file_option(install_path, db, models):
+def test_execute_plugin_file_option(install_path, session_local, models):
     from empire.server.core.plugin_service import PluginService
 
     main_menu_mock = MagicMock()
@@ -129,7 +131,9 @@ def test_execute_plugin_file_option(install_path, db, models):
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
 
-    plugin = plugin_service.get_by_id("basic_reporting")
+    with session_local.begin() as db:
+        plugin_holder = plugin_service.get_by_id(db, "basic_reporting")
+        plugin = plugin_holder.loaded_plugin
 
     mocked_execute = MagicMock()
     mocked_execute.return_value = "success"
@@ -151,13 +155,14 @@ def test_execute_plugin_file_option(install_path, db, models):
         patch_plugin_execute(plugin, mocked_execute),
     ):
         req = PluginExecutePostRequest(options={"file_option": "9999"})
-        res, err = plugin_service.execute_plugin(db, plugin, req, None)
+        with session_local.begin() as db:
+            res, err = plugin_service.execute_plugin(db, plugin, req, None)
 
-        assert err is None
-        assert res == "success"
-        mocked_execute.assert_called_once_with(
-            {"file_option": download}, db=db, user=None
-        )
+            assert err is None
+            assert res == "success"
+            mocked_execute.assert_called_once_with(
+                {"file_option": download}, db=db, user=None
+            )
 
 
 def test_on_start_on_stop_called(install_path):
@@ -217,50 +222,48 @@ def plugin_service(main: "MainMenu"):
 
 def test__determine_auto_start(empire_config, plugin_service):
     from empire.server.core.config import PluginConfig
-    from empire.server.core.plugins import PluginInfo
+    from empire.server.core.db.models import PluginInfo
 
-    plugin_obj = Mock()
-    plugin_obj.info = PluginInfo(name="TestAutoStart", auto_start=False, main="")
+    plugin_info = PluginInfo(name="TestAutoStart", auto_start=False, main="")
 
     empire_config_tmp = empire_config.model_copy()
     empire_config_tmp.plugins["TestAutoStart"] = PluginConfig()
 
-    # Test with plugin obj False and server config empty
-    # Should use plugin_obj value
-    assert plugin_service._determine_auto_start(plugin_obj, empire_config_tmp) is False
+    # Test with plugin config False and server config empty
+    # Should use plugin config value
+    assert plugin_service._determine_auto_start(plugin_info, empire_config_tmp) is False
 
-    # Test with plugin obj false and server config true
+    # Test with plugin config false and server config true
     # Should use server config value
     empire_config_tmp.plugins["TestAutoStart"].auto_start = True
-    assert plugin_service._determine_auto_start(plugin_obj, empire_config_tmp) is True
+    assert plugin_service._determine_auto_start(plugin_info, empire_config_tmp) is True
 
 
 def test__determine_auto_execute(empire_config, plugin_service):
     from empire.server.core.config import PluginConfig
-    from empire.server.core.plugins import PluginInfo
+    from empire.server.core.db.models import PluginInfo
 
-    plugin_obj = Mock()
-    plugin_obj.info = PluginInfo(name="TestAutoExecute", auto_execute=None, main="")
+    plugin_config = PluginInfo(name="TestAutoExecute", auto_execute=None, main="")
 
-    # Test with plugin obj None and server config None
+    # Test with plugin config None and server config None
     # Should use default value (None)
-    assert plugin_service._determine_auto_execute(plugin_obj, empire_config) is None
+    assert plugin_service._determine_auto_execute(plugin_config, empire_config) is None
 
-    # Test with plugin obj None and server config true
+    # Test with plugin config None and server config true
     # Should use server config value
     empire_config.plugins["TestAutoExecute"] = PluginConfig(
         auto_execute=PluginAutoExecuteConfig(enabled=True)
     )
     assert (
-        plugin_service._determine_auto_execute(plugin_obj, empire_config)
+        plugin_service._determine_auto_execute(plugin_config, empire_config)
         is empire_config.plugins["TestAutoExecute"].auto_execute
     )
 
-    # Test with plugin_obj true and server_config None
-    # Should use plugin_obj value
-    plugin_obj.info.auto_execute = PluginAutoExecuteConfig(enabled=True)
+    # Test with plugin config true and server_config None
+    # Should use plugin config value
+    plugin_config.auto_execute = PluginAutoExecuteConfig(enabled=True)
     empire_config.plugins["TestAutoExecute"] = PluginConfig(auto_execute=None)
     assert (
-        plugin_service._determine_auto_execute(plugin_obj, empire_config)
-        is plugin_obj.info.auto_execute
+        plugin_service._determine_auto_execute(plugin_config, empire_config)
+        is plugin_config.auto_execute
     )

@@ -2,7 +2,6 @@ import asyncio
 import os
 import shutil
 import sys
-import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -138,15 +137,6 @@ def regular_auth_token(client, admin_auth_token):
     )
 
     return response.json()["access_token"]
-
-
-# TODO: Remove this. Use session_local fixture instead
-@pytest.fixture(scope="module")
-def db():
-    warnings.warn("Use session_local fixture instead", DeprecationWarning, stacklevel=5)
-    from empire.server.core.db.base import SessionLocal
-
-    return SessionLocal()
 
 
 @pytest.fixture(scope="session")

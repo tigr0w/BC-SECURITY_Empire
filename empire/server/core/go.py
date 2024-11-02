@@ -75,7 +75,6 @@ class GoCompiler:
             Path(self.install_path)
             / f"data/agent/gopire/{task_name}_{random_suffix}.exe"
         )
-
         template_path = "main.template"
         output_path = source_file / "main.go"
 

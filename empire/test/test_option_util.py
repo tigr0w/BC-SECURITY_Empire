@@ -198,7 +198,7 @@ def test_validate_options_with_uneditable_field():
     assert cleaned_options == {}
 
 
-def test_validate_options_with_file_not_found(db):
+def test_validate_options_with_file_not_found(session_local):
     instance_options = {
         "File": {
             "Description": "A File",
@@ -216,15 +216,16 @@ def test_validate_options_with_file_not_found(db):
     download_service_mock = MagicMock()
     download_service_mock.get_by_id.return_value = None
 
-    cleaned_options, err = validate_options(
-        instance_options, options, db, download_service_mock
-    )
+    with session_local.begin() as db:
+        cleaned_options, err = validate_options(
+            instance_options, options, db, download_service_mock
+        )
 
-    assert cleaned_options is None
-    assert err == "File not found for 'File' id 9999"
+        assert cleaned_options is None
+        assert err == "File not found for 'File' id 9999"
 
 
-def test_validate_options_with_file(db, models):
+def test_validate_options_with_file(session_local, models):
     instance_options = {
         "File": {
             "Description": "A File",
@@ -243,11 +244,12 @@ def test_validate_options_with_file(db, models):
     download_service_mock = MagicMock()
     download_service_mock.get_by_id.return_value = download
 
-    cleaned_options, err = validate_options(
-        instance_options, options, db, download_service_mock
-    )
+    with session_local.begin() as db:
+        cleaned_options, err = validate_options(
+            instance_options, options, db, download_service_mock
+        )
 
-    assert cleaned_options["File"] == download
+        assert cleaned_options["File"] == download
 
 
 def test_safe_cast_string():
@@ -401,7 +403,7 @@ def test_validate_options_dependency_not_met():
     assert err is None
 
 
-def test_validate_options_dependency_met(db):
+def test_validate_options_dependency_met(session_local):
     instance_options = {
         "DependentOption": {
             "Description": "An option with dependencies",
@@ -411,10 +413,12 @@ def test_validate_options_dependency_met(db):
         }
     }
     options = {"AnotherOption": "True"}
-    cleaned_options, err = validate_options(instance_options, options, db, None)
 
-    assert "DependentOption" in cleaned_options
-    assert err is None
+    with session_local.begin() as db:
+        cleaned_options, err = validate_options(instance_options, options, db, None)
+
+        assert "DependentOption" in cleaned_options
+        assert err is None
 
 
 def test_validate_options_with_name_in_code():
@@ -433,7 +437,7 @@ def test_validate_options_with_name_in_code():
     assert err is None
 
 
-def test_validate_options_file_with_correct_script_type(db, models):
+def test_validate_options_file_with_correct_script_type(session_local, models):
     instance_options = {
         "ScriptType": {
             "Description": "Type of script to execute",
@@ -470,13 +474,14 @@ def test_validate_options_file_with_correct_script_type(db, models):
     download_service_mock = MagicMock()
     download_service_mock.get_by_id.return_value = download
 
-    cleaned_options, err = validate_options(
-        instance_options, options, db, download_service_mock
-    )
+    with session_local.begin() as db:
+        cleaned_options, err = validate_options(
+            instance_options, options, db, download_service_mock
+        )
 
-    assert "File" in cleaned_options
-    assert cleaned_options["File"] == download
-    assert err is None
+        assert "File" in cleaned_options
+        assert cleaned_options["File"] == download
+        assert err is None
 
 
 def test_validate_options_file_skipped_with_url_script_type():

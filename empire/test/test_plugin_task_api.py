@@ -65,7 +65,7 @@ def test_get_task_for_plugin_not_found(client, admin_auth_header, plugin_name):
     )
 
 
-def test_get_task_for_plugin(client, admin_auth_header, plugin_name, db, plugin_task_1):
+def test_get_task_for_plugin(client, admin_auth_header, plugin_name, plugin_task_1):
     response = client.get(
         f"/api/v2/plugins/{plugin_name}/tasks/{plugin_task_1}",
         headers=admin_auth_header,

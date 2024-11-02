@@ -30,7 +30,13 @@ comments:
   - Any additional comments about the module.
 # The entry point for the plugin. The file that contains the `Plugin` class.
 main: example.py
-
+# Extra dependencies that the plugin requires.
+# Empire will not automatically install these dependencies, but
+# will check if they are installed before running the plugin.
+# Starkiller may tell the user to install these dependencies when it is installed via the marketplace.
+python_deps:
+  - requests>=2.25.1
+  - pyyaml
 ```
 
 The `example.py` file contains the plugin class. The class must be named `Plugin`

@@ -21,3 +21,6 @@ auto_execute:
   options:
     Status: start
     Message: Hello World!
+python_deps:
+  - requests>=2.25.1
+  - twilio

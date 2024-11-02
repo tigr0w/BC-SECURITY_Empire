@@ -1,31 +1,18 @@
 import logging
+import typing
 from typing import Any
 
-from pydantic import BaseModel
-
-from empire.server.core.config import PluginAutoExecuteConfig
 from empire.server.core.db import models
-from empire.server.core.db.base import SessionLocal
-from empire.server.core.module_models import EmpireAuthor
+from empire.server.core.db.models import PluginInfo
 
 log = logging.getLogger(__name__)
 
-
-class PluginInfo(BaseModel):
-    name: str
-    authors: list[EmpireAuthor] = []
-    description: str | None = ""
-    software: str | None = ""
-    techniques: list[str] | None = []
-    tactics: list[str] | None = []
-    comments: list[str] | None = []
-    auto_start: bool = True
-    auto_execute: PluginAutoExecuteConfig | None = None
-    main: str
+if typing.TYPE_CHECKING:
+    from empire.server.core.db.base import SessionLocal
 
 
 class BasePlugin:
-    def __init__(self, main_menu, plugin_info: PluginInfo, db: SessionLocal):
+    def __init__(self, main_menu, plugin_info: PluginInfo, db: "SessionLocal"):
         self.main_menu = main_menu
         self.info: PluginInfo = plugin_info
 

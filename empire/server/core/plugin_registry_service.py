@@ -103,7 +103,8 @@ class PluginRegistryService:
 
     def get_marketplace(self, db):
         registries = db.query(models.PluginRegistry).all()
-        installed_plugins = self.plugin_service.get_all()
+        installed_plugins = self.plugin_service.get_all(db)
+        installed_plugins = {p.db_plugin.name: p.db_plugin for p in installed_plugins}
         merged = {}
         for registry in registries:
             registry_data = registry.data

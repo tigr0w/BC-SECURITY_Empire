@@ -6,7 +6,7 @@ from empire.server.core.exceptions import ModuleValidationException
 
 
 @pytest.fixture(scope="module")
-def main_menu_mock(db, models, install_path):
+def main_menu_mock(models, install_path):
     main_menu = Mock()
     main_menu.installPath = install_path
     main_menu.listeners.activeListeners = {}
