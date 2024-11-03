@@ -1,7 +1,5 @@
 import logging
 
-from empire.server.utils.string_util import removeprefix, removesuffix
-
 log = logging.getLogger(__name__)
 
 
@@ -99,8 +97,8 @@ class Stager:
             return ""
 
         disarm = False
-        launcher = removeprefix(launcher, "echo ")
-        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.removeprefix("echo ")
+        launcher = launcher.removesuffix(" | python3 &")
         launcher = launcher.strip('"')
         return self.mainMenu.stagergenv2.generate_appbundle(
             launcher_code=launcher,

