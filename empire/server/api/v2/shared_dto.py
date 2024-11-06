@@ -112,21 +112,3 @@ def to_string(value):
 #   validation.
 # This could be removed in Empire 6 as a breaking change.
 coerced_dict = dict[str, Annotated[str, BeforeValidator(to_string)]]
-
-
-# Set proxy IDs
-PROXY_NAME = {
-    "SOCKS4": 1,
-    "SOCKS5": 2,
-    "HTTP": 3,
-    "SSL": 4,
-    "SSL_WEAK": 5,
-    "SSL_ANON": 6,
-    "TOR": 7,
-    "HTTPS": 8,
-    "HTTP_CONNECT": 9,
-    "HTTPS_CONNECT": 10,
-}
-
-# inverse of PROXY_NAME
-PROXY_ID = {v: k for k, v in PROXY_NAME.items()}

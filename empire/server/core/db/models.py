@@ -290,7 +290,6 @@ class Agent(Base):
     notes = Column(Text)
     architecture = Column(String(255))
     archived = Column(Boolean, nullable=False)
-    proxies = Column(JSON)
     socks = Column(Boolean)
     socks_port = Column(Integer)
     tags = relationship("Tag", secondary=agent_tag_assc)

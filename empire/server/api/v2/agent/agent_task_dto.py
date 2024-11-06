@@ -120,19 +120,6 @@ class DirectoryListPostRequest(BaseModel):
     path: str
 
 
-class ProxyEnum(str, Enum):
-    socks4 = "SOCKS4"
-    socks5 = "SOCKS5"
-    http = "HTTP"
-    ssl = "SSL"
-    ssl_weak = "SSL_WEAK"
-    ssl_anon = "SSL_ANON"
-    tor = "TOR"
-    https = "HTTPS"
-    http_connect = "HTTP_CONNECT"
-    https_connect = "HTTPS_CONNECT"
-
-
 class ExitPostRequest(BaseModel):
     pass
 
