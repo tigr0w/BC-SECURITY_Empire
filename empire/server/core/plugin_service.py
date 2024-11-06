@@ -129,12 +129,7 @@ class PluginService:
                 log.error(f"Failed to load plugin {plugin_dir.name}: {e}")
                 continue
 
-            try:
-                self.load_plugin(db, plugin_dir, plugin_config)
-            except Exception as e:
-                log.error(
-                    f"Failed to load plugin {plugin_config.name}: {e}", exc_info=True
-                )
+            self.load_plugin(db, plugin_dir, plugin_config)
 
     def load_plugin(self, db: Session, plugin_dir: Path, plugin_config: PluginInfo):
         """Given the name of a plugin and a menu object, load it into the menu"""
@@ -160,10 +155,14 @@ class PluginService:
         file_path = plugin_dir / plugin_config.main
         try:
             plugin_obj = self._create_plugin_obj(db, file_path, plugin_config)
-        except ImportError as e:
+        except Exception as e:
             db_plugin.enabled = False
+            db_plugin.load_error = str(e)
             log.warning(f"Failed to load plugin {name}: {e}")
             return
+
+        # If you make it this far, the plugin has loaded successfully
+        db_plugin.load_error = None
 
         if not db_plugin.settings_initialized:
             plugin_obj.set_initial_options(db)

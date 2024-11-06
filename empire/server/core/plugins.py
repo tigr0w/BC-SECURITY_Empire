@@ -24,14 +24,8 @@ class BasePlugin:
         self.execution_options: dict = {}
         self.settings_options: dict = {}
 
-        try:
-            self.on_load(db)
-            self._set_options_defaults()
-        except Exception as e:
-            if self.info.name:
-                log.error(f"{self.info.name} failed to initialize: {e}")
-            else:
-                log.error(f"Error initializing plugin: {e}")
+        self.on_load(db)
+        self._set_options_defaults()
 
     def _set_options_defaults(self):
         for value in self.execution_options.values():

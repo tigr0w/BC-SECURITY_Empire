@@ -491,6 +491,7 @@ class Plugin(Base):
     settings_initialized = Column(Boolean, nullable=False, default=False)
     internal_state = Column(JSON)
     info = Column(PydanticType(PluginInfo), nullable=False)
+    load_error = Column(Text, nullable=True)
 
 
 class PluginTaskStatus(str, enum.Enum):

@@ -1,5 +1,6 @@
 import logging
 from contextlib import contextmanager
+from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
@@ -267,3 +268,25 @@ def test__determine_auto_execute(empire_config, plugin_service):
         plugin_service._determine_auto_execute(plugin_config, empire_config)
         is plugin_config.auto_execute
     )
+
+
+def test_plugin_load_exception(install_path, session_local):
+    from empire.server.core.plugin_service import PluginService
+
+    main_menu_mock = MagicMock()
+    main_menu_mock.installPath = install_path
+
+    plugin_service = PluginService(main_menu_mock)
+    main_menu_mock = MagicMock()
+    main_menu_mock.installPath = install_path
+
+    plugin_service.plugin_path = Path(install_path).parent / "test/plugin_install"
+
+    plugin_service.startup()
+
+    with session_local.begin() as db:
+        plugin = plugin_service.get_by_id(db, "LoadExceptionPlugin")
+
+        assert plugin is not None
+        assert plugin.db_plugin.load_error == "This plugin is meant to fail to load."
+        assert plugin.loaded_plugin is None
