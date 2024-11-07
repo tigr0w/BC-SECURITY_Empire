@@ -101,8 +101,12 @@ def title(version, server, modules, listeners, agents):
     print()
     print("              " + color(str(agents), "green") + " agents currently active")
     print()
-    print(color("Starkiller is now the recommended way to use Empire.", "green"))
-    print(color(f"Try it out at {server}/", "green"))
+    print(color("* * * * * * * * * ", "red"))
+    print(color("The Empire client is deprecated.", "red"))
+    print(color("The functionality has been reduced.", "red"))
+    print(color("Starkiller is now the recommended way to use Empire.", "red"))
+    print(color(f"Try it out at {server}/", "red"))
+    print(color("* * * * * * * * * ", "red"))
 
 
 def loading():

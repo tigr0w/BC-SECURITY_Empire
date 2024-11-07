@@ -152,13 +152,10 @@ class MainMenu(Menu):
         # Update help menu with other menus
         help_list.append(["listeners", "View all listeners.", "listeners"])
         help_list.append(
-            ["uselisteners", "Use an Empire listener.", "uselisteners <listener_name>"]
+            ["uselistener", "Use an Empire listener.", "uselistener <listener_name>"]
         )
         help_list.append(
             ["usestager", "Use an Empire stager.", "usestager <stager_name>"]
-        )
-        help_list.append(
-            ["useplugin", "Use an Empire plugin.", "useplugin <plugin_name>"]
         )
         help_list.append(
             ["usecredential", "View and edit an credential.", "usecredential <cred_id>"]
@@ -179,7 +176,6 @@ class MainMenu(Menu):
         help_list.append(
             ["interact", "Interact with active agents.", "interact <agent_name>"]
         )
-        help_list.append(["sponsors", "List of Empire sponsors.", "sponsors"])
         help_list.append(
             [
                 "resource",

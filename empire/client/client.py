@@ -21,23 +21,15 @@ from empire.client.src.EmpireCliConfig import empire_config
 from empire.client.src.EmpireCliState import state
 from empire.client.src.menus.AdminMenu import admin_menu
 from empire.client.src.menus.AgentMenu import agent_menu
-from empire.client.src.menus.ChatMenu import chat_menu
 from empire.client.src.menus.CredentialMenu import credential_menu
-from empire.client.src.menus.EditListenerMenu import edit_listener_menu
 from empire.client.src.menus.InteractMenu import interact_menu
 from empire.client.src.menus.ListenerMenu import listener_menu
 from empire.client.src.menus.MainMenu import main_menu
 from empire.client.src.menus.PluginMenu import plugin_menu
-from empire.client.src.menus.ProxyMenu import proxy_menu
-from empire.client.src.menus.ShellMenu import shell_menu
-from empire.client.src.menus.SponsorsMenu import sponsors_menu
-from empire.client.src.menus.UseCredentialMenu import use_credential_menu
 from empire.client.src.menus.UseListenerMenu import use_listener_menu
 from empire.client.src.menus.UseModuleMenu import use_module_menu
-from empire.client.src.menus.UsePluginMenu import use_plugin_menu
 from empire.client.src.menus.UseStagerMenu import use_stager_menu
 from empire.client.src.MenuState import menu_state
-from empire.client.src.ShortcutHandler import shortcut_handler
 from empire.client.src.utils import file_util, print_util
 from empire.client.src.utils.autocomplete_util import (
     current_files,
@@ -86,14 +78,6 @@ class MyCustomCompleter(Completer):
                 yield from self.empire_cli.menus["InteractMenu"].get_completions(
                     document, complete_event, cmd_line, word_before_cursor
                 )
-            elif cmd_line[0] in ["useplugin"]:
-                yield from self.empire_cli.menus["UsePluginMenu"].get_completions(
-                    document, complete_event, cmd_line, word_before_cursor
-                )
-            elif cmd_line[0] in ["usecredential"]:
-                yield from self.empire_cli.menus["UseCredentialMenu"].get_completions(
-                    document, complete_event, cmd_line, word_before_cursor
-                )
             elif cmd_line[0] in ["resource"]:
                 if len(cmd_line) > 1 and cmd_line[1] == "-p":
                     file = state.search_files()
@@ -122,24 +106,17 @@ class CliExitException(BaseException):
 class EmpireCli:
     def __init__(self) -> None:
         self.completer = MyCustomCompleter(self)
-        self.menus: dict[Menu] = {
+        self.menus: dict[str, Menu] = {
             "MainMenu": main_menu,
             "ListenerMenu": listener_menu,
-            "UseCredentialMenu": use_credential_menu,
             "UseListenerMenu": use_listener_menu,
-            "EditListenerMenu": edit_listener_menu,
             "UseStagerMenu": use_stager_menu,
             "AgentMenu": agent_menu,
             "UseModuleMenu": use_module_menu,
             "InteractMenu": interact_menu,
-            "ShellMenu": shell_menu,
             "CredentialMenu": credential_menu,
             "PluginMenu": plugin_menu,
-            "UsePluginMenu": use_plugin_menu,
             "AdminMenu": admin_menu,
-            "ChatMenu": chat_menu,
-            "SponsorsMenu": sponsors_menu,
-            "ProxyMenu": proxy_menu,
         }
         for menu in self.menus.values():
             state.register_menu(menu)
@@ -298,14 +275,8 @@ class EmpireCli:
             shortcuts.clear()
         elif text.strip() == "listeners":
             menu_state.push(self.menus["ListenerMenu"])
-        elif text.strip() == "chat":
-            menu_state.push(self.menus["ChatMenu"])
-        elif menu_state.current_menu_name == "ChatMenu":
-            menu_state.current_menu.send_chat(text)
         elif text.strip() == "agents":
             menu_state.push(self.menus["AgentMenu"])
-        elif text.strip() == "sponsors":
-            menu_state.push(self.menus["SponsorsMenu"])
         elif text.strip() == "credentials":
             menu_state.push(self.menus["CredentialMenu"])
         elif text.strip() == "plugins":
@@ -327,16 +298,6 @@ class EmpireCli:
                 menu_state.push(self.menus["InteractMenu"], selected=cmd_line[1])
             else:
                 log.error(f"Agent not found: {cmd_line[1]}")
-        elif cmd_line[0] == "useplugin" and len(cmd_line) > 1:
-            if cmd_line[1] in state.plugins:
-                menu_state.push(self.menus["UsePluginMenu"], selected=cmd_line[1])
-            else:
-                log.error(f"Plugin not found: {cmd_line[1]}")
-        elif cmd_line[0] == "usecredential" and len(cmd_line) > 1:
-            if cmd_line[1] in state.credentials or cmd_line[1] == "add":
-                menu_state.push(self.menus["UseCredentialMenu"], selected=cmd_line[1])
-            else:
-                log.error(f"Credential not found: {cmd_line[1]}")
         elif cmd_line[0] == "usemodule" and len(cmd_line) > 1:
             if cmd_line[1] in state.modules:
                 if menu_state.current_menu_name == "InteractMenu":
@@ -349,52 +310,6 @@ class EmpireCli:
                     menu_state.push(self.menus["UseModuleMenu"], selected=cmd_line[1])
             else:
                 log.error(f"Module not found: {cmd_line[1]}")
-        elif cmd_line[0] == "editlistener" and len(cmd_line) > 1:
-            if menu_state.current_menu_name == "ListenerMenu":
-                if cmd_line[1] in state.listeners:
-                    menu_state.push(
-                        self.menus["EditListenerMenu"], selected=cmd_line[1]
-                    )
-            else:
-                log.error(f"Listener not found: {cmd_line[1]}")
-        elif text.strip() == "shell":
-            if menu_state.current_menu_name == "InteractMenu":
-                menu_state.push(
-                    self.menus["ShellMenu"], selected=menu_state.current_menu.selected
-                )
-            else:
-                pass
-        elif menu_state.current_menu_name == "ShellMenu":
-            if text == "exit":
-                menu_state.push(
-                    self.menus["InteractMenu"],
-                    selected=menu_state.current_menu.selected,
-                )
-            else:
-                menu_state.current_menu.shell(menu_state.current_menu.selected, text)
-        elif text.strip() == "proxy":
-            if menu_state.current_menu_name == "InteractMenu":
-                if menu_state.current_menu.agent_options["language"] not in [
-                    "python",
-                    "ironpython",
-                ]:
-                    log.error(
-                        f'Agent proxies are not available in {menu_state.current_menu.agent_options["language"]} agents'
-                    )
-                    pass
-                elif state.listeners[menu_state.current_menu.agent_options["listener"]][
-                    "template"
-                ] not in ["http", "http_hop", "redirector"]:
-                    log.error(
-                        f"Agent proxies are not available in {state.listeners[menu_state.current_menu.agent_options['listener']]['module']} listeners"
-                    )
-                else:
-                    menu_state.push(
-                        self.menus["ProxyMenu"],
-                        selected=menu_state.current_menu.selected,
-                    )
-            else:
-                pass
         elif text.strip() == "back":
             menu_state.pop()
         elif text.strip() == "exit":
@@ -452,13 +367,6 @@ class EmpireCli:
                     pass
                 except SystemExit:
                     pass
-            elif (
-                not func
-                and menu_state.current_menu_name == "InteractMenu"
-                and cmd_line[0]
-                in shortcut_handler.get_names(self.menus["InteractMenu"].agent_language)
-            ):
-                menu_state.current_menu.execute_shortcut(cmd_line[0], cmd_line[1:])
 
 
 def setup_logging(args):
@@ -486,7 +394,6 @@ def setup_logging(args):
 
 
 def reset():
-    # todo empire_config in the client should be converted to a class like the one in the server.
     download_dir = empire_config.yaml.get("directories", {}).get("downloads")
     if download_dir:
         file_util.remove_dir_contents(download_dir)

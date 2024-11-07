@@ -63,9 +63,6 @@ class UseListenerMenu(UseMenu):
 
         Usage: execute
         """
-        # todo validation and error handling
-        # todo alias start to execute and generate
-        # Hopefully this will force us to provide more info in api errors ;)
         post_body = {}
         temp_record = {}
         for key in self.record_options:

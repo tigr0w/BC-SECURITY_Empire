@@ -73,6 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Moved EmpireCompiler from a submodule to be downloaded instead
 -   Migrated all C# modules to Empire yaml format
 -   Moved EmpireCompiler compression from application to the server
+-   The client has been deprecated and will be removed in a future major Empire release
+   -   The current feature set has been reduced
 
 ### Deprecated
 

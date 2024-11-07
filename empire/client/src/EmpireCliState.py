@@ -32,9 +32,6 @@ class EmpireCliState:
         self.connected = False
         self.menus = []
 
-        # These are cached values that can be used for autocompletes and other things.
-        # When switching menus, refresh these cached values by calling their respective 'get' functions.
-        # In the future, maybe we'll set a scheduled task to refresh this every n seconds/minutes?
         self.listeners = {}
         self.listener_types = []
         self.stagers = {}
@@ -48,8 +45,6 @@ class EmpireCliState:
         self.bypasses = {}
         self.credentials = {}
         self.empire_version = ""
-        self.cached_plugin_results = {}
-        self.chat_cache = []
         self.server_files = {}
         self.hide_stale_agents = False
 
@@ -121,10 +116,8 @@ class EmpireCliState:
         self.get_agents()
         self.get_active_plugins()
         self.get_user_me()
-        self.get_malleable_profile()
         self.get_bypasses()
         self.get_credentials()
-        self.get_files()
         self.get_directories()
 
     def init_handlers(self):
@@ -164,9 +157,6 @@ class EmpireCliState:
                     )
                 ),
             )
-
-            # Todo: need to only display results from the current agent and user. Otherwise there will be too many
-            #  returns when you add more users self.sio.on('agents/task', lambda data: print(data['data']))
 
     def disconnect(self):
         self.host = ""
@@ -211,39 +201,15 @@ class EmpireCliState:
         else:
             self.cached_agent_results[session_id][data["id"]] = data["output"]
 
-    def add_plugin_cache(self, data) -> None:
-        """
-        When plugin results come back, we will display them if the current menu is for the plugin.
-        Otherwise, we will ad them to the plugin result dictionary and display them when the plugin menu
-        is loaded.
-        :param data: the plugin object
-        :return:
-        """
-        plugin_name = data["plugin_name"]
-        if not self.cached_plugin_results.get(plugin_name):
-            self.cached_plugin_results[plugin_name] = {}
-
-        if (
-            menu_state.current_menu_name == "UsePluginMenu"
-            and menu_state.current_menu.selected == plugin_name
-        ):
-            if data["message"] is not None:
-                print(print_util.color(data["message"]))
-        else:
-            self.cached_plugin_results[plugin_name][data["message"]] = data["message"]
-
     def bottom_toolbar(self):
         if self.connected:
             agent_tasks = list(self.cached_agent_results.keys())
-            plugin_tasks = list(self.cached_plugin_results.keys())
 
             toolbar_text = [("bold", "Connected: ")]
             toolbar_text.append(("bg:#FF0000 bold", f"{self.host}:{self.port} "))
             toolbar_text.append(("bold", "| "))
             toolbar_text.append(("bg:#FF0000 bold", f"{len(self.active_agents)} "))
             toolbar_text.append(("bold", "agent(s) | "))
-            toolbar_text.append(("bg:#FF0000 bold", f"{len(self.chat_cache)} "))
-            toolbar_text.append(("bold", "unread message(s) "))
 
             agent_text = ""
             for agents in agent_tasks:
@@ -254,9 +220,6 @@ class EmpireCliState:
                 toolbar_text.append(("bg:#FF0000 bold", f"{agent_text} "))
 
             plugin_text = ""
-            for plugins in plugin_tasks:
-                if self.cached_plugin_results[plugins]:
-                    plugin_text += f" {plugins}"
             if plugin_text:
                 toolbar_text.append(("bold", "| Plugin(s) received task result(s):"))
                 toolbar_text.append(("bg:#FF0000 bold", f"{plugin_text} "))
@@ -288,8 +251,6 @@ class EmpireCliState:
             if self.directory[key][-1] != "/":
                 self.directory[key] += "/"
 
-    # I think we will break out the socketio handler and http requests to new classes that the state imports.
-    # This will do for this iteration.
     def get_listeners(self):
         response = requests.get(
             url=f"{self.host}:{self.port}/api/v2/listeners",
@@ -317,16 +278,6 @@ class EmpireCliState:
         )
         return response.json()
 
-    def get_files(self):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2/downloads",
-            verify=False,
-            params={"sources": "upload"},
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        self.server_files = {x["filename"]: x for x in response.json()["records"]}
-        return self.server_files
-
     def get_version(self):
         response = requests.get(
             url=f"{self.host}:{self.port}/api/v2/meta/version",
@@ -343,15 +294,6 @@ class EmpireCliState:
         )
         self.get_listeners()
         return response
-
-    def edit_listener(self, listener_id: str, options: dict):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2/listeners/{listener_id}",
-            json=options,
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
 
     def get_listener_types(self):
         response = requests.get(
@@ -501,52 +443,6 @@ class EmpireCliState:
         )
         return response.json()
 
-    def update_agent_comms(self, agent_name: str, listener_name: str):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/update_comms",
-            json={"listener": listener_name},
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def update_agent_kill_date(self, agent_name: str, kill_date: str):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/kill_date",
-            json={"kill_date": kill_date},
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def update_agent_proxy(self, session_id: str, options: list):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/proxy_list",
-            json={"proxy": options},
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        log.error("todo: fix update agent proxy")
-        return response.json()
-
-    def get_proxy_info(self, session_id: str):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/proxy_list",
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        log.error("todo: fix get agent proxy")
-        return response.json()
-
-    def update_agent_working_hours(self, session_id: str, working_hours: str):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/working_hours",
-            json={"working_hours": working_hours},
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
     def agent_shell(self, session_id: str, shell_cmd: str, literal: bool = False):
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/shell",
@@ -560,25 +456,6 @@ class EmpireCliState:
         response = requests.post(
             url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/sysinfo",
             json={},
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def agent_script_import(self, session_id: str, filename: str, file_data: bytes):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_import",
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-            data={},
-            files=[("file", (filename, file_data, "application/octet-stream"))],
-        )
-        return response.json()
-
-    def agent_script_command(self, session_id: str, script_command: str):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/agents/{session_id}/tasks/script_command",
-            json={"command": script_command},
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -627,32 +504,6 @@ class EmpireCliState:
         )
         return response.json()
 
-    def edit_credential(self, cred_id, cred_options: dict):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
-            verify=False,
-            json=cred_options,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def add_credential(self, cred_options):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/credentials",
-            json=cred_options,
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def remove_credential(self, cred_id):
-        response = requests.delete(
-            url=f"{self.host}:{self.port}/api/v2/credentials/{cred_id}",
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response
-
     def get_active_plugins(self):
         response = requests.get(
             url=f"{self.host}:{self.port}/api/v2/plugins",
@@ -661,9 +512,7 @@ class EmpireCliState:
         )
 
         self.plugins = {x["name"]: x for x in response.json()["records"]}
-        for _name, plugin in self.plugins.items():
-            plugin_name = plugin["name"]
-            self.sio.on(f"plugins/{plugin_name}/notifications", self.add_plugin_cache)
+
         return self.plugins
 
     def get_plugin(self, plugin_name):
@@ -701,36 +550,9 @@ class EmpireCliState:
         )
         return response
 
-    def agent_sleep(self, agent_name: str, delay: int, jitter: float):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/agents/{agent_name}/tasks/sleep",
-            json={"delay": delay, "jitter": jitter},
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
     def get_users(self):
         response = requests.get(
             url=f"{self.host}:{self.port}/api/v2/users",
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def create_user(self, new_user):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/users",
-            json=new_user,
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def edit_user(self, user_id: str, user):
-        response = requests.put(
-            url=f"{self.host}:{self.port}/api/v2/users/{user_id}",
-            json=user,
             verify=False,
             headers={"Authorization": f"Bearer {self.token}"},
         )
@@ -754,16 +576,6 @@ class EmpireCliState:
         self.me = response.json()
         return response.json()
 
-    def get_malleable_profile(self):
-        response = requests.get(
-            url=f"{self.host}:{self.port}/api/v2/malleable-profiles",
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-
-        self.profiles = {x["name"]: x for x in response.json()["records"]}
-        return self.profiles
-
     def get_bypasses(self):
         response = requests.get(
             url=f"{self.host}:{self.port}/api/v2/bypasses",
@@ -773,40 +585,6 @@ class EmpireCliState:
 
         self.bypasses = {x["name"]: x for x in response.json()["records"]}
         return self.bypasses
-
-    def add_malleable_profile(self, data):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/malleable-profiles",
-            json=data,
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def delete_malleable_profile(self, profile_id: str):
-        response = requests.delete(
-            url=f"{self.host}:{self.port}/api/v2/malleable-profiles/{profile_id}",
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response.json()
-
-    def preobfuscate(self, language: str, reobfuscate: bool):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/obfuscation/global/{language}/preobfuscate?reobfuscate={reobfuscate}",
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response
-
-    def keyword_obfuscation(self, options: dict):
-        response = requests.post(
-            url=f"{self.host}:{self.port}/api/v2/obfuscation/keywords",
-            json=options,
-            verify=False,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
-        return response
 
 
 state = EmpireCliState()

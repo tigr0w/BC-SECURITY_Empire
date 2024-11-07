@@ -28,11 +28,6 @@ class AgentMenu(Menu):
                 yield Completion(agent, start_position=-len(word_before_cursor))
             yield Completion("all", start_position=-len(word_before_cursor))
             yield Completion("stale", start_position=-len(word_before_cursor))
-        elif cmd_line[0] in ["rename"] and position_util(
-            cmd_line, 2, word_before_cursor
-        ):
-            for agent in filtered_search_list(word_before_cursor, state.agents.keys()):
-                yield Completion(agent, start_position=-len(word_before_cursor))
 
         yield from super().get_completions(
             document, complete_event, cmd_line, word_before_cursor
@@ -130,23 +125,6 @@ class AgentMenu(Menu):
         """
         state.hide_stale_agents = True
         log.info("Stale agents now hidden")
-        # todo: add other hide options and add to config file
-
-    @command
-    def rename(self, agent_name: str, new_agent_name: str) -> None:
-        """
-        Rename selected agent
-
-        Usage: rename <agent_name> <new_agent_name>
-        """
-        options = state.agents[agent_name]
-        options["name"] = new_agent_name
-
-        response = state.update_agent(options["session_id"], options)
-        if "session_id" in response:
-            log.info("Agent successfully renamed to " + new_agent_name)
-        elif "detail" in response:
-            log.error(response["detail"])
 
     @staticmethod
     def kill_agent(agent_name: str) -> None:
@@ -156,15 +134,6 @@ class AgentMenu(Menu):
             log.info("Kill command sent to agent " + agent_name)
         elif "detail" in response:
             log.error(response["detail"])
-
-
-def trunc(value: str = "", limit: int = 1) -> str:
-    if value:
-        if len(value) > limit:
-            return value[: limit - 2] + ".."
-        else:
-            return value
-    return ""
 
 
 agent_menu = AgentMenu()

@@ -51,19 +51,6 @@ def position_util(
     )
 
 
-def complete_path(file_type: str):
-    """
-    Completion of file paths.
-    """
-    filenames = []
-    for filename in os.listdir():
-        if not filename.lower().endswith(file_type):
-            continue
-        else:
-            filenames.append(filename)
-    return filenames
-
-
 def current_files(directory: str):
     """
     List files in current directory

@@ -23,18 +23,11 @@ class ListenerMenu(Menu):
         return self._cmd_registry + super().autocomplete()
 
     def get_completions(self, document, complete_event, cmd_line, word_before_cursor):
-        if cmd_line[0] in ["kill", "options", "enable", "disable"] and position_util(
+        if cmd_line[0] in ["kill", "options"] and position_util(
             cmd_line, 2, word_before_cursor
         ):
             for listener in filtered_search_list(
                 word_before_cursor, state.listeners.keys()
-            ):
-                yield Completion(listener, start_position=-len(word_before_cursor))
-        elif cmd_line[0] == "editlistener" and position_util(
-            cmd_line, 2, word_before_cursor
-        ):
-            for listener in filtered_search_list(
-                word_before_cursor, sorted(state.listeners.keys())
             ):
                 yield Completion(listener, start_position=-len(word_before_cursor))
 
@@ -103,16 +96,6 @@ class ListenerMenu(Menu):
             log.info("Listener " + listener_name + " killed")
         elif "detail" in response:
             log.error(response["detail"])
-
-    @command
-    def editlistener(self, listener_name: str) -> None:
-        """
-        Edit the selected listener
-
-        Usage: editlistener <listener_name>
-        """
-        # Empty so the menu can see the option and usage
-        pass
 
 
 listener_menu = ListenerMenu()
