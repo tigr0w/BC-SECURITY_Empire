@@ -709,12 +709,12 @@ files = [
 
 [[package]]
 name = "donut-shellcode"
-version = "1.0.2"
+version = "1.1"
 description = "Donut shellcode Python C extension"
 optional = false
 python-versions = ">=3.0"
 files = [
-    {file = "donut-shellcode-1.0.2.tar.gz", hash = "sha256:66fd1b5d4b7af2ec6ddd554d7e0ab93810f6c8172ab0c12f1f776e108e331121"},
+    {file = "donut_shellcode-1.1.tar.gz", hash = "sha256:80861de844b9a36de3907e726605cdf01b8e052c24a74b6e454da9b2ebca2788"},
 ]
 
 [[package]]
@@ -3396,4 +3396,4 @@ test = ["pytest"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "d2acc72039e831149b3a4225cc50619fc01fe496a644e177185575cd65934a3d"
+content-hash = "3e1fcd78b7d6a0ec1c3eabb7aee6c2a349f03e768e977d40335525e68e1137c5"

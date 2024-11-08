@@ -203,7 +203,7 @@ class ModuleService:
                 else:
                     task_command = "TASK_POWERSHELL_CMD_WAIT"
 
-        elif agent.language == "ironpython" and module.language == "csharp":
+        elif agent.language == "ironpython" and module.language in ("csharp", "bof"):
             task_command = "TASK_CSHARP"
 
         return {"command": task_command, "data": module_data}, None

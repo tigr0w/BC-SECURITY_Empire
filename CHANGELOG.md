@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.11.6] - 2024-11-08
+
+-   Fixed extra character in nanodump.x64.o
+-   Fixed bof tasking for IronPython agent
+
 ## [5.11.5] - 2024-09-22
 
 -   Updated Starkiller to v2.8.2
@@ -934,7 +939,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.5...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.6...HEAD
+
+[5.11.6]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.5...v5.11.6
 
 [5.11.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.4...v5.11.5
 
