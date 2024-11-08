@@ -48,7 +48,7 @@ pyvnc = {git = "https://github.com/BC-SECURITY/pyVNC.git"}
 python-socketio = {extras = ["client"], version = "^5.11.1"}
 Flask = "^3.0.2"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev = "da5be0e"}
-donut-shellcode = { version = "^1.0.2", markers = "platform_machine == 'x86_64' or platform_machine == 'amd64'" }
+donut-shellcode = { version = "^1.1", markers = "platform_machine == 'x86_64' or platform_machine == 'amd64'" }
 python-obfuscator = "^0.0.2"
 pyinstaller = "^6.4.0"
 md2pdf = {git = "https://github.com/bc-security/md2pdf", rev = "48d5a46"}
