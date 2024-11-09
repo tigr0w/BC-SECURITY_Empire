@@ -17,7 +17,13 @@ class Plugin(BasePlugin):
                 "Value": "default",
                 "SuggestedValues": ["default", "other"],
                 "Strict": True,
-            }
+            },
+            "file_option": {
+                "Description": "File option",
+                "Required": False,
+                "Value": "",
+                "File": True,
+            },
         }
 
     @override
@@ -48,3 +54,22 @@ def test_on_settings_change_called(session_local):
         example_plugin.set_settings(db, {"test_setting": "other"})
 
     on_settings_change_mock.assert_called_once_with(db, {"test_setting": "other"})
+
+
+@pytest.mark.usefixtures("_setup_database")
+def test_settings_file_option(main, session_local, models):
+    example_plugin = Plugin(main, PluginInfo(name="example", main=""), None)
+
+    with session_local.begin() as db:
+        example_plugin.set_settings(db, {"file_option": "1"})
+
+    with session_local.begin() as db:
+        settings = example_plugin.current_settings(db)
+
+        download = db.query(models.Download).filter(models.Download.id == "1").first()
+
+        assert settings["file_option"] == "1"
+        assert download is None
+
+    with session_local.begin() as db:
+        example_plugin.set_settings(db, {"file_option": "99999"})

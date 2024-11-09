@@ -82,21 +82,7 @@ class PluginService:
         """
         Will skip any options that are not editable.
         """
-        plugin = plugin_holder.loaded_plugin
-        db_plugin = plugin_holder.db_plugin
-        cleaned_options, err = validate_options(
-            plugin.settings_options, settings, db, self.download_service
-        )
-
-        if err:
-            raise PluginValidationException(err)
-
-        # Add the uneditable settings back to the dict.
-        current_settings = plugin.current_settings(db)
-        cleaned_options = {**current_settings, **cleaned_options}
-        db_plugin.settings = cleaned_options
-
-        return cleaned_options
+        return plugin_holder.loaded_plugin.set_settings(db, settings)
 
     def auto_execute_plugins(self, db):
         """

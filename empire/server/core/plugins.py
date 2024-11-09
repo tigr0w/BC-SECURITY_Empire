@@ -4,16 +4,22 @@ from typing import Any
 
 from empire.server.core.db import models
 from empire.server.core.db.models import PluginInfo
+from empire.server.core.exceptions import PluginValidationException
+from empire.server.utils.option_util import validate_options
 
 log = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from empire.server.core.db.base import SessionLocal
+    from empire.server.core.download_service import DownloadService
+    from empire.server.core.plugin_service import PluginService
 
 
 class BasePlugin:
     def __init__(self, main_menu, plugin_info: PluginInfo, db: "SessionLocal"):
         self.main_menu = main_menu
+        self.plugin_service: PluginService = self.main_menu.pluginsv2
+        self.download_service: DownloadService = self.main_menu.downloadsv2
         self.info: PluginInfo = plugin_info
 
         log.info(f"Initializing plugin: {self.info.name}")
@@ -59,7 +65,7 @@ class BasePlugin:
         for key, value in self.settings_options.items():
             settings[key] = value["Value"]
 
-        self.set_settings(db, settings)
+        self.set_settings(db, settings, validate=False)
 
     def on_load(self, db):
         """Things to do during init: meant to be overridden by
@@ -96,11 +102,25 @@ class BasePlugin:
     def current_internal_state(self, db) -> dict[str, Any]:
         return self.get_db_plugin(db).internal_state
 
-    def set_settings(self, db, settings: dict[str, Any]):
-        db_plugin = self.get_db_plugin(db)
-        db_plugin.settings = settings
+    def set_settings(self, db, settings: dict[str, Any], validate=True):
+        if validate:
+            cleaned_options, err = validate_options(
+                self.settings_options, settings, db, self.download_service
+            )
+
+            if err:
+                raise PluginValidationException(err)
+        else:
+            cleaned_options = settings
+
+        # Add the uneditable settings back to the dict.
+        current_settings = self.current_settings(db) or {}
+        cleaned_options = {**current_settings, **cleaned_options}
+        self.get_db_plugin(db).settings = cleaned_options
         db.flush()
         self.on_settings_change(db, settings)
+
+        return cleaned_options
 
     def on_settings_change(self, db, settings: dict[str, Any]):
         """Things to do when the settings change: meant to be overridden by
