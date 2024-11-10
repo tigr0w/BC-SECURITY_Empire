@@ -30,9 +30,9 @@ class Module:
             encode=False,
             obfuscate=launcher_obfuscation,
             obfuscation_command=launcher_obfuscation_command,
-            userAgent=user_agent,
+            user_agent=user_agent,
             proxy=proxy,
-            proxyCreds=proxy_creds,
+            proxy_creds=proxy_creds,
         )
 
         shellcode, err = main_menu.stagergenv2.generate_powershell_shellcode(

@@ -16,6 +16,14 @@ min_language_version: ''
 comments:
   - https://github.com/connormcgarr/tgtdelegation
 options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
   - name: domain
     description: Specify the domain to use.
     required: true

@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import threading
 import typing
@@ -384,21 +385,35 @@ class AgentTaskService:
         if task_name in ["TASK_CSHARP_CMD_JOB", "TASK_CSHARP_CMD_WAIT"]:
             compiled_path, arguments = task_input.split("|")
             arguments = arguments.lstrip(",").strip()
-            filename = compiled_path.rsplit("/", 1)[-1].split(".")[0].split("_")[0]
-            short_task_input = f"{filename} " + base64.b64decode(
-                arguments.encode("UTF-8")
-            ).decode("UTF-8")
+
+            if module_name.startswith("bof_"):
+                decoded_arguments = base64.b64decode(arguments).decode("UTF-8")
+                data_dict = json.loads(decoded_arguments)
+                base64_data = data_dict.get("base64_bof_data", "")
+                truncated_base64_data = (
+                    base64_data[:15] + "..."
+                    if len(base64_data) > 10  # noqa: PLR2004
+                    else base64_data
+                )
+                data_dict["base64_bof_data"] = truncated_base64_data
+                short_task_input = f"{module_name} {json.dumps(data_dict)}"
+
+            else:
+                filename = compiled_path.rsplit("/", 1)[-1].split(".")[0].split("_")[0]
+                short_task_input = f"{filename} " + base64.b64decode(
+                    arguments.encode("UTF-8")
+                ).decode("UTF-8")
+
             task = models.AgentTask(
                 id=pk,
                 agent_id=agent.session_id,
-                input=short_task_input[:100],
+                input=short_task_input[:150],
                 input_full=task_input,
                 user_id=user_id if user_id else None,
                 module_name=module_name,
                 task_name=task_name,
                 status=AgentTaskStatus.queued,
             )
-
         else:
             task = models.AgentTask(
                 id=pk,

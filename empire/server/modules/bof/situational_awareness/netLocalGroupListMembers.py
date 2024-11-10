@@ -13,9 +13,9 @@ class Module:
     ):
         params_dict = {
             "Architecture": params["Architecture"],
-            "Setting": "-s:0",
+            "Extra": "-s:1",
             "Server": f"-Z:{params['Server']}",
-            "Extra": "-Z:",
+            "Group": f"-Z:{params['Group']}",
         }
 
         return main_menu.modulesv2.generate_script_bof(

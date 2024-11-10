@@ -69,7 +69,7 @@ function update_goenv() {
 function install_go() {
   echo -e "\x1b[1;34m[*] Installing Go\x1b[0m"
 
-  goenv install $(cat .go-version)
+  goenv install $(cat .go-version) -s
 }
 
 function install_pyenv() {
@@ -107,7 +107,7 @@ function install_python() {
     libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
     lzma lzma-dev tk-dev uuid-dev zlib1g-dev
 
-  pyenv install $(cat .python-version)
+  pyenv install $(cat .python-version) -s
 }
 
 function install_poetry() {

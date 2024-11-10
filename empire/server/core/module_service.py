@@ -355,16 +355,31 @@ class ModuleService:
         params_dict = {"base64_bof_data": f"-a:{b64_bof_data}"}
 
         filtered_params = {
-            key: value
+            key: (
+                value if value != "" else " "
+            )  # Replace empty values with a blank space
             for key, value in params.items()
             if key.lower()
-            not in ["agent", "computername", "dotnetversion", "architecture"]
-            and value
+            not in [
+                "agent",
+                "computername",
+                "dotnetversion",
+                "architecture",
+                "entrypoint",
+            ]
         }
+
+        for key in filtered_params:
+            option = next(
+                (opt for opt in module.options if opt.name.lower() == key.lower()), None
+            )
+            if option and hasattr(option, "format"):
+                filtered_params[key] = f"-{option.format}:{filtered_params[key]}"
+
         params_dict.update(filtered_params)
 
-        if filtered_params.get("entrypoint"):
-            params_dict["entrypoint"] = f"-e:{filtered_params['entrypoint']}"
+        if params.get("entrypoint"):
+            params_dict["entrypoint"] = f"-e:{params['entrypoint']}"
 
         final_base64_json = base64.b64encode(
             json.dumps(params_dict).encode("utf-8")
