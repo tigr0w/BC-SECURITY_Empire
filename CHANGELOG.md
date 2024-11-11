@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fix arm installs by installing dotnet and powershell manually
+-   Fix issue initializing some databases by removing the unused Reporting table
+
 ## [5.11.6] - 2024-11-08
 
 -   Fixed extra character in nanodump.x64.o

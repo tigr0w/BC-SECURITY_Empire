@@ -5,4 +5,4 @@ commandTests:
   - name: "mysql version"
     command: "mysql"
     args: ["--version"]
-    expectedOutput: ["mysql  Ver 15.*10.*-MariaDB"]
+    expectedOutput: ["mysql from 11.*-MariaDB*"]
