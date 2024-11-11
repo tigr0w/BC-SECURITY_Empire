@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.11.7] - 2024-11-11
+
 -   Fix arm installs by installing dotnet and powershell manually
 -   Fix issue initializing some databases by removing the unused Reporting table
 
@@ -928,7 +930,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.6...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.7...HEAD
+
+[5.11.7]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.6...v5.11.7
 
 [5.11.6]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.5...v5.11.6
 
