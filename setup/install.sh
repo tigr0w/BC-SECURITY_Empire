@@ -23,36 +23,26 @@ done
 function command_exists() {
   command -v "$1" >/dev/null 2>&1;
 }
+
 function install_powershell() {
   echo -e "\x1b[1;34m[*] Installing PowerShell\x1b[0m"
-  if [ "$OS_NAME" == "DEBIAN" ]; then
-    # TODO Temporary until official Debian 12 support is added
-    VERSION_ID_2=$VERSION_ID
-    if [ "$VERSION_ID" == "12" ]; then
-      VERSION_ID_2="11"
-    fi
-    wget https://packages.microsoft.com/config/debian/"${VERSION_ID_2}"/packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    rm packages-microsoft-prod.deb
-    sudo apt-get update
-    sudo apt-get install -y powershell
-  elif [ "$OS_NAME" == "UBUNTU" ]; then
-    sudo apt-get update
-    sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y wget apt-transport-https software-properties-common
-    wget -q "https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/packages-microsoft-prod.deb"
-    sudo dpkg -i packages-microsoft-prod.deb
-    rm packages-microsoft-prod.deb
-    sudo apt-get update
-    sudo apt-get install -y powershell
-  elif [ "$OS_NAME" == "KALI" ]; then
-    sudo apt-get update && sudo apt-get -y install powershell
-  elif [ $OS_NAME == "PARROT" ]; then
-    sudo apt-get update && sudo apt-get -y install powershell
+
+  # https://learn.microsoft.com/en-us/powershell/scripting/install/install-other-linux?view=powershell-7.4#binary-archives
+  ARCH=$(uname -m)
+  if [ "$ARCH" == "x86_64" ]; then
+    POWERSHELL_URL="https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/powershell-7.4.6-linux-x64.tar.gz"
+  else
+    POWERSHELL_URL="https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/powershell-7.4.6-linux-arm64.tar.gz"
   fi
+
+  curl -L -o /tmp/powershell.tar.gz $POWERSHELL_URL
+  sudo mkdir -p /opt/microsoft/powershell/7
+  sudo tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7
+  sudo chmod +x /opt/microsoft/powershell/7/pwsh
+  sudo ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh
 
   sudo mkdir -p /usr/local/share/powershell/Modules
   sudo cp -r "$PARENT_PATH"/empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
-  rm -f packages-microsoft-prod.deb*
 }
 
 function install_mysql() {
@@ -126,35 +116,36 @@ function install_bomutils() {
 
 function install_dotnet() {
   echo -e "\x1b[1;34m[*] Installing dotnet for C# agents and modules\x1b[0m"
-  if [ $OS_NAME == "UBUNTU" ]; then
-    wget https://packages.microsoft.com/config/ubuntu/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    rm packages-microsoft-prod.deb
 
-    # If version is 22.04, we need to write an /etc/apt/preferences file
-    # https://github.com/dotnet/core/issues/7699
-    if [ "$VERSION_ID" == "22.04" ]; then
-      echo -e "\x1b[1;34m[*] Detected Ubuntu 22.04, writing /etc/apt/preferences file\x1b[0m"
-      sudo tee -a /etc/apt/preferences <<EOT
-Package: *
-Pin: origin "packages.microsoft.com"
-Pin-Priority: 100
-EOT
-    fi
-
-    sudo apt-get update
-    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
-  elif [ $OS_NAME == "DEBIAN" ]; then
-    wget https://packages.microsoft.com/config/debian/"${VERSION_ID}"/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    sudo apt-get update
-    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
+  # Since PMC doesn't support arm64 we need to manually install it
+  # https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-6.0.427-linux-arm64-binaries
+  ARCH=$(uname -m)
+  if [ "$ARCH" == "x86_64" ]; then
+    DOTNET_URL="https://download.visualstudio.microsoft.com/download/pr/12ee34e8-640c-400e-a6dc-4892b442df92/81d40fc98a5bbbfbafa4cc1ab86d6288/dotnet-sdk-6.0.427-linux-x64.tar.gz"
+    CHECKSUM="a9cd1e5ccc3c5d847aca2ef21dd145f61c6b18c4e75a3c2fc9aed592c6066d511b8b658c54c2cd851938fe5aba2386e5f6f51005f6406b420110c0ec408a8401"
   else
-    wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    sudo apt-get update
-    sudo apt-get install -y apt-transport-https dotnet-sdk-6.0
+    DOTNET_URL="https://download.visualstudio.microsoft.com/download/pr/30d99992-ae6a-45b8-a8b3-560d2e587ea8/a35304fce1d8a6f5c76a2ccd8da9d431/dotnet-sdk-6.0.427-linux-arm64.tar.gz"
+    CHECKSUM="9129961b54ad77dac2b4de973875f7acd1e8d2833673a51923706620e0c5b7b8c5b057c8d395532ad9da46b1dcb5ab8fd07a4f552bd57256d5a0c21070ad5771"
   fi
+
+  wget $DOTNET_URL -O /tmp/dotnet-sdk.tar.gz
+
+  echo "$CHECKSUM /tmp/dotnet-sdk.tar.gz" | sha512sum -c
+  if [ $? -ne 0 ]; then
+    echo -e "\x1b[1;31m[!] Checksum verification failed. Exiting.\x1b[0m"
+    exit 1
+  fi
+
+  mkdir -p $HOME/dotnet && tar zxf /tmp/dotnet-sdk.tar.gz -C $HOME/dotnet
+  sudo ln -s $HOME/dotnet/dotnet /usr/bin/dotnet
+  export DOTNET_ROOT=$HOME/dotnet
+  export PATH=$PATH:$HOME/dotnet
+
+  echo "export DOTNET_ROOT=$HOME/dotnet" >> ~/.bashrc
+  echo "export PATH=$PATH:$HOME/dotnet" >> ~/.bashrc
+
+  echo "export DOTNET_ROOT=$HOME/dotnet" >> ~/.zshrc
+  echo "export PATH=$PATH:$HOME/dotnet" >> ~/.zshrc
 }
 
 function install_nim() {
@@ -165,7 +156,8 @@ function install_nim() {
     read -r answer
   fi
   if [ "$answer" != "${answer#[Yy]}" ]; then
-    sudo apt-get install -y curl git gcc xz-utils
+    # https://github.com/dom96/choosenim/issues/303
+    sudo apt-get install -y curl git gcc xz-utils libcurl4-gnutls-dev
     export CHOOSENIM_CHOOSE_VERSION=1.6.12
     curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
     echo "export PATH=$HOME/.nimble/bin:$PATH" >> ~/.bashrc
@@ -305,7 +297,7 @@ if ! command_exists pyenv; then
       libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
       lzma lzma-dev tk-dev uuid-dev zlib1g-dev
 
-  pyenv install 3.12.2
+  pyenv install 3.12.6
 fi
 
 if ! command_exists poetry; then

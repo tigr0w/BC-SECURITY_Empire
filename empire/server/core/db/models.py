@@ -455,19 +455,6 @@ class PluginTask(Base):
         return f"<PluginTask(id='{self.id}')>"
 
 
-class Reporting(Base):
-    __tablename__ = "reporting"
-    id = Column(Integer, Sequence("reporting_id_seq"), primary_key=True)
-    name = Column(String(255), nullable=False)
-    event_type = Column(String(255))
-    message = Column(Text)
-    timestamp = Column(UtcDateTime, default=utcnow(), nullable=False)
-    taskID = Column(Integer, ForeignKey("agent_tasks.id"))
-
-    def __repr__(self):
-        return f"<Reporting(id='{self.id}')>"
-
-
 class Keyword(Base):
     __tablename__ = "keywords"
     id = Column(Integer, Sequence("keyword_seq"), primary_key=True)
