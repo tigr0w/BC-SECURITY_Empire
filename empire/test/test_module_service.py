@@ -131,7 +131,7 @@ def test_execute_module_task_command_python_agent(module_service, agent_mock):
     assert script == "run_command('say -v alex Hello World')"
 
     task_command = res["command"]
-    assert task_command == "TASK_PYTHON_WAIT"
+    assert task_command == "TASK_PYTHON_CMD_WAIT"
 
 
 def test_execute_module_task_command_ironpython_agent(module_service, agent_mock):
@@ -147,7 +147,7 @@ def test_execute_module_task_command_ironpython_agent(module_service, agent_mock
 
     assert err is None
     task_command = res["command"]
-    assert task_command == "TASK_PYTHON_WAIT"
+    assert task_command == "TASK_PYTHON_CMD_WAIT"
 
 
 def test_execute_module_task_command_csharp_agent_with_missing_csharp_module(

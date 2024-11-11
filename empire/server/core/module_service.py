@@ -187,7 +187,7 @@ class ModuleService:
                     f"Unsupported module language {module.language} for agent {agent.language}"
                 )
 
-        elif agent.language in ["powershell", "go"]:
+        elif agent.language in ("powershell", "go"):
             if module.language == "powershell":
                 if module.background:
                     task_command = "TASK_POWERSHELL_CMD_JOB"
@@ -204,10 +204,6 @@ class ModuleService:
                 log.error(
                     f"Unsupported module language {module.language} for agent {agent.language}"
                 )
-
-        elif agent.language == "ironpython" and module.language in ("csharp", "bof"):
-            task_command = "TASK_CSHARP"
-
         else:
             log.error(f"Unsupported agent language {agent.language}")
             return None, f"Unsupported agent language: {agent.language}"
@@ -219,8 +215,8 @@ class ModuleService:
         if extension:
             save_file_prefix = module_name.split("/")[-1][:15]
             module_data = save_file_prefix.rjust(15) + extension + module_data
-            return f"{cmd_type}_WAIT_SAVE", module_data
-        return f"{cmd_type}_WAIT", module_data
+            return f"{cmd_type}_CMD_WAIT_SAVE", module_data
+        return f"{cmd_type}_CMD_WAIT", module_data
 
     def _validate_module_params(  # noqa: PLR0913
         self,

