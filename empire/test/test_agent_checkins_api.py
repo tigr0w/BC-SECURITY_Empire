@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 from starlette import status
@@ -8,7 +8,7 @@ from starlette import status
 log = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def agents(session_local, host, models):
     agent_ids = []
     with session_local.begin() as db:
@@ -62,7 +62,7 @@ async def _create_checkins(session_local, models, agent_ids):
 agent_count = 2
 time_delta = 20  # 4320 checkins per agent per day
 days_back = 3
-end_time = datetime(2023, 1, 8, tzinfo=timezone.utc)
+end_time = datetime(2023, 1, 8, tzinfo=UTC)
 start_time = end_time - timedelta(days=days_back)
 
 
