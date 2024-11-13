@@ -110,8 +110,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--  Fixed extra character in nanodump.x64.o
--  Fixed bof tasking for IronPython agent
+-   Reduce the check-in tests that were adding an unncessary amount of time to the CI
+
+## [5.11.7] - 2024-11-11
+
+-   Fix arm installs by installing dotnet and powershell manually
+-   Fix issue initializing some databases by removing the unused Reporting table
+
+## [5.11.6] - 2024-11-08
+
+-   Fixed extra character in nanodump.x64.o
+-   Fixed bof tasking for IronPython agent
 
 ## [5.11.5] - 2024-09-22
 
@@ -1019,7 +1028,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.5...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.7...HEAD
+
+[5.11.7]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.6...v5.11.7
+
+[5.11.6]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.5...v5.11.6
 
 [5.11.5]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.4...v5.11.5
 
