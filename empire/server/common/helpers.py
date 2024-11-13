@@ -39,7 +39,6 @@ import base64
 import binascii
 import ipaddress
 import logging
-import os
 import random
 import re
 import socket
@@ -47,8 +46,6 @@ import string
 import sys
 import threading
 from datetime import datetime
-
-import netifaces
 
 from empire.server.utils.math_util import old_div
 
@@ -597,44 +594,14 @@ def lhost():
     """
     Return the local IP.
     """
-
-    if os.name != "nt":
-        import fcntl
-        import struct
-
-        def get_interface_ip(ifname):
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                return socket.inet_ntoa(
-                    fcntl.ioctl(
-                        s.fileno(),
-                        0x8915,  # SIOCGIFADDR
-                        struct.pack("256s", ifname[:15].encode("UTF-8")),
-                    )[20:24]
-                )
-            except OSError:
-                return ""
-
-    ip = ""
     try:
-        ip = socket.gethostbyname(socket.gethostname())
-    except socket.gaierror:
-        pass
+        # Create a socket and connect to a remote server
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
     except Exception:
-        log.error("Unexpected error:", exc_info=True)
-        return ip
-
-    if (ip == "" or ip.startswith("127.")) and os.name != "nt":
-        interfaces = netifaces.interfaces()
-        for ifname in interfaces:
-            if "lo" not in ifname:
-                try:
-                    ip = get_interface_ip(ifname)
-                    if ip != "":
-                        break
-                except Exception:
-                    log.error("Unexpected error:", exc_info=True)
-                    pass
+        ip = "127.0.0.1"
     return ip
 
 
