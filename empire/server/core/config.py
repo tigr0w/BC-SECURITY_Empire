@@ -46,6 +46,14 @@ class StarkillerConfig(EmpireBaseModel):
     enabled: bool | None = True
 
 
+class EmpireCompilerConfig(EmpireBaseModel):
+    repo: str = "bc-security/Empire-Compiler"
+    directory: Path = "empire/server/Empire-Compiler"
+    version: str = "v0.2"
+    auto_update: bool = True
+    enabled: bool | None = True
+
+
 class DatabaseDefaultObfuscationConfig(EmpireBaseModel):
     language: str = "powershell"
     enabled: bool = False
@@ -149,6 +157,7 @@ class PluginRegistryConfig(EmpireBaseModel):
 class EmpireConfig(EmpireBaseModel):
     supress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig | None = ApiConfig()
+    empire_config: EmpireCompilerConfig | None = None
     starkiller: StarkillerConfig
     submodules: SubmodulesConfig
     database: DatabaseConfig
@@ -164,6 +173,9 @@ class EmpireConfig(EmpireBaseModel):
         super().__init__(**config_dict)
         # For backwards compatibility
         self.yaml = config_dict
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 def set_yaml(location: str):

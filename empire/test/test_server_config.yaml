@@ -47,14 +47,18 @@ plugin_registries:
     location: empire/test/test_registry_1.yaml
   - name: BC-SECURITY-TEST
     location: empire/test/test_registry_2.yaml
+empire_compiler:
+  enabled: true
+  version: v0.2
+  repo: https://github.com/BC-SECURITY/Empire-Compiler.git
+  directory: empire/server/Empire-Compiler
+  auto_update: true
 starkiller:
-  repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+  enabled: true
+  repo: https://github.com/BC-SECURITY/Starkiller.git
+  directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
-  ref: 5.0-dev-sponsors
-  # for private-main, instead of updating the submodule, just work out of a local copy.
-  # So devs can work off the latest changes and not worry about accidentally updating the submodule
-  # for the downstream main branches.
-  use_temp_dir: false
+  ref: v2.8.2
   auto_update: true
 submodules:
   auto_update: true

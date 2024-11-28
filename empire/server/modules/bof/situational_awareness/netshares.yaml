@@ -29,11 +29,11 @@ options:
     description: Hostname to query.
     required: true
     value: '.'
-    format: Z
 bof:
   x86: bof/situational_awareness/netshares/netshares.x86.o
   x64: bof/situational_awareness/netshares/netshares.x64.o
   entry_point: ''
+  format_string: Zi
 script_path: ''
 script_end: ''
 advanced:

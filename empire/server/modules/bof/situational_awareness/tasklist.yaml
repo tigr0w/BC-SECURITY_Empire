@@ -29,10 +29,10 @@ options:
     description: Computer to query for processes.
     required: false
     value: ''
-    format: Z
 bof:
   x86: bof/situational_awareness/tasklist/tasklist.x86.o
   x64: bof/situational_awareness/tasklist/tasklist.x64.o
   entry_point: ''
+  format_string: Z
 script_path: ''
 script_end: ''

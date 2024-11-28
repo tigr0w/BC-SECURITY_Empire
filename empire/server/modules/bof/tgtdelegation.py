@@ -17,11 +17,14 @@ class Module:
 
         params_dict = {
             "Architecture": params["Architecture"],
-            "Nonce": f"-i:{nonce}",
-            "Domain": f"-Z:{params['domain']}",
-            "SPN": f"-Z:{params['SPN']}",
+            "Nonce": nonce,
+            "Domain": params["domain"],
+            "SPN": params["SPN"],
         }
 
         return main_menu.modulesv2.generate_script_bof(
-            module=module, params=params_dict, obfuscate=obfuscate
+            module=module,
+            params=params_dict,
+            obfuscate=obfuscate,
+            skip_params=True,
         )

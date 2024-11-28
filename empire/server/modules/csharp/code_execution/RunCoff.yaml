@@ -1,21 +1,21 @@
-name: inject_bof
+name: RunCoff
 authors:
 - name: Anthony Rose
   handle: Cx01N
   link: https://twitter.com/Cx01N_
 description: |
-  A tool to run object files, mainly beacon object files (BOF), in .Net using a modified version of RunOF
+  This is a quick and dirty COFF loader (AKA Beacon Object Files).
 software: ''
 tactics: []
 techniques: []
-background: false
+background: true
 output_extension: null
 needs_admin: false
 opsec_safe: true
 language: csharp
 min_language_version: ''
 comments:
-  - https://github.com/BC-SECURITY/RunOF
+  - https://github.com/BC-SECURITY/CS_COFFLoader/tree/main
 options:
   - name: File
     description: Beacon object file to load and execute.
@@ -24,19 +24,15 @@ options:
   - name: EntryPoint
     description: Name of the function exported to execute in the beacon object file.
     required: false
-    value: ''
-  - name: ArgumentList
-    description: List of arguments that will be passed to the beacon, available through BeaconParse API.
+    value: 'go'
+  - name: Format String
+    description: The format string must only include the following characters b, i, s, z, Z
     required: false
     value: ''
-  - name: Architecture
-    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
-    required: true
-    value: x64
-    strict: true
-    suggested_values:
-      - x64
-      - x86
+  - name: Arguments
+    description: List of arguments that will be passed to the beacon. <arg1> [arg2] [arg2]
+    required: false
+    value: ''
 csharp:
   UnsafeCompile: true
   CompatibleDotNetVersions:
@@ -45,7 +41,7 @@ csharp:
     using System;
     using System.IO;
     using System.Linq;
-    using RunOF;
+    using CoffLoader;
     
     public static class Program
     {
@@ -60,7 +56,19 @@ csharp:
             
                 try
                 {
-                    RunOF.Program.Main(args);
+                    string functionName = args[0];
+                    string coffData = args[1];
+                    string argDataHex = args[2];
+    
+                    // Console.WriteLine(functionName);
+                    // Console.WriteLine(coffData);
+                    // Console.WriteLine(argDataHex);
+
+                    string result = CoffLoader.Program.RunCoff(functionName, coffData, argDataHex);
+
+                    Console.WriteLine(result);
+                    string output = CoffLoader.Program.BeaconGetOutputData();
+                    Console.WriteLine(output);
                 }
                 catch (Exception ex)
                 {
@@ -76,10 +84,9 @@ csharp:
         }
     }
   ReferenceSourceLibraries:
-  - Name: RunOF
-    Description: A tool to run object files, mainly beacon object files (BOF), in
-      .Net.
-    Location: RunOF\RunOF64\
+  - Name: CoffLoader
+    Description: A tool to run object files, mainly beacon object files (BOF), in .Net.
+    Location: CS_COFFLoader\CoffLoader\
     Language: CSharp
     CompatibleDotNetVersions:
     - net40
@@ -93,9 +100,13 @@ csharp:
     - Name: mscorlib.dll
       Location: net40\mscorlib.dll
       DotNetVersion: net40
-    EmbeddedResources:
-    - Name: RunOF.beacon_funcs.x64.o
-      Location: RunOF.beacon_funcs.x64.o
+    - Name: System.Data.dll
+      Location: net40\System.Data.dll
+      DotNetVersion: net40
+    - Name: System.XML.dll
+      Location: net40\System.XML.dll
+      DotNetVersion: net40
+    EmbeddedResources: []
   ReferenceAssemblies: []
   EmbeddedResources: []
 advanced:

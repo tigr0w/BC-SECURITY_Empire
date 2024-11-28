@@ -69,6 +69,7 @@ bof:
   x86: ''
   x64: bof/secinject/secinject.x64.o
   entry_point: ''
+  format_string: ib
 script_path: ''
 script_end: ''
 advanced:

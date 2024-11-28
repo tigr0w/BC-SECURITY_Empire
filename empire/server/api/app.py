@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 
+from empire.scripts.sync_empire_compiler import load_empire_compiler
 from empire.scripts.sync_starkiller import sync_starkiller
 from empire.server.api.middleware import EmpireCORSMiddleware
 from empire.server.api.v2.websocket.socketio import setup_socket_events
@@ -171,6 +172,12 @@ def initialize(run: bool = True):  # noqa: PLR0915
         load_starkiller(app, ip, port)
     else:
         log.info("Starkiller disabled. Not loading.")
+
+    if empire_config.empire_compiler["enabled"]:
+        log.info("Empire Compiler enabled. Loading.")
+        load_empire_compiler(empire_config)
+    else:
+        log.info("Empire Compiler disabled. Not loading.")
 
     cert_path = Path(empire_config.api.cert_path)
 

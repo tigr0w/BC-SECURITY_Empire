@@ -43,24 +43,7 @@ RUN unameOut="$(uname -m)" && \
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
     ln -s /root/.local/bin/poetry /usr/bin
 
-ENV EMPIRE_COMPILER_VERSION="v0.2.0"
 ENV PARENT_PATH="/empire"
-
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
-        ARCH="linux-x64"; \
-    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then \
-        ARCH="linux-arm64"; \
-    else \
-        echo -e "[!] Unsupported architecture: $ARCH. Exiting." && exit 1; \
-    fi && \
-    SOURCE_DIR="$PARENT_PATH/empire/server/Empire-Compiler" && \
-    git clone --branch "$EMPIRE_COMPILER_VERSION" --recursive --depth 1 https://github.com/BC-SECURITY/Empire-Compiler.git "$SOURCE_DIR" && \
-    DOWNLOAD_URL="https://github.com/BC-SECURITY/Empire-Compiler/releases/download/${EMPIRE_COMPILER_VERSION}/EmpireCompiler-${ARCH}" && \
-    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler/EmpireCompiler" && \
-    mkdir -p "$TARGET_DIR" && \
-    wget -O "${TARGET_DIR}/EmpireCompiler" "$DOWNLOAD_URL" && \
-    chmod 777 "${TARGET_DIR}/EmpireCompiler"
 
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
@@ -92,6 +75,7 @@ RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml && \
     sed -i 's/auto_update: true/auto_update: false/g' empire/server/config.yaml
 
 RUN ./ps-empire -f sync-starkiller
+RUN ./ps-empire -f sync-empire-compiler
 
 ENTRYPOINT ["./ps-empire"]
 CMD ["-f", "server"]

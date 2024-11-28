@@ -71,10 +71,29 @@ database:
       - Invoke-Mimikatz
 ```
 
+* **empire_compiler** - Configure the Empire Compiler module. This block manages settings for the Empire Compiler, which is responsible for handling C# compilation tasks.
+
+enabled: Enable or disable the Empire Compiler module.
+version: Specify the version of the Empire Compiler to use.
+repo: Repository location for the Empire Compiler.
+directory: Directory path where the Empire Compiler is installed.
+auto_update: Automatically update the Empire Compiler on startup.
+
+```yaml
+empire_compiler:
+  enabled: true
+  version: v0.2
+  repo: git@github.com:BC-SECURITY/Empire-Compiler.git
+  directory: empire/server/Empire-Compiler
+  auto_update: true
+```
+
+
 * **plugins** - Config related to plugins
 auto_start - boolean, whether the plugin should start automatically. If this is not set, Empire will defer to the plugin's own configuration.
 auto_execute - run an execute command on the plugin at startup. If this is not set, Empire will defer to the plugin's own configuration.
-```
+
+```yaml
 plugins:
   # Auto-execute plugin with defined settings
   basic_reporting:
@@ -87,7 +106,7 @@ plugins:
 
 * **directories** - Control where Empire should read and write specific data.
 
-```
+```yaml
 directories:
   downloads: empire/server/downloads/
   module_source: empire/server/data/module_source/

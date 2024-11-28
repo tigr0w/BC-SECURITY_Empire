@@ -26,11 +26,10 @@ cd Empire
 When running the ps-empire installation script, you can use the following optional flags to customize the installation process:
 
 - `-y`: Automatically answer 'Yes' to all prompts during installation. This is useful if you want to install all optional dependencies without being prompted for confirmation.
-- `-c`: Compile the Empire-Compiler from source instead of downloading the pre-built version. Use this if you want to build the compiler locally or need a custom configuration.
 - `-f`: Force the installation as root. Normally, Empire does not recommend installing as the root user for security reasons. However, if you need to bypass this restriction, you can use this flag. **Note: Using this option is not recommended unless absolutely necessary.**
-
+- `-h`: Displays the help text.
 ```
-./ps-empire install -y -c -f
+./ps-empire install -y -f
 ```
 
 **Sponsors:**

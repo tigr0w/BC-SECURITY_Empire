@@ -65,6 +65,3 @@ fileExistenceTests:
   - name: 'invoke obfuscation'
     path: '/usr/local/share/powershell/Modules/Invoke-Obfuscation/'
     shouldExist: true
-  - name: 'sharpire'
-    path: '/empire/empire/server/Empire-Compiler/EmpireCompiler/Data/ReferenceSourceLibraries/Sharpire'
-    shouldExist: true

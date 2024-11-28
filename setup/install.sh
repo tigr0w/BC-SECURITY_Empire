@@ -1,6 +1,5 @@
 #!/bin/bash
 
-EMPIRE_COMPILER_VERSION="v0.2.0"
 COMPILE_FROM_SOURCE=0
 FORCE_ROOT=0
 
@@ -9,7 +8,6 @@ function usage() {
 	echo "USAGE: ./install.sh"
 	echo "OPTIONS:"
 	echo "  -y    Assume Yes to all questions (install all optional dependencies)"
-	echo "  -c    Compile Empire-Compiler from source instead of downloading"
 	echo "  -f    Force install as root (not recommended)"
 	echo "  -h    Displays this help text"
 }
@@ -156,89 +154,6 @@ function get_architecture() {
     esac
 }
 
-function compile_empire_compiler() {
-    install_dotnet
-
-    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler"
-
-    if [ -d "$TARGET_DIR" ] && [ "$(ls -A "$TARGET_DIR")" ]; then
-        echo "[*] Empire-Compiler directory already exists and is not empty. Skipping download."
-    else
-        echo "[*] Downloading Empire-Compiler"
-
-        mkdir -p "$TARGET_DIR"
-        git clone --recursive --branch $EMPIRE_COMPILER_VERSION https://github.com/BC-SECURITY/Empire-Compiler.git "$TARGET_DIR"
-
-        if [ $? -eq 0 ]; then
-            echo "[*] Empire-Compiler downloaded successfully."
-        else
-            echo "[!] Failed to download Empire-Compiler. Please check the path and permissions."
-            exit 1
-        fi
-    fi
-
-    echo -e "\x1b[1;34m[*] Compiling Empire-Compiler from source\x1b[0m"
-
-    dotnet publish "$TARGET_DIR" -c Release -r $(get_architecture) --self-contained -p:PublishTrimmed=true -p:PublishSingleFile=true -o ./publish/$(get_architecture)
-
-    BIN_DIR="$TARGET_DIR/EmpireCompiler"
-    mkdir -p "$BIN_DIR"
-    mv ./publish/$(get_architecture)/* "$BIN_DIR"
-
-    if [ $? -eq 0 ]; then
-        echo -e "\x1b[1;34m[*] Setting execute permissions\x1b[0m"
-        chmod +x "${BIN_DIR}/EmpireCompiler"
-
-        echo -e "\x1b[1;32m[+] Compilation and placement complete!\x1b[0m"
-    else
-        echo -e "\x1b[1;31m[!] Compilation failed. Exiting.\x1b[0m"
-        exit 1
-    fi
-    rm -rf publish
-}
-
-function download_empire_compiler() {
-    echo -e "\x1b[1;34m[*] Downloading Empire-Compiler version ${EMPIRE_COMPILER_VERSION}\x1b[0m"
-
-    ARCH=$(get_architecture)
-    if [ "$ARCH" == "unsupported" ]; then
-        echo -e "\x1b[1;31m[!] Unsupported architecture: $ARCH. Exiting.\x1b[0m"
-        exit 1
-    fi
-
-    TARGET_DIR="$PARENT_PATH/empire/server/Empire-Compiler"
-    if [ -d "$TARGET_DIR" ] && [ "$(ls -A "$TARGET_DIR")" ]; then
-        echo "[*] Empire-Compiler directory already exists and is not empty. Skipping download."
-    else
-        mkdir -p "$TARGET_DIR"
-
-        git clone --recursive --branch $EMPIRE_COMPILER_VERSION https://github.com/BC-SECURITY/Empire-Compiler.git "$TARGET_DIR"
-
-        if [ $? -eq 0 ]; then
-            echo "[*] Empire-Compiler downloaded successfully."
-        else
-            echo "[!] Failed to download Empire-Compiler. Please check the path and permissions."
-            exit 1
-        fi
-    fi
-
-    DOWNLOAD_URL="https://github.com/BC-SECURITY/Empire-Compiler/releases/download/${EMPIRE_COMPILER_VERSION}/EmpireCompiler-${ARCH}"
-    BIN_DIR="$TARGET_DIR/EmpireCompiler"
-    mkdir -p "$BIN_DIR"
-
-    wget -O "${BIN_DIR}/EmpireCompiler" "$DOWNLOAD_URL"
-
-    if [ $? -eq 0 ]; then
-        echo -e "\x1b[1;34m[*] Setting execute permissions\x1b[0m"
-        chmod 777 "${BIN_DIR}/EmpireCompiler"
-
-        echo -e "\x1b[1;32m[+] Download and placement complete!\x1b[0m"
-    else
-        echo -e "\x1b[1;31m[!] Download failed. Exiting.\x1b[0m"
-        exit 1
-    fi
-}
-
 function install_mysql() {
   echo -e "\x1b[1;34m[*] Installing MySQL\x1b[0m"
   # https://imsavva.com/silent-installation-mysql-5-7-on-ubuntu/
@@ -306,40 +221,6 @@ function install_bomutils() {
   (cd bomutils && sudo make install)
   chmod 755 bomutils/build/bin/mkbom && sudo cp bomutils/build/bin/mkbom /usr/local/bin/.
   rm -rf bomutils
-}
-
-function install_dotnet() {
-  echo -e "\x1b[1;34m[*] Installing dotnet for C# agents and modules\x1b[0m"
-
-  # Since PMC doesn't support arm64 we need to manually install it
-  # https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-6.0.427-linux-arm64-binaries
-  ARCH=$(uname -m)
-  if [ "$ARCH" == "x86_64" ]; then
-    DOTNET_URL="https://download.visualstudio.microsoft.com/download/pr/12ee34e8-640c-400e-a6dc-4892b442df92/81d40fc98a5bbbfbafa4cc1ab86d6288/dotnet-sdk-6.0.427-linux-x64.tar.gz"
-    CHECKSUM="a9cd1e5ccc3c5d847aca2ef21dd145f61c6b18c4e75a3c2fc9aed592c6066d511b8b658c54c2cd851938fe5aba2386e5f6f51005f6406b420110c0ec408a8401"
-  else
-    DOTNET_URL="https://download.visualstudio.microsoft.com/download/pr/30d99992-ae6a-45b8-a8b3-560d2e587ea8/a35304fce1d8a6f5c76a2ccd8da9d431/dotnet-sdk-6.0.427-linux-arm64.tar.gz"
-    CHECKSUM="9129961b54ad77dac2b4de973875f7acd1e8d2833673a51923706620e0c5b7b8c5b057c8d395532ad9da46b1dcb5ab8fd07a4f552bd57256d5a0c21070ad5771"
-  fi
-
-  wget $DOTNET_URL -O /tmp/dotnet-sdk.tar.gz
-
-  echo "$CHECKSUM /tmp/dotnet-sdk.tar.gz" | sha512sum -c
-  if [ $? -ne 0 ]; then
-    echo -e "\x1b[1;31m[!] Checksum verification failed. Exiting.\x1b[0m"
-    exit 1
-  fi
-
-  mkdir -p $HOME/dotnet && tar zxf /tmp/dotnet-sdk.tar.gz -C $HOME/dotnet
-  sudo ln -s $HOME/dotnet/dotnet /usr/bin/dotnet
-  export DOTNET_ROOT=$HOME/dotnet
-  export PATH=$PATH:$HOME/dotnet
-
-  echo "export DOTNET_ROOT=$HOME/dotnet" >> ~/.bashrc
-  echo "export PATH=$PATH:$HOME/dotnet" >> ~/.bashrc
-
-  echo "export DOTNET_ROOT=$HOME/dotnet" >> ~/.zshrc
-  echo "export PATH=$PATH:$HOME/dotnet" >> ~/.zshrc
 }
 
 set -e
@@ -412,12 +293,6 @@ if ! command_exists mysql; then
 fi
 
 start_mysql
-
-if [ "$COMPILE_FROM_SOURCE" -eq 1 ]; then
-  compile_empire_compiler
-else
-  download_empire_compiler
-fi
 
 if [ "$ASSUME_YES" == "1" ] ;then
   answer="Y"

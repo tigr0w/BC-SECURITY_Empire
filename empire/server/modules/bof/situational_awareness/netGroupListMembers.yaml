@@ -37,6 +37,7 @@ bof:
   x86: bof/situational_awareness/netgroup/netgroup.x86.o
   x64: bof/situational_awareness/netgroup/netgroup.x64.o
   entry_point: ''
+  format_string: sZZ
 script_path: ''
 script_end: ''
 advanced:

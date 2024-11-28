@@ -28,10 +28,10 @@ options:
     description: Computer to enumerate scheduled tasks on
     required: false
     value: ''
-    format: z
 bof:
   x86: bof/situational_awareness/schtasksenum/schtasksenum.x86.o
   x64: bof/situational_awareness/schtasksenum/schtasksenum.x64.o
   entry_point: ''
+  format_string: z
 script_path: ''
 script_end: ''

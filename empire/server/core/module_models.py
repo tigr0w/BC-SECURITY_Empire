@@ -28,7 +28,6 @@ class EmpireModuleOption(BaseModel):
     suggested_values: list[str] = []
     strict: bool = False
     type: str | None = None
-    format: str | None = None
     internal: bool = False
     depends_on: list[dict[str, str | list[str]]] | None = None
 
@@ -56,6 +55,7 @@ class BofModuleOption(BaseModel):
     x86: str | None = None
     x64: str | None = None
     entry_point: str | None = None
+    format_string: str | None = None
 
 
 class CSharpOption(BaseModel):

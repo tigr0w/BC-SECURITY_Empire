@@ -35,7 +35,7 @@ commandTests:
   - name: "ps-empire version"
     command: "./ps-empire"
     args: ["-f", "server", "--version"]
-    expectedOutput: ["5.* BC Security Fork"]
+    expectedOutput: ["6.* BC Security Fork"]
   - name: "go which"
     command: "which"
     args: [ "go" ]

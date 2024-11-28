@@ -40,6 +40,12 @@ database:
       - Invoke-Mimikatz
     ip_allow_list: []
     ip_deny_list: []
+empire_compiler:
+  enabled: true
+  version: v0.2
+  repo: https://github.com/BC-SECURITY/Empire-Compiler.git
+  directory: empire/server/Empire-Compiler
+  auto_update: true
 starkiller:
   enabled: true
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git

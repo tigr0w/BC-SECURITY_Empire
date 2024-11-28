@@ -70,6 +70,7 @@ bof:
   x86: ''
   x64: bof/ClipboardWindow/ClipboardWindow-Inject.x64.o
   entry_point: ''
+  format_string: bi
 script_path: ''
 script_end: ''
 advanced:

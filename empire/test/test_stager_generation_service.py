@@ -1,110 +1,48 @@
 import base64
 import os
-import platform
 import re
-import shutil
-import subprocess
+from pathlib import Path
 
 import pytest
-import requests
 
+from empire.scripts.sync_empire_compiler import (
+    get_latest_patch_version,
+    load_empire_compiler,
+)
 from empire.server.common.empire import MainMenu
-
-EMPIRE_COMPILER_VERSION = "v0.2.0"
-repo_path = "empire/server/Empire-Compiler"
-base_download_url = "https://github.com/BC-SECURITY/Empire-Compiler/releases/download"
-target_dir = os.path.join(repo_path, "EmpireCompiler")
-target_compiler_path = os.path.join(target_dir, "EmpireCompiler")
-
-
-def get_architecture():
-    """
-    Detect the system architecture and return the corresponding value.
-    """
-    arch = platform.machine()
-    if arch == "x86_64":
-        return "linux-x64"
-    elif arch in ["aarch64", "arm64"]:  # noqa: RET505
-        return "linux-arm64"
-    else:
-        return "unsupported"
-
-
-def download_file(url, target_path):
-    """
-    Download a file from a given URL and save it to the target path.
-    """
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:  # noqa: PLR2004
-        with open(target_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                file.write(chunk)
-        print(f"Downloaded file to {target_path}")
-    else:
-        print(
-            f"Failed to download file from {url}. Status code: {response.status_code}"
-        )
-        response.raise_for_status()
-
-
-def clone_repository_if_needed():
-    """
-    Clone the repository if it doesn't already exist.
-    """
-    if not os.path.exists(repo_path):
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                EMPIRE_COMPILER_VERSION,
-                "--recursive",
-                "--depth",
-                "1",
-                "https://github.com/BC-SECURITY/Empire-Compiler.git",
-                repo_path,
-            ],
-            check=True,
-        )
-        print("Repository cloned successfully.")
-    else:
-        print("Repository already cloned.")
-
-
-def ensure_empire_compiler_exists():
-    """
-    Ensure that the EmpireCompiler binary is in the target directory.
-    If it's not present, download it first and then move it to the target directory.
-    """
-    if not os.path.exists(target_compiler_path):
-        print(f"EmpireCompiler not found at {target_compiler_path}. Downloading...")
-        os.makedirs(target_dir, exist_ok=True)
-
-        arch = get_architecture()
-        if arch == "unsupported":
-            print("Unsupported architecture. Exiting.")
-            return
-
-        download_url = (
-            f"{base_download_url}/{EMPIRE_COMPILER_VERSION}/EmpireCompiler-{arch}"
-        )
-
-        temp_download_path = os.path.join("/tmp", "EmpireCompiler")
-        download_file(download_url, temp_download_path)
-        shutil.move(temp_download_path, target_compiler_path)
-        os.chmod(target_compiler_path, 0o755)
-        print("EmpireCompiler downloaded and moved successfully.")
-    else:
-        print("EmpireCompiler already exists.")
-
-
-clone_repository_if_needed()
-ensure_empire_compiler_exists()
+from empire.server.utils.file_util import run_as_user
 
 
 @pytest.fixture(scope="module")
 def stager_generation_service(main: MainMenu):
     return main.stagergenv2
+
+
+def test_compiler(empire_config):
+    """
+    Tests related to the EmpireCompiler binary.
+    """
+    load_empire_compiler(empire_config)
+
+    compiler_dir = (
+        Path(empire_config.empire_compiler["directory"])
+        / "EmpireCompiler"
+        / "EmpireCompiler"
+    )
+    assert compiler_dir.is_file(), f"EmpireCompiler binary not found at {compiler_dir}"
+
+    result = run_as_user([str(compiler_dir), "--help"], text=True, capture_output=True)
+    assert "Usage:" in result, "Unexpected output from EmpireCompiler --help"
+
+    expected_version = get_latest_patch_version(
+        empire_config, empire_config.empire_compiler["version"]
+    )[1:]
+    version_output = run_as_user(
+        [str(compiler_dir), "--version"], text=True, capture_output=True
+    )
+    assert (
+        expected_version in version_output
+    ), f"Expected version {expected_version}, but got {version_output}"
 
 
 def test_generate_launcher_fetcher(stager_generation_service):

@@ -45,10 +45,13 @@ class Module:
 
         params_dict = {
             "Architecture": "x64",
-            "ProcessID": f"-i:{pid}",
-            "Shellcode": f"-b:{encoded_shellcode}",
+            "ProcessID": pid,
+            "Shellcode": encoded_shellcode,
         }
 
         return main_menu.modulesv2.generate_script_bof(
-            module=module, params=params_dict, obfuscate=obfuscate
+            module=module,
+            params=params_dict,
+            obfuscate=obfuscate,
+            skip_params=True,
         )

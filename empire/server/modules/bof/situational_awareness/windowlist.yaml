@@ -37,6 +37,7 @@ bof:
   x86: bof/situational_awareness/windowlist/windowlist.x86.o
   x64: bof/situational_awareness/windowlist/windowlist.x64.o
   entry_point: ''
+  format_string: i
 script_path: ''
 script_end: ''
 advanced:

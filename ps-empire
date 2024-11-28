@@ -2,7 +2,6 @@
 
 INSTALL=0
 YES_OPTION=""
-COMPILE_OPTION=""
 FORCE_OPTION=""
 EMPIRE_ARGS=()
 
@@ -13,9 +12,6 @@ for arg in "$@"; do
       ;;
     -y)
       YES_OPTION="-y"
-      ;;
-    -c)
-      COMPILE_OPTION="-c"
       ;;
     -f)
       FORCE_OPTION="-f"
@@ -30,7 +26,7 @@ for arg in "$@"; do
 done
 
 if [ $INSTALL -eq 1 ]; then
-  ./setup/install.sh $SHOW_HELP $YES_OPTION $COMPILE_OPTION $FORCE_OPTION
+  ./setup/install.sh $SHOW_HELP $YES_OPTION $FORCE_OPTION
 fi
 
 if [ "$EUID" -eq 0 ] && [ -z "$FORCE_OPTION" ]; then

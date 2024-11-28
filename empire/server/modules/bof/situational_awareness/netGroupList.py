@@ -13,11 +13,14 @@ class Module:
     ):
         params_dict = {
             "Architecture": params["Architecture"],
-            "Extra": "-s:0",
-            "Domain": f"-Z:{params['Domain']}",
-            "Parameter": "-Z: ",
+            "Extra": "0",
+            "Domain": params["Domain"],
+            "Parameter": "",
         }
 
         return main_menu.modulesv2.generate_script_bof(
-            module=module, params=params_dict, obfuscate=obfuscate
+            module=module,
+            params=params_dict,
+            obfuscate=obfuscate,
+            skip_params=False,
         )

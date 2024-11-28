@@ -29,6 +29,7 @@ from empire.server.core.module_models import (
     EmpireModuleOption,
     LanguageEnum,
 )
+from empire.server.utils.bof_packer import process_arguments
 from empire.server.utils.option_util import convert_module_options, validate_options
 
 if typing.TYPE_CHECKING:
@@ -320,35 +321,21 @@ class ModuleService:
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
+        skip_params=False,
     ) -> str:
-        bof_module = self.modules["csharp_code_execution_inject_bof"]
+        bof_module = self.modules["csharp_code_execution_runcoff"]
 
-        compiler_dict: dict = yaml.safe_load(bof_module.compiler_yaml)
-
-        if params["Architecture"] == "x64":
-            script_path = empire_config.directories.module_source / module.bof.x64
-            bof_data = script_path.read_bytes()
-        elif params["Architecture"] == "x86":
-            compiler_dict[0]["ReferenceSourceLibraries"][0]["EmbeddedResources"][0][
-                "Name"
-            ] = "RunOF.beacon_funcs.x64.o"
-            compiler_dict[0]["ReferenceSourceLibraries"][0]["EmbeddedResources"][0][
-                "Location"
-            ] = "RunOF.beacon_funcs.x64.o"
-            compiler_dict[0]["ReferenceSourceLibraries"][0][
-                "Location"
-            ] = "RunOF\\RunOF32\\"
+        if params["Architecture"] == "x86":
             script_path = empire_config.directories.module_source / module.bof.x86
-            bof_data = script_path.read_bytes()
+        else:
+            script_path = empire_config.directories.module_source / module.bof.x64
 
+        bof_data = script_path.read_bytes()
         b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
 
-        compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
         script_file = self.main_menu.dotnet_compiler.compile_task(
-            compiler_yaml, bof_module.name, dotnet="net40", confuse=obfuscate
+            bof_module.compiler_yaml, bof_module.name, dotnet="net40", confuse=obfuscate
         )
-
-        params_dict = {"base64_bof_data": f"-a:{b64_bof_data}"}
 
         filtered_params = {
             key: (
@@ -365,17 +352,22 @@ class ModuleService:
             ]
         }
 
-        for key in filtered_params:
-            option = next(
-                (opt for opt in module.options if opt.name.lower() == key.lower()), None
+        formatted_args = " ".join(
+            f'"{value}"' if " " in value else value
+            for value in filtered_params.values()
+        )
+
+        if not skip_params:
+            params_dict = {}
+            params_dict["Entrypoint"] = (
+                module.bof.entry_point if module.bof.entry_point else "go"
             )
-            if option and hasattr(option, "format"):
-                filtered_params[key] = f"-{option.format}:{filtered_params[key]}"
-
-        params_dict.update(filtered_params)
-
-        if params.get("entrypoint"):
-            params_dict["entrypoint"] = f"-e:{params['entrypoint']}"
+            params_dict["File"] = b64_bof_data
+            params_dict["HexData"] = process_arguments(
+                module.bof.format_string, formatted_args
+            )
+        else:
+            params_dict = params
 
         final_base64_json = base64.b64encode(
             json.dumps(params_dict).encode("utf-8")

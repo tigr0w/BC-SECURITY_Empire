@@ -16,12 +16,15 @@ class Module:
         # Build the params dictionary with required prefixes
         params_dict = {
             "Architecture": params["Architecture"],
-            "System": f"-Z:{params['System']}",
-            "Namespace": f"-Z:{params['Namespace']}",
-            "Query": f"-Z:{params['Query']}",
-            "Resource": f"-Z:{resource}",
+            "System": params["System"],
+            "Namespace": params["Namespace"],
+            "Query": params["Query"],
+            "Resource": resource,
         }
 
         return main_menu.modulesv2.generate_script_bof(
-            module=module, params=params_dict, obfuscate=obfuscate
+            module=module,
+            params=params_dict,
+            obfuscate=obfuscate,
+            skip_params=True,
         )

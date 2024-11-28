@@ -1,24 +1,25 @@
 # BOF Modules
 
-BOF modules are mostly configured the same as powershell modules.
+BOF modules are configured similarly to PowerShell modules with a few key differences:
+- The `script`, `script_path`, and `script_end` fields are no longer used.
+- `bof.x86` and `bof.x64` refer to the path of the beacon object file for each architecture (x86 and x64).
+- `bof.entry_point` is an optional field to define the object file's entry point.
+- An `Architecture` field is required.
+- `format_string` is used to define how data should be passed.
 
-Where it varies:
-* The `script`, `script_path`, and `script_end` fields are not used
-* `bof.x86` and `box.x64` refer to the path to the beacon object file for each architecture
-* `bof.entry_point` is an optional field for defining the object file entry point
-* An `Architecture` field is required
+
+### Format String
+| Type | Description | Unpack With (C) |
+|------|-------------|-----------------|
+| **b** | Binary data | `BeaconDataExtract` |
+| **i** | 4-byte integer | `BeaconDataInt` |
+| **s** | 2-byte short integer | `BeaconDataShort` |
+| **z** | Zero-terminated + encoded string | `BeaconDataExtract` |
+| **Z** | Zero-terminated wide-char string (`wchar_t *`) | `BeaconDataExtract` |
 
 
-In addition, options add the `format` which breaks them into the following categeories:
-```
-        -i:123       A 32 bit integer (e.g. 123 passed to object file)
-        -s:12        A 16 bit integer (e.g. 12 passed to object file)
-        -z:hello     An ASCII string  (e.g. hello passed to object file)
-        -Z:hello     A string that's converted to wchar (e.g. (wchar_t)hello passed to object file)
-        -b:aGVsbG8=  A base64 encoded binary blob (decoded binary passed to object file)
-```
+## Example BOF
 
-The yaml would use the following format:
 ```yaml
 options:
   - name: Architecture
@@ -34,7 +35,11 @@ options:
     required: true
     value: 'C:\\windows\\system32\\cmd.exe'
     format: Z
-    value: 'alex'
+bof:
+  x86: bof/situational_awareness/cacls.x86.o
+  x64: bof/situational_awareness/cacls.x64.o
+  entry_point: ''
+  format_string: Z
 ```
 
 BOF modules also support the `advanced.custom_generate` method of generating the script.

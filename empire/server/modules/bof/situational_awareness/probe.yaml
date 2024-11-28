@@ -28,16 +28,15 @@ options:
   - name: Host
     description: Host to probe.
     required: true
-    value: ''
-    format: z
+    value: 'localhost'
   - name: Port
     description: Port to probe.
     required: true
-    value: ''
-    format: i
+    value: '80'
 bof:
   x86: bof/situational_awareness/probe/probe.x86.o
   x64: bof/situational_awareness/probe/probe.x64.o
   entry_point: ''
+  format_string: zi
 script_path: ''
 script_end: ''

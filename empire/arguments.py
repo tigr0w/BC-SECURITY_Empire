@@ -8,6 +8,9 @@ client_parser = subparsers.add_parser("client", help="Launch Empire CLI")
 sync_starkiller_parser = subparsers.add_parser(
     "sync-starkiller", help="Sync Starkiller submodule with the config"
 )
+sync_empire_compiler_parser = subparsers.add_parser(
+    "sync-empire-compiler", help="Sync Empire Compiler submodule with the config"
+)
 install_parser = subparsers.add_parser("install", help="Install the Empire framework")
 install_parser.add_argument(
     "-y",

@@ -118,11 +118,11 @@ options:
     suggested_values:
       - true
       - false
-    format: i
 bof:
   x86: bof/nanodump/nanodump.x86.o
   x64: bof/nanodump/nanodump.x64.o
   entry_point: ''
+  format_string: iziiiiiiiiiiiziiizi
 script_path: ''
 script_end: ''
 advanced:

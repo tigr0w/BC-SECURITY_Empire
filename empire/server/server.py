@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import glob
 import logging
 import os
 import pathlib
@@ -69,10 +70,12 @@ def setup_logging(args):
 CSHARP_DIR_BASE = os.path.join(
     os.path.dirname(__file__), "Empire-Compiler/EmpireCompiler"
 )
+GO_DIR_BASE = os.path.join(os.path.dirname(__file__), "data/agent/gopire")
 INVOKE_OBFS_SRC_DIR_BASE = os.path.join(
     os.path.dirname(__file__), "data/Invoke-Obfuscation"
 )
 INVOKE_OBFS_DST_DIR_BASE = "/usr/local/share/powershell/Modules/Invoke-Obfuscation"
+EMPIRE_COMPILER_DIR_BASE = empire_config.empire_compiler["directory"]
 
 
 def reset():
@@ -93,12 +96,19 @@ def reset():
         f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/netcoreapp3.0"
     )
 
+    for exe_file in glob.glob(f"{GO_DIR_BASE}/**/*.exe", recursive=True):
+        os.remove(exe_file)
+
+    if os.path.exists(f"{EMPIRE_COMPILER_DIR_BASE}"):
+        shutil.rmtree(f"{EMPIRE_COMPILER_DIR_BASE}")
+
+    file_util.remove_file(f"{GO_DIR_BASE}/main.go")
+
     file_util.remove_file(f"{CSHARP_DIR_BASE}/Data/EmbeddedResources/launcher.txt")
 
     if os.path.exists(empire_config.starkiller.directory):
         shutil.rmtree(empire_config.starkiller.directory)
 
-    # invoke obfuscation
     if os.path.exists(f"{INVOKE_OBFS_DST_DIR_BASE}"):
         shutil.rmtree(INVOKE_OBFS_DST_DIR_BASE)
     pathlib.Path(pathlib.Path(INVOKE_OBFS_SRC_DIR_BASE).parent).mkdir(
@@ -162,6 +172,10 @@ def check_recommended_configuration():
 
 
 def run(args):
+    if args.version:
+        print(empire.VERSION)
+        sys.exit()
+
     setup_logging(args)
 
     if empire_config.submodules.auto_update:
@@ -173,12 +187,7 @@ def run(args):
     check_submodules()
     check_recommended_configuration()
 
-    if args.version:
-        # log to stdout instead of stderr
-        print(empire.VERSION)
-        sys.exit()
-
-    elif args.reset:
+    if args.reset:
         choice = input(
             "\x1b[1;33m[>] Would you like to reset your Empire Server instance? [y/N]: \x1b[0m"
         )

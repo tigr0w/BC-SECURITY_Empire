@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated module_service logic for tasking types
 -   Updated shortened task results to show the C# command ran and full input to show directory of the file
 -   Updated C# tasks into folders and split yamls to be 1 per a file
+-   Swapped C# module RunOF for COFFLoader
+-   Updated parsing for bof formatting to use bof_pack
 
 #### Breaking
 -   Moved `Agents` class to `AgentCommunicationService`
@@ -75,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Moved EmpireCompiler compression from application to the server
 -   The client has been deprecated and will be removed in a future major Empire release
    -   The current feature set has been reduced
+-   Moved EmpireCompiler from install script to startup with autoupdate functionality
 
 ### Deprecated
 

@@ -58,6 +58,10 @@ def test_on_settings_change_called(session_local):
 
 @pytest.mark.usefixtures("_setup_database")
 def test_settings_file_option(main, session_local, models):
+    with session_local.begin() as db:
+        db.query(models.upload_download_assc).delete()
+        db.query(models.Download).delete()
+
     example_plugin = Plugin(main, PluginInfo(name="example", main=""), None)
 
     with session_local.begin() as db:
