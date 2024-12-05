@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 -   Reduce the check-in tests that were adding an unncessary amount of time to the CI
+-   Allow Python 3.13 to be used
 
 ## [5.11.7] - 2024-11-11
 
