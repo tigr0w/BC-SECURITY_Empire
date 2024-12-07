@@ -40,9 +40,6 @@ function install_powershell() {
   sudo tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7
   sudo chmod +x /opt/microsoft/powershell/7/pwsh
   sudo ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh
-
-  sudo mkdir -p /usr/local/share/powershell/Modules
-  sudo cp -r "$PARENT_PATH"/empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
 }
 
 function install_mysql() {

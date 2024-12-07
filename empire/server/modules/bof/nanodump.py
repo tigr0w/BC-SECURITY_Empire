@@ -16,8 +16,7 @@ class Module:
             module=module, params=params, obfuscate=obfuscate
         )
 
-        for name in params:
-            value = params[name]
+        for name, value in params.items():
             if name == "write":
                 if value != "":
                     dump_path = value

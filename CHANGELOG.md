@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Support Empire for system-wide deployment (@D3vil0p3r)
+-   Paths specified in config.yaml where user does not have write permission will be fallback to ~/.empire directory and config.yaml updated as well (@D3vil0p3r)
+-   Invoke-Obfuscation is no longer copied to /usr/local/share
+
 ## [5.11.7] - 2024-11-11
 
 -   Fix arm installs by installing dotnet and powershell manually

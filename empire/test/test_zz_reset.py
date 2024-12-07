@@ -39,8 +39,6 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
      1. Deletes the sqlite db. Don't need to test mysql atm.
      2. Deletes the downloads dir contents
      3. Deletes the csharp generated files
-     4. Deletes the obfuscated modules
-     5. Deletes / Copies invoke obfuscation
     """
     monkeypatch.setattr("builtins.input", lambda _: "y")
     sys.argv = [*default_argv.copy(), "--reset"]
@@ -64,9 +62,8 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     for f in download_files:
         assert Path(downloads_dir + f[0]).exists()
 
-    # Change the csharp and Invoke-Obfuscation dir so we don't delete real files.
+    # Change the csharp dir so we don't delete real files.
     csharp_dir = tmp_path / "empire/server/data/csharp"
-    invoke_obfs_dir = tmp_path / "powershell/Modules/Invoke-Obfuscation"
 
     # Write files to csharp_dir
     csharp_files = [
@@ -105,7 +102,6 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
         assert Path(server_config_dict["database"]["location"]).exists()
 
     server.CSHARP_DIR_BASE = csharp_dir
-    server.INVOKE_OBFS_DST_DIR_BASE = invoke_obfs_dir
 
     with pytest.raises(SystemExit):
         server.run(args)
@@ -125,8 +121,6 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
         assert not Path(
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
-
-    assert Path(invoke_obfs_dir / "Invoke-Obfuscation.ps1").exists()
 
     if server_config_dict.get("database", {}).get("type") == "sqlite":
         assert not Path(server_config_dict["database"]["location"]).exists()
