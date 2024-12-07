@@ -732,9 +732,7 @@ class Listener:
                                 return_val,
                             ) = self.mainMenu.agentcommsv2.handle_agent_data(
                                 staging_key, content, listener_options
-                            )[
-                                0
-                            ]
+                            )[0]
                             message = f"{listener_name}: Uploading {base_folder}/{staging_folder}/{agent_name}_2.txt, {len(return_val)!s} bytes"
                             self.instance_log.info(message)
                             s.put(
@@ -758,9 +756,7 @@ class Listener:
                                 return_val,
                             ) = self.mainMenu.agentcommsv2.handle_agent_data(
                                 staging_key, content, listener_options
-                            )[
-                                0
-                            ]
+                            )[0]
 
                             session_key = self.mainMenu.agentcommsv2.agents[agent_name][
                                 "sessionKey"

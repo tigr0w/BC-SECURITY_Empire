@@ -1,4 +1,4 @@
-""" An example of a plugin. """
+"""An example of a plugin."""
 
 import logging
 from typing import override

@@ -264,9 +264,7 @@ class Listener:
             updateServers = """
                 $Script:ControlServers = @("{}");
                 $Script:ServerIndex = 0;
-            """.format(
-                listenerOptions["Host"]["Value"]
-            )
+            """.format(listenerOptions["Host"]["Value"])
 
             getTask = """
                 $script:GetTask = {

@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated C# tasks into folders and split yamls to be 1 per a file
 -   Swapped C# module RunOF for COFFLoader
 -   Updated parsing for bof formatting to use bof_pack
+-   Change formatter to ruff to consolidate tools
 
 #### Breaking
 -   Moved `Agents` class to `AgentCommunicationService`

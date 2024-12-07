@@ -15,7 +15,6 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-
         script_file = main_menu.dotnet_compiler.compile_task(
             module.compiler_yaml,
             module.name,

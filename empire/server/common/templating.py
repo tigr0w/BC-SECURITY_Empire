@@ -1,5 +1,5 @@
-""" Provides helper methods for templating.
-This is useful for generating stagers """
+"""Provides helper methods for templating.
+This is useful for generating stagers"""
 
 import jinja2
 

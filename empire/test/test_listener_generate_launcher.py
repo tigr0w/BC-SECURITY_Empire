@@ -164,9 +164,9 @@ def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
     http_hop_listener = Listener(main_menu_mock)
 
     http_hop_listener.options["Host"]["Value"] = "http://localhost"
-    http_hop_listener.options["DefaultProfile"][
-        "Value"
-    ] = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+    http_hop_listener.options["DefaultProfile"]["Value"] = (
+        "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+    )
     main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_hop_listener.options}
     }
@@ -208,9 +208,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
 
     session_mock = MagicMock()
     profile_mock = MagicMock()
-    session_mock.return_value.query.return_value.filter.return_value.first.return_value = (
-        profile_mock
-    )
+    session_mock.return_value.query.return_value.filter.return_value.first.return_value = profile_mock
     profile_mock.data = _fake_malleable_profile()
     monkeypatch.setattr(
         "empire.server.listeners.http_malleable.SessionLocal", session_mock
