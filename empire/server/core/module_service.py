@@ -571,6 +571,9 @@ class ModuleService:
         self, db: Session, yaml_module, root_path, file_path: str
     ):
         module_name = file_path.split(root_path)[-1][0:-5]
+        yaml_module["techniques"].extend(
+            self._get_interpreter_technique(yaml_module["language"])
+        )
 
         if yaml_module["language"] == "csharp":
             yaml_module["id"] = self.slugify(module_name)
@@ -676,6 +679,19 @@ class ModuleService:
 
         self.modules[self.slugify(module_name)] = my_model
         self.modules[self.slugify(module_name)].enabled = mod.enabled
+
+    def _get_interpreter_technique(self, language):
+        if language == LanguageEnum.powershell:
+            return ["T1059.001"]
+        if language == LanguageEnum.csharp:
+            return ["T1620"]
+        if language == LanguageEnum.python:
+            return ["T1059.006"]
+        if language == LanguageEnum.ironpython:
+            return ["T1059.006", "T1620"]
+        if language == LanguageEnum.bof:
+            return ["T1620"]
+        return []
 
     def get_module_script(self, module_id: str):
         mod: EmpireModule = self.modules.get(module_id)

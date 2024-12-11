@@ -22,9 +22,10 @@ description: Runs a BypassUAC attack to escape from a medium integrity process t
   originally discovered by Leo Davidson. Empire uses components of MSF's bypassuac injection implementation as well as an
   adapted version of PowerSploit's Invoke--Shellcode.ps1 script for backend lifting.
 software: ''
-tactics: []
+tactics:
+  - TA0004
 techniques:
-  - T1088
+  - T1548.002
 background: true
 output_extension:
 needs_admin: false

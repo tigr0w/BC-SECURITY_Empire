@@ -5,8 +5,10 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Use a SharpUp command.
 software: ''
-tactics: []
-techniques: []
+tactics:
+  - TA0007
+techniques:
+  - T1012
 background: false
 output_extension: ''
 needs_admin: false

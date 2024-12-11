@@ -5,9 +5,11 @@ authors:
     link: ''
 description: Performs an ARP scan against a given range of IPv4 IP Addresses.
 software: S0099
-tactics: []
+tactics:
+  - TA0007
 techniques:
   - T1016
+  - T1018
 background: true
 output_extension:
 needs_admin: false

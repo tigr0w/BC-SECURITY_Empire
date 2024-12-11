@@ -5,9 +5,11 @@ authors:
     link: https://twitter.com/harmj0y
 description: Executes a stager on remote hosts using PSRemoting.
 software: ''
-tactics: []
+tactics:
+  - TA0008
 techniques:
-  - T1028
+  - T1059.001
+  - T1021.002
 background: true
 output_extension:
 needs_admin: false

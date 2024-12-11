@@ -8,7 +8,7 @@ software: S0194
 tactics:
   - TA0002
 techniques:
-  - T1059
+  - T1059.006
 background: true
 output_extension:
 needs_admin: false
