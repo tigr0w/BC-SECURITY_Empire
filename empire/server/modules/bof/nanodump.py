@@ -13,9 +13,10 @@ class Module:
     ):
         params_dict = {
             "Architecture": "x64",
-            "ProcessID": "1" if params.get("getpid") == "true" else "0",
+            "ProcessID": params.get("pid") if params.get("pid") else "0",
             "DumpPath": params.get("write", "find_me.dmp"),
             "WriteFile": "1" if params.get("write") else "0",
+            "Chunksize": params.get("chunksize") if params.get("chunksize") else "0",
             "ValidSignature": "1" if params.get("valid") == "true" else "0",
             "Fork": "1" if params.get("fork") == "true" else "0",
             "Snapshot": "1" if params.get("snapshot") == "true" else "0",
@@ -47,5 +48,4 @@ class Module:
             module=module,
             params=params_dict,
             obfuscate=obfuscate,
-            skip_params=True,
         )

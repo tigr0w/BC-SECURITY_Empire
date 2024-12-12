@@ -22,5 +22,4 @@ class Module:
             module=module,
             params=params_dict,
             obfuscate=obfuscate,
-            skip_params=True,
         )

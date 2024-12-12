@@ -321,7 +321,6 @@ class ModuleService:
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
-        skip_params=False,
     ) -> str:
         bof_module = self.modules["csharp_code_execution_runcoff"]
 
@@ -357,17 +356,14 @@ class ModuleService:
             for value in filtered_params.values()
         )
 
-        if not skip_params:
-            params_dict = {}
-            params_dict["Entrypoint"] = (
-                module.bof.entry_point if module.bof.entry_point else "go"
-            )
-            params_dict["File"] = b64_bof_data
-            params_dict["HexData"] = process_arguments(
-                module.bof.format_string, formatted_args
-            )
-        else:
-            params_dict = params
+        params_dict = {}
+        params_dict["Entrypoint"] = (
+            module.bof.entry_point if module.bof.entry_point else "go"
+        )
+        params_dict["File"] = b64_bof_data
+        params_dict["HexData"] = process_arguments(
+            module.bof.format_string, formatted_args
+        )
 
         final_base64_json = base64.b64encode(
             json.dumps(params_dict).encode("utf-8")
