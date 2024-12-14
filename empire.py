@@ -2,10 +2,11 @@
 
 import sys
 
-from empire import arguments
+from empire import arguments, config_manager
 
 if __name__ == "__main__":
     args = arguments.args
+    config_manager.config_init()
 
     if args.subparser_name == "server":
         from empire.server import server
@@ -16,7 +17,7 @@ if __name__ == "__main__":
 
         from empire.scripts.sync_starkiller import sync_starkiller
 
-        with open("empire/server/config.yaml") as f:
+        with open(config_manager.CONFIG_SERVER_PATH) as f:
             config = yaml.safe_load(f)
 
         sync_starkiller(config)

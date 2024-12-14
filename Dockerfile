@@ -59,9 +59,7 @@ RUN poetry config virtualenvs.create false && \
 
 COPY . /empire
 
-RUN mkdir -p /usr/local/share/powershell/Modules && \
-    cp -r ./empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules && \
-    rm -rf /empire/empire/server/data/empire*
+RUN rm -rf /empire/empire/server/data/empire*
 
 RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml && \
     sed -i 's/auto_update: true/auto_update: false/g' empire/server/config.yaml
