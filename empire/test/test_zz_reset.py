@@ -31,9 +31,7 @@ def _wrap_reset(server_config_dict):
 
 @pytest.mark.slow
 @pytest.mark.timeout(30)
-def test_reset_server(  # noqa: PLR0915
-    monkeypatch, tmp_path, default_argv, server_config_dict
-):
+def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     """
     Test for
      1. Deletes the sqlite db. Don't need to test mysql atm.
@@ -90,10 +88,6 @@ def test_reset_server(  # noqa: PLR0915
         assert Path(
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
-
-    invoke_obfs_src_dir.mkdir(parents=True, exist_ok=True)
-    (invoke_obfs_src_dir / "Invoke-Obfuscation.ps1").write_text("Test content")
-    assert (invoke_obfs_src_dir / "Invoke-Obfuscation.ps1").exists()
 
     launcher_file = (
         tmp_path / "Empire-Compiler/EmpireCompiler/Data/EmbeddedResources/launcher.txt"
