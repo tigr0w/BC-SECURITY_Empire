@@ -103,7 +103,7 @@ function install_python() {
   apt-get -y install build-essential gdb lcov pkg-config \
     libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
     libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
-    lzma lzma-dev tk-dev uuid-dev zlib1g-dev
+    lzma tk-dev uuid-dev zlib1g-dev
 
   pyenv install $(cat .python-version) -s
 }
@@ -134,9 +134,6 @@ function install_powershell() {
   sudo tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7
   sudo chmod +x /opt/microsoft/powershell/7/pwsh
   sudo ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh
-
-  sudo mkdir -p /usr/local/share/powershell/Modules
-  sudo cp -r "$PARENT_PATH"/empire/server/data/Invoke-Obfuscation /usr/local/share/powershell/Modules
 }
 
 function get_architecture() {

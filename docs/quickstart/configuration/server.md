@@ -2,7 +2,9 @@
 
 The Server configuration is managed via [empire/server/config.yaml](https://github.com/BC-SECURITY/Empire/blob/master/empire/client/config.yaml).
 
-* **suppress_self_cert_warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
+Once launched, Empire checks for user write permissions on paths specified in `config.yaml`. If the current user does not have write permissions on these paths, `~/.empire` will be set as fallback parent directory and the configuration file will be updated as well.
+
+* **suppress-self-cert-warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
 
 * **api** - Configure the RESTful API.
 

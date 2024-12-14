@@ -62,6 +62,3 @@ fileExistenceTests:
   - name: 'profiles'
     path: '/empire/empire/server/data/profiles/'
     shouldExist: true
-  - name: 'invoke obfuscation'
-    path: '/usr/local/share/powershell/Modules/Invoke-Obfuscation/'
-    shouldExist: true

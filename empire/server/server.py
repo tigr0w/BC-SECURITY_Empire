@@ -2,7 +2,6 @@
 import glob
 import logging
 import os
-import pathlib
 import pwd
 import shutil
 import signal
@@ -71,10 +70,6 @@ CSHARP_DIR_BASE = os.path.join(
     os.path.dirname(__file__), "Empire-Compiler/EmpireCompiler"
 )
 GO_DIR_BASE = os.path.join(os.path.dirname(__file__), "data/agent/gopire")
-INVOKE_OBFS_SRC_DIR_BASE = os.path.join(
-    os.path.dirname(__file__), "data/Invoke-Obfuscation"
-)
-INVOKE_OBFS_DST_DIR_BASE = "/usr/local/share/powershell/Modules/Invoke-Obfuscation"
 EMPIRE_COMPILER_DIR_BASE = empire_config.empire_compiler["directory"]
 
 
@@ -108,15 +103,6 @@ def reset():
 
     if os.path.exists(empire_config.starkiller.directory):
         shutil.rmtree(empire_config.starkiller.directory)
-
-    if os.path.exists(f"{INVOKE_OBFS_DST_DIR_BASE}"):
-        shutil.rmtree(INVOKE_OBFS_DST_DIR_BASE)
-    pathlib.Path(pathlib.Path(INVOKE_OBFS_SRC_DIR_BASE).parent).mkdir(
-        parents=True, exist_ok=True
-    )
-    shutil.copytree(
-        INVOKE_OBFS_SRC_DIR_BASE, INVOKE_OBFS_DST_DIR_BASE, dirs_exist_ok=True
-    )
 
     file_util.remove_file("data/sessions.csv")
     file_util.remove_file("data/credentials.csv")
@@ -158,6 +144,9 @@ def check_submodules():
 
 
 def fetch_submodules():
+    if not os.path.exists(Path(".git")):
+        log.info("No .git directory found. Skipping submodule fetch.")
+        return
     command = ["git", "submodule", "update", "--init", "--recursive"]
     run_as_user(command)
 

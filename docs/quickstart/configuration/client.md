@@ -5,6 +5,8 @@
 
 The Client configuration is managed via [empire/client/config.yaml](https://github.com/BC-SECURITY/Empire/blob/master/empire/client/config.yaml).
 
+Once launched, Empire checks for user write permissions on paths specified in `config.yaml`. If the current user does not have write permissions on these paths, `~/.empire` will be set as fallback parent directory and the configuration file will be updated as well.
+
 *   **servers** - The servers block is meant to give the user the ability to set up frequently used Empire servers.
 
     If a server is listed in this block then when connecting to the server they need only type: `connect -c localhost`.

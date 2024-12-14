@@ -15,6 +15,8 @@ from pydantic import (
     model_validator,
 )
 
+from empire import config_manager
+
 log = logging.getLogger(__name__)
 
 
@@ -111,9 +113,9 @@ class DatabaseConfig(EmpireBaseModel):
 
 
 class DirectoriesConfig(EmpireBaseModel):
-    downloads: Path
-    module_source: Path
-    obfuscated_module_source: Path
+    downloads: Path = Path("empire/server/downloads")
+    module_source: Path = Path("empire/server/modules")
+    obfuscated_module_source: Path = Path("empire/server/data/obfuscated_module_source")
 
 
 class LoggingConfig(EmpireBaseModel):
@@ -156,20 +158,28 @@ class PluginRegistryConfig(EmpireBaseModel):
 
 class EmpireConfig(EmpireBaseModel):
     supress_self_cert_warning: bool = Field(default=True)
-    api: ApiConfig | None = ApiConfig()
-    empire_config: EmpireCompilerConfig | None = None
-    starkiller: StarkillerConfig
-    submodules: SubmodulesConfig
-    database: DatabaseConfig
-    plugins: dict[str, PluginConfig] = {}
-    plugin_registries: list[PluginRegistryConfig] = []
-    directories: DirectoriesConfig
-    logging: LoggingConfig
-    debug: DebugConfig
+    api: ApiConfig = ApiConfig()
+    empire_config: EmpireCompilerConfig = EmpireCompilerConfig()
+    starkiller: StarkillerConfig = StarkillerConfig()
+    submodules: SubmodulesConfig = SubmodulesConfig()
+    database: DatabaseConfig = DatabaseConfig(
+        sqlite=SQLiteDatabaseConfig(),
+        mysql=MySQLDatabaseConfig(),
+        defaults=DatabaseDefaultsConfig(),
+    )
+    plugins: dict[str, dict[str, str]] = {}
+    directories: DirectoriesConfig = DirectoriesConfig()
+    logging: LoggingConfig = LoggingConfig()
+    debug: DebugConfig = DebugConfig(last_task=LastTaskConfig())
 
     model_config = ConfigDict(extra="allow")
 
-    def __init__(self, config_dict: dict):
+    def __init__(self, config_dict: dict | None = None):
+        if config_dict is None:
+            config_dict = {}
+        if not isinstance(config_dict, dict):
+            raise ValueError("config_dict must be a dictionary")
+
         super().__init__(**config_dict)
         # For backwards compatibility
         self.yaml = config_dict
@@ -189,13 +199,18 @@ def set_yaml(location: str):
         log.warning(exc)
 
 
-config_dict = {}
+config_dict = EmpireConfig().model_dump()
 if "--config" in sys.argv:
     location = sys.argv[sys.argv.index("--config") + 1]
     log.info(f"Loading config from {location}")
-    config_dict = set_yaml(location)
-if len(config_dict.items()) == 0:
+    loaded_config = set_yaml(location)
+    if loaded_config:
+        config_dict = loaded_config
+elif config_manager.CONFIG_SERVER_PATH.exists():
     log.info("Loading default config")
-    config_dict = set_yaml("./empire/server/config.yaml")
+    loaded_config = set_yaml(config_manager.CONFIG_SERVER_PATH)
+    if loaded_config:
+        config_dict = loaded_config
+        config_dict = config_manager.check_config_permission(config_dict, "server")
 
 empire_config = EmpireConfig(config_dict)
