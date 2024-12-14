@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.12.0] - 2024-12-14
+
 -   Reduce the check-in tests that were adding an unncessary amount of time to the CI
 -   Allow Python 3.13 to be used
 -   Fix python install
@@ -937,7 +939,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.7...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.0...HEAD
+
+[5.12.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.7...v5.12.0
 
 [5.11.7]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.11.6...v5.11.7
 
