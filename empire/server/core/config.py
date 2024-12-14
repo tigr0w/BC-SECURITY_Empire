@@ -167,7 +167,8 @@ class EmpireConfig(EmpireBaseModel):
         mysql=MySQLDatabaseConfig(),
         defaults=DatabaseDefaultsConfig(),
     )
-    plugins: dict[str, dict[str, str]] = {}
+    plugins: dict[str, PluginConfig] = {}
+    plugin_registries: list[PluginRegistryConfig] = []
     directories: DirectoriesConfig = DirectoriesConfig()
     logging: LoggingConfig = LoggingConfig()
     debug: DebugConfig = DebugConfig(last_task=LastTaskConfig())
