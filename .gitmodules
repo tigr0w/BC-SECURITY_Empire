@@ -1,12 +1,3 @@
 [submodule "empire/server/data/profiles"]
 	path = empire/server/data/profiles
 	url = https://github.com/BC-SECURITY/Malleable-C2-Profiles
-[submodule "empire/server/plugins/SocksProxyServer-Plugin"]
-	path = empire/server/plugins/SocksProxyServer-Plugin
-	url = https://github.com/BC-SECURITY/SocksProxyServer-Plugin.git
-[submodule "empire/server/plugins/ChiselServer-Plugin"]
-	path = empire/server/plugins/ChiselServer-Plugin
-	url = https://github.com/BC-SECURITY/ChiselServer-Plugin.git
-[submodule "empire/server/plugins/Report-Generation-Plugin"]
-	path = empire/server/plugins/Report-Generation-Plugin
-	url = https://github.com/BC-SECURITY/Report-Generation-Plugin.git

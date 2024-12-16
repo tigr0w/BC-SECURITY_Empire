@@ -45,7 +45,9 @@ def _setup_database(session_local, models):
 @pytest.mark.usefixtures("_setup_database")
 def test_on_settings_change_called(session_local):
     main_menu_mock = MagicMock()
-    example_plugin = Plugin(main_menu_mock, PluginInfo(name="example", main=""), None)
+    example_plugin = Plugin(
+        main_menu_mock, PluginInfo(id="example", name="example", main=""), None
+    )
 
     on_settings_change_mock = MagicMock()
     example_plugin.on_settings_change = on_settings_change_mock
@@ -62,7 +64,9 @@ def test_settings_file_option(main, session_local, models):
         db.query(models.upload_download_assc).delete()
         db.query(models.Download).delete()
 
-    example_plugin = Plugin(main, PluginInfo(name="example", main=""), None)
+    example_plugin = Plugin(
+        main, PluginInfo(id="example", name="example", main=""), None
+    )
 
     with session_local.begin() as db:
         example_plugin.set_settings(db, {"file_option": "1"})

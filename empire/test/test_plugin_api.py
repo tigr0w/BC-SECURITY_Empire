@@ -51,10 +51,6 @@ def test_get_plugin(client, admin_auth_header):
 
     assert response.status_code == HTTP_200_OK
     assert response.json()["name"] == "basic_reporting"
-    assert (
-        response.json()["description"]
-        == "Generates credentials.csv, sessions.csv, and master.log. Writes to server/data directory."
-    )
 
 
 def test_get_plugins(client, admin_auth_header):

@@ -17,8 +17,10 @@ def test_config_resolves_path():
 def test_config_validates_registry_location_or_url():
     server_config_dict = load_test_config()
 
-    server_config_dict["plugin_registries"][0]["location"] = None
-    server_config_dict["plugin_registries"][0]["url"] = None
+    server_config_dict["plugin_marketplace"]["registries"][0]["location"] = None
+    server_config_dict["plugin_marketplace"]["registries"][0]["url"] = None
 
-    with pytest.raises(ValueError, match="Either location or url must be set"):
+    with pytest.raises(
+        ValueError, match="Either location, url, or git_url must be set"
+    ):
         EmpireConfig(server_config_dict)

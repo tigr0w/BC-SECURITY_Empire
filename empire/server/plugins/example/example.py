@@ -62,6 +62,9 @@ class Plugin(BasePlugin):
             },
         }
 
+        # This is not necessary, it is only here for tests.
+        super().on_load(db)
+
     @override
     def on_start(self, db):
         self.set_internal_state(db, {"SomeInternalSetting": "internal_state_value"})

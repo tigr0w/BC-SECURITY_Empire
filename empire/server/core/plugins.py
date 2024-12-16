@@ -92,9 +92,7 @@ class BasePlugin:
         pass
 
     def get_db_plugin(self, db) -> models.Plugin | None:
-        return (
-            db.query(models.Plugin).filter(models.Plugin.id == self.info.name).first()
-        )
+        return db.query(models.Plugin).filter(models.Plugin.id == self.info.id).first()
 
     def current_settings(self, db) -> dict[str, Any]:
         return self.get_db_plugin(db).settings
@@ -144,4 +142,4 @@ class BasePlugin:
 
     def send_socketio_message(self, message):
         """Send a message to the socketio server"""
-        self.main_menu.plugin_service.plugin_socketio_message(self.info.name, message)
+        self.plugin_service.plugin_socketio_message(self.info.name, message)

@@ -421,7 +421,9 @@ def session_local(client):
 @pytest.fixture
 def host(session_local, models):
     with session_local.begin() as db:
-        host = models.Host(name="host1", internal_ip="192.168.0.1")
+        host = models.Host(
+            name=f"host_{get_random_string(5)}", internal_ip="192.168.0.1"
+        )
         db.add(host)
         db.flush()
         host_id = host.id
@@ -436,7 +438,7 @@ def host(session_local, models):
 @pytest.fixture
 def agent(session_local, models, host, main):
     with session_local.begin() as db:
-        name = f'agent_{__name__.split(".")[-1]}'
+        name = f"agent_{get_random_string(5)}"
         agent = models.Agent(
             name=name,
             session_id=name,

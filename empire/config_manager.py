@@ -55,6 +55,9 @@ def check_config_permission(config_dict: dict, config_type: str):
             ("debug", "last_task", "file"): config_dict.get("debug", {})
             .get("last_task", {})
             .get("file"),
+            ("plugin_marketplace", "directory"): config_dict.get(
+                "plugin_marketplace", {}
+            ).get("directory"),
             ("directories", "downloads"): config_dict.get("directories", {}).get(
                 "downloads"
             ),

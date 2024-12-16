@@ -7,6 +7,7 @@ import typing
 from sqlalchemy.orm import Session
 
 from empire.server.core.db.base import SessionLocal
+from empire.server.utils.string_util import slugify
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -78,7 +79,3 @@ class ListenerTemplateService:
                         value["Depends_on"] = []
 
                 self._loaded_listener_templates[slugify(listener_name)] = listener
-
-
-def slugify(listener_name: str):
-    return listener_name.lower().replace("/", "_")

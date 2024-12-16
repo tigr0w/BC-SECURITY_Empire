@@ -78,12 +78,8 @@ def reset():
 
     file_util.remove_dir_contents(empire_config.directories.downloads)
 
-    if os.path.exists(f"{CSHARP_DIR_BASE}/bin"):
-        shutil.rmtree(f"{CSHARP_DIR_BASE}/bin")
-
-    if os.path.exists(f"{CSHARP_DIR_BASE}/obj"):
-        shutil.rmtree(f"{CSHARP_DIR_BASE}/obj")
-
+    shutil.rmtree(f"{CSHARP_DIR_BASE}/bin", ignore_errors=True)
+    shutil.rmtree(f"{CSHARP_DIR_BASE}/obj", ignore_errors=True)
     file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net35")
     file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net40")
     file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net45")
@@ -94,15 +90,13 @@ def reset():
     for exe_file in glob.glob(f"{GO_DIR_BASE}/**/*.exe", recursive=True):
         os.remove(exe_file)
 
-    if os.path.exists(f"{EMPIRE_COMPILER_DIR_BASE}"):
-        shutil.rmtree(f"{EMPIRE_COMPILER_DIR_BASE}")
+    shutil.rmtree(f"{EMPIRE_COMPILER_DIR_BASE}", ignore_errors=True)
 
     file_util.remove_file(f"{GO_DIR_BASE}/main.go")
-
     file_util.remove_file(f"{CSHARP_DIR_BASE}/Data/EmbeddedResources/launcher.txt")
 
-    if os.path.exists(empire_config.starkiller.directory):
-        shutil.rmtree(empire_config.starkiller.directory)
+    shutil.rmtree(empire_config.starkiller.directory, ignore_errors=True)
+    file_util.remove_dir_contents(empire_config.plugin_marketplace.directory)
 
     file_util.remove_file("data/sessions.csv")
     file_util.remove_file("data/credentials.csv")

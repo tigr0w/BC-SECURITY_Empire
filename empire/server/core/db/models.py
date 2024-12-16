@@ -172,13 +172,13 @@ class PydanticType(sqlalchemy.types.TypeDecorator):
 
 
 class PluginInfo(BaseModel):
+    id: str | None = None  # Get's set after the class is loaded from the yaml file
     name: str
     authors: list[EmpireAuthor] = []
-    description: str | None = ""
+    readme: str | None = ""
     software: str | None = ""
     techniques: list[str] | None = []
     tactics: list[str] | None = []
-    comments: list[str] | None = []
     auto_start: bool = True
     auto_execute: PluginAutoExecuteConfig | None = None
     main: str
@@ -492,6 +492,7 @@ class Plugin(Base):
     internal_state = Column(JSON)
     info = Column(PydanticType(PluginInfo), nullable=False)
     load_error = Column(Text, nullable=True)
+    installed_version = Column(String(255), nullable=False, default="unknown")
 
 
 class PluginTaskStatus(str, enum.Enum):

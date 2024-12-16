@@ -10,6 +10,7 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import PluginValidationException
 from empire.server.core.module_models import EmpireAuthor
+from empire.server.utils.git_util import clone_git_repo
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -24,6 +25,7 @@ class PluginRegistryPluginVersion(BaseModel):
     tar_url: str | None = None
     subdirectory: str | None = None
     ref: str | None = None
+    name: str
 
     @model_validator(mode="before")
     @classmethod
@@ -35,9 +37,11 @@ class PluginRegistryPluginVersion(BaseModel):
 
 class PluginRegistryPlugin(BaseModel):
     name: str
-    url: str | None = None
+    homepage_url: str | None = None
+    source_url: str | None = None
     authors: list[EmpireAuthor] = []
     versions: list[PluginRegistryPluginVersion] = []
+    description: str
 
 
 class PluginRegistry(BaseModel):
@@ -54,7 +58,7 @@ class PluginRegistryService:
             self.load_plugin_registries(db)
 
     def load_plugin_registries(self, db):
-        registries = empire_config.plugin_registries
+        registries = empire_config.plugin_marketplace.registries
         to_add = []
         for r in registries:
             if (
@@ -68,6 +72,9 @@ class PluginRegistryService:
 
             if r.location:
                 registry_yaml = r.location.read_text()
+            elif r.git_url:
+                tmp_dir = clone_git_repo(r.git_url, r.ref)
+                registry_yaml = (tmp_dir / r.file).read_text()
             else:
                 resp = requests.get(r.url)
                 if not resp.ok:
@@ -121,6 +128,11 @@ class PluginRegistryService:
                     "name": plugin_name,
                     "registries": registries,
                     "installed": installed_plugins.get(plugin_name) is not None,
+                    "installed_version": (
+                        installed_plugins.get(plugin_name).installed_version
+                        if installed_plugins.get(plugin_name)
+                        else None
+                    ),
                 }
                 for plugin_name, registries in merged.items()
             ]
@@ -128,16 +140,33 @@ class PluginRegistryService:
 
     def install_plugin(self, db, name, version, registry):
         version = self._validate_install(db, name, registry, version)
+        registry_data = self._get_plugin_registry_entry(db, name, registry)
 
         if version.get("git_url"):
             self.plugin_service.install_plugin_from_git(
-                db, version["git_url"], version["subdirectory"], version["ref"]
+                db,
+                version["git_url"],
+                version.get("subdirectory"),
+                version.get("ref"),
+                version.get("name"),
+                registry_data,
             )
 
         else:
             self.plugin_service.install_plugin_from_tar(
-                db, version["tar_url"], version["subdirectory"]
+                db,
+                version["tar_url"],
+                version.get("subdirectory"),
+                version.get("name"),
+                registry_data,
             )
+
+    def _get_plugin_registry_entry(self, db, name, registry):
+        plugin_registry = self.get_marketplace(db)
+        plugin_reference = next(
+            (p for p in plugin_registry["records"] if p["name"] == name), None
+        )
+        return plugin_reference["registries"].get(registry)
 
     def _validate_install(self, db, name, registry, version):
         marketplace = self.get_marketplace(db)

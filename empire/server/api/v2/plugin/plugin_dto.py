@@ -56,11 +56,10 @@ def domain_to_dto_plugin(plugin: "PluginHolder", db):
         }
 
     return Plugin(
-        id=info.name,
+        id=db_plugin.id,
         name=info.name,
         authors=[a.model_dump() for a in info.authors],
-        description=info.description,
-        comments=info.comments,
+        readme=info.readme,
         techniques=info.techniques,
         software=info.software,
         execution_options=execution_options,
@@ -77,10 +76,9 @@ class Plugin(BaseModel):
     id: str
     name: str
     authors: list[Author]
-    description: str
+    readme: str | None = ""
     techniques: list[str] = []
     software: str | None = None
-    comments: list[str]
     execution_options: dict[str, CustomOptionSchema] | None = None
     settings_options: dict[str, CustomOptionSchema] | None = None
     current_settings: dict[str, Any] | None = None

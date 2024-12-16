@@ -147,13 +147,21 @@ class PluginRegistryConfig(EmpireBaseModel):
     name: str
     location: Path | None = None
     url: str | None = None
+    git_url: str | None = None
+    ref: str | None = None
+    file: str | None = None
 
     @model_validator(mode="before")
     @classmethod
-    def validate_location_or_url(cls, values):
-        if not values.get("location") and not values.get("url"):
-            raise ValueError("Either location or url must be set")
+    def validate_location_or_url_or_git_url(cls, values):
+        if not (values.get("location") or values.get("url") or values.get("git_url")):
+            raise ValueError("Either location, url, or git_url must be set")
         return values
+
+
+class PluginMarketplaceConfig(EmpireBaseModel):
+    directory: Path = "empire/server/data/plugin_marketplace"
+    registries: list[PluginRegistryConfig] = []
 
 
 class EmpireConfig(EmpireBaseModel):
@@ -168,7 +176,7 @@ class EmpireConfig(EmpireBaseModel):
         defaults=DatabaseDefaultsConfig(),
     )
     plugins: dict[str, PluginConfig] = {}
-    plugin_registries: list[PluginRegistryConfig] = []
+    plugin_marketplace: PluginMarketplaceConfig = PluginMarketplaceConfig()
     directories: DirectoriesConfig = DirectoriesConfig()
     logging: LoggingConfig = LoggingConfig()
     debug: DebugConfig = DebugConfig(last_task=LastTaskConfig())

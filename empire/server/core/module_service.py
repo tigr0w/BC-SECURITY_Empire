@@ -31,6 +31,7 @@ from empire.server.core.module_models import (
 )
 from empire.server.utils.bof_packer import process_arguments
 from empire.server.utils.option_util import convert_module_options, validate_options
+from empire.server.utils.string_util import slugify
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -572,7 +573,7 @@ class ModuleService:
         )
 
         if yaml_module["language"] == "csharp":
-            yaml_module["id"] = self.slugify(module_name)
+            yaml_module["id"] = slugify(module_name)
 
             # TODO: Remove this from EmpireCompiler so we dont need to build all the extra unused fields
             dict_yaml = yaml_module.get("csharp", {}).copy()
@@ -620,7 +621,7 @@ class ModuleService:
                 )
             )
         else:
-            yaml_module["id"] = self.slugify(module_name)
+            yaml_module["id"] = slugify(module_name)
             my_model = EmpireModule(**yaml_module)
 
         if my_model.advanced.custom_generate:
@@ -673,8 +674,8 @@ class ModuleService:
             )
             db.add(mod)
 
-        self.modules[self.slugify(module_name)] = my_model
-        self.modules[self.slugify(module_name)].enabled = mod.enabled
+        self.modules[slugify(module_name)] = my_model
+        self.modules[slugify(module_name)].enabled = mod.enabled
 
     def _get_interpreter_technique(self, language):
         if language == LanguageEnum.powershell:
@@ -760,10 +761,6 @@ class ModuleService:
         if obfuscate:
             script = self.obfuscation_service.obfuscate(script, obfuscation_command)
         return self.obfuscation_service.obfuscate_keywords(script)
-
-    @staticmethod
-    def slugify(module_name: str):
-        return module_name.lower().replace("/", "_")
 
     def delete_all_modules(self, db: Session):
         for module in list(self.modules.values()):

@@ -99,6 +99,11 @@ def patch_install_plugin_from_git(plugin_service):
     plugin_service.install_plugin_from_git = original
 
 
+class IsDict:
+    def __eq__(self, other):
+        return isinstance(other, dict)
+
+
 def test_install_plugin_git(client, admin_auth_header, plugin_service):
     with patch_install_plugin_from_git(plugin_service) as mock:
         response = client.post(
@@ -108,9 +113,19 @@ def test_install_plugin_git(client, admin_auth_header, plugin_service):
         )
         assert response.status_code == status.HTTP_200_OK
 
-        # db, version["git_url"], version["subdirectory"], version["ref"]
+        # db: Session,
+        # git_url: str,
+        # subdir: str | None = None,
+        # ref: str | None = None,
+        # version_name: str | None = None,
+        # registry_data: dict | None = None,
         mock.assert_called_once_with(
-            ANY, "https://github.com/bc-security/slack-plugin", None, "v1.0.0"
+            ANY,
+            "https://github.com/bc-security/slack-plugin",
+            None,
+            "v1.0.0",
+            "1.0.0",
+            IsDict(),
         )
 
 
@@ -134,9 +149,15 @@ def test_install_plugin_tar(client, admin_auth_header, plugin_service):
         )
         assert response.status_code == status.HTTP_200_OK
 
-        # db, version["tar_url"], version["subdirectory"]
+        # db: Session,
+        # tar_url: str,
+        # subdir: str | None = None,
+        # version_name: str | None = None,
+        # registry_data: dict | None = None,
         mock.assert_called_once_with(
             ANY,
             "https://github.com/bc-security/slack-other/releases/download/v1.0.0/slack.tar.gz",
             None,
+            "1.0.0",
+            IsDict(),
         )

@@ -14,14 +14,18 @@ class MarketPlaceEntryVersionResponse(BaseModel):
 class MarketplaceEntryRegistryResponse(BaseModel):
     name: str
     registry: str
-    url: str | None = None
+    homepage_url: str | None = None
+    source_url: str | None = None
     authors: list[Author]
     versions: list[MarketPlaceEntryVersionResponse]
+    description: str
 
 
 class MarketplaceEntryResponse(BaseModel):
     name: str
     registries: dict[str, MarketplaceEntryRegistryResponse]
+    installed: bool = False
+    installed_version: str | None = None
 
 
 class MarketplaceResponse(BaseModel):

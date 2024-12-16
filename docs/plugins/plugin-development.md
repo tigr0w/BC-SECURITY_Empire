@@ -300,6 +300,3 @@ This is no different than the way things were pre 5.0.
 ## Future Work
 * improved plugin logging -
   Give plugins individual log files like listeners have. Make those logs accessible via Starkiller.
-* endpoint for installing plugins -
-  A user would be able to provide the URL to a git repository and Empire would download and install the plugin.
-* Add an option to override the default settings via the server config.yaml

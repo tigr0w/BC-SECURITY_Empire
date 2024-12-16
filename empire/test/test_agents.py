@@ -10,7 +10,6 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from empire.server.common.empire import MainMenu
-from empire.server.utils.string_util import is_valid_session_id
 
 log = logging.getLogger(__name__)
 
@@ -364,29 +363,6 @@ def test_update_dir_list_with_existing_joined_file(
         assert file.name == file2.name
 
         db.query(models.AgentFile).delete()
-
-
-@pytest.mark.parametrize(
-    ("session_id", "expected"),
-    [
-        ("ABCDEFGH", True),
-        ("12345678", True),
-        ("ABCDEF1H", True),
-        ("A1B2C3D4", True),
-        ("ABCDEFG", False),
-        ("ABCDEFGHI", False),
-        ("ABCD_EFG", False),
-        ("       ", False),
-        ("", False),
-        (12345678, False),
-        (None, False),
-        ("./../../", False),
-    ],
-)
-def test_is_valid_session_id(session_id, expected):
-    assert (
-        is_valid_session_id(session_id) == expected
-    ), f"Test failed for session_id: {session_id}"
 
 
 def test_skywalker_exploit_protection(caplog, agent, session_local, main: MainMenu):

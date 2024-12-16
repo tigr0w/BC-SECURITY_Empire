@@ -26,6 +26,7 @@ from empire.server.core.exceptions import (
 from empire.server.core.plugins import BasePlugin
 from empire.server.utils import git_util
 from empire.server.utils.option_util import validate_options
+from empire.server.utils.string_util import slugify
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -117,21 +118,26 @@ class PluginService:
 
             self.load_plugin(db, plugin_dir, plugin_config)
 
-    def load_plugin(self, db: Session, plugin_dir: Path, plugin_config: PluginInfo):
-        """Given the name of a plugin and a menu object, load it into the menu"""
-        name = plugin_config.name
-        plugin_holder = self.get_by_id(db, name)
+    def load_plugin(
+        self,
+        db: Session,
+        plugin_dir: Path,
+        plugin_config: PluginInfo,
+        version: str | None = None,
+    ):
+        plugin_holder = self.get_by_id(db, plugin_config.id)
 
         if not plugin_holder:
             auto_start = self._determine_auto_start(plugin_config, empire_config)
 
             db_plugin = models.Plugin(
-                id=name,
-                name=name,
+                id=plugin_config.id,
+                name=plugin_config.name,
                 enabled=auto_start,
                 settings={},
                 settings_initialized=False,
                 info=plugin_config,
+                installed_version=version,
             )
             db.add(db_plugin)
             db.flush()
@@ -144,7 +150,7 @@ class PluginService:
         except Exception as e:
             db_plugin.enabled = False
             db_plugin.load_error = str(e)
-            log.warning(f"Failed to load plugin {name}: {e}")
+            log.warning(f"Failed to load plugin {plugin_config.name}: {e}")
             return
 
         # If you make it this far, the plugin has loaded successfully
@@ -154,7 +160,7 @@ class PluginService:
             plugin_obj.set_initial_options(db)
             db_plugin.settings_initialized = True
 
-        self.loaded_plugins[name] = plugin_obj
+        self.loaded_plugins[plugin_config.id] = plugin_obj
 
         try:
             if db_plugin.enabled:
@@ -168,24 +174,29 @@ class PluginService:
 
         plugin_obj.enabled = db_plugin.enabled
 
-    def install_plugin_from_git(
+    def install_plugin_from_git(  # noqa: PLR0913
         self,
         db: Session,
         git_url: str,
         subdir: str | None = None,
         ref: str | None = None,
+        version_name: str | None = None,
+        registry_data: dict | None = None,
     ):
         temp_dir = git_util.clone_git_repo(git_url, ref)
         temp_dir = temp_dir / subdir if subdir else temp_dir
         plugin_dir, plugin_config = self._validate_temp_plugin(db, temp_dir)
+        plugin_config = self._merge_plugin_config(plugin_config, registry_data)
 
-        self.load_plugin(db, plugin_dir, plugin_config)
+        self.load_plugin(db, plugin_dir, plugin_config, version_name)
 
     def install_plugin_from_tar(
         self,
         db: Session,
         tar_url: str,
         subdir: str | None = None,
+        version_name: str | None = None,
+        registry_data: dict | None = None,
     ):
         temp_dir = Path(tempfile.gettempdir()) / tar_url.split("/")[-1].split(".")[0]
 
@@ -202,7 +213,30 @@ class PluginService:
         temp_dir = temp_dir / subdir if subdir else temp_dir
 
         plugin_dir, plugin_config = self._validate_temp_plugin(db, temp_dir)
-        self.load_plugin(db, plugin_dir, plugin_config)
+        plugin_config = self._merge_plugin_config(plugin_config, registry_data)
+
+        self.load_plugin(db, plugin_dir, plugin_config, version_name)
+
+    @staticmethod
+    def _merge_plugin_config(plugin_config, registry_data):
+        """
+        If a plugin is installed from a registry, merge the plugin config with the registry data.
+        Things like author info and description from the registry will take presedence.
+        """
+        if not registry_data:
+            return plugin_config
+
+        registry_plugin = registry_data.get("plugins", {}).get(plugin_config.name)
+        if not registry_plugin:
+            return plugin_config
+
+        plugin_config.authors = registry_plugin.get("authors", plugin_config.authors)
+        plugin_config.description = registry_plugin.get(
+            "description", plugin_config.description
+        )
+        plugin_config.comments = registry_plugin.get("comments", plugin_config.comments)
+
+        return plugin_config
 
     def execute_plugin(
         self,
@@ -294,6 +328,10 @@ class PluginService:
             raise PluginValidationException("plugin.yaml not found")
 
         plugin_config = PluginInfo(**yaml.safe_load(plugin_yaml.read_text()))
+        plugin_config.id = slugify(plugin_config.name)
+        readme = plugin_dir / "README.md"
+        if readme.exists():
+            plugin_config.readme = readme.read_text()
         plugin_file = plugin_dir / plugin_config.main
 
         if not plugin_file.is_file():
@@ -310,10 +348,10 @@ class PluginService:
         and move it to the plugin directory."""
         plugin_config = self._validate_plugin(temp_dir)
 
-        if self.get_by_id(db, plugin_config.name):
+        if self.get_by_id(db, plugin_config.id):
             raise PluginValidationException("Plugin already exists")
 
-        plugin_dir = self.plugin_path / "marketplace" / plugin_config.name
+        plugin_dir = self.plugin_path / "marketplace" / plugin_config.id
         shutil.move(temp_dir, plugin_dir)
         shutil.rmtree(plugin_dir / ".git", ignore_errors=True)
 
@@ -328,7 +366,7 @@ class PluginService:
     @staticmethod
     def _determine_auto_start(plugin_config: PluginInfo, empire_config) -> bool:
         # Server Config -> Plugin Config (Default True)
-        server_config = empire_config.plugins.get(plugin_config.name, PluginConfig())
+        server_config = empire_config.plugins.get(plugin_config.id, PluginConfig())
 
         if server_config.auto_start is not None:
             return server_config.auto_start
@@ -338,7 +376,7 @@ class PluginService:
     @staticmethod
     def _determine_auto_execute(plugin_config, empire_config) -> PluginConfig | None:
         # Server Config -> Plugin Config -> Default (None)
-        server_config = empire_config.plugins.get(plugin_config.name)
+        server_config = empire_config.plugins.get(plugin_config.id)
 
         if server_config is not None and server_config.auto_execute is not None:
             return server_config.auto_execute

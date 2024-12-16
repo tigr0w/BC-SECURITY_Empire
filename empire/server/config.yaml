@@ -55,9 +55,13 @@ starkiller:
   auto_update: true
 submodules:
   auto_update: true
-plugin_registries:
-  - name: BC-SECURITY
-    url: https://github.com/BC-SECURITY/Empire-Plugin-Registry/blob/main/registry.yaml
+plugin_marketplace:
+  directory: empire/server/plugins/marketplace/
+  registries:
+    - name: BC-SECURITY
+      git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
+      ref: main
+      file: registry.yaml
 directories:
   downloads: empire/server/downloads/
   module_source: empire/server/data/module_source/
