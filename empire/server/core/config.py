@@ -167,7 +167,7 @@ class PluginMarketplaceConfig(EmpireBaseModel):
 class EmpireConfig(EmpireBaseModel):
     supress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig = ApiConfig()
-    empire_config: EmpireCompilerConfig = EmpireCompilerConfig()
+    empire_compiler: EmpireCompilerConfig = EmpireCompilerConfig()
     starkiller: StarkillerConfig = StarkillerConfig()
     submodules: SubmodulesConfig = SubmodulesConfig()
     database: DatabaseConfig = DatabaseConfig(

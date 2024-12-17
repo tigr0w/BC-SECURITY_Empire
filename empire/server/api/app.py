@@ -173,7 +173,7 @@ def initialize(run: bool = True):  # noqa: PLR0915
     else:
         log.info("Starkiller disabled. Not loading.")
 
-    if empire_config.empire_compiler["enabled"]:
+    if empire_config.empire_compiler.enabled:
         log.info("Empire Compiler enabled. Loading.")
         load_empire_compiler(empire_config)
     else:

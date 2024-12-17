@@ -70,7 +70,7 @@ CSHARP_DIR_BASE = os.path.join(
     os.path.dirname(__file__), "Empire-Compiler/EmpireCompiler"
 )
 GO_DIR_BASE = os.path.join(os.path.dirname(__file__), "data/agent/gopire")
-EMPIRE_COMPILER_DIR_BASE = empire_config.empire_compiler["directory"]
+EMPIRE_COMPILER_DIR_BASE = empire_config.empire_compiler.directory
 
 
 def reset():
