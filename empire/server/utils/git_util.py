@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 
 from empire.server.common.helpers import random_string
+from empire.server.utils.file_util import run_as_user
 
 
 class GitOperationException(Exception):
@@ -28,7 +29,7 @@ def clone_git_repo(
         )
 
     try:
-        subprocess.run(["git", "clone", git_url, directory], check=True)
+        run_as_user(["git", "clone", git_url, directory])
     except subprocess.CalledProcessError:
         raise GitOperationException(
             f"Failed to clone git repository: {git_url}"
@@ -36,7 +37,7 @@ def clone_git_repo(
 
     if ref:
         try:
-            subprocess.run(["git", "checkout", ref], cwd=directory, check=True)
+            run_as_user(["git", "checkout", ref], cwd=directory)
         except subprocess.CalledProcessError:
             raise GitOperationException(f"Failed to check out ref {ref}") from None
 

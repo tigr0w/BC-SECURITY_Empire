@@ -66,7 +66,9 @@ def run_as_user(  # noqa: PLR0913
 
     except subprocess.CalledProcessError as e:
         log.error("Failed to execute command: %s", e, exc_info=True)
-        log.error("Try running the command manually: %s", " ".join(command))
+        log.error(
+            "Try running the command manually: %s", " ".join([str(c) for c in command])
+        )
         if e.stdout:
             log.error("Command output: %s", e.stdout)
         if e.stderr:
