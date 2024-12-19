@@ -27,12 +27,11 @@ options:
     suggested_values:
       - powershell
       - csharp
-      - ironpython
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
+    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types. For powershell only.
     required: false
-    value: 'False'
+    value: False
     strict: true
     suggested_values:
       - True
@@ -62,7 +61,7 @@ options:
     value: default
   - name: pid
     description: Specify the process id.
-    required: false
+    required: true
     value: ''
   - name: Architecture
     description: Architecture of the .dll to generate (x64 or x86).
@@ -96,13 +95,6 @@ csharp:
     {
         public static void Main(string[] args)
         {
-            string command = args.Length > 0 ? args[0] : "";
-            string result = ExecuteProcessInjection(command);
-            Console.WriteLine(result);
-        }
-
-        public static string ExecuteProcessInjection(string command = "")
-        {
             using (StringWriter stringWriter = new StringWriter())
             {
                 TextWriter originalOutput = Console.Out;
@@ -112,7 +104,6 @@ csharp:
 
                 try
                 {
-                    string[] args = command.Split(' ');
                     ProcessInjection.ProcessInjection.Main(args);
                 }
                 catch (Exception ex)
@@ -128,8 +119,7 @@ csharp:
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
                 }
-
-                return stringWriter.ToString();
+                Console.WriteLine(stringWriter.ToString());
             }
         }
     }
@@ -175,3 +165,5 @@ csharp:
     EmbeddedResources: []
   ReferenceAssemblies: []
   EmbeddedResources: []
+advanced:
+  custom_generate: true

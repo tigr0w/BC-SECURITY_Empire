@@ -28,7 +28,6 @@ options:
     strict: true
     suggested_values:
       - powershell
-      - csharp
       - ironpython
   - name: Obfuscate
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
@@ -99,43 +98,34 @@ csharp:
     {
         public static void Main(string[] args)
         {
-            string command = args.Length > 0 ? args[0] : "";
-            string result = ExecuteThreadlessInject(command);
-            Console.WriteLine(result);
-        }
-
-        public static string ExecuteThreadlessInject(string command)
-        {
             using (StringWriter stringWriter = new StringWriter())
             {
-                TextWriter originalStdOut = Console.Out;
-                TextWriter originalStdErr = Console.Error;
+                TextWriter originalOutput = Console.Out;
+                TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
-
+            
                 try
                 {
-                    string[] args = command.Split(' ');
                     ThreadlessInject.Program.Main(args);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
+                    stringWriter.WriteLine($"Error: {ex.Message}");
                 }
                 finally
                 {
-                    Console.SetOut(originalStdOut);
-                    Console.SetError(originalStdErr);
+                    Console.SetOut(originalOutput);
+                    Console.SetError(originalError);
                 }
-
-                return stringWriter.ToString();
+                Console.WriteLine(stringWriter.ToString());
             }
         }
     }
   ReferenceSourceLibraries:
   - Name: ThreadlessInject
     Description: The program is designed to perform process injection.
-    Location: ThreadlessInject\
+    Location: ThreadlessInject\ThreadlessInject\
     Language: CSharp
     CompatibleDotNetVersions:
     - Net40
@@ -167,3 +157,5 @@ csharp:
     EmbeddedResources: []
   ReferenceAssemblies: []
   EmbeddedResources: []
+advanced:
+  custom_generate: true

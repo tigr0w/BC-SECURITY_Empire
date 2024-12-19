@@ -7,9 +7,11 @@ try:
 except ModuleNotFoundError:
     donut = None
 
+from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.db.base import SessionLocal
 from empire.server.core.module_models import EmpireModule
 
 
@@ -62,7 +64,12 @@ class Module:
 
         elif language.lower() == "csharp":
             arch_type = {"x86": 1, "x64": 2, "both": 3}.get(arch, 2)
-            directory = f"{main_menu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
+            directory = (
+                Path(main_menu.installPath)
+                / "Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled"
+                / dot_net_version
+                / f"{launcher}.exe"
+            )
 
             if not donut:
                 raise ModuleValidationException(
@@ -71,15 +78,6 @@ class Module:
 
             shellcode = donut.create(file=directory, arch=arch_type)
 
-        elif language.lower() == "ironpython":
-            if dot_net_version == "net35":
-                raise ModuleValidationException(
-                    "[!] IronPython agent only supports NetFramework 4.0 and above."
-                )
-            shellcode = main_menu.stagergenv2.generate_python_shellcode(
-                launcher, arch=arch, dot_net_version="net40"
-            )
-
         base64_shellcode = helpers.encode_base64(shellcode).decode("UTF-8")
 
         params_dict = {
@@ -87,8 +85,14 @@ class Module:
             "pid": f"--pid={pid}",
             "dll": f"--dll={dll}",
             "ExportFunction": f"--export={export}",
+            "DotNetVersion": dot_net_version,
         }
 
+        with SessionLocal() as db:
+            obfuscation_config = main_menu.obfuscationv2.get_obfuscation_config(
+                db, module.language
+            )
+
         return main_menu.modulesv2.generate_script_csharp(
-            module=module, params=params_dict, obfuscate=obfuscate
+            module=module, params=params_dict, obfuscation_config=obfuscation_config
         )

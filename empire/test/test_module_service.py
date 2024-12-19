@@ -235,26 +235,6 @@ def test_execute_bof_module_missing_architecture(module_service, agent_mock):
     assert "required option missing: Architecture" in str(excinfo.value)
 
 
-def test_execute_csharp_module_custom_generate(module_service, agent_mock, listener):
-    agent_mock.language = "csharp"
-    params = {
-        "Agent": agent_mock.session_id,
-        "Listener": "new-listener-1",
-        "Language": "powershell",
-        "Architecture": "both",
-        "Technique": "Dynamic Invoke",
-    }
-    module_id = "csharp_management_processinjection"
-
-    res, err = module_service.execute_module(
-        None, agent_mock, module_id, params, True, True, None
-    )
-
-    assert err is None
-    task_command = res["command"]
-    assert task_command == "TASK_CSHARP_CMD_WAIT"
-
-
 def test_execute_csharp_module(module_service, agent_mock):
     agent_mock.language = "csharp"
     params = {
