@@ -1,6 +1,8 @@
 package common
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os/exec"
@@ -33,4 +35,23 @@ func RandomInt(min, max int) int {
 		return min
 	}
 	return rand.Intn(max-min) + min
+}
+
+func DecodeAndExtract(encodedParam string) ([]string, error) {
+	decoded, err := base64.StdEncoding.DecodeString(encodedParam)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding base64 string: %w", err)
+	}
+
+	var result map[string]string
+	if err := json.Unmarshal(decoded, &result); err != nil {
+		return nil, fmt.Errorf("error parsing JSON: %w", err)
+	}
+
+	values := make([]string, 0, len(result))
+	for _, value := range result {
+		values = append(values, value)
+	}
+
+	return values, nil
 }

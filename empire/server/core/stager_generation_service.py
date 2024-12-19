@@ -824,21 +824,28 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 architecture="AMD64",
             )
 
-            # Send initial task for sysinfo into the database
             self.agent_task_service.create_task_sysinfo(db, agent, 0)
 
-            # get the agent's session key
             session_key = agent.session_key
 
             template_vars = {
+                "PROFILE": profile,
                 "HOST": host,
                 "SESSION_ID": session_id,
+                "KILL_DATE": kill_date,
+                "WORKING_HOURS": working_hours,
+                "DELAY": delay,
+                "JITTER": jitter,
+                "LOST_LIMIT": lost_limit,
                 "STAGING_KEY": base64.b64encode(staging_key.encode("UTF-8")).decode(
                     "UTF-8"
                 ),
                 "AES_KEY": base64.b64encode(session_key.encode("UTF-8")).decode(
                     "UTF-8"
                 ),
+                "DEFAULT_RESPONSE": base64.b64encode(
+                    active_listener.default_response().encode("UTF-8")
+                ).decode("UTF-8"),
             }
 
             return self.main_menu.go_compiler.compile_stager(

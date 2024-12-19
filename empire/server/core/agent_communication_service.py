@@ -116,7 +116,7 @@ class AgentCommunicationService:
             mode = "ab" if append else "wb"
             f = save_file.open(mode)
 
-            if "python" in language:
+            if language in ["python", "go"]:
                 data = self._decompress_python_data(data, filename, session_id)
 
             f.write(data)
@@ -587,13 +587,15 @@ class AgentCommunicationService:
                 hostname = str(parts[4], "utf-8")
                 internal_ip = str(parts[5], "utf-8")
                 os_details = str(parts[6], "utf-8")
-                high_integrity = str(parts[7], "utf-8")
+                high_integrity = 1 if str(parts[7], "utf-8").lower() == "true" else 0
                 process_name = str(parts[8], "utf-8")
                 process_id = str(parts[9], "utf-8")
                 language = str(parts[10], "utf-8")
                 language_version = str(parts[11], "utf-8")
                 architecture = str(parts[12], "utf-8")
-                high_integrity = 1 if high_integrity == "True" else 0
+
+                if domainname:
+                    username = f"{domainname}\\{username}"
 
             except Exception as e:
                 message = (
@@ -602,9 +604,6 @@ class AgentCommunicationService:
                 log.error(message, exc_info=True)
                 self._remove_agent(db, session_id)
                 return f"Error: Exception in agents.handle_agent_staging() for {session_id} : {e}"
-
-            if domainname and domainname.strip() != "":
-                username = f"{domainname}\\{username}"
 
             # update the agent with this new information
             self.update_agent_sysinfo(
@@ -972,16 +971,15 @@ class AgentCommunicationService:
                 hostname = parts[4]
                 internal_ip = parts[5]
                 os_details = parts[6]
-                high_integrity = parts[7]
+                high_integrity = 1 if str(parts[7]).lower() == "true" else 0
                 process_name = parts[8]
                 process_id = parts[9]
                 language = parts[10]
                 language_version = parts[11]
                 architecture = parts[12]
-                high_integrity = 1 if high_integrity == "True" else 0
 
-                # username = str(domainname)+"\\"+str(username)
-                username = f"{domainname}\\{username}"
+                if domainname:
+                    username = f"{domainname}\\{username}"
 
                 # update the agent with this new information
                 self.update_agent_sysinfo(
@@ -1118,6 +1116,7 @@ class AgentCommunicationService:
             "TASK_POWERSHELL_CMD_WAIT",
             "TASK_PYTHON_CMD_WAIT",
             "TASK_CSHARP_CMD_WAIT",
+            "TASK_BOF_CMD_WAIT",
         ]:
             # dynamic script output -> blocking
 

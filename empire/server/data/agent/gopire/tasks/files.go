@@ -1,27 +1,27 @@
 package tasks
 
 import (
+	"bytes"
+	"compress/zlib"
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
+	"hash/crc32"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 func FileUpload(data string) (string, error) {
-	// Split the data into file path and base64 content
 	parts := strings.Split(data, "|")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("invalid data format for file upload")
 	}
 
-	// First part is the file path
 	filePath := parts[0]
-
-	// Second part is the base64-encoded file content
 	base64Part := parts[1]
 
-	// Ensure the directory exists
 	dir := filepath.Dir(filePath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err := os.MkdirAll(dir, 0755) // Create the directory if it doesn't exist
@@ -30,19 +30,16 @@ func FileUpload(data string) (string, error) {
 		}
 	}
 
-	// Check if the filePath is a directory
 	fileInfo, err := os.Stat(filePath)
 	if err == nil && fileInfo.IsDir() {
 		return "", fmt.Errorf("the provided path is a directory, not a file: %s", filePath)
 	}
 
-	// Decode the base64 content
 	rawData, err := base64.StdEncoding.DecodeString(base64Part)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode base64 content: %v", err)
 	}
 
-	// Append to the file
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %v", err)
@@ -56,7 +53,7 @@ func FileUpload(data string) (string, error) {
 	return fmt.Sprintf("Upload of %s successful", filePath), nil
 }
 
-func FileDownload(filePath string) ([]string, error) {
+func GetFileList(filePath string) ([]string, error) {
 	absPath, err := filepath.Abs(filePath)
 	if err != nil || !fileExists(absPath) {
 		return nil, err
@@ -88,12 +85,6 @@ func GetFileSize(path string) int64 {
 	return info.Size()
 }
 
-func GetFilePart(filePath string, offset int) ([]byte, error) {
-	// Implement the logic to get the file part based on the offset
-	// This function should return the file part that packet_handler.go will process
-	return nil, nil
-}
-
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
@@ -105,4 +96,47 @@ func isDir(path string) bool {
 		return false
 	}
 	return info.IsDir()
+}
+
+func GetFilePart(filePath string, offset int, chunkSize int) ([]byte, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open file: %w", err)
+	}
+	defer file.Close()
+
+	_, err = file.Seek(int64(offset), io.SeekStart)
+	if err != nil {
+		return nil, fmt.Errorf("could not seek to offset: %w", err)
+	}
+
+	buffer := make([]byte, chunkSize)
+	bytesRead, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return nil, fmt.Errorf("could not read file: %w", err)
+	}
+
+	return buffer[:bytesRead], nil
+}
+
+// CompressData compresses data using zlib and calculates CRC32 checksum.
+func CompressData(data []byte) ([]byte, error) {
+	crc := crc32.ChecksumIEEE(data)
+
+	var compressedBuffer bytes.Buffer
+	writer, err := zlib.NewWriterLevel(&compressedBuffer, zlib.BestCompression) // Compression level 9
+	if err != nil {
+		return nil, fmt.Errorf("failed to create zlib writer: %w", err)
+	}
+	_, err = writer.Write(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compress data: %w", err)
+	}
+	writer.Close()
+
+	crcHeader := make([]byte, 4)
+	binary.BigEndian.PutUint32(crcHeader, crc)
+	builtData := append(crcHeader, compressedBuffer.Bytes()...)
+
+	return builtData, nil
 }

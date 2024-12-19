@@ -120,6 +120,7 @@ class ModuleService:
             db,
             module,
             cleaned_options,
+            agent.language,
         )
         if isinstance(module_data, tuple):
             warnings.warn(
@@ -189,7 +190,7 @@ class ModuleService:
                     f"Unsupported module language {module.language} for agent {agent.language}"
                 )
 
-        elif agent.language in ("powershell", "go"):
+        elif agent.language == "powershell":
             if module.language == "powershell":
                 if module.background:
                     task_command = "TASK_POWERSHELL_CMD_JOB"
@@ -202,6 +203,27 @@ class ModuleService:
                     task_command = "TASK_CSHARP_CMD_JOB"
                 else:
                     task_command = "TASK_CSHARP_CMD_WAIT"
+            else:
+                log.error(
+                    f"Unsupported module language {module.language} for agent {agent.language}"
+                )
+        elif agent.language == "go":
+            if module.language == "powershell":
+                if module.background:
+                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                else:
+                    task_command, module_data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data
+                    )
+            elif module.language == "csharp":
+                if module.background:
+                    task_command = "TASK_CSHARP_CMD_JOB"
+                else:
+                    task_command = "TASK_CSHARP_CMD_WAIT"
+            elif module.language == "bof":
+                task_command = "TASK_BOF_CMD_WAIT"
+            elif module.language == "pe":
+                task_command = "TASK_PE_CMD_WAIT"
             else:
                 log.error(
                     f"Unsupported module language {module.language} for agent {agent.language}"
@@ -265,6 +287,7 @@ class ModuleService:
         db: Session,
         module: EmpireModule,
         params: dict,
+        agent_language: str,
         obfuscation_config: models.ObfuscationConfig = None,
     ) -> tuple[str | None, str | None]:
         """
@@ -310,6 +333,8 @@ class ModuleService:
         elif module.language == LanguageEnum.csharp:
             return self.generate_script_csharp(module, params, obfuscation_config)
         elif module.language == LanguageEnum.bof:
+            if agent_language == "go":
+                return self.generate_go_bof(module, params)
             if not obfuscation_config:
                 obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                     db, LanguageEnum.csharp
@@ -371,6 +396,107 @@ class ModuleService:
         ).decode("utf-8")
 
         return f"{script_file}|,{final_base64_json}"
+
+    def generate_go_bof(
+        self,
+        module: EmpireModule,
+        params: dict,
+        skip_params=False,
+    ) -> str:
+        if params["Architecture"] == "x86":
+            script_path = empire_config.directories.module_source / module.bof.x86
+        else:
+            script_path = empire_config.directories.module_source / module.bof.x64
+
+        bof_data = script_path.read_bytes()
+        b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
+
+        filtered_params = {
+            key: (
+                value if value != "" else " "
+            )  # Replace empty values with a blank space
+            for key, value in params.items()
+            if key.lower()
+            not in [
+                "agent",
+                "computername",
+                "dotnetversion",
+                "architecture",
+                "entrypoint",
+            ]
+        }
+
+        formatted_args = " ".join(
+            f'"{value}"' if " " in value else value
+            for value in filtered_params.values()
+        )
+
+        if not skip_params:
+            params_dict = {}
+            params_dict["File"] = b64_bof_data
+            params_dict["HexData"] = process_arguments(
+                module.bof.format_string, formatted_args
+            )
+        else:
+            params_dict = params
+
+        final_base64_json = base64.b64encode(
+            json.dumps(params_dict).encode("utf-8")
+        ).decode("utf-8")
+
+        return f"{final_base64_json}"
+
+    def generate_go_pe(
+        module: EmpireModule,
+        params: dict[str, str],
+        skip_params=False,
+    ) -> str:
+        """
+        Generates a base64-encoded JSON structure for a PE file and its arguments.
+
+        :param module: EmpireModule object containing PE file paths and format info.
+        :param params: Dictionary of parameters, including architecture and arguments.
+        :param skip_params: If True, bypasses argument formatting and uses params as is.
+        :return: Base64-encoded JSON string.
+        """
+        # Determine the file path based on architecture
+        if params["Architecture"] == "x86":
+            script_path = empire_config.directories.module_source / module.pe.x86
+        else:
+            script_path = empire_config.directories.module_source / module.pe.x64
+
+        # Read the PE file and encode it in base64
+        pe_data = script_path.read_bytes()
+        b64_pe_data = base64.b64encode(pe_data).decode("utf-8")
+
+        # Filter and prepare arguments
+        filtered_params = {
+            key: (
+                value if value != "" else " "
+            )  # Replace empty values with a blank space
+            for key, value in params.items()
+            if key.lower()
+            not in [
+                "agent",
+                "computername",
+                "dotnetversion",
+                "architecture",
+                "entrypoint",
+            ]
+        }
+
+        # Create a list of arguments
+        formatted_args = [
+            f'"{value}"' if " " in value else value
+            for value in filtered_params.values()
+        ]
+
+        if not skip_params:
+            params_dict = {"File": b64_pe_data, "Args": formatted_args}
+        else:
+            params_dict = params
+
+        return base64.b64encode(json.dumps(params_dict).encode("utf-8")).decode("utf-8")
 
     def _generate_script_python(
         self,

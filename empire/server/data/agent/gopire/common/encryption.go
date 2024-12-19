@@ -52,9 +52,9 @@ func verifyHMAC(key, data []byte) bool {
 	expectedMAC.Write(data)
 	expectedMACDigest := expectedMAC.Sum(nil)[:10]
 
-	fmt.Printf("Data: %x\n", data)
-	fmt.Printf("MAC: %x\n", mac)
-	fmt.Printf("Expected MAC: %x\n", expectedMACDigest)
+	// fmt.Printf("Data: %x\n", data)
+	// fmt.Printf("MAC: %x\n", mac)
+	// fmt.Printf("Expected MAC: %x\n", expectedMACDigest)
 
 	return hmac.Equal(mac, expectedMACDigest)
 }
