@@ -266,19 +266,40 @@ def test_generate_go_stageless(stager_generation_service):
 
 
 def test_generate_dylib(stager_generation_service):
-    pass
+    """
+    Tests the generate_dylib function to ensure it creates a dylib with an embedded launcher code.
+    """
+    launcher_code = "import os; print('Hello, World!')"
+    arch = "x64"
+    hijacker = "false"
+
+    result = stager_generation_service.generate_dylib(launcher_code, arch, hijacker)
+
+    assert result is not None, "generate_dylib returned None"
+    assert len(result) > 9000  # noqa: PLR2004
 
 
 def test_generate_appbundle(stager_generation_service):
-    pass
+    launcher_code = "import os; print('Hello, World!')"
+    arch = "x64"
+    icon = ""
+    app_name = ""
+    disarm = False
 
+    result = stager_generation_service.generate_appbundle(
+        launcher_code, arch, icon, app_name, disarm
+    )
 
-def test_generate_pkg(stager_generation_service):
-    pass
+    assert result is not None, "generate_appbundle returned None"
+    assert len(result) > 9000  # noqa: PLR2004
 
 
 def test_generate_jar(stager_generation_service):
-    pass
+    launcher_code = "import os; print('Hello, World!')"
+    result = stager_generation_service.generate_jar(launcher_code)
+
+    assert result is not None, "generate_jar returned None"
+    assert len(result) > 1000  # noqa: PLR2004
 
 
 def test_generate_upload(stager_generation_service):

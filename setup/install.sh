@@ -195,31 +195,6 @@ function start_mysql() {
   fi
 }
 
-function install_xar() {
-  # xar-1.6.1 has an incompatibility with libssl 1.1.x that is patched here
-  wget https://github.com/BC-SECURITY/xar/archive/xar-1.6.1-patch.tar.gz
-  rm -rf xar-1.6.1
-  rm -rf xar-1.6.1-patch/xar
-  rm -rf xar-xar-1.6.1-patch
-  tar -xvf xar-1.6.1-patch.tar.gz && mv xar-xar-1.6.1-patch/xar/ xar-1.6.1/
-  (cd xar-1.6.1 && ./autogen.sh)
-  (cd xar-1.6.1 && ./configure)
-  (cd xar-1.6.1 && make)
-  (cd xar-1.6.1 && sudo make install)
-  rm -rf xar-1.6.1
-  rm -rf xar-1.6.1-patch/xar
-  rm -rf xar-xar-1.6.1-patch
-}
-
-function install_bomutils() {
-  rm -rf bomutils
-  git clone https://github.com/BC-SECURITY/bomutils.git
-  (cd bomutils && make)
-  (cd bomutils && sudo make install)
-  chmod 755 bomutils/build/bin/mkbom && sudo cp bomutils/build/bin/mkbom /usr/local/bin/.
-  rm -rf bomutils
-}
-
 set -e
 
 if [ "$EUID" -eq 0 ]; then
@@ -290,20 +265,6 @@ if ! command_exists mysql; then
 fi
 
 start_mysql
-
-if [ "$ASSUME_YES" == "1" ] ;then
-  answer="Y"
-else
-  echo -n -e "\x1b[1;33m[>] Do you want to install xar and bomutils? They are only needed to generate a .dmg stager (y/N)? \x1b[0m"
-  read -r answer
-fi
-if [ "$answer" != "${answer#[Yy]}" ] ;then
-  sudo apt-get install -y make autoconf g++ git zlib1g-dev libxml2-dev libssl-dev
-  install_xar
-  install_bomutils
-else
-    echo -e "\x1b[1;34m[*] Skipping xar and bomutils\x1b[0m"
-fi
 
 if [ "$ASSUME_YES" == "1" ] ;then
   answer="Y"

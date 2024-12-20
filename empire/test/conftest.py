@@ -400,7 +400,7 @@ def windows_macro_stager():
 def pyinstaller_stager():
     return {
         "name": "MyStager3",
-        "template": "multi_pyinstaller",
+        "template": "linux_pyinstaller",
         "options": {
             "Listener": "new-listener-1",
             "Language": "python",

@@ -38,14 +38,14 @@ class Stager:
                 "Value": "",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
             "Base64": {
-                "Description": "Switch. Base64 encode the output.",
+                "Description": "Base64 encode the output.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],

@@ -40,18 +40,18 @@ class Stager:
             },
             "OutFile": {
                 "Description": "File to output HTA to, otherwise displayed on the screen.",
-                "Required": False,
-                "Value": "",
+                "Required": True,
+                "Value": "launcher.hta",
             },
             "Base64": {
-                "Description": "Switch. Base64 encode the output.",
+                "Description": "Base64 encode the output.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],

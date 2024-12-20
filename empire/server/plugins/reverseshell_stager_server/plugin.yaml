@@ -1,9 +1,0 @@
-name: reverseshell_stager_server
-authors:
-  - name: Anthony Rose
-    handle: '@Cx01N'
-    link: 'https://twitter.com/Cx01N_'
-software: ''
-techniques: []
-main: reverseshell_stager_server.py
-auto_start: false

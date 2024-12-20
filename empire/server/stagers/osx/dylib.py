@@ -1,4 +1,8 @@
+import logging
+
 from empire.server.common import helpers
+
+log = logging.getLogger(__name__)
 
 
 class Stager:
@@ -38,7 +42,7 @@ class Stager:
                 "Value": "x86",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -54,7 +58,7 @@ class Stager:
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": True,
-                "Value": "",
+                "Value": "empire.dylib",
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -63,12 +67,9 @@ class Stager:
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
     def generate(self):
-        # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
@@ -80,7 +81,6 @@ class Stager:
             print(helpers.color("[!] Please select a valid architecture"))
             return ""
 
-        # generate the launcher code
         launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,

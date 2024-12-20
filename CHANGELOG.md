@@ -79,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   The client has been deprecated and will be removed in a future major Empire release
    -   The current feature set has been reduced
 -   Moved EmpireCompiler from install script to startup with autoupdate functionality
+-   Moved bash and pyinstaller stagers to linux folder
 
 ### Deprecated
 
@@ -96,6 +97,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed module management/invoke-script for local ps1 script execution
 -   Removed migration docs to Empire 5.0
 -   Removed slack notifications from listener in favor for hooks and filters in plugins
+-   Removed the following stagers
+   - osx/pkg
+   - windows/backdoorlnkmacro
+   - windows/launcher_lnk
+   - windows/launcher_sct
+   - windows/ms16-051
+   - windows/reverseshell
 
 #### Breaking
 
@@ -105,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed `--restip` and `--restport` options from the command line. Use the config file instead.
 -   Removed `socketport` config option on the client which was no longer being used
 -   Removed script and module upload to memory in favor of modules with same functionality
+-   Removed reverseshellserver plugin
 
 
 ### Fixed

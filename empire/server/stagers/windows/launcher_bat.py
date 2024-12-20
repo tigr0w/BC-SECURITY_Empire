@@ -38,18 +38,18 @@ class Stager:
             },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output, otherwise returned as a string.",
-                "Required": False,
+                "Required": True,
                 "Value": "launcher.bat",
             },
             "Delete": {
-                "Description": "Switch. Delete .bat after running.",
+                "Description": "Delete .bat after running.",
                 "Required": False,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],

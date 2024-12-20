@@ -35,7 +35,7 @@ class Stager:
                 "Value": "",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for "
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for "
                 "obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",

