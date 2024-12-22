@@ -500,15 +500,15 @@ def agent_task(client, admin_auth_header, agent, session_local, main):
 
 
 @pytest.fixture(scope="module")
-def plugin_name():
+def plugin_id():
     return "basic_reporting"
 
 
 @pytest.fixture
-def plugin_task(main, session_local, models, plugin_name):
+def plugin_task(main, session_local, models, plugin_id):
     with session_local.begin() as db:
         plugin_task = models.PluginTask(
-            plugin_id=plugin_name,
+            plugin_id=plugin_id,
             input="This is the trimmed input for the task.",
             input_full="This is the full input for the task.",
             user_id=1,

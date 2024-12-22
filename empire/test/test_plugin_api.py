@@ -50,7 +50,7 @@ def test_get_plugin(client, admin_auth_header):
     response = client.get("/api/v2/plugins/basic_reporting", headers=admin_auth_header)
 
     assert response.status_code == HTTP_200_OK
-    assert response.json()["name"] == "basic_reporting"
+    assert response.json()["id"] == "basic_reporting"
 
 
 def test_get_plugins(client, admin_auth_header):

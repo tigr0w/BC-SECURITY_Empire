@@ -296,6 +296,7 @@ This is no different than the way things were pre 5.0.
     * If using `auto_start`, the default settings should be valid
   * `auto_execute` - Automatically execute the plugin when Empire starts
 * Execution can be disabled by setting `self.execution_enabled = False`
+* `PluginTask` should now use the id of the plugin instead of the name
 
 ## Future Work
 * improved plugin logging -

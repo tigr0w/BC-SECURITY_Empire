@@ -11,6 +11,9 @@ empire/server/data/obfuscated_module_source/*.ps1
 empire/server/data/misc/ToObfuscate.ps1
 empire/server/data/misc/Obfuscated.ps1
 empire/server/data/generated-stagers/*
+empire/server/data/cti**
+empire/server/data/agent/gopire/*.go
+
 empire/server/downloads/*
 empire/server/api/static/*
 empire/server/api/v2/starkiller-temp

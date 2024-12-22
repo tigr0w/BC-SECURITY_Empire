@@ -43,13 +43,13 @@ router = APIRouter(
 
 
 async def get_task(uid: int, db: CurrentSession, plugin: CurrentPlugin):
-    task = plugin_task_service.get_task(db, plugin.db_plugin.name, uid)
+    task = plugin_task_service.get_task(db, plugin.db_plugin.id, uid)
 
     if task:
         return task
 
     raise HTTPException(
-        404, f"Task not found for plugin {plugin.db_plugin.name} and task id {uid}"
+        404, f"Task not found for plugin {plugin.db_plugin.id} and task id {uid}"
     )
 
 
@@ -119,7 +119,7 @@ async def read_tasks(
 ):
     tasks, total = plugin_task_service.get_tasks(
         db,
-        plugins=[plugin.db_plugin.name],
+        plugins=[plugin.db_plugin.id],
         users=users,
         tags=tags,
         limit=limit,
