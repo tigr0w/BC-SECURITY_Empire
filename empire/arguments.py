@@ -4,7 +4,6 @@ parent_parser = argparse.ArgumentParser()
 subparsers = parent_parser.add_subparsers(dest="subparser_name")
 
 server_parser = subparsers.add_parser("server", help="Launch Empire Server")
-client_parser = subparsers.add_parser("client", help="Launch Empire CLI")
 sync_starkiller_parser = subparsers.add_parser(
     "sync-starkiller", help="Sync Starkiller submodule with the config"
 )
@@ -16,33 +15,6 @@ install_parser.add_argument(
     "-y",
     action="store_true",
     help="Automatically say yes to all prompts during installation",
-)
-
-# Client Args
-client_parser.add_argument(
-    "-l",
-    "--log-level",
-    dest="log_level",
-    type=str.upper,
-    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-    help="Set the logging level",
-)
-client_parser.add_argument(
-    "-r",
-    "--resource",
-    type=str,
-    help="Run the Empire commands in the specified resource file after startup.",
-)
-client_parser.add_argument(
-    "--config",
-    type=str,
-    nargs=1,
-    help="Specify a config.yaml different from the config.yaml in the empire/client directory.",
-)
-client_parser.add_argument(
-    "--reset",
-    action="store_true",
-    help="Resets Empire's client to defaults and deletes any app data accumulated over previous runs.",
 )
 
 # Server Args

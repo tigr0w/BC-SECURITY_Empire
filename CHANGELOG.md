@@ -114,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed `socketport` config option on the client which was no longer being used
 -   Removed script and module upload to memory in favor of modules with same functionality
 -   Removed reverseshellserver plugin
+-   Removed the command line client. Use Starkiller instead.
 
 
 ### Fixed

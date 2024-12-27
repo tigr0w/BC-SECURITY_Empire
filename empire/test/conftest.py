@@ -9,7 +9,7 @@ import pytest
 import yaml
 from starlette.testclient import TestClient
 
-from empire.client.src.utils.data_util import get_random_string
+from empire.server.utils.string_util import get_random_string
 
 if TYPE_CHECKING:
     from empire.server.core.config import EmpireConfig

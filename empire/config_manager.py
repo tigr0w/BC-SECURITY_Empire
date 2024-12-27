@@ -11,19 +11,11 @@ user_home = Path.home()
 SOURCE_CONFIG_CLIENT = Path("empire/client/config.yaml")
 SOURCE_CONFIG_SERVER = Path("empire/server/config.yaml")
 CONFIG_DIR = user_home / ".empire"
-CONFIG_CLIENT_PATH = CONFIG_DIR / "client" / "config.yaml"
 CONFIG_SERVER_PATH = CONFIG_DIR / "server" / "config.yaml"
 
 
 def config_init():
-    CONFIG_CLIENT_PATH.parent.mkdir(parents=True, exist_ok=True)
     CONFIG_SERVER_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    if not CONFIG_CLIENT_PATH.exists():
-        shutil.copy(SOURCE_CONFIG_CLIENT, CONFIG_CLIENT_PATH)
-        log.info(f"Copied {SOURCE_CONFIG_CLIENT} to {CONFIG_CLIENT_PATH}")
-    else:
-        log.info(f"{CONFIG_CLIENT_PATH} already exists.")
 
     if not CONFIG_SERVER_PATH.exists():
         shutil.copy(SOURCE_CONFIG_SERVER, CONFIG_SERVER_PATH)
@@ -32,52 +24,33 @@ def config_init():
         log.info(f"{CONFIG_SERVER_PATH} already exists.")
 
 
-def check_config_permission(config_dict: dict, config_type: str):
+def check_config_permission(config_dict: dict):
     """
     Check if the specified directories in config.yaml are writable. If not, switches to a fallback directory.
     Handles both server and client configurations.
 
     Args:
         config_dict (dict): The configuration dictionary loaded from YAML.
-        config_type (str): The type of configuration ("server" or "client").
     """
     # Define paths to check based on config type
-    if config_type == "server":
-        paths_to_check = {
-            ("api", "cert_path"): config_dict.get("api", {}).get("cert_path"),
-            ("database", "sqlite", "location"): config_dict.get("database", {})
-            .get("sqlite", {})
-            .get("location"),
-            ("starkiller", "directory"): config_dict.get("starkiller", {}).get(
-                "directory"
-            ),
-            ("logging", "directory"): config_dict.get("logging", {}).get("directory"),
-            ("debug", "last_task", "file"): config_dict.get("debug", {})
-            .get("last_task", {})
-            .get("file"),
-            ("plugin_marketplace", "directory"): config_dict.get(
-                "plugin_marketplace", {}
-            ).get("directory"),
-            ("directories", "downloads"): config_dict.get("directories", {}).get(
-                "downloads"
-            ),
-        }
-        config_path = CONFIG_SERVER_PATH  # Use the server config path
-
-    elif config_type == "client":
-        paths_to_check = {
-            ("logging", "directory"): config_dict.get("logging", {}).get("directory"),
-            ("directories", "downloads"): config_dict.get("directories", {}).get(
-                "downloads"
-            ),
-            ("directories", "generated-stagers"): config_dict.get(
-                "directories", {}
-            ).get("generated-stagers"),
-        }
-        config_path = CONFIG_CLIENT_PATH  # Use the client config path
-
-    else:
-        raise ValueError("Invalid config_type. Expected 'server' or 'client'.")
+    paths_to_check = {
+        ("api", "cert_path"): config_dict.get("api", {}).get("cert_path"),
+        ("database", "sqlite", "location"): config_dict.get("database", {})
+        .get("sqlite", {})
+        .get("location"),
+        ("starkiller", "directory"): config_dict.get("starkiller", {}).get("directory"),
+        ("logging", "directory"): config_dict.get("logging", {}).get("directory"),
+        ("debug", "last_task", "file"): config_dict.get("debug", {})
+        .get("last_task", {})
+        .get("file"),
+        ("plugin_marketplace", "directory"): config_dict.get(
+            "plugin_marketplace", {}
+        ).get("directory"),
+        ("directories", "downloads"): config_dict.get("directories", {}).get(
+            "downloads"
+        ),
+    }
+    config_path = CONFIG_SERVER_PATH  # Use the server config path
 
     # Check permissions and update paths as needed
     for keys, dir_path in paths_to_check.items():

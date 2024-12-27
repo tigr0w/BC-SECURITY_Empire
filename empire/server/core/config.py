@@ -220,6 +220,6 @@ elif config_manager.CONFIG_SERVER_PATH.exists():
     loaded_config = set_yaml(config_manager.CONFIG_SERVER_PATH)
     if loaded_config:
         config_dict = loaded_config
-        config_dict = config_manager.check_config_permission(config_dict, "server")
+        config_dict = config_manager.check_config_permission(config_dict)
 
 empire_config = EmpireConfig(config_dict)

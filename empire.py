@@ -32,9 +32,4 @@ if __name__ == "__main__":
 
         load_empire_compiler(config)
 
-    elif args.subparser_name == "client":
-        from empire.client import client
-
-        client.start(args)
-
     sys.exit(0)
