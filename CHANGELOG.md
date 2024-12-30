@@ -14,72 +14,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [6.0.0-dev]
 
+### Highlights
+
+-   Plugin Marketplace
+-   Go agents
+-   Empire Compiler for C#
+-   Command line client removed
+
 ### Added
--   Typehinting for MainMenu object in services
--   Added `api.ip` and `api.secure` as server options
--   API endpoints for adding/removing ip allow/deny list entries
--   Added tests for stager compilation using `DotnetCompiler`
+
+-   Added support for plugin registries and installing plugins via the API
+    -   See the Plugin Marketplace in Starkiller 3.0! 
+-   New allow/deny list implementation that properly supports IPv4, IPv6, Ranges, and CIDRs
+-   Added API endpoints for managing autorun commands on agent checkin
+-   Added `api.ip` and `api.secure` as server config options
+-   Added Go agents
+    -   Added Go to install script
+    -   Added new stager type `multi_go_exe`
+    -   Added new compiler class `GoCompiler`
 -   Added `-f` flag for install script to force install as root
 -   Added dynamic options to modules
--   Added PT, TCH rules to ruff config
--   Added module code_execution/invoke-script for remote ps1 script execution
--   Added module python/code_execution/invoke-script for remote py script execution
--   Added tests for files being dependent options
--   Added endpoint for installing plugins from a git repository
--   Added endpoint for installing plugins from a tar
--   Added Go agent
--   Added new compiler class `GoCompiler`
--   Added new stager type `multi_go_exe`
--   Added autorun capability for agents on checkin through Starkiller menu
--   Added go to install script
-
+-   Added module `code_execution/invoke-script` for remote ps1 script execution
+-   Added module `python/code_execution/invoke-script` for remote py script execution
 
 ### Changed
--   New allow/deny list implementation properly supports IPv4, IPv6, Ranges, and CIDRs
--   Plugins refactored - see the `plugin-development` wiki page
--   Updated install base test remove nim and dotnet
+
+-   Changed minimum Python version to 3.13
 -   Updated module_service logic for tasking types
--   Updated shortened task results to show the C# command ran and full input to show directory of the file
--   Updated C# tasks into folders and split yamls to be 1 per a file
 -   Swapped C# module RunOF for COFFLoader
 -   Updated parsing for bof formatting to use bof_pack
--   Change formatter to ruff to consolidate tools
+-   Moved bash and pyinstaller stagers to linux folder
+-   Change formatter to ruff to consolidate developer tooling
 
 #### Breaking
+
+-   Many improvements to plugins - see the `plugin-development` wiki page
 -   Moved `Agents` class to `AgentCommunicationService`
     -   Refactored many of the functions and parameter names
 -   Moved `Stagers` class to `StagerGenerationService`
    -    Refactored many of the funtions and parameter names
 -   Moved Plugin Task handling from `PluginService` to `PluginTaskService`
 -   Moved socks management to `AgentSocksService`
--   Renamed socks properties on `AgentSocksService` to use plural naming
+    -   Renamed socks properties on `AgentSocksService` to use plural naming
 -   Remove `update_lastseen` parameter from `handle_agent_request`
--   Renamed all config properties in client and server yamls to use snake_case
--   Changed minimum Python version to 3.13
+-   Renamed all config properties in client and server configs to use snake_case
 -   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
 -   `ip_whitelist` and `ip_blacklist` are now `ip_allow_list` and `ip_deny_list` and are lists instead of comma separated strings
--   Plugins must use a `.py` extension and contain a `plugin.yaml` file in the same directory
--   Plugins must extend the `BasePlugin` class instead of the `Plugin` class
--   Plugin "info" is now a class instead of a dictionary and it is automatically set from the `plugin.yaml` file on load
--   Plugin execute function must take `**kwargs`
--   Plugin name is now based on the name in the `plugin.yaml` file instead of the filename
--   Plugins now contain `main_menu` instead of `mainMenu`
--   Plugin `onLoad` renamed to `on_load` and takes a `db` object
--   New config options -
-   -   `auto_start` - Automatically start the plugin when Empire starts
-   -   If using `auto_start`, the default settings should be valid
-   -   `auto_execute` - Automatically execute the plugin when Empire starts
-* Execution can be disabled by setting `self.execution_enabled = False`
--   Moved C# compiler to a submodule.
--   All C# module code has been moved as submodules of Empire-Compiler
--   Update module validation to not include the internal and depends_on options
--   Moved EmpireCompiler from a submodule to be downloaded instead
--   Migrated all C# modules to Empire yaml format
--   Moved EmpireCompiler compression from application to the server
--   The client has been deprecated and will be removed in a future major Empire release
-   -   The current feature set has been reduced
--   Moved EmpireCompiler from install script to startup with autoupdate functionality
--   Moved bash and pyinstaller stagers to linux folder
+-   Using a new and improved [Empire-Compiler] for C# compilation
+    -   Downloads pre-compiled Empire-Compiler to eliminate `dotnet` as an OS dependency
+    -   Updated shortened task results to show the C# command ran and full input to show directory of the file
+    -   Updated C# tasks into folders and split yaml configs to be one per module and match Empire yaml format
+    -   All C# module code has been moved as submodules of Empire-Compiler
+    -   Moved EmpireCompiler compression from application to the server
+    -   Moved EmpireCompiler from install script to startup with autoupdate functionality
+    -   Replaced csharpserver plugin with `DotnetCompiler` class in `empire.server.common`
 
 ### Deprecated
 
@@ -87,16 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Removed autorun config options which haven't been used since Empire 3
 -   Removed install support for Debian 10
--   Removed Python 3.11 as a supported Python version
--   Removed unused `iptools` dependency
--   Replaced csharpserver plugin with `DotnetCompiler` class in `empire.server.common`
--   Downloads pre-compiled Empire-Compiler to eliminate `dotnet` as an OS dependency
--   Removed dotnet install in Docker
--   Removed `nim` stager from Empire
--   Removed nim from installation script
--   Removed module management/invoke-script for local ps1 script execution
--   Removed migration docs to Empire 5.0
--   Removed slack notifications from listener in favor for hooks and filters in plugins
+-   Removed `nim` stager from Empire and install script
+-   Removed slack notifications from listeners
 -   Removed the following stagers
    - osx/pkg
    - windows/backdoorlnkmacro
@@ -107,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking
 
+-   Removed the command line client. Use Starkiller instead.
 -   Removed `Listeners` class
 -   Removed `Credentials` class
 -   Removed functions from `Agents` class that were marked as deprecated in 5.x
@@ -114,8 +95,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed `socketport` config option on the client which was no longer being used
 -   Removed script and module upload to memory in favor of modules with same functionality
 -   Removed reverseshellserver plugin
--   Removed the command line client. Use Starkiller instead.
-
 
 ### Fixed
 -   Fixed Powershell agent overwritting results for C# taskings
