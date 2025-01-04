@@ -3,14 +3,13 @@ import logging
 import struct
 import time
 import zlib
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 from sqlalchemy.exc import IntegrityError
 
 from empire.server.common.empire import MainMenu
-from empire.server.utils.string_util import is_valid_session_id
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +59,7 @@ class compress:
         return header + data
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def agents(session_local, models, host):
     with session_local.begin() as db:
         db_host = db.query(models.Host).filter(models.Host.id == host).first()
@@ -170,7 +169,7 @@ def agents(session_local, models, host):
         db.add(
             models.AgentCheckIn(
                 agent_id=agent4.session_id,
-                checkin_time=datetime.now(timezone.utc) - timedelta(days=2),
+                checkin_time=datetime.now(UTC) - timedelta(days=2),
             )
         )
         db.flush()
@@ -229,20 +228,21 @@ def test_large_internal_ip_works(session_local, host, models, agent):
 
 
 def test_duplicate_host(session_local, models, host):
-    with pytest.raises(IntegrityError), session_local.begin() as db:
+    with session_local.begin() as db:
         db_host = db.query(models.Host).filter(models.Host.id == host).first()
         host2 = models.Host(name=db_host.name, internal_ip=db_host.internal_ip)
-
         db.add(host2)
-        db.flush()
+
+        with pytest.raises(IntegrityError):
+            db.flush()
 
 
 def test_duplicate_checkin_raises_exception(session_local, models, agent):
-    with pytest.raises(IntegrityError), session_local.begin() as db:
+    with session_local.begin() as db:
         db_agent = (
             db.query(models.Agent).filter(models.Agent.session_id == agent).first()
         )
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         checkin = models.AgentCheckIn(
             agent_id=db_agent.session_id, checkin_time=timestamp
         )
@@ -252,7 +252,9 @@ def test_duplicate_checkin_raises_exception(session_local, models, agent):
 
         db.add(checkin)
         db.add(checkin2)
-        db.flush()
+
+        with pytest.raises(IntegrityError):
+            db.flush()
 
 
 def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
@@ -265,8 +267,8 @@ def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
         # as the original checkin
         time.sleep(2)
 
-        main.agents.update_agent_lastseen_db(db_agent.session_id, db)
-        main.agents.update_agent_lastseen_db(db_agent.session_id, db)
+        main.agentsv2.update_agent_lastseen(db, db_agent.session_id)
+        main.agentsv2.update_agent_lastseen(db, db_agent.session_id)
 
     with session_local.begin() as db:
         db_agent = (
@@ -295,7 +297,7 @@ def test_update_dir_list(session_local, models, agent, main: MainMenu):
                 },
             ],
         }
-        main.agents.update_dir_list(agent, message, db)
+        main.agentcommsv2._update_dir_list(db, agent, message)
 
         file, _ = main.agentfilesv2.get_file_by_path(
             db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
@@ -329,7 +331,7 @@ def test_update_dir_list_with_existing_joined_file(
                 },
             ],
         }
-        main.agents.update_dir_list(agent, message, db)
+        main.agentcommsv2._update_dir_list(db, agent, message)
 
         file, _ = main.agentfilesv2.get_file_by_path(
             db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
@@ -345,7 +347,7 @@ def test_update_dir_list_with_existing_joined_file(
         )
 
         # This previously raised a Foreign Key Constraint error, but should succeed now.
-        main.agents.update_dir_list(agent, message, db)
+        main.agentcommsv2._update_dir_list(db, agent, message)
 
         file2, _ = main.agentfilesv2.get_file_by_path(
             db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
@@ -363,51 +365,32 @@ def test_update_dir_list_with_existing_joined_file(
         db.query(models.AgentFile).delete()
 
 
-@pytest.mark.parametrize(
-    "session_id,expected",
-    [
-        ("ABCDEFGH", True),
-        ("12345678", True),
-        ("ABCDEF1H", True),
-        ("A1B2C3D4", True),
-        ("ABCDEFG", False),
-        ("ABCDEFGHI", False),
-        ("ABCD_EFG", False),
-        ("       ", False),
-        ("", False),
-        (12345678, False),
-        (None, False),
-        ("./../../", False),
-    ],
-)
-def test_is_valid_session_id(session_id, expected):
-    assert (
-        is_valid_session_id(session_id) == expected
-    ), f"Test failed for session_id: {session_id}"
+def test_skywalker_exploit_protection(caplog, agent, session_local, main: MainMenu):
+    with session_local.begin() as db:
+        # Malicious file path attempting directory traversal
+        malicious_directory = (
+            main.installPath + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
+        )
+        encodedPart = b"test"
+        c = compress()
+        start_crc32 = c.crc32_data(encodedPart)
+        comp_data = c.comp_data(encodedPart)
+        encodedPart = c.build_header(comp_data, start_crc32)
+        encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
 
+        malicious_data = "|".join(
+            [
+                "0",
+                malicious_directory,
+                "6",
+                encodedPart,
+            ]
+        )
 
-def test_skywalker_exploit_protection(caplog, agent, db, main: MainMenu):
-    # Malicious file path attempting directory traversal
-    malicious_directory = (
-        main.installPath + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
-    )
-    encodedPart = b"test"
-    c = compress()
-    start_crc32 = c.crc32_data(encodedPart)
-    comp_data = c.comp_data(encodedPart)
-    encodedPart = c.build_header(comp_data, start_crc32)
-    encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
+        main.agentcommsv2._process_agent_packet(
+            db, agent, "TASK_DOWNLOAD", "1", malicious_data
+        )
 
-    malicious_data = "|".join(
-        [
-            "0",
-            malicious_directory,
-            "6",
-            encodedPart,
-        ]
-    )
+        expected_message_part = "attempted skywalker exploit!"
 
-    main.agents.process_agent_packet(agent, "TASK_DOWNLOAD", "1", malicious_data, db)
-
-    expected_message_part = "attempted skywalker exploit!"
     assert any(expected_message_part in message for message in caplog.messages)

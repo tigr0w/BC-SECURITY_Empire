@@ -1,14 +1,54 @@
 # Plugin Development
 
+## Lifecycle Hooks
+
+### on_load
+
+The `on_load` function is called when the plugin is loaded into memory.
+```python
+@override
+def on_load(self, db):
+    print("Plugin loaded")
+```
+
+### on_unload
+
+The `on_unload` function is called when the plugin is unloaded from memory.
+```python
+@override
+def on_unload(self, db):
+    print("Plugin unloaded")
+```
+
+### on_start
+
+The `on_start` function is called when the plugin is started.
+```python
+@override
+def on_start(self, db):
+    print("Plugin started")
+```
+
+### on_stop
+
+The `on_stop` function is called when the plugin is stopped.
+```python
+@override
+def on_stop(self, db):
+    print("Plugin stopped")
+```
+
+## Execution
+
+```python
+
 ## Execute Function
-The execute function is the entry point for the plugin. It is called when the plugin is executed via the API. The execute function is passed the following arguments:
+The execute function is called when the plugin is executed via the API. The execute function is passed the following arguments:
 
 * command - A dict of the command arguments, already parsed and validated by the core Empire code
 * kwargs - Additional arguments that may be passed in by the core Empire code. Right now there are only two.
   * user - The user database object for the user that is executing the plugin
   * db - The database session object
-
-If the plugin doesn't have `**kwargs`, then no kwargs will be sent. This is to ensure backwards compatibility with plugin pre-5.2.
 
 ### Error Handling
 
@@ -54,7 +94,6 @@ def execute(self, command, **kwargs):
     # Failed execution
     # raise PluginValidationException("Error Message")
     # raise PluginExecutionException("Error Message")
-    # return False, "Execution failed"
 ```
 
 ## Plugin Tasks
@@ -90,18 +129,11 @@ For an example of using plugin tasks and attaching files, see the [basic_reporti
 Notifications are meant for time sensitive information that the user should be aware of.
 In Starkiller, these get displayed immediately, so it is important not to spam them.
 
-To send a notification, use the `plugin_service`.
+To send a notification, use the `send_socketio_message` from the `BasePlugin`.
 
 ```python
-def register(self, mainMenu):
-    self.plugin_service = mainMenu.pluginsv2
-
 def execute(self, command, **kwargs):
-    # Do something
-
-    self.plugin_service.plugin_socketio_message(
-        self.info["Name"], "Helo World!"
-    )
+    self.send_socketio_message("Helo World!")
 ```
 
 ## Using the database
@@ -160,7 +192,60 @@ from empire.server.plugins.example import example_helpers
 **Note**: Relative imports will not work. For example, the example plugin cannot
 import `example_helpers.py` with `from . import example_helpers`.
 
-## 4->5 Changes
+## Settings/State Management
+
+Plugins can have state that persists through database restarts.
+There are different types of state.
+
+### Settings
+
+There are values that are defined in the same format as execution options.
+These options can be modified by the user and are persisted in the database.
+
+"Settings" supports one extra option that execution options don't. "Editable" is a boolean
+that determines if the user can modify the value. If "Editable" is set to False, the
+value can be seen via the API, but not modified.
+
+When getting the settings from within the plugin, use `self.current_settings(db)`, which will
+return the current settings values from the database.
+
+```python
+@override
+def on_start(self, db):
+    settings = self.current_settings(db)
+    print(settings)
+```
+
+To set settings values, use `self.set_settings(db, settings)` where `settings` is a dict of
+the values you want to set, or `self.state_settings_option(db, key, value)` to set a single
+value.
+
+```python
+@override
+def on_start(self, db):
+    self.set_settings(db, {"key": "value"})
+    self.set_settings_option(db, "key", "value")
+```
+
+#### `on_settings_change`
+
+When settings are updated, the `on_settings_change` function is called. This allows your plugin
+to react to changes in settings without needing to be restarted or continuously check the database.
+
+```python
+@override
+def on_settings_change(self, db, settings):
+    print(settings)
+```
+
+
+### Internal State
+
+Internal state is state that is defined by the plugin and is not exposed via the API,
+but is persisted in the database. It can be accessed via `self.internal_state(db)`,
+and can be set via `self.set_internal_state(db, state)` or `self.set_internal_state_option(db, key, value)`.
+
+## 4->5 Migration
 Not a lot has changed for plugins in Empire 5.0. We've just added a few guard rails for better
 stability between Empire versions.
 
@@ -179,8 +264,40 @@ This is no different than the way things were pre 5.0.
 * `plugin_socketio_message` was moved from `MainMenu` to `plugin_service`.
 * Example conversion for a 5.0 plugin can be seen in [ChiselServer-Plugin](https://github.com/BC-SECURITY/ChiselServer-Plugin/compare/5.0)
 
+## 5->6 Migration
+* self.info is now an object of type `PluginInfo` instead of a dict
+  * `self.info["Name"]` is now `self.info.name`
+* plugins now require a `plugin.yaml` file (added in 5.9)
+* all `self.info` fields are now in the `plugin.yaml` file
+* `.plugin` files are no longer supported and won't be loaded
+* The `Plugin` class is now called `BasePlugin`
+* Plugin constructors now take a `PluginInfo` object as the second positional argument
+* Removed `Category` from `PluginInfo` which was not used
+* Plugin execute function must take `**kwargs`
+* Plugin name is now based on the name in the `plugin.yaml` file instead of the filename
+* `mainMenu` is now `main_menu`
+* BasePlugin moved from common to core
+* Sending socketio messages can now be done via `self.send_socketio_message` which will automatically use the correct plugin id
+* `onLoad` renamed to `on_load` and receives a `db` object
+* Plugins can now be turned on and off via the API without needing to use the `execute` function
+  * Plugins have an `enabled` boolean attribute that is set in the database and on the plugin object
+* Lifecycle functions -
+  * `on_load` - When the plugin is loaded into memory
+  * `on_unload` - When the plugin is unloaded from memory
+  * `on_start` - When the plugin is started
+  * `on_stop` - When the plugin is stopped
+* `register` function was removed
+* `install_path` is automatically set on `BasePlugin` constructor
+* Plugins have an internal state that can be defined in a similar way to execution and module options
+  * Internal state persists through database restarts
+* `options` is now `execution_options`
+* New config options -
+  * `auto_start` - Automatically start the plugin when Empire starts
+    * If using `auto_start`, the default settings should be valid
+  * `auto_execute` - Automatically execute the plugin when Empire starts
+* Execution can be disabled by setting `self.execution_enabled = False`
+* `PluginTask` should now use the id of the plugin instead of the name
+
 ## Future Work
 * improved plugin logging -
   Give plugins individual log files like listeners have. Make those logs accessible via Starkiller.
-* endpoint for installing plugins -
-  A user would be able to provide the URL to a git repository and Empire would download and install the plugin.

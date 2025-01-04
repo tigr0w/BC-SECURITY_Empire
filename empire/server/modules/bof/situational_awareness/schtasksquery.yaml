@@ -28,15 +28,14 @@ options:
     description: Computer to enumerate scheduled tasks on.
     required: false
     value: ''
-    format: Z
   - name: Task Path
     description: Task path to query.
     required: true
     value: '\\Microsoft\\Windows\\MUI\\LpRemove'
-    format: Z
 bof:
   x86: bof/situational_awareness/schtasksquery/schtasksquery.x86.o
   x64: bof/situational_awareness/schtasksquery/schtasksquery.x64.o
   entry_point: ''
+  format_string: ZZ
 script_path: ''
 script_end: ''

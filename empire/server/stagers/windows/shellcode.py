@@ -83,7 +83,7 @@ class Stager:
                 "Value": "launcher.bin",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -127,16 +127,16 @@ class Stager:
             obfuscate_script = True
 
         # generate the PowerShell one-liner with all of the proper options set
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
             encode=False,
             obfuscate=obfuscate_script,
             obfuscation_command=obfuscate_command,
-            userAgent=user_agent,
+            user_agent=user_agent,
             proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
+            proxy_creds=proxy_creds,
+            stager_retries=stager_retries,
             bypasses=bypasses,
         )
         if launcher == "":
@@ -145,7 +145,7 @@ class Stager:
             return "[!] Error in launcher command generation."
 
         if language.lower() == "powershell":
-            shellcode, err = self.mainMenu.stagers.generate_powershell_shellcode(
+            shellcode, err = self.mainMenu.stagergenv2.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:
@@ -166,11 +166,11 @@ class Stager:
                     "module donut-shellcode not installed. It is only supported on x86."
                 )
 
-            directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
+            directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
             return donut.create(file=directory, arch=arch_type)
 
         if language.lower() == "python":
-            shellcode, err = self.mainMenu.stagers.generate_python_shellcode(
+            shellcode, err = self.mainMenu.stagergenv2.generate_python_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:

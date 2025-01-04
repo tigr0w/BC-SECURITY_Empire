@@ -19,10 +19,22 @@ comments:
   - Inspired by @subtee
   - http://subt0x10.blogspot.com/2016/09/bypassing-application-whitelisting.html
 options:
-  - name: Agent
-    description: Agent to run module from.
+  - name: Credentials
+    description: Manually enter credentials or credential ID.
     required: true
-    value: ''
+    value: 'Manual'
+    strict: true
+    suggested_values:
+      - Manual
+      - CredID
+  - name: Payload
+    description: Manually build command or use Empire.
+    required: true
+    value: 'Manual'
+    strict: true
+    suggested_values:
+      - Manual
+      - Empire
   - name: Listener
     description: Listener to use.
     required: false
@@ -31,6 +43,9 @@ options:
     description: Custom command to run.
     required: false
     value: ''
+    depends_on:
+      - name: Payload
+        values: [ 'Empire' ]
   - name: Obfuscate
     description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
       only.
@@ -44,6 +59,9 @@ options:
     description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
     required: false
     value: Token\All\1
+    depends_on:
+      - name: Obfuscate
+        values: [ 'True' ]
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
@@ -52,18 +70,30 @@ options:
     description: CredID from the store to use.
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'CredID' ]
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none, or other).
     required: false
     value: default
+    depends_on:
+      - name: Payload
+        values: [ 'Empire' ]
   - name: Proxy
     description: Proxy to use for request (default, none, or other).
     required: false
     value: default
+    depends_on:
+      - name: Payload
+        values: [ 'Empire' ]
   - name: ProxyCreds
     description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
     required: false
     value: default
+    depends_on:
+      - name: Payload
+        values: [ 'Empire' ]
   - name: ComputerName
     description: Host to target
     required: true
@@ -72,10 +102,16 @@ options:
     description: UserName if executing with credentials
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'Manual' ]
   - name: Password
     description: Password if executing with credentials
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'Manual' ]
   - name: FilePath
     description: Desired location to copy the xml file on the target
     required: false

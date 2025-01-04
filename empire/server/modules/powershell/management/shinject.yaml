@@ -24,18 +24,38 @@ comments:
   - comment
   - ''
 options:
-  - name: Agent
-    description: Agent to run the module on.
+  - name: Process
+    description: ProcessID or name.
     required: true
-    value: ''
+    value: 'ProcId'
+    strict: true
+    internal: true
+    suggested_values:
+      - ProcId
+      - ProcName
   - name: ProcId
     description: ProcessID to inject into.
-    required: true
+    required: false
     value: ''
+    depends_on:
+      - name: Process
+        values: ['ProcId']
+  - name: ProcName
+    description: Process name to inject into.
+    required: false
+    value: ''
+    depends_on:
+      - name: Process
+        values: [ 'ProcName' ]
   - name: Arch
     description: Architecture of the target process.
     required: true
-    value: ''
+    value: both
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+      - both
   - name: Listener
     description: Listener to use.
     required: true

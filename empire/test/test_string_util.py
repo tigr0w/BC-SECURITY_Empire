@@ -1,15 +1,33 @@
-from empire.server.utils.string_util import removeprefix, removesuffix
+import pytest
+
+from empire.server.utils.string_util import is_valid_session_id, slugify
 
 
-def test_remove_prefix():
-    assert removeprefix("empire", "emp") == "ire"
-    assert removeprefix("empire", "empire") == ""
-    assert removeprefix("empire", "empire1") == "empire"
-    assert removeprefix("techteach", "tech") == "teach"
+@pytest.mark.parametrize(
+    ("session_id", "expected"),
+    [
+        ("ABCDEFGH", True),
+        ("12345678", True),
+        ("ABCDEF1H", True),
+        ("A1B2C3D4", True),
+        ("ABCDEFG", False),
+        ("ABCDEFGHI", False),
+        ("ABCD_EFG", False),
+        ("       ", False),
+        ("", False),
+        (12345678, False),
+        (None, False),
+        ("./../../", False),
+    ],
+)
+def test_is_valid_session_id(session_id, expected):
+    assert (
+        is_valid_session_id(session_id) == expected
+    ), f"Test failed for session_id: {session_id}"
 
 
-def test_remove_suffix():
-    assert removesuffix("empire", "ire") == "emp"
-    assert removesuffix("empire", "empire") == ""
-    assert removesuffix("empire", "ire1") == "empire"
-    assert removesuffix("techteach", "teach") == "tech"
+def test_slugify():
+    assert (
+        slugify("this/has invalid_characters-in\tstring")
+        == "this_has_invalid_characters_in_string"
+    )

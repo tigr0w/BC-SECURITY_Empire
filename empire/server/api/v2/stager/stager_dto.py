@@ -22,6 +22,8 @@ def domain_to_dto_template(stager, uid: str):
             "strict": x[1]["Strict"],
             "suggested_values": x[1]["SuggestedValues"],
             "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
+            "depends_on": x[1]["Depends_on"] if x[1]["Depends_on"] is not None else [],
+            "internal": x[1]["Internal"] if x[1]["Internal"] is not None else False,
         }
         for x in stager.options.items()
     }
@@ -81,6 +83,8 @@ class StagerTemplate(BaseModel):
                         "value": "",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Language": {
                         "description": "Language of the stager to generate.",
@@ -88,6 +92,8 @@ class StagerTemplate(BaseModel):
                         "value": "powershell",
                         "suggested_values": ["powershell", "python"],
                         "strict": True,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "StagerRetries": {
                         "description": "Times for the stager to retry connecting.",
@@ -95,6 +101,8 @@ class StagerTemplate(BaseModel):
                         "value": "0",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "OutFile": {
                         "description": "Filename that should be used for the generated output.",
@@ -102,6 +110,8 @@ class StagerTemplate(BaseModel):
                         "value": "",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Base64": {
                         "description": "Switch. Base64 encode the output.",
@@ -109,6 +119,8 @@ class StagerTemplate(BaseModel):
                         "value": "True",
                         "suggested_values": ["True", "False"],
                         "strict": True,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Obfuscate": {
                         "description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
@@ -116,6 +128,8 @@ class StagerTemplate(BaseModel):
                         "value": "False",
                         "suggested_values": ["True", "False"],
                         "strict": True,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "ObfuscateCommand": {
                         "description": "The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.",
@@ -123,6 +137,8 @@ class StagerTemplate(BaseModel):
                         "value": "Token\\All\\1",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "SafeChecks": {
                         "description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if True. Defaults to True.",
@@ -130,6 +146,8 @@ class StagerTemplate(BaseModel):
                         "value": "True",
                         "suggested_values": ["True", "False"],
                         "strict": True,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "UserAgent": {
                         "description": "User-agent string to use for the staging request (default, none, or other).",
@@ -137,6 +155,8 @@ class StagerTemplate(BaseModel):
                         "value": "default",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Proxy": {
                         "description": "Proxy to use for request (default, none, or other).",
@@ -144,6 +164,8 @@ class StagerTemplate(BaseModel):
                         "value": "default",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "ProxyCreds": {
                         "description": "Proxy credentials ([domain\\]username:password) to use for request (default, none, or other).",
@@ -151,6 +173,8 @@ class StagerTemplate(BaseModel):
                         "value": "default",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                     "Bypasses": {
                         "description": "Bypasses as a space separated list to be prepended to the launcher",
@@ -158,6 +182,8 @@ class StagerTemplate(BaseModel):
                         "value": "mattifestation etw",
                         "suggested_values": [],
                         "strict": False,
+                        "depends_on:": [],
+                        "internal": False,
                     },
                 },
             }

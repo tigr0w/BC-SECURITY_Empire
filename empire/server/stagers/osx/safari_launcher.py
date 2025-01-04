@@ -38,14 +38,14 @@ class Stager:
                 "Value": "",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
             "Base64": {
-                "Description": "Switch. Base64 encode the output.",
+                "Description": "Base64 encode the output.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -75,12 +75,12 @@ class Stager:
             encode = True
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
-            listenerName=listener_name,
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
+            listener_name=listener_name,
             language=language,
             encode=encode,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
         if launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))

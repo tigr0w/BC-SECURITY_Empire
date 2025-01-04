@@ -34,12 +34,8 @@ def get_default_user():
 def get_default_config():
     return models.Config(
         staging_key=get_staging_key(),
-        ip_whitelist=database_config.ip_whitelist,
-        ip_blacklist=database_config.ip_blacklist,
-        autorun_command="",
-        autorun_data="",
-        rootuser=True,
         jwt_secret_key=pwd.genword(length=32, charset="hex"),
+        ip_filtering=True,
     )
 
 
@@ -75,6 +71,20 @@ def get_default_obfuscation_config():
         )
 
     return obfuscation_configs
+
+
+def get_default_ips():
+    allows = database_config.ip_allow_list
+    denies = database_config.ip_deny_list
+    ips = []
+
+    for ip in allows:
+        ips.append(models.IP(ip_address=ip, list="allow"))
+
+    for ip in denies:
+        ips.append(models.IP(ip_address=ip, list="deny"))
+
+    return ips
 
 
 def get_staging_key():

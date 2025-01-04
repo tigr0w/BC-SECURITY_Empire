@@ -33,13 +33,11 @@ Includes:
     complete_path() - helper to tab-complete file paths
     dict_factory() - helper that returns the SQLite query results as a dictionary
     KThread() - a subclass of threading.Thread, with a kill() method
-    slackMessage() - send notifications to the Slack API
 """
 
 import base64
 import binascii
 import ipaddress
-import json
 import logging
 import random
 import re
@@ -47,9 +45,6 @@ import socket
 import string
 import sys
 import threading
-import urllib.error
-import urllib.parse
-import urllib.request
 from datetime import datetime
 
 from empire.server.utils.math_util import old_div
@@ -745,9 +740,3 @@ class KThread(threading.Thread):
 
     def kill(self):
         self.killed = True
-
-
-def slackMessage(slack_webhook_url, slack_text):
-    message = {"text": slack_text}
-    req = urllib.request.Request(slack_webhook_url, json.dumps(message).encode("UTF-8"))
-    urllib.request.urlopen(req)

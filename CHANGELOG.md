@@ -12,6 +12,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Fixed** for any bug fixes.
 -   **Security** in case of vulnerabilities.
 
+## [6.0.0-dev]
+
+### Highlights
+
+-   Plugin Marketplace
+-   Go agents
+-   Empire Compiler for C#
+-   Command line client removed
+
+### Added
+
+-   Added support for plugin registries and installing plugins via the API
+    -   See the Plugin Marketplace in Starkiller 3.0! 
+-   New allow/deny list implementation that properly supports IPv4, IPv6, Ranges, and CIDRs
+-   Added API endpoints for managing autorun commands on agent checkin
+-   Added `api.ip` and `api.secure` as server config options
+-   Added Go agents
+    -   Added Go to install script
+    -   Added new stager type `multi_go_exe`
+    -   Added new compiler class `GoCompiler`
+-   Added `-f` flag for install script to force install as root
+-   Added dynamic options to modules
+-   Added module `code_execution/invoke-script` for remote ps1 script execution
+-   Added module `python/code_execution/invoke-script` for remote py script execution
+
+### Changed
+
+-   Changed minimum Python version to 3.13
+-   Updated module_service logic for tasking types
+-   Swapped C# module RunOF for COFFLoader
+-   Updated parsing for bof formatting to use bof_pack
+-   Moved bash and pyinstaller stagers to linux folder
+-   Change formatter to ruff to consolidate developer tooling
+
+#### Breaking
+
+-   Many improvements to plugins - see the `plugin-development` wiki page
+-   Moved `Agents` class to `AgentCommunicationService`
+    -   Refactored many of the functions and parameter names
+-   Moved `Stagers` class to `StagerGenerationService`
+   -    Refactored many of the funtions and parameter names
+-   Moved Plugin Task handling from `PluginService` to `PluginTaskService`
+-   Moved socks management to `AgentSocksService`
+    -   Renamed socks properties on `AgentSocksService` to use plural naming
+-   Remove `update_lastseen` parameter from `handle_agent_request`
+-   Renamed all config properties in client and server configs to use snake_case
+-   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
+-   `ip_whitelist` and `ip_blacklist` are now `ip_allow_list` and `ip_deny_list` and are lists instead of comma separated strings
+-   Using a new and improved [Empire-Compiler] for C# compilation
+    -   Downloads pre-compiled Empire-Compiler to eliminate `dotnet` as an OS dependency
+    -   Updated shortened task results to show the C# command ran and full input to show directory of the file
+    -   Updated C# tasks into folders and split yaml configs to be one per module and match Empire yaml format
+    -   All C# module code has been moved as submodules of Empire-Compiler
+    -   Moved EmpireCompiler compression from application to the server
+    -   Moved EmpireCompiler from install script to startup with autoupdate functionality
+    -   Replaced csharpserver plugin with `DotnetCompiler` class in `empire.server.common`
+
+### Deprecated
+
+### Removed
+
+-   Removed autorun config options which haven't been used since Empire 3
+-   Removed install support for Debian 10
+-   Removed `nim` stager from Empire and install script
+-   Removed slack notifications from listeners
+-   Removed the following stagers
+   - osx/pkg
+   - windows/backdoorlnkmacro
+   - windows/launcher_lnk
+   - windows/launcher_sct
+   - windows/ms16-051
+   - windows/reverseshell
+
+#### Breaking
+
+-   Removed the command line client. Use Starkiller instead.
+-   Removed `Listeners` class
+-   Removed `Credentials` class
+-   Removed functions from `Agents` class that were marked as deprecated in 5.x
+-   Removed `--restip` and `--restport` options from the command line. Use the config file instead.
+-   Removed `socketport` config option on the client which was no longer being used
+-   Removed script and module upload to memory in favor of modules with same functionality
+-   Removed reverseshellserver plugin
+
+### Fixed
+-   Fixed Powershell agent overwritting results for C# taskings
+
+### Security
+
 ## [Unreleased]
 
 ## [5.12.0] - 2024-12-14

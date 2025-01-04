@@ -1,8 +1,10 @@
 import base64
 import fnmatch
 import importlib.util
+import json
 import logging
 import os
+import typing
 import warnings
 from pathlib import Path
 
@@ -15,24 +17,32 @@ from empire.server.api.v2.module.module_dto import (
     ModuleUpdateRequest,
 )
 from empire.server.common import helpers
-from empire.server.common.converter.load_covenant import _convert_covenant_to_empire
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.download_service import DownloadService
 from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
 )
-from empire.server.core.module_models import EmpireModule, LanguageEnum
-from empire.server.core.obfuscation_service import ObfuscationService
+from empire.server.core.module_models import (
+    EmpireModule,
+    EmpireModuleOption,
+    LanguageEnum,
+)
+from empire.server.utils.bof_packer import process_arguments
 from empire.server.utils.option_util import convert_module_options, validate_options
+from empire.server.utils.string_util import slugify
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+    from empire.server.core.download_service import DownloadService
+    from empire.server.core.obfuscation_service import ObfuscationService
 
 log = logging.getLogger(__name__)
 
 
 class ModuleService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
         self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
         self.download_service: DownloadService = main_menu.downloadsv2
@@ -110,6 +120,7 @@ class ModuleService:
             db,
             module,
             cleaned_options,
+            agent.language,
         )
         if isinstance(module_data, tuple):
             warnings.warn(
@@ -139,133 +150,97 @@ class ModuleService:
             module_data = helpers.strip_python_comments(module_data)
 
         task_command = ""
-        if agent.language != "ironpython" or (
-            agent.language == "ironpython" and module.language == "python"
-        ):
-            if module.language == LanguageEnum.csharp:
-                task_command = "TASK_CSHARP"
-            # build the appropriate task command and module data blob
-            elif module.background:
-                # if this module should be run in the background
-                extension = module.output_extension
-                if extension and extension != "":
-                    # if this module needs to save its file output to the server
-                    #   format- [15 chars of prefix][5 chars extension][data]
-                    save_file_prefix = module.name.split("/")[-1]
-                    module_data = (
-                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                    )
-                    task_command = "TASK_CMD_JOB_SAVE"
-                else:
-                    task_command = "TASK_CMD_JOB"
-            elif module.language == LanguageEnum.bof:
-                task_command = "TASK_CSHARP"
-            else:
-                # if this module is run in the foreground
-                extension = module.output_extension
-                if module.output_extension and module.output_extension != "":
-                    # if this module needs to save its file output to the server
-                    #   format- [15 chars of prefix][5 chars extension][data]
-                    save_file_prefix = module.name.split("/")[-1][:15]
-                    module_data = (
-                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                    )
-                    task_command = "TASK_CMD_WAIT_SAVE"
-                else:
-                    task_command = "TASK_CMD_WAIT"
+        extension = module.output_extension.rjust(5) if module.output_extension else ""
 
-        elif agent.language == "ironpython" and module.language == "powershell":
-            if module.background:
-                # if this module should be run in the background
-                extension = module.output_extension
-                if extension and extension != "":
-                    # if this module needs to save its file output to the server
-                    #   format- [15 chars of prefix][5 chars extension][data]
-                    save_file_prefix = module.name.split("/")[-1]
-                    module_data = (
-                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                    )
-                    task_command = "TASK_POWERSHELL_CMD_JOB_SAVE"
+        if agent.language in ("ironpython", "python"):
+            if module.language == "python":
+                if module.background:
+                    task_command = "TASK_PYTHON_CMD_JOB"
                 else:
+                    task_command, module_data = self._handle_save_file_command(
+                        "TASK_PYTHON", module.name, extension, module_data
+                    )
+            elif module.language == "powershell":
+                if module.background:
                     task_command = "TASK_POWERSHELL_CMD_JOB"
-
-            else:
-                # if this module is run in the foreground
-                extension = module.output_extension
-                if module.output_extension and module.output_extension != "":
-                    # if this module needs to save its file output to the server
-                    #   format- [15 chars of prefix][5 chars extension][data]
-                    save_file_prefix = module.name.split("/")[-1][:15]
-                    module_data = (
-                        save_file_prefix.rjust(15) + extension.rjust(5) + module_data
-                    )
-                    task_command = "TASK_POWERSHELL_CMD_WAIT_SAVE"
                 else:
-                    task_command = "TASK_POWERSHELL_CMD_WAIT"
+                    task_command, module_data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data
+                    )
+            elif module.language in ("csharp", "bof"):
+                if module.background:
+                    task_command = "TASK_CSHARP_CMD_JOB"
+                else:
+                    task_command = "TASK_CSHARP_CMD_WAIT"
+            else:
+                log.error(
+                    f"Unsupported module language {module.language} for agent {agent.language}"
+                )
 
-        elif agent.language == "ironpython" and module.language in ("csharp", "bof"):
-            task_command = "TASK_CSHARP"
+        elif agent.language == "csharp":
+            if module.language in ("csharp", "bof"):
+                if module.background:
+                    task_command = "TASK_CSHARP_CMD_JOB"
+                else:
+                    task_command = "TASK_CSHARP_CMD_WAIT"
+            elif module.language == "powershell":
+                task_command = "TASK_POWERSHELL_CMD_JOB"
+            else:
+                log.error(
+                    f"Unsupported module language {module.language} for agent {agent.language}"
+                )
+
+        elif agent.language == "powershell":
+            if module.language == "powershell":
+                if module.background:
+                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                else:
+                    task_command, module_data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data
+                    )
+            elif module.language in ("csharp", "bof"):
+                if module.background:
+                    task_command = "TASK_CSHARP_CMD_JOB"
+                else:
+                    task_command = "TASK_CSHARP_CMD_WAIT"
+            else:
+                log.error(
+                    f"Unsupported module language {module.language} for agent {agent.language}"
+                )
+        elif agent.language == "go":
+            if module.language == "powershell":
+                if module.background:
+                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                else:
+                    task_command, module_data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data
+                    )
+            elif module.language == "csharp":
+                if module.background:
+                    task_command = "TASK_CSHARP_CMD_JOB"
+                else:
+                    task_command = "TASK_CSHARP_CMD_WAIT"
+            elif module.language == "bof":
+                task_command = "TASK_BOF_CMD_WAIT"
+            elif module.language == "pe":
+                task_command = "TASK_PE_CMD_WAIT"
+            else:
+                log.error(
+                    f"Unsupported module language {module.language} for agent {agent.language}"
+                )
+        else:
+            log.error(f"Unsupported agent language {agent.language}")
+            return None, f"Unsupported agent language: {agent.language}"
 
         return {"command": task_command, "data": module_data}, None
 
-    def generate_bof_data(
-        self,
-        module: EmpireModule,
-        params: dict,
-        obfuscate: bool = False,
-    ) -> tuple[str, str]:
-        bof_module = self.modules["csharp_inject_bof_inject_bof"]
-
-        compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
-        if not compiler.status == "ON":
-            raise ModuleValidationException("csharpserver plugin not running")
-
-        compiler_dict: dict = yaml.safe_load(bof_module.compiler_yaml)
-        del compiler_dict[0]["Empire"]
-
-        if params["Architecture"] == "x64":
-            script_path = empire_config.directories.module_source / module.bof.x64
-            bof_data = script_path.read_bytes()
-            b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
-
-        elif params["Architecture"] == "x86":
-            compiler_dict[0]["ReferenceSourceLibraries"][0]["EmbeddedResources"][0][
-                "Name"
-            ] = "RunOF.beacon_funcs.x64.o"
-            compiler_dict[0]["ReferenceSourceLibraries"][0]["EmbeddedResources"][0][
-                "Location"
-            ] = "RunOF.beacon_funcs.x64.o"
-            compiler_dict[0]["ReferenceSourceLibraries"][0][
-                "Location"
-            ] = "RunOF\\RunOF32\\"
-
-            script_path = empire_config.directories.module_source / module.bof.x86
-            bof_data = script_path.read_bytes()
-            b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
-
-        compiler_yaml: str = yaml.dump(compiler_dict, sort_keys=False)
-
-        file_name = compiler.do_send_message(
-            compiler_yaml, bof_module.name, confuse=obfuscate
-        )
-        if file_name == "failed":
-            raise ModuleExecutionException("module compile failed")
-
-        script_file = (
-            self.main_menu.installPath
-            + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
-            + "net40"
-            + "/"
-            + file_name
-            + ".compiled"
-        )
-
-        script_end = f",-a:{b64_bof_data}"
-
-        if module.bof.entry_point != "":
-            script_end += f" -e:{params['EntryPoint']}"
-
-        return script_file, script_end
+    @staticmethod
+    def _handle_save_file_command(cmd_type, module_name, extension, module_data):
+        if extension:
+            save_file_prefix = module_name.split("/")[-1][:15]
+            module_data = save_file_prefix.rjust(15) + extension + module_data
+            return f"{cmd_type}_CMD_WAIT_SAVE", module_data
+        return f"{cmd_type}_CMD_WAIT", module_data
 
     def _validate_module_params(  # noqa: PLR0913
         self,
@@ -283,6 +258,7 @@ class ModuleService:
         :return: tuple with options and the error message (if applicable)
         """
         converted_options = convert_module_options(module.options)
+
         options, err = validate_options(
             converted_options, params, db, self.download_service
         )
@@ -311,6 +287,7 @@ class ModuleService:
         db: Session,
         module: EmpireModule,
         params: dict,
+        agent_language: str,
         obfuscation_config: models.ObfuscationConfig = None,
     ) -> tuple[str | None, str | None]:
         """
@@ -354,44 +331,182 @@ class ModuleService:
         elif module.language == LanguageEnum.python:
             return self._generate_script_python(module, params, obfuscation_config)
         elif module.language == LanguageEnum.csharp:
-            return self._generate_script_csharp(module, params, obfuscation_config)
+            return self.generate_script_csharp(module, params, obfuscation_config)
         elif module.language == LanguageEnum.bof:
+            if agent_language == "go":
+                return self.generate_go_bof(module, params)
             if not obfuscation_config:
                 obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                     db, LanguageEnum.csharp
                 )
-            return self._generate_script_bof(module, params, obfuscation_config)
+            return self.generate_script_bof(module, params, obfuscation_enabled)
         return None
 
-    def _generate_script_bof(
+    def generate_script_bof(
         self,
         module: EmpireModule,
         params: dict,
-        obfuscation_config: models.ObfuscationConfig,
+        obfuscate: bool = False,
     ) -> str:
-        script_file, script_end = self.generate_bof_data(
-            module=module, params=params, obfuscate=obfuscation_config.enabled
+        bof_module = self.modules["csharp_code_execution_runcoff"]
+
+        if params["Architecture"] == "x86":
+            script_path = empire_config.directories.module_source / module.bof.x86
+        else:
+            script_path = empire_config.directories.module_source / module.bof.x64
+
+        bof_data = script_path.read_bytes()
+        b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
+
+        script_file = self.main_menu.dotnet_compiler.compile_task(
+            bof_module.compiler_yaml, bof_module.name, dotnet="net40", confuse=obfuscate
         )
 
-        for key, v in params.items():
-            value = v
-            if key in ["Agent", "Architecture"]:
-                continue
-            for option in module.options:
-                if option.name == key:
-                    if value == "":
-                        value = " "
-                    script_end += f" -{option.format}:{value}"
+        filtered_params = {
+            key: (
+                value if value != "" else " "
+            )  # Replace empty values with a blank space
+            for key, value in params.items()
+            if key.lower()
+            not in [
+                "agent",
+                "computername",
+                "dotnetversion",
+                "architecture",
+                "entrypoint",
+            ]
+        }
 
-        return f"{script_file}|{script_end}"
+        formatted_args = " ".join(
+            f'"{value}"' if " " in value else value
+            for value in filtered_params.values()
+        )
+
+        params_dict = {}
+        params_dict["Entrypoint"] = (
+            module.bof.entry_point if module.bof.entry_point else "go"
+        )
+        params_dict["File"] = b64_bof_data
+        params_dict["HexData"] = process_arguments(
+            module.bof.format_string, formatted_args
+        )
+
+        final_base64_json = base64.b64encode(
+            json.dumps(params_dict).encode("utf-8")
+        ).decode("utf-8")
+
+        return f"{script_file}|,{final_base64_json}"
+
+    def generate_go_bof(
+        self,
+        module: EmpireModule,
+        params: dict,
+        skip_params=False,
+    ) -> str:
+        if params["Architecture"] == "x86":
+            script_path = empire_config.directories.module_source / module.bof.x86
+        else:
+            script_path = empire_config.directories.module_source / module.bof.x64
+
+        bof_data = script_path.read_bytes()
+        b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
+
+        filtered_params = {
+            key: (
+                value if value != "" else " "
+            )  # Replace empty values with a blank space
+            for key, value in params.items()
+            if key.lower()
+            not in [
+                "agent",
+                "computername",
+                "dotnetversion",
+                "architecture",
+                "entrypoint",
+            ]
+        }
+
+        formatted_args = " ".join(
+            f'"{value}"' if " " in value else value
+            for value in filtered_params.values()
+        )
+
+        if not skip_params:
+            params_dict = {}
+            params_dict["File"] = b64_bof_data
+            params_dict["HexData"] = process_arguments(
+                module.bof.format_string, formatted_args
+            )
+        else:
+            params_dict = params
+
+        final_base64_json = base64.b64encode(
+            json.dumps(params_dict).encode("utf-8")
+        ).decode("utf-8")
+
+        return f"{final_base64_json}"
+
+    def generate_go_pe(
+        module: EmpireModule,
+        params: dict[str, str],
+        skip_params=False,
+    ) -> str:
+        """
+        Generates a base64-encoded JSON structure for a PE file and its arguments.
+
+        :param module: EmpireModule object containing PE file paths and format info.
+        :param params: Dictionary of parameters, including architecture and arguments.
+        :param skip_params: If True, bypasses argument formatting and uses params as is.
+        :return: Base64-encoded JSON string.
+        """
+        # Determine the file path based on architecture
+        if params["Architecture"] == "x86":
+            script_path = empire_config.directories.module_source / module.pe.x86
+        else:
+            script_path = empire_config.directories.module_source / module.pe.x64
+
+        # Read the PE file and encode it in base64
+        pe_data = script_path.read_bytes()
+        b64_pe_data = base64.b64encode(pe_data).decode("utf-8")
+
+        # Filter and prepare arguments
+        filtered_params = {
+            key: (
+                value if value != "" else " "
+            )  # Replace empty values with a blank space
+            for key, value in params.items()
+            if key.lower()
+            not in [
+                "agent",
+                "computername",
+                "dotnetversion",
+                "architecture",
+                "entrypoint",
+            ]
+        }
+
+        # Create a list of arguments
+        formatted_args = [
+            f'"{value}"' if " " in value else value
+            for value in filtered_params.values()
+        ]
+
+        if not skip_params:
+            params_dict = {"File": b64_pe_data, "Args": formatted_args}
+        else:
+            params_dict = params
+
+        return base64.b64encode(json.dumps(params_dict).encode("utf-8")).decode("utf-8")
 
     def _generate_script_python(
         self,
         module: EmpireModule,
         params: dict,
-        obfuscaton_config: models.ObfuscationConfig,
+        obfuscation_config: models.ObfuscationConfig,
     ) -> str:
-        obfuscate = obfuscaton_config.enabled
+        obfuscate = (
+            obfuscation_config.enabled if obfuscation_config is not None else False
+        )
 
         if module.script_path:
             script_path = os.path.join(
@@ -418,10 +533,14 @@ class ModuleService:
         self,
         module: EmpireModule,
         params: dict,
-        obfuscaton_config: models.ObfuscationConfig,
+        obfuscation_config: models.ObfuscationConfig,
     ) -> str:
-        obfuscate = obfuscaton_config.enabled
-        obfuscate_command = obfuscaton_config.command
+        obfuscate = (
+            obfuscation_config.enabled if obfuscation_config is not None else False
+        )
+        obfuscate_command = (
+            obfuscation_config.command if obfuscation_config is not None else ""
+        )
 
         if module.script_path:
             script, err = self.get_module_source(
@@ -488,40 +607,38 @@ class ModuleService:
             obfuscation_command=obfuscate_command,
         )
 
-    def _generate_script_csharp(
+    def generate_script_csharp(
         self,
         module: EmpireModule,
         params: dict,
         obfuscation_config: models.ObfuscationConfig,
     ) -> str:
         try:
-            compiler = self.main_menu.pluginsv2.get_by_id("csharpserver")
-            if not compiler.status == "ON":
-                raise ModuleValidationException("csharpserver plugin not running")
-            file_name = compiler.do_send_message(
-                module.compiler_yaml, module.name, confuse=obfuscation_config.enabled
+            obfuscate = (
+                obfuscation_config.enabled if obfuscation_config is not None else False
             )
-            if file_name == "failed":
-                raise ModuleExecutionException("module compile failed")
-
-            script_file = (
-                self.main_menu.installPath
-                + "/csharp/Covenant/Data/Tasks/CSharp/Compiled/"
-                + (params["DotNetVersion"]).lower()
-                + "/"
-                + file_name
-                + ".compiled"
+            script_file = self.main_menu.dotnet_compiler.compile_task(
+                module.compiler_yaml,
+                module.name,
+                dotnet=params["DotNetVersion"].lower(),
+                confuse=obfuscate,
             )
-            param_string = ""
+            filtered_params = {}
             for key, value in params.items():
                 if (
                     key.lower() not in ["agent", "computername", "dotnetversion"]
                     and value
                     and value != ""
                 ):
-                    param_string += "," + value
+                    if key.lower() == "file":
+                        base64_assembly = value.get_base64_file()
+                        filtered_params[key] = base64_assembly
+                    else:
+                        filtered_params[key] = value
 
-            return f"{script_file}|{param_string}"
+            param_json = json.dumps(filtered_params)
+            base64_json = base64.b64encode(param_json.encode("utf-8")).decode("utf-8")
+            return f"{script_file}|,{base64_json}"
         except (ModuleValidationException, ModuleExecutionException) as e:
             raise e
         except Exception as e:
@@ -567,36 +684,70 @@ class ModuleService:
                 # instantiate the module and save it to the internal cache
                 try:
                     with open(file_path) as stream:
-                        if file_path.lower().endswith(".covenant.yaml"):
-                            yaml2 = yaml.safe_load(stream)
-                            for covenant_module in yaml2:
-                                # remove None values so pydantic can apply defaults
-                                yaml_module = {
-                                    k: v
-                                    for k, v in covenant_module.items()
-                                    if v is not None
-                                }
-                                self._load_module(db, yaml_module, root_path, file_path)
-                        else:
-                            yaml2 = yaml.safe_load(stream)
-                            yaml_module = {
-                                k: v for k, v in yaml2.items() if v is not None
-                            }
-                            self._load_module(db, yaml_module, root_path, file_path)
+                        yaml2 = yaml.safe_load(stream)
+                        yaml_module = {k: v for k, v in yaml2.items() if v is not None}
+                        self._load_module(db, yaml_module, root_path, file_path)
                 except Exception as e:
                     log.error(f"Error loading module {filename}: {e}")
 
-    def _load_module(self, db: Session, yaml_module, root_path, file_path: str):
-        # extract just the module name from the full path
+    def _load_module(  # noqa: PLR0912
+        self, db: Session, yaml_module, root_path, file_path: str
+    ):
         module_name = file_path.split(root_path)[-1][0:-5]
+        yaml_module["techniques"].extend(
+            self._get_interpreter_technique(yaml_module["language"])
+        )
 
-        if file_path.lower().endswith(".covenant.yaml"):
-            cov_yaml_module = _convert_covenant_to_empire(yaml_module, file_path)
-            module_name = f"{module_name[:-9]}/{cov_yaml_module['name']}"
-            cov_yaml_module["id"] = self.slugify(module_name)
-            my_model = EmpireModule(**cov_yaml_module)
+        if yaml_module["language"] == "csharp":
+            yaml_module["id"] = slugify(module_name)
+
+            # TODO: Remove this from EmpireCompiler so we dont need to build all the extra unused fields
+            dict_yaml = yaml_module.get("csharp", {}).copy()
+            dict_yaml.update(
+                {
+                    "Name": yaml_module.get("name", ""),
+                    "Language": yaml_module.get("language", ""),
+                    "TokenTask": False,
+                }
+            )
+
+            dict_yaml["ReferenceSourceLibraries"] = [
+                {
+                    "Name": ref_lib.get("Name", ""),
+                    "Description": ref_lib.get("Description", ""),
+                    "Location": ref_lib.get("Location", ""),
+                    "Language": ref_lib.get("Language", "CSharp"),
+                    "CompatibleDotNetVersions": ref_lib.get(
+                        "CompatibleDotNetVersions", []
+                    ),
+                    "ReferenceAssemblies": ref_lib.get("ReferenceAssemblies", []),
+                    "EmbeddedResources": ref_lib.get("EmbeddedResources", []),
+                }
+                for ref_lib in dict_yaml.get("ReferenceSourceLibraries", [])
+            ]
+
+            compiler_yaml = yaml.dump(
+                [dict_yaml],
+                sort_keys=False,
+                default_flow_style=False,
+                allow_unicode=True,
+            )
+
+            my_model = EmpireModule(**yaml_module)
+            my_model.compiler_yaml = compiler_yaml
+
+            my_model.options.append(
+                EmpireModuleOption(
+                    name="DotNetVersion",
+                    value=my_model.csharp.CompatibleDotNetVersions[0],
+                    description=".NET version to compile against",
+                    required=True,
+                    suggested_values=my_model.csharp.CompatibleDotNetVersions,
+                    strict=True,
+                )
+            )
         else:
-            yaml_module["id"] = self.slugify(module_name)
+            yaml_module["id"] = slugify(module_name)
             my_model = EmpireModule(**yaml_module)
 
         if my_model.advanced.custom_generate:
@@ -629,6 +780,8 @@ class ModuleService:
                 empire_config.directories.module_source / my_model.bof.x64
             ).exists():
                 raise Exception(f"x64 bof file provided does not exist: {module_name}")
+        elif my_model.language == LanguageEnum.csharp:
+            pass
         else:
             raise Exception(
                 "Must provide a valid script, script_path, or custom generate function"
@@ -647,8 +800,21 @@ class ModuleService:
             )
             db.add(mod)
 
-        self.modules[self.slugify(module_name)] = my_model
-        self.modules[self.slugify(module_name)].enabled = mod.enabled
+        self.modules[slugify(module_name)] = my_model
+        self.modules[slugify(module_name)].enabled = mod.enabled
+
+    def _get_interpreter_technique(self, language):
+        if language == LanguageEnum.powershell:
+            return ["T1059.001"]
+        if language == LanguageEnum.csharp:
+            return ["T1620"]
+        if language == LanguageEnum.python:
+            return ["T1059.006"]
+        if language == LanguageEnum.ironpython:
+            return ["T1059.006", "T1620"]
+        if language == LanguageEnum.bof:
+            return ["T1620"]
+        return []
 
     def get_module_script(self, module_id: str):
         mod: EmpireModule = self.modules.get(module_id)
@@ -721,10 +887,6 @@ class ModuleService:
         if obfuscate:
             script = self.obfuscation_service.obfuscate(script, obfuscation_command)
         return self.obfuscation_service.obfuscate_keywords(script)
-
-    @staticmethod
-    def slugify(module_name: str):
-        return module_name.lower().replace("/", "_")
 
     def delete_all_modules(self, db: Session):
         for module in list(self.modules.values()):

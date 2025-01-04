@@ -7,7 +7,7 @@
 # 2) create volume storage: `docker create -v /empire --name data bcsecurity/empire`
 # 3) run out container: `docker run -it --volumes-from data bcsecurity/empire /bin/bash`
 
-FROM python:3.12.6-bullseye
+FROM python:3.13.0-bullseye
 
 LABEL maintainer="bc-security"
 LABEL description="Dockerfile for Empire server and client. https://bc-security.gitbook.io/empire-wiki/quickstart/installation#docker"
@@ -40,15 +40,23 @@ RUN unameOut="$(uname -m)" && \
     ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh && \
     rm /tmp/powershell.tar.gz
 
-
-RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
-    chmod +x ./dotnet-install.sh && \
-    ./dotnet-install.sh --channel 6.0 && \
-    ln -s /root/.dotnet/dotnet /usr/bin/dotnet && \
-    rm dotnet-install.sh
-
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
     ln -s /root/.local/bin/poetry /usr/bin
+
+ENV PARENT_PATH="/empire"
+
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        ARCH="linux-amd64"; \
+    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then \
+        ARCH="linux-arm64"; \
+    else \
+        echo -e "[!] Unsupported architecture: $ARCH. Exiting." && exit 1; \
+    fi && \
+    curl -L -o /tmp/go.tar.gz https://go.dev/dl/go1.23.2.$ARCH.tar.gz && \
+    tar zxf /tmp/go.tar.gz -C /opt && \
+    ln -s /opt/go/bin/go /usr/bin/go && \
+    rm /tmp/go.tar.gz
 
 WORKDIR /empire
 
@@ -64,7 +72,8 @@ RUN rm -rf /empire/empire/server/data/empire*
 RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml && \
     sed -i 's/auto_update: true/auto_update: false/g' empire/server/config.yaml
 
-RUN ./ps-empire sync-starkiller
+RUN ./ps-empire -f sync-starkiller
+RUN ./ps-empire -f sync-empire-compiler
 
 ENTRYPOINT ["./ps-empire"]
-CMD ["server"]
+CMD ["-f", "server"]

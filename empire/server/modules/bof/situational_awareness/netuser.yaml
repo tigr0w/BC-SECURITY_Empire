@@ -28,15 +28,14 @@ options:
     description: Username to query.
     required: true
     value: ''
-    format: Z
   - name: Domain
     description: Username to query.
     required: false
     value: ''
-    format: Z
 bof:
   x86: bof/situational_awareness/netuser/netuser.x86.o
   x64: bof/situational_awareness/netuser/netuser.x64.o
   entry_point: ''
+  format_string: ZZ
 script_path: ''
 script_end: ''

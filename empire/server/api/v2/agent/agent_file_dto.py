@@ -2,13 +2,17 @@
 # https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel, ConfigDict
 
 from empire.server.api.v2.shared_dto import (
     DownloadDescription,
     domain_to_dto_download_description,
 )
-from empire.server.core.db import models
+
+if TYPE_CHECKING:
+    from empire.server.core.db import models
 
 
 def domain_to_dto_file(file: models.AgentFile, children: list[models.AgentFile]):

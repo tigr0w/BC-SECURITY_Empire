@@ -21,13 +21,13 @@ options:
     required: true
     value: ''
   - name: CleanUp
-    description: Switch. Re-enable machine password changes. (1 - True, 0 - False)
+    description: Re-enable machine password changes.
     required: false
-    value: '0'
+    value: 'False'
     strict: true
     suggested_values:
-      - 1
-      - 0
+      - True
+      - False
 script: |
   Function Invoke-DisableAccountChange {
       param

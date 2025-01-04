@@ -7,7 +7,7 @@ commandTests:
   - name: "python3 version"
     command: "python3"
     args: ["--version"]
-    expectedOutput: ["Python 3.12.*"]
+    expectedOutput: ["Python 3.13.*"]
   - name: "poetry"
     command: "which"
     args: ["poetry"]
@@ -19,15 +19,7 @@ commandTests:
   - name: "poetry python version"
     command: "poetry"
     args: ["run", "python3", "--version"]
-    expectedOutput: ["Python 3.12.*"]
-  - name: "dotnet which"
-    command: "which"
-    args: ["dotnet"]
-    expectedOutput: ["/usr/bin/dotnet"]
-  - name: "dotnet version"
-    command: "dotnet"
-    args: [ "--version" ]
-    expectedOutput: ["6.0.*"]
+    expectedOutput: ["Python 3.13.*"]
   - name: "powershell which"
     command: "which"
     args: ["pwsh"]
@@ -38,18 +30,23 @@ commandTests:
     expectedOutput: ["PowerShell 7.*"]
   - name: "ps-empire help"
     command: "./ps-empire"
-    args: ["server", "--help"]
+    args: ["-f", "server", "--help"]
     expectedOutput: ["usage: empire.py server [-h]*"]
   - name: "ps-empire version"
     command: "./ps-empire"
-    args: ["server", "--version"]
-    expectedOutput: ["5.* BC Security Fork"]
+    args: ["-f", "server", "--version"]
+    expectedOutput: ["6.* BC Security Fork"]
+  - name: "go which"
+    command: "which"
+    args: [ "go" ]
+    expectedOutput: [ "/usr/bin/go" ]
+  - name: "go version"
+    command: "go"
+    args: [ "version" ]
+    expectedOutput: [ "go version go1.23.* linux/*" ]
 fileExistenceTests:
   - name: 'profiles'
     path: '/empire/empire/server/data/profiles/'
-    shouldExist: true
-  - name: 'sharpire'
-    path: '/empire/empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Sharpire'
     shouldExist: true
   - name: 'starkiller'
     path: '/empire/empire/server/api/v2/starkiller/index.html'

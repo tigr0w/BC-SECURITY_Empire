@@ -2,16 +2,21 @@ import fnmatch
 import importlib.util
 import logging
 import os
+import typing
 
 from sqlalchemy.orm import Session
 
 from empire.server.core.db.base import SessionLocal
+from empire.server.utils.string_util import slugify
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
 
 
 class ListenerTemplateService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
         # loaded listener format:
@@ -68,9 +73,9 @@ class ListenerTemplateService:
                         value["SuggestedValues"] = []
                     if value.get("Strict") is None:
                         value["Strict"] = False
+                    if value.get("Internal") is None:
+                        value["Internal"] = False
+                    if value.get("Depends_on") is None:
+                        value["Depends_on"] = []
 
                 self._loaded_listener_templates[slugify(listener_name)] = listener
-
-
-def slugify(listener_name: str):
-    return listener_name.lower().replace("/", "_")

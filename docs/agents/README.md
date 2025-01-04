@@ -12,13 +12,25 @@ IronPython brings the Python language to the .NET framework. The IronPython agen
 ## Python Agent
 The Python agent offers cross-platform capabilities for targeting non-Windows systems, such as Linux and macOS. Additional documentation on the agent can be found [here](./python/README.md).
 
-## Features
+### Features
 - Cross-platform for Linux and macOS.
+
+## Go Agent
+The Go agent (`Gopire`) is designed for use in environments where Go is advantageous for performance and portability. It is lightweight and suitable for Windows systems. **Currently, the Go agent only supports Windows and the HTTP listener.** Future updates may include cross-platform support.
+
+### Features
+- **Currently only Windows compatible.**
+- Written in Go, providing performance and portability benefits.
+- Can run taskings such as C#, PowerShell, and shell commands.
+- Reflectively loaded to evade detection.
+- **Supports only the HTTP listener.**
+
+Additional documentation on the agent can be found [here](./go/README.md).
 
 ## PowerShell Agent
 The PowerShell agent is the original agent for Empire.
 
-# Features:
+### Features:
 - Reflectively loads into memory.
 - Can run C# and PowerShell taskings.
 

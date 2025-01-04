@@ -1,9 +1,18 @@
+<div align="center">
+
+![Empire](https://user-images.githubusercontent.com/20302208/70022749-1ad2b080-154a-11ea-9d8c-1b42632fd9f9.jpg)
+[![Donate](https://img.shields.io/badge/Donate-Sponsor-blue?style=plastic&logo=github)](https://github.com/sponsors/BC-SECURITY)
+[![Docs](https://img.shields.io/badge/Wiki-Docs-green?style=plastic&logo=wikipedia)](https://bc-security.gitbook.io/empire-wiki/)
+[![Discord](https://img.shields.io/discord/716165691383873536?style=plastic&logo=discord)](https://discord.gg/P8PZPyf)
+[![Blog](https://img.shields.io/badge/Blog-Read%20me-orange?style=plastic&logo=wordpress)](https://www.bc-security.org/blog)
+[![Twitter URL](https://img.shields.io/twitter/follow/BCSecurity?style=plastic&logo=twitter)](https://twitter.com/BCSecurity)
+[![Twitter URL](https://img.shields.io/twitter/follow/EmpireC2Project?style=plastic&logo=twitter)](https://twitter.com/EmpireC2Project)
+[![YouTube URL](https://img.shields.io/youtube/channel/views/UCIV4xSntF1h1bvFt8SUfzZg?style=plastic&logo=youtube)](https://www.youtube.com/channel/UCIV4xSntF1h1bvFt8SUfzZg)
+[![LinkedIn](https://img.shields.io/badge/Linkedin-blue?style=plastic&logo=linkedin&logoColor=#0A66C2)](https://www.linkedin.com/company/bc-security/)
+
+</div>
+
 # Empire
-
-![](https://user-images.githubusercontent.com/20302208/70022749-1ad2b080-154a-11ea-9d8c-1b42632fd9f9.jpg)
-
-[![Docs](https://img.shields.io/badge/Wiki-Docs-green?style=plastic\&logo=wikipedia)](https://bc-security.gitbook.io/empire-wiki/) [![Twitter URL](https://img.shields.io/twitter/follow/BCSecurity1?style=plastic\&logo=twitter)](https://twitter.com/BCSecurity1) [![YouTube URL](https://img.shields.io/youtube/channel/views/UCIV4xSntF1h1bvFt8SUfzZg?style=plastic\&logo=youtube)](https://www.youtube.com/channel/UCIV4xSntF1h1bvFt8SUfzZg) [![Discord](https://img.shields.io/discord/716165691383873536?style=plastic\&logo=discord)](https://discord.gg/P8PZPyf) [![Donate](https://img.shields.io/badge/Donate-Sponsor-blue?style=plastic\&logo=github)](https://github.com/sponsors/BC-SECURITY) [![Blog](https://img.shields.io/badge/Blog-Read%20me-orange?style=plastic\&logo=wordpress)](https://www.bc-security.org/blog)
-
 Empire is a post-exploitation and adversary emulation framework that is used to aid Red Teams and Penetration Testers. The Empire server is written in Python 3 and is modular to allow operator flexibility. Empire comes built-in with a client that can be used remotely to access the server. There is also a GUI available for remotely accessing the Empire server, [Starkiller](https://github.com/BC-SECURITY/Starkiller).
 
 ## Features
@@ -30,6 +39,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 * Python 3
 * C#
 * IronPython 3
+* Go
 
 ## Modules
 
@@ -44,10 +54,13 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 * And Many More
 
 ## Sponsors
+<div align="center">
 
-&#x20;      [<img src="https://user-images.githubusercontent.com/20302208/185246508-56f4f574-5a06-4a2c-ac62-320922588dcf.png" alt="" data-size="original">](https://www.sans.org/cyber-security-courses/red-team-operations-adversary-emulation/)&#x20;
+[<img src="https://github.com/user-attachments/assets/604fbb97-4641-4a15-a6ba-039f67694f15" width="200"/>](https://www.route4me.com//)
 
-&#x20;     [![](https://user-images.githubusercontent.com/20302208/208271681-235c914b-5359-426e-8a3d-903bbd018847.png)](https://www.cybrary.it/)   &#x20;
+
+[<img src="https://github.com/user-attachments/assets/8685f8de-ad66-46d3-8751-8f2bdddc4ac1" width="100"/>](https://www.instagram.com/purpl3_cult/)
+</div>
 
 ## Help us Improve!
 

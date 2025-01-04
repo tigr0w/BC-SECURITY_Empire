@@ -28,7 +28,7 @@ options:
   - name: Group
     description: Group to query.
     required: true
-    value: ''
+    value: 'Administrators'
   - name: Server
     description: Server to query.
     required: false
@@ -37,6 +37,7 @@ bof:
   x86: bof/situational_awareness/netlocalgroup/netlocalgroup.x86.o
   x64: bof/situational_awareness/netlocalgroup/netlocalgroup.x64.o
   entry_point: ''
+  format_string: sZZ
 script_path: ''
 script_end: ''
 advanced:

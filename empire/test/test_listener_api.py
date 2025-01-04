@@ -373,3 +373,52 @@ def test_delete_listener_while_disabled(client, admin_auth_header, base_listener
         f"/api/v2/listeners/{to_delete_id}", headers=admin_auth_header
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_listener_autorun(client, admin_auth_header, listener):
+    autorun_tasks = [
+        {
+            "module_id": "bof_situational_awareness_whoami",
+            "ignore_language_version_check": False,
+            "ignore_admin_check": False,
+            "options": {"Architecture": "x64"},
+            "modified_input": None,
+        }
+    ]
+
+    response = client.put(
+        f"/api/v2/listeners/{listener['id']}/autorun",
+        headers=admin_auth_header,
+        json={"records": autorun_tasks},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    response = client.get(
+        f"/api/v2/listeners/{listener['id']}/autorun",
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"records": autorun_tasks}
+
+
+def test_update_listener_autorun_invalid(client, admin_auth_header, listener):
+    autorun_tasks = [
+        {
+            "module_id": None,
+            "ignore_language_version_check": False,
+            "ignore_admin_check": False,
+            "options": {"Architecture": "x64"},
+            "modified_input": None,
+        }
+    ]
+
+    response = client.put(
+        f"/api/v2/listeners/{listener['id']}/autorun",
+        headers=admin_auth_header,
+        json={"records": autorun_tasks},
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert "detail" in response.json()

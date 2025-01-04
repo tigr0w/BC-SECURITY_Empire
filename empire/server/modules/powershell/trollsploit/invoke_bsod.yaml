@@ -5,8 +5,10 @@ authors:
     link: 'https://x.com/peewpw'
 description: A PowerShell script to induce a Blue Screen of Death (BSOD) without admin privileges. Also enumerates Windows crash dump settings.
 software: ''
-tactics: []
+tactics:
+  - TA0040
 techniques:
+  - T1529
 background: true
 output_extension:
 needs_admin: false

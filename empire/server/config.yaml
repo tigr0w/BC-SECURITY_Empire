@@ -1,6 +1,8 @@
-suppress-self-cert-warning: true
+suppress_self_cert_warning: true
 api:
+  ip: 0.0.0.0
   port: 1337
+  secure: false
   cert_path: empire/server/data/
 database:
   use: mysql
@@ -14,7 +16,7 @@ database:
   defaults:
     # staging key will first look at OS environment variables, then here.
     # If empty, will be prompted (like Empire <3.7).
-    staging-key: RANDOM
+    staging_key: RANDOM
     username: empireadmin
     password: password123
     obfuscation:
@@ -36,25 +38,30 @@ database:
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
-    # an IP white list to ONLY accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-whitelist: ""
-    # an IP black list to reject accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-blacklist: ""
+    ip_allow_list: []
+    ip_deny_list: []
+empire_compiler:
+  enabled: true
+  version: v0.2
+  repo: https://github.com/BC-SECURITY/Empire-Compiler.git
+  directory: empire/server/Empire-Compiler
+  auto_update: true
 starkiller:
   enabled: true
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
   directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
-  ref: sponsors-main
+  ref: v3.0-dev
   auto_update: true
 submodules:
   auto_update: true
-plugins:
-  # Auto-load plugin with defined settings
-  csharpserver:
-    status: start
+plugin_marketplace:
+  directory: empire/server/plugins/marketplace/
+  registries:
+    - name: BC-SECURITY
+      git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
+      ref: main
+      file: registry.yaml
 directories:
   downloads: empire/server/downloads/
   module_source: empire/server/data/module_source/

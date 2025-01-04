@@ -21,9 +21,15 @@ if __name__ == "__main__":
             config = yaml.safe_load(f)
 
         sync_starkiller(config)
-    elif args.subparser_name == "client":
-        from empire.client import client
 
-        client.start(args)
+    elif args.subparser_name == "sync-empire-compiler":
+        import yaml
+
+        from empire.scripts.sync_empire_compiler import load_empire_compiler
+
+        with open("empire/server/config.yaml") as f:
+            config = yaml.safe_load(f)
+
+        load_empire_compiler(config)
 
     sys.exit(0)

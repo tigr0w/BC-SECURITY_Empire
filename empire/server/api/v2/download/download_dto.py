@@ -4,14 +4,12 @@ from enum import Enum
 from pydantic import BaseModel
 
 from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
-from empire.server.utils.string_util import removeprefix
 
 
 def domain_to_dto_download(download):
-    location = removeprefix(download.location, "empire/server/downloads/")
     return Download(
         id=download.id,
-        location=location,
+        location=download.location.removeprefix("empire/server/downloads/"),
         filename=download.filename,
         size=download.size,
         created_at=download.created_at,

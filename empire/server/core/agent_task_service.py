@@ -1,7 +1,8 @@
+import base64
 import json
 import logging
 import threading
-import time
+import typing
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -15,23 +16,25 @@ from empire.server.api.v2.agent.agent_task_dto import (
     ModulePostRequest,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.common import helpers
 from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
-from empire.server.core.listener_service import ListenerService
-from empire.server.core.module_service import ModuleService
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
 
 
 class AgentTaskService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
-        self.module_service: ModuleService = main_menu.modulesv2
-        self.listener_service: ListenerService = main_menu.listenersv2
+        self.module_service = main_menu.modulesv2
+        self.listener_service = main_menu.listenersv2
+        self.agent_socks_service = main_menu.agentsocksv2
+        self.agent_service = main_menu.agentsv2
 
         # { agent_id: [TemporaryTask] }
         self.temporary_tasks = defaultdict(list)
@@ -168,24 +171,6 @@ class AgentTaskService:
     ):
         return self.add_task(db, agent, "TASK_DOWNLOAD", path_to_file, user_id=user_id)
 
-    def create_task_script_import(
-        self, db: Session, agent: models.Agent, file_data: str, user_id: int
-    ):
-        if agent.language != "powershell":
-            return None, "Only PowerShell agents support script imports"
-
-        # strip out comments and blank lines from the imported script
-        file_data = helpers.strip_powershell_comments(file_data)
-
-        return self.add_task(
-            db, agent, "TASK_SCRIPT_IMPORT", file_data, user_id=user_id
-        )
-
-    def create_task_script_command(
-        self, db: Session, agent: models.Agent, command: str, user_id: int
-    ):
-        return self.add_task(db, agent, "TASK_SCRIPT_COMMAND", command, user_id=user_id)
-
     def create_task_sysinfo(self, db: Session, agent: models.Agent, user_id: int):
         return self.add_task(db, agent, "TASK_SYSINFO", user_id=user_id)
 
@@ -201,12 +186,8 @@ class AgentTaskService:
         resp, err = self.add_task(db, agent, "TASK_EXIT", user_id=current_user_id)
         agent.archived = True
 
-        # Close socks client
-        if (agent.session_id in self.main_menu.agents.socksthread) and agent.stale:
-            agent.socks = False
-            self.main_menu.agents.socksclient[agent.session_id].shutdown()
-            time.sleep(1)
-            self.main_menu.agents.socksthread[agent.session_id].kill()
+        self.agent_socks_service.close_socks_client(agent)
+
         return resp, err
 
     def create_task_socks(
@@ -269,7 +250,7 @@ class AgentTaskService:
             return self.add_task(
                 db,
                 agent,
-                "TASK_CMD_WAIT",
+                "TASK_PYTHON_CMD_WAIT",
                 f"global delay; global jitter; delay={delay}; jitter={jitter}; print('delay/jitter set to {delay}/{jitter}')",
                 user_id=user_id,
             )
@@ -341,23 +322,13 @@ class AgentTaskService:
     ):
         return self.add_task(db, agent, "TASK_DIR_LIST", path, user_id=user_id)
 
-    def create_task_proxy_list(
-        self, db: Session, agent: models.Agent, body: dict, user_id: int
-    ):
-        agent.proxies = body
-        return self.add_task(
-            db, agent, "TASK_SET_PROXY", json.dumps(body), user_id=user_id
-        )
-
     class TemporaryTask(BaseModel):
         """
         Fields should match the Task db model, so that we can use the same
         functions to retrieve tasks.
         """
 
-        id: int = (
-            0  # We don't need an ID for these, but it is used in agents.py:1206, so we just initialize it to 0
-        )
+        id: int = 0  # We don't need an ID for these, but it is used in agents.py:1206, so we just initialize it to 0
         agent_id: str
         task_name: str
         input_full: str
@@ -397,7 +368,7 @@ class AgentTaskService:
 
         message = f"Tasked {agent.session_id} to run {task_name}"
         log.info(message)
-        self.main_menu.agents.save_agent_log(agent.session_id, message)
+        self.agent_service.save_agent_log(agent.session_id, message)
 
         pk = (
             db.query(func.max(models.AgentTask.id))
@@ -409,16 +380,49 @@ class AgentTaskService:
             pk = 0
         pk = (pk + 1) % 65536
 
-        task = models.AgentTask(
-            id=pk,
-            agent_id=agent.session_id,
-            input=task_input[:100],
-            input_full=task_input,
-            user_id=user_id if user_id else None,
-            module_name=module_name,
-            task_name=task_name,
-            status=AgentTaskStatus.queued,
-        )
+        if task_name in ["TASK_CSHARP_CMD_JOB", "TASK_CSHARP_CMD_WAIT"]:
+            compiled_path, arguments = task_input.split("|")
+            arguments = arguments.lstrip(",").strip()
+
+            if module_name.startswith("bof_"):
+                decoded_arguments = base64.b64decode(arguments).decode("UTF-8")
+                data_dict = json.loads(decoded_arguments)
+                base64_data = data_dict.get("base64_bof_data", "")
+                truncated_base64_data = (
+                    base64_data[:15] + "..."
+                    if len(base64_data) > 10  # noqa: PLR2004
+                    else base64_data
+                )
+                data_dict["base64_bof_data"] = truncated_base64_data
+                short_task_input = f"{module_name} {json.dumps(data_dict)}"
+
+            else:
+                filename = compiled_path.rsplit("/", 1)[-1].split(".")[0].split("_")[0]
+                short_task_input = f"{filename} " + base64.b64decode(
+                    arguments.encode("UTF-8")
+                ).decode("UTF-8")
+
+            task = models.AgentTask(
+                id=pk,
+                agent_id=agent.session_id,
+                input=short_task_input[:150],
+                input_full=task_input,
+                user_id=user_id if user_id else None,
+                module_name=module_name,
+                task_name=task_name,
+                status=AgentTaskStatus.queued,
+            )
+        else:
+            task = models.AgentTask(
+                id=pk,
+                agent_id=agent.session_id,
+                input=task_input[:100],
+                input_full=task_input,
+                user_id=user_id if user_id else None,
+                module_name=module_name,
+                task_name=task_name,
+                status=AgentTaskStatus.queued,
+            )
         db.add(task)
         db.flush()
 

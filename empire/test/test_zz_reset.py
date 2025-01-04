@@ -5,12 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from empire.test.conftest import CLIENT_CONFIG_LOC
-
 
 # These tests are run last since they reset the server and can cause other tests to fail
 @pytest.fixture(scope="module", autouse=True)
-def wrap_reset(server_config_dict):
+def _wrap_reset(server_config_dict):
     """
     This wraps the reset tests by backing up the db and restoring it.
     """
@@ -58,12 +56,11 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     for f in download_files:
         write_to_file(downloads_dir + f[0], f[1])
 
-    # check they wrote properly
     for f in download_files:
         assert Path(downloads_dir + f[0]).exists()
 
     # Change the csharp dir so we don't delete real files.
-    csharp_dir = tmp_path / "empire/server/data/csharp"
+    csharp_dir = tmp_path / "Empire-Compiler/EmpireCompiler"
 
     # Write files to csharp_dir
     csharp_files = [
@@ -92,6 +89,13 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
 
+    launcher_file = (
+        tmp_path / "Empire-Compiler/EmpireCompiler/Data/EmbeddedResources/launcher.txt"
+    )
+    launcher_file.parent.mkdir(parents=True, exist_ok=True)
+    launcher_file.write_text("Test content")
+    assert launcher_file.exists()
+
     import empire.arguments
 
     reload(empire.arguments)
@@ -101,7 +105,7 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
     if server_config_dict.get("database", {}).get("type") == "sqlite":
         assert Path(server_config_dict["database"]["location"]).exists()
 
-    server.CSHARP_DIR_BASE = csharp_dir
+    server.CSHARP_DIR_BASE = tmp_path / "Empire-Compiler/EmpireCompiler"
 
     with pytest.raises(SystemExit):
         server.run(args)
@@ -122,75 +126,10 @@ def test_reset_server(monkeypatch, tmp_path, default_argv, server_config_dict):
             csharp_dir / "Data/Tasks/CSharp/Compiled/netcoreapp3.0" / f[0]
         ).exists()
 
+    assert not launcher_file.exists()
+
     if server_config_dict.get("database", {}).get("type") == "sqlite":
         assert not Path(server_config_dict["database"]["location"]).exists()
-
-    sys.argv = default_argv
-
-
-# TODO: At the moment, this is the only client test we have.
-#  It probably makes sense to split the tests into server and client directories, but
-#  I'm hesitant to do that just yet because it could cause some merge pain with 5.x
-@pytest.mark.slow
-@pytest.mark.timeout(30)
-def test_reset_client(monkeypatch, tmp_path, default_argv, client_config_dict):
-    monkeypatch.setattr("builtins.input", lambda _: "y")
-    sys.argv = ["", "client", "--config", CLIENT_CONFIG_LOC, "--reset"]
-
-    download_files = [
-        ("file1.txt", "TEST"),
-        ("file2.txt", "TESTTEST"),
-        ("file3.txt", "TESTTESTTEST"),
-        (".keep", ""),
-    ]
-    for f in download_files:
-        write_to_file(client_config_dict["directories"]["downloads"] + f[0], f[1])
-
-    for f in download_files:
-        assert Path(client_config_dict["directories"]["downloads"] + f[0]).exists()
-
-    stager_files = [
-        ("file1.ps1", "TEST"),
-        ("file2.ps1", "TESTTEST"),
-        ("file3.ps1", "TESTTESTTEST"),
-        (".keep", ""),
-    ]
-    for f in stager_files:
-        write_to_file(
-            client_config_dict["directories"]["generated-stagers"] + f[0], f[1]
-        )
-
-    for f in stager_files:
-        assert Path(
-            client_config_dict["directories"]["generated-stagers"] + f[0]
-        ).exists()
-
-    import empire.arguments
-    from empire.client import client
-
-    reload(empire.arguments)
-    from empire.arguments import args
-
-    with pytest.raises(SystemExit):
-        client.start(args)
-
-    for f in download_files:
-        if f[0] != ".keep":
-            assert not Path(
-                client_config_dict["directories"]["downloads"] + f[0]
-            ).exists()
-        else:
-            assert Path(client_config_dict["directories"]["downloads"] + f[0]).exists()
-
-    for f in stager_files:
-        if f[0] != ".keep":
-            assert not Path(
-                client_config_dict["directories"]["generated-stagers"] + f[0]
-            ).exists()
-        else:
-            assert Path(
-                client_config_dict["directories"]["generated-stagers"] + f[0]
-            ).exists()
 
     sys.argv = default_argv
 

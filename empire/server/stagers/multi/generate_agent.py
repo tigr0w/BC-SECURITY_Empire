@@ -57,7 +57,7 @@ class Stager:
                 "Value": "agent.txt",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -103,17 +103,17 @@ class Stager:
         staged = self.options["Staged"]["Value"].lower() == "true"
 
         if not staged:
-            launcher = self.mainMenu.stagers.generate_stageless(self.options)
+            launcher = self.mainMenu.stagergenv2.generate_stageless(self.options)
         else:
-            launcher = self.mainMenu.stagers.generate_launcher(
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=False,
                 obfuscate=False,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
 

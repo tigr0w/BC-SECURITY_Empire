@@ -38,7 +38,7 @@ class Stager:
                 "Value": "",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. "
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. "
                 "Defaults to True.",
                 "Required": True,
                 "Value": "True",
@@ -64,12 +64,12 @@ class Stager:
         safe_checks = self.options["SafeChecks"]["Value"]
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
             encode=True,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":

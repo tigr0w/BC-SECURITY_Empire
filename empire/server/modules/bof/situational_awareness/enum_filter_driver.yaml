@@ -29,10 +29,10 @@ options:
     description: Specifies the remote system to connect to.
     required: true
     value: '.'
-    format: z
 bof:
   x86: bof/situational_awareness/cacls/cacls.x86.o
   x64: bof/situational_awareness/cacls/cacls.x64.o
   entry_point: ''
+  format_string: z
 script_path: ''
 script_end: ''

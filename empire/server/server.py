@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import glob
 import logging
 import os
 import pwd
@@ -65,7 +66,11 @@ def setup_logging(args):
         log.error("Permission denied. You need root privileges to change file owner.")
 
 
-CSHARP_DIR_BASE = os.path.join(os.path.dirname(__file__), "csharp/Covenant")
+CSHARP_DIR_BASE = os.path.join(
+    os.path.dirname(__file__), "Empire-Compiler/EmpireCompiler"
+)
+GO_DIR_BASE = os.path.join(os.path.dirname(__file__), "data/agent/gopire")
+EMPIRE_COMPILER_DIR_BASE = empire_config.empire_compiler.directory
 
 
 def reset():
@@ -73,12 +78,8 @@ def reset():
 
     file_util.remove_dir_contents(empire_config.directories.downloads)
 
-    if os.path.exists(f"{CSHARP_DIR_BASE}/bin"):
-        shutil.rmtree(f"{CSHARP_DIR_BASE}/bin")
-
-    if os.path.exists(f"{CSHARP_DIR_BASE}/obj"):
-        shutil.rmtree(f"{CSHARP_DIR_BASE}/obj")
-
+    shutil.rmtree(f"{CSHARP_DIR_BASE}/bin", ignore_errors=True)
+    shutil.rmtree(f"{CSHARP_DIR_BASE}/obj", ignore_errors=True)
     file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net35")
     file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net40")
     file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net45")
@@ -86,8 +87,16 @@ def reset():
         f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/netcoreapp3.0"
     )
 
-    if os.path.exists(empire_config.starkiller.directory):
-        shutil.rmtree(empire_config.starkiller.directory)
+    for exe_file in glob.glob(f"{GO_DIR_BASE}/**/*.exe", recursive=True):
+        os.remove(exe_file)
+
+    shutil.rmtree(f"{EMPIRE_COMPILER_DIR_BASE}", ignore_errors=True)
+
+    file_util.remove_file(f"{GO_DIR_BASE}/main.go")
+    file_util.remove_file(f"{CSHARP_DIR_BASE}/Data/EmbeddedResources/launcher.txt")
+
+    shutil.rmtree(empire_config.starkiller.directory, ignore_errors=True)
+    file_util.remove_dir_contents(empire_config.plugin_marketplace.directory)
 
     file_util.remove_file("data/sessions.csv")
     file_util.remove_file("data/credentials.csv")
@@ -146,6 +155,10 @@ def check_recommended_configuration():
 
 
 def run(args):
+    if args.version:
+        print(empire.VERSION)
+        sys.exit()
+
     setup_logging(args)
 
     if empire_config.submodules.auto_update:
@@ -157,22 +170,7 @@ def run(args):
     check_submodules()
     check_recommended_configuration()
 
-    if not args.restport:
-        args.restport = empire_config.api.port
-    else:
-        args.restport = int(args.restport[0])
-
-    if not args.restip:
-        args.restip = "0.0.0.0"
-    else:
-        args.restip = args.restip[0]
-
-    if args.version:
-        # log to stdout instead of stderr
-        print(empire.VERSION)
-        sys.exit()
-
-    elif args.reset:
+    if args.reset:
         choice = input(
             "\x1b[1;33m[>] Would you like to reset your Empire Server instance? [y/N]: \x1b[0m"
         )
@@ -198,6 +196,6 @@ def run(args):
 
         from empire.server.api import app
 
-        app.initialize(secure=args.secure_api, ip=args.restip, port=args.restport)
+        app.initialize()
 
     sys.exit()

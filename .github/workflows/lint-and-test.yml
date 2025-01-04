@@ -12,22 +12,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: psf/black@24.4.2
       - name: Run ruff
         run: |
-          pip install ruff==0.5.3
+          pip install ruff==0.8.4
           ruff check .
+          ruff format --check .
   matrix-prep-config:
     runs-on: ubuntu-latest
     steps:
       - id: release
         if: ${{ startsWith(github.head_ref, 'release/') || contains( github.event.pull_request.labels.*.name, 'run-all-versions') }}
         run: |
-          echo "config={\"python-version\": [\"3.10\", \"3.11\", \"3.12\"]}" >> $GITHUB_OUTPUT
+          echo "config={\"python-version\": [\"3.13\"]}" >> $GITHUB_OUTPUT
       - id: not-release
         if: ${{ !startsWith(github.head_ref, 'release/') }}
         run: |
-          echo "config={\"python-version\": [\"3.10\", \"3.12\"]}" >> $GITHUB_OUTPUT
+          echo "config={\"python-version\": [\"3.13\"]}" >> $GITHUB_OUTPUT
     outputs:
         config: ${{ steps.release.outputs.config || steps.not-release.outputs.config }}
   test:
@@ -51,6 +51,10 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
+      - name: Initialize mandatory git config
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email noreply@github.com
       - name: Install Poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y
@@ -74,7 +78,7 @@ jobs:
       - name: Run test suite - mysql
         run: |
           set -o pipefail
-          if [ "${{ matrix.python-version }}" = "3.12" ]; then
+          if [ "${{ matrix.python-version }}" = "3.13" ]; then
             DATABASE_USE=mysql poetry run pytest -v --runslow --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
           else
             DATABASE_USE=mysql poetry run pytest -v --runslow .
@@ -84,7 +88,7 @@ jobs:
         run: |
           DATABASE_USE=sqlite poetry run pytest . -v --runslow
       - name: Pytest coverage comment
-        if: ${{ matrix.python-version == '3.12' }}
+        if: ${{ matrix.python-version == '3.13' }}
         uses: MishaKav/pytest-coverage-comment@v1.1.53
         with:
           pytest-coverage-path: ./pytest-coverage.txt
@@ -126,7 +130,7 @@ jobs:
       matrix:
         # Because the box runs out of disk space, we can't run all tests on a single docker compose build.
         images:
-          - ['debian10', 'debian11', 'debian12']
+          - ['debian11', 'debian12']
           - ['ubuntu2004', 'ubuntu2204']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.

@@ -44,7 +44,7 @@ def catch_logs(level: int, logger: logging.Logger) -> LogCaptureHandler:
         logger.removeHandler(handler)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def main_menu_mock(models):
     main_menu = Mock()
     main_menu.installPath = "empire/server"
@@ -61,22 +61,25 @@ def main_menu_mock(models):
     )
     main_menu.obfuscationv2.obfuscate = Mock(side_effect=fake_obfuscate)
     main_menu.obfuscationv2.obfuscate_keywords = Mock(side_effect=lambda x: x)
+    main_menu.pluginsv2.get_by_id = Mock(
+        side_effect=lambda x: Mock(enabled=False) if x == "csharpserver" else None
+    )
 
-    yield main_menu
+    return main_menu
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def module_service(main_menu_mock):
     from empire.server.core.module_service import ModuleService
 
     module_service = ModuleService(main_menu_mock)
     main_menu_mock.modulesv2 = module_service
 
-    yield module_service
+    return module_service
 
 
 @pytest.mark.slow
-def test_load_modules(main_menu_mock, models, db):
+def test_load_modules(main_menu_mock, models, session_local):
     """
     This is just meant to be a small smoke test to ensure that the modules
     that come with Empire can be loaded properly at startup and a script can
@@ -98,29 +101,30 @@ def test_load_modules(main_menu_mock, models, db):
 
     min_modules = 300
     assert len(module_service.modules) > min_modules
-    assert len(db.query(models.Module).all()) > min_modules
 
-    for key, module in module_service.modules.items():
-        if not module.advanced.custom_generate:
-            try:
-                err = None
-                resp = module_service._generate_script(
-                    db, module, convert_options_to_params(module.options), None
-                )
+    with session_local.begin() as db:
+        assert len(db.query(models.Module).all()) > min_modules
 
-                if isinstance(resp, tuple):
-                    resp, err = resp
+        for key, module in module_service.modules.items():
+            if not module.advanced.custom_generate:
+                try:
+                    err = None
+                    resp = module_service._generate_script(
+                        db, module, convert_options_to_params(module.options), None
+                    )
 
-                if err != "csharpserver plugin not running":
-                    # fail if a module fails to generate a script.
-                    assert (
-                        resp is not None and len(resp) > 0
-                    ), f"No generated script for module {key}"
+                    if isinstance(resp, tuple):
+                        resp, err = resp
 
-            except ModuleValidationException as e:
-                # not gonna bother mocking out the csharp server right now.
-                if str(e) == "csharpserver plugin not running":
-                    pass
+                    if err != "csharpserver plugin not running":
+                        # fail if a module fails to generate a script.
+                        assert resp is not None, f"No generated script for module {key}"
+                        assert len(resp) > 0, f"No generated script for module {key}"
+
+                except ModuleValidationException as e:
+                    # not gonna bother mocking out the csharp server right now.
+                    if str(e) == "csharpserver plugin not running":
+                        pass
 
 
 def test_execute_custom_generate(

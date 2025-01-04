@@ -13,10 +13,17 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        script_file, script_end = main_menu.modulesv2.generate_bof_data(
-            module=module, params=params, obfuscate=obfuscate
-        )
-
         nonce = random.randint(1000, 10000)
-        script_end += f" -i:{nonce} -Z:{params['domain']} -Z:{params['SPN']}"
-        return f"{script_file}|{script_end}"
+
+        params_dict = {
+            "Architecture": params["Architecture"],
+            "Nonce": nonce,
+            "Domain": params["domain"],
+            "SPN": params["SPN"],
+        }
+
+        return main_menu.modulesv2.generate_script_bof(
+            module=module,
+            params=params_dict,
+            obfuscate=obfuscate,
+        )

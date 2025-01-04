@@ -59,10 +59,6 @@ def get_powershell_name():
     return "powershell"
 
 
-def convert_obfuscation_command(obfuscate_command):
-    return "".join(obfuscate_command.split()).replace(",", ",home,").replace("\\", ",")
-
-
 def ps_convert_to_oneliner(psscript):
     """
     Converts a PowerShell script to a one-liner.

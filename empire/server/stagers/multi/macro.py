@@ -67,7 +67,7 @@ class Stager:
                 "Value": "",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -94,7 +94,7 @@ class Stager:
                 "Value": "default",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -148,12 +148,12 @@ class Stager:
             invoke_obfuscation = True
 
         # generate the python launcher code
-        pylauncher = self.mainMenu.stagers.generate_launcher(
+        pylauncher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language="python",
             encode=True,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if pylauncher == "":
@@ -166,17 +166,17 @@ class Stager:
             pypayload = formStr("str", match)
 
         # generate the powershell launcher code
-        poshlauncher = self.mainMenu.stagers.generate_launcher(
+        poshlauncher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
             encode=True,
             obfuscate=invoke_obfuscation,
             obfuscation_command=obfuscate_command,
-            userAgent=user_agent,
+            user_agent=user_agent,
             proxy=proxy,
-            proxyCreds=proxy_creds,
-            stagerRetries=stager_retries,
-            safeChecks=safe_checks,
+            proxy_creds=proxy_creds,
+            stager_retries=stager_retries,
+            safe_checks=safe_checks,
             bypasses=bypasses,
         )
 

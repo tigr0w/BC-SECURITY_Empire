@@ -37,6 +37,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - Python 3
 - C#
 - IronPython 3
+- Go
 
 ### Modules
 - [Assembly Execution](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/data/module_source/code_execution/Invoke-Assembly.ps1)

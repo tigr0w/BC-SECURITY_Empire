@@ -42,14 +42,14 @@ class Stager:
                 "Value": "",
             },
             "Base64": {
-                "Description": "Switch. Base64 encode the output.",
+                "Description": "Base64 encode the output.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -61,7 +61,7 @@ class Stager:
                 "Value": r"Token\All\1",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -121,7 +121,7 @@ class Stager:
                 )
                 return ""
 
-            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
@@ -129,17 +129,17 @@ class Stager:
                 listener_name=listener_name,
             )
         else:
-            launcher = self.mainMenu.stagers.generate_launcher(
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=encode,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
-                safeChecks=safe_checks,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
+                safe_checks=safe_checks,
                 bypasses=self.options["Bypasses"]["Value"],
             )
 

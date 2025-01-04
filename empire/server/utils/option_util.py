@@ -22,6 +22,9 @@ def convert_module_options(options: list[EmpireModuleOption]) -> dict:
     converted_options = {}
 
     for option in options:
+        if option.internal:
+            continue
+
         converted_options[option.name] = {
             "Description": option.description,
             "Required": option.required,
@@ -30,12 +33,14 @@ def convert_module_options(options: list[EmpireModuleOption]) -> dict:
             "Strict": option.strict,
             "Type": option.type,
             "NameInCode": option.name_in_code,
+            "Internal": option.internal,
+            "DependsOn": option.depends_on,
         }
 
     return converted_options
 
 
-def validate_options(
+def validate_options(  # noqa: PLR0912 PLR0911
     instance_options: dict, params: dict, db: Session, download_service
 ) -> tuple[dict | None, str | None]:
     """
@@ -45,48 +50,76 @@ def validate_options(
     (options, None).
 
     Will also attempt to cast the options to the correct type using safe_cast.
-
     Options of type "file" are not validated.
+    If an option has "Editable" set to False, it will be skipped (Only applies to
+    plugins for now).
     """
     options = {}
-    # make a copy so that the original options are not modified
     params = params.copy()
 
     for instance_key, option_meta in instance_options.items():
-        if _lower_default(option_meta.get("Type")) == "file":
-            db_download = download_service.get_by_id(db, params[instance_key])
-            if not db_download:
-                return (
-                    None,
-                    f"File not found for '{instance_key}' id {params[instance_key]}",
-                )
-
-            options[instance_key] = db_download
+        if option_meta.get("Internal", False):
             continue
 
-        # Attempt to default a unset option to the default value
+        if not evaluate_dependencies(option_meta, params):
+            continue
+
+        if option_meta.get("Editable", True) is False:
+            continue
+
+        if _lower_default(option_meta.get("Type")) == "file":
+            # Check if there are any dependencies for this option
+            if option_meta["DependsOn"]:
+                # If 'depends_on' is present, check if the option is required based on it
+                if is_option_required(option_meta, params):
+                    # If 'File' is required and not provided, raise an error
+                    if not params.get(instance_key):
+                        return None, f"required option missing: {instance_key}"
+
+                    # Try to retrieve the file using the provided file ID
+                    db_download = download_service.get_by_id(db, params[instance_key])
+                    if not db_download:
+                        return (
+                            None,
+                            f"File not found for '{instance_key}' id {params[instance_key]}",
+                        )
+
+                    options[instance_key] = db_download
+                else:
+                    # If the option isn't required, set it to an empty string
+                    options[instance_key] = ""
+            else:
+                # If no 'depends_on' exists, use the original logic to check if the file exists
+                db_download = download_service.get_by_id(db, params.get(instance_key))
+                if not db_download:
+                    return (
+                        None,
+                        f"File not found for '{instance_key}' id {params.get(instance_key)}",
+                    )
+
+                options[instance_key] = db_download
+
+            continue
+
+        # Handle other options (non-file types)
         if instance_key not in params and option_meta["Value"] not in ["", None]:
             params[instance_key] = option_meta["Value"]
 
-        # If the required option still isn't set, return an error
-        if option_meta["Required"] and (
+        if option_meta.get("Required") and (
             instance_key not in params
             or params[instance_key] == ""
             or params[instance_key] is None
         ):
             return None, f"required option missing: {instance_key}"
 
-        # If strict, check that the option is one of the suggested values
-        if (
-            option_meta["Strict"]
-            and params[instance_key] not in option_meta["SuggestedValues"]
-        ):
+        if option_meta.get("Strict") and params.get(
+            instance_key, ""
+        ) not in option_meta.get("SuggestedValues"):
             return (
                 None,
                 f"{instance_key} must be set to one of the suggested values.",
             )
 
-        # If the option is set, attempt to cast it to the correct type
         casted, err = _safe_cast_option(
             instance_key, params.get(instance_key, ""), option_meta
         )
@@ -101,9 +134,58 @@ def validate_options(
     return options, None
 
 
+def is_option_required(option_meta: dict, params: dict) -> bool:
+    """
+    Check if an option should be validated based on its `depends_on` configuration.
+    This will return True if the option's dependencies are met.
+    """
+    dependencies = option_meta.get("DependsOn", [])
+
+    if not dependencies:
+        # If there are no dependencies, treat the option as required based on the 'Required' field
+        return option_meta.get("Required", False)
+
+    # If there are dependencies, check if all are satisfied
+    for dependency in dependencies:
+        dependent_option = dependency["name"]
+        required_values = dependency["values"]
+
+        # Check if the dependent option's value matches any of the required values
+        if params.get(dependent_option) not in required_values:
+            return (
+                False  # If any dependency is not satisfied, the option is not required
+            )
+
+    # If all dependencies are satisfied, return True
+    return True
+
+
+def evaluate_dependencies(option, params):
+    """
+    Evaluate the depends_on conditions for a given option.
+    :param option: The option being validated.
+    :param params: The current parameters provided by the user.
+    :return: Boolean indicating if the dependencies are met.
+    """
+    if "depends_on" not in option:
+        return True
+
+    for dependency in option["depends_on"]:
+        dependent_option = dependency["name"]
+        if dependent_option not in params:
+            return False
+        if (
+            "values" in dependency
+            and params[dependent_option] not in dependency["values"]
+        ):
+            return False
+
+    return True
+
+
 def set_options(instance, options: dict):
     """
-    Sets the options for the listener/stager/plugin instance.
+    Sets the options for the listener/stager instance.
     """
     for option_name, option_value in options.items():
         instance.options[option_name]["Value"] = option_value

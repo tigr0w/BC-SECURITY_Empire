@@ -6,11 +6,18 @@ Once launched, Empire checks for user write permissions on paths specified in `c
 
 * **suppress-self-cert-warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
 
-* **api** - Configure the RESTful API. This includes the port to run the API on, as well as the path for the SSL certificates. If `empire-priv.key` and `empire-chain.pem` are not found in this directory, self-signed certs will be generated.
+* **api** - Configure the RESTful API.
+
+ip - The IP address to bind the API and Starkiller to.
+port - The port to bind the API and Starkiller to.
+secure - Enable HTTPS for the API and Starkiller. Browsers will not work with self-signed certs. Uses .key and .pem file from empire/server/data
+cert_path - path for the SSL certificates. If `empire-priv.key` and `empire-chain.pem` are not found in this directory, self-signed certs will be generated.
 
 ```yaml
 api:
+  ip: 0.0.0.0
   port: 1337
+  secure: false
   cert_path: empire/server/data/
 ```
 
@@ -59,32 +66,49 @@ database:
         command: ""
         module: "confuser"
         preobfuscatable: false
-    # an IP white list to ONLY accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-whitelist: ""
-    # an IP black list to reject accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-blacklist: ""
-    # Adds keywords that will be obfuscated in Empire. For example, anytime
-    # Invoke-Empire or Invoke-Mimikatz is used in a module/stager, it will
-    # be replaced with a random 5 character string.
+    ip_allow_list: []
+    ip_deny_list: []
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
 ```
 
-* **plugins** - Auto runs plugins with defined settings. This tells Empire to run a set of commands with the plugin at server startup.
+* **empire_compiler** - Configure the Empire Compiler module. This block manages settings for the Empire Compiler, which is responsible for handling C# compilation tasks.
 
+enabled: Enable or disable the Empire Compiler module.
+version: Specify the version of the Empire Compiler to use.
+repo: Repository location for the Empire Compiler.
+directory: Directory path where the Empire Compiler is installed.
+auto_update: Automatically update the Empire Compiler on startup.
+
+```yaml
+empire_compiler:
+  enabled: true
+  version: v0.2
+  repo: git@github.com:BC-SECURITY/Empire-Compiler.git
+  directory: empire/server/Empire-Compiler
+  auto_update: true
 ```
+
+
+* **plugins** - Config related to plugins
+auto_start - boolean, whether the plugin should start automatically. If this is not set, Empire will defer to the plugin's own configuration.
+auto_execute - run an execute command on the plugin at startup. If this is not set, Empire will defer to the plugin's own configuration.
+
+```yaml
 plugins:
   # Auto-execute plugin with defined settings
-  csharpserver:
-    status: start
+  basic_reporting:
+    auto_start: true
+    auto_execute:
+      enabled: true
+      options:
+        report: all
 ```
 
 * **directories** - Control where Empire should read and write specific data.
 
-```
+```yaml
 directories:
   downloads: empire/server/downloads/
   module_source: empire/server/data/module_source/

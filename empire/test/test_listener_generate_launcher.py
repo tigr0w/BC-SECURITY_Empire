@@ -7,21 +7,19 @@ from empire.server.common import helpers
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_staging_key(db, models):
-    config = db.query(models.Config).first()
-    config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
-    db.add(config)
-    db.commit()
-    yield
+def _setup_staging_key(session_local, models):
+    with session_local.begin() as db:
+        config = db.query(models.Config).first()
+        config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
 
 
-@pytest.fixture(scope="function")
-def main_menu_mock(db, models):
+@pytest.fixture
+def main_menu_mock(models):
     main_menu = Mock()
     main_menu.installPath = ""
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}
-    yield main_menu
+    return main_menu
 
 
 def test_dbx_generate_launcher(monkeypatch, main_menu_mock):
@@ -36,13 +34,13 @@ def test_dbx_generate_launcher(monkeypatch, main_menu_mock):
     dbx_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = dbx_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_dbx_python_launcher()
 
     powershell_launcher = dbx_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_dbx_powershell_launcher()
@@ -72,13 +70,13 @@ def test_http_generate_launcher(monkeypatch, main_menu_mock):
     http_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_http_python_launcher()
 
     powershell_launcher = http_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_http_powershell_launcher()
@@ -107,13 +105,13 @@ def test_http_com_generate_launcher(monkeypatch, main_menu_mock):
     http_com_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_com_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher is None
 
     powershell_launcher = http_com_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_http_com_powershell_launcher()
@@ -138,13 +136,13 @@ def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
     http_foreign_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_foreign_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_http_foreign_python_launcher()
 
     powershell_launcher = http_foreign_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_http_foreign_powershell_launcher()
@@ -166,9 +164,9 @@ def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
     http_hop_listener = Listener(main_menu_mock)
 
     http_hop_listener.options["Host"]["Value"] = "http://localhost"
-    http_hop_listener.options["DefaultProfile"][
-        "Value"
-    ] = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+    http_hop_listener.options["DefaultProfile"]["Value"] = (
+        "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+    )
     main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_hop_listener.options}
     }
@@ -176,13 +174,13 @@ def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
     http_hop_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_hop_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_http_hop_python_launcher()
 
     powershell_launcher = http_hop_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_http_hop_powershell_launcher()
@@ -210,9 +208,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
 
     session_mock = MagicMock()
     profile_mock = MagicMock()
-    session_mock.return_value.query.return_value.filter.return_value.first.return_value = (
-        profile_mock
-    )
+    session_mock.return_value.query.return_value.filter.return_value.first.return_value = profile_mock
     profile_mock.data = _fake_malleable_profile()
     monkeypatch.setattr(
         "empire.server.listeners.http_malleable.SessionLocal", session_mock
@@ -230,7 +226,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     http_malleable_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_malleable_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     # can't control the random characters in the url path, so just removing it from the comparison.
@@ -255,7 +251,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     assert python_launcher == expected_python_launcher
 
     powershell_launcher = http_malleable_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     powershell_launcher_start = powershell_launcher.find(")));$t=")
@@ -294,13 +290,13 @@ def test_onedrive_generate_launcher(monkeypatch, main_menu_mock):
     onedrive_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = onedrive_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == "Python not implemented yet"
 
     powershell_launcher = onedrive_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_onedrive_powershell_launcher()
@@ -332,13 +328,13 @@ def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
     port_forward_pivot.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = port_forward_pivot.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_redirector_python_launcher()
 
     powershell_launcher = port_forward_pivot.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_redirector_powershell_launcher()

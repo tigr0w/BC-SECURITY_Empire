@@ -1,22 +1,26 @@
 import copy
 import hashlib
 import logging
+import typing
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.download_service import DownloadService
 from empire.server.core.hooks import hooks
-from empire.server.core.listener_template_service import ListenerTemplateService
 from empire.server.utils.option_util import set_options, validate_options
 
 log = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+    from empire.server.core.download_service import DownloadService
+    from empire.server.core.listener_template_service import ListenerTemplateService
+
 
 class ListenerService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
         self.listener_template_service: ListenerTemplateService = (

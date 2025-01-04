@@ -2,37 +2,40 @@ import pytest
 from starlette import status
 
 
-@pytest.fixture(scope="function", autouse=True)
-def processes(db, host, agent, models):
-    db_agent = db.query(models.Agent).filter(models.Agent.session_id == agent).first()
-    db_agent.process_id = "11"
-    process1 = models.HostProcess(
-        host_id=host,
-        process_id=db_agent.process_id,
-        process_name="explorer.exe",
-        architecture="x86",
-        user="CX01N",
-    )
+@pytest.fixture(autouse=True)
+def processes(session_local, host, agent, models):
+    with session_local.begin() as db:
+        db_agent = (
+            db.query(models.Agent).filter(models.Agent.session_id == agent).first()
+        )
+        db_agent.process_id = 11
+        process1 = models.HostProcess(
+            host_id=host,
+            process_id=db_agent.process_id,
+            process_name="explorer.exe",
+            architecture="x86",
+            user="CX01N",
+        )
 
-    process2 = models.HostProcess(
-        host_id=host,
-        process_id="12",
-        process_name="discord.exe",
-        architecture="x86",
-        user="Admin",
-    )
-    db.add(process1)
-    db.add(process2)
-    db.flush()
-    db.commit()
+        process2 = models.HostProcess(
+            host_id=host,
+            process_id="12",
+            process_name="discord.exe",
+            architecture="x86",
+            user="Admin",
+        )
+        db.add(process1)
+        db.add(process2)
 
-    processes = [process1, process2]
+        processes = [process1.process_id, process2.process_id]
 
     yield processes
 
-    db.delete(processes[0])
-    db.delete(processes[1])
-    db.commit()
+    with session_local.begin() as db:
+        for process in processes:
+            db.query(models.HostProcess).filter(
+                models.HostProcess.process_id == process
+            ).delete()
 
 
 def test_get_process_host_not_found(client, admin_auth_header):
@@ -56,14 +59,12 @@ def test_get_process_not_found(client, admin_auth_header, host):
 
 def test_get_process(client, admin_auth_header, host, processes):
     response = client.get(
-        f"/api/v2/hosts/{host}/processes/{processes[0].process_id}",
+        f"/api/v2/hosts/{host}/processes/{processes[0]}",
         headers=admin_auth_header,
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["process_id"] == processes[0].process_id
-    assert response.json()["process_name"] == processes[0].process_name
-    assert response.json()["host_id"] == processes[0].host_id
+    assert response.json()["process_id"] == processes[0]
 
 
 def test_get_processes(client, admin_auth_header, host):

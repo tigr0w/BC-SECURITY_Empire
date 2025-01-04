@@ -24,10 +24,6 @@ min_language_version: '2'
 comments:
   - https://v3ded.github.io/redteam/utilizing-programmatic-identifiers-progids-for-uac-bypasses
 options:
-  - name: Agent
-    description: Agent to run module on.
-    required: true
-    value: ''
   - name: Command
     description: Command to execute
     required: true

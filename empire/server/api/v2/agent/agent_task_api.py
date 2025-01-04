@@ -2,7 +2,7 @@ import base64
 import math
 from datetime import datetime
 
-from fastapi import Depends, File, HTTPException, Query, UploadFile
+from fastapi import Depends, HTTPException, Query
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
 
@@ -22,8 +22,6 @@ from empire.server.api.v2.agent.agent_task_dto import (
     KillDatePostRequest,
     KillJobPostRequest,
     ModulePostRequest,
-    ProxyListPostRequest,
-    ScriptCommandPostRequest,
     ShellPostRequest,
     SleepPostRequest,
     SocksPostRequest,
@@ -34,7 +32,6 @@ from empire.server.api.v2.agent.agent_task_dto import (
 )
 from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import (
-    PROXY_NAME,
     BadRequestResponse,
     NotFoundResponse,
     OrderDirection,
@@ -341,56 +338,6 @@ async def create_task_download(
     return domain_to_dto_task(resp)
 
 
-@router.post(
-    "/{agent_id}/tasks/script_import", status_code=201, response_model=AgentTask
-)
-async def create_task_script_import(
-    db: CurrentSession,
-    current_user: CurrentUser,
-    file: UploadFile = File(...),
-    db_agent: models.Agent = Depends(get_agent),
-):
-    file_data = await file.read()
-    file_data = file_data.decode("utf-8")
-    resp, err = agent_task_service.create_task_script_import(
-        db, db_agent, file_data, current_user.id
-    )
-
-    if err:
-        raise HTTPException(status_code=400, detail=err)
-
-    return domain_to_dto_task(resp)
-
-
-@router.post(
-    "/{agent_id}/tasks/script_command", status_code=201, response_model=AgentTask
-)
-async def create_task_script_command(
-    script_command_request: ScriptCommandPostRequest,
-    db: CurrentSession,
-    current_user: CurrentUser,
-    db_agent: models.Agent = Depends(get_agent),
-):
-    """
-    For python agents, this will run a script on the agent.
-    For Powershell agents, script_import must be run first and then this will run the script.
-
-    :param script_command_request:
-    :param db_agent:
-    :param db:
-    :param current_user:
-    :return:
-    """
-    resp, err = agent_task_service.create_task_script_command(
-        db, db_agent, script_command_request.command, current_user.id
-    )
-
-    if err:
-        raise HTTPException(status_code=400, detail=err)
-
-    return domain_to_dto_task(resp)
-
-
 @router.post("/{agent_id}/tasks/sysinfo", status_code=201, response_model=AgentTask)
 async def create_task_sysinfo(
     sysinfo_request: SysinfoPostRequest,
@@ -489,29 +436,6 @@ async def create_task_update_directory_list(
 ):
     resp, err = agent_task_service.create_task_directory_list(
         db, db_agent, directory_list_request.path, current_user.id
-    )
-
-    if err:
-        raise HTTPException(status_code=400, detail=err)
-
-    return domain_to_dto_task(resp)
-
-
-@router.post("/{agent_id}/tasks/proxy_list", status_code=201, response_model=AgentTask)
-async def create_task_update_proxy_list(
-    proxy_list_request: ProxyListPostRequest,
-    db: CurrentSession,
-    current_user: CurrentUser,
-    db_agent: models.Agent = Depends(get_agent),
-):
-    # We have to use a string enum to get the api to accept strings
-    # then convert to int manually. Agent code could be refactored to just
-    # use strings, then this conversion could be removed.
-    proxy_list_dict = proxy_list_request.model_dump()
-    for proxy in proxy_list_dict["proxies"]:
-        proxy["proxy_type"] = PROXY_NAME[proxy["proxy_type"]]
-    resp, err = agent_task_service.create_task_proxy_list(
-        db, db_agent, proxy_list_dict, current_user.id
     )
 
     if err:

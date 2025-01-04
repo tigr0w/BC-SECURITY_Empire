@@ -6,6 +6,7 @@ from empire.server.core.module_models import EmpireModule, LanguageEnum
 
 def domain_to_dto_module(module: EmpireModule, uid: str):
     options = {x.name: x for x in module.options}
+
     options = {
         x[0]: {
             "description": x[1].description,
@@ -13,8 +14,9 @@ def domain_to_dto_module(module: EmpireModule, uid: str):
             "value": x[1].value,
             "strict": x[1].strict,
             "suggested_values": x[1].suggested_values,
-            # todo expand to listener, stager, etc
             "value_type": to_value_type(x[1].value, x[1].type),
+            "depends_on": x[1].depends_on if x[1].depends_on is not None else [],
+            "internal": x[1].internal if x[1].internal is not None else False,
         }
         for x in options.items()
     }

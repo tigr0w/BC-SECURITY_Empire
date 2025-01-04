@@ -62,8 +62,8 @@ class Module:
                 return handle_error_message("[!] Invalid listener: " + listener_name)
 
             # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagers.generate_launcher(
-                listenerName=listener_name,
+            launcher = main_menu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
                 language="powershell",
                 encode=True,
                 obfuscate=launcher_obfuscate,

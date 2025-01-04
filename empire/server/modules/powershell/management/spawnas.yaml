@@ -20,14 +20,21 @@ min_language_version: '2'
 comments:
   - https://github.com/rvrsh3ll/Misc-Powershell-Scripts/blob/master/RunAs.ps1
 options:
-  - name: Agent
-    description: Agent to run module on.
+  - name: Credentials
+    description: Manually enter credentials or credential ID.
     required: true
-    value: ''
+    value: 'Manual'
+    strict: true
+    suggested_values:
+      - Manual
+      - CredID
   - name: CredID
     description: CredID from the store to use.
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: ['CredID']
   - name: Domain
     description: Optional domain.
     required: false
@@ -36,17 +43,22 @@ options:
     description: Username to run the command as.
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: ['Manual']
   - name: Password
     description: Password for the specified username.
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: ['Manual']
   - name: Listener
     description: Listener to use.
     required: true
     value: ''
   - name: Obfuscate
-    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
-      only.
+    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.
     required: false
     value: 'False'
     strict: true
@@ -57,6 +69,11 @@ options:
     description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
     required: false
     value: Token\All\1
+    depends_on:
+      - name: Language
+        values: [ 'powershell' ]
+      - name: Obfuscate
+        values: [ 'True' ]
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false

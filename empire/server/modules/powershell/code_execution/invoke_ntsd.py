@@ -76,10 +76,10 @@ class Module:
 
         exec_write = f'Write-Ini {upload_path} "{launcher}"'
         code_exec = f"{upload_path}\\ntsd.exe -cf {upload_path}\\ntsd.ini {bin}"
-        ntsd_exe_upload = main_menu.stagers.generate_upload(
+        ntsd_exe_upload = main_menu.stagergenv2.generate_upload(
             ntsd_exe_data, ntsd_exe_upload_path
         )
-        ntsd_dll_upload = main_menu.stagers.generate_upload(
+        ntsd_dll_upload = main_menu.stagergenv2.generate_upload(
             ntsd_dll_data, ntsd_dll_upload_path
         )
 

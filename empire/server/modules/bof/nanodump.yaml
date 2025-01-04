@@ -16,6 +16,10 @@ min_language_version: ''
 comments:
   - https://github.com/fortra/nanodump
 options:
+  - name: pid
+    description: Process ID
+    required: false
+    value: ''
   - name: write
     description: filename of the dump
     required: false
@@ -28,6 +32,10 @@ options:
     suggested_values:
       - true
       - false
+  - name: chunksize
+    description: chunksize
+    required: false
+    value: 0
   - name: duplicate
     description: duplicate a high privileged existing LSASS handle
     required: false
@@ -118,11 +126,11 @@ options:
     suggested_values:
       - true
       - false
-    format: i
 bof:
   x86: bof/nanodump/nanodump.x86.o
   x64: bof/nanodump/nanodump.x64.o
   entry_point: ''
+  format_string: iziiiiiiiiiiiziiizi
 script_path: ''
 script_end: ''
 advanced:

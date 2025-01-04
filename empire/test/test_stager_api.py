@@ -5,7 +5,7 @@ from starlette import status
 
 
 @pytest.fixture(scope="module", autouse=True)
-def cleanup_stagers(session_local, models):
+def _cleanup_stagers(session_local, models):
     yield
 
     with session_local.begin() as db:
@@ -16,7 +16,7 @@ def cleanup_stagers(session_local, models):
 
 
 def test_get_stager_templates(client, admin_auth_header):
-    min_stagers = 36
+    min_stagers = 30
     response = client.get(
         "/api/v2/stager-templates/",
         headers=admin_auth_header,
@@ -510,7 +510,7 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
 
 
 @pytest.mark.parametrize(
-    "document_type, trigger_function, expected_trigger",
+    ("document_type", "trigger_function", "expected_trigger"),
     [
         ("word", "autoopen", "Sub AutoOpen()"),
         ("word", "autoclose", "Sub AutoClose()"),

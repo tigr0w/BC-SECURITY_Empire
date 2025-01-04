@@ -1,17 +1,21 @@
 import fnmatch
 import logging
 import os
+import typing
 
 from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 log = logging.getLogger(__name__)
 
 
 class ProfileService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
         with SessionLocal.begin() as db:

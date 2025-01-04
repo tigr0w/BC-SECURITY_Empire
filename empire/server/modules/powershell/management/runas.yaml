@@ -5,9 +5,10 @@ authors:
     link: ''
 description: Runas knockoff. Will bypass GPO path restrictions.
 software: ''
-tactics: []
+tactics:
+  - TA0006
 techniques:
-  - T1088
+  - T1078
 background: false
 output_extension:
 needs_admin: false
@@ -17,14 +18,22 @@ min_language_version: '2'
 comments:
   - https://github.com/rvrsh3ll/Misc-Powershell-Scripts/blob/master/RunAs.ps1
 options:
-  - name: Agent
-    description: Agent to run module on.
+  - name: Credentials
+    description: Manually enter credentials or credential ID.
     required: true
-    value: ''
+    value: 'Manual'
+    strict: true
+    internal: true
+    suggested_values:
+      - Manual
+      - CredID
   - name: CredID
     description: CredID from the store to use.
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'CredID' ]
   - name: Domain
     description: Optional domain.
     required: false
@@ -33,10 +42,16 @@ options:
     description: Username to run the command as.
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'Manual' ]
   - name: Password
     description: Password for the specified username.
     required: false
     value: ''
+    depends_on:
+      - name: Credentials
+        values: [ 'Manual' ]
   - name: Cmd
     description: Command to run.
     required: true

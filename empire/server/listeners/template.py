@@ -121,11 +121,6 @@ class Listener:
                 "Required": False,
                 "Value": "default",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
         }
 
         # required:
@@ -169,13 +164,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] | None = None,
     ):
         """
@@ -269,9 +264,7 @@ class Listener:
             updateServers = """
                 $Script:ControlServers = @("{}");
                 $Script:ServerIndex = 0;
-            """.format(
-                listenerOptions["Host"]["Value"]
-            )
+            """.format(listenerOptions["Host"]["Value"])
 
             getTask = """
                 $script:GetTask = {

