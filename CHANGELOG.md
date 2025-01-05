@@ -31,21 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added Go agents
     -   Added Go to install script
     -   Added new stager type `multi_go_exe`
+    -   Added Go is an option for `multi_launcher`
     -   Added new compiler class `GoCompiler`
 -   Added `-f` flag for install script to force install as root
 -   Added dynamic options to modules
--   Added PT, TCH rules to ruff config
--   Added module code_execution/invoke-script for remote ps1 script execution
--   Added module python/code_execution/invoke-script for remote py script execution
--   Added tests for files being dependent options
--   Added endpoint for installing plugins from a git repository
--   Added endpoint for installing plugins from a tar
--   Added Go agent
--   Added new compiler class `GoCompiler`
--   Added new stager type `multi_go_exe`
--   Added autorun capability for agents on checkin through Starkiller menu
--   Added go to install script
--   Add multi-launcher for gopire
 -   Added module `code_execution/invoke-script` for remote ps1 script execution
 -   Added module `python/code_execution/invoke-script` for remote py script execution
 
