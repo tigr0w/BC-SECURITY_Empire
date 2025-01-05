@@ -814,12 +814,16 @@ class Listener:
                     obfuscation_config = (
                         self.mainMenu.obfuscationv2.get_obfuscation_config(db, "csharp")
                     )
+                    obfuscation = obfuscation_config.enabled
+                    obfuscation_command = obfuscation_config.command
+                elif stager == "go":
+                    pass
                 else:
                     obfuscation_config = (
                         self.mainMenu.obfuscationv2.get_obfuscation_config(db, stager)
                     )
-                obfuscation = obfuscation_config.enabled
-                obfuscation_command = obfuscation_config.command
+                    obfuscation = obfuscation_config.enabled
+                    obfuscation_command = obfuscation_config.command
 
             if stager == "powershell":
                 return self.mainMenu.stagergenv2.generate_launcher(
@@ -881,6 +885,12 @@ class Listener:
                     proxy_creds=proxyCreds,
                 )
                 directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
+                with open(directory, "rb") as f:
+                    return f.read()
+            elif stager == "go":
+                directory = self.mainMenu.stagergenv2.generate_go_stageless(
+                    self.options, listenerName
+                )
                 with open(directory, "rb") as f:
                     return f.read()
             else:

@@ -265,6 +265,71 @@ def test_generate_go_stageless(stager_generation_service):
     ), f"AES key length mismatch: expected 32 bytes, got {len(aes_key)} bytes"
 
 
+@pytest.mark.parametrize(
+    ("language", "listener_name", "obfuscate", "encode", "expected_partial_launcher"),
+    [
+        (
+            "go",
+            "new-listener-1",
+            False,
+            False,
+            r'\$tempFilePath = \[System.IO.Path\]::Combine\(\[System.IO.Path\]::GetTempPath\(\), "[\w\d]+\.exe"\);',
+        ),
+        (
+            "go",
+            "new-listener-1",
+            True,
+            False,
+            None,
+        ),
+        (
+            "go",
+            "new-listener-1",
+            False,
+            True,
+            None,
+        ),
+    ],
+)
+def test_generate_go_exe_oneliner(
+    stager_generation_service,
+    language,
+    listener_name,
+    obfuscate,
+    encode,
+    expected_partial_launcher,
+):
+    launcher = stager_generation_service.generate_go_exe_oneliner(
+        language=language,
+        listener_name=listener_name,
+        obfuscate=obfuscate,
+        obfuscation_command="Token\\ALL\\1" if obfuscate else "",
+        encode=encode,
+    )
+
+    assert launcher is not None, "Launcher generation failed, result is None."
+
+    if not obfuscate and not encode:
+        assert re.search(
+            expected_partial_launcher, launcher
+        ), f"Launcher does not contain expected content: {launcher}"
+
+    if obfuscate or encode:
+        # Check if launcher is a string
+        assert isinstance(
+            launcher, str
+        ), f"Expected launcher to be a string, but got {type(launcher)}."
+
+        # Check if launcher has a non-zero length
+        assert len(launcher) > 0, "Launcher is empty; expected non-empty string."
+
+    if encode:
+        assert re.match(
+            r"powershell -noP -sta -w 1 -enc\s+[A-Za-z0-9+/=]+",
+            launcher,
+        ), f"Encoded launcher does not match expected structure: {launcher}"
+
+
 def test_generate_dylib(stager_generation_service):
     """
     Tests the generate_dylib function to ensure it creates a dylib with an embedded launcher code.

