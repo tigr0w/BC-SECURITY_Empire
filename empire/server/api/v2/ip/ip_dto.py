@@ -12,6 +12,7 @@ def domain_to_dto_ip(ip):
         id=ip.id,
         ip_address=ip.ip_address,
         list=ip.list,
+        description=ip.description,
         created_at=ip.created_at,
         updated_at=ip.updated_at,
     )
@@ -19,6 +20,7 @@ def domain_to_dto_ip(ip):
 
 class IpPostRequest(BaseModel):
     ip_address: Annotated[str, AfterValidator(valid_ip)]
+    description: str | None = None
     list: IpList
 
 
@@ -26,6 +28,7 @@ class IP(BaseModel):
     id: int
     ip_address: str
     list: IpList
+    description: str | None
     created_at: datetime
     updated_at: datetime
 

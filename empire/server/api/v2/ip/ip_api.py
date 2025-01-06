@@ -2,7 +2,10 @@ from fastapi import Depends, HTTPException
 from starlette.responses import Response
 
 from empire.server.api.api_router import APIRouter
-from empire.server.api.jwt_auth import get_current_active_user
+from empire.server.api.jwt_auth import (
+    get_current_active_admin_user,
+    get_current_active_user,
+)
 from empire.server.api.v2.ip.ip_dto import IP, IpPostRequest, Ips, domain_to_dto_ip
 from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
@@ -44,13 +47,22 @@ async def read_ips(db: CurrentSession, ip_list: IpList = None):
     return {"records": ips}
 
 
-@router.post("/", response_model=IP, status_code=201)
+@router.post(
+    "/",
+    response_model=IP,
+    status_code=201,
+    dependencies=[Depends(get_current_active_admin_user)],
+)
 async def create_ip(ip: IpPostRequest, db: CurrentSession):
-    db_ip = ip_service.create_ip(db, ip.ip_address, ip.list)
-
+    db_ip = ip_service.create_ip(db, ip.ip_address, ip.description, ip.list)
     return domain_to_dto_ip(db_ip)
 
 
-@router.delete("/{uid}", response_class=Response, status_code=204)
+@router.delete(
+    "/{uid}",
+    response_class=Response,
+    status_code=204,
+    dependencies=[Depends(get_current_active_admin_user)],
+)
 async def delete_ip(uid: int, db: CurrentSession, dp_ip: models.IP = Depends(get_ip)):
     ip_service.delete_ip(db, dp_ip)

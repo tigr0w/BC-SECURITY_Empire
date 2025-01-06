@@ -35,12 +35,14 @@ def test_create_ip_allow(client, admin_auth_header):
         json={
             "ip_address": "192.168.0.1",
             "list": "allow",
+            "description": "test",
         },
     )
 
     assert resp.status_code == HTTP_201_CREATED
     assert resp.json()["ip_address"] == "192.168.0.1"
     assert resp.json()["list"] == "allow"
+    assert resp.json()["description"] == "test"
 
     client.delete(
         f"/api/v2/ips/{resp.json()['id']}",
@@ -55,12 +57,14 @@ def test_create_ip_deny(client, admin_auth_header):
         json={
             "ip_address": "192.168.0.1",
             "list": "deny",
+            "description": "test",
         },
     )
 
     assert resp.status_code == HTTP_201_CREATED
     assert resp.json()["ip_address"] == "192.168.0.1"
     assert resp.json()["list"] == "deny"
+    assert resp.json()["description"] == "test"
 
     client.delete(
         f"/api/v2/ips/{resp.json()['id']}",

@@ -631,6 +631,7 @@ class IP(Base):
     id = Column(Integer, Sequence("ip_seq"), primary_key=True)
     ip_address = Column(String(255), nullable=False)
     list = Column(Enum(IpList), nullable=False)
+    description = Column(Text, nullable=True)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
     updated_at = Column(
         UtcDateTime, nullable=False, onupdate=utcnow(), default=utcnow()

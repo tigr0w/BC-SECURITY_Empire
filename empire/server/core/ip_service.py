@@ -37,7 +37,7 @@ class IpService:
         for ip in ip_list:
             if "-" in ip.ip_address:
                 split = ip.ip_address.split("-")
-                ip_set.add(netaddr.IPRange(split[0], split[1]))
+                ip_set.add(netaddr.IPRange(split[0].strip(), split[1].strip()))
             elif "/" in ip.ip_address:
                 ip_set.add(netaddr.IPNetwork(ip.ip_address))
             else:
@@ -50,24 +50,24 @@ class IpService:
         If no allow list or deny list is set, then all IPs are allowed.
         If only allow list is set, then only IPs in the allow list are allowed.
         If only a deny list is set, then only IPs not in the deny list are allowed.
-        If both an allow list and a deny list are set, then IPs in the deny list are not
-        allowed, but allow listed IPs take precedence over deny listed IPs.
+        If both an allow list and a deny list are set, the IPs are first filtered
+        # through the allow list, and then the deny list.
         """
         if not self.ip_filtering:
             return True
-
-        ip_address = netaddr.IPAddress(ip_address)
-
         if not self.allow_list and not self.deny_list:
             return True
 
-        if self.allow_list and self._ip_is_in(ip_address, self.allow_list):
-            return True
+        ip_address = netaddr.IPAddress(ip_address)
+        allowed = True
+        denied = False
 
+        if self.allow_list and not self._ip_is_in(ip_address, self.allow_list):
+            allowed = False
         if self.deny_list and self._ip_is_in(ip_address, self.deny_list):
-            return False
+            denied = True
 
-        return not (self.allow_list and not self._ip_is_in(ip_address, self.allow_list))
+        return allowed and not denied
 
     def _ip_is_in(self, ip_address: str | netaddr.IPAddress, ip_list: IPSet):
         if isinstance(ip_address, str):
@@ -90,8 +90,8 @@ class IpService:
     def get_by_id(db: Session, uid: int):
         return db.query(models.IP).filter(models.IP.id == uid).first()
 
-    def create_ip(self, db: Session, ip_address: str, list: str):
-        db_ip = models.IP(ip_address=ip_address, list=list)
+    def create_ip(self, db: Session, ip_address: str, description: str, list: str):
+        db_ip = models.IP(ip_address=ip_address, description=description, list=list)
         db.add(db_ip)
         db.flush()
 

@@ -87,5 +87,15 @@ def test_is_ip_allowed_allow_deny(ip_service):
 
     ip_service.deny_list.add(netaddr.IPAddress("192.168.0.0"))
 
-    # Allow list takes precedence
-    assert ip_service.is_ip_allowed("192.168.0.0") is True
+    assert ip_service.is_ip_allowed("192.168.0.0") is False
+
+    ip_service.allow_list = to_set(
+        ip_service, ["192.168.1.1-192.168.1.255"], IpList.allow
+    )
+    ip_service.deny_list = to_set(ip_service, ["192.168.1.5"], IpList.deny)
+
+    assert ip_service.is_ip_allowed("192.168.1.1") is True  # in allow list
+    assert (
+        ip_service.is_ip_allowed("192.168.1.5") is False
+    )  # in allow list, but also in deny list
+    assert ip_service.is_ip_allowed("192.168.8.8") is False  # In neither list

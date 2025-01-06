@@ -1,7 +1,10 @@
 from fastapi import Depends
 
 from empire.server.api.api_router import APIRouter
-from empire.server.api.jwt_auth import get_current_active_admin_user
+from empire.server.api.jwt_auth import (
+    get_current_active_admin_user,
+    get_current_active_user,
+)
 from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.server import main
@@ -15,10 +18,15 @@ router = APIRouter(
         404: {"description": "Not found", "model": NotFoundResponse},
         400: {"description": "Bad request", "model": BadRequestResponse},
     },
-    dependencies=[Depends(get_current_active_admin_user)],
+    dependencies=[Depends(get_current_active_user)],
 )
 
 
-@router.put("/ip_filtering")
-async def toggle_ip_filtering(db: CurrentSession, enabled: bool):
+@router.put("/ip_filtering", dependencies=[Depends(get_current_active_admin_user)])
+def toggle_ip_filtering(db: CurrentSession, enabled: bool):
     ip_service.toggle_ip_filtering(db, enabled)
+
+
+@router.get("/ip_filtering", dependencies=[Depends(get_current_active_user)])
+def get_ip_filtering():
+    return {"enabled": ip_service.ip_filtering}

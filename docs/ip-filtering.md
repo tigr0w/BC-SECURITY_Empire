@@ -12,7 +12,9 @@ The defaults from the `config.yaml` file are loaded into the database when Empir
 starts up if the ip lists are empty in the database. After the initial load, IPs
 can be added to both lists via the API or Starkiller.
 
-IP Filtering can be turned on/off by an admin user via the API or Starkiller.
+IP Filtering can be turned on/off by an admin user via the API. The default behavior has both lists empty and the feature enabled.
+
+An IP Filtering interface is available in the [Sponsors](https://github.com/sponsors/BC-SECURITY) version of Starkiller.
 
 ### Example Configuration formatting
 
@@ -38,6 +40,6 @@ The IP filtering logic is as follows:
 * If no allow list or deny list is set, then all IPs are allowed.
 * If only an allow list is set, then only IPs in the allow list are allowed.
 * If only a deny list is set, then only IPs not in the deny list are allowed.
-* If both an allow list and a deny list are set, then IPs in the deny list are not allowed, but allow listed IPs take precedence over deny listed IPs.
+* If both an allow list and a deny list are set, the IPs are first filtered through the allow list, and then the deny list.
 
 For example filtering logic see the [tests](https://github.com/BC-SECURITY/Empire/blob/main/empire/test/test_ip_service.py).
