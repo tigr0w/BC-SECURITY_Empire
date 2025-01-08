@@ -307,7 +307,6 @@ fi
 
 echo -e "\x1b[1;34m[*] Installing Packages\x1b[0m"
 poetry config virtualenvs.in-project true
-poetry config virtualenvs.prefer-active-python true
 poetry install
 
 echo -e '\x1b[1;32m[+] Install Complete!\x1b[0m'
