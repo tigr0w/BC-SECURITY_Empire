@@ -11,6 +11,10 @@ on:
           - minor
           - major
         required: true
+      overrideVersion:
+        description: "Override the version number. If this is set, the bumpType will be ignored. example: v6.0.0-beta1"
+        type: string
+        required: false
 
 jobs:
   release_private:
@@ -40,7 +44,11 @@ jobs:
       - name: Change version number
         run: |
           OLD_VERSION=$(poetry version -s)
-          poetry version ${{ github.event.inputs.bumpType }}
+          if [ -n "${{ github.event.inputs.overrideVersion }}" ]; then
+            poetry version ${{ github.event.inputs.overrideVersion }}
+          else
+            poetry version ${{ github.event.inputs.bumpType }}
+          fi
           APP_VERSION=$(poetry version -s)
           echo "APP_VERSION=$(poetry version -s)" >> $GITHUB_ENV
           sed -i "s/$OLD_VERSION\ BC\ Security/$APP_VERSION\ BC\ Security/" empire/server/common/empire.py
