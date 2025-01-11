@@ -148,8 +148,8 @@ def get_latest_patch_version(empire_config, base_version):
     """
     import requests
 
-    compiler_config = empire_config.empire_compiler
-    repo_url = compiler_config.repo
+    compiler_config = empire_config["empire_compiler"]
+    repo_url = compiler_config["repo"]
 
     if repo_url.startswith("https://github.com/"):
         parts = repo_url[len("https://github.com/") :].rstrip(".git").split("/")

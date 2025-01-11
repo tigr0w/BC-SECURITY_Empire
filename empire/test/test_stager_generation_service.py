@@ -22,7 +22,7 @@ def test_compiler(empire_config):
     """
     Tests related to the EmpireCompiler binary.
     """
-    load_empire_compiler(empire_config)
+    load_empire_compiler(empire_config.model_dump())
 
     compiler_dir = (
         Path(empire_config.empire_compiler.directory)
