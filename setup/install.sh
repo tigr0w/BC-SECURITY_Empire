@@ -239,11 +239,9 @@ else
 fi
 
 sudo apt-get update
-# xclip for copying to clipboard
 # libpango-1.0-0 and libharfbuzz0b for weasyprint
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
   python3 \
-  xclip \
   libpango-1.0-0 \
   libharfbuzz0b \
   libpangoft2-1.0-0
