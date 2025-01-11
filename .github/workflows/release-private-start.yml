@@ -12,7 +12,7 @@ on:
           - major
         required: true
       overrideVersion:
-        description: "Override the version number. If this is set, the bumpType will be ignored. example: v6.0.0-beta1"
+        description: "Override the version number. If this is set, the bumpType will be ignored. example: 6.0.0-beta1"
         type: string
         required: false
 
