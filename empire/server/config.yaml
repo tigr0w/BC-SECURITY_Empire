@@ -51,7 +51,7 @@ starkiller:
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
   directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
-  ref: v3.0-dev
+  ref: sponsors-main
   auto_update: true
 submodules:
   auto_update: true
