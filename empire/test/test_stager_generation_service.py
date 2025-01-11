@@ -22,10 +22,11 @@ def test_compiler(empire_config):
     """
     Tests related to the EmpireCompiler binary.
     """
+    empire_config = empire_config.model_dump()
     load_empire_compiler(empire_config)
 
     compiler_dir = (
-        Path(empire_config.empire_compiler.directory)
+        Path(empire_config["empire_compiler"]["directory"])
         / "EmpireCompiler"
         / "EmpireCompiler"
     )
@@ -35,7 +36,7 @@ def test_compiler(empire_config):
     assert "Usage:" in result, "Unexpected output from EmpireCompiler --help"
 
     expected_version = get_latest_patch_version(
-        empire_config, empire_config.empire_compiler.version
+        empire_config, empire_config["empire_compiler"]["version"]
     )[1:]
     version_output = run_as_user(
         [str(compiler_dir), "--version"], text=True, capture_output=True

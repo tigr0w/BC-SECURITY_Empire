@@ -285,15 +285,11 @@ def test_plugin_load_exception(install_path, session_local):
     main_menu_mock.installPath = install_path
 
     plugin_service = PluginService(main_menu_mock)
-    main_menu_mock = MagicMock()
-    main_menu_mock.installPath = install_path
-
     plugin_service.plugin_path = Path(install_path).parent / "test/plugin_install"
-
     plugin_service.startup()
 
     with session_local.begin() as db:
-        plugin = plugin_service.get_by_id(db, "LoadExceptionPlugin")
+        plugin = plugin_service.get_by_id(db, "loadexceptionplugin")
 
         assert plugin is not None
         assert plugin.db_plugin.load_error == "This plugin is meant to fail to load."

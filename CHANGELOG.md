@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Fixed** for any bug fixes.
 -   **Security** in case of vulnerabilities.
 
-## [6.0.0-dev]
+## [Unreleased]
+
+## [6.0.0-beta1] - 2025-01-11
 
 ### Highlights
 
@@ -53,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Moved `Agents` class to `AgentCommunicationService`
     -   Refactored many of the functions and parameter names
 -   Moved `Stagers` class to `StagerGenerationService`
-   -    Refactored many of the funtions and parameter names
+    -   Refactored many of the funtions and parameter names
 -   Moved Plugin Task handling from `PluginService` to `PluginTaskService`
 -   Moved socks management to `AgentSocksService`
     -   Renamed socks properties on `AgentSocksService` to use plural naming
@@ -79,12 +81,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed `nim` stager from Empire and install script
 -   Removed slack notifications from listeners
 -   Removed the following stagers
-   - osx/pkg
-   - windows/backdoorlnkmacro
-   - windows/launcher_lnk
-   - windows/launcher_sct
-   - windows/ms16-051
-   - windows/reverseshell
+    -   osx/pkg
+    -   windows/backdoorlnkmacro
+    -   windows/launcher_lnk
+    -   windows/launcher_sct
+    -   windows/ms16-051
+    -   windows/reverseshell
 
 #### Breaking
 
@@ -98,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed reverseshellserver plugin
 
 ### Fixed
+
 -   Fixed Powershell agent overwritting results for C# taskings
 
 ### Security
@@ -1035,7 +1038,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta1...HEAD
+
+[6.0.0-beta1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...v6.0.0-beta1
 
 [5.12.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.0...v5.12.1
 

@@ -175,7 +175,7 @@ def initialize(run: bool = True):  # noqa: PLR0915
 
     if empire_config.empire_compiler.enabled:
         log.info("Empire Compiler enabled. Loading.")
-        load_empire_compiler(empire_config)
+        load_empire_compiler(empire_config.model_dump())
     else:
         log.info("Empire Compiler disabled. Not loading.")
 
