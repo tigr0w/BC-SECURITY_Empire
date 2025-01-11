@@ -84,10 +84,10 @@ def load_empire_compiler(empire_config):
     Syncs the Empire Compiler directory with what is in the config.
     Determines the latest version and ensures the repository is up to date.
     """
-    compiler_config = empire_config.empire_compiler
-    repo_path = Path(compiler_config.directory)
-    repo_url = compiler_config.repo
-    base_version = compiler_config.version
+    compiler_config = empire_config["empire_compiler"]
+    repo_path = Path(compiler_config["directory"])
+    repo_url = compiler_config["repo"]
+    base_version = compiler_config["version"]
     architecture = get_architecture()
 
     if architecture == "unsupported":
@@ -122,7 +122,7 @@ def load_empire_compiler(empire_config):
         _clone_empire_compiler(repo_url, latest_version, repo_path)
         binary_needs_replacement = True
 
-    elif compiler_config.auto_update:
+    elif compiler_config["auto_update"]:
         log.info("Empire Compiler: Autoupdate on. Pulling latest changes.")
         current_version = fetch_checkout_pull(repo_url, latest_version, repo_path)
         binary_needs_replacement = current_version != latest_version
