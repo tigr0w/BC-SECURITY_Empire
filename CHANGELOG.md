@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v5.12.2] - 2025-01-12
+
 ### Fixed
 
 -   Fixed issue with C# exe and shellcode not compiling PowerShell stagers
@@ -950,7 +952,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...HEAD
+
+[5.12.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...v5.12.2
 
 [5.12.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.0...v5.12.1
 
