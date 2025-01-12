@@ -105,7 +105,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-## [Unreleased]
+## [5.12.2] - 2025-01-12
+
+### Fixed
+
+-   Fixed issue with C# exe and shellcode not compiling PowerShell stagers
+-   Fix delay/jitter adjustment in python agent (@janit0rjoe)
 
 ## [5.12.1] - 2025-01-08
 
@@ -1040,7 +1045,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta1...HEAD
 
-[6.0.0-beta1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...v6.0.0-beta1
+[6.0.0-beta1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...v6.0.0-beta1
+
+[5.12.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...v5.12.2
 
 [5.12.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.0...v5.12.1
 

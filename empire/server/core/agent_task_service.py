@@ -251,7 +251,7 @@ class AgentTaskService:
                 db,
                 agent,
                 "TASK_PYTHON_CMD_WAIT",
-                f"global delay; global jitter; delay={delay}; jitter={jitter}; print('delay/jitter set to {delay}/{jitter}')",
+                f"global agent; agent.delay={delay}; agent.jitter={jitter}; print('delay/jitter set to {delay}/{jitter}')",
                 user_id=user_id,
             )
         if agent.language == "csharp":

@@ -593,6 +593,7 @@ class MainAgent:
         Task 110
         """
         try:
+            globals().update({'agent':self})
             buffer = StringIO()
             sys.stdout = buffer
             code_obj = compile(data, "<string>", "exec")
