@@ -1,7 +1,8 @@
-# Plugins Getting Started
+# Plugin Development
 
-This page will walk you through the process of creating a plugin for Empire using
-the hello world plugin as an example. The hello world plugin is an example plugin
+## Getting Started
+
+The hello world plugin is an example plugin
 that can be found in the `empire/server/plugins/example` directory.
 
 ```
@@ -42,5 +43,3 @@ and must inherit from `empire.server.common.plugins.BasePlugin`.
 class Plugin(BasePlugin):
     ...
 ```
-
-To get into the details of the plugin, move onto the [plugin development](./plugin-development.md) page.

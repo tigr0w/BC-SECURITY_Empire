@@ -84,7 +84,7 @@ Some tasks have the ability to join in a `Download`, if this is the case, the do
 */api/v2/agents/{agent_id}/files/*
 The agent files endpoints are a read only view of the the files on an agent's machine.
 To populate agent files, a task must be run to get a list of files. At the moment running an `ls`
-will populate this resource because of a [hook](../plugins/hooks-and-filters.md) that is built in to Empire. There is also a `DirectoryList` task that also populates these, which is what the File Browser in Starkiller uses.
+will populate this resource because of a [hook](../plugins/development/hooks-and-filters.md) that is built in to Empire. There is also a `DirectoryList` task that also populates these, which is what the File Browser in Starkiller uses.
 
 If a file is downloaded, then the associated AgentFile record will have a joined `Download` record. Just like Stagers and Agent Tasks, if a download is associated with a file, it will be returned along with the file with a reference to the uri to download it.
 

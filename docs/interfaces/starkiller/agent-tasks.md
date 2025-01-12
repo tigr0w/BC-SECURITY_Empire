@@ -1,6 +1,6 @@
-# Agent Taskings
+# Agent Tasks
 
-Agent taskings in Empire are managed through a series of status updates that reflect the lifecycle of a task from creation to completion. These statuses help users understand the current state of tasks assigned to agents. Below are the possible statuses for agent taskings along with descriptions and representative icons.
+Agent tasks in Empire are managed through a series of status updates that reflect the lifecycle of a task from creation to completion. These statuses help users understand the current state of tasks assigned to agents. Below are the possible statuses for agent taskings along with descriptions and representative icons.
 
 ## Queued
 
