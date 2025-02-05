@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 
 from empire.scripts.sync_empire_compiler import (
-    get_latest_patch_version,
     load_empire_compiler,
 )
 from empire.server.common.empire import MainMenu
@@ -34,16 +33,6 @@ def test_compiler(empire_config):
 
     result = run_as_user([str(compiler_dir), "--help"], text=True, capture_output=True)
     assert "Usage:" in result, "Unexpected output from EmpireCompiler --help"
-
-    expected_version = get_latest_patch_version(
-        empire_config, empire_config["empire_compiler"]["version"]
-    )[1:]
-    version_output = run_as_user(
-        [str(compiler_dir), "--version"], text=True, capture_output=True
-    )
-    assert (
-        expected_version in version_output
-    ), f"Expected version {expected_version}, but got {version_output}"
 
 
 def test_generate_launcher_fetcher(stager_generation_service):

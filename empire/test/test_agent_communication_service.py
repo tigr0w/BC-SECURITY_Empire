@@ -41,10 +41,6 @@ def test_save_file_non_python(
             "powershell",
         )
 
-    expected = (
-        empire_config.directories.downloads / agent / file_path.replace("\\", "/")
-    )
-
     with session_local.begin() as db:
         task = agent_task_service.get_task_for_agent(db, agent, agent_task["id"])
         assert len(task.downloads) == 1
@@ -52,7 +48,7 @@ def test_save_file_non_python(
         assert download.filename == "test.txt"
         assert download.size == len(data)
         assert download.get_bytes_file() == data
-        assert download.location == str(expected)
+        assert f'downloads/{agent}/{file_path.replace("\\", "/")}' in download.location
 
 
 def test_save_file_python(

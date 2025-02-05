@@ -42,14 +42,17 @@ log = logging.getLogger(__name__)
 class MainMenu:
     def __init__(self, args=None):
         log.info("Empire starting up...")
-        self.installPath = str(Path(os.path.realpath(__file__)).parent.parent)
+
+        self.install_path = Path(os.path.realpath(__file__)).parent.parent
+        # installPath is deprecated, use install_path
+        self.installPath = str(self.install_path)
 
         self.args = args
 
         self.socketio: SocketIO | None = None
 
-        self.dotnet_compiler = DotnetCompiler(self.installPath)
-        self.go_compiler = GoCompiler(self.installPath)
+        self.dotnet_compiler = DotnetCompiler(self.install_path)
+        self.go_compiler = GoCompiler(self.install_path)
         self.listenertemplatesv2 = ListenerTemplateService(self)
         self.stagertemplatesv2 = StagerTemplateService(self)
         self.bypassesv2 = BypassService(self)

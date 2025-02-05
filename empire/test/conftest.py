@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from empire.server.core.config.config_manager import EmpireConfig
 
 SERVER_CONFIG_LOC = "empire/test/test_server_config.yaml"
-CLIENT_CONFIG_LOC = "empire/test/test_client_config.yaml"
 DEFAULT_ARGV = ["", "server", "--config", SERVER_CONFIG_LOC]
 
 
@@ -210,7 +209,7 @@ def base_listener_non_fixture():
         "template": "http",
         "options": {
             "Name": "new-listener-1",
-            "Host": "http://localhost:80",
+            "Host": "http://localhost:1336",
             "BindIP": "0.0.0.0",
             "Port": "1336",
             "Launcher": "powershell -noP -sta -w 1 -enc ",
@@ -559,15 +558,6 @@ def download(client, admin_auth_header):
     )
 
     return response.json()["id"]
-
-
-@pytest.fixture(scope="session")
-def server_config_dict():
-    # load the config file
-    import yaml
-
-    with open(SERVER_CONFIG_LOC) as f:
-        return yaml.safe_load(f)
 
 
 @contextmanager

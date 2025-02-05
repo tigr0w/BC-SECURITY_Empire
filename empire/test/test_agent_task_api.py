@@ -945,11 +945,7 @@ def test_last_task(client, admin_auth_header, agent, empire_config):
     )
 
     assert response.status_code == status.HTTP_201_CREATED
-
-    location = empire_config.yaml["debug"]["last_task"]["file"]
-    with open(location) as f:
-        last_task = f.read()
-
+    last_task = empire_config.debug.last_task.file.read_text()
     assert 'echo "HELLO WORLD"' in last_task
 
 
