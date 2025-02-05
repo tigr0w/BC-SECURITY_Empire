@@ -13,7 +13,7 @@ from empire.server.api.v2.download.download_dto import (
     DownloadSourceFilter,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 
 if typing.TYPE_CHECKING:

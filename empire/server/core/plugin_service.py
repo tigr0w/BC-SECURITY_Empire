@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from starlette.status import HTTP_200_OK
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
-from empire.server.core.config import PluginConfig, empire_config
+from empire.server.core.config.config_manager import PluginConfig, empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import PluginInfo

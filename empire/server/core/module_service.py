@@ -17,7 +17,7 @@ from empire.server.api.v2.module.module_dto import (
     ModuleUpdateRequest,
 )
 from empire.server.common import helpers
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import (

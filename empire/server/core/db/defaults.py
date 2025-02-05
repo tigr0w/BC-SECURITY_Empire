@@ -7,7 +7,7 @@ import string
 from passlib import pwd
 from passlib.context import CryptContext
 
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 
 database_config = empire_config.database.defaults

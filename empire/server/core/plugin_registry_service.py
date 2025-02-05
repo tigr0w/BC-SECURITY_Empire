@@ -5,7 +5,7 @@ import requests
 import yaml
 from pydantic import BaseModel, ValidationError, model_validator
 
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import PluginValidationException

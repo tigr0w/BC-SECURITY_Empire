@@ -11,7 +11,7 @@ import python_obfuscator
 from python_obfuscator.techniques import one_liner, variable_renamer
 from sqlalchemy.orm import Session
 
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util

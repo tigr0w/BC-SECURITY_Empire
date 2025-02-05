@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
-from empire.server.core.config import PluginAutoExecuteConfig
+from empire.server.core.config.config_manager import PluginAutoExecuteConfig
 from empire.server.core.exceptions import PluginValidationException
 
 if TYPE_CHECKING:
@@ -226,7 +226,7 @@ def plugin_service(main: "MainMenu"):
 
 
 def test__determine_auto_start(empire_config, plugin_service):
-    from empire.server.core.config import PluginConfig
+    from empire.server.core.config.config_manager import PluginConfig
     from empire.server.core.db.models import PluginInfo
 
     plugin_info = PluginInfo(
@@ -247,7 +247,7 @@ def test__determine_auto_start(empire_config, plugin_service):
 
 
 def test__determine_auto_execute(empire_config, plugin_service):
-    from empire.server.core.config import PluginConfig
+    from empire.server.core.config.config_manager import PluginConfig
     from empire.server.core.db.models import PluginInfo
 
     plugin_config = PluginInfo(

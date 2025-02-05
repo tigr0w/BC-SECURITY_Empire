@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+-   Combined config with config_manager
+-   Add pytest-env to set TEST_MODE
+
 ## [6.0.0-beta1] - 2025-01-11
 
 ### Highlights

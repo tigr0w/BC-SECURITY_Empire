@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from empire.server.core.config import EmpireConfig
+from empire.server.core.config.config_manager import EmpireConfig
 from empire.test.conftest import load_test_config
 
 

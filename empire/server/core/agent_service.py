@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from empire.server.api.v2.agent.agent_dto import AggregateBucket
 from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.common import encryption, helpers
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.utils import datetime_util
 
@@ -273,6 +273,6 @@ class AgentService:
             self._agent_log_locks[session_id] = threading.Lock()
         lock = self._agent_log_locks[session_id]
 
-        with lock, open(f"{save_path}/agent.log", "a") as f:
+        with lock, (save_path / "agent.log").open("a") as f:
             f.write("\n" + current_time + " : " + "\n")
             f.write(data + "\n")

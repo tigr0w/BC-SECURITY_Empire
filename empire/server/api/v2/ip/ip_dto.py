@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel
 
-from empire.server.core.config import valid_ip
+from empire.server.core.config.config_manager import valid_ip
 from empire.server.core.db.models import IpList
 
 

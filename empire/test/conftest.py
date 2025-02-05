@@ -12,7 +12,7 @@ from starlette.testclient import TestClient
 from empire.server.utils.string_util import get_random_string
 
 if TYPE_CHECKING:
-    from empire.server.core.config import EmpireConfig
+    from empire.server.core.config.config_manager import EmpireConfig
 
 SERVER_CONFIG_LOC = "empire/test/test_server_config.yaml"
 CLIENT_CONFIG_LOC = "empire/test/test_client_config.yaml"
@@ -90,7 +90,7 @@ def _example_2_plugin(install_path):
 
 @pytest.fixture(scope="session", autouse=True)
 def empire_config() -> "EmpireConfig":
-    from empire.server.core.config import empire_config
+    from empire.server.core.config.config_manager import empire_config
 
     return empire_config
 
@@ -567,14 +567,6 @@ def server_config_dict():
     import yaml
 
     with open(SERVER_CONFIG_LOC) as f:
-        return yaml.safe_load(f)
-
-
-@pytest.fixture(scope="session")
-def client_config_dict():
-    import yaml
-
-    with open(CLIENT_CONFIG_LOC) as f:
         return yaml.safe_load(f)
 
 

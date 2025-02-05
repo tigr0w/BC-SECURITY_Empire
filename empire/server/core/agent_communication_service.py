@@ -15,7 +15,7 @@ from zlib_wrapper import decompress
 from empire.server.api.v2.agent.agent_task_dto import ModulePostRequest
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
 from empire.server.common import encryption, helpers, packets
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus

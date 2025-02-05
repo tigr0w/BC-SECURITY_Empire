@@ -16,7 +16,7 @@ from empire.server.api.v2.agent.agent_task_dto import (
     ModulePostRequest,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks

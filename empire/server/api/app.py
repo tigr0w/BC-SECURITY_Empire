@@ -15,7 +15,7 @@ from empire.scripts.sync_empire_compiler import load_empire_compiler
 from empire.scripts.sync_starkiller import sync_starkiller
 from empire.server.api.middleware import EmpireCORSMiddleware
 from empire.server.api.v2.websocket.socketio import setup_socket_events
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 
 log = logging.getLogger(__name__)
 

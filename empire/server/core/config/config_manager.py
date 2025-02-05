@@ -1,4 +1,6 @@
 import logging
+import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -14,8 +16,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-
-from empire import config_manager
 
 log = logging.getLogger(__name__)
 
@@ -208,6 +208,22 @@ def set_yaml(location: str):
         log.warning(exc)
 
 
+DEFAULT_CONFIG = Path("empire/server/config.yaml")
+
+if os.environ.get("TEST_MODE"):
+    CONFIG_DIR = Path.home() / ".config" / "empire-test"
+    shutil.rmtree(CONFIG_DIR, ignore_errors=True)
+else:
+    CONFIG_DIR = Path.home() / ".config" / "empire"
+
+CONFIG_PATH = CONFIG_DIR / "config.yaml"
+CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+if not CONFIG_PATH.exists():
+    shutil.copy(DEFAULT_CONFIG, CONFIG_PATH)
+    log.info(f"Copied {DEFAULT_CONFIG} to {CONFIG_PATH}")
+
+
 config_dict = EmpireConfig().model_dump()
 if "--config" in sys.argv:
     location = sys.argv[sys.argv.index("--config") + 1]
@@ -215,11 +231,10 @@ if "--config" in sys.argv:
     loaded_config = set_yaml(location)
     if loaded_config:
         config_dict = loaded_config
-elif config_manager.CONFIG_SERVER_PATH.exists():
+elif CONFIG_PATH.exists():
     log.info("Loading default config")
-    loaded_config = set_yaml(config_manager.CONFIG_SERVER_PATH)
+    loaded_config = set_yaml(str(CONFIG_PATH))
     if loaded_config:
         config_dict = loaded_config
-        config_dict = config_manager.check_config_permission(config_dict)
 
 empire_config = EmpireConfig(config_dict)

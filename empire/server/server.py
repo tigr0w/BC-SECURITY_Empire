@@ -13,7 +13,7 @@ from pathlib import Path
 import urllib3
 
 from empire.server.common import empire
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import base
 from empire.server.utils import file_util
 from empire.server.utils.file_util import run_as_user
