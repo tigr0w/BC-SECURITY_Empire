@@ -29,6 +29,7 @@ from empire.server.core.module_models import (
     EmpireModuleOption,
     LanguageEnum,
 )
+from empire.server.utils import data_util, file_util
 from empire.server.utils.bof_packer import process_arguments
 from empire.server.utils.option_util import convert_module_options, validate_options
 from empire.server.utils.string_util import slugify
@@ -46,6 +47,7 @@ class ModuleService:
         self.main_menu = main_menu
         self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
         self.download_service: DownloadService = main_menu.downloadsv2
+        self.module_source_path = main_menu.install_path / "data/module_source"
 
         self.modules = {}
 
@@ -351,9 +353,9 @@ class ModuleService:
         bof_module = self.modules["csharp_code_execution_runcoff"]
 
         if params["Architecture"] == "x86":
-            script_path = empire_config.directories.module_source / module.bof.x86
+            script_path = self.module_source_path / module.bof.x86
         else:
-            script_path = empire_config.directories.module_source / module.bof.x64
+            script_path = self.module_source_path / module.bof.x64
 
         bof_data = script_path.read_bytes()
         b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
@@ -404,9 +406,9 @@ class ModuleService:
         skip_params=False,
     ) -> str:
         if params["Architecture"] == "x86":
-            script_path = empire_config.directories.module_source / module.bof.x86
+            script_path = self.module_source_path / module.bof.x86
         else:
-            script_path = empire_config.directories.module_source / module.bof.x64
+            script_path = self.module_source_path / module.bof.x64
 
         bof_data = script_path.read_bytes()
         b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
@@ -447,6 +449,7 @@ class ModuleService:
         return f"{final_base64_json}"
 
     def generate_go_pe(
+        self,
         module: EmpireModule,
         params: dict[str, str],
         skip_params=False,
@@ -461,9 +464,9 @@ class ModuleService:
         """
         # Determine the file path based on architecture
         if params["Architecture"] == "x86":
-            script_path = empire_config.directories.module_source / module.pe.x86
+            script_path = self.module_source_path / module.pe.x86
         else:
-            script_path = empire_config.directories.module_source / module.pe.x64
+            script_path = self.module_source_path / module.pe.x64
 
         # Read the PE file and encode it in base64
         pe_data = script_path.read_bytes()
@@ -509,10 +512,7 @@ class ModuleService:
         )
 
         if module.script_path:
-            script_path = os.path.join(
-                empire_config.directories.module_source,
-                module.script_path,
-            )
+            script_path = self.module_source_path / module.script_path
             with open(script_path) as stream:
                 script = stream.read()
         else:
@@ -760,25 +760,17 @@ class ModuleService:
             spec.loader.exec_module(imp_mod)
             my_model.advanced.generate_class = imp_mod.Module()
         elif my_model.script_path:
-            if not os.path.exists(
-                os.path.join(
-                    empire_config.directories.module_source,
-                    my_model.script_path,
-                )
-            ):
+            script_path = self.module_source_path / my_model.script_path
+            if not script_path.exists():
                 raise Exception(
                     f"File provided in script_path does not exist: { module_name }"
                 )
         elif my_model.script:
             pass
         elif my_model.language == LanguageEnum.bof:
-            if not (
-                empire_config.directories.module_source / my_model.bof.x86
-            ).exists():
+            if not (self.module_source_path / my_model.bof.x86).exists():
                 raise Exception(f"x86 bof file provided does not exist: {module_name}")
-            if not (
-                empire_config.directories.module_source / my_model.bof.x64
-            ).exists():
+            if not (self.module_source_path / my_model.bof.x64).exists():
                 raise Exception(f"x64 bof file provided does not exist: {module_name}")
         elif my_model.language == LanguageEnum.csharp:
             pass
@@ -823,9 +815,7 @@ class ModuleService:
             return None
 
         if mod.script_path:
-            script_path = (
-                Path(empire_config.directories.module_source) / mod.script_path
-            )
+            script_path = self.module_source_path / mod.script_path
             script = script_path.read_text()
         else:
             script = mod.script
@@ -840,10 +830,9 @@ class ModuleService:
         """
         try:
             if obfuscate:
-                obfuscated_module_source = (
-                    empire_config.directories.obfuscated_module_source
+                module_path = (
+                    empire_config.directories.obfuscated_module_source / module_name
                 )
-                module_path = os.path.join(obfuscated_module_source, module_name)
                 # If pre-obfuscated module exists then return code
                 if os.path.exists(module_path):
                     with open(module_path) as f:
@@ -851,8 +840,7 @@ class ModuleService:
                     return obfuscated_module_code, None
 
                 # If pre-obfuscated module does not exist then generate obfuscated code and return it
-                module_source = empire_config.directories.module_source
-                module_path = os.path.join(module_source, module_name)
+                module_path = self.module_source_path / module_name
                 with open(module_path) as f:
                     module_code = f.read()
                 obfuscated_module_code = self.obfuscation_service.obfuscate(
@@ -861,13 +849,102 @@ class ModuleService:
                 return obfuscated_module_code, None
 
             # Use regular/unobfuscated code
-            module_source = empire_config.directories.module_source
-            module_path = os.path.join(module_source, module_name)
+            module_path = self.module_source_path / module_name
             with open(module_path) as f:
                 module_code = f.read()
             return module_code, None
         except Exception:
-            return None, f"[!] Could not read module source path at: {module_source}"
+            return (
+                None,
+                f"[!] Could not read module source path at: {self.module_source_path}",
+            )
+
+    def preobfuscate_modules(self, language: str, reobfuscate=False):
+        """
+        Preobfuscate PowerShell module_source files
+        """
+        if not data_util.is_powershell_installed():
+            err = "PowerShell is not installed and is required to use obfuscation, please install it first."
+            log.error(err)
+            return err
+
+        with SessionLocal.begin() as db:
+            db_obf_config = self.obfuscation_service.get_obfuscation_config(
+                db, language
+            )
+            files = self._get_module_source_files()
+
+            for file in files:
+                if reobfuscate or not self.is_obfuscated(file):
+                    message = f"Obfuscating {os.path.basename(file)}..."
+                    log.info(message)
+                else:
+                    log.warning(
+                        f"{os.path.basename(file)} was already obfuscated. Not reobfuscating."
+                    )
+                self.obfuscate_module(file, db_obf_config.command, reobfuscate)
+            return None
+
+    # this is still written in a way that its only used for PowerShell
+    # to make it work for other languages, we probably want to just pass in the db_obf_config
+    # and delegate to language specific functions
+    def obfuscate_module(
+        self, module_source, obfuscation_command="", force_reobfuscation=False
+    ):
+        if self.is_obfuscated(module_source) and not force_reobfuscation:
+            return None
+
+        try:
+            with open(module_source) as f:
+                module_code = f.read()
+        except Exception:
+            log.error(f"Could not read module source path at: {module_source}")
+            return ""
+
+        # Get the random function name generated at install and patch the stager with the proper function name
+        module_code = self.obfuscation_service.obfuscate_keywords(module_code)
+
+        # obfuscate and write to obfuscated source path
+        obfuscated_code = self.obfuscation_service.obfuscate(
+            module_code, obfuscation_command
+        )
+
+        relative_path = module_source.relative_to(self.module_source_path)
+        obfuscated_source = (
+            empire_config.directories.obfuscated_module_source / relative_path
+        )
+
+        try:
+            obfuscated_source.parent.mkdir(parents=True, exist_ok=True)
+            with open(obfuscated_source, "w") as f:
+                f.write(obfuscated_code)
+        except Exception:
+            log.error(
+                f"Could not write obfuscated module source path at: {obfuscated_source}"
+            )
+            return ""
+
+    def is_obfuscated(self, module_source: Path):
+        # Get the file path of the module_source, but only relative to the module_source directory
+        # Then append to the obfuscated_module_source directory
+        relative_path = module_source.relative_to(self.module_source_path)
+        return (
+            empire_config.directories.obfuscated_module_source / relative_path
+        ).exists()
+
+    def _get_module_source_files(self):
+        paths = []
+        pattern = "*.ps1"
+        for root, _dirs, files in self.module_source_path.walk():
+            for filename in fnmatch.filter(files, pattern):
+                paths.append(root / filename)
+
+        return paths
+
+    def remove_preobfuscated_modules(self, _language: str):
+        file_util.remove_dir_contents(
+            empire_config.directories.obfuscated_module_source
+        )
 
     def finalize_module(
         self,

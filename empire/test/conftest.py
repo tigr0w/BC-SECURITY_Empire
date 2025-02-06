@@ -1,7 +1,7 @@
 import os
 import shutil
 import sys
-from contextlib import contextmanager, suppress
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -89,9 +89,9 @@ def _example_2_plugin(install_path):
 
 @pytest.fixture(scope="session", autouse=True)
 def empire_config() -> "EmpireConfig":
-    from empire.server.core.config.config_manager import empire_config
+    from empire.server.core.config import config_manager
 
-    return empire_config
+    return config_manager.empire_config
 
 
 @pytest.fixture(scope="session")
@@ -558,21 +558,6 @@ def download(client, admin_auth_header):
     )
 
     return response.json()["id"]
-
-
-@contextmanager
-def patch_config(empire_config):
-    """
-    Change the module_source directory temporarily.
-    """
-    orig_src_dir = empire_config.directories.module_source
-    try:
-        empire_config.directories.module_source = Path(
-            "empire/test/data/module_source/"
-        ).resolve()
-        yield empire_config
-    finally:
-        empire_config.directories.module_source = orig_src_dir
 
 
 def load_test_config():

@@ -10,7 +10,6 @@ from _pytest.logging import LogCaptureHandler
 from empire.server.core.exceptions import (
     ModuleValidationException,
 )
-from empire.test.conftest import patch_config
 
 
 def convert_options_to_params(options):
@@ -45,9 +44,10 @@ def catch_logs(level: int, logger: logging.Logger) -> LogCaptureHandler:
 
 
 @pytest.fixture
-def main_menu_mock(models):
+def main_menu_mock(models, install_path):
     main_menu = Mock()
-    main_menu.installPath = "empire/server"
+    main_menu.install_path = Path(install_path)
+    main_menu.installPath = install_path
 
     main_menu.obfuscationv2 = Mock()
     obf_conf_mock = MagicMock()
@@ -154,10 +154,20 @@ def test_execute_custom_generate(
         assert execute["data"] == "This is the module code."
 
 
+@contextmanager
+def patch_module_source(module_service):
+    old_source = module_service.module_source_path
+    module_service.module_source_path = Path("empire/test/data/module_source")
+
+    yield
+
+    module_service.module_source_path = old_source
+
+
 def test_auto_get_source(
     empire_config, module_service, session_local, agent, models, install_path
 ):
-    with session_local.begin() as db, patch_config(empire_config):
+    with session_local.begin() as db, patch_module_source(module_service):
         source_path = Path(
             "empire/test/data/module_source/custom_module_auto_get_source.py"
         )
@@ -187,7 +197,7 @@ def test_auto_get_source(
 def test_auto_finalize(
     empire_config, module_service, session_local, agent, models, install_path
 ):
-    with session_local.begin() as db, patch_config(empire_config):
+    with session_local.begin() as db:
         file_path = "empire/test/data/modules/test_custom_module_auto_finalize.yaml"
         root_path = f"{install_path}/modules/"
         path = Path(file_path)

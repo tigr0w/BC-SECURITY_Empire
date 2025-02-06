@@ -114,7 +114,6 @@ class DatabaseConfig(EmpireBaseModel):
 
 class DirectoriesConfig(EmpireBaseModel):
     downloads: Path = Path("empire/server/downloads")
-    module_source: Path = Path("empire/server/modules")
     obfuscated_module_source: Path = Path("empire/server/data/obfuscated_module_source")
 
 

@@ -111,7 +111,6 @@ plugins:
 ```yaml
 directories:
   downloads: empire/server/downloads/
-  module_source: empire/server/data/module_source/
   obfuscated_module_source: empire/server/data/obfuscated_module_source/
 ```
 
