@@ -118,8 +118,12 @@ def test_load_modules(main_menu_mock, models, session_local):
 
                     if err != "csharpserver plugin not running":
                         # fail if a module fails to generate a script.
-                        assert resp is not None, f"No generated script for module {key}"
-                        assert len(resp) > 0, f"No generated script for module {key}"
+                        assert (
+                            resp.data is not None
+                        ), f"No generated script for module {key}"
+                        assert (
+                            len(resp.data) > 0
+                        ), f"No generated script for module {key}"
 
                 except ModuleValidationException as e:
                     # not gonna bother mocking out the csharp server right now.
@@ -151,7 +155,7 @@ def test_execute_custom_generate(
         )
 
         assert err is None
-        assert execute["data"] == "This is the module code."
+        assert execute.data == "This is the module code."
 
 
 @contextmanager
@@ -191,7 +195,7 @@ def test_auto_get_source(
         )
 
         assert err is None
-        assert execute["data"].strip() == source_path.read_text().strip()
+        assert execute.data.strip() == source_path.read_text().strip()
 
 
 def test_auto_finalize(
@@ -218,4 +222,4 @@ def test_auto_finalize(
         )
 
         assert err is None
-        assert execute["data"].strip() == "ScriptScriptEnd"
+        assert execute.data.strip() == "ScriptScriptEnd"

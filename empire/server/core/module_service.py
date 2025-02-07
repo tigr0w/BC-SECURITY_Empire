@@ -10,6 +10,7 @@ from pathlib import Path
 
 import yaml
 from packaging.version import parse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from empire.server.api.v2.module.module_dto import (
@@ -40,6 +41,12 @@ if typing.TYPE_CHECKING:
     from empire.server.core.obfuscation_service import ObfuscationService
 
 log = logging.getLogger(__name__)
+
+
+class ModuleExecutionRequest(BaseModel):
+    command: str
+    data: str
+    files: dict[str, Path] = {}
 
 
 class ModuleService:
@@ -92,7 +99,7 @@ class ModuleService:
         ignore_language_version_check: bool = False,
         ignore_admin_check: bool = False,
         modified_input: str | None = None,
-    ) -> tuple[dict | None, str | None]:
+    ) -> tuple[ModuleExecutionRequest | None, str | None]:
         """
         Execute the module. Note this doesn't actually add the task to the queue,
         it only generates the module data needed for a task to be created.
@@ -140,40 +147,47 @@ class ModuleService:
             # This should probably be a ModuleExecutionException, but
             # for backwards compatability with 5.x, it needs to raise a 400
             raise ModuleValidationException(err or "module produced an empty script")
-        if not module_data.isascii():
+
+        if type(module_data) is not ModuleExecutionRequest:
+            module_data = ModuleExecutionRequest(command="", data=module_data)
+
+        if not module_data.data.isascii():
             # This previously returned 'None, 'module source contains non-ascii characters'
             # Was changed in 4.3 to print a warning.
             log.warning(f"Module source for {module_id} contains non-ascii characters")
 
         if module.language == LanguageEnum.powershell:
-            module_data = helpers.strip_powershell_comments(module_data)
+            module_data.data = helpers.strip_powershell_comments(module_data.data)
 
         if module.language == LanguageEnum.python:
-            module_data = helpers.strip_python_comments(module_data)
+            module_data.data = helpers.strip_python_comments(module_data.data)
 
-        task_command = ""
         extension = module.output_extension.rjust(5) if module.output_extension else ""
 
         if agent.language in ("ironpython", "python"):
             if module.language == "python":
                 if module.background:
-                    task_command = "TASK_PYTHON_CMD_JOB"
+                    module_data.command = "TASK_PYTHON_CMD_JOB"
                 else:
-                    task_command, module_data = self._handle_save_file_command(
-                        "TASK_PYTHON", module.name, extension, module_data
+                    command, data = self._handle_save_file_command(
+                        "TASK_PYTHON", module.name, extension, module_data.data
                     )
+                    module_data.command = command
+                    module_data.data = data
             elif module.language == "powershell":
                 if module.background:
-                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                    module_data.command = "TASK_POWERSHELL_CMD_JOB"
                 else:
-                    task_command, module_data = self._handle_save_file_command(
-                        "TASK_POWERSHELL", module.name, extension, module_data
+                    command, data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data.data
                     )
+                    module_data.command = command
+                    module_data.data = data
             elif module.language in ("csharp", "bof"):
                 if module.background:
-                    task_command = "TASK_CSHARP_CMD_JOB"
+                    module_data.command = "TASK_CSHARP_CMD_JOB"
                 else:
-                    task_command = "TASK_CSHARP_CMD_WAIT"
+                    module_data.command = "TASK_CSHARP_CMD_WAIT"
             else:
                 log.error(
                     f"Unsupported module language {module.language} for agent {agent.language}"
@@ -182,11 +196,11 @@ class ModuleService:
         elif agent.language == "csharp":
             if module.language in ("csharp", "bof"):
                 if module.background:
-                    task_command = "TASK_CSHARP_CMD_JOB"
+                    module_data.command = "TASK_CSHARP_CMD_JOB"
                 else:
-                    task_command = "TASK_CSHARP_CMD_WAIT"
+                    module_data.command = "TASK_CSHARP_CMD_WAIT"
             elif module.language == "powershell":
-                task_command = "TASK_POWERSHELL_CMD_JOB"
+                module_data.command = "TASK_POWERSHELL_CMD_JOB"
             else:
                 log.error(
                     f"Unsupported module language {module.language} for agent {agent.language}"
@@ -195,16 +209,18 @@ class ModuleService:
         elif agent.language == "powershell":
             if module.language == "powershell":
                 if module.background:
-                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                    module_data.command = "TASK_POWERSHELL_CMD_JOB"
                 else:
-                    task_command, module_data = self._handle_save_file_command(
-                        "TASK_POWERSHELL", module.name, extension, module_data
+                    command, data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data.data
                     )
+                    module_data.command = command
+                    module_data.data = data
             elif module.language in ("csharp", "bof"):
                 if module.background:
-                    task_command = "TASK_CSHARP_CMD_JOB"
+                    module_data.command = "TASK_CSHARP_CMD_JOB"
                 else:
-                    task_command = "TASK_CSHARP_CMD_WAIT"
+                    module_data.command = "TASK_CSHARP_CMD_WAIT"
             else:
                 log.error(
                     f"Unsupported module language {module.language} for agent {agent.language}"
@@ -212,20 +228,22 @@ class ModuleService:
         elif agent.language == "go":
             if module.language == "powershell":
                 if module.background:
-                    task_command = "TASK_POWERSHELL_CMD_JOB"
+                    module_data.command = "TASK_POWERSHELL_CMD_JOB"
                 else:
-                    task_command, module_data = self._handle_save_file_command(
-                        "TASK_POWERSHELL", module.name, extension, module_data
+                    command, data = self._handle_save_file_command(
+                        "TASK_POWERSHELL", module.name, extension, module_data.data
                     )
+                    module_data.command = command
+                    module_data.data = data
             elif module.language == "csharp":
                 if module.background:
-                    task_command = "TASK_CSHARP_CMD_JOB"
+                    module_data.command = "TASK_CSHARP_CMD_JOB"
                 else:
-                    task_command = "TASK_CSHARP_CMD_WAIT"
+                    module_data.command = "TASK_CSHARP_CMD_WAIT"
             elif module.language == "bof":
-                task_command = "TASK_BOF_CMD_WAIT"
+                module_data.command = "TASK_BOF_CMD_WAIT"
             elif module.language == "pe":
-                task_command = "TASK_PE_CMD_WAIT"
+                module_data.command = "TASK_PE_CMD_WAIT"
             else:
                 log.error(
                     f"Unsupported module language {module.language} for agent {agent.language}"
@@ -234,7 +252,7 @@ class ModuleService:
             log.error(f"Unsupported agent language {agent.language}")
             return None, f"Unsupported agent language: {agent.language}"
 
-        return {"command": task_command, "data": module_data}, None
+        return module_data, None
 
     @staticmethod
     def _handle_save_file_command(cmd_type, module_name, extension, module_data):
@@ -291,7 +309,7 @@ class ModuleService:
         params: dict,
         agent_language: str,
         obfuscation_config: models.ObfuscationConfig = None,
-    ) -> tuple[str | None, str | None]:
+    ) -> tuple[ModuleExecutionRequest | None, str | None]:
         """
         Generate the script to execute
         :param module: the execution parameters (already validated)
@@ -327,22 +345,27 @@ class ModuleService:
                 log.error(f"Error generating script: {e}", exc_info=True)
                 return None, "Error generating script."
         elif module.language == LanguageEnum.powershell:
-            return self._generate_script_powershell(module, params, obfuscation_config)
+            resp = self._generate_script_powershell(module, params, obfuscation_config)
+            return ModuleExecutionRequest(command="", data=resp), None
         # We don't have obfuscation for other languages yet, but when we do,
         # we can pass it in here.
         elif module.language == LanguageEnum.python:
-            return self._generate_script_python(module, params, obfuscation_config)
+            resp = self._generate_script_python(module, params, obfuscation_config)
+            return ModuleExecutionRequest(command="", data=resp), None
         elif module.language == LanguageEnum.csharp:
-            return self.generate_script_csharp(module, params, obfuscation_config)
+            return self.generate_script_csharp(module, params, obfuscation_config), None
         elif module.language == LanguageEnum.bof:
             if agent_language == "go":
-                return self.generate_go_bof(module, params)
+                resp = self.generate_go_bof(module, params)
+                return ModuleExecutionRequest(command="", data=resp), None
             if not obfuscation_config:
                 obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                     db, LanguageEnum.csharp
                 )
-            return self.generate_script_bof(module, params, obfuscation_enabled)
-        return None
+            resp = self.generate_script_bof(module, params, obfuscation_enabled)
+            return ModuleExecutionRequest(command="", data=resp), None
+
+        return None, "Unsupported language"
 
     def generate_script_bof(
         self,
@@ -612,7 +635,7 @@ class ModuleService:
         module: EmpireModule,
         params: dict,
         obfuscation_config: models.ObfuscationConfig,
-    ) -> str:
+    ) -> ModuleExecutionRequest:
         try:
             obfuscate = (
                 obfuscation_config.enabled if obfuscation_config is not None else False
@@ -638,7 +661,10 @@ class ModuleService:
 
             param_json = json.dumps(filtered_params)
             base64_json = base64.b64encode(param_json.encode("utf-8")).decode("utf-8")
-            return f"{script_file}|,{base64_json}"
+            return ModuleExecutionRequest(
+                command="",
+                data=f"{script_file}|,{base64_json}",
+            )
         except (ModuleValidationException, ModuleExecutionException) as e:
             raise e
         except Exception as e:

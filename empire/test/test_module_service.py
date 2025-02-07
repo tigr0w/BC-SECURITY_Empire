@@ -51,7 +51,7 @@ def test_execute_module_with_script_in_yaml_modified_python_agent(
     )
 
     assert err is None
-    script = res["data"]
+    script = res.data
 
     assert script == "Modified Script: Hello World"
 
@@ -70,7 +70,7 @@ def test_execute_module_with_script_in_path_powershell_agent(
     )
 
     assert err is None
-    script = res["data"]
+    script = res.data
 
     assert script.startswith("function Invoke-Boolang")
 
@@ -89,7 +89,7 @@ def test_execute_module_with_script_in_path_modified_powershell(
     )
 
     assert err is None
-    script = res["data"]
+    script = res.data
 
     assert script.startswith(
         'Modified Script:  Invoke-Boolang -BooSource "Hello World"'
@@ -111,7 +111,7 @@ def test_execute_module_custom_generate_no_obfuscation_config_powershell_agent(
     )
 
     assert err is None
-    script = res["data"]
+    script = res.data
 
     assert script == 'cmd = "find /Users/ -name *.emlx 2>/dev/null"\nrun_command(cmd)'
 
@@ -129,10 +129,10 @@ def test_execute_module_task_command_python_agent(module_service, agent_mock):
 
     assert err is None
 
-    script = res["data"]
+    script = res.data
     assert script == "run_command('say -v alex Hello World')"
 
-    task_command = res["command"]
+    task_command = res.command
     assert task_command == "TASK_PYTHON_CMD_WAIT"
 
 
@@ -148,7 +148,7 @@ def test_execute_module_task_command_ironpython_agent(module_service, agent_mock
     )
 
     assert err is None
-    task_command = res["command"]
+    task_command = res.command
     assert task_command == "TASK_PYTHON_CMD_WAIT"
 
 
@@ -182,7 +182,7 @@ def test_execute_module_task_command_csharp_agent_with_csharp_module(
     )
 
     assert err is None
-    task_command = res["command"]
+    task_command = res.command
     assert task_command == "TASK_CSHARP_CMD_JOB"
 
 
@@ -193,13 +193,13 @@ def test_execute_module_bof_custom_generate(module_service, agent_mock):
         "Architecture": "x64",
         "Domain": ".",
     }
-    module_id = "bof_situational_awareness_netgrouplist"
+    module_id = "bof_situational_awareness_adcs_enum"
     res, err = module_service.execute_module(
         None, agent_mock, module_id, params, True, True, None
     )
 
     assert err is None
-    task_command = res["command"]
+    task_command = res.command
     assert task_command == "TASK_CSHARP_CMD_WAIT"
 
 
@@ -216,7 +216,7 @@ def test_execute_module_bof(module_service, agent_mock):
     )
 
     assert err is None
-    task_command = res["command"]
+    task_command = res.command
     assert task_command == "TASK_CSHARP_CMD_WAIT"
 
 
@@ -252,7 +252,7 @@ def test_execute_csharp_module(module_service, agent_mock):
     )
 
     assert err is None
-    task_command = res["command"]
+    task_command = res.command
     assert task_command == "TASK_CSHARP_CMD_WAIT"
 
 
@@ -286,7 +286,7 @@ def test_execute_module_task_command_powershell_agent(module_service, agent_mock
     )
 
     assert err is None
-    task_command = res["command"]
+    task_command = res.command
     assert task_command == "TASK_POWERSHELL_CMD_JOB"
 
 
@@ -320,7 +320,7 @@ def test_execute_module_with_non_ascii_characters(module_service, agent_mock):
     )
 
     assert err is None
-    assert res["data"]
+    assert res.data
 
 
 def test_execute_disabled_module(module_service, agent_mock):

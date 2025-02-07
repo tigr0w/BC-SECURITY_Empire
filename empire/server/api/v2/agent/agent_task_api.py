@@ -209,7 +209,7 @@ async def create_task_jobs(
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
 ):
-    resp, err = agent_task_service.create_task_jobs(db, db_agent, current_user.id)
+    resp, err = agent_task_service.create_task_jobs(db, db_agent, current_user)
 
     return domain_to_dto_task(resp)
 
@@ -223,7 +223,7 @@ async def create_task_kill_job(
 ):
     kill_job = str(jobs.id)
     resp, err = agent_task_service.create_task_kill_job(
-        db, db_agent, current_user.id, kill_job
+        db, db_agent, kill_job, current_user
     )
 
     return domain_to_dto_task(resp)
@@ -241,7 +241,7 @@ async def create_task_shell(
     such a whoami or ps and execute the command directly.
     """
     resp, err = agent_task_service.create_task_shell(
-        db, db_agent, shell_request.command, shell_request.literal, current_user.id
+        db, db_agent, shell_request.command, shell_request.literal, current_user
     )
 
     if err:
@@ -259,7 +259,7 @@ async def create_task_module(
 ):
     try:
         resp, err = agent_task_service.create_task_module(
-            db, db_agent, module_request, current_user.id
+            db, db_agent, module_request, current_user
         )
 
         # This is for backwards compatibility with modules returning
@@ -312,7 +312,7 @@ async def create_task_upload(
         )
 
     resp, err = agent_task_service.create_task_upload(
-        db, db_agent, file_data, upload_request.path_to_file, current_user.id
+        db, db_agent, file_data, upload_request.path_to_file, current_user
     )
 
     if err:
@@ -329,7 +329,7 @@ async def create_task_download(
     db_agent: models.Agent = Depends(get_agent),
 ):
     resp, err = agent_task_service.create_task_download(
-        db, db_agent, download_request.path_to_file, current_user.id
+        db, db_agent, download_request.path_to_file, current_user
     )
 
     if err:
@@ -345,7 +345,7 @@ async def create_task_sysinfo(
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
 ):
-    resp, err = agent_task_service.create_task_sysinfo(db, db_agent, current_user.id)
+    resp, err = agent_task_service.create_task_sysinfo(db, db_agent, current_user)
 
     if err:
         raise HTTPException(status_code=400, detail=err)
@@ -363,7 +363,7 @@ async def create_task_update_comms(
     db_agent: models.Agent = Depends(get_agent),
 ):
     resp, err = agent_task_service.create_task_update_comms(
-        db, db_agent, comms_request.new_listener_id, current_user.id
+        db, db_agent, comms_request.new_listener_id, current_user
     )
 
     if err:
@@ -380,7 +380,7 @@ async def create_task_update_sleep(
     db_agent: models.Agent = Depends(get_agent),
 ):
     resp, err = agent_task_service.create_task_update_sleep(
-        db, db_agent, sleep_request.delay, sleep_request.jitter, current_user.id
+        db, db_agent, sleep_request.delay, sleep_request.jitter, current_user
     )
 
     if err:
@@ -397,7 +397,7 @@ async def create_task_update_kill_date(
     db_agent: models.Agent = Depends(get_agent),
 ):
     resp, err = agent_task_service.create_task_update_kill_date(
-        db, db_agent, kill_date_request.kill_date, current_user.id
+        db, db_agent, kill_date_request.kill_date, current_user
     )
 
     if err:
@@ -416,7 +416,7 @@ async def create_task_update_working_hours(
     db_agent: models.Agent = Depends(get_agent),
 ):
     resp, err = agent_task_service.create_task_update_working_hours(
-        db, db_agent, working_hours_request.working_hours, current_user.id
+        db, db_agent, working_hours_request.working_hours, current_user
     )
 
     if err:
@@ -435,7 +435,7 @@ async def create_task_update_directory_list(
     db_agent: models.Agent = Depends(get_agent),
 ):
     resp, err = agent_task_service.create_task_directory_list(
-        db, db_agent, directory_list_request.path, current_user.id
+        db, db_agent, directory_list_request.path, current_user
     )
 
     if err:
@@ -451,7 +451,7 @@ async def create_task_exit(
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
 ):
-    resp, err = agent_task_service.create_task_exit(db, db_agent, current_user.id)
+    resp, err = agent_task_service.create_task_exit(db, db_agent, current_user)
 
     if err:
         raise HTTPException(status_code=400, detail=err)
@@ -486,7 +486,7 @@ async def create_task_socks(
         raise HTTPException(status_code=400, detail="Socks port is in use")
 
     resp, err = agent_task_service.create_task_socks(
-        db, db_agent, socks.port, current_user.id
+        db, db_agent, socks.port, current_user
     )
     if err:
         raise HTTPException(status_code=400, detail=err)
