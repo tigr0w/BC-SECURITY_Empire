@@ -18,7 +18,6 @@ from empire.server.api.v2.module.module_dto import (
     ModuleUpdateRequest,
 )
 from empire.server.common import helpers
-from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import (
@@ -55,6 +54,17 @@ class ModuleService:
         self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
         self.download_service: DownloadService = main_menu.downloadsv2
         self.module_source_path = main_menu.install_path / "data/module_source"
+
+        # TODO: This will just move to DATA_DIR and the conditional
+        #  Won't be needed.
+        if os.environ.get("TEST_MODE"):
+            self._obfuscated_module_source_path = (
+                main_menu.install_path.parent / "test/data/obfuscated_module_source"
+            )
+        else:
+            self._obfuscated_module_source_path = (
+                main_menu.install_path / "data/obfuscated_module_source"
+            )
 
         self.modules = {}
 
@@ -856,9 +866,7 @@ class ModuleService:
         """
         try:
             if obfuscate:
-                module_path = (
-                    empire_config.directories.obfuscated_module_source / module_name
-                )
+                module_path = self._obfuscated_module_source_path / module_name
                 # If pre-obfuscated module exists then return code
                 if os.path.exists(module_path):
                     with open(module_path) as f:
@@ -936,9 +944,7 @@ class ModuleService:
         )
 
         relative_path = module_source.relative_to(self.module_source_path)
-        obfuscated_source = (
-            empire_config.directories.obfuscated_module_source / relative_path
-        )
+        obfuscated_source = self._obfuscated_module_source_path / relative_path
 
         try:
             obfuscated_source.parent.mkdir(parents=True, exist_ok=True)
@@ -954,9 +960,7 @@ class ModuleService:
         # Get the file path of the module_source, but only relative to the module_source directory
         # Then append to the obfuscated_module_source directory
         relative_path = module_source.relative_to(self.module_source_path)
-        return (
-            empire_config.directories.obfuscated_module_source / relative_path
-        ).exists()
+        return (self._obfuscated_module_source_path / relative_path).exists()
 
     def _get_module_source_files(self):
         paths = []
@@ -968,9 +972,7 @@ class ModuleService:
         return paths
 
     def remove_preobfuscated_modules(self, _language: str):
-        file_util.remove_dir_contents(
-            empire_config.directories.obfuscated_module_source
-        )
+        file_util.remove_dir_contents(self._obfuscated_module_source_path)
 
     def finalize_module(
         self,

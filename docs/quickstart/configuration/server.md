@@ -111,7 +111,6 @@ plugins:
 ```yaml
 directories:
   downloads: empire/server/downloads/
-  obfuscated_module_source: empire/server/data/obfuscated_module_source/
 ```
 
 * **logging** - See [Logging](../../logging/logging.md) for more information on logging configuration.

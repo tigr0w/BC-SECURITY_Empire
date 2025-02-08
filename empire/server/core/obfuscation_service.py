@@ -1,6 +1,4 @@
-import fnmatch
 import logging
-import os
 import subprocess
 import tempfile
 import typing
@@ -9,7 +7,6 @@ import python_obfuscator
 from python_obfuscator.techniques import one_liner, variable_renamer
 from sqlalchemy.orm import Session
 
-from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util
@@ -130,22 +127,6 @@ class ObfuscationService:
                     data = data.replace(keyword.keyword, keyword.replacement)
 
         return data
-
-    def _get_obfuscated_module_source_files(self, language: str):
-        """
-        Get the filepaths of PowerShell module_source files located
-        in the data/module_source directory.
-        """
-        paths = []
-        # This logic will need to be updated later. Right now we're only doing powershell.
-        pattern = "*.ps1"
-        for root, _dirs, files in os.walk(
-            empire_config.directories.obfuscated_module_source
-        ):
-            for filename in fnmatch.filter(files, pattern):
-                paths.append(os.path.join(root, filename))
-
-        return paths
 
     def _convert_obfuscation_command(self, obfuscate_command):
         return (

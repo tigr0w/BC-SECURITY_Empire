@@ -67,7 +67,6 @@ submodules:
 directories:
   downloads: empire/test/downloads/
   module_source: empire/server/data/module_source/
-  obfuscated_module_source: empire/test/data/obfuscated_module_source/
 keyword_obfuscation:
   # List of keywords to obfuscate
   - Invoke-Empire

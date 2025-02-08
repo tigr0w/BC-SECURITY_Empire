@@ -64,7 +64,6 @@ plugin_marketplace:
       file: registry.yaml
 directories:
   downloads: empire/server/downloads/
-  obfuscated_module_source: empire/server/data/obfuscated_module_source/
 logging:
   level: INFO
   directory: empire/server/downloads/logs/

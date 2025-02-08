@@ -222,7 +222,7 @@ def test_preobfuscate_post(client, admin_auth_header, empire_config, main):
         # It is run as a background task, but in tests it runs synchronously.
         assert response.status_code == status.HTTP_202_ACCEPTED
 
-        obf_module_dir = empire_config.directories.obfuscated_module_source
+        obf_module_dir = main.modulesv2._obfuscated_module_source_path
 
         count = 0
         for root, _dirs, files in os.walk(module_source_dir):
@@ -259,7 +259,7 @@ def test_preobfuscate_delete(main, client, admin_auth_header, empire_config):
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     module_dir = main.modulesv2.module_source_path
-    obf_module_dir = empire_config.directories.obfuscated_module_source
+    obf_module_dir = main.modulesv2._obfuscated_module_source_path
 
     for root, _dirs, files in os.walk(module_dir):
         for file in files:

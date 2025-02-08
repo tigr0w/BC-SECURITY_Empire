@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 -   Combined config with config_manager
--   Remove empire_config.directories.module_source
+-   Remove empire_config.directories.module_source and empire_config.directories.obfuscated_module_source
 -   Add pytest-env to set TEST_MODE
 -   module_service execute_module returns a pydantic model
 -   agent_task_service functions take a user model instead of user id
