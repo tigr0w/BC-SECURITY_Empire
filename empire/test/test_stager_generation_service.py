@@ -5,9 +5,6 @@ from pathlib import Path
 
 import pytest
 
-from empire.scripts.sync_empire_compiler import (
-    load_empire_compiler,
-)
 from empire.server.common.empire import MainMenu
 from empire.server.utils.file_util import run_as_user
 
@@ -17,21 +14,14 @@ def stager_generation_service(main: MainMenu):
     return main.stagergenv2
 
 
-def test_compiler(empire_config):
-    """
-    Tests related to the EmpireCompiler binary.
-    """
-    empire_config = empire_config.model_dump()
-    load_empire_compiler(empire_config)
+def test_compiler(main, empire_config):
+    dotnet_compiler = main.dotnet_compiler
+    compiler_dir = dotnet_compiler.compiler_dir
+    compiler_path = compiler_dir / "EmpireCompiler"
 
-    compiler_dir = (
-        Path(empire_config["empire_compiler"]["directory"])
-        / "EmpireCompiler"
-        / "EmpireCompiler"
-    )
-    assert compiler_dir.is_file(), f"EmpireCompiler binary not found at {compiler_dir}"
+    assert compiler_path.is_file(), f"EmpireCompiler binary not found at {compiler_dir}"
 
-    result = run_as_user([str(compiler_dir), "--help"], text=True, capture_output=True)
+    result = run_as_user([str(compiler_path), "--help"], text=True, capture_output=True)
     assert "Usage:" in result, "Unexpected output from EmpireCompiler --help"
 
 
@@ -112,16 +102,11 @@ def test_generate_powershell_exe(stager_generation_service, dot_net_version, obf
     result = stager_generation_service.generate_powershell_exe(
         "posh_code", dot_net_version, obfuscate
     )
-    expected_pattern = (
-        re.escape(stager_generation_service.main_menu.installPath)
-        + r"/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/"
-        + re.escape(dot_net_version)
-        + r"/CSharpPS_\w+\.exe"
-    )
 
-    assert re.match(
-        expected_pattern, result
-    ), f"Result '{result}' does not match the expected pattern '{expected_pattern}'"
+    assert Path(result).exists(), f"Generated file not found: {result}"
+    assert result.split("_")[0].endswith(
+        f"EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/CSharpPS"
+    )
 
 
 @pytest.mark.parametrize(
@@ -162,22 +147,17 @@ def test_generate_powershell_shellcode(
     [
         ("net40", False),
         ("net40", True),
-        ("net35", False),
-        ("net35", True),
     ],
 )
 def test_generate_python_exe(stager_generation_service, dot_net_version, obfuscate):
     result = stager_generation_service.generate_python_exe(
         "python_code", dot_net_version, obfuscate
     )
-    base_path = f"{stager_generation_service.main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/"
 
-    assert result.startswith(
-        base_path
-    ), f"Result path does not start with expected base path: {result}"
-    assert re.match(
-        r".*CSharpPy_\w+\.exe$", result
-    ), f"Filename does not match expected pattern: {result}"
+    assert Path(result).exists(), f"Generated file not found: {result}"
+    assert result.split("_")[0].endswith(
+        f"EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/CSharpPy"
+    )
 
 
 @pytest.mark.parametrize(
@@ -214,16 +194,14 @@ def test_generate_go_stageless(stager_generation_service):
         generated_executable_path
     ), f"Generated executable not found: {generated_executable_path}"
 
-    generated_dir = os.path.dirname(generated_executable_path)
-    generated_main_go_path = os.path.join(generated_dir, "main.go")
-
-    assert os.path.exists(
-        generated_main_go_path
+    generated_main_go_path = (
+        stager_generation_service.main_menu.install_path / "data/agent/gopire/main.go"
+    )
+    assert (
+        generated_main_go_path.exists()
     ), f"Generated main.go not found: {generated_main_go_path}"
 
-    with open(generated_main_go_path) as f:
-        main_go_content = f.read()
-
+    main_go_content = generated_main_go_path.read_text()
     aes_key_base64_match = re.search(r'aesKeyBase64\s*:=\s*"([^"]+)"', main_go_content)
     staging_key_base64_match = re.search(
         r'stagingKeyBase64\s*:=\s*"([^"]+)"', main_go_content

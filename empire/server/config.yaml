@@ -3,7 +3,6 @@ api:
   ip: 0.0.0.0
   port: 1337
   secure: false
-  cert_path: empire/server/data/
 database:
   use: mysql
   mysql:
@@ -12,7 +11,7 @@ database:
     password: empire_password
     database_name: empire
   sqlite:
-    location: empire/server/data/empire.db
+    location: empire.db
   defaults:
     # staging key will first look at OS environment variables, then here.
     # If empty, will be prompted (like Empire <3.7).
@@ -41,34 +40,27 @@ database:
     ip_allow_list: []
     ip_deny_list: []
 empire_compiler:
-  enabled: true
-  version: v0.2
-  repo: https://github.com/BC-SECURITY/Empire-Compiler.git
-  directory: empire/server/Empire-Compiler
-  auto_update: true
+  archive: https://github.com/BC-SECURITY/Empire-Compiler/releases/download/v0.3.1/EmpireCompiler-{{platform}}-v0.3.1.tgz
 starkiller:
   enabled: true
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
-  directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
   ref: sponsors-main
   auto_update: true
 submodules:
   auto_update: true
 plugin_marketplace:
-  directory: empire/server/plugins/marketplace/
   registries:
     - name: BC-SECURITY
       git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
       ref: main
       file: registry.yaml
 directories:
-  downloads: empire/server/downloads/
+  downloads: downloads
 logging:
   level: INFO
-  directory: empire/server/downloads/logs/
   simple_console: true
 debug:
   last_task:
     enabled: false
-    file: empire/server/data/last_task.txt
+    file: debug/last_task.txt

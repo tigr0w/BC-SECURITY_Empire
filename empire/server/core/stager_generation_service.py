@@ -34,6 +34,7 @@ class StagerGenerationService:
         self.agent_communication_service = main_menu.agentcommsv2
         self.agent_task_service = main_menu.agenttasksv2
         self.obfuscation_service = main_menu.obfuscationv2
+        self.dotnet_compiler = main_menu.dotnet_compiler
 
     def generate_launcher_fetcher(
         self,
@@ -151,16 +152,14 @@ class StagerGenerationService:
 
         # Write text file to resources to be embedded
         with open(
-            self.main_menu.installPath
-            + "/Empire-Compiler/EmpireCompiler/Data/EmbeddedResources/launcher.txt",
+            self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/launcher.txt",
             "w",
         ) as f:
             f.write(posh_code)
 
-        file_name = self.main_menu.dotnet_compiler.compile_stager(
-            stager_yaml, "CSharpPS", confuse=obfuscate
+        return self.dotnet_compiler.compile_stager(
+            stager_yaml, "CSharpPS", dot_net_version=dot_net_version, confuse=obfuscate
         )
-        return f"{self.main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
 
     def generate_powershell_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"
@@ -289,17 +288,17 @@ class StagerGenerationService:
         stager_yaml = stager_yaml.decode("UTF-8")
 
         # Write text file to resources to be embedded
+        # This file is problematic because multiple runs
+        # can overwrite the file and cause issues.
         with open(
-            self.main_menu.installPath
-            + "/Empire-Compiler/EmpireCompiler/Data/EmbeddedResources/launcher.txt",
+            self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/launcher.txt",
             "w",
         ) as f:
             f.write(python_code)
 
-        file_name = self.main_menu.dotnet_compiler.compile_stager(
-            stager_yaml, "CSharpPy", confuse=obfuscate
+        return self.dotnet_compiler.compile_stager(
+            stager_yaml, "CSharpPy", dot_net_version=dot_net_version, confuse=obfuscate
         )
-        return f"{self.main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{file_name}.exe"
 
     def generate_python_shellcode(
         self, posh_code, arch="both", dot_net_version="net40"

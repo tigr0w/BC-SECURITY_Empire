@@ -18,6 +18,7 @@ from empire.server.api.v2.module.module_dto import (
     ModuleUpdateRequest,
 )
 from empire.server.common import helpers
+from empire.server.core.config.config_manager import DATA_DIR
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import (
@@ -54,17 +55,7 @@ class ModuleService:
         self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
         self.download_service: DownloadService = main_menu.downloadsv2
         self.module_source_path = main_menu.install_path / "data/module_source"
-
-        # TODO: This will just move to DATA_DIR and the conditional
-        #  Won't be needed.
-        if os.environ.get("TEST_MODE"):
-            self._obfuscated_module_source_path = (
-                main_menu.install_path.parent / "test/data/obfuscated_module_source"
-            )
-        else:
-            self._obfuscated_module_source_path = (
-                main_menu.install_path / "data/obfuscated_module_source"
-            )
+        self._obfuscated_module_source_path = DATA_DIR / "obfuscated_module_source"
 
         self.modules = {}
 

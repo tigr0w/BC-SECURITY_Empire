@@ -1,3 +1,4 @@
+import contextlib
 import subprocess
 import tempfile
 from pathlib import Path
@@ -27,6 +28,7 @@ def clone_git_repo(
             / random_string(5)
             / git_url.removesuffix(".git").split("/")[-1]
         )
+    directory.mkdir(parents=True, exist_ok=True)
 
     try:
         run_as_user(["git", "clone", git_url, directory])
@@ -42,3 +44,13 @@ def clone_git_repo(
             raise GitOperationException(f"Failed to check out ref {ref}") from None
 
     return directory
+
+
+def update_git_repo(directory: Path) -> bool:
+    """
+    Does a git pull on the provided directory. If it can't be pulled, it's ignored.
+    """
+    with contextlib.suppress(subprocess.CalledProcessError):
+        run_as_user(["git", "pull"], cwd=directory)
+
+    return True

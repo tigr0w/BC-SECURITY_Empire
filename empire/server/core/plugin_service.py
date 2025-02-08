@@ -15,7 +15,11 @@ from sqlalchemy.orm import Session
 from starlette.status import HTTP_200_OK
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
-from empire.server.core.config.config_manager import PluginConfig, empire_config
+from empire.server.core.config import config_manager
+from empire.server.core.config.config_manager import (
+    PluginConfig,
+    empire_config,
+)
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import PluginInfo
@@ -51,6 +55,8 @@ class PluginService:
         self.download_service = main_menu.downloadsv2
         self.loaded_plugins = {}
         self.plugin_path = Path(self.main_menu.installPath) / "plugins/"
+        self.marketplace_path = config_manager.DATA_DIR / "plugins" / "marketplace"
+        self.marketplace_path.mkdir(parents=True, exist_ok=True)
 
     def startup(self):
         """
@@ -109,7 +115,7 @@ class PluginService:
         """
         log.info(f"Searching for plugins at {self.plugin_path}")
 
-        for plugin_dir in self._list_plugin_directories(self.plugin_path):
+        for plugin_dir in self._list_plugin_directories():
             try:
                 plugin_config = self._validate_plugin(plugin_dir)
             except PluginValidationException as e:
@@ -351,7 +357,7 @@ class PluginService:
         if self.get_by_id(db, plugin_config.id):
             raise PluginValidationException("Plugin already exists")
 
-        plugin_dir = self.plugin_path / "marketplace" / plugin_config.id
+        plugin_dir = self.marketplace_path / plugin_config.id
         shutil.move(temp_dir, plugin_dir)
         shutil.rmtree(plugin_dir / ".git", ignore_errors=True)
 
@@ -385,22 +391,23 @@ class PluginService:
 
         return None
 
-    @staticmethod
-    def _list_plugin_directories(plugin_path: Path):
+    def _list_plugin_directories(self):
         def _ignore_plugin(plugin_dir):
             return (
-                plugin_dir.name in ("example", "marketplace")
+                plugin_dir.name == "example"
                 or not plugin_dir.is_dir()
                 or plugin_dir.name.startswith(".")
                 or plugin_dir.name.startswith("_")
             )
 
         main_dirs = [
-            d for d in plugin_path.iterdir() if d.is_dir() and not _ignore_plugin(d)
+            d
+            for d in self.plugin_path.iterdir()
+            if d.is_dir() and not _ignore_plugin(d)
         ]
         marketplace_dirs = [
             d
-            for d in (plugin_path / "marketplace").iterdir()
+            for d in self.marketplace_path.iterdir()
             if d.is_dir() and not _ignore_plugin(d)
         ]
 

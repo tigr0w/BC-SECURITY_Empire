@@ -105,7 +105,7 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
       # For the sponsors repo, this is a sort of hack to get around the fact that
-      # the docker image fails on ./ps-empire sync-starkiller because the repo is private.
+      # the docker image fails on ./ps-empire setup because the repo is private.
       - name: Rewrite Starkiller
         run: |
             if [ ${{ endswith(github.repository, 'Empire-Sponsors') }} ]; then

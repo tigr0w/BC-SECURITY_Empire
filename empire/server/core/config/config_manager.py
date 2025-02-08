@@ -25,7 +25,9 @@ class EmpireBaseModel(BaseModel):
     @classmethod
     def set_path(cls, v):
         if isinstance(v, Path):
-            return v.expanduser().resolve()
+            if v.expanduser().is_absolute():
+                return v.expanduser().resolve()
+            return DATA_DIR / v
         return v
 
 
@@ -33,7 +35,6 @@ class ApiConfig(EmpireBaseModel):
     ip: str = "0.0.0.0"
     port: int = 1337
     secure: bool = False
-    cert_path: Path = "empire/server/data"
 
 
 class SubmodulesConfig(EmpireBaseModel):
@@ -41,19 +42,17 @@ class SubmodulesConfig(EmpireBaseModel):
 
 
 class StarkillerConfig(EmpireBaseModel):
+    enabled: bool = True
     repo: str = "bc-security/starkiller"
-    directory: Path = "empire/server/api/v2/starkiller"
     ref: str = "main"
     auto_update: bool = True
-    enabled: bool | None = True
 
 
 class EmpireCompilerConfig(EmpireBaseModel):
-    repo: str = "bc-security/Empire-Compiler"
-    directory: Path = "empire/server/Empire-Compiler"
-    version: str = "v0.2"
-    auto_update: bool = True
-    enabled: bool | None = True
+    archive: str = ""
+    # This is only used if you are using a self-compiled
+    # version that is not already tarred and published.
+    directory: str | None = None
 
 
 class DatabaseDefaultObfuscationConfig(EmpireBaseModel):
@@ -92,7 +91,7 @@ class DatabaseDefaultsConfig(EmpireBaseModel):
 
 
 class SQLiteDatabaseConfig(EmpireBaseModel):
-    location: Path = "empire/server/data/empire.db"
+    location: Path = Path("empire.db")
 
 
 class MySQLDatabaseConfig(EmpireBaseModel):
@@ -113,18 +112,17 @@ class DatabaseConfig(EmpireBaseModel):
 
 
 class DirectoriesConfig(EmpireBaseModel):
-    downloads: Path = Path("empire/server/downloads")
+    downloads: Path = Path("downloads")
 
 
 class LoggingConfig(EmpireBaseModel):
     level: str = "INFO"
-    directory: Path = "empire/server/downloads/logs/"
     simple_console: bool = True
 
 
 class LastTaskConfig(EmpireBaseModel):
     enabled: bool = False
-    file: Path = "empire/server/data/last_task.txt"
+    file: Path = Path("debug/last_task.txt")
 
 
 class DebugConfig(EmpireBaseModel):
@@ -158,7 +156,6 @@ class PluginRegistryConfig(EmpireBaseModel):
 
 
 class PluginMarketplaceConfig(EmpireBaseModel):
-    directory: Path = "empire/server/data/plugin_marketplace"
     registries: list[PluginRegistryConfig] = []
 
 
@@ -210,12 +207,22 @@ DEFAULT_CONFIG = Path("empire/server/config.yaml")
 
 if os.environ.get("TEST_MODE"):
     CONFIG_DIR = Path.home() / ".config" / "empire-test"
+    DATA_DIR = Path.home() / ".local" / "share" / "empire-test"
     shutil.rmtree(CONFIG_DIR, ignore_errors=True)
+    shutil.rmtree(DATA_DIR, ignore_errors=True)
+
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    test_registry_1 = Path("empire/test/test_registry_1.yaml")
+    test_registry_2 = Path("empire/test/test_registry_2.yaml")
+    shutil.copy(test_registry_1, DATA_DIR / "test_registry_1.yaml")
+    shutil.copy(test_registry_2, DATA_DIR / "test_registry_2.yaml")
 else:
     CONFIG_DIR = Path.home() / ".config" / "empire"
+    DATA_DIR = Path.home() / ".local" / "share" / "empire"
 
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 if not CONFIG_PATH.exists():
     shutil.copy(DEFAULT_CONFIG, CONFIG_PATH)

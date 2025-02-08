@@ -5,6 +5,8 @@ import zlib
 from pathlib import Path
 
 from empire.server.common.helpers import random_string
+from empire.server.core.config.config_manager import empire_config
+from empire.server.core.config.data_manager import sync_empire_compiler
 from empire.server.core.exceptions import ModuleExecutionException
 
 log = logging.getLogger(__name__)
@@ -13,7 +15,9 @@ log = logging.getLogger(__name__)
 class DotnetCompiler:
     def __init__(self, install_path):
         self.install_path = install_path
-        self.compiler = Path(install_path) / "Empire-Compiler/EmpireCompiler/"
+        self.compiler_dir = (
+            sync_empire_compiler(empire_config.empire_compiler) / "EmpireCompiler"
+        )
 
     def compile_task(self, compiler_yaml, task_name, dotnet="net35", confuse=False):
         random_task_name = f"{task_name}_{random_string(4)}"
@@ -34,7 +38,7 @@ class DotnetCompiler:
             capture_output=True,
             text=True,
             check=False,
-            cwd=self.compiler,
+            cwd=self.compiler_dir,
         )
 
         if result.returncode != 0:
@@ -68,7 +72,9 @@ class DotnetCompiler:
 
         return compiled_location
 
-    def compile_stager(self, compiler_yaml, task_name, confuse=False):
+    def compile_stager(
+        self, compiler_yaml, task_name, dot_net_version="net40", confuse=False
+    ):
         random_task_name = f"{task_name}_{random_string(4)}"
 
         args = [
@@ -87,7 +93,7 @@ class DotnetCompiler:
             capture_output=True,
             text=True,
             check=False,
-            cwd=self.compiler,
+            cwd=self.compiler_dir,
         )
 
         if result.returncode != 0:
@@ -101,4 +107,11 @@ class DotnetCompiler:
             log.error(result.stdout)
             raise ModuleExecutionException("Stager compile failed")
 
-        return output.split("Final Task Name:")[1].strip()
+        name = output.split("Final Task Name:")[1].strip()
+
+        return str(
+            self.compiler_dir
+            / "Data/Tasks/CSharp/Compiled/"
+            / dot_net_version
+            / f"{name}.exe"
+        )

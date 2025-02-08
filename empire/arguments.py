@@ -4,11 +4,8 @@ parent_parser = argparse.ArgumentParser()
 subparsers = parent_parser.add_subparsers(dest="subparser_name")
 
 server_parser = subparsers.add_parser("server", help="Launch Empire Server")
-sync_starkiller_parser = subparsers.add_parser(
-    "sync-starkiller", help="Sync Starkiller submodule with the config"
-)
-sync_empire_compiler_parser = subparsers.add_parser(
-    "sync-empire-compiler", help="Sync Empire Compiler submodule with the config"
+setup_parser = subparsers.add_parser(
+    "setup", help="Setup the data directories for Empire"
 )
 install_parser = subparsers.add_parser("install", help="Install the Empire framework")
 install_parser.add_argument(

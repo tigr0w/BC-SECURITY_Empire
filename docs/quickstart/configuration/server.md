@@ -3,6 +3,7 @@
 The Server configuration is managed via [empire/server/config.yaml](https://github.com/BC-SECURITY/Empire/blob/master/empire/client/config.yaml).
 
 Once launched, Empire checks for user write permissions on paths specified in `config.yaml`. If the current user does not have write permissions on these paths, `~/.empire` will be set as fallback parent directory and the configuration file will be updated as well.
+If `empire-priv.key` and `empire-chain.pem` are not found in ~/.local/share/empire directory, self-signed certs will be generated.
 
 * **suppress-self-cert-warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
 
@@ -11,14 +12,12 @@ Once launched, Empire checks for user write permissions on paths specified in `c
 ip - The IP address to bind the API and Starkiller to.
 port - The port to bind the API and Starkiller to.
 secure - Enable HTTPS for the API and Starkiller. Browsers will not work with self-signed certs. Uses .key and .pem file from empire/server/data
-cert_path - path for the SSL certificates. If `empire-priv.key` and `empire-chain.pem` are not found in this directory, self-signed certs will be generated.
 
 ```yaml
 api:
   ip: 0.0.0.0
   port: 1337
   secure: false
-  cert_path: empire/server/data/
 ```
 
 * **database** - Configure Empire's database. Empire defaults to SQLite and has the ability to run with MySQL. For more info on the database, see the [Database](database/README.md) section.
@@ -110,7 +109,7 @@ plugins:
 
 ```yaml
 directories:
-  downloads: empire/server/downloads/
+  downloads: downloads
 ```
 
 * **logging** - See [Logging](../../logging/logging.md) for more information on logging configuration.

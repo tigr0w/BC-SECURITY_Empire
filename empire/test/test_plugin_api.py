@@ -504,14 +504,14 @@ def plugin_service(main) -> "PluginService":
 @pytest.fixture
 def _cleanup_foo_plugin(plugin_service, session_local, models):
     plugin_service.loaded_plugins.pop("foo", None)
-    shutil.rmtree(plugin_service.plugin_path / "marketplace/foo", ignore_errors=True)
+    shutil.rmtree(plugin_service.marketplace_path / "foo", ignore_errors=True)
     with session_local.begin() as db:
         db.query(models.Plugin).filter(models.Plugin.name == "foo").delete()
 
     yield
 
     plugin_service.loaded_plugins.pop("foo", None)
-    shutil.rmtree(plugin_service.plugin_path / "marketplace/foo", ignore_errors=True)
+    shutil.rmtree(plugin_service.marketplace_path / "foo", ignore_errors=True)
     with session_local.begin() as db:
         db.query(models.Plugin).filter(models.Plugin.name == "foo").delete()
 

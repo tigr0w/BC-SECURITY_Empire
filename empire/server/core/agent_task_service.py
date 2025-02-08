@@ -472,6 +472,7 @@ class AgentTaskService:
         if last_task_config.enabled:
             with self.last_task_lock:
                 location = Path(last_task_config.file)
+                location.parent.mkdir(parents=True, exist_ok=True)
                 location.write_text(task_input)
 
         hooks.run_hooks(hooks.AFTER_TASKING_HOOK, db, task)

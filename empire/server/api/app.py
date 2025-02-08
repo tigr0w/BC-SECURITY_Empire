@@ -3,7 +3,6 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 from json import JSONEncoder
-from pathlib import Path
 
 import socketio
 import uvicorn
@@ -11,11 +10,10 @@ from fastapi import FastAPI
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 
-from empire.scripts.sync_empire_compiler import load_empire_compiler
-from empire.scripts.sync_starkiller import sync_starkiller
 from empire.server.api.middleware import EmpireCORSMiddleware
 from empire.server.api.v2.websocket.socketio import setup_socket_events
 from empire.server.core.config.config_manager import empire_config
+from empire.server.core.config.data_manager import sync_starkiller
 
 log = logging.getLogger(__name__)
 
@@ -44,9 +42,9 @@ class MyJsonEncoder(JSONEncoder):
         return JSONEncoder.default(self, o)
 
 
-def load_starkiller(app, ip, port):
+def load_starkiller(app, port):
     try:
-        sync_starkiller(empire_config.model_dump())
+        starkiller_dir = sync_starkiller(empire_config.starkiller)
     except Exception as e:
         log.warning("Failed to load Starkiller: %s", e, exc_info=True)
         log.warning(
@@ -56,21 +54,19 @@ def load_starkiller(app, ip, port):
             "https://docs.github.com/en/github/authenticating-to-github"
             "/connecting-to-github-with-ssh"
         )
+        return
 
-    if (Path(empire_config.starkiller.directory) / "dist").exists():
-        app.mount(
-            "/",
-            StaticFiles(
-                directory=f"{empire_config.starkiller.directory}/dist", html=True
-            ),
-            name="static",
-        )
+    app.mount(
+        "/",
+        StaticFiles(directory=f"{starkiller_dir!s}/dist", html=True),
+        name="static",
+    )
 
-        log.info("Starkiller served at the same ip and port as Empire Server")
-        log.info(f"Starkiller served at http://localhost:{port}/")
+    log.info("Starkiller served at the same ip and port as Empire Server")
+    log.info(f"Starkiller served at http://localhost:{port}/")
 
 
-def initialize(run: bool = True):  # noqa: PLR0915
+def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
     ip = empire_config.api.ip
     port = empire_config.api.port
     secure = empire_config.api.secure
@@ -169,26 +165,20 @@ def initialize(run: bool = True):  # noqa: PLR0915
 
     if empire_config.starkiller.enabled:
         log.info("Starkiller enabled. Loading.")
-        load_starkiller(app, ip, port)
+        load_starkiller(app, port)
     else:
         log.info("Starkiller disabled. Not loading.")
 
-    if empire_config.empire_compiler.enabled:
-        log.info("Empire Compiler enabled. Loading.")
-        load_empire_compiler(empire_config.model_dump())
-    else:
-        log.info("Empire Compiler disabled. Not loading.")
-
-    cert_path = Path(empire_config.api.cert_path)
-
     if run:
-        if not secure:
+        if secure and cert_path:
             uvicorn.run(
                 app,
                 host=ip,
                 port=port,
                 log_config=None,
                 lifespan="on",
+                ssl_keyfile=f"{cert_path}/empire-priv.key",
+                ssl_certfile=f"{cert_path}/empire-chain.pem",
                 # log_level="info",
             )
         else:
@@ -198,8 +188,6 @@ def initialize(run: bool = True):  # noqa: PLR0915
                 port=port,
                 log_config=None,
                 lifespan="on",
-                ssl_keyfile=f"{cert_path}/empire-priv.key",
-                ssl_certfile=f"{cert_path}/empire-chain.pem",
                 # log_level="info",
             )
 

@@ -1,7 +1,6 @@
 suppress_self_cert_warning: true
 api:
   port: 1337
-  cert_path: empire/server/data/
 database:
   use: mysql
   mysql:
@@ -10,7 +9,7 @@ database:
     password: empire_password
     database_name: test_empire
   sqlite:
-    location: empire/test/test_empire.db
+    location: test_empire.db
   defaults:
     # staging key will first look at OS environment variables, then here.
     # If empty, will be prompted (like Empire <3.7).
@@ -36,46 +35,32 @@ database:
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
-    # an IP white list to ONLY accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-whitelist: ""
-    # an IP black list to reject accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-blacklist: ""
-plugin_marketplace:
-  directory: empire/test/downloads/plugins/marketplace/
-  registries:
-    - name: BC-SECURITY
-      location: empire/test/test_registry_1.yaml
-    - name: BC-SECURITY-TEST
-      location: empire/test/test_registry_2.yaml
 empire_compiler:
-  enabled: true
-  version: v0.2
-  repo: https://github.com/BC-SECURITY/Empire-Compiler.git
-  directory: empire/server/Empire-Compiler
-  auto_update: true
+  archive: https://github.com/BC-SECURITY/Empire-Compiler/releases/download/v0.3.1/EmpireCompiler-{{platform}}-v0.3.1.tgz
 starkiller:
   enabled: true
   repo: https://github.com/BC-SECURITY/Starkiller.git
-  directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
   ref: v2.8.2
   auto_update: true
 submodules:
   auto_update: true
+plugin_marketplace:
+  registries:
+    - name: BC-SECURITY
+      location: test_registry_1.yaml
+    - name: BC-SECURITY-TEST
+      location: test_registry_2.yaml
 directories:
-  downloads: empire/test/downloads/
-  module_source: empire/server/data/module_source/
+  downloads: downloads
 keyword_obfuscation:
   # List of keywords to obfuscate
   - Invoke-Empire
   - Invoke-Mimikatz
 logging:
   level: INFO
-  directory: empire/test/downloads/logs/
   simple_console: true
 debug:
   last_task:
     enabled: true
-    file: empire/test/downloads/logs/last_task.txt
+    file: debug/last_task.txt

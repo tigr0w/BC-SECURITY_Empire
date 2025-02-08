@@ -72,8 +72,7 @@ RUN rm -rf /empire/empire/server/data/empire*
 RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml && \
     sed -i 's/auto_update: true/auto_update: false/g' empire/server/config.yaml
 
-RUN ./ps-empire -f sync-starkiller
-RUN ./ps-empire -f sync-empire-compiler
+RUN ./ps-empire setup
 
 ENTRYPOINT ["./ps-empire"]
-CMD ["-f", "server"]
+CMD ["server"]

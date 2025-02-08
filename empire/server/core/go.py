@@ -1,5 +1,7 @@
 import logging
+import os
 import subprocess
+import tempfile
 from pathlib import Path
 
 import jinja2
@@ -69,29 +71,36 @@ class GoCompiler:
             output_file.write(rendered_content)
 
     def compile_stager(self, template_vars, task_name, goos="windows", goarch="amd64"):
-        random_suffix = random_string(5)
-        source_file = Path(self.install_path) / "data/agent/gopire/"
-        output_file = (
-            Path(self.install_path)
-            / f"data/agent/gopire/{task_name}_{random_suffix}.exe"
-        )
-        template_path = "main.template"
-        output_path = source_file / "main.go"
-
-        self.generate_main_go(template_path, output_path, template_vars)
-
         env = {"GOOS": goos, "GOARCH": goarch}
+        random_task_name = f"{task_name}_{random_string(6)}.exe"
+        template_path = "main.template"
 
-        result = subprocess.run(
-            ["go", "build", "-o", str(output_file)],
-            env={**env, **subprocess.os.environ},
-            capture_output=True,
-            text=True,
-            cwd=source_file,
-            check=False,
+        # This should move to a temp location. Using this static path will
+        # cause issues when multiple stagers are compiled at the same time.
+        source_file = Path(self.install_path) / "data/agent/gopire/main.go"
+
+        with (
+            tempfile.NamedTemporaryFile(delete=False) as temp_executable_file,
+        ):
+            temp_executable_file_path = Path(temp_executable_file.name)
+            self.generate_main_go(template_path, str(source_file), template_vars)
+
+            result = subprocess.run(
+                ["go", "build", "-o", str(temp_executable_file_path)],
+                env={**env, **os.environ},
+                capture_output=True,
+                text=True,
+                cwd=source_file.parent,
+                check=False,
+            )
+
+            if result.returncode != 0:
+                raise ModuleExecutionException(
+                    f"Go build failed: {result.stderr.strip()}"
+                )
+
+        return str(
+            temp_executable_file_path.rename(
+                temp_executable_file_path.with_name(random_task_name)
+            )
         )
-
-        if result.returncode != 0:
-            raise ModuleExecutionException(f"Go build failed: {result.stderr.strip()}")
-
-        return str(output_file)
