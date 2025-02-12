@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   module_service execute_module returns a pydantic model
 -   agent_task_service functions take a user model instead of user id
 -   All writeable data moved out of the install path into `~/.local/share/empire`
+-   Pass output path to dotnet compiler, only compile the requested version
 
 ## [6.0.0-beta1] - 2025-01-11
 

@@ -7,7 +7,6 @@ try:
 except ModuleNotFoundError:
     donut = None
 
-from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
@@ -64,19 +63,13 @@ class Module:
 
         elif language.lower() == "csharp":
             arch_type = {"x86": 1, "x64": 2, "both": 3}.get(arch, 2)
-            directory = (
-                Path(main_menu.installPath)
-                / "Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled"
-                / dot_net_version
-                / f"{launcher}.exe"
-            )
 
             if not donut:
                 raise ModuleValidationException(
                     "module donut-shellcode not installed. It is only supported on x86."
                 )
 
-            shellcode = donut.create(file=directory, arch=arch_type)
+            shellcode = donut.create(file=str(launcher), arch=arch_type)
 
         base64_shellcode = helpers.encode_base64(shellcode).decode("UTF-8")
 

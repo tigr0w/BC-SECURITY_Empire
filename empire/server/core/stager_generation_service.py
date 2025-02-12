@@ -6,6 +6,7 @@ import shutil
 import string
 import typing
 from itertools import cycle
+from pathlib import Path
 
 try:
     import donut
@@ -142,7 +143,7 @@ class StagerGenerationService:
 
     def generate_powershell_exe(
         self, posh_code, dot_net_version="net40", obfuscate=False
-    ):
+    ) -> Path:
         """
         Generate powershell launcher embedded in csharp
         """
@@ -181,7 +182,7 @@ class StagerGenerationService:
             log.warning(err, exc_info=True)
             return None, err
 
-        shellcode = donut.create(file=directory, arch=arch_type)
+        shellcode = donut.create(file=str(directory), arch=arch_type)
         return shellcode, None
 
     def generate_exe_oneliner(
@@ -279,7 +280,7 @@ class StagerGenerationService:
 
     def generate_python_exe(
         self, python_code, dot_net_version="net40", obfuscate=False
-    ):
+    ) -> Path:
         """
         Generate ironpython launcher embedded in csharp
         """
@@ -319,7 +320,7 @@ class StagerGenerationService:
             return None, err
 
         directory = self.generate_python_exe(posh_code, dot_net_version)
-        shellcode = donut.create(file=directory, arch=arch_type)
+        shellcode = donut.create(file=str(directory), arch=arch_type)
         return shellcode, None
 
     def generate_macho(self, launcher_code):

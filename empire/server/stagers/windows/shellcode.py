@@ -166,8 +166,7 @@ class Stager:
                     "module donut-shellcode not installed. It is only supported on x86."
                 )
 
-            directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
-            return donut.create(file=directory, arch=arch_type)
+            return donut.create(file=str(launcher), arch=arch_type)
 
         if language.lower() == "python":
             shellcode, err = self.mainMenu.stagergenv2.generate_python_shellcode(

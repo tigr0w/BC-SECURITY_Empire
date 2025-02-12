@@ -497,8 +497,10 @@ class Listener:
                 .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
             )
 
-            return self.mainMenu.dotnet_compiler.compile_stager(
-                stager_yaml, "Sharpire", confuse=obfuscate
+            return str(
+                self.mainMenu.dotnet_compiler.compile_stager(
+                    stager_yaml, "Sharpire", confuse=obfuscate
+                )
             )
 
         self.instance_log.error(
@@ -875,7 +877,7 @@ class Listener:
                     return f.read()
 
             elif stager == "csharp":
-                filename = self.mainMenu.stagergenv2.generate_launcher(
+                path = self.mainMenu.stagergenv2.generate_launcher(
                     listener_name=hop or listenerName,
                     language="csharp",
                     encode=False,
@@ -884,9 +886,7 @@ class Listener:
                     proxy=proxy,
                     proxy_creds=proxyCreds,
                 )
-                directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/net35/{filename}.exe"
-                with open(directory, "rb") as f:
-                    return f.read()
+                return path.read_text()
             elif stager == "go":
                 directory = self.mainMenu.stagergenv2.generate_go_stageless(
                     self.options, listenerName

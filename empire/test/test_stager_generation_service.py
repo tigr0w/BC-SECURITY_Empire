@@ -1,7 +1,6 @@
 import base64
 import os
 import re
-from pathlib import Path
 
 import pytest
 
@@ -103,10 +102,8 @@ def test_generate_powershell_exe(stager_generation_service, dot_net_version, obf
         "posh_code", dot_net_version, obfuscate
     )
 
-    assert Path(result).exists(), f"Generated file not found: {result}"
-    assert result.split("_")[0].endswith(
-        f"EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/CSharpPS"
-    )
+    assert result is not None
+    assert result.exists(), f"Generated file not found: {result}"
 
 
 @pytest.mark.parametrize(
@@ -154,10 +151,8 @@ def test_generate_python_exe(stager_generation_service, dot_net_version, obfusca
         "python_code", dot_net_version, obfuscate
     )
 
-    assert Path(result).exists(), f"Generated file not found: {result}"
-    assert result.split("_")[0].endswith(
-        f"EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/CSharpPy"
-    )
+    assert result is not None
+    assert result.exists(), f"Generated file not found: {result}"
 
 
 @pytest.mark.parametrize(

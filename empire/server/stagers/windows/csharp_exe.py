@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from empire.server.common.helpers import (
     strip_powershell_comments,
     strip_python_comments,
@@ -153,9 +155,7 @@ class Stager:
                 return f.read()
 
         elif language.lower() == "csharp":
-            directory = f"{self.mainMenu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
-            with open(directory, "rb") as f:
-                return f.read()
+            return Path(launcher).read_bytes()
 
         elif language.lower() == "ironpython":
             directory = self.mainMenu.stagergenv2.generate_python_exe(

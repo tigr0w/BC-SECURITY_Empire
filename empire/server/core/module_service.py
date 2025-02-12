@@ -144,6 +144,7 @@ class ModuleService:
             # Not all modules return a tuple. If they just return a single value,
             # we don't want to throw an unpacking error.
             err = None
+
         if not module_data or module_data == "":
             # This should probably be a ModuleExecutionException, but
             # for backwards compatability with 5.x, it needs to raise a 400
@@ -385,7 +386,10 @@ class ModuleService:
         b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
 
         script_file = self.main_menu.dotnet_compiler.compile_task(
-            bof_module.compiler_yaml, bof_module.name, dotnet="net40", confuse=obfuscate
+            bof_module.compiler_yaml,
+            bof_module.name,
+            dot_net_version="net40",
+            confuse=obfuscate,
         )
 
         filtered_params = {
@@ -644,7 +648,7 @@ class ModuleService:
             script_file = self.main_menu.dotnet_compiler.compile_task(
                 module.compiler_yaml,
                 module.name,
-                dotnet=params["DotNetVersion"].lower(),
+                dot_net_version=params["DotNetVersion"].lower(),
                 confuse=obfuscate,
             )
             filtered_params = {}

@@ -74,14 +74,13 @@ class Module:
                 arch_type = 2
             elif arch == "both":
                 arch_type = 3
-            directory = f"{main_menu.installPath}/Empire-Compiler/EmpireCompiler/Data/Tasks/CSharp/Compiled/{dot_net_version}/{launcher}.exe"
 
             if not donut:
                 raise ModuleExecutionException(
                     "module donut-shellcode not installed. It is only supported on x86."
                 )
 
-            shellcode = donut.create(file=directory, arch=arch_type)
+            shellcode = donut.create(file=str(launcher), arch=arch_type)
             base64_shellcode = base64.b64encode(shellcode).decode("UTF-8")
 
         technique_map = {

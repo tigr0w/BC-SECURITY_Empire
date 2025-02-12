@@ -18,7 +18,7 @@ class Module:
         script_file = main_menu.dotnet_compiler.compile_task(
             module.compiler_yaml,
             module.name,
-            dotnet=params["DotNetVersion"].lower(),
+            dot_net_version=params["DotNetVersion"].lower(),
             confuse=obfuscate,
         )
 
