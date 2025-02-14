@@ -22,7 +22,7 @@ class DotnetCompiler:
 
     def compile_task(
         self, compiler_yaml, task_name, dot_net_version="net40", confuse=False
-    ):
+    ) -> Path:
         random_task_name = f"{task_name}_{random_string(6)}.exe"
 
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:

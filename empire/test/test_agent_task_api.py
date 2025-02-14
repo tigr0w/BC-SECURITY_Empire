@@ -1,4 +1,3 @@
-import contextlib
 from pathlib import Path
 from textwrap import dedent
 from types import SimpleNamespace
@@ -42,6 +41,7 @@ def agent_low_version(session_local, models, main):
                 archived=False,
             )
             db.add(agent)
+            db.add(models.AgentCheckIn(agent_id=agent.session_id))
             db.flush()
 
         main.agentcommsv2.agents["WEAK"] = {
@@ -50,14 +50,7 @@ def agent_low_version(session_local, models, main):
 
         session_id = agent.session_id
 
-    yield session_id
-
-    with session_local.begin() as db:
-        db.query(models.AgentTask).filter(
-            models.AgentTask.agent_id == session_id
-        ).delete()
-        db.query(models.Agent).filter(models.Agent.session_id == session_id).delete()
-        db.commit()
+    return session_id  # noqa RET504
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -88,6 +81,7 @@ def agent_archived(session_local, models, main):
                 archived=True,
             )
             db.add(agent)
+            db.add(models.AgentCheckIn(agent_id=agent.session_id))
             db.flush()
 
         main.agentcommsv2.agents["iamarchived"] = {
@@ -96,14 +90,7 @@ def agent_archived(session_local, models, main):
 
         session_id = agent.session_id
 
-    yield session_id
-
-    with session_local.begin() as db:
-        db.query(models.AgentTask).filter(
-            models.AgentTask.agent_id == session_id
-        ).delete()
-        db.query(models.Agent).filter(models.Agent.session_id == session_id).delete()
-        db.commit()
+    return session_id  # noqa RET504
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -132,6 +119,7 @@ def agent_low_integrity(session_local, models, main):
                 archived=False,
             )
             db.add(agent)
+            db.add(models.AgentCheckIn(agent_id=agent.session_id))
             db.flush()
 
         main.agentcommsv2.agents["WEAK2"] = {
@@ -140,19 +128,9 @@ def agent_low_integrity(session_local, models, main):
 
         session_id = agent.session_id
 
-    yield session_id
-
-    with session_local.begin() as db:
-        db.query(models.AgentTask).filter(
-            models.AgentTask.agent_id == session_id
-        ).delete()
-        db.query(models.Agent).filter(models.Agent.session_id == session_id).delete()
-        db.commit()
+    return session_id  # noqa RET504
 
 
-#
-# TODO: I think the source of the issues is the db fixture. Should replace with
-# session_local fixture. I'm not sure why the issue is just now popping up though.
 @pytest.fixture(scope="module", autouse=True)
 def download(client, admin_auth_header, session_local, models):
     response = client.post(
@@ -166,11 +144,7 @@ def download(client, admin_auth_header, session_local, models):
         },
     )
 
-    yield response.json()
-
-    # there is no delete endpoint for downloads, so we need to delete the file manually
-    with contextlib.suppress(Exception), session_local.begin() as db:
-        db.query(models.Download).delete()
+    return response.json()
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -186,11 +160,7 @@ def bof_download(client, admin_auth_header, session_local, models):
         },
     )
 
-    yield response.json()
-
-    # there is no delete endpoint for downloads, so we need to delete the file manually
-    with contextlib.suppress(Exception), session_local.begin() as db:
-        db.query(models.Download).delete()
+    return response.json()
 
 
 @pytest.fixture
@@ -348,6 +318,22 @@ def test_create_task_module(client, admin_auth_header, agent):
     assert response.json()["agent_id"] == agent
 
 
+def test_create_task_module_csharp(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "csharp_credentials_sharpdpapi",
+            "options": {
+                "Command": "triage",
+            },
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["id"] > 0
+
+
 def test_create_task_module_modified_input(client, admin_auth_header, agent):
     modified_input = dedent(
         """
@@ -377,13 +363,6 @@ def test_create_task_module_modified_input(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith(modified_input)
     assert response.json()["agent_id"] == agent
-
-
-@contextlib.contextmanager
-def disable_csharpserver(main):
-    main.pluginsv2.loaded_plugins["csharpserver"].enabled = False
-    yield
-    main.pluginsv2.loaded_plugins["csharpserver"].enabled = True
 
 
 def test_create_task_module_with_file_option_not_found(
@@ -929,9 +908,17 @@ def test_create_task_archived_agent(client, admin_auth_header, agent_archived):
     assert response.json()["detail"] == f"[!] Agent {agent_archived} is archived."
 
 
-def test_delete_task(client, admin_auth_header, agent, agent_task):
+def test_delete_task(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/shell",
+        headers=admin_auth_header,
+        json={"command": 'echo "HELLO WORLD"'},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
     response = client.delete(
-        f"/api/v2/agents/{agent}/tasks/1", headers=admin_auth_header
+        f"/api/v2/agents/{agent}/tasks/{response.json()['id']}",
+        headers=admin_auth_header,
     )
 
     assert response.status_code == status.HTTP_204_NO_CONTENT

@@ -159,7 +159,7 @@ def listener(client, admin_auth_header):
     return response.json()
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def listener_malleable(client, admin_auth_header):
     # not using fixture because scope issues
     response = client.post(
