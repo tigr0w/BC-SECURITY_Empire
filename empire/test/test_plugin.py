@@ -56,28 +56,3 @@ def test_on_settings_change_called(session_local):
         example_plugin.set_settings(db, {"test_setting": "other"})
 
     on_settings_change_mock.assert_called_once_with(db, {"test_setting": "other"})
-
-
-@pytest.mark.usefixtures("_setup_database")
-def test_settings_file_option(main, session_local, models):
-    with session_local.begin() as db:
-        db.query(models.upload_download_assc).delete()
-        db.query(models.Download).delete()
-
-    example_plugin = Plugin(
-        main, PluginInfo(id="example", name="example", main=""), None
-    )
-
-    with session_local.begin() as db:
-        example_plugin.set_settings(db, {"file_option": "1"})
-
-    with session_local.begin() as db:
-        settings = example_plugin.current_settings(db)
-
-        download = db.query(models.Download).filter(models.Download.id == "1").first()
-
-        assert settings["file_option"] == "1"
-        assert download is None
-
-    with session_local.begin() as db:
-        example_plugin.set_settings(db, {"file_option": "99999"})

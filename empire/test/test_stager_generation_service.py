@@ -1,11 +1,16 @@
 import base64
 import os
+import platform
 import re
 
 import pytest
 
 from empire.server.common.empire import MainMenu
 from empire.server.utils.file_util import run_as_user
+
+is_arm = platform.machine().startswith("arm") or platform.machine().startswith(
+    "aarch64"
+)
 
 
 @pytest.fixture(scope="module")
@@ -106,6 +111,7 @@ def test_generate_powershell_exe(stager_generation_service, dot_net_version, obf
     assert result.exists(), f"Generated file not found: {result}"
 
 
+@pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
 @pytest.mark.parametrize(
     ("arch", "dot_net_version"),
     [
@@ -155,6 +161,7 @@ def test_generate_python_exe(stager_generation_service, dot_net_version, obfusca
     assert result.exists(), f"Generated file not found: {result}"
 
 
+@pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
 @pytest.mark.parametrize(
     ("arch", "dot_net_version"),
     [

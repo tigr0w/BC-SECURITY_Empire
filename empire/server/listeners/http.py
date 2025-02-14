@@ -797,7 +797,7 @@ class Listener:
         proxy = listenerOptions["Proxy"]["Value"]
         proxyCreds = listenerOptions["ProxyCreds"]["Value"]
 
-        if "pytest" in sys.modules:
+        if os.environ.get("TEST_MODE"):
             # Let's not start the server if we're running tests.
             while True:
                 time.sleep(1)

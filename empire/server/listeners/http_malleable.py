@@ -1318,6 +1318,11 @@ def send_staging_for_child(self, received_data, hop_name):
         log = logging.getLogger("werkzeug")
         log.setLevel(logging.ERROR)
 
+        if os.environ.get("TEST_MODE"):
+            # Let's not start the server if we're running tests.
+            while True:
+                time.sleep(1)
+
         # initialize flask server
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app

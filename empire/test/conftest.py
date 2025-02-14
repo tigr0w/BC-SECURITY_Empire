@@ -2,6 +2,7 @@ import os
 import shutil
 import sys
 from contextlib import suppress
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -10,6 +11,7 @@ import yaml
 from starlette.testclient import TestClient
 
 from empire.server.utils.string_util import get_random_string
+from empire.test.test_listener_api import get_base_listener, get_base_malleable_listener
 
 if TYPE_CHECKING:
     from empire.server.core.config.config_manager import EmpireConfig
@@ -145,135 +147,16 @@ def main():
     return main
 
 
-@pytest.fixture
-def base_listener():
-    return {
-        "name": "new-listener-1",
-        "template": "http",
-        "options": {
-            "Name": "new-listener-1",
-            "Host": "http://localhost:1336",
-            "BindIP": "0.0.0.0",
-            "Port": "1336",
-            "Launcher": "powershell -noP -sta -w 1 -enc ",
-            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
-            "DefaultDelay": "5",
-            "DefaultJitter": "0.0",
-            "DefaultLostLimit": "60",
-            "DefaultProfile": "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-            "CertPath": "",
-            "KillDate": "",
-            "WorkingHours": "",
-            "Headers": "Server:Microsoft-IIS/7.5",
-            "Cookie": "",
-            "StagerURI": "",
-            "UserAgent": "default",
-            "Proxy": "default",
-            "ProxyCreds": "default",
-            "JA3_Evasion": "False",
-        },
-    }
-
-
-@pytest.fixture
-def malleable_listener():
-    return {
-        "name": "malleable_listener_1",
-        "template": "http_malleable",
-        "options": {
-            "Name": "http_malleable",
-            "Host": "http://localhost",
-            "BindIP": "0.0.0.0",
-            "Port": "1338",
-            "Profile": "amazon.profile",
-            "Launcher": "powershell -noP -sta -w 1 -enc ",
-            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
-            "DefaultDelay": "5",
-            "DefaultJitter": "0.0",
-            "DefaultLostLimit": "60",
-            "CertPath": "",
-            "KillDate": "",
-            "WorkingHours": "",
-            "Cookie": "",
-            "UserAgent": "default",
-            "Proxy": "default",
-            "ProxyCreds": "default",
-            "JA3_Evasion": "False",
-        },
-    }
-
-
-def base_listener_non_fixture():
-    return {
-        "name": "new-listener-1",
-        "template": "http",
-        "options": {
-            "Name": "new-listener-1",
-            "Host": "http://localhost:1336",
-            "BindIP": "0.0.0.0",
-            "Port": "1336",
-            "Launcher": "powershell -noP -sta -w 1 -enc ",
-            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
-            "DefaultDelay": "5",
-            "DefaultJitter": "0.0",
-            "DefaultLostLimit": "60",
-            "DefaultProfile": "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-            "CertPath": "",
-            "KillDate": "",
-            "WorkingHours": "",
-            "Headers": "Server:Microsoft-IIS/7.5",
-            "Cookie": "",
-            "StagerURI": "",
-            "UserAgent": "default",
-            "Proxy": "default",
-            "ProxyCreds": "default",
-            "JA3_Evasion": "False",
-        },
-    }
-
-
-def malleable_listener_non_fixture():
-    return {
-        "name": "malleable_listener_1",
-        "template": "http_malleable",
-        "options": {
-            "Name": "http_malleable",
-            "Host": "http://localhost",
-            "BindIP": "0.0.0.0",
-            "Port": "1338",
-            "Profile": "amazon.profile",
-            "Launcher": "powershell -noP -sta -w 1 -enc ",
-            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
-            "DefaultDelay": "5",
-            "DefaultJitter": "0.0",
-            "DefaultLostLimit": "60",
-            "CertPath": "",
-            "KillDate": "",
-            "WorkingHours": "",
-            "Cookie": "",
-            "UserAgent": "default",
-            "Proxy": "default",
-            "ProxyCreds": "default",
-            "JA3_Evasion": "False",
-        },
-    }
-
-
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def listener(client, admin_auth_header):
     # not using fixture because scope issues
     response = client.post(
         "/api/v2/listeners/",
         headers=admin_auth_header,
-        json=base_listener_non_fixture(),
+        json=get_base_listener(),
     )
 
-    yield response.json()
-
-    with suppress(Exception):
-        client.delete(
-            f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
-        )
+    return response.json()
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -282,132 +165,10 @@ def listener_malleable(client, admin_auth_header):
     response = client.post(
         "/api/v2/listeners/",
         headers=admin_auth_header,
-        json=malleable_listener_non_fixture(),
+        json=get_base_malleable_listener(),
     )
 
-    yield response.json()
-
-    with suppress(Exception):
-        client.delete(
-            f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
-        )
-
-
-@pytest.fixture
-def base_stager():
-    return {
-        "name": "MyStager",
-        "template": "multi_launcher",
-        "options": {
-            "Listener": "new-listener-1",
-            "Language": "powershell",
-            "StagerRetries": "0",
-            "OutFile": "",
-            "Base64": "True",
-            "Obfuscate": "False",
-            "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
-            "UserAgent": "default",
-            "Proxy": "default",
-            "ProxyCreds": "default",
-            "Bypasses": "mattifestation etw",
-        },
-    }
-
-
-@pytest.fixture
-def base_stager_dll():
-    return {
-        "name": "MyStager2",
-        "template": "windows_dll",
-        "options": {
-            "Listener": "new-listener-1",
-            "Language": "powershell",
-            "StagerRetries": "0",
-            "Arch": "x86",
-            "OutFile": "my-windows-dll.dll",
-            "Base64": "True",
-            "Obfuscate": "False",
-            "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
-            "UserAgent": "default",
-            "Proxy": "default",
-            "ProxyCreds": "default",
-            "Bypasses": "mattifestation etw",
-        },
-    }
-
-
-@pytest.fixture
-def base_stager_malleable():
-    return {
-        "name": "MyStager",
-        "template": "multi_launcher",
-        "options": {
-            "Listener": "malleable_listener_1",
-            "Language": "powershell",
-            "StagerRetries": "0",
-            "OutFile": "",
-            "Base64": "True",
-            "Obfuscate": "False",
-            "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
-            "UserAgent": "default",
-            "Proxy": "default",
-            "ProxyCreds": "default",
-            "Bypasses": "mattifestation etw",
-        },
-    }
-
-
-@pytest.fixture
-def bat_stager():
-    return {
-        "name": "bat_stager",
-        "template": "windows_launcher_bat",
-        "options": {
-            "Listener": "new-listener-1",
-            "Language": "powershell",
-            "OutFile": "my-bat.bat",
-            "Obfuscate": "False",
-            "ObfuscateCommand": "Token\\All\\1",
-            "Bypasses": "mattifestation etw",
-        },
-    }
-
-
-@pytest.fixture
-def windows_macro_stager():
-    return {
-        "name": "macro_stager",
-        "template": "windows_macro",
-        "options": {
-            "Listener": "new-listener-1",
-            "Language": "powershell",
-            "DocumentType": "word",
-            "Trigger": "autoopen",
-            "OutFile": "document_macro.txt",
-            "Obfuscate": "False",
-            "ObfuscateCommand": "Token\\All\\1",
-            "Bypasses": "mattifestation etw",
-            "SafeChecks": "True",
-        },
-    }
-
-
-@pytest.fixture
-def pyinstaller_stager():
-    return {
-        "name": "MyStager3",
-        "template": "linux_pyinstaller",
-        "options": {
-            "Listener": "new-listener-1",
-            "Language": "python",
-            "OutFile": "empire",
-            "SafeChecks": "True",
-            "UserAgent": "default",
-        },
-    }
+    return response.json()
 
 
 @pytest.fixture(scope="session")
@@ -427,13 +188,10 @@ def host(session_local, models):
         db.flush()
         host_id = host.id
 
-    yield host_id
-
-    with session_local.begin() as db:
-        db.query(models.Agent).filter(models.Agent.host_id == host_id).delete()
-        db.query(models.Host).filter(models.Host.id == host_id).delete()
+    return host_id  # noqa RET504
 
 
+# This provides a new agent to any test that requests it.
 @pytest.fixture
 def agent(session_local, models, host, main):
     with session_local.begin() as db:
@@ -470,13 +228,140 @@ def agent(session_local, models, host, main):
 
         agent_id = agent.session_id
 
-    yield agent_id
+    return agent_id  # noqa RET504
 
+
+# These are global for test_agent_api and test_agents
+@pytest.fixture(scope="session", autouse=True)
+def _agents(session_local, models, main):
     with session_local.begin() as db:
-        db.query(models.AgentCheckIn).filter(
-            models.AgentCheckIn.agent_id == agent_id
-        ).delete()
-        db.query(models.Agent).filter(models.Agent.session_id == agent_id).delete()
+        host = models.Host(name=f"host_{get_random_string(5)}", internal_ip="127.0.0.1")
+
+        agent = models.Agent(
+            name="TEST123",
+            session_id="TEST123",
+            delay=60,
+            jitter=0.1,
+            external_ip="1.1.1.1",
+            session_key="qwerty",
+            nonce="nonce",
+            profile="profile",
+            kill_date="killDate",
+            working_hours="workingHours",
+            lost_limit=60,
+            listener="http",
+            language="powershell",
+            language_version="5",
+            high_integrity=False,
+            process_name="proc",
+            process_id=12345,
+            hostname="vinnybod",
+            host=host,
+            archived=False,
+        )
+
+        agent2 = models.Agent(
+            name="SECOND",
+            session_id="SECOND",
+            delay=60,
+            jitter=0.1,
+            external_ip="1.1.1.1",
+            session_key="qwerty",
+            nonce="nonce",
+            profile="profile",
+            kill_date="killDate",
+            working_hours="workingHours",
+            lost_limit=60,
+            listener="http",
+            language="powershell",
+            language_version="5",
+            high_integrity=False,
+            process_name="proc",
+            process_id=12345,
+            hostname="vinnybod",
+            host=host,
+            archived=False,
+        )
+
+        agent3 = models.Agent(
+            name="ARCHIVED",
+            session_id="ARCHIVED",
+            delay=60,
+            jitter=0.1,
+            external_ip="1.1.1.1",
+            session_key="qwerty",
+            nonce="nonce",
+            profile="profile",
+            kill_date="killDate",
+            working_hours="workingHours",
+            lost_limit=60,
+            listener="http",
+            language="powershell",
+            language_version="5",
+            high_integrity=False,
+            process_name="proc",
+            process_id=12345,
+            hostname="vinnybod",
+            host=host,
+            archived=True,
+        )
+
+        agent4 = models.Agent(
+            name="STALE",
+            session_id="STALE",
+            delay=1,
+            jitter=0.1,
+            external_ip="1.1.1.1",
+            session_key="qwerty",
+            nonce="nonce",
+            profile="profile",
+            kill_date="killDate",
+            working_hours="workingHours",
+            lost_limit=60,
+            listener="http",
+            language="powershell",
+            language_version="5",
+            high_integrity=False,
+            process_name="proc",
+            process_id=12345,
+            hostname="vinnybod",
+            host=host,
+            archived=False,
+        )
+
+        db.add(host)
+        db.add(agent)
+        db.add(agent2)
+        db.add(agent3)
+        db.add(agent4)
+        db.add(models.AgentCheckIn(agent_id=agent.session_id))
+        db.add(models.AgentCheckIn(agent_id=agent2.session_id))
+        db.add(models.AgentCheckIn(agent_id=agent3.session_id))
+        db.add(
+            models.AgentCheckIn(
+                agent_id=agent4.session_id,
+                checkin_time=datetime.now(UTC) - timedelta(days=2),
+            )
+        )
+        db.flush()
+        agents = [agent, agent2, agent3, agent4]
+
+        main.agentcommsv2.agents["TEST123"] = {
+            "sessionKey": agents[0].session_key,
+            "functions": agents[0].functions,
+        }
+        main.agentcommsv2.agents["SECOND"] = {
+            "sessionKey": agents[1].session_key,
+            "functions": agents[1].functions,
+        }
+        main.agentcommsv2.agents["ARCHIVED"] = {
+            "sessionKey": agents[2].session_key,
+            "functions": agents[2].functions,
+        }
+        main.agentcommsv2.agents["STALE"] = {
+            "sessionKey": agents[3].session_key,
+            "functions": agents[3].functions,
+        }
 
 
 @pytest.fixture
@@ -487,15 +372,7 @@ def agent_task(client, admin_auth_header, agent, session_local, main):
         json={"command": 'echo "HELLO WORLD"'},
     )
 
-    yield resp.json()
-
-    with session_local.begin() as db:
-        task = main.agenttasksv2.get_task_for_agent(db, agent, resp.json()["id"])
-
-        for download in task.downloads:
-            db.delete(download)
-
-        db.delete(task)
+    return resp.json()
 
 
 @pytest.fixture(scope="module")
@@ -516,10 +393,7 @@ def plugin_task(main, session_local, models, plugin_id):
         db.flush()
         task_id = plugin_task.id
 
-    yield task_id
-
-    with session_local.begin() as db:
-        db.query(models.PluginTask).delete()
+    return task_id  # noqa RET504
 
 
 @pytest.fixture
@@ -536,12 +410,7 @@ def credential(client, admin_auth_header):
         },
     )
 
-    yield resp.json()["id"]
-
-    with suppress(Exception):
-        client.delete(
-            f"/api/v2/credentials/{resp.json()['id']}", headers=admin_auth_header
-        )
+    return resp.json()["id"]
 
 
 @pytest.fixture

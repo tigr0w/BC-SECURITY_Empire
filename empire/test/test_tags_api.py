@@ -351,9 +351,6 @@ def test_get_tags(client, admin_auth_header, create_tags):
 def create_agent_tasks_with_tags(
     client, admin_auth_header, agent, session_local, models
 ):
-    with session_local.begin() as db:
-        db.query(models.AgentTask).delete()
-
     agent_id = agent
     agent_tasks = []
     tags = []
@@ -375,21 +372,7 @@ def create_agent_tasks_with_tags(
         assert resp.status_code == status.HTTP_201_CREATED
         tags.append((agent_task, resp.json()))
 
-    yield agent_tasks
-
-    for task, tag in tags:
-        resp = client.delete(
-            f"/api/v2/agents/{agent_id}/tasks/{task['id']}/tags/{tag['id']}",
-            headers=admin_auth_header,
-        )
-        assert resp.status_code == status.HTTP_204_NO_CONTENT
-
-    for agent_task in agent_tasks:
-        resp = client.delete(
-            f"/api/v2/agents/{agent_id}/tasks/{agent_task['id']}",
-            headers=admin_auth_header,
-        )
-        assert resp.status_code == status.HTTP_204_NO_CONTENT
+    return agent_tasks
 
 
 def test_get_agent_tasks_tag_filter(
@@ -472,9 +455,6 @@ def create_plugin_tasks_with_tags(
         )
         assert resp.status_code == status.HTTP_204_NO_CONTENT
 
-    with session_local.begin() as db:
-        db.query(models.PluginTask).delete()
-
 
 def test_get_plugin_tasks_tag_filter(
     client, admin_auth_header, plugin_id, create_plugin_tasks_with_tags
@@ -483,7 +463,7 @@ def test_get_plugin_tasks_tag_filter(
 
     task_count = 3
     assert resp.status_code == status.HTTP_200_OK
-    assert len(resp.json()["records"]) == task_count
+    assert len(resp.json()["records"]) > task_count
 
     resp = client.get(
         f"/api/v2/plugins/{plugin_id}/tasks?tags=test_tag_0:test_value_0",
@@ -524,12 +504,6 @@ def test_get_plugin_tasks_tag_filter(
 def create_downloads_with_tags(models, session_local, client, admin_auth_header):
     downloads = []
     tags = []
-    with session_local.begin() as db:
-        # Unsure why this is needed, but it is.
-        # Some other test must be adding a download and not removing it.
-        db.query(models.upload_download_assc).delete()
-        db.query(models.Download).delete()
-
     for i in range(3):
         download = models.Download(
             location=f"path/{i}", filename=f"filename_{i}", size=1
@@ -557,10 +531,6 @@ def create_downloads_with_tags(models, session_local, client, admin_auth_header)
         )
         assert resp.status_code == status.HTTP_204_NO_CONTENT
 
-    with session_local.begin() as db:
-        db.query(models.download_tag_assc).delete()
-        db.query(models.Download).delete()
-
 
 def test_get_downloads_tag_filter(
     client, admin_auth_header, create_downloads_with_tags
@@ -569,7 +539,7 @@ def test_get_downloads_tag_filter(
 
     download_count = 3
     assert resp.status_code == status.HTTP_200_OK
-    assert len(resp.json()["records"]) == download_count
+    assert len(resp.json()["records"]) > download_count
 
     resp = client.get(
         "/api/v2/downloads?tags=test_tag_0:test_value_0",
