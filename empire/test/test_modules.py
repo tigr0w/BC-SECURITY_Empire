@@ -94,6 +94,10 @@ def test_load_modules(main_menu_mock, models, session_local):
     ) as handler:
         module_service = ModuleService(main_menu_mock)
 
+        module_service.dotnet_compiler.compile_task = Mock(
+            return_value=Path("/tmp/compiled_task.exe")
+        )
+
         messages = [x.message for x in handler.records if x.levelno >= logging.WARNING]
 
     if messages:

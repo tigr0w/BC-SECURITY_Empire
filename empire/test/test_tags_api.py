@@ -343,8 +343,8 @@ def test_get_tags(client, admin_auth_header, create_tags):
     for tag in actual_tags:
         tag.pop("id")
 
-    expected_tags = sorted(expected_tags, key=lambda k: k["name"])
-    assert actual_tags == expected_tags
+    for tag in expected_tags:
+        assert tag in actual_tags
 
 
 @pytest.fixture

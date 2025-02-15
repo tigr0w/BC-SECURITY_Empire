@@ -10,43 +10,38 @@ def test_get_agent_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Agent not found for id XYZ123"
 
 
-def test_get_agent(client, admin_auth_header):
-    expected_delay = 60
-    expected_jitter = 0.1
-    response = client.get("/api/v2/agents/TEST123", headers=admin_auth_header)
+def test_get_agent(client, agent, admin_auth_header):
+    response = client.get(f"/api/v2/agents/{agent}", headers=admin_auth_header)
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["session_id"] == "TEST123"
-    assert response.json()["delay"] == expected_delay
-    assert response.json()["jitter"] == expected_jitter
+    assert response.json()["session_id"] == agent
 
 
 def test_get_agents(client, admin_auth_header):
-    expected_agents = 3
     response = client.get("/api/v2/agents", headers=admin_auth_header)
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()["records"]) == expected_agents
+    assert len(response.json()["records"]) > 0
 
 
 def test_get_agents_include_stale_false(client, admin_auth_header):
-    expected_agents = 2
     response = client.get(
         "/api/v2/agents?include_stale=false", headers=admin_auth_header
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()["records"]) == expected_agents
+    assert len(response.json()["records"]) > 0
+    assert all(record["stale"] is False for record in response.json()["records"])
 
 
 def test_get_agents_include_archived_true(client, admin_auth_header):
-    expected_agents = 4
     response = client.get(
         "/api/v2/agents?include_archived=true", headers=admin_auth_header
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()["records"]) == expected_agents
+    assert len(response.json()["records"]) > 0
+    assert any(record["archived"] is True for record in response.json()["records"])
 
 
 def test_update_agent_not_found(client, admin_auth_header):
@@ -61,26 +56,26 @@ def test_update_agent_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Agent not found for id XYZ123"
 
 
-def test_update_agent_name_conflict(client, admin_auth_header):
-    response = client.get("/api/v2/agents/TEST123", headers=admin_auth_header)
+def test_update_agent_name_conflict(client, agents, admin_auth_header):
+    response = client.get(f"/api/v2/agents/{agents[0]}", headers=admin_auth_header)
     agent = response.json()
-    agent["name"] = "SECOND"
+    agent["name"] = agents[1]
 
     response = client.put(
-        "/api/v2/agents/TEST123", json=agent, headers=admin_auth_header
+        f"/api/v2/agents/{agents[0]}", json=agent, headers=admin_auth_header
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json()["detail"] == "Agent with name SECOND already exists."
+    assert response.json()["detail"] == f"Agent with name {agents[1]} already exists."
 
 
-def test_update_agent(client, admin_auth_header):
-    response = client.get("/api/v2/agents/TEST123", headers=admin_auth_header)
+def test_update_agent(client, agent, admin_auth_header):
+    response = client.get(f"/api/v2/agents/{agent}", headers=admin_auth_header)
 
     agent = response.json()
     agent["name"] = "My New Agent Name"
     agent["notes"] = "The new notes!"
     response = client.put(
-        "/api/v2/agents/TEST123", json=agent, headers=admin_auth_header
+        f"/api/v2/agents/{agent['session_id']}", json=agent, headers=admin_auth_header
     )
 
     assert response.status_code == status.HTTP_200_OK

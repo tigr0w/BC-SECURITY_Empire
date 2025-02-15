@@ -102,9 +102,11 @@ class TagService:
         self,
         db: Session,
         taggable: Taggable,
-        tag_req,
+        name: str,
+        value: str,
+        color: str | None = None,
     ):
-        tag = models.Tag(name=tag_req.name, value=tag_req.value, color=tag_req.color)
+        tag = models.Tag(name=name, value=value, color=color)
         taggable.tags.append(tag)
         db.flush()
 

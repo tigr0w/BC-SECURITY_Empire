@@ -25,11 +25,6 @@ sys.argv = DEFAULT_ARGV
 
 
 @pytest.fixture(scope="session")
-def default_argv():
-    return DEFAULT_ARGV
-
-
-@pytest.fixture(scope="session")
 def install_path():
     return str(Path(os.path.realpath(__file__)).parent.parent / "server")
 
@@ -233,13 +228,14 @@ def agent(session_local, models, host, main):
 
 # These are global for test_agent_api and test_agents
 @pytest.fixture(scope="session", autouse=True)
-def _agents(session_local, models, main):
+def agents(session_local, models, main):
+    random_string = get_random_string(5)
     with session_local.begin() as db:
         host = models.Host(name=f"host_{get_random_string(5)}", internal_ip="127.0.0.1")
 
         agent = models.Agent(
-            name="TEST123",
-            session_id="TEST123",
+            name=f"TEST123_{random_string}",
+            session_id=f"TEST123_{random_string}",
             delay=60,
             jitter=0.1,
             external_ip="1.1.1.1",
@@ -261,8 +257,8 @@ def _agents(session_local, models, main):
         )
 
         agent2 = models.Agent(
-            name="SECOND",
-            session_id="SECOND",
+            name=f"SECOND_{random_string}",
+            session_id=f"SECOND_{random_string}",
             delay=60,
             jitter=0.1,
             external_ip="1.1.1.1",
@@ -284,8 +280,8 @@ def _agents(session_local, models, main):
         )
 
         agent3 = models.Agent(
-            name="ARCHIVED",
-            session_id="ARCHIVED",
+            name=f"ARCHIVED_{random_string}",
+            session_id=f"ARCHIVED_{random_string}",
             delay=60,
             jitter=0.1,
             external_ip="1.1.1.1",
@@ -307,8 +303,8 @@ def _agents(session_local, models, main):
         )
 
         agent4 = models.Agent(
-            name="STALE",
-            session_id="STALE",
+            name=f"STALE_{random_string}",
+            session_id=f"STALE_{random_string}",
             delay=1,
             jitter=0.1,
             external_ip="1.1.1.1",
@@ -346,22 +342,24 @@ def _agents(session_local, models, main):
         db.flush()
         agents = [agent, agent2, agent3, agent4]
 
-        main.agentcommsv2.agents["TEST123"] = {
+        main.agentcommsv2.agents[f"TEST123_{random_string}"] = {
             "sessionKey": agents[0].session_key,
             "functions": agents[0].functions,
         }
-        main.agentcommsv2.agents["SECOND"] = {
+        main.agentcommsv2.agents[f"SECOND_{random_string}"] = {
             "sessionKey": agents[1].session_key,
             "functions": agents[1].functions,
         }
-        main.agentcommsv2.agents["ARCHIVED"] = {
+        main.agentcommsv2.agents[f"ARCHIVED_{random_string}"] = {
             "sessionKey": agents[2].session_key,
             "functions": agents[2].functions,
         }
-        main.agentcommsv2.agents["STALE"] = {
+        main.agentcommsv2.agents[f"STALE_{random_string}"] = {
             "sessionKey": agents[3].session_key,
             "functions": agents[3].functions,
         }
+
+        return [agent.session_id for agent in agents]
 
 
 @pytest.fixture
@@ -375,7 +373,7 @@ def agent_task(client, admin_auth_header, agent, session_local, main):
     return resp.json()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def plugin_id():
     return "basic_reporting"
 

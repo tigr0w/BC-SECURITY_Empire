@@ -35,6 +35,7 @@ class AgentTaskService:
         self.listener_service = main_menu.listenersv2
         self.agent_socks_service = main_menu.agentsocksv2
         self.agent_service = main_menu.agentsv2
+        self.download_service = main_menu.downloadsv2
 
         # { agent_id: [TemporaryTask] }
         self.temporary_tasks = defaultdict(list)
@@ -353,6 +354,7 @@ class AgentTaskService:
             task_input=resp.data,
             module_name=module_req.module_id,
             user=user,
+            files=resp.files,
         )
 
     def create_task_directory_list(
@@ -401,10 +403,12 @@ class AgentTaskService:
         task_input="",
         module_name: str | None = None,
         user: models.User | None = None,
+        files: list[Path] | None = None,
     ) -> tuple[models.AgentTask | None, str | None]:
         """
         Task an agent. Adapted from agents.py
         """
+        files = files or []
         if agent.archived:
             return None, f"[!] Agent {agent.session_id} is archived."
 
@@ -466,6 +470,14 @@ class AgentTaskService:
                 status=AgentTaskStatus.queued,
             )
         db.add(task)
+        db.flush()
+
+        for path in files:
+            task.downloads.append(
+                self.download_service.create_download(
+                    db, user, path, tags=["task:input"]
+                )
+            )
         db.flush()
 
         last_task_config = empire_config.debug.last_task

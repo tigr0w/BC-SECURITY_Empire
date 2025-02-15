@@ -20,6 +20,7 @@ def main_menu_mock(models, install_path):
         )
     )
     main_menu.obfuscationv2.obfuscate_keywords = Mock(side_effect=lambda x: x)
+
     return main_menu
 
 
@@ -27,7 +28,13 @@ def main_menu_mock(models, install_path):
 def module_service(main_menu_mock):
     from empire.server.core.module_service import ModuleService
 
-    return ModuleService(main_menu=main_menu_mock)
+    module_service = ModuleService(main_menu=main_menu_mock)
+
+    module_service.dotnet_compiler.compile_task = Mock(
+        return_value=Path("/tmp/compiled_task.exe")
+    )
+
+    return module_service
 
 
 @pytest.fixture

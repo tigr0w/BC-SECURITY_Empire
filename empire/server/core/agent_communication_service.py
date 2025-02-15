@@ -770,6 +770,9 @@ class AgentCommunicationService:
                         "TASK_CSHARP_CMD_JOB",
                         "TASK_CSHARP_CMD_WAIT",
                     ]:
+                        # This is where we read the input file.
+                        # We could change it to use the linked/tagged download.
+                        # But this still works.
                         with open(tasking.input_full.split("|")[0], "rb") as f:
                             input_full = f.read()
                         input_full = base64.b64encode(input_full).decode("UTF-8")

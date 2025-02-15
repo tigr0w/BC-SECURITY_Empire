@@ -46,7 +46,7 @@ log = logging.getLogger(__name__)
 class ModuleExecutionRequest(BaseModel):
     command: str
     data: str
-    files: dict[str, Path] = {}
+    files: list[Path] = []
 
 
 class ModuleService:
@@ -54,6 +54,8 @@ class ModuleService:
         self.main_menu = main_menu
         self.obfuscation_service: ObfuscationService = main_menu.obfuscationv2
         self.download_service: DownloadService = main_menu.downloadsv2
+        self.dotnet_compiler = main_menu.dotnet_compiler
+
         self.module_source_path = main_menu.install_path / "data/module_source"
         self._obfuscated_module_source_path = DATA_DIR / "obfuscated_module_source"
 
@@ -145,6 +147,7 @@ class ModuleService:
             # we don't want to throw an unpacking error.
             err = None
 
+        # Should standardize on the return type.
         if not module_data or module_data == "":
             # This should probably be a ModuleExecutionException, but
             # for backwards compatability with 5.x, it needs to raise a 400
@@ -364,8 +367,7 @@ class ModuleService:
                 obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                     db, LanguageEnum.csharp
                 )
-            resp = self.generate_script_bof(module, params, obfuscation_enabled)
-            return ModuleExecutionRequest(command="", data=resp), None
+            return self.generate_script_bof(module, params, obfuscation_enabled), None
 
         return None, "Unsupported language"
 
@@ -374,7 +376,7 @@ class ModuleService:
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
-    ) -> str:
+    ) -> ModuleExecutionRequest:
         bof_module = self.modules["csharp_code_execution_runcoff"]
 
         if params["Architecture"] == "x86":
@@ -385,7 +387,7 @@ class ModuleService:
         bof_data = script_path.read_bytes()
         b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
 
-        script_file = self.main_menu.dotnet_compiler.compile_task(
+        script_file = self.dotnet_compiler.compile_task(
             bof_module.compiler_yaml,
             bof_module.name,
             dot_net_version="net40",
@@ -425,7 +427,11 @@ class ModuleService:
             json.dumps(params_dict).encode("utf-8")
         ).decode("utf-8")
 
-        return f"{script_file}|,{final_base64_json}"
+        return ModuleExecutionRequest(
+            command="",
+            data=f"{script_file}|,{final_base64_json}",
+            files=[script_file],
+        )
 
     def generate_go_bof(
         self,
@@ -645,7 +651,7 @@ class ModuleService:
             obfuscate = (
                 obfuscation_config.enabled if obfuscation_config is not None else False
             )
-            script_file = self.main_menu.dotnet_compiler.compile_task(
+            script_file = self.dotnet_compiler.compile_task(
                 module.compiler_yaml,
                 module.name,
                 dot_net_version=params["DotNetVersion"].lower(),
@@ -669,6 +675,7 @@ class ModuleService:
             return ModuleExecutionRequest(
                 command="",
                 data=f"{script_file}|,{base64_json}",
+                files=[script_file],
             )
         except (ModuleValidationException, ModuleExecutionException) as e:
             raise e

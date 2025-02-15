@@ -82,7 +82,9 @@ def add_endpoints_to_taggable(router, path, get_taggable):
         db: CurrentSession,
         db_taggable=Depends(get_taggable),
     ):
-        tag = tag_service.add_tag(db, db_taggable, tag_req)
+        tag = tag_service.add_tag(
+            db, db_taggable, tag_req.name, tag_req.value, tag_req.color
+        )
 
         return domain_to_dto_tag(tag)
 

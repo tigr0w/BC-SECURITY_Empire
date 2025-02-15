@@ -318,6 +318,31 @@ def test_create_task_module(client, admin_auth_header, agent):
     assert response.json()["agent_id"] == agent
 
 
+def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "bof_nanodump",
+            "options": {},
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["id"] > 0
+    downloads = response.json()["downloads"]
+    assert len(downloads) > 0
+    download_id = downloads[0]["id"]
+    response = client.get(f"/api/v2/downloads/{download_id}", headers=admin_auth_header)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["id"] == download_id
+    assert response.json()["size"] > 0
+    tags = response.json()["tags"]
+    assert len(tags) > 0
+    assert tags[0]["label"] == "task:input"
+
+
 def test_create_task_module_csharp(client, admin_auth_header, agent):
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/module",
@@ -332,6 +357,17 @@ def test_create_task_module_csharp(client, admin_auth_header, agent):
 
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["id"] > 0
+    downloads = response.json()["downloads"]
+    assert len(downloads) > 0
+    download_id = downloads[0]["id"]
+    response = client.get(f"/api/v2/downloads/{download_id}", headers=admin_auth_header)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["id"] == download_id
+    assert response.json()["size"] > 0
+    tags = response.json()["tags"]
+    assert len(tags) > 0
+    assert tags[0]["label"] == "task:input"
 
 
 def test_create_task_module_modified_input(client, admin_auth_header, agent):
