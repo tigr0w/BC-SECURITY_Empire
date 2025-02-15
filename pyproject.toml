@@ -17,30 +17,30 @@ urllib3 = "^2.3.0"
 requests = "^2.32.3"
 macholib = "^1.16.3"
 dropbox = "^12.0.2"
-pyOpenSSL = "^24.3.0"
+pyOpenSSL = "^25.0.0"
 zlib_wrapper = "^0.1.3"
 jinja2 = "^3.1.5"
-pyparsing = "^3.2.0"
+pyparsing = "^3.2.1"
 PyMySQL = "^1.1.1"
-SQLAlchemy = "^2.0.36"
+SQLAlchemy = "^2.0.38"
 PyYAML = "^6.0.2"
 SQLAlchemy-Utc = "^0.14.0"
 terminaltables = "^3.1.10"
 pycryptodome = "^3.21.0"
-cryptography = "^44.0.0"
-fastapi = "^0.115.6"
+cryptography = "^44.0.1"
+fastapi = "^0.115.8"
 uvicorn = "^0.34.0"
 jq = "^1.8.0"
 aiofiles = "^24.1.0"
 python-multipart = "^0.0.20"
 python-jose = {version = "^3.3.0", extras = ["cryptography"]}
 passlib = {version = "^1.7.4", extras = ["bcrypt"]}
-python-socketio = "^5.12.0"
+python-socketio = "^5.12.1"
 Flask = "^3.1.0"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev = "da5be0e"}
 donut-shellcode = { version = "^1.1", markers = "platform_machine == 'x86_64' or platform_machine == 'amd64'" }
 python-obfuscator = "^0.0.2"
-pyinstaller = "^6.11.1"
+pyinstaller = "^6.12.0"
 packaging = "^24.2"
 netaddr = "^1.3.0"
 bcrypt = "4.0.1" # Locked to 4.0.1 due to passlib no longer being updated https://github.com/pyca/bcrypt/issues/684
@@ -52,9 +52,9 @@ websockify = "^0.12.0" # Used for websockify plugin
 httpx = "^0.28.1" # For starlette TestClient
 pytest = "^8.3.4"
 pytest-timeout = "^2.3.1"
-ruff = "^0.8.4"
+ruff = "^0.9.6"
 pytest-cov = "^6.0.0"
-coverage = {version = "^7.6.10", extras = ["toml"]}
+coverage = {version = "^7.6.12", extras = ["toml"]}
 pytest-env = "^1.1.5"
 
 [build-system]

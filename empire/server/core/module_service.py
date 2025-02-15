@@ -801,7 +801,7 @@ class ModuleService:
             script_path = self.module_source_path / my_model.script_path
             if not script_path.exists():
                 raise Exception(
-                    f"File provided in script_path does not exist: { module_name }"
+                    f"File provided in script_path does not exist: {module_name}"
                 )
         elif my_model.script:
             pass

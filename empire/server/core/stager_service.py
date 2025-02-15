@@ -54,7 +54,7 @@ class StagerService:
         if params.get("Listener") and not self.listener_service.get_by_name(
             db, params["Listener"]
         ):
-            return None, f'Listener {params["Listener"]} not found'
+            return None, f"Listener {params['Listener']} not found"
 
         template_instance = self.stager_template_service.new_instance(template)
         cleaned_options, err = validate_options(

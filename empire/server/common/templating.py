@@ -69,9 +69,7 @@ def filter_noleadingslash(host):
     Usage: {{ '/login.php' | noleadingslash }}
     Output: 'login.php'
     """
-    if host.startswith("/"):
-        host = host[1:]
-    return host
+    return host.removeprefix("/")
 
 
 def filter_ensuretrailingslash(host):

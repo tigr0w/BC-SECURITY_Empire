@@ -48,7 +48,7 @@ def test_save_file_non_python(
         assert download.filename == "test.txt"
         assert download.size == len(data)
         assert download.get_bytes_file() == data
-        assert f'downloads/{agent}/{file_path.replace("\\", "/")}' in download.location
+        assert f"downloads/{agent}/{file_path.replace('\\', '/')}" in download.location
 
 
 def test_save_file_python(

@@ -27,7 +27,7 @@ class Plugin(BasePlugin):
         """
         user = kwargs["user"]
         db = kwargs["db"]
-        input = f'Generating reports for: {command["report"]}'
+        input = f"Generating reports for: {command['report']}"
         plugin_task = models.PluginTask(
             plugin_id=self.info.id,
             input=input,

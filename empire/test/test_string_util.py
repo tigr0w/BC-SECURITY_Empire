@@ -21,9 +21,9 @@ from empire.server.utils.string_util import is_valid_session_id, slugify
     ],
 )
 def test_is_valid_session_id(session_id, expected):
-    assert (
-        is_valid_session_id(session_id) == expected
-    ), f"Test failed for session_id: {session_id}"
+    assert is_valid_session_id(session_id) == expected, (
+        f"Test failed for session_id: {session_id}"
+    )
 
 
 def test_slugify():

@@ -292,7 +292,7 @@ def test_create_stager_name_conflict(client, admin_auth_header):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
-        == f'Stager with name {base_stager["name"]} already exists.'
+        == f"Stager with name {base_stager['name']} already exists."
     )
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)

