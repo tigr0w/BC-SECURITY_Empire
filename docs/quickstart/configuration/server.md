@@ -74,19 +74,11 @@ database:
 
 * **empire_compiler** - Configure the Empire Compiler module. This block manages settings for the Empire Compiler, which is responsible for handling C# compilation tasks.
 
-enabled: Enable or disable the Empire Compiler module.
-version: Specify the version of the Empire Compiler to use.
-repo: Repository location for the Empire Compiler.
-directory: Directory path where the Empire Compiler is installed.
-auto_update: Automatically update the Empire Compiler on startup.
+archive: The URL to the Empire Compiler archive. The {{platform}} variable will be replaced with the current platform/architecture. (e.g. linux-amd64, linux-arm64)
 
 ```yaml
 empire_compiler:
-  enabled: true
-  version: v0.2
-  repo: git@github.com:BC-SECURITY/Empire-Compiler.git
-  directory: empire/server/Empire-Compiler
-  auto_update: true
+  archive: https://github.com/BC-SECURITY/Empire-Compiler/releases/download/v0.3.2/EmpireCompiler-{{platform}}-v0.3.2.tgz
 ```
 
 

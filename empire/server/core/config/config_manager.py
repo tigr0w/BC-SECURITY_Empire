@@ -45,7 +45,6 @@ class StarkillerConfig(EmpireBaseModel):
     enabled: bool = True
     repo: str = "bc-security/starkiller"
     ref: str = "main"
-    auto_update: bool = True
 
 
 class EmpireCompilerConfig(EmpireBaseModel):

@@ -10,7 +10,7 @@ from empire.server.core.config.config_manager import (
     EmpireCompilerConfig,
     StarkillerConfig,
 )
-from empire.server.utils.git_util import clone_git_repo, update_git_repo
+from empire.server.utils.git_util import clone_git_repo
 
 log = logging.getLogger(__name__)
 
@@ -21,12 +21,6 @@ def sync_starkiller(starkiller_config: StarkillerConfig):
     if not Path(starkiller_dir).exists():
         log.info("Starkiller: directory not found. Cloning Starkiller")
         clone_git_repo(starkiller_config.repo, starkiller_config.ref, starkiller_dir)
-
-        return starkiller_dir
-
-    if starkiller_config.auto_update:
-        log.info("Starkiller: auto update enabled. Attempting auto update")
-        update_git_repo(starkiller_dir)
 
     return starkiller_dir
 

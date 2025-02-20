@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   All writeable data moved out of the install path into `~/.local/share/empire`
 -   Pass output path to dotnet compiler, only compile the requested version
 -   Csharp and bof tasks attach the executable as a 'download' with a tag 'task:input'
+-   Fixed issue with permissions caused by git operations being done with de-elevated permissions
 
 ## [6.0.0-beta1] - 2025-01-11
 

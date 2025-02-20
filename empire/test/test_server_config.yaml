@@ -42,7 +42,6 @@ starkiller:
   repo: https://github.com/BC-SECURITY/Starkiller.git
   # Can be a branch, tag, or commit hash
   ref: v2.8.2
-  auto_update: true
 submodules:
   auto_update: true
 plugin_marketplace:
