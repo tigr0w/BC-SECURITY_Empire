@@ -71,7 +71,7 @@ RUN rm -rf /empire/empire/server/data/empire*
 
 RUN sed -i 's/use: mysql/use: sqlite/g' empire/server/config.yaml
 
-RUN ./ps-empire setup
+RUN ./ps-empire -f setup
 
 ENTRYPOINT ["./ps-empire"]
-CMD ["server"]
+CMD ["-f", "server"]
