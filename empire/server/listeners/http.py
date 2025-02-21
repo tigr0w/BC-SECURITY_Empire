@@ -6,6 +6,7 @@ import random
 import ssl
 import sys
 import time
+from pathlib import Path
 from textwrap import dedent
 
 from flask import Flask, make_response, render_template, request, send_from_directory
@@ -882,7 +883,7 @@ class Listener:
                     proxy=proxy,
                     proxy_creds=proxyCreds,
                 )
-                return path.read_text()
+                return Path(path).read_bytes()
             elif stager == "go":
                 directory = self.mainMenu.stagergenv2.generate_go_stageless(
                     self.options, listenerName
