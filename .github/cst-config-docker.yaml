@@ -49,5 +49,5 @@ fileExistenceTests:
     path: '/empire/empire/server/data/profiles/'
     shouldExist: true
   - name: 'starkiller'
-    path: '/empire/empire/server/api/v2/starkiller/index.html'
+    path: '/root/.local/share/empire/starkiller/'
     shouldExist: true
