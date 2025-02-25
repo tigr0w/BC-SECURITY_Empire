@@ -11,7 +11,7 @@ techniques:
   - T1069.001
 background: false
 output_extension:
-needs_admin: true
+needs_admin: false
 opsec_safe: true
 language: bof
 min_language_version: ''
