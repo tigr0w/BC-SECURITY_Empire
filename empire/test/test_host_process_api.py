@@ -2,7 +2,7 @@ import pytest
 from starlette import status
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def processes(session_local, host, agent, models):
     with session_local.begin() as db:
         db_agent = (
@@ -29,13 +29,7 @@ def processes(session_local, host, agent, models):
 
         processes = [process1.process_id, process2.process_id]
 
-    yield processes
-
-    with session_local.begin() as db:
-        for process in processes:
-            db.query(models.HostProcess).filter(
-                models.HostProcess.process_id == process
-            ).delete()
+    return processes  # noqa RET504
 
 
 def test_get_process_host_not_found(client, admin_auth_header):
@@ -67,25 +61,15 @@ def test_get_process(client, admin_auth_header, host, processes):
     assert response.json()["process_id"] == processes[0]
 
 
-def test_get_processes(client, admin_auth_header, host):
+def test_get_processes(client, admin_auth_header, host, processes):
     response = client.get(f"/api/v2/hosts/{host}/processes/", headers=admin_auth_header)
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 0
 
 
-def test_agent_join(client, admin_auth_header, host, agent):
+def test_agent_join(client, admin_auth_header, host, agent, processes):
     response = client.get(f"/api/v2/hosts/{host}/processes/", headers=admin_auth_header)
 
     assert response.status_code == status.HTTP_200_OK
-    assert (
-        len(
-            list(
-                filter(
-                    lambda x: x["agent_id"] == agent,
-                    response.json()["records"],
-                )
-            )
-        )
-        == 1
-    )
+    assert len([x for x in response.json()["records"] if x["agent_id"] == agent]) == 1

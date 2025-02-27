@@ -56,7 +56,7 @@ def patch_installed_plugin(plugin_name, session_local, models):
 
 
 def test_install_plugin_plugin_already_installed(
-    client, admin_auth_header, plugin_id, session_local, models
+    client, admin_auth_header, session_local, models
 ):
     with patch_installed_plugin("slack", session_local, models):
         response = client.post(

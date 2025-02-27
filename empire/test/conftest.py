@@ -373,27 +373,6 @@ def agent_task(client, admin_auth_header, agent, session_local, main):
     return resp.json()
 
 
-@pytest.fixture(scope="session")
-def plugin_id():
-    return "basic_reporting"
-
-
-@pytest.fixture
-def plugin_task(main, session_local, models, plugin_id):
-    with session_local.begin() as db:
-        plugin_task = models.PluginTask(
-            plugin_id=plugin_id,
-            input="This is the trimmed input for the task.",
-            input_full="This is the full input for the task.",
-            user_id=1,
-        )
-        db.add(plugin_task)
-        db.flush()
-        task_id = plugin_task.id
-
-    return task_id  # noqa RET504
-
-
 @pytest.fixture
 def credential(client, admin_auth_header):
     resp = client.post(

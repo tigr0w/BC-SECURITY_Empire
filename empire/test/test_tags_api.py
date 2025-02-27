@@ -3,6 +3,24 @@ from starlette import status
 
 from empire.server.core.db.models import PluginTaskStatus
 
+PLUGIN_ID = "basic_reporting"
+
+
+@pytest.fixture
+def plugin_task(main, session_local, models):
+    with session_local.begin() as db:
+        plugin_task = models.PluginTask(
+            plugin_id=PLUGIN_ID,
+            input="This is the trimmed input for the task.",
+            input_full="This is the full input for the task.",
+            user_id=1,
+        )
+        db.add(plugin_task)
+        db.flush()
+        task_id = plugin_task.id
+
+    return task_id  # noqa RET504
+
 
 def _test_add_tag(client, admin_auth_header, path, taggable_id):
     resp = client.post(
@@ -419,14 +437,12 @@ def test_get_agent_tasks_tag_filter(
 
 
 @pytest.fixture
-def create_plugin_tasks_with_tags(
-    models, session_local, client, admin_auth_header, plugin_id
-):
+def create_plugin_tasks_with_tags(models, session_local, client, admin_auth_header):
     plugin_tasks = []
     tags = []
     for i in range(3):
         plugin_task = models.PluginTask(
-            plugin_id=plugin_id,
+            plugin_id=PLUGIN_ID,
             input=f"input {i}",
             input_full=f"input {i}",
             user_id=None,
@@ -439,7 +455,7 @@ def create_plugin_tasks_with_tags(
 
     for i, plugin_task in enumerate(plugin_tasks):
         resp = client.post(
-            f"/api/v2/plugins/{plugin_id}/tasks/{plugin_task['id']}/tags",
+            f"/api/v2/plugins/{PLUGIN_ID}/tasks/{plugin_task['id']}/tags",
             headers=admin_auth_header,
             json={"name": f"test_tag_{i}", "value": f"test_value_{i}"},
         )
@@ -450,23 +466,23 @@ def create_plugin_tasks_with_tags(
 
     for task, tag in tags:
         resp = client.delete(
-            f"/api/v2/plugins/{plugin_id}/tasks/{task['id']}/tags/{tag['id']}",
+            f"/api/v2/plugins/{PLUGIN_ID}/tasks/{task['id']}/tags/{tag['id']}",
             headers=admin_auth_header,
         )
         assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
 def test_get_plugin_tasks_tag_filter(
-    client, admin_auth_header, plugin_id, create_plugin_tasks_with_tags
+    client, admin_auth_header, create_plugin_tasks_with_tags
 ):
-    resp = client.get(f"/api/v2/plugins/{plugin_id}/tasks", headers=admin_auth_header)
+    resp = client.get(f"/api/v2/plugins/{PLUGIN_ID}/tasks", headers=admin_auth_header)
 
     task_count = 3
     assert resp.status_code == status.HTTP_200_OK
     assert len(resp.json()["records"]) > task_count
 
     resp = client.get(
-        f"/api/v2/plugins/{plugin_id}/tasks?tags=test_tag_0:test_value_0",
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks?tags=test_tag_0:test_value_0",
         headers=admin_auth_header,
     )
 
@@ -476,7 +492,7 @@ def test_get_plugin_tasks_tag_filter(
     assert resp.json()["records"][0]["tags"][0]["name"] == "test_tag_0"
 
     resp = client.get(
-        f"/api/v2/plugins/{plugin_id}/tasks?tags=test_tag_0:test_value_0&tags=test_tag_1:test_value_1",
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks?tags=test_tag_0:test_value_0&tags=test_tag_1:test_value_1",
         headers=admin_auth_header,
     )
 
@@ -490,7 +506,7 @@ def test_get_plugin_tasks_tag_filter(
 
     # Test tag value bad
     resp = client.get(
-        f"/api/v2/plugins/{plugin_id}/tasks?tags=test_tag_0",
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks?tags=test_tag_0",
         headers=admin_auth_header,
     )
 
