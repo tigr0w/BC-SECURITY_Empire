@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0-beta3] - 2025-03-02
+
 -   Simplify option_util.validate_options, fixes a bug where an optional file option was treated as required
 -   Fix issue loading a plugin that has multiple files
 
@@ -1060,7 +1062,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta3...HEAD
+
+[6.0.0-beta3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta2...v6.0.0-beta3
 
 [6.0.0-beta2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta1...v6.0.0-beta2
 
