@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Simplify option_util.validate_options, fixes a bug where an optional file option was treated as required
+
 ## [6.0.0-beta2] - 2025-02-21
 
 ### Changed

@@ -557,3 +557,19 @@ def test_validate_options_file_missing_with_file_script_type():
 
     assert cleaned_options is None
     assert err == "required option missing: File"
+
+
+def test_validation_options_file_not_required():
+    instance_options = {
+        "File": {
+            "Description": "A file",
+            "Required": False,
+            "Value": "",
+            "Type": "file",
+        }
+    }
+
+    options = {"File": ""}
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert cleaned_options == {"File": ""}

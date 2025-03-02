@@ -40,7 +40,7 @@ def convert_module_options(options: list[EmpireModuleOption]) -> dict:
     return converted_options
 
 
-def validate_options(  # noqa: PLR0912 PLR0911
+def validate_options(  # noqa: PLR0912
     instance_options: dict, params: dict, db: Session, download_service
 ) -> tuple[dict | None, str | None]:
     """
@@ -67,50 +67,29 @@ def validate_options(  # noqa: PLR0912 PLR0911
         if option_meta.get("Editable", True) is False:
             continue
 
-        if _lower_default(option_meta.get("Type")) == "file":
-            # Check if there are any dependencies for this option
-            if option_meta["DependsOn"]:
-                # If 'depends_on' is present, check if the option is required based on it
-                if is_option_required(option_meta, params):
-                    # If 'File' is required and not provided, raise an error
-                    if not params.get(instance_key):
-                        return None, f"required option missing: {instance_key}"
-
-                    # Try to retrieve the file using the provided file ID
-                    db_download = download_service.get_by_id(db, params[instance_key])
-                    if not db_download:
-                        return (
-                            None,
-                            f"File not found for '{instance_key}' id {params[instance_key]}",
-                        )
-
-                    options[instance_key] = db_download
-                else:
-                    # If the option isn't required, set it to an empty string
-                    options[instance_key] = ""
-            else:
-                # If no 'depends_on' exists, use the original logic to check if the file exists
-                db_download = download_service.get_by_id(db, params.get(instance_key))
-                if not db_download:
-                    return (
-                        None,
-                        f"File not found for '{instance_key}' id {params.get(instance_key)}",
-                    )
-
-                options[instance_key] = db_download
-
-            continue
-
-        # Handle other options (non-file types)
         if instance_key not in params and option_meta["Value"] not in ["", None]:
             params[instance_key] = option_meta["Value"]
 
-        if option_meta.get("Required") and (
+        if is_option_required(option_meta, params) and (
             instance_key not in params
             or params[instance_key] == ""
             or params[instance_key] is None
         ):
             return None, f"required option missing: {instance_key}"
+
+        if _lower_default(option_meta.get("Type")) == "file":
+            if params.get(instance_key):
+                db_download = download_service.get_by_id(db, params[instance_key])
+                if not db_download:
+                    return (
+                        None,
+                        f"File not found for '{instance_key}' id {params[instance_key]}",
+                    )
+
+                options[instance_key] = db_download
+            else:
+                options[instance_key] = ""
+            continue
 
         if option_meta.get("Strict") and params.get(
             instance_key, ""
