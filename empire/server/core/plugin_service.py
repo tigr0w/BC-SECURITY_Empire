@@ -2,6 +2,7 @@ import asyncio
 import importlib
 import logging
 import shutil
+import sys
 import tarfile
 import tempfile
 import typing
@@ -364,9 +365,16 @@ class PluginService:
         return plugin_dir, plugin_config
 
     def _create_plugin_obj(self, db, file_path, plugin_config: PluginInfo):
-        plugin_file_name = file_path.name.removesuffix(".py")
-        loader = importlib.machinery.SourceFileLoader(plugin_file_name, str(file_path))
-        module = loader.load_module()
+        plugin_file_name = file_path.stem
+        package_name = file_path.parent.name
+        sys.path.append(str(file_path.parent.parent))
+
+        spec = importlib.util.spec_from_file_location(
+            f"{package_name}.{plugin_file_name}", str(file_path)
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
         return module.Plugin(self.main_menu, plugin_config, db)
 
     @staticmethod
