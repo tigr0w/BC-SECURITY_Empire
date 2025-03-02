@@ -43,7 +43,7 @@ def test_listener_template_loader(monkeypatch):
 
     listener_template_service = ListenerTemplateService(main_menu)
 
-    min_template_count = 7
+    min_template_count = 5
     assert len(listener_template_service.get_listener_templates()) > min_template_count
 
 

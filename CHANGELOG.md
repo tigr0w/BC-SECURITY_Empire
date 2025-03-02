@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Security** in case of vulnerabilities.
 
 ## [Unreleased]
+-   Remove outdated listeners
+  - HTTP COM only supports powershell agent and uses an older COM object that isn't used often
+  - OneDrive has new APIs and Microsoft hs made registration harder. May return in the future with revisions.
+  - Dropbox has new APIs and may return in the future with revisions.
 
 ## [6.0.0-beta3] - 2025-03-02
 

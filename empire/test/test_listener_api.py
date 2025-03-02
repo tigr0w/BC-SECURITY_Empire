@@ -58,7 +58,7 @@ def get_base_malleable_listener():
 
 
 def test_get_listener_templates(client, admin_auth_header):
-    min_expected_templates = 8
+    min_expected_templates = 6
     response = client.get(
         "/api/v2/listener-templates/",
         headers=admin_auth_header,
