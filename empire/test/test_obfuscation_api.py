@@ -264,4 +264,5 @@ def test_preobfuscate_delete(main, client, admin_auth_header, empire_config):
     for root, _dirs, files in os.walk(module_dir):
         for file in files:
             root_rep = root.replace(str(module_dir), str(obf_module_dir))
-            assert not os.path.exists(root_rep + "/" + file)
+            path = Path(root_rep + "/" + file)
+            assert not path.exists()

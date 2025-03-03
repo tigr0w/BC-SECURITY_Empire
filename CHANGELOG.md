@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Simplify option_util.validate_options, fixes a bug where an optional file option was treated as required
 -   Fix issue loading a plugin that has multiple files
+-   Convert many parts of codebase to be compliant with flake8-use-pathlib
 
 ## [6.0.0-beta2] - 2025-02-21
 

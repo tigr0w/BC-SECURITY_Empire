@@ -20,7 +20,7 @@ SERVER_CONFIG_LOC = "empire/test/test_server_config.yaml"
 DEFAULT_ARGV = ["", "server", "--config", SERVER_CONFIG_LOC]
 
 
-os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
+os.chdir(Path(__file__).parent.parent.parent)
 sys.argv = DEFAULT_ARGV
 
 
@@ -32,7 +32,6 @@ def install_path():
 @pytest.fixture(scope="session", autouse=True)
 def client(_example_2_plugin):
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
-    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
 
     import empire.server.core.db.base
     from empire.server.core.db.base import reset_db, startup_db
@@ -407,5 +406,5 @@ def download(client, admin_auth_header):
 
 
 def load_test_config():
-    with open(SERVER_CONFIG_LOC) as f:
+    with Path(SERVER_CONFIG_LOC).open() as f:
         return yaml.safe_load(f)

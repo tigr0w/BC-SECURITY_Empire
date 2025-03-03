@@ -108,9 +108,8 @@ class AgentCommunicationService:
                 log.warning(message)
                 return
 
-            # make the recursive directory structure if it doesn't already exist
             if not save_path.exists():
-                os.makedirs(save_path)
+                save_path.mkdir(parents=True, exist_ok=True)
 
             # overwrite an existing file
             mode = "ab" if append else "wb"

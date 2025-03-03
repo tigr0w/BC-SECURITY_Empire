@@ -1,4 +1,3 @@
-import os
 import shutil
 import typing
 from operator import and_
@@ -139,7 +138,7 @@ class DownloadService:
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 
-        filename, location = self._increment_filename(filename, location)
+        filename, location = self._increment_filename(location)
 
         with location.open("w") as buffer:
             buffer.write(file)
@@ -165,7 +164,7 @@ class DownloadService:
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 
-        filename, location = self._increment_filename(filename, location)
+        filename, location = self._increment_filename(location)
 
         with location.open("wb") as buffer:
             if isinstance(file, Path):
@@ -177,11 +176,12 @@ class DownloadService:
         return self._save_download(db, filename, location, tags)
 
     @staticmethod
-    def _increment_filename(filename, location):
-        filename, file_extension = os.path.splitext(filename)
+    def _increment_filename(location: Path) -> tuple[str, Path]:
+        filename_stem = location.stem
+        file_extension = location.suffix
         i = 1
-        while os.path.isfile(location):
-            temp_name = f"{filename}({i}){file_extension}"
+        while location.exists():
+            temp_name = f"{filename_stem}({i}){file_extension}"
             location = location.parent / temp_name
             i += 1
         filename = location.name
@@ -189,10 +189,10 @@ class DownloadService:
         return filename, location
 
     def _save_download(
-        self, db: Session, filename: str, location: str, tags: list[str] | None
+        self, db: Session, filename: str, location: Path, tags: list[str] | None
     ):
         download = models.Download(
-            location=str(location), filename=filename, size=os.path.getsize(location)
+            location=str(location), filename=filename, size=location.stat().st_size
         )
         db.add(download)
         db.flush()

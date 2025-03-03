@@ -3,7 +3,7 @@ import fnmatch
 import importlib.util
 import json
 import logging
-import os
+import shutil
 import typing
 import warnings
 from pathlib import Path
@@ -30,7 +30,7 @@ from empire.server.core.module_models import (
     EmpireModuleOption,
     LanguageEnum,
 )
-from empire.server.utils import data_util, file_util
+from empire.server.utils import data_util
 from empire.server.utils.bof_packer import process_arguments
 from empire.server.utils.option_util import convert_module_options, validate_options
 from empire.server.utils.string_util import slugify
@@ -547,8 +547,7 @@ class ModuleService:
 
         if module.script_path:
             script_path = self.module_source_path / module.script_path
-            with open(script_path) as stream:
-                script = stream.read()
+            script = script_path.read_text()
         else:
             script = module.script
 
@@ -699,39 +698,26 @@ class ModuleService:
         return modified_module
 
     def load_modules(self, db: Session):
-        """
-        Load Empire modules.
-        """
-        root_path = f"{self.main_menu.installPath}/modules/"
-
+        root_path = Path(self.main_menu.installPath) / "modules"
         log.info(f"v2: Loading modules from: {root_path}")
 
-        for root, _dirs, files in os.walk(root_path):
-            for filename in files:
-                if not filename.lower().endswith(
-                    ".yaml"
-                ) and not filename.lower().endswith(".yml"):
-                    continue
+        for file_path in root_path.rglob("*.y*ml"):
+            filename = file_path.name
+            if fnmatch.fnmatch(filename, "*template.yaml"):
+                continue
 
-                file_path = os.path.join(root, filename)
-
-                # don't load up any of the templates
-                if fnmatch.fnmatch(filename, "*template.yaml"):
-                    continue
-
-                # instantiate the module and save it to the internal cache
-                try:
-                    with open(file_path) as stream:
-                        yaml2 = yaml.safe_load(stream)
-                        yaml_module = {k: v for k, v in yaml2.items() if v is not None}
-                        self._load_module(db, yaml_module, root_path, file_path)
-                except Exception as e:
-                    log.error(f"Error loading module {filename}: {e}")
+            # instantiate the module and save it to the internal cache
+            try:
+                yaml2 = yaml.safe_load(file_path.read_text())
+                yaml_module = {k: v for k, v in yaml2.items() if v is not None}
+                self._load_module(db, yaml_module, root_path, file_path)
+            except Exception as e:
+                log.error(f"Error loading module {filename}: {e}")
 
     def _load_module(  # noqa: PLR0912
-        self, db: Session, yaml_module, root_path, file_path: str
+        self, db: Session, yaml_module, root_path: Path, file_path: Path
     ):
-        module_name = file_path.split(root_path)[-1][0:-5]
+        module_name = file_path.relative_to(root_path).with_suffix("").as_posix()
         yaml_module["techniques"].extend(
             self._get_interpreter_technique(yaml_module["language"])
         )
@@ -789,10 +775,10 @@ class ModuleService:
             my_model = EmpireModule(**yaml_module)
 
         if my_model.advanced.custom_generate:
-            if not os.path.exists(file_path[:-4] + "py"):
+            if not file_path.with_suffix(".py").exists():
                 raise Exception("No File to use for custom generate.")
             spec = importlib.util.spec_from_file_location(
-                module_name + ".py", file_path[:-5] + ".py"
+                module_name + ".py", file_path.with_suffix(".py")
             )
             imp_mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(imp_mod)
@@ -870,15 +856,12 @@ class ModuleService:
             if obfuscate:
                 module_path = self._obfuscated_module_source_path / module_name
                 # If pre-obfuscated module exists then return code
-                if os.path.exists(module_path):
-                    with open(module_path) as f:
-                        obfuscated_module_code = f.read()
-                    return obfuscated_module_code, None
+                if module_path.exists():
+                    return module_path.read_text(), None
 
                 # If pre-obfuscated module does not exist then generate obfuscated code and return it
                 module_path = self.module_source_path / module_name
-                with open(module_path) as f:
-                    module_code = f.read()
+                module_code = module_path.read_text()
                 obfuscated_module_code = self.obfuscation_service.obfuscate(
                     module_code, obfuscate_command
                 )
@@ -886,8 +869,7 @@ class ModuleService:
 
             # Use regular/unobfuscated code
             module_path = self.module_source_path / module_name
-            with open(module_path) as f:
-                module_code = f.read()
+            module_code = module_path.read_text()
             return module_code, None
         except Exception:
             return (
@@ -912,11 +894,11 @@ class ModuleService:
 
             for file in files:
                 if reobfuscate or not self.is_obfuscated(file):
-                    message = f"Obfuscating {os.path.basename(file)}..."
+                    message = f"Obfuscating {file.name}..."
                     log.info(message)
                 else:
                     log.warning(
-                        f"{os.path.basename(file)} was already obfuscated. Not reobfuscating."
+                        f"{file.name} was already obfuscated. Not reobfuscating."
                     )
                 self.obfuscate_module(file, db_obf_config.command, reobfuscate)
             return None
@@ -925,14 +907,13 @@ class ModuleService:
     # to make it work for other languages, we probably want to just pass in the db_obf_config
     # and delegate to language specific functions
     def obfuscate_module(
-        self, module_source, obfuscation_command="", force_reobfuscation=False
+        self, module_source: Path, obfuscation_command="", force_reobfuscation=False
     ):
         if self.is_obfuscated(module_source) and not force_reobfuscation:
             return None
 
         try:
-            with open(module_source) as f:
-                module_code = f.read()
+            module_code = module_source.read_text()
         except Exception:
             log.error(f"Could not read module source path at: {module_source}")
             return ""
@@ -950,8 +931,7 @@ class ModuleService:
 
         try:
             obfuscated_source.parent.mkdir(parents=True, exist_ok=True)
-            with open(obfuscated_source, "w") as f:
-                f.write(obfuscated_code)
+            obfuscated_source.write_text(obfuscated_code)
         except Exception:
             log.error(
                 f"Could not write obfuscated module source path at: {obfuscated_source}"
@@ -964,7 +944,7 @@ class ModuleService:
         relative_path = module_source.relative_to(self.module_source_path)
         return (self._obfuscated_module_source_path / relative_path).exists()
 
-    def _get_module_source_files(self):
+    def _get_module_source_files(self) -> list[Path]:
         paths = []
         pattern = "*.ps1"
         for root, _dirs, files in self.module_source_path.walk():
@@ -974,7 +954,7 @@ class ModuleService:
         return paths
 
     def remove_preobfuscated_modules(self, _language: str):
-        file_util.remove_dir_contents(self._obfuscated_module_source_path)
+        shutil.rmtree(self._obfuscated_module_source_path)
 
     def finalize_module(
         self,

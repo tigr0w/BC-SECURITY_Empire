@@ -1,7 +1,7 @@
 import copy
-import os
 import typing
 import uuid
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -105,7 +105,7 @@ class StagerService:
         download = models.Download(
             location=generated,
             filename=generated.split("/")[-1],
-            size=os.path.getsize(generated),
+            size=Path(generated).stat().st_size,
         )
         db.add(download)
         db.flush()
@@ -145,7 +145,7 @@ class StagerService:
         download = models.Download(
             location=generated,
             filename=generated.split("/")[-1],
-            size=os.path.getsize(generated),
+            size=Path(generated).stat().st_size,
         )
         db.add(download)
         db.flush()
@@ -172,7 +172,7 @@ class StagerService:
         )
         file_name.parent.mkdir(parents=True, exist_ok=True)
         mode = "w" if isinstance(resp, str) else "wb"
-        with open(file_name, mode) as f:
+        with file_name.open(mode) as f:
             f.write(resp)
 
         return str(file_name), None

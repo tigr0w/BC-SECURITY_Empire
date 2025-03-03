@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import logging
-import os
 import shutil
 import signal
 import subprocess
@@ -51,7 +50,7 @@ signal.signal(signal.SIGINT, shutdown_handler)
 
 def check_submodules():
     log.info("Checking submodules...")
-    if not os.path.exists(Path(".git")):
+    if not Path(".git").exists():
         log.info("No .git directory found. Skipping submodule check.")
         return
 
@@ -67,7 +66,7 @@ def check_submodules():
 
 
 def fetch_submodules():
-    if not os.path.exists(Path(".git")):
+    if not Path(".git").exists():
         log.info("No .git directory found. Skipping submodule fetch.")
         return
     command = ["git", "submodule", "update", "--init", "--recursive"]

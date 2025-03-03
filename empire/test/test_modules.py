@@ -139,11 +139,12 @@ def test_execute_custom_generate(
     module_service, session_local, agent, models, install_path
 ):
     with session_local.begin() as db:
-        file_path = "empire/test/data/modules/test_custom_module.yaml"
-        root_path = f"{install_path}/modules/"
-        path = Path(file_path)
+        file_path = (
+            Path(install_path).parent / "test/data/modules/test_custom_module.yaml"
+        )
+        root_path = Path(install_path).parent
         module_service._load_module(
-            db, yaml.safe_load(path.read_text()), root_path, file_path
+            db, yaml.safe_load(file_path.read_text()), root_path, file_path
         )
 
         db_agent = (
@@ -152,7 +153,7 @@ def test_execute_custom_generate(
         execute, err = module_service.execute_module(
             db,
             db_agent,
-            "empire_test_data_modules_test_custom_module",
+            "test_data_modules_test_custom_module",
             {"Agent": agent},
             ignore_admin_check=True,
             ignore_language_version_check=True,
@@ -179,11 +180,13 @@ def test_auto_get_source(
         source_path = Path(
             "empire/test/data/module_source/custom_module_auto_get_source.py"
         )
-        file_path = "empire/test/data/modules/test_custom_module_auto_get_source.yaml"
-        root_path = f"{install_path}/modules/"
-        path = Path(file_path)
+        file_path = (
+            Path(install_path).parent
+            / "test/data/modules/test_custom_module_auto_get_source.yaml"
+        )
+        root_path = Path(install_path).parent
         module_service._load_module(
-            db, yaml.safe_load(path.read_text()), root_path, file_path
+            db, yaml.safe_load(file_path.read_text()), root_path, file_path
         )
 
         db_agent = (
@@ -192,7 +195,7 @@ def test_auto_get_source(
         execute, err = module_service.execute_module(
             db,
             db_agent,
-            "empire_test_data_modules_test_custom_module_auto_get_source",
+            "test_data_modules_test_custom_module_auto_get_source",
             {"Agent": agent},
             ignore_admin_check=True,
             ignore_language_version_check=True,
@@ -206,11 +209,13 @@ def test_auto_finalize(
     empire_config, module_service, session_local, agent, models, install_path
 ):
     with session_local.begin() as db:
-        file_path = "empire/test/data/modules/test_custom_module_auto_finalize.yaml"
-        root_path = f"{install_path}/modules/"
-        path = Path(file_path)
+        file_path = (
+            Path(install_path).parent
+            / "test/data/modules/test_custom_module_auto_finalize.yaml"
+        )
+        root_path = Path(install_path).parent
         module_service._load_module(
-            db, yaml.safe_load(path.read_text()), root_path, file_path
+            db, yaml.safe_load(file_path.read_text()), root_path, file_path
         )
 
         db_agent = (
@@ -219,7 +224,7 @@ def test_auto_finalize(
         execute, err = module_service.execute_module(
             db,
             db_agent,
-            "empire_test_data_modules_test_custom_module_auto_finalize",
+            "test_data_modules_test_custom_module_auto_finalize",
             {"Agent": agent},
             ignore_admin_check=True,
             ignore_language_version_check=True,

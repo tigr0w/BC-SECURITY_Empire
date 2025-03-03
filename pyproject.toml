@@ -93,7 +93,7 @@ select = [
     "SIM", # flake8-simplify
     "TC", # flake8-type-checking
 #    "ARG", # flake8-unused-arguments
-#    "PTH", # flake8-use-pathlib
+    "PTH", # flake8-use-pathlib
 #    "ERA", # eradicate
     "PLC", # pylint-convention
     "PLE", # pylint-error
@@ -112,9 +112,15 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 [tool.ruff.lint.per-file-ignores]
 # PLR, PLW: Each individual stager, listener, and module lacks tests, so it is not worth the
 # risk to manually refactor them until there are tests in place for them.
-"empire/server/listeners/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901"]
-"empire/server/stagers/*" = ["PLR0911", "PLR0912", "PLR0915"]
-"empire/server/modules/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915"]
+# PTH: Excluded some files with lower test coverage for PTH so we can enable it for
+# the rest of the files and incrementally increase the coverage.
+"empire/server/listeners/*" = ["PTH", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901"]
+"empire/server/stagers/*" = ["PTH", "PLR0911", "PLR0912", "PLR0915"]
+"empire/server/modules/*" = ["PTH", "PLR0911", "PLR0912", "PLR0913", "PLR0915"]
+"empire/server/utils/bof_packer.py" = ["PTH"]
+"empire/server/core/stager_generation_service.py" = ["PTH"]
+"empire/server/core/agent_communication_service.py" = ["PTH"]
+"empire/server/core/go.py" = ["PTH"]
 
 # It's hard to limit arguments on the endpoint functions.
 "empire/server/api/*" = ["PLR0913"]

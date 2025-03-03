@@ -1,6 +1,7 @@
 import base64
 import enum
 import os
+from pathlib import Path
 
 import sqlalchemy
 from fastapi.encoders import jsonable_encoder
@@ -427,12 +428,10 @@ class Download(Base):
     tags = relationship("Tag", secondary=download_tag_assc)
 
     def get_base64_file(self):
-        with open(self.location, "rb") as f:
-            return base64.b64encode(f.read()).decode("utf-8")
+        return base64.b64encode(self.get_bytes_file()).decode("utf-8")
 
     def get_bytes_file(self):
-        with open(self.location, "rb") as f:
-            return f.read()
+        return Path(self.location).read_bytes()
 
 
 class AgentTaskStatus(str, enum.Enum):

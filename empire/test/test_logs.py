@@ -1,7 +1,5 @@
 import logging
-import os
 import sys
-from pathlib import Path
 from unittest.mock import MagicMock
 
 from empire.test.conftest import SERVER_CONFIG_LOC, load_test_config
@@ -9,7 +7,6 @@ from empire.test.conftest import SERVER_CONFIG_LOC, load_test_config
 
 def test_simple_log_format(monkeypatch):
     logging.getLogger().handlers.clear()
-    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     monkeypatch.setattr("empire.server.server.empire", MagicMock())
@@ -37,7 +34,6 @@ def test_simple_log_format(monkeypatch):
 
 def test_extended_log_format(monkeypatch):
     logging.getLogger().handlers.clear()
-    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     from empire import arguments
@@ -64,7 +60,6 @@ def test_extended_log_format(monkeypatch):
 
 def test_log_level_by_config(monkeypatch):
     logging.getLogger().handlers.clear()
-    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     from empire import arguments
@@ -90,7 +85,6 @@ def test_log_level_by_config(monkeypatch):
 
 def test_log_level_by_arg():
     logging.getLogger().handlers.clear()
-    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     sys.argv = [
         "",
         "server",
@@ -123,7 +117,6 @@ def test_log_level_by_arg():
 
 def test_log_level_by_debug_arg():
     logging.getLogger().handlers.clear()
-    os.chdir(Path(os.path.dirname(os.path.abspath(__file__))).parent.parent)
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC, "--debug"]
 
     from empire import arguments

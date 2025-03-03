@@ -295,10 +295,7 @@ async def create_task_upload(
             detail=f"Download not found for id {upload_request.file_id}",
         )
 
-    with open(download.location, "rb") as f:
-        file_data = f.read()
-
-    file_data = base64.b64encode(file_data).decode("UTF-8")
+    file_data = download.get_base64_file()
     raw_data = base64.b64decode(file_data)
 
     # We can probably remove this file size limit with updates to the agent code.

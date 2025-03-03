@@ -1,5 +1,4 @@
 import logging
-import os
 import threading
 import typing
 from datetime import UTC, datetime
@@ -263,9 +262,8 @@ class AgentService:
 
         save_path = empire_config.directories.downloads / session_id
 
-        # make the recursive directory structure if it doesn't already exist
         if not save_path.exists():
-            os.makedirs(save_path)
+            save_path.mkdir(parents=True, exist_ok=True)
 
         current_time = helpers.get_datetime()
 

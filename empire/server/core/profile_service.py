@@ -1,7 +1,7 @@
 import fnmatch
 import logging
-import os
 import typing
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -25,48 +25,38 @@ class ProfileService:
         """
         Load Malleable C2 Profiles to the database
         """
-        malleable_path = f"{self.main_menu.installPath}/data/profiles/"
+        malleable_path = Path(self.main_menu.installPath) / "data/profiles/"
         log.info(f"v2: Loading malleable profiles from: {malleable_path}")
 
-        malleable_directories = os.listdir(malleable_path)
+        for file_path in malleable_path.rglob("*.profile"):
+            filename = file_path.name
 
-        for malleable_directory in malleable_directories:
-            for root, _dirs, files in os.walk(
-                malleable_path + "/" + malleable_directory
-            ):
-                for filename in files:
-                    if not filename.lower().endswith(".profile"):
-                        continue
+            # don't load up any of the templates
+            if fnmatch.fnmatch(filename, "*template.profile"):
+                continue
 
-                    file_path = os.path.join(root, filename)
+            malleable_split = file_path.relative_to(malleable_path).parts
+            profile_category = malleable_split[0]
+            profile_name = malleable_split[1]
 
-                    # don't load up any of the templates
-                    if fnmatch.fnmatch(filename, "*template.profile"):
-                        continue
+            # Check if module is in database and load new profiles
+            profile = (
+                db.query(models.Profile)
+                .filter(models.Profile.name == profile_name)
+                .first()
+            )
+            if not profile:
+                log.debug(f"Adding malleable profile: {profile_name}")
 
-                    malleable_split = file_path.split(malleable_path)[-1].split("/")
-                    profile_category = malleable_split[1]
-                    profile_name = malleable_split[2]
-
-                    # Check if module is in database and load new profiles
-                    profile = (
-                        db.query(models.Profile)
-                        .filter(models.Profile.name == profile_name)
-                        .first()
+                profile_data = file_path.read_text()
+                db.add(
+                    models.Profile(
+                        file_path=str(file_path),
+                        name=profile_name,
+                        category=profile_category,
+                        data=profile_data,
                     )
-                    if not profile:
-                        log.debug(f"Adding malleable profile: {profile_name}")
-
-                        with open(file_path) as stream:
-                            profile_data = stream.read()
-                            db.add(
-                                models.Profile(
-                                    file_path=file_path,
-                                    name=profile_name,
-                                    category=profile_category,
-                                    data=profile_data,
-                                )
-                            )
+                )
 
     @staticmethod
     def get_all(db: Session):

@@ -1,7 +1,7 @@
 import base64
-import os
 import platform
 import re
+from pathlib import Path
 
 import pytest
 
@@ -192,7 +192,7 @@ def test_generate_go_stageless(stager_generation_service):
     assert result is not None, "Stager generation failed, result is None."
 
     generated_executable_path = result
-    assert os.path.exists(generated_executable_path), (
+    assert Path(generated_executable_path).exists(), (
         f"Generated executable not found: {generated_executable_path}"
     )
 
