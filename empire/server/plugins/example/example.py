@@ -54,6 +54,11 @@ class Plugin(BasePlugin):
         # Using BasePlugin's functions for setting and getting the current
         # state, it will ensure things are kept in sync with the db
         self.settings_options = {
+            "SomeEditableSetting": {
+                "Description": "Edit This",
+                "Required": True,
+                "Value": "",
+            },
             "SomeNonEditableSetting": {
                 "Description": "This is displayed to users, but can't be changed via the API",
                 "Required": True,

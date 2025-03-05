@@ -300,37 +300,13 @@ def test_toggle_plugin_enabled_causes_exception(client, admin_auth_header, main)
 
 
 def test_plugin_settings(client, admin_auth_header, main):
-    response = client.get(
-        "/api/v2/plugins/websockify_server", headers=admin_auth_header
-    )
+    response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
     assert response.status_code == HTTP_200_OK
 
     assert response.json()["settings_options"] == {
-        "SourceHost": {
-            "description": "Address of the source host.",
+        "SomeEditableSetting": {
             "editable": True,
-            "required": True,
-            "value": "0.0.0.0",
-            "strict": False,
-            "suggested_values": [],
-            "value_type": "STRING",
-            "internal": False,
-            "depends_on": [],
-        },
-        "SourcePort": {
-            "description": "Port on source host.",
-            "editable": True,
-            "required": True,
-            "value": "5910",
-            "strict": False,
-            "suggested_values": [],
-            "value_type": "STRING",
-            "internal": False,
-            "depends_on": [],
-        },
-        "TargetHost": {
-            "description": "Address of the target host.",
-            "editable": True,
+            "description": "Edit This",
             "required": True,
             "value": "",
             "strict": False,
@@ -339,11 +315,11 @@ def test_plugin_settings(client, admin_auth_header, main):
             "internal": False,
             "depends_on": [],
         },
-        "TargetPort": {
-            "description": "Port on target host.",
-            "editable": True,
+        "SomeNonEditableSetting": {
+            "editable": False,
+            "description": "This is displayed to users, but can't be changed via the API",
             "required": True,
-            "value": "5900",
+            "value": "Hello World",
             "strict": False,
             "suggested_values": [],
             "value_type": "STRING",
@@ -353,43 +329,37 @@ def test_plugin_settings(client, admin_auth_header, main):
     }
 
     assert response.json()["current_settings"] == {
-        "SourceHost": "0.0.0.0",
-        "SourcePort": "5910",
-        "TargetHost": "",
-        "TargetPort": "5900",
+        "SomeEditableSetting": "",
+        "SomeNonEditableSetting": "Hello World",
     }
 
     # Validation failure
     response = client.put(
-        "/api/v2/plugins/websockify_server/settings",
+        "/api/v2/plugins/example_2/settings",
         json={},  # Missing required fields
         headers=admin_auth_header,
     )
 
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response.json() == {"detail": "required option missing: TargetHost"}
+    assert response.json() == {"detail": "required option missing: SomeEditableSetting"}
 
     # Update the settings
     response = client.put(
-        "/api/v2/plugins/websockify_server/settings",
+        "/api/v2/plugins/example_2/settings",
         # The only field that is required and missing a default
-        json={"TargetHost": "0.0.0.0"},
+        json={"SomeEditableSetting": "0.0.0.0"},
         headers=admin_auth_header,
     )
 
     assert response.status_code == HTTP_200_OK
 
-    response = client.get(
-        "/api/v2/plugins/websockify_server", headers=admin_auth_header
-    )
+    response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
 
     # Settings should be updated
     assert response.status_code == HTTP_200_OK
     assert response.json()["current_settings"] == {
-        "SourceHost": "0.0.0.0",
-        "SourcePort": "5910",
-        "TargetHost": "0.0.0.0",
-        "TargetPort": "5900",
+        "SomeEditableSetting": "0.0.0.0",
+        "SomeNonEditableSetting": "Hello World",
     }
 
 
@@ -398,7 +368,8 @@ def test_plugin_settings_non_editable(client, admin_auth_header, main, session_l
         # Check the initial value of the non-editable field
         internal_plugin = main.pluginsv2.loaded_plugins["example_2"]
         assert internal_plugin.current_settings(db) == {
-            "SomeNonEditableSetting": "Hello World"
+            "SomeEditableSetting": "0.0.0.0",
+            "SomeNonEditableSetting": "Hello World",
         }
 
         response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
@@ -410,14 +381,18 @@ def test_plugin_settings_non_editable(client, admin_auth_header, main, session_l
             is False
         )
         assert response.json()["current_settings"] == {
-            "SomeNonEditableSetting": "Hello World"
+            "SomeEditableSetting": "0.0.0.0",
+            "SomeNonEditableSetting": "Hello World",
         }
 
         # Trying to edit the field won't result in an error,
         # but it also won't do anything.
         response = client.put(
             "/api/v2/plugins/example_2/settings",
-            json={"SomeNonEditableSetting": "new value"},
+            json={
+                "SomeEditableSetting": "0.0.0.0",
+                "SomeNonEditableSetting": "new value",
+            },
             headers=admin_auth_header,
         )
         assert response.status_code == HTTP_200_OK
@@ -425,7 +400,8 @@ def test_plugin_settings_non_editable(client, admin_auth_header, main, session_l
         response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
         assert response.status_code == HTTP_200_OK
         assert response.json()["current_settings"] == {
-            "SomeNonEditableSetting": "Hello World"
+            "SomeEditableSetting": "0.0.0.0",
+            "SomeNonEditableSetting": "Hello World",
         }
 
 
