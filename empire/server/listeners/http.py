@@ -1009,6 +1009,7 @@ class Listener:
 
                 if isinstance(results, str):
                     results = results.encode("UTF-8")
+
                 if results == b"STAGE0":
                     # handle_agent_data() signals that the listener should return the stager.ps1 code
                     # step 2 of negotiation -> return stager.ps1 (stage 1)
@@ -1145,25 +1146,33 @@ class Listener:
                         obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
                             db, language
                         )
-                        agentCode = self.generate_agent(
-                            language=language,
-                            listenerOptions=tempListenerOptions,
-                            obfuscate=(False if not obf_config else obf_config.enabled),
-                            obfuscation_command=(
-                                "" if not obf_config else obf_config.command
-                            ),
-                            version=version,
-                        )
+                        if language.lower() != "go":
+                            agentCode = self.generate_agent(
+                                language=language,
+                                listenerOptions=tempListenerOptions,
+                                obfuscate=(
+                                    False if not obf_config else obf_config.enabled
+                                ),
+                                obfuscation_command=(
+                                    "" if not obf_config else obf_config.command
+                                ),
+                                version=version,
+                            )
+                        else:
+                            agentCode = ""
 
-                        if language.lower() in ["python", "ironpython"]:
+                        if language.lower() in ["python", "ironpython", "go", "csharp"]:
                             sessionKey = bytes.fromhex(sessionKey)
 
                         encryptedAgent = encryption.aes_encrypt_then_hmac(
                             sessionKey, agentCode
                         )
-                        # TODO: wrap ^ in a routing packet?
-
-                        return make_response(encryptedAgent, 200)
+                        return make_response(
+                            packets.build_routing_packet(
+                                stagingKey, sessionID, language, encData=encryptedAgent
+                            ),
+                            200,
+                        )
 
                 elif results[:10].lower().startswith(b"error") or results[
                     :10

@@ -204,15 +204,12 @@ def test_generate_go_stageless(stager_generation_service):
     )
 
     main_go_content = generated_main_go_path.read_text()
-    aes_key_base64_match = re.search(r'aesKeyBase64\s*:=\s*"([^"]+)"', main_go_content)
     staging_key_base64_match = re.search(
         r'stagingKeyBase64\s*:=\s*"([^"]+)"', main_go_content
     )
 
-    assert aes_key_base64_match, "aesKeyBase64 not found in main.go"
     assert staging_key_base64_match, "stagingKeyBase64 not found in main.go"
 
-    extracted_aes_key_base64 = aes_key_base64_match.group(1)
     extracted_staging_key_base64 = staging_key_base64_match.group(1)
 
     active_listener = (
@@ -228,11 +225,6 @@ def test_generate_go_stageless(stager_generation_service):
     assert extracted_staging_key_base64 == expected_staging_key_base64, (
         f"StagingKeyBase64 mismatch: expected {expected_staging_key_base64}, got {extracted_staging_key_base64}"
     )
-
-    aes_key = base64.b64decode(extracted_aes_key_base64)
-    assert (
-        len(aes_key) == 32  # noqa: PLR2004
-    ), f"AES key length mismatch: expected 32 bytes, got {len(aes_key)} bytes"
 
 
 @pytest.mark.parametrize(

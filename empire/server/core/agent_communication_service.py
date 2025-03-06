@@ -3,6 +3,7 @@ import contextlib
 import json
 import logging
 import os
+import random
 import string
 import threading
 import typing
@@ -27,6 +28,8 @@ if typing.TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+DEFAULT_SESSION_ID = 00000000
 
 
 class AgentCommunicationService:
@@ -429,7 +432,7 @@ class AgentCommunicationService:
                 log.error(message, exc_info=True)
                 return "ERROR: HMAC verification failed"
 
-            if language.lower() == "powershell" or language.lower() == "csharp":
+            if language.lower() == "powershell":
                 # strip non-printable characters
                 message = "".join(
                     [x for x in message.decode("UTF-8") if x in string.printable]
@@ -486,8 +489,60 @@ class AgentCommunicationService:
                 data = data.encode("ascii", "ignore")
 
                 # step 4 of negotiation -> server returns RSA(nonce+AESsession))
-                return encryption.rsa_encrypt(rsa_key, data)
-                # TODO: wrap this in a routing packet!
+                encdata = encryption.rsa_encrypt(rsa_key, data)
+                return packets.build_routing_packet(
+                    staging_key, session_id, language, encData=encdata
+                )
+
+            if language.lower() == "csharp":
+                message = int.from_bytes(message, "little")
+                if (len(str(message)) < 1000) or (len(str(message)) > 2500):  # noqa: PLR2004
+                    message = f"Invalid C# key post format from {session_id}"
+                    log.error(message)
+                    return f"Error: Invalid C# key post format from {session_id}"
+
+                # client posts PUBc key
+                clientPub = message
+                serverPub = encryption.DiffieHellman()
+                serverPub.genKey(clientPub)
+                # serverPub.key == the negotiated session key
+
+                nonce = helpers.random_string(16, charset=string.digits)
+
+                message = f"Agent {session_id} from {client_ip} posted valid C# PUB key"
+                log.info(message)
+
+                delay = listener_options["DefaultDelay"]["Value"]
+                jitter = listener_options["DefaultJitter"]["Value"]
+                profile = listener_options["DefaultProfile"]["Value"]
+                killDate = listener_options["KillDate"]["Value"]
+                workingHours = listener_options["WorkingHours"]["Value"]
+                lostLimit = listener_options["DefaultLostLimit"]["Value"]
+
+                # add the agent to the database now that it's "checked in"
+                agent = self.agent_service.create_agent(
+                    db,
+                    session_id,
+                    client_ip,
+                    delay,
+                    jitter,
+                    profile,
+                    killDate,
+                    workingHours,
+                    lostLimit,
+                    session_key=serverPub.key.hex(),
+                    nonce=nonce,
+                    listener=listener_name,
+                    language=language,
+                )
+                self.add_agent_to_cache(agent)
+
+                # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
+                data = f"{nonce}{serverPub.publicKey}"
+                encdata = encryption.aes_encrypt_then_hmac(staging_key, data)
+                return packets.build_routing_packet(
+                    staging_key, session_id, language, encData=encdata
+                )
 
             if language.lower() == "python":
                 if (len(message) < 1000) or (len(message) > 2500):  # noqa: PLR2004
@@ -542,8 +597,61 @@ class AgentCommunicationService:
 
                 # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
                 data = f"{nonce}{serverPub.publicKey}"
-                return encryption.aes_encrypt_then_hmac(staging_key, data)
-                # TODO: wrap this in a routing packet?
+                encdata = encryption.aes_encrypt_then_hmac(staging_key, data)
+                return packets.build_routing_packet(
+                    staging_key, session_id, language, encData=encdata
+                )
+
+            if language.lower() == "go":
+                message = int.from_bytes(message)
+                if (len(str(message)) < 1000) or (len(str(message)) > 2500):  # noqa: PLR2004
+                    message = f"Invalid Go key post format from {session_id}"
+                    log.error(message)
+                    return f"Error: Invalid Go key post format from {session_id}"
+
+                # client posts PUBc key
+                clientPub = message
+                serverPub = encryption.DiffieHellman()
+                serverPub.genKey(clientPub)
+                # serverPub.key == the negotiated session key
+
+                nonce = helpers.random_string(16, charset=string.digits)
+
+                message = (
+                    f"Agent {session_id} from {client_ip} posted valid Python PUB key"
+                )
+                log.info(message)
+
+                delay = listener_options["DefaultDelay"]["Value"]
+                jitter = listener_options["DefaultJitter"]["Value"]
+                profile = listener_options["DefaultProfile"]["Value"]
+                killDate = listener_options["KillDate"]["Value"]
+                workingHours = listener_options["WorkingHours"]["Value"]
+                lostLimit = listener_options["DefaultLostLimit"]["Value"]
+
+                # add the agent to the database now that it's "checked in"
+                agent = self.agent_service.create_agent(
+                    db,
+                    session_id,
+                    client_ip,
+                    delay,
+                    jitter,
+                    profile,
+                    killDate,
+                    workingHours,
+                    lostLimit,
+                    session_key=serverPub.key.hex(),
+                    nonce=nonce,
+                    listener=listener_name,
+                    language=language,
+                )
+                self.add_agent_to_cache(agent)
+
+                data = f"{nonce}{serverPub.publicKey}"
+                encdata = encryption.aes_encrypt_then_hmac(staging_key, data)
+                return packets.build_routing_packet(
+                    staging_key, session_id, language, encData=encdata
+                )
 
             message = f"Agent {session_id} from {client_ip} using an invalid language specification: {language}"
             log.info(message)
@@ -554,7 +662,7 @@ class AgentCommunicationService:
             try:
                 session_key = self.agents[session_id]["sessionKey"]
                 if isinstance(session_key, str):
-                    if language == "PYTHON":
+                    if language in ["PYTHON", "GO", "CSHARP"]:
                         session_key = bytes.fromhex(session_key)
                     else:
                         session_key = (self.agents[session_id]["sessionKey"]).encode(
@@ -674,6 +782,9 @@ class AgentCommunicationService:
 
         # process each routing packet
         for session_id, (language, meta, additional, encData) in routing_packet.items():
+            if session_id == DEFAULT_SESSION_ID:
+                session_id = self.generate_sessionid()  # noqa: PLW2901
+
             if not is_valid_session_id(session_id):
                 message = f"handle_agent_data(): invalid sessionID {session_id}"
                 log.error(message)
@@ -785,6 +896,8 @@ class AgentCommunicationService:
                 if self.agents[session_id]["language"].lower() in [
                     "python",
                     "ironpython",
+                    "go",
+                    "csharp",
                 ]:
                     with contextlib.suppress(Exception):
                         session_key = bytes.fromhex(session_key)
@@ -817,7 +930,12 @@ class AgentCommunicationService:
         # extract the agent's session key
         sessionKey = self.agents[session_id]["sessionKey"]
 
-        if self.agents[session_id]["language"].lower() in ["python", "ironpython"]:
+        if self.agents[session_id]["language"].lower() in [
+            "python",
+            "ironpython",
+            "go",
+            "csharp",
+        ]:
             with contextlib.suppress(Exception):
                 sessionKey = bytes.fromhex(sessionKey)
 
@@ -1326,3 +1444,8 @@ class AgentCommunicationService:
                     )
                 except ValidationError as e:
                     log.error(f"Error parsing module request: {e}")
+
+    def generate_sessionid(self):
+        return "".join(
+            random.choice(string.ascii_uppercase + string.digits) for _ in range(8)
+        )

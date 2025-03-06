@@ -772,67 +772,26 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         else:
             host = ""
 
-        with SessionLocal.begin() as db:
-            agent = self.agent_service.create_agent(
-                db,
-                session_id,
-                "0.0.0.0",
-                delay,
-                jitter,
-                profile,
-                kill_date,
-                working_hours,
-                lost_limit,
-                listener=listener_name,
-                language="go",
-            )
+        template_vars = {
+            "PROFILE": profile,
+            "HOST": host,
+            "SESSION_ID": session_id,
+            "KILL_DATE": kill_date,
+            "WORKING_HOURS": working_hours,
+            "DELAY": delay,
+            "JITTER": jitter,
+            "LOST_LIMIT": lost_limit,
+            "STAGING_KEY": base64.b64encode(staging_key.encode("UTF-8")).decode(
+                "UTF-8"
+            ),
+            "DEFAULT_RESPONSE": base64.b64encode(
+                active_listener.default_response().encode("UTF-8")
+            ).decode("UTF-8"),
+        }
 
-            self.agent_communication_service.add_agent_to_cache(agent)
-
-            # update the agent with this new information
-            self.agent_communication_service.update_agent_sysinfo(
-                db,
-                session_id,
-                listener=listener_name,
-                internal_ip="0.0.0.0",
-                username="blank\\blank",
-                hostname="blank",
-                os_details="blank",
-                high_integrity=0,
-                process_name="blank",
-                process_id=99999,
-                language_version=3,
-                language="go",
-                architecture="AMD64",
-            )
-
-            self.agent_task_service.create_task_sysinfo(db, agent, 0)
-
-            session_key = agent.session_key
-
-            template_vars = {
-                "PROFILE": profile,
-                "HOST": host,
-                "SESSION_ID": session_id,
-                "KILL_DATE": kill_date,
-                "WORKING_HOURS": working_hours,
-                "DELAY": delay,
-                "JITTER": jitter,
-                "LOST_LIMIT": lost_limit,
-                "STAGING_KEY": base64.b64encode(staging_key.encode("UTF-8")).decode(
-                    "UTF-8"
-                ),
-                "AES_KEY": base64.b64encode(session_key.encode("UTF-8")).decode(
-                    "UTF-8"
-                ),
-                "DEFAULT_RESPONSE": base64.b64encode(
-                    active_listener.default_response().encode("UTF-8")
-                ).decode("UTF-8"),
-            }
-
-            return self.main_menu.go_compiler.compile_stager(
-                template_vars, "stager", goos="windows", goarch="amd64"
-            )
+        return self.main_menu.go_compiler.compile_stager(
+            template_vars, "stager", goos="windows", goarch="amd64"
+        )
 
 
 def replace_execute_function(code, session_key):

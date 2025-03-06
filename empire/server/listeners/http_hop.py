@@ -414,7 +414,7 @@ class Listener:
                 )
             return stager
 
-        if language in ["python", "ironpython"]:
+        if language.lower() in ["python", "ironpython"]:
             template_path = [
                 os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
                 os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),

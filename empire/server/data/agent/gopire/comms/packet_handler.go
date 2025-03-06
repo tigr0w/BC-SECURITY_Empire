@@ -40,7 +40,7 @@ func (ph PacketHandler) BuildResponsePacket(taskingID int, packetData string, re
 func (ph PacketHandler) BuildRoutingPacket(stagingKey []byte, sessionID string, meta int, encData []byte) []byte {
 	buf := new(bytes.Buffer)
 	buf.WriteString(sessionID)
-	binary.Write(buf, binary.LittleEndian, uint8(2))
+	binary.Write(buf, binary.LittleEndian, uint8(4))
 	binary.Write(buf, binary.LittleEndian, uint8(meta))
 	binary.Write(buf, binary.LittleEndian, uint16(0))
 	binary.Write(buf, binary.LittleEndian, uint32(len(encData)))

