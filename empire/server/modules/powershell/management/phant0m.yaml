@@ -5,10 +5,8 @@ authors:
     link: ''
 description: Kills Event Log Service Threads
 software: ''
-tactics: []
-techniques:
-  - T1070
-  - T1089
+tactics: [TA0005]
+techniques: [T1562.006]
 background: false
 output_extension:
 needs_admin: true

@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/xorrior
 description: This module will decrypt passwords saved in chrome and display them in the console.
 software: ''
-tactics: []
-techniques:
-  - T1503
+tactics: [TA0006]
+techniques: [T1555.03]
 background: true
 output_extension:
 needs_admin: false

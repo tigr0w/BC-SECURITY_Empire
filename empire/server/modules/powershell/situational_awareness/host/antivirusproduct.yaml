@@ -8,9 +8,8 @@ authors:
     link: ''
 description: Get antivirus product information.
 software: ''
-tactics: []
-techniques:
-  - T1063
+tactics: [TA0007]
+techniques: [T1518.001]
 background: true
 output_extension:
 needs_admin: false

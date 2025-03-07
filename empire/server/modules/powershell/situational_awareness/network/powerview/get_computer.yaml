@@ -5,11 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Queries the domain for current computer objects. Part of PowerView.
 software: S0194
-tactics:
-  - TA0007
-techniques:
-  - T1082
-  - T1017
+tactics: [TA0007]
+techniques: [T1069, T1018, T1615]
 background: true
 output_extension:
 needs_admin: false

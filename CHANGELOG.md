@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - OneDrive has new APIs and Microsoft hs made registration harder. May return in the future with revisions.
   - Dropbox has new APIs and may return in the future with revisions.
 -   Revised the staging process for agents. Session IDs are provided by the server and all packets are wrapped in routing packets.
+-   Update tactics and techniques on all modules
 
 ## [6.0.0-beta3] - 2025-03-02
 

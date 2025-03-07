@@ -6,9 +6,8 @@ authors:
 description: Returns the members of a given group, with the option to "Recurse" to find all effective group members. Part
   of PowerView.
 software: S0194
-tactics: []
-techniques:
-  - T1482
+tactics: [TA0007]
+techniques: [T1482,T1615, T1069.002]
 background: true
 output_extension:
 needs_admin: false

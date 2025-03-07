@@ -6,8 +6,8 @@ authors:
 description: Certify is a C# tool to enumerate and abuse misconfigurations in Active
   Directory Certificate Services (AD CS).
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0043, TA0007]
+techniques: [T1590.001,T1590.003,T1482,T1106]
 background: false
 output_extension:
 needs_admin: false

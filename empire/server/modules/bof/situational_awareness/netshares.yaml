@@ -5,10 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List shares on local or remote computer and gets more info then standard netshares(requires admin).
 software: ''
-tactics:
-  - TA0007
-techniques:
-  - T1069.001
+tactics: [TA0007]
+techniques: [T1135]
 background: false
 output_extension:
 needs_admin: false

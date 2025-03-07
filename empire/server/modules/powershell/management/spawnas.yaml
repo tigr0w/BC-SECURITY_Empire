@@ -8,9 +8,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Spawn an agent with the specified logon credentials.
 software: ''
-tactics: []
-techniques:
-  - T1055
+tactics: [TA0004, TA0005]
+techniques: [T1134.002]
 background: false
 output_extension:
 needs_admin: false

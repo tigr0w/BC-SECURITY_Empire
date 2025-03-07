@@ -7,10 +7,8 @@ description: Uses PowerSploit's Invoke-Shellcode to inject shellcode into the pr
   of the running PowerShell process. If you're injecting custom shellcode, make sure it's in the correct format and matches
   the architecture of the process you're injecting into.
 software: S0194
-tactics:
-  - TA0005
-techniques:
-  - T1620
+tactics: [TA0005]
+techniques: [T1620]
 background: true
 output_extension:
 needs_admin: false

@@ -7,10 +7,8 @@ description: 'Execute shellcode within the context of the running PowerShell pro
   Warning: This script has no way to validate that your shellcode is 32 vs. 64-bit!Note: Your shellcode must end in a ret
   (0xC3) and maintain proper stack alignment or PowerShell will crash!'
 software: ''
-tactics:
-  - TA0002
-techniques:
-  - T1059
+tactics: [TA0002, TA0005]
+techniques: [T1620]
 background: false
 output_extension:
 needs_admin: false

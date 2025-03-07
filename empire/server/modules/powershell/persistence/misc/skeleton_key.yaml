@@ -9,9 +9,8 @@ authors:
 description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::skeleton to implant a skeleton key w/ password 'mimikatz'.
   ONLY APPLICABLE ON DOMAIN CONTROLLERS!
 software: S0194
-tactics: []
-techniques:
-  - T1098
+tactics: [TA0004, TA0006]
+techniques: [T1556.001]
 background: true
 output_extension:
 needs_admin: true

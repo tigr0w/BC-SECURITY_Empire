@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Enumerate CAs and templates in the AD using IX509PolicyServerListManager COM object.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0043, TA0007]
+techniques: [T1590.001,T1590.003,T1482,T1559.001]
 background: false
 output_extension:
 needs_admin: false

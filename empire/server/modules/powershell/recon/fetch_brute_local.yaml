@@ -9,9 +9,8 @@ authors:
 description: This module will logon to a member server using the agents account or a provided account, fetch the local accounts
   and perform a network based brute force attack.
 software: ''
-tactics: []
-techniques:
-  - T1110
+tactics: [TA0006,TA0007]
+techniques: [T1087.001, T1110.001]
 background: true
 output_extension:
 needs_admin: false

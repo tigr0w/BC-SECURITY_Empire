@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List process modules (DLL). Target current process if PID is empty. Complement to driversigs to determine if our process was injected by AV/EDR.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1057, T1518.001]
 background: false
 output_extension:
 needs_admin: false

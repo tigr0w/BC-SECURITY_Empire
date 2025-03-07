@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Monitor the keystrokes for a specified period of time.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0006,TA0009]
+techniques: [T1056.001]
 background: false
 output_extension: ''
 needs_admin: false

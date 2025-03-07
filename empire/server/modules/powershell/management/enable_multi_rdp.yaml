@@ -9,9 +9,8 @@ authors:
 description: "[!] WARNING: Experimental! Runs PowerSploit's Invoke-Mimikatz function to patch the Windows terminal service\
   \ to allow multiple users to establish simultaneous RDP connections."
 software: ''
-tactics: []
-techniques:
-  - T1076
+tactics: [TA0005, TA0008]
+techniques: [T1021.001, T1562]
 background: true
 output_extension:
 needs_admin: true

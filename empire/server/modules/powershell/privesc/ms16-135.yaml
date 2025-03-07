@@ -13,9 +13,8 @@ description: "Spawns a new Listener as SYSTEM by leveraging the MS16-135 local e
   \ works on unlocked session. Note: the exploit performs fast windows switching, victim's desktop may flash. A named pipe\
   \ is also created. Thus, opsec is not guaranteed"
 software: ''
-tactics: []
-techniques:
-  - T1068
+tactics: [TA0004]
+techniques: [T1068]
 background: true
 output_extension:
 needs_admin: false

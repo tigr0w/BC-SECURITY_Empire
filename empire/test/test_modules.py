@@ -1,4 +1,5 @@
 import logging
+import re
 from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import MagicMock, Mock
@@ -232,3 +233,25 @@ def test_auto_finalize(
 
         assert err is None
         assert execute.data.strip() == "ScriptScriptEnd"
+
+
+def test_ttps(install_path):
+    module_dir = Path(install_path) / "modules"
+    tactic_pattern = re.compile(r"TA\d{4}")
+    technique_pattern = re.compile(r"T\d{4}(\.\d{3})?")
+
+    for path in module_dir.rglob("*.y*ml"):
+        try:
+            mod = yaml.safe_load(path.read_text())
+
+            for tactic in mod.get("tactics", []):
+                assert tactic_pattern.match(tactic), (
+                    f"Invalid tactic {tactic} in {path}"
+                )
+            for technique in mod.get("techniques", []):
+                assert technique_pattern.match(technique), (
+                    f"Invalid technique {technique} in {path}"
+                )
+
+        except Exception as e:
+            pytest.fail(f"Error loading {path}: {e}")

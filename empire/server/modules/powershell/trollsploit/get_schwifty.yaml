@@ -6,9 +6,8 @@ authors:
 description: |
   Play's a hidden version of Rick and Morty Get Schwifty video while maxing out a computer's volume.
 software:
-tactics: []
-techniques:
-  - T1491
+tactics: [TA0040]
+techniques: [T1491.001]
 background: true
 output_extension:
 needs_admin: false

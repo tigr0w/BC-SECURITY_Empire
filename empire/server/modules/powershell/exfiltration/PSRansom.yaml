@@ -5,8 +5,8 @@ authors:
     link: ''
 description: PSRansom is a PowerShell Ransomware Simulator with C2 Server capabilities.
 software: ''
-techniques:
-  - T1486
+tactics: [TA0040]
+techniques: [T1486, T1491.001, T1140, T1083]
 background: true
 output_extension:
 needs_admin: false

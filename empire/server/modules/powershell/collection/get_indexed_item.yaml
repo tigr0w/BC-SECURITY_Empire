@@ -5,9 +5,8 @@ authors:
     link: ''
 description: Gets files which have been indexed by Windows desktop search.
 software: ''
-tactics: []
-techniques:
-  - T1083
+tactics: [TA0007]
+techniques: [T1083]
 background: false
 output_extension:
 needs_admin: false

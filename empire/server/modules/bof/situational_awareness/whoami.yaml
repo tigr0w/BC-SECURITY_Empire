@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List whoami /all
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1033]
 background: false
 output_extension:
 needs_admin: false

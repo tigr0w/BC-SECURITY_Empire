@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class LanguageEnum(str, Enum):
@@ -68,6 +68,7 @@ class CSharpOption(BaseModel):
 
 
 class EmpireModule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     id: str
     name: str
     authors: list[EmpireAuthor] = []

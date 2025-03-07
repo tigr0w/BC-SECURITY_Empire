@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Use a SharpDump command.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0006, TA0007]
+techniques: [T1003, T1555.03]
 background: false
 output_extension: ''
 needs_admin: false

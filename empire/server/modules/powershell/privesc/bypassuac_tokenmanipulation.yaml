@@ -8,9 +8,8 @@ authors:
     link: https://twitter.com/424f424f
 description: Bypass UAC module based on the script released by Matt Nelson @enigma0x3 at Derbycon 2017
 software: ''
-tactics: []
-techniques:
-  - T1088
+tactics: [TA0004]
+techniques: [T1548.002]
 background: false
 output_extension:
 needs_admin: false

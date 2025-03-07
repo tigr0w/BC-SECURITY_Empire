@@ -6,9 +6,8 @@ authors:
 description: Continuously check running processes for the presence of suspicious users, members of groups, process names,
   and for any processes running off of USB drives.
 software: ''
-tactics: []
-techniques:
-  - T1057
+tactics: [TA0005]
+techniques: [T1057, T1546]
 background: true
 output_extension:
 needs_admin: true

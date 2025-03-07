@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Query the given task on the local or remote computer
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1082]
 background: false
 output_extension:
 needs_admin: false

@@ -9,10 +9,8 @@ authors:
 description: Spawns a native toast notification that, if clicked, prompts the current user to enter their credentials into
   a native looking prompt. Notification stays on screen for ~25 seconds. Requires Windows >= 8.1/2012
 software: ''
-tactics: []
-techniques:
-  - T1141
-  - T1514
+tactics: [TA0006, TA0009]
+techniques: [T1056.002]
 background: false
 output_extension:
 needs_admin: false

@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/JosephBialek
 description: Enumerates useful information on the system. By default, all checks are run.
 software: ''
-tactics: []
-techniques:
-  - T1082
+tactics: [TA0007]
+techniques: [T1082]
 background: true
 output_extension:
 needs_admin: true

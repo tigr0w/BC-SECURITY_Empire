@@ -6,9 +6,8 @@ authors:
 description: Tater is a PowerShell implementation of the Hot Potato Windows Privilege Escalation exploit from @breenmachine
   and @foxglovesec.
 software: ''
-tactics: []
-techniques:
-  - T1187
+tactics: [TA0004]
+techniques: [T1068,T1187]
 background: true
 output_extension:
 needs_admin: false

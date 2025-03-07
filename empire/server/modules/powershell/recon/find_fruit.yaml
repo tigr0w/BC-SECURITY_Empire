@@ -5,10 +5,8 @@ authors:
     link: https://twitter.com/424f424f
 description: Searches a network range for potentially vulnerable web services.
 software: ''
-tactics: []
-techniques:
-  - T1102
-  - T1256
+tactics: [TA0007]
+techniques: [T1046]
 background: true
 output_extension:
 needs_admin: false

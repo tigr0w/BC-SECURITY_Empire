@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Get info about specific user. Pull from domain if a domain name is specified.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1033]
 background: false
 output_extension:
 needs_admin: false

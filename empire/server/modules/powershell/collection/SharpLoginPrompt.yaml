@@ -10,9 +10,8 @@ description: This Program creates a login prompt to gather username and password
   red team to phish username and password of the current user without touching lsass and having administrator credentials
   on the system.
 software: ''
-tactics: []
-techniques:
-  - T1056
+tactics: [TA0006, TA0009]
+techniques: [T1056.002]
 background: false
 output_extension:
 needs_admin: false

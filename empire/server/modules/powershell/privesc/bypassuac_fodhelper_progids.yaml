@@ -12,9 +12,8 @@ authors:
 description: |
   Bypasses UAC by performing a registry modification for FodHelper but uses ProgIDs to bypass antivirus signatures on the registry key
 software: ''
-tactics: []
-techniques:
-  - T1088
+tactics: [TA0004]
+techniques: [T1548.002]
 background: true
 output_extension:
 needs_admin: false

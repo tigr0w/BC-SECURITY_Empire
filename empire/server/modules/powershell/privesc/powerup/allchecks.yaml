@@ -5,14 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Runs all current checks for Windows privesc vectors.
 software: S0194
-tactics: []
-techniques:
-  - T1087
-  - T1038
-  - T1031
-  - T1034
-  - T1057
-  - T1012
+tactics: [TA0007]
+techniques: [T1068, T1082]
 background: true
 output_extension:
 needs_admin: false

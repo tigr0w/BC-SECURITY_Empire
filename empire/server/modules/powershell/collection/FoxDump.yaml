@@ -6,9 +6,8 @@ authors:
 description: This module will dump any saved passwords from Firefox to the console. This should work for any versionof Firefox
   above version 32. This will only be successful if the master password is blank or has not been set.
 software: ''
-tactics: []
-techniques:
-  - T1503
+tactics: [TA0006]
+techniques: [T1555.03]
 background: true
 output_extension:
 needs_admin: false

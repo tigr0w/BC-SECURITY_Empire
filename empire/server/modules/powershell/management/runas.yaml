@@ -5,10 +5,8 @@ authors:
     link: ''
 description: Runas knockoff. Will bypass GPO path restrictions.
 software: ''
-tactics:
-  - TA0006
-techniques:
-  - T1078
+tactics: [TA0004, TA0005]
+techniques: [T1134.002]
 background: false
 output_extension:
 needs_admin: false

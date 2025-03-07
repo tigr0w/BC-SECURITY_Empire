@@ -8,9 +8,8 @@ authors:
     link: https://twitter.com/mattifestation
 description: Gets SYSTEM privileges with one of two methods.
 software: S0194
-tactics: []
-techniques:
-  - T1103
+tactics: [TA0004]
+techniques: [T1134.001]
 background: false
 output_extension:
 needs_admin: true

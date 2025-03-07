@@ -9,9 +9,8 @@ authors:
 description: Chisel is a fast TCP tunnel, transported over HTTP, secured via SSH. Written in Go (golang). Chisel is mainly
   useful for passing through firewalls, though it can also be used to provide a secure endpoint into your network.
 software: ''
-tactics: []
-techniques:
-  - T1090
+tactics: [TA0011]
+techniques: [T1090]
 background: true
 output_extension:
 needs_admin: false

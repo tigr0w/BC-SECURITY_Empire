@@ -7,9 +7,8 @@ description: Inveigh is a Windows PowerShell LLMNR/mDNS/NBNS spoofer/man-in-the-
   only a subset of Inveigh's parameters. Inveigh can be used through Empire's scriptimport and scriptcmd if additional parameters
   are needed.
 software: ''
-tactics: []
-techniques:
-  - T1171
+tactics: [TA0006, TA0009]
+techniques: [T1040, T1557.001, T1557.003, T1119]
 background: true
 output_extension:
 needs_admin: false

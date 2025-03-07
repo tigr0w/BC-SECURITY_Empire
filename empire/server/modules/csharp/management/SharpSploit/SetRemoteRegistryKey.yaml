@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Sets a value into the registry on a remote system.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0004, TA0005]
+techniques: [T1112]
 background: false
 output_extension: ''
 needs_admin: false

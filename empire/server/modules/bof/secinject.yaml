@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Section Mapping Process Injection (secinject)
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0004]
+techniques: [T1055]
 background: false
 output_extension:
 needs_admin: false

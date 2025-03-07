@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Impersonate the SYSTEM user. Equates to ImpersonateUser("NT AUTHORITY\SYSTEM").
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0004]
+techniques: [T1134.001]
 background: false
 output_extension: ''
 needs_admin: false

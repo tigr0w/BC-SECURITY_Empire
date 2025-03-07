@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Spawns a new sacrificial process in a suspended state. Non-Microsoft signed binaries are blocked.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0002]
+techniques: [T1134.004, T1106]
 background: false
 output_extension:
 needs_admin: false

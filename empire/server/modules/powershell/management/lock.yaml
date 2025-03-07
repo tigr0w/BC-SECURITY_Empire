@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Locks the workstation's display.
 software: ''
-tactics: []
-techniques:
-  - T1098
+tactics: [TA0040]
+techniques: [T1531]
 background: false
 output_extension:
 needs_admin: false

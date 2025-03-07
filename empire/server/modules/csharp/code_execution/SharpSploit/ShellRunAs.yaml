@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Execute a Shell command using CreateProcess as a specified user.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0002]
+techniques: [T1059.003, T1078.002]
 background: false
 output_extension: ''
 needs_admin: false

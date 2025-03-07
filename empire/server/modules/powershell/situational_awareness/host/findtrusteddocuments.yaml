@@ -6,9 +6,8 @@ authors:
 description: This module will enumerate the appropriate registry keys to determine what, if any, trusted documents exist on
   the host.  It will also enumerate trusted locations.
 software: ''
-tactics: []
-techniques:
-  - T1135
+tactics: [TA0007]
+techniques: [T1012, T1083]
 background: false
 output_extension:
 needs_admin: false

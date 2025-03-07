@@ -6,9 +6,8 @@ authors:
 description: Returns a list of all file servers extracted from user homedirectory, scriptpath, and profilepath fields. Part
   of PowerView.
 software: S0194
-tactics: []
-techniques:
-  - T1083
+tactics: [TA0007]
+techniques: [T1135]
 background: true
 output_extension:
 needs_admin: false

@@ -9,9 +9,8 @@ authors:
 description: 'Returns the ACLs associated with a specific active directory object. Part of PowerView. WARNING: specify a specific
   object, otherwise a huge amount of data will be returned.'
 software: S0194
-tactics: []
-techniques:
-  - T1003
+tactics: [TA0007]
+techniques: [T1069, T1615]
 background: true
 output_extension:
 needs_admin: false

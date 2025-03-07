@@ -8,9 +8,8 @@ authors:
     link: ''
 description: This module will list the Microsoft update history, including pending updates, of the machine
 software: ''
-tactics: []
-techniques:
-  - T1082
+tactics: [TA0009]
+techniques: [T1082]
 background: true
 output_extension:
 needs_admin: true

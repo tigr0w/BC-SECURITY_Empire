@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Enumerate sessions on the local or specified computer.
 software: ''
-tactics: []
-techniques:
-  - T1049
+tactics: [TA0007]
+techniques: [T1049,T1087.002]
 background: false
 output_extension:
 needs_admin: false

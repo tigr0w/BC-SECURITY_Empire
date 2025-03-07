@@ -9,14 +9,8 @@ authors:
 description: Writes out a hijackable .dll to the specified path along with a stager.bat that's called by the .dll. wlbsctrl.dll
   works well for Windows 7. The machine will need to be restarted for the privesc to work.
 software: S0194
-tactics: []
-techniques:
-  - T1087
-  - T1038
-  - T1031
-  - T1034
-  - T1057
-  - T1012
+tactics: [TA0004]
+techniques: [T1574.001, T1574.007,T1574.008,T1574.009, T1068]
 background: true
 output_extension:
 needs_admin: false

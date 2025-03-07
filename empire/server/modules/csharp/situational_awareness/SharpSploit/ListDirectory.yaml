@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Get a listing of the current directory.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1083]
 background: false
 output_extension: ''
 needs_admin: false

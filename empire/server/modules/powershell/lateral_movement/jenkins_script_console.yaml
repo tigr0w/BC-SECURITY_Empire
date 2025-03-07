@@ -5,9 +5,8 @@ authors:
     link: ''
 description: Exploit unauthenticated Jenkins Script consoles.
 software: ''
-tactics: []
-techniques:
-  - T1210
+tactics: [TA0002, TA0008]
+techniques: [T1210, T1059.006]
 background: true
 output_extension:
 needs_admin: false

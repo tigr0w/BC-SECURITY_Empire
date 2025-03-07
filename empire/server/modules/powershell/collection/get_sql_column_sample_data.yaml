@@ -9,9 +9,8 @@ authors:
 description: Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating
   credit card numbers.
 software: ''
-tactics: []
-techniques:
-  - T1046
+tactics: [TA0009]
+techniques: [T1213]
 background: true
 output_extension:
 needs_admin: false

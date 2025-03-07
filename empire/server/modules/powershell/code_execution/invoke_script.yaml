@@ -5,10 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Load and execute a PowerShell script from either a URL or base64 string, then run a function within the script with parameters.
 software: S0194
-tactics:
-  - TA0002
-techniques:
-  - T1059
+tactics: [TA0002]
+techniques: [T1059]
 background: true
 output_extension:
 needs_admin: false

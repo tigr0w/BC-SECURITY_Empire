@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Beacon Object File (BOF) to obtain a usable TGT for the current user and does not require elevated privileges on the host. This data blob is passed to tgtParse.py/tgtParse.exe ("custom" Impacket scripts to decrypt/parse the Kerberos data blobs) and ticketConverter.py/ticketConverter.exe automatically, via tgtdelegation.cna, to be leveraged as a usable .ccache and/or .kirbi for lateral movement with Impacket, Rubeus, and other supported tools over Kerberos.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0006]
+techniques: [T1558]
 background: false
 output_extension:
 needs_admin: false

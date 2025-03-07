@@ -12,10 +12,8 @@ authors:
 description: Utilizes Powershell to to inject a Stephen Fewer formed ReflectivePick which executes PS codefrom memory in a
   remote process. ProcID or ProcName must be specified.
 software: ''
-tactics:
-  - TA0002
-techniques:
-  - T1055
+tactics: [TA0002]
+techniques: [T1055.001]
 background: true
 output_extension:
 needs_admin: false

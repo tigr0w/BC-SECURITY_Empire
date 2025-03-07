@@ -6,9 +6,8 @@ authors:
 description: Bypasses UAC (even with Always Notify level set) by by performing an registry modification of the "windir" value
   in "Environment" based on James Forshaw findings(https://tyranidslair.blogspot.cz/2017/05/exploiting-environment-variables-in.html)
 software: ''
-tactics: []
-techniques:
-  - T1088
+tactics: [TA0004]
+techniques: [T1548.002]
 background: true
 output_extension:
 needs_admin: false

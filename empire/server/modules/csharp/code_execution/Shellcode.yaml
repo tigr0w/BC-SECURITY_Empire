@@ -6,8 +6,8 @@ authors:
 description: Executes a specified shellcode byte array by copying it to pinned memory,
   modifying the memory permissions, and executing.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0002]
+techniques: [T1106,T1620]
 background: false
 output_extension: null
 needs_admin: false

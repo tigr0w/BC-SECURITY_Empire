@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Return information about a given forest, including the root domain and SID. Part of PowerView.
 software: S0194
-tactics: []
-techniques:
-  - T1482
+tactics: [TA0007]
+techniques: [T1482]
 background: true
 output_extension:
 needs_admin: false

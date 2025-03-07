@@ -6,9 +6,8 @@ authors:
 description: Runs Invoke-RIDHijacking. Allows setting desired privileges to an existent account by modifying the Relative
   Identifier value copy used to create the access token. This module needs administrative privileges.
 software: ''
-tactics: []
-techniques:
-  - T1003
+tactics: [TA0004]
+techniques: [T1098]
 background: false
 output_extension:
 needs_admin: true

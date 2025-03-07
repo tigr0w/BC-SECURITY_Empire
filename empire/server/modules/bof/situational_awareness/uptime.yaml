@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List system boot time and how long it has been running.
 software: ''
-tactics: []
-techniques:
-  - T1082
+tactics: [TA0007]
+techniques: [T1082]
 background: false
 output_extension:
 needs_admin: false

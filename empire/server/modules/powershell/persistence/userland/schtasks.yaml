@@ -8,9 +8,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Persist a stager (or script) using schtasks. This has a moderate detection/removal rating.
 software: S0111
-tactics: []
-techniques:
-  - T1053
+tactics: [TA0003, TA0004]
+techniques: [T1053.005]
 background: false
 output_extension:
 needs_admin: false

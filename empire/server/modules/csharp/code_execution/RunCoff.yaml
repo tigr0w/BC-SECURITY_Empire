@@ -6,8 +6,8 @@ authors:
 description: |
   This is a quick and dirty COFF loader (AKA Beacon Object Files).
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0002]
+techniques: [T1106, T1620]
 background: true
 output_extension: null
 needs_admin: false

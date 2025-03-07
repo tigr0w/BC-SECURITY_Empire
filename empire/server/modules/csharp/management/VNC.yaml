@@ -6,8 +6,8 @@ authors:
 description: |
   Installs and runs a C# VNC server on the victim.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0008]
+techniques: [T1021.005]
 background: false
 output_extension: ''
 needs_admin: false

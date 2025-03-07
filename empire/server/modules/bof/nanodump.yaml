@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: A flexible tool that creates a minidump of the LSASS process.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0006]
+techniques: [T1003.001]
 background: false
 output_extension:
 needs_admin: true

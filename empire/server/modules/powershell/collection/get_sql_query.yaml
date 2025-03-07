@@ -8,9 +8,8 @@ authors:
     link: ''
 description: Executes a query on target SQL servers.
 software: ''
-tactics: []
-techniques:
-  - T1046
+tactics: [TA0009]
+techniques: [T1213]
 background: true
 output_extension:
 needs_admin: false

@@ -6,9 +6,8 @@ authors:
 description: powercat is a powershell function. First you need to load the function before you can execute it.You can put
   one of the below commands into your powershell profile so powercat is automaticallyloaded when powershell starts..
 software: ''
-tactics: []
-techniques:
-  - T1036
+tactics: [TA0003]
+techniques: [T1546.013]
 background: true
 output_extension:
 needs_admin: false

@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List ARP table.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1016,T1018, T1106]
 background: false
 output_extension:
 needs_admin: false

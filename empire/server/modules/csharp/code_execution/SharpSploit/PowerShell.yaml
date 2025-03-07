@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Execute a PowerShell command.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0002]
+techniques: [T1059.001]
 background: true
 output_extension: ''
 needs_admin: false

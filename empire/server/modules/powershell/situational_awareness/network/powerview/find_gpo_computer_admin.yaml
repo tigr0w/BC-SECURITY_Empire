@@ -6,9 +6,8 @@ authors:
 description: Takes a computer (or GPO) object and determines what users/groups have administrative access over it. Part of
   PowerView.
 software: S0194
-tactics: []
-techniques:
-  - T1069
+tactics: [TA0007]
+techniques: [T1482, T1069, T1615]
 background: true
 output_extension:
 needs_admin: false

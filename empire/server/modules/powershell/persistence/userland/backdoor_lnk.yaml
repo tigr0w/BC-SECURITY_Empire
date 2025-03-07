@@ -5,10 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Backdoor a specified .LNK file with a version that launches the original binary and then an Empire stager.
 software: ''
-tactics: []
-techniques:
-  - T1204
-  - T1023
+tactics: [TA0004]
+techniques: [T1204.001, T1547.009]
 background: true
 output_extension:
 needs_admin: false

@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/424f424f
 description: Executes a command on a remote host via SSH.
 software: ''
-tactics: []
-techniques:
-  - T1071
+tactics: [TA0008]
+techniques: [T1021.004]
 background: true
 output_extension:
 needs_admin: false

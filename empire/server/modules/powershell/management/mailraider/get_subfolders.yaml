@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/xorrior
 description: Returns a list of all the folders in the specified top level folder.
 software: ''
-tactics: []
-techniques:
-  - T1114
+tactics: [TA0009]
+techniques: [T1114]
 background: true
 output_extension:
 needs_admin: false

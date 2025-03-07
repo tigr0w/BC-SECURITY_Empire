@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Displays a specified message to the user.
 software: ''
-tactics: []
-techniques:
-  - T1491
+tactics: [TA0040]
+techniques: [T1491.001]
 background: true
 output_extension:
 needs_admin: false

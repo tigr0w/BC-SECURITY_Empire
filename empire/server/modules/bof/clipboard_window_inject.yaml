@@ -6,8 +6,8 @@ authors:
 description: Beacon Object File (BOF) that injects beacon shellcode into remote process, avoiding the usage of common 
   monitored APIs using the CLIPBRDWNDCLASS injection technique (similar to Propagate) learned from Hexacorn.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0004]
+techniques: [T1115]
 background: false
 output_extension:
 needs_admin: false

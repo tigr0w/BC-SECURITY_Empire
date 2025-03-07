@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Use a Seatbelt command.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1087.001, T1087.002, T1217, T1526, T1615, T1654, T1083, T1057, T1518.001, T1082, T1007]
 background: true
 output_extension:
 needs_admin: false

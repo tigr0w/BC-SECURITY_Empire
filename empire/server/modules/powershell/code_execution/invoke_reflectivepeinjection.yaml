@@ -6,9 +6,8 @@ authors:
 description: Uses PowerSploit's Invoke-ReflectivePEInjection to reflectively load a DLL/EXE in to the PowerShell process or
   reflectively load a DLL in to a remote process.
 software: S0194
-tactics: []
-techniques:
-  - T1055
+tactics: [TA0004,TA0005]
+techniques: [T1055.002]
 background: false
 output_extension:
 needs_admin: false

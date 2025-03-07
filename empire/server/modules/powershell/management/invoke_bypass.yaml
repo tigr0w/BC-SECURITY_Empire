@@ -3,12 +3,10 @@ authors:
   - name: "Anthony Rose"
     handle: "@Cx01N"
     link: "https://twitter.com/Cx01N_"
-description: Run a bypasses from the server.
+description: Run a bypass from the server.
 software: ''
-tactics:
-  - TA0005
-techniques:
-  - T1562
+tactics: [TA0005]
+techniques: [T1562.006]
 background: true
 output_extension:
 needs_admin: false

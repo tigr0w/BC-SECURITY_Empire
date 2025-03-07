@@ -5,11 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Executes a stager on remote hosts using WMI.
 software: ''
-tactics:
-  - TA0008
-techniques:
-  - T1047
-  - T1021.002
+tactics: [TA0002,TA0008]
+techniques: [T1047,T1021.006]
 background: false
 output_extension:
 needs_admin: false

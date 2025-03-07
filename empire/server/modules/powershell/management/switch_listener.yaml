@@ -6,9 +6,8 @@ authors:
 description: Overwrites the listener controller logic with the agent with the logic from generate_comms() for the specified
   listener.
 software: ''
-tactics: []
-techniques:
-  - T1008
+tactics: [TA0011]
+techniques: [T1008]
 background: false
 output_extension:
 needs_admin: false

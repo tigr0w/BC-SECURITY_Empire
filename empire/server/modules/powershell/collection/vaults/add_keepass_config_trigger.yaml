@@ -8,9 +8,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: This module adds a KeePass exfiltration trigger to all KeePass configs found by Find-KeePassConfig.
 software: ''
-tactics: []
-techniques:
-  - T1119
+tactics: [TA0003, TA0009]
+techniques: [T1119, T1546]
 background: true
 output_extension: ''
 needs_admin: false

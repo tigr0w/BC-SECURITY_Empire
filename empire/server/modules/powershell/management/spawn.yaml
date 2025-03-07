@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Spawns a new agent in a new powershell.exe process.
 software: ''
-tactics: []
-techniques:
-  - T1055
+tactics: [TA0002]
+techniques: [T1059.001]
 background: false
 output_extension:
 needs_admin: false

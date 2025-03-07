@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List system locale language, locale ID, date, time, and country.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1614]
 background: false
 output_extension:
 needs_admin: false

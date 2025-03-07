@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Use a SharpWMI command.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0002]
+techniques: [T1047, T1546.003]
 background: true
 output_extension: ''
 needs_admin: false

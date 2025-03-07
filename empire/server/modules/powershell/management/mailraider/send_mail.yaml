@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/xorrior
 description: Sends emails using a custom or default template to specified target email addresses.
 software: ''
-tactics: []
-techniques:
-  - T1114
+tactics: [TA0042]
+techniques: [T1586.002, T1566]
 background: true
 output_extension:
 needs_admin: false

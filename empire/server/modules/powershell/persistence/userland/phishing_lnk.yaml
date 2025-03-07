@@ -4,10 +4,8 @@ authors:
     handle: '0xFFaraday'
     link: ''
 description: Adds an additional .LNK file to the targeted user's desktop and backdoors it to launch a stager of your choice. This lets the operator have the availability to spawn a new agent from the end user clicking a new "useful" shortcut.
-tactics: [TA0002]
-techniques:
-  - T1059
-  - T1204
+tactics: [TA0004]
+techniques: [T1204.001]
 background: true
 output_extension:
 needs_admin: false

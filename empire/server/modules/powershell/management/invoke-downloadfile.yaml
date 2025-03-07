@@ -5,9 +5,8 @@ authors:
     link: ''
 description: Download files from the internet through PowerShell.
 software: ''
-tactics: []
-techniques:
-  - T1544
+tactics: [TA0010]
+techniques: [T1041]
 background: true
 output_extension:
 needs_admin: false

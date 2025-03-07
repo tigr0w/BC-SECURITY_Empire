@@ -8,8 +8,8 @@ description: |
   LocalMachine\" for HKLM.\n\tValue: Value to set in the registry. E.g. \"C:\\\
   Example\\GruntStager.exe\"\n\tName: Name for the registy value.E.g. \"Updater\".
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0003]
+techniques: [T1547.001]
 background: false
 output_extension: ''
 needs_admin: false

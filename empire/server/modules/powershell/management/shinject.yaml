@@ -10,10 +10,9 @@ authors:
     handle: '@monogas'
     link: ''
 description: Injects a PIC shellcode payload into a target process, via Invoke-Shellcode
-software: ''
-tactics: []
-techniques:
-  - T1055
+software: S0194
+tactics: [TA0005]
+techniques: [T1620]
 background: true
 output_extension:
 needs_admin: false

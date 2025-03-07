@@ -5,9 +5,8 @@ authors:
     link: ''
 description: Executes time-stomp like functionality by invoking Set-MacAttribute.
 software: ''
-tactics: []
-techniques:
-  - T1099
+tactics: [TA0005]
+techniques: [T1070.006]
 background: false
 output_extension:
 needs_admin: false

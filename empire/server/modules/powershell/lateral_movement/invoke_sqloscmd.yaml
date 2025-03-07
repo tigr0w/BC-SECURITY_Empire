@@ -8,9 +8,8 @@ authors:
     link: ''
 description: Executes a command or stager on remote hosts using xp_cmdshell.
 software: ''
-tactics: []
-techniques:
-  - T1505
+tactics: [TA0002, TA0008]
+techniques: [T1505.001]
 background: true
 output_extension:
 needs_admin: false

@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List Windows firewall rules.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1082,T1518.001]
 background: false
 output_extension:
 needs_admin: false

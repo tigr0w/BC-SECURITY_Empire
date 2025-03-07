@@ -12,9 +12,8 @@ authors:
 description: Drops wscript.exe and a custom manifest into C:\Windows\ and then proceeds to execute VBScript using the wscript
   executablewith the new manifest. The VBScript executed by C:\Windows\wscript.exe will run elevated.
 software: ''
-tactics: []
-techniques:
-  - T1088
+tactics: [TA0004]
+techniques: [T1548.002]
 background: true
 output_extension:
 needs_admin: false

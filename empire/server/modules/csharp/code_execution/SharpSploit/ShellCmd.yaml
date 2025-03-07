@@ -5,8 +5,8 @@ authors:
   link: https://twitter.com/Cx01N_
 description: Execute a Shell command using CreateProcess with "cmd.exe /c"
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0002]
+techniques: [T1059.003]
 background: false
 output_extension: ''
 needs_admin: false

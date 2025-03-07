@@ -8,9 +8,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Takes a screenshot of the current desktop and returns the output as a .PNG.
 software: ''
-tactics: []
-techniques:
-  - T1113
+tactics: [TA0009]
+techniques: [T1113]
 background: false
 output_extension: png
 needs_admin: false

@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/mattifestation
 description: Uses PowerSploit's Invoke-DLLInjection to inject  a Dll into the process ID of your choosing.
 software: S0194
-tactics: []
-techniques:
-  - T1055
+tactics: [TA0004,TA0005]
+techniques: [T1055.001]
 background: false
 output_extension:
 needs_admin: false

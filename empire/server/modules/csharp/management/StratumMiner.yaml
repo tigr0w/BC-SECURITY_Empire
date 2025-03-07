@@ -6,8 +6,8 @@ authors:
 description: |
   A .NET implementation of a stratum miner in C#.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0040]
+techniques: [T1496.001]
 background: false
 output_extension: ''
 needs_admin: false

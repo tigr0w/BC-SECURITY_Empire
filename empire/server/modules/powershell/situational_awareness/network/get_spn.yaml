@@ -6,9 +6,8 @@ authors:
 description: Displays Service Principal Names (SPN) for domain accounts based on SPN service name, domain account, or domain
   group via LDAP queries.
 software: ''
-tactics: []
-techniques:
-  - T1207
+tactics: [TA0007]
+techniques: [T1558, T1087.002]
 background: true
 output_extension:
 needs_admin: false
