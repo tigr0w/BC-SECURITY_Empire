@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dropbox has new APIs and may return in the future with revisions.
 -   Revised the staging process for agents. Session IDs are provided by the server and all packets are wrapped in routing packets.
 -   Update tactics and techniques on all modules
+-   Add a yaml formatter and run pre-commit across all files
 
 ## [6.0.0-beta3] - 2025-03-02
 
@@ -52,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 -   Added support for plugin registries and installing plugins via the API
-    -   See the Plugin Marketplace in Starkiller 3.0! 
+    -   See the Plugin Marketplace in Starkiller 3.0!
 -   New allow/deny list implementation that properly supports IPv4, IPv6, Ranges, and CIDRs
 -   Added API endpoints for managing autorun commands on agent checkin
 -   Added `api.ip` and `api.secure` as server config options
@@ -183,7 +184,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed Rubeus error where only first arg was being used (@Cx01N)
 -   Fixed background jobs checking in continuously (@Cx01N)
--   Fixed Rubeus killing agent when certain options were given that use System.Environment.Exit (@Cx01N) 
+-   Fixed Rubeus killing agent when certain options were given that use System.Environment.Exit (@Cx01N)
 -   Fixed option parsing error in credential/tokens module (@Cx01N)
 -   Removed requirement for credid for mimikatz/pth (@Cx01N)
 
@@ -253,7 +254,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 -   Removed BypassUACGrunt due to compatibility with only Covenant (@Cx01N)
--   Removed BypassUACCommand due to compatibility with only Covenant (@Cx01N) 
+-   Removed BypassUACCommand due to compatibility with only Covenant (@Cx01N)
 
 ## [5.10.2] - 2024-05-05
 

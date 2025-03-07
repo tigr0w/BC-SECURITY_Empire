@@ -36,7 +36,8 @@ options:
     required: false
     value: ''
   - name: NetOnly
-    description: Start the process using the LOGON_NETCREDENTIALS_ONLY flag (equivalent of running "runas.exe /netonly")
+    description: Start the process using the LOGON_NETCREDENTIALS_ONLY flag (equivalent
+      of running "runas.exe /netonly")
     required: false
     value: 'False'
     strict: true

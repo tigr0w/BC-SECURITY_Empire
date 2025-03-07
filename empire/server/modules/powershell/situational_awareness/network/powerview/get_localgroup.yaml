@@ -3,10 +3,11 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Returns a list of all current users in a specified local group on a local or remote machine. Part of PowerView.
+description: Returns a list of all current users in a specified local group on a
+  local or remote machine. Part of PowerView.
 software: S0194
 tactics: [TA0007]
-techniques: [T1482,T1615, T1069.001]
+techniques: [T1482, T1615, T1069.001]
 background: true
 output_extension:
 needs_admin: false
@@ -37,8 +38,8 @@ options:
       - True
       - False
   - name: Recurse
-    description: If the local member member is a domain group, recursively try to resolve its members to get a list
-      of domain users who can access this machine.
+    description: If the local member member is a domain group, recursively try to
+      resolve its members to get a list of domain users who can access this machine.
     required: false
     value: 'False'
     strict: true
@@ -46,7 +47,8 @@ options:
       - True
       - False
   - name: API
-    description: Use API calls instead of the WinNT service provider. Less information, but the results are faster.
+    description: Use API calls instead of the WinNT service provider. Less information,
+      but the results are faster.
     required: false
     value: 'False'
     strict: true
@@ -54,7 +56,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -65,4 +68,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Get-NetLocalGroup {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-NetLocalGroup completed'
+script_end: Get-NetLocalGroup {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Get-NetLocalGroup completed'

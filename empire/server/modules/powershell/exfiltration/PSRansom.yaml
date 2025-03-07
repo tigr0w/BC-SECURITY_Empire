@@ -33,14 +33,14 @@ options:
       - 'False'
     depends_on:
       - name: Mode
-        values: [ 'Encrypt' ]
+        values: ['Encrypt']
   - name: RecoveryKey
     description: Decrypt all files with recovery key string
     required: false
     value: ''
     depends_on:
       - name: Mode
-        values: [ 'Decrypt' ]
+        values: ['Decrypt']
   - name: Exfiltrate
     description: Exfiltrate files to Command & Control Server.
     required: true
@@ -51,21 +51,21 @@ options:
     strict: true
     depends_on:
       - name: Mode
-        values: [ 'Encrypt' ]
+        values: ['Encrypt']
   - name: C2Server
     description: Command & Control Server IP Address.
     required: false
     value: ''
     depends_on:
       - name: Mode
-        values: [ 'Encrypt' ]
+        values: ['Encrypt']
   - name: C2Port
     description: Command & Control Server Port.
     required: false
     value: ''
     depends_on:
       - name: Mode
-        values: [ 'Encrypt' ]
+        values: ['Encrypt']
   - name: Directory
     description: Directory to encrypt or decrypt.
     required: true

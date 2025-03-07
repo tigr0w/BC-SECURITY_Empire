@@ -3,8 +3,9 @@ authors:
   - name: Kevin Robertson
     handle: ''
     link: ''
-description: Inveigh is a Windows PowerShell LLMNR/mDNS/NBNS spoofer/man-in-the-middle tool. Note that this module exposes
-  only a subset of Inveigh's parameters. Inveigh can be used through Empire's scriptimport and scriptcmd if additional parameters
+description: Inveigh is a Windows PowerShell LLMNR/mDNS/NBNS spoofer/man-in-the-middle
+  tool. Note that this module exposes only a subset of Inveigh's parameters. Inveigh
+  can be used through Empire's scriptimport and scriptcmd if additional parameters
   are needed.
 software: ''
 tactics: [TA0006, TA0009]
@@ -23,8 +24,8 @@ options:
     required: true
     value: ''
   - name: ConsoleOutput
-    description: '(Low/Medium/Y) Default = Y: Enable/Disable real time console output. Medium and Low can be used to reduce
-      output.'
+    description: '(Low/Medium/Y) Default = Y: Enable/Disable real time console output.
+      Medium and Low can be used to reduce output.'
     required: false
     value: 'Y'
     strict: true
@@ -33,13 +34,13 @@ options:
       - Medium
       - Y
   - name: ConsoleStatus
-    description: Interval in minutes for displaying all unique captured hashes and credentials. This will display a clean
-      list of captures in Empire.
+    description: Interval in minutes for displaying all unique captured hashes and
+      credentials. This will display a clean list of captures in Empire.
     required: false
     value: '1'
   - name: ConsoleUnique
-    description: '(Y/N) Default = Y: Enable/Disable displaying challenge/response hashes for only unique IP, domain/hostname,
-      and username combinations.'
+    description: '(Y/N) Default = Y: Enable/Disable displaying challenge/response
+      hashes for only unique IP, domain/hostname, and username combinations.'
     required: false
     value: 'Y'
     strict: true
@@ -48,8 +49,9 @@ options:
       - Medium
       - Y
   - name: ElevatedPrivilege
-    description: '(Auto/Y/N) Default = Auto: Set the privilege mode. Auto will determine if Inveigh is running with elevated
-      privilege. If so, options that require elevated privilege can be used.'
+    description: '(Auto/Y/N) Default = Auto: Set the privilege mode. Auto will determine
+      if Inveigh is running with elevated privilege. If so, options that require
+      elevated privilege can be used.'
     required: false
     value: 'Auto'
     strict: true
@@ -66,8 +68,8 @@ options:
       - Y
       - N
   - name: HTTPAuth
-    description: (Anonymous/Basic/NTLM/NTLMNoESS) HTTP listener authentication type. This setting does not apply to wpad.dat
-      requests.
+    description: (Anonymous/Basic/NTLM/NTLMNoESS) HTTP listener authentication type.
+      This setting does not apply to wpad.dat requests.
     required: false
     value: ''
     strict: false
@@ -77,14 +79,16 @@ options:
       - NTLM
       - NTLMNoESS
   - name: HTTPContentType
-    description: Content type for HTTP/Proxy responses. Does not apply to EXEs and wpad.dat. Set to "application/hta" for
-      HTA files or when using HTA code with HTTPResponse.
+    description: Content type for HTTP/Proxy responses. Does not apply to EXEs and
+      wpad.dat. Set to "application/hta" for HTA files or when using HTA code with
+      HTTPResponse.
     required: false
     value: ''
   - name: HTTPResponse
-    description: Content to serve as the default HTTP/Proxy response. This response will not be used for wpad.dat requests.
-      Use PowerShell escape characters and newlines where necessary. This paramater will be wrapped in double quotes by this
-      module.
+    description: Content to serve as the default HTTP/Proxy response. This response
+      will not be used for wpad.dat requests. Use PowerShell escape characters and
+      newlines where necessary. This paramater will be wrapped in double quotes by
+      this module.
     required: false
     value: ''
   - name: Inspect
@@ -96,8 +100,9 @@ options:
       - True
       - False
   - name: IP
-    description: Local IP address for listening and packet sniffing. This IP address will also be used for LLMNR/mDNS/NBNS
-      spoofing if the SpooferIP parameter is not set.
+    description: Local IP address for listening and packet sniffing. This IP address
+      will also be used for LLMNR/mDNS/NBNS spoofing if the SpooferIP parameter is
+      not set.
     required: false
     value: ''
   - name: LLMNR
@@ -117,8 +122,8 @@ options:
       - Y
       - N
   - name: mDNSTypes
-    description: '(QU,QM) Default = QU: Comma separated list of mDNS types to spoof. Note that QM will send the response to
-      224.0.0.251.'
+    description: '(QU,QM) Default = QU: Comma separated list of mDNS types to spoof.
+      Note that QM will send the response to 224.0.0.251.'
     required: false
     value: 'QU'
     strict: true
@@ -162,8 +167,8 @@ options:
       - Y
       - N
   - name: SpooferIP
-    description: Response IP address for spoofing. This parameter is only necessary when redirecting victims to a system other
-      than the Inveigh host.
+    description: Response IP address for spoofing. This parameter is only necessary
+      when redirecting victims to a system other than the Inveigh host.
     required: false
     value: ''
   - name: SpooferHostsIgnore
@@ -191,12 +196,13 @@ options:
       - Y
       - N
   - name: SpooferLearningDelay
-    description: Time in minutes that Inveigh will delay spoofing while valid hosts are being blacklisted through SpooferLearning.
+    description: Time in minutes that Inveigh will delay spoofing while valid hosts
+      are being blacklisted through SpooferLearning.
     required: false
     value: ''
   - name: SpooferRepeat
-    description: '(Y/N) Default = Y: Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after one user challenge/response
-      has been captured.'
+    description: '(Y/N) Default = Y: Enable/Disable repeated LLMNR/NBNS spoofs to
+      a victim system after one user challenge/response has been captured.'
     required: false
     value: 'Y'
     strict: true
@@ -204,7 +210,8 @@ options:
       - Y
       - N
   - name: WPADAuth
-    description: (Anonymous/Basic/NTLM/NTLMNoESS) HTTP listener authentication type for wpad.dat requests.
+    description: (Anonymous/Basic/NTLM/NTLMNoESS) HTTP listener authentication type
+      for wpad.dat requests.
     required: false
     value: ''
     strict: false

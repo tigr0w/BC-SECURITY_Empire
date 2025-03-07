@@ -6,7 +6,7 @@ authors:
 description: List Windows firewall rules.
 software: ''
 tactics: [TA0007]
-techniques: [T1082,T1518.001]
+techniques: [T1082, T1518.001]
 background: false
 output_extension:
 needs_admin: false

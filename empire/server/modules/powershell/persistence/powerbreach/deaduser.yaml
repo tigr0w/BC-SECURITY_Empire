@@ -3,7 +3,8 @@ authors:
   - name: ''
     handle: '@sixdub'
     link: ''
-description: Backup backdoor for a backdoor user. Looks for a speicifed user account. If not found, then calls back to the server
+description: Backup backdoor for a backdoor user. Looks for a speicifed user account.
+  If not found, then calls back to the server
 software: ''
 tactics: [TA0004]
 techniques: [T1546]

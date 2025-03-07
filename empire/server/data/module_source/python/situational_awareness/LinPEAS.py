@@ -88,20 +88,20 @@ ${NC}This tool enum and search possible misconfigurations$DG (known vulns, user,
         ${YELLOW}    -r${BLUE} Enable Regexes (this can take from some mins to hours)
         ${YELLOW}    -P${BLUE} Indicate a password that will be used to run 'sudo -l' and to bruteforce other users accounts via 'su'
 	${YELLOW}    -D${BLUE} Debug mode
-	
+
       ${GREEN}  Network recon:
         ${YELLOW}    -t${BLUE} Automatic network scan & Internet conectivity checks - This option writes to files
 	${YELLOW}    -d <IP/NETMASK>${BLUE} Discover hosts using fping or ping.$DG Ex: -d 192.168.0.1/24
         ${YELLOW}    -p <PORT(s)> -d <IP/NETMASK>${BLUE} Discover hosts looking for TCP open ports (via nc). By default ports 22,80,443,445,3389 and another one indicated by you will be scanned (select 22 if you don't want to add more). You can also add a list of ports.$DG Ex: -d 192.168.0.1/24 -p 53,139
         ${YELLOW}    -i <IP> [-p <PORT(s)>]${BLUE} Scan an IP using nc. By default (no -p), top1000 of nmap will be scanned, but you can select a list of ports instead.$DG Ex: -i 127.0.0.1 -p 53,80,443,8000,8080
         $GREEN     Notice${BLUE} that if you specify some network scan (options -d/-p/-i but NOT -t), no PE check will be performed
-      
+
       ${GREEN}  Port forwarding (reverse connection):
         ${YELLOW}    -F LOCAL_IP:LOCAL_PORT:REMOTE_IP:REMOTE_PORT${BLUE} Execute linpeas to forward a port from a your host (LOCAL_IP:LOCAL_PORT) to a remote IP (REMOTE_IP:REMOTE_PORT)
-      
+
       ${GREEN}  Firmware recon:
         ${YELLOW}    -f </FOLDER/PATH>${BLUE} Execute linpeas to search passwords/file permissions misconfigs inside a folder
-	
+
       ${GREEN}  Misc:
         ${YELLOW}    -h${BLUE} To show this message
 	${YELLOW}    -w${BLUE} Wait execution between big blocks of checks
@@ -131,12 +131,12 @@ while getopts "h?asd:p:i:P:qo:LMwNDterf:F:" opt; do
     r)  REGEXES="1";;
     f)  SEARCH_IN_FOLDER=$OPTARG;
     	if ! [ "$(echo -n $SEARCH_IN_FOLDER | tail -c 1)" = "/" ]; then #Make sure firmware folder ends with "/"
-        SEARCH_IN_FOLDER="${SEARCH_IN_FOLDER}/"; 
+        SEARCH_IN_FOLDER="${SEARCH_IN_FOLDER}/";
       fi;
           ROOT_FOLDER=$SEARCH_IN_FOLDER;
       REGEXES="1";
 	    CHECKS="procs_crons_timers_srvcs_sockets,software_information,interesting_perms_files,interesting_files,api_keys_regex";;
-	
+
     F)  PORT_FORWARD=$OPTARG;;
     esac
 done
@@ -312,7 +312,7 @@ idB="euid|egid$baduid"
 sudovB="[01].[012345678].[0-9]+|1.9.[01234]|1.9.5p1"
 
 mounted=$( (cat /proc/self/mountinfo || cat /proc/1/mountinfo) 2>/dev/null | cut -d " " -f5 | grep "^/" | tr '\n' '|')$(cat /etc/fstab 2>/dev/null | grep -v "#" | grep -E '\W/\W' | awk '{print $1}')
-if ! [ "$mounted" ]; then 
+if ! [ "$mounted" ]; then
   mounted=$( (mount -l || cat /proc/mounts || cat /proc/self/mounts || cat /proc/1/mounts) 2>/dev/null | grep "^/" | cut -d " " -f1 | tr '\n' '|')$(cat /etc/fstab 2>/dev/null | grep -v "#" | grep -E '\W/\W' | awk '{print $1}')
 fi
 if ! [ "$mounted" ]; then mounted="ImPoSSssSiBlEee"; fi #Don't let any blacklist to be empty
@@ -669,7 +669,7 @@ print_title(){
   printf "╚"
   for i in $(seq 1 $title_len); do printf "═"; done; printf "═";
   printf "╝"
-  
+
   printf $NC
   echo ""
 }
@@ -1130,7 +1130,7 @@ elif echo $CHECKS | grep -q procs_crons_timers_srvcs_sockets || echo $CHECKS | g
 
   wait # Always wait at the end
   CONT_THREADS=0 #Reset the threads counter
-fi 
+fi
 
 if [ "$SEARCH_IN_FOLDER" ] || echo $CHECKS | grep -q procs_crons_timers_srvcs_sockets || echo $CHECKS | grep -q software_information || echo $CHECKS | grep -q interesting_files; then
   #GENERATE THE STORAGES OF THE FOUND FILES
@@ -1434,11 +1434,11 @@ containerCheck() {
     else containerType="kubernetes\n"
     fi
   fi
-  
+
   # Inside concourse?
   if grep "/concourse" /proc/1/mounts -qa 2>/dev/null; then
     inContainer="1"
-    if [ "$containerType" ]; then 
+    if [ "$containerType" ]; then
       containerType="$containerType (concourse)\n"
     fi
   fi
@@ -1506,7 +1506,7 @@ enumerateDockerSockets() {
             dockerVersion=$(echo "$sockInfoResponse" | tr ',' '\n' | grep 'Server Version' | cut -d' ' -f 4)
             printf "$sockInfoResponse" | tr ',' '\n' | grep -E "$GREP_DOCKER_SOCK_INFOS" | grep -v "$GREP_DOCKER_SOCK_INFOS_IGNORE" | tr -d '"'
           fi
-        
+
         else
           echo "You have write permissions over interesting socket $int_sock" | sed -${E} "s,$int_sock,${SED_RED},g"
         fi
@@ -1573,29 +1573,29 @@ checkProcSysBreakouts(){
     run_unshare="No"
   fi
 
-  if [ "$(ls -l /sys/fs/cgroup/*/release_agent 2>/dev/null)" ]; then 
+  if [ "$(ls -l /sys/fs/cgroup/*/release_agent 2>/dev/null)" ]; then
     release_agent_breakout1="Yes"
-  else 
+  else
     release_agent_breakout1="No"
   fi
-  
+
   release_agent_breakout2="No"
   mkdir /tmp/cgroup_3628d4
   mount -t cgroup -o memory cgroup /tmp/cgroup_3628d4 2>/dev/null
-  if [ $? -eq 0 ]; then 
-    release_agent_breakout2="Yes"; 
+  if [ $? -eq 0 ]; then
+    release_agent_breakout2="Yes";
     rm -rf /tmp/cgroup_3628d4
-  else 
+  else
     mount -t cgroup -o rdma cgroup /tmp/cgroup_3628d4 2>/dev/null
-    if [ $? -eq 0 ]; then 
-      release_agent_breakout2="Yes"; 
+    if [ $? -eq 0 ]; then
+      release_agent_breakout2="Yes";
       rm -rf /tmp/cgroup_3628d4
-    else 
+    else
       checkCreateReleaseAgent
     fi
   fi
   rm -rf /tmp/cgroup_3628d4 2>/dev/null
-  
+
   core_pattern_breakout="$( (echo -n '' > /proc/sys/kernel/core_pattern && echo Yes) 2>/dev/null || echo No)"
   modprobe_present="$(ls -l `cat /proc/sys/kernel/modprobe` 2>/dev/null || echo No)"
   panic_on_oom_dos="$( (echo -n '' > /proc/sys/vm/panic_on_oom && echo Yes) 2>/dev/null || echo No)"
@@ -1628,9 +1628,9 @@ checkProcSysBreakouts(){
 containerCheck
 
 print_2title "Container related tools present (if any):"
-command -v docker 
-command -v lxc 
-command -v rkt 
+command -v docker
+command -v lxc
+command -v rkt
 command -v kubectl
 command -v podman
 command -v runc
@@ -1658,7 +1658,7 @@ else
     if [ "$lxccontainers" -ne "0" ]; then containerCounts="${containerCounts}lxc($lxccontainers) "; fi
     if [ "$rktcontainers" -ne "0" ]; then containerCounts="${containerCounts}rkt($rktcontainers) "; fi
     echo "Yes $containerCounts" | sed -${E} "s,.*,${SED_RED},"
-    
+
     # List any running containers
     if [ "$dockercontainers" -ne "0" ]; then echo "Running Docker Containers" | sed -${E} "s,.*,${SED_RED},"; docker ps | tail -n +2 2>/dev/null; echo ""; fi
     if [ "$podmancontainers" -ne "0" ]; then echo "Running Podman Containers" | sed -${E} "s,.*,${SED_RED},"; podman ps | tail -n +2 2>/dev/null; echo ""; fi
@@ -1729,7 +1729,7 @@ if [ "$inContainer" ]; then
 
     print_3title "Breakout via mounts"
     print_info "https://book.hacktricks.xyz/linux-hardening/privilege-escalation/docker-breakout/docker-breakout-privilege-escalation/sensitive-mounts"
-    
+
     checkProcSysBreakouts
     print_list "/proc mounted? ................. $proc_mounted\n" | sed -${E} "s,Yes,${SED_RED_YELLOW},"
     print_list "/dev mounted? .................. $dev_mounted\n" | sed -${E} "s,Yes,${SED_RED_YELLOW},"
@@ -1761,7 +1761,7 @@ if [ "$inContainer" ]; then
       print_list "/sys/firmware/efi/vars writable  $efi_vars_writable\n" | sed -${E} "s,Yes,${SED_RED},"
       print_list "/sys/firmware/efi/efivars writable $efi_efivars_writable\n" | sed -${E} "s,Yes,${SED_RED},"
     fi
-    
+
     echo ""
     print_3title "Namespaces"
     print_info "https://book.hacktricks.xyz/linux-hardening/privilege-escalation/docker-breakout/namespaces"
@@ -1771,15 +1771,15 @@ if [ "$inContainer" ]; then
         print_list "Kubernetes namespace ...........$NC $(cat /run/secrets/kubernetes.io/serviceaccount/namespace /var/run/secrets/kubernetes.io/serviceaccount/namespace /secrets/kubernetes.io/serviceaccount/namespace 2>/dev/null)\n"
         print_list "Kubernetes token ...............$NC $(cat /run/secrets/kubernetes.io/serviceaccount/token /var/run/secrets/kubernetes.io/serviceaccount/token /secrets/kubernetes.io/serviceaccount/token 2>/dev/null)\n"
         echo ""
-        
+
         print_2title "Kubernetes Information"
         print_info "https://book.hacktricks.xyz/cloud-security/pentesting-kubernetes/attacking-kubernetes-from-inside-a-pod"
-        
-        
+
+
         print_3title "Kubernetes service account folder"
         ls -lR /run/secrets/kubernetes.io/ /var/run/secrets/kubernetes.io/ /secrets/kubernetes.io/ 2>/dev/null
         echo ""
-        
+
         print_3title "Kubernetes env vars"
         (env | set) | grep -Ei "kubernetes|kube" | grep -Ev "^WF=|^Wfolders=|^mounted=|^USEFUL_SOFTWARE='|^INT_HIDDEN_FILES=|^containerType="
         echo ""
@@ -1796,7 +1796,7 @@ if [ "$inContainer" ]; then
 
     print_2title "Container Capabilities"
     print_info "https://book.hacktricks.xyz/linux-hardening/privilege-escalation/docker-breakout/docker-breakout-privilege-escalation#capabilities-abuse-escape"
-    if [ "$(command -v capsh)" ]; then 
+    if [ "$(command -v capsh)" ]; then
       capsh --print 2>/dev/null | sed -${E} "s,$containercapsB,${SED_RED},g"
     else
       defautl_docker_caps="00000000a80425fb=cap_chown,cap_dac_override,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_net_bind_service,cap_net_raw,cap_sys_chroot,cap_mknod,cap_audit_write,cap_setfcap"
@@ -1841,12 +1841,12 @@ GCP_GOOD_SCOPES="/devstorage.read_only|/logging.write|/monitoring|/servicecontro
 GCP_BAD_SCOPES="/cloud-platform|/compute"
 
 exec_with_jq(){
-  if [ "$(command -v jq)" ]; then 
+  if [ "$(command -v jq)" ]; then
     $@ | jq 2>/dev/null;
     if ! [ $? -eq 0 ]; then
       $@;
     fi
-   else 
+   else
     $@;
    fi
 }
@@ -1882,16 +1882,16 @@ check_aws_ecs(){
     is_aws_ecs="Yes";
     aws_ecs_metadata_uri=$ECS_CONTAINER_METADATA_URI_v4;
     aws_ecs_service_account_uri="http://169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
-  
+
   elif (env | grep -q ECS_CONTAINER_METADATA_URI); then
     is_aws_ecs="Yes";
     aws_ecs_metadata_uri=$ECS_CONTAINER_METADATA_URI;
     aws_ecs_service_account_uri="http://169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
-  
+
   elif (env | grep -q AWS_CONTAINER_CREDENTIALS_RELATIVE_URI); then
     is_aws_ecs="Yes";
   fi
-  
+
   if [ "$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI" ]; then
     aws_ecs_service_account_uri="http://169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
   fi
@@ -1911,7 +1911,7 @@ check_aws_ec2(){
       is_aws_ec2="Yes"
     fi
   fi
-  
+
   if [ "$is_aws_ec2" = "Yes" ] && grep -iq "Beanstalk" "/etc/motd"; then
     is_aws_ec2_beanstalk="Yes"
   fi
@@ -1948,7 +1948,7 @@ if [ "$is_gcp" = "Yes" ]; then
         gcp_req='curl -s -f  -H "X-Google-Metadata-Request: True"'
     elif [ "$(command -v wget)" ]; then
         gcp_req='wget -q -O - --header "X-Google-Metadata-Request: True"'
-    else 
+    else
         echo "Neither curl nor wget were found, I can't enumerate the metadata service :("
     fi
 
@@ -2010,7 +2010,7 @@ if [ "$is_gcp" = "Yes" ]; then
 
         echo ""
         print_3title "Interfaces"
-        for iface in $(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/"); do 
+        for iface in $(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/"); do
             echo "  IP: "$(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/$iface/ip")
             echo "  Subnetmask: "$(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/$iface/subnetmask")
             echo "  Gateway: "$(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/$iface/gateway")
@@ -2018,7 +2018,7 @@ if [ "$is_gcp" = "Yes" ]; then
             echo "  Network: "$(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/$iface/network")
             echo "  ==============  "
         done
-        
+
         echo ""
         print_3title "User Data"
         echo $(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/attributes/startup-script")
@@ -2026,7 +2026,7 @@ if [ "$is_gcp" = "Yes" ]; then
 
         echo ""
         print_3title "Service Accounts"
-        for sa in $(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/"); do 
+        for sa in $(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/"); do
             echo "  Name: $sa"
             echo "  Email: "$(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/$sa/email")
             echo "  Aliases: "$(eval $gcp_req "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/$sa/aliases")
@@ -2041,13 +2041,13 @@ fi
 
 if [ "$is_aws_ecs" = "Yes" ]; then
     print_2title "AWS ECS Enumeration"
-    
+
     aws_ecs_req=""
     if [ "$(command -v curl)" ]; then
         aws_ecs_req='curl -s -f'
     elif [ "$(command -v wget)" ]; then
         aws_ecs_req='wget -q -O -'
-    else 
+    else
         echo "Neither curl nor wget were found, I can't enumerate the metadata service :("
     fi
 
@@ -2055,7 +2055,7 @@ if [ "$is_aws_ecs" = "Yes" ]; then
         print_3title "Container Info"
         exec_with_jq eval $aws_ecs_req "$aws_ecs_metadata_uri"
         echo ""
-        
+
         print_3title "Task Info"
         exec_with_jq eval $aws_ecs_req "$aws_ecs_metadata_uri/task"
         echo ""
@@ -2074,19 +2074,19 @@ fi
 
 if [ "$is_aws_ec2" = "Yes" ]; then
     print_2title "AWS EC2 Enumeration"
-    
+
     HEADER="X-aws-ec2-metadata-token: $EC2_TOKEN"
     URL="http://169.254.169.254/latest/meta-data"
-    
+
     aws_req=""
     if [ "$(command -v curl)" ]; then
         aws_req="curl -s -f -H '$HEADER'"
     elif [ "$(command -v wget)" ]; then
         aws_req="wget -q -O - -H '$HEADER'"
-    else 
+    else
         echo "Neither curl nor wget were found, I can't enumerate the metadata service :("
     fi
-  
+
     if [ "$aws_req" ]; then
         printf "ami-id: "; eval $aws_req "$URL/ami-id"; echo ""
         printf "instance-action: "; eval $aws_req "$URL/instance-action"; echo ""
@@ -2101,7 +2101,7 @@ if [ "$is_aws_ec2" = "Yes" ]; then
 
         echo ""
         print_3title "Network Info"
-        for mac in $(eval $aws_req "$URL/network/interfaces/macs/" 2>/dev/null); do 
+        for mac in $(eval $aws_req "$URL/network/interfaces/macs/" 2>/dev/null); do
           echo "Mac: $mac"
           printf "Owner ID: "; eval $aws_req "$URL/network/interfaces/macs/$mac/owner-id"; echo ""
           printf "Public Hostname: "; eval $aws_req "$URL/network/interfaces/macs/$mac/public-hostname"; echo ""
@@ -2117,20 +2117,20 @@ if [ "$is_aws_ec2" = "Yes" ]; then
         echo ""
         print_3title "IAM Role"
         exec_with_jq eval $aws_req "$URL/iam/info"; echo ""
-        for role in $(eval $aws_req "$URL/iam/security-credentials/" 2>/dev/null); do 
+        for role in $(eval $aws_req "$URL/iam/security-credentials/" 2>/dev/null); do
           echo "Role: $role"
           exec_with_jq eval $aws_req "$URL/iam/security-credentials/$role"; echo ""
           echo ""
         done
-        
+
         echo ""
         print_3title "User Data"
         eval $aws_req "http://169.254.169.254/latest/user-data"; echo ""
-        
+
         echo ""
         echo "EC2 Security Credentials"
         exec_with_jq eval $aws_req "$URL/identity-credentials/ec2/security-credentials/ec2-instance"; echo ""
-        
+
         print_3title "SSM Runnig"
         ps aux 2>/dev/null | grep "ssm-agent" | grep -v "grep" | sed "s,ssm-agent,${SED_RED},"
     fi
@@ -2156,7 +2156,7 @@ if [ "$is_do" = "Yes" ]; then
       do_req='curl -s -f '
   elif [ "$(command -v wget)" ]; then
       do_req='wget -q -O - '
-  else 
+  else
       echo "Neither curl nor wget were found, I can't enumerate the metadata service :("
   fi
 
@@ -2185,13 +2185,13 @@ if [ "$is_ibm_vm" = "Yes" ]; then
     TOKEN_HEADER="Authorization: Bearer $IBM_TOKEN"
     ACCEPT_HEADER="Accept: application/json"
     URL="http://169.254.169.254/latest/meta-data"
-    
+
     ibm_req=""
     if [ "$(command -v curl)" ]; then
         ibm_req="curl -s -f -H '$TOKEN_HEADER' -H '$ACCEPT_HEADER'"
     elif [ "$(command -v wget)" ]; then
         ibm_req="wget -q -O - -H '$TOKEN_HEADER' -H '$ACCEPT_HEADER'"
-    else 
+    else
         echo "Neither curl nor wget were found, I can't enumerate the metadata service :("
     fi
 
@@ -2272,7 +2272,7 @@ if ! [ "$SEARCH_IN_FOLDER" ] && ! [ "$NOUSEPS" ]; then
   #-- PCS) Process opened by other users
   print_2title "Processes whose PPID belongs to a different user (not root)"
   print_info "You will know if a user can somehow spawn processes as a different user"
-  
+
   # Function to get user by PID
   get_user_by_pid() {
     ps -p "$1" -o user | grep -v "USER"
@@ -2323,11 +2323,11 @@ if ! [ "$SEARCH_IN_FOLDER" ]; then
     print_2title "Different processes executed during 1 min (interesting is low number of repetitions)"
     print_info "https://book.hacktricks.xyz/linux-hardening/privilege-escalation#frequent-cron-jobs"
     temp_file=$(mktemp)
-    if [ "$(ps -e -o user,command 2>/dev/null)" ]; then 
-      for i in $(seq 1 1210); do 
-        ps -e -o user,command >> "$temp_file" 2>/dev/null; sleep 0.05; 
+    if [ "$(ps -e -o user,command 2>/dev/null)" ]; then
+      for i in $(seq 1 1210); do
+        ps -e -o user,command >> "$temp_file" 2>/dev/null; sleep 0.05;
       done;
-      sort "$temp_file" 2>/dev/null | uniq -c | grep -v "\[" | sed '/^.\{200\}./d' | sort -r -n | grep -E -v "\s*[1-9][0-9][0-9][0-9]" | sed -${E} "s,$Wfolders,${SED_RED},g" | sed -${E} "s,$sh_usrs,${SED_LIGHT_CYAN}," | sed "s,$USER,${SED_LIGHT_MAGENTA}," | sed -${E} "s,$nosh_usrs,${SED_BLUE}," | sed "s,root,${SED_RED},"; 
+      sort "$temp_file" 2>/dev/null | uniq -c | grep -v "\[" | sed '/^.\{200\}./d' | sort -r -n | grep -E -v "\s*[1-9][0-9][0-9][0-9]" | sed -${E} "s,$Wfolders,${SED_RED},g" | sed -${E} "s,$sh_usrs,${SED_LIGHT_CYAN}," | sed "s,$USER,${SED_LIGHT_MAGENTA}," | sed -${E} "s,$nosh_usrs,${SED_BLUE}," | sed "s,root,${SED_RED},";
       rm "$temp_file";
     fi
     echo ""
@@ -2495,7 +2495,7 @@ if ! [ "$IAMROOT" ]; then
     done
   done
   echo ""
-  
+
   if ! [ "$SEARCH_IN_FOLDER" ]; then
     print_2title "Unix Sockets Listening"
     print_info "https://book.hacktricks.xyz/linux-hardening/privilege-escalation#sockets"
@@ -2507,9 +2507,9 @@ if ! [ "$IAMROOT" ]; then
     if ! [ "$unix_scks_list" ];then
       unix_scks_list=$(netstat -a -p --unix 2>/dev/null | grep -Ei "listen|PID" | grep -Eo "/[a-zA-Z0-9\._/\-]+" | tail -n +2)
     fi
-     unix_scks_list3=$(lsof -U 2>/dev/null | awk '{print $9}' | grep "/") 
+     unix_scks_list3=$(lsof -U 2>/dev/null | awk '{print $9}' | grep "/")
   fi
-  
+
   if ! [ "$SEARCH_IN_FOLDER" ]; then
     # But also search socket files
     unix_scks_list2=$(find / -type s 2>/dev/null)
@@ -2526,7 +2526,7 @@ if ! [ "$IAMROOT" ]; then
     if [ -w "$l" ];then
       perms="${perms}Write"
     fi
-    
+
     if [ "$EXTRA_CHECKS" ] && [ "$(command -v curl)" ]; then
       CANNOT_CONNECT_TO_SOCKET="$(curl -v --unix-socket "$l" --max-time 1 http:/linpeas 2>&1 | grep -i 'Permission denied')"
       if ! [ "$CANNOT_CONNECT_TO_SOCKET" ]; then
@@ -2535,9 +2535,9 @@ if ! [ "$IAMROOT" ]; then
         perms="${perms} - Cannot Connect"
       fi
     fi
-    
+
     if ! [ "$perms" ]; then echo "$l" | sed -${E} "s,$l,${SED_GREEN},g";
-    else 
+    else
       echo "$l" | sed -${E} "s,$l,${SED_RED},g"
       echo "  └─(${RED}${perms}${NC})" | sed -${E} "s,Cannot Connect,${SED_GREEN},g"
       # Try to contact the socket
@@ -2686,7 +2686,7 @@ if [ "$MACPEAS" ] && [ "$EXTRA_CHECKS" ]; then
   print_2title "Wifi Proxy URL"
   networksetup -getautoproxyurl Wi-Fi
   echo ""
-  
+
   print_2title "Wifi Web Proxy"
   networksetup -getwebproxy Wi-Fi
   echo ""
@@ -2721,11 +2721,11 @@ if [ "$AUTO_NETWORK_SCAN" ]; then
   if ! [ "$FOUND_NC" ] && ! [ "$FOUND_BASH" ]; then
     printf $RED"[-] $SCAN_BAN_BAD\n$NC"
     echo "The network is not going to be scanned..."
-  
+
   elif ! [ "$(command -v ifconfig)" ] && ! [ "$(command -v ip a)" ]; then
     printf $RED"[-] No ifconfig or ip commands, cannot find local ips\n$NC"
     echo "The network is not going to be scanned..."
-  
+
   else
     print_2title "Scanning local networks (using /24)"
 
@@ -2738,32 +2738,32 @@ if [ "$AUTO_NETWORK_SCAN" ]; then
     printf "%s\n" "$local_ips" | while read local_ip; do
       if ! [ -z "$local_ip" ]; then
         print_3title "Discovering hosts in $local_ip/24"
-        
+
         if [ "$PING" ] || [ "$FPING" ]; then
           discover_network "$local_ip/24" | sed 's/\x1B\[[0-9;]\{1,\}[A-Za-z]//g' | grep -A 256 "Network Discovery" | grep -v "Network Discovery" | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' > $Wfolder/.ips.tmp
         fi
-        
+
         discovery_port_scan "$local_ip/24" 22 | sed 's/\x1B\[[0-9;]\{1,\}[A-Za-z]//g' | grep -A 256 "Ports going to be scanned" | grep -v "Ports going to be scanned" | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' >> $Wfolder/.ips.tmp
-        
+
         sort $Wfolder/.ips.tmp | uniq > $Wfolder/.ips
         rm $Wfolder/.ips.tmp 2>/dev/null
-        
+
         while read disc_ip; do
           me=""
           if [ "$disc_ip" = "$local_ip" ]; then
             me=" (local)"
           fi
-          
+
           echo "Scanning top ports of ${disc_ip}${me}"
           (tcp_port_scan "$disc_ip" "" | grep -A 1000 "Ports going to be scanned" | grep -v "Ports going to be scanned" | sort | uniq) 2>/dev/null
           echo ""
         done < $Wfolder/.ips
-        
+
         rm $Wfolder/.ips 2>/dev/null
         echo ""
       fi
     done
-    
+
     print_3title "Scanning top ports of host.docker.internal"
     (tcp_port_scan "host.docker.internal" "" | grep -A 1000 "Ports going to be scanned" | grep -v "Ports going to be scanned" | sort | uniq) 2>/dev/null
     echo ""
@@ -2833,7 +2833,7 @@ if [ "$MACPEAS" ];then
 
   print_2title "SystemKey"
   ls -l /var/db/SystemKey
-  if [ -r "/var/db/SystemKey" ]; then 
+  if [ -r "/var/db/SystemKey" ]; then
     echo "You can read /var/db/SystemKey" | sed -${E} "s,.*,${SED_RED_YELLOW},";
     hexdump -s 8 -n 24 -e '1/1 "%.2x"' /var/db/SystemKey | sed -${E} "s,.*,${SED_RED_YELLOW},";
   fi
@@ -2879,7 +2879,7 @@ fi
 for filename in /etc/sudoers.d/*; do
   if [ -r "$filename" ]; then
     echo "Sudoers file: $filename is readable" | sed -${E} "s,.*,${SED_RED},g"
-    grep -Iv "^$" "$filename" | grep -v "#" | sed "s,_proxy,${SED_RED},g" | sed "s,$sudoG,${SED_GREEN},g" | sed -${E} "s,$sudoVB1,${SED_RED_YELLOW}," | sed -${E} "s,$sudoVB2,${SED_RED_YELLOW}," | sed -${E} "s,$sudoB,${SED_RED},g" | sed "s,pwfeedback,${SED_RED},g" 
+    grep -Iv "^$" "$filename" | grep -v "#" | sed "s,_proxy,${SED_RED},g" | sed "s,$sudoG,${SED_GREEN},g" | sed -${E} "s,$sudoVB1,${SED_RED_YELLOW}," | sed -${E} "s,$sudoVB2,${SED_RED_YELLOW}," | sed -${E} "s,$sudoB,${SED_RED},g" | sed "s,pwfeedback,${SED_RED},g"
   fi
 done
 echo ""
@@ -2888,17 +2888,17 @@ echo ""
 print_2title "Checking sudo tokens"
 print_info "https://book.hacktricks.xyz/linux-hardening/privilege-escalation#reusing-sudo-tokens"
 ptrace_scope="$(cat /proc/sys/kernel/yama/ptrace_scope 2>/dev/null)"
-if [ "$ptrace_scope" ] && [ "$ptrace_scope" -eq 0 ]; then 
+if [ "$ptrace_scope" ] && [ "$ptrace_scope" -eq 0 ]; then
   echo "ptrace protection is disabled (0), so sudo tokens could be abused" | sed "s,is disabled,${SED_RED},g";
-  
-  if [ "$(command -v gdb 2>/dev/null)" ]; then 
+
+  if [ "$(command -v gdb 2>/dev/null)" ]; then
     echo "gdb was found in PATH" | sed -${E} "s,.*,${SED_RED},g";
   fi
-  
-  if [ "$CURRENT_USER_PIVOT_PID" ]; then 
+
+  if [ "$CURRENT_USER_PIVOT_PID" ]; then
     echo "The current user proc $CURRENT_USER_PIVOT_PID is the parent of a different user proccess" | sed -${E} "s,.*,${SED_RED},g";
   fi
-  
+
   if [ -f "$HOME/.sudo_as_admin_successful" ]; then
     echo "Current user has .sudo_as_admin_successful file, so he can execute with sudo" | sed -${E} "s,.*,${SED_RED},";
   fi
@@ -2908,7 +2908,7 @@ if [ "$ptrace_scope" ] && [ "$ptrace_scope" -eq 0 ]; then
     ps -eo pid,command -u "$(id -u)" | grep -v "$PPID" | grep -v " " | grep -E '(ash|ksh|csh|dash|bash|zsh|tcsh|sh)$'
   fi
 
-else 
+else
   echo "ptrace protection is enabled ($ptrace_scope)" | sed "s,is enabled,${SED_GREEN},g";
 
 fi
@@ -2918,7 +2918,7 @@ echo ""
 if [ -f "/etc/doas.conf" ] || [ "$DEBUG" ]; then
   print_2title "Checking doas.conf"
   doas_dir_name=$(dirname "$(command -v doas)" 2>/dev/null)
-  if [ "$(cat /etc/doas.conf $doas_dir_name/doas.conf $doas_dir_name/../etc/doas.conf $doas_dir_name/etc/doas.conf 2>/dev/null)" ]; then 
+  if [ "$(cat /etc/doas.conf $doas_dir_name/doas.conf $doas_dir_name/../etc/doas.conf $doas_dir_name/etc/doas.conf 2>/dev/null)" ]; then
     cat /etc/doas.conf "$doas_dir_name/doas.conf" "$doas_dir_name/../etc/doas.conf" "$doas_dir_name/etc/doas.conf" 2>/dev/null | sed -${E} "s,$sh_usrs,${SED_RED}," | sed "s,root,${SED_RED}," | sed "s,nopass,${SED_RED}," | sed -${E} "s,$nosh_usrs,${SED_BLUE}," | sed "s,$USER,${SED_RED_YELLOW},"
   else echo_not_found "doas.conf"
   fi
@@ -3155,21 +3155,21 @@ if [ "$PSTORAGE_MYSQL" ] || [ "$DEBUG" ]; then
           cat "$f"
         fi
       done
-      
+
       for f in $(find $d -name user.MYD 2>/dev/null); do
         if [ -r "$f" ]; then
           echo "We can read the Mysql Hashes from $f" | sed -${E} "s,.*,${SED_RED},"
           grep -oaE "[-_\.\*a-Z0-9]{3,}" "$f" | grep -v "mysql_native_password"
         fi
       done
-      
+
       for f in $(grep -lr "user\s*=" $d 2>/dev/null | grep -v "debian.cnf"); do
         if [ -r "$f" ]; then
           u=$(cat "$f" | grep -v "#" | grep "user" | grep "=" 2>/dev/null)
           echo "From '$f' Mysql user: $u" | sed -${E} "s,$sh_usrs,${SED_LIGHT_CYAN}," | sed -${E} "s,$nosh_usrs,${SED_BLUE}," | sed -${E} "s,$knw_usrs,${SED_GREEN}," | sed "s,$USER,${SED_LIGHT_MAGENTA}," | sed "s,root,${SED_RED},"
         fi
       done
-      
+
       for f in $(find $d -name my.cnf 2>/dev/null); do
         if [ -r "$f" ]; then
           echo "Found readable $f"
@@ -3177,7 +3177,7 @@ if [ "$PSTORAGE_MYSQL" ] || [ "$DEBUG" ]; then
         fi
       done
     fi
-    
+
     mysqlexec=$(whereis lib_mysqludf_sys.so 2>/dev/null | grep -Ev '^lib_mysqludf_sys.so:$' | grep "lib_mysqludf_sys\.so")
     if [ "$mysqlexec" ]; then
       echo "Found $mysqlexec. $(whereis lib_mysqludf_sys.so)"
@@ -3386,7 +3386,7 @@ if [ "$kadmin_exists" ] || [ "$klist_exists" ] || [ "$kinit_exists" ] || [ "$PST
   if [ "$ptrace_scope" ] && [ "$ptrace_scope" -eq 0 ]; then echo "ptrace protection is disabled (0), you might find tickets inside processes memory" | sed "s,is disabled,${SED_RED},g";
   else echo "ptrace protection is enabled ($ptrace_scope), you need to disable it to search for tickets inside processes memory" | sed "s,is enabled,${SED_GREEN},g";
   fi
-  
+
   (env || printenv) 2>/dev/null | grep -E "^KRB5" | sed -${E} "s,KRB5,${SED_RED},g"
 
   printf "%s\n" "$PSTORAGE_KERBEROS" | while read f; do
@@ -3409,7 +3409,7 @@ if [ "$kadmin_exists" ] || [ "$klist_exists" ] || [ "$kinit_exists" ] || [ "$PST
         ls -l "$f"
         cat "$f" 2>/dev/null | sed -${E} "s,default_ccache_name,${SED_RED},";
       elif echo "$f" | grep -q kadm5.acl; then
-        ls -l "$f" 
+        ls -l "$f"
         cat "$f" 2>/dev/null
       elif echo "$f" | grep -q sssd.conf; then
         ls -l "$f"
@@ -3477,10 +3477,10 @@ if ([ "$screensess" ] || [ "$screensess2" ] || [ "$DEBUG" ]) && ! [ "$SEARCH_IN_
   print_info "https://book.hacktricks.xyz/linux-hardening/privilege-escalation#open-shell-sessions"
   screensess=$(screen -ls 2>/dev/null)
   screensess2=$(find /run/screen -type d -path "/run/screen/S-*" 2>/dev/null)
-  
+
   screen -v
   printf "$screensess\n$screensess2" | sed -${E} "s,.*,${SED_RED}," | sed -${E} "s,No Sockets found.*,${C}[32m&${C}[0m,"
-  
+
   find /run/screen -type s -path "/run/screen/S-*" -not -user $USER '(' '(' -perm -o=w ')' -or  '(' -perm -g=w -and '(' $wgroups ')' ')' ')' 2>/dev/null | while read f; do
     echo "Other user screen socket is writable: $f" | sed "s,$f,${SED_RED_YELLOW},"
   done
@@ -3795,7 +3795,7 @@ for s in $suids_files; do
         echo "$s (Unknown SUID binary!)" | sed -${E} "s,/.*,${SED_RED},"
         printf $ITALIC
         if ! [ "$FAST" ]; then
-          
+
           if [ "$STRINGS" ]; then
             $STRINGS "$sname" 2>/dev/null | sort | uniq | while read sline; do
               sline_first="$(echo "$sline" | cut -d ' ' -f1)"
@@ -3822,7 +3822,7 @@ for s in $suids_files; do
           if [ "$READELF" ]; then
             "$READELF" -d "$sname" | grep PATH | sed -${E} "s,$Wfolders,${SED_RED_YELLOW},g"
           fi
-          
+
           if [ "$TIMEOUT" ] && [ "$STRACE" ] && ! [ "$NOTEXPORT" ] && [ -x "$sname" ]; then
             printf $ITALIC
             echo "----------------------------------------------------------------------------------------"
@@ -3835,7 +3835,7 @@ for s in $suids_files; do
             echo "----------------------------------------------------------------------------------------"
             echo ""
           fi
-        
+
         fi
       fi
     fi
@@ -3876,7 +3876,7 @@ for s in $sgids_files; do
         echo "$s (Unknown SGID binary)" | sed -${E} "s,/.*,${SED_RED},"
         printf $ITALIC
         if ! [ "$FAST" ]; then
-        
+
           if [ "$STRINGS" ]; then
             $STRINGS "$sname" | sort | uniq | while read sline; do
               sline_first="$(echo $sline | cut -d ' ' -f1)"
@@ -3903,7 +3903,7 @@ for s in $sgids_files; do
           if [ "$READELF" ]; then
             "$READELF" -d "$sname" | grep PATH | grep -E "$Wfolders" | sed -${E} "s,$Wfolders,${SED_RED_YELLOW},g"
           fi
-            
+
           if [ "$TIMEOUT" ] && [ "$STRACE" ] && [ ! "$SUPERFAST" ]; then
             printf "$ITALIC"
             echo "  --- Trying to execute $sname with strace in order to look for hijackable libraries..."
@@ -3911,7 +3911,7 @@ for s in $sgids_files; do
             printf "$NC"
             echo ""
           fi
-        
+
         fi
       fi
     fi
@@ -3923,8 +3923,8 @@ echo ""
 if ! [ "$SEARCH_IN_FOLDER" ] && ! [ "$IAMROOT" ]; then
   print_2title "Checking misconfigurations of ld.so"
   print_info "https://book.hacktricks.xyz/linux-hardening/privilege-escalation#ld.so"
-  if [ -f "/etc/ld.so.conf" ] && [ -w "/etc/ld.so.conf" ]; then 
-    echo "You have write privileges over /etc/ld.so.conf" | sed -${E} "s,.*,${SED_RED_YELLOW},"; 
+  if [ -f "/etc/ld.so.conf" ] && [ -w "/etc/ld.so.conf" ]; then
+    echo "You have write privileges over /etc/ld.so.conf" | sed -${E} "s,.*,${SED_RED_YELLOW},";
     printf $RED$ITALIC"/etc/ld.so.conf\n"$NC;
   else
     printf $GREEN$ITALIC"/etc/ld.so.conf\n"$NC;
@@ -3939,28 +3939,28 @@ if ! [ "$SEARCH_IN_FOLDER" ] && ! [ "$IAMROOT" ]; then
       ini_path=$(echo "$l" | cut -d " " -f 2)
       fpath=$(dirname "$ini_path")
 
-      if [ -d "/etc/ld.so.conf" ] && [ -w "$fpath" ]; then 
-        echo "You have write privileges over $fpath" | sed -${E} "s,.*,${SED_RED_YELLOW},"; 
+      if [ -d "/etc/ld.so.conf" ] && [ -w "$fpath" ]; then
+        echo "You have write privileges over $fpath" | sed -${E} "s,.*,${SED_RED_YELLOW},";
         printf $RED_YELLOW$ITALIC"$fpath\n"$NC;
       else
         printf $GREEN$ITALIC"$fpath\n"$NC;
       fi
 
       if [ "$(find $fpath -type f '(' '(' -user $USER ')' -or '(' -perm -o=w ')' -or  '(' -perm -g=w -and '(' $wgroups ')' ')' ')' 2>/dev/null)" ]; then
-        echo "You have write privileges over $(find $fpath -type f '(' '(' -user $USER ')' -or '(' -perm -o=w ')' -or  '(' -perm -g=w -and '(' $wgroups ')' ')' ')' 2>/dev/null)" | sed -${E} "s,.*,${SED_RED_YELLOW},"; 
+        echo "You have write privileges over $(find $fpath -type f '(' '(' -user $USER ')' -or '(' -perm -o=w ')' -or  '(' -perm -g=w -and '(' $wgroups ')' ')' ')' 2>/dev/null)" | sed -${E} "s,.*,${SED_RED_YELLOW},";
       fi
 
       for f in $fpath/*; do
-        if [ -w "$f" ]; then 
-          echo "You have write privileges over $f" | sed -${E} "s,.*,${SED_RED_YELLOW},"; 
+        if [ -w "$f" ]; then
+          echo "You have write privileges over $f" | sed -${E} "s,.*,${SED_RED_YELLOW},";
           printf $RED_YELLOW$ITALIC"$f\n"$NC;
         else
           printf $GREEN$ITALIC"  $f\n"$NC;
         fi
 
         cat "$f" | grep -v "^#" | while read l2; do
-          if [ -f "$l2" ] && [ -w "$l2" ]; then 
-            echo "You have write privileges over $l2" | sed -${E} "s,.*,${SED_RED_YELLOW},"; 
+          if [ -f "$l2" ] && [ -w "$l2" ]; then
+            echo "You have write privileges over $l2" | sed -${E} "s,.*,${SED_RED_YELLOW},";
             printf $RED_YELLOW$ITALIC"  - $l2\n"$NC;
           else
             echo $ITALIC"  - $l2"$NC | sed -${E} "s,$l2,${SED_GREEN}," | sed -${E} "s,$Wfolders,${SED_RED_YELLOW},g";
@@ -3972,8 +3972,8 @@ if ! [ "$SEARCH_IN_FOLDER" ] && ! [ "$IAMROOT" ]; then
   echo ""
 
 
-  if [ -f "/etc/ld.so.preload" ] && [ -w "/etc/ld.so.preload" ]; then 
-    echo "You have write privileges over /etc/ld.so.preload" | sed -${E} "s,.*,${SED_RED_YELLOW},"; 
+  if [ -f "/etc/ld.so.preload" ] && [ -w "/etc/ld.so.preload" ]; then
+    echo "You have write privileges over /etc/ld.so.preload" | sed -${E} "s,.*,${SED_RED_YELLOW},";
   else
     printf $ITALIC$GREEN"/etc/ld.so.preload\n"$NC;
   fi
@@ -4013,12 +4013,12 @@ if ! [ "$SEARCH_IN_FOLDER" ]; then
       fi
     done
     echo ""
-  
+
   else
     print_3title "Current shell capabilities"
     (cat "/proc/$$/status" | grep Cap | sed -${E} "s,.*0000000000000000|CapBnd:	0000003fffffffff,${SED_GREEN},") 2>/dev/null || echo_not_found "/proc/$$/status"
     echo ""
-    
+
     print_3title "Parent proc capabilities"
     (cat "/proc/$PPID/status" | grep Cap | sed -${E} "s,.*0000000000000000|CapBnd:	0000003fffffffff,${SED_GREEN},") 2>/dev/null || echo_not_found "/proc/$PPID/status"
     echo ""
@@ -4027,7 +4027,7 @@ if ! [ "$SEARCH_IN_FOLDER" ]; then
   echo "Files with capabilities (limited to 50):"
   getcap -r / 2>/dev/null | head -n 50 | while read cb; do
     capsVB_vuln=""
-    
+
     for capVB in $capsVB; do
       capname="$(echo $capVB | cut -d ':' -f 1)"
       capbins="$(echo $capVB | cut -d ':' -f 2)"
@@ -4037,7 +4037,7 @@ if ! [ "$SEARCH_IN_FOLDER" ]; then
         break
       fi
     done
-    
+
     if ! [ "$capsVB_vuln" ]; then
       echo "$cb" | sed -${E} "s,$capsB,${SED_RED},"
     fi
@@ -4264,7 +4264,7 @@ if ! [ "$SEARCH_IN_FOLDER" ]; then
   echo ""
 
   broken_links=$(find "$d" -type l 2>/dev/null | xargs file 2>/dev/null | grep broken)
-  if [ "$broken_links" ] || [ "$DEBUG" ]; then 
+  if [ "$broken_links" ] || [ "$DEBUG" ]; then
     print_2title "Broken links in path"
     echo $PATH | tr ":" "\n" | while read d; do
       find "$d" -type l 2>/dev/null | xargs file 2>/dev/null | grep broken | sed -${E} "s,broken,${SED_RED},";
@@ -4569,7 +4569,7 @@ search_for_regex(){
     title=$1
     regex=$2
     caseSensitive=$3
-    
+
     if [ "$caseSensitive" ]; then
         i="i"
     else
@@ -4583,22 +4583,22 @@ search_for_regex(){
     else
         # Search in home direcoties (usually the slowest)
         timeout 120 find $HOMESEARCH -type f -not -path "*/node_modules/*" -exec grep -HnRIE$i "$regex" '{}' \; 2>/dev/null  | sed '/^.\{150\}./d' | sort | uniq | head -n 50 &
-        
+
         # Search in etc
         timeout 120 find /etc -type f -not -path "*/node_modules/*" -exec grep -HnRIE$i "$regex" '{}' \; 2>/dev/null  | sed '/^.\{150\}./d' | sort | uniq | head -n 50 &
-        
+
         # Search in opt
         timeout 120 find /opt -type f -not -path "*/node_modules/*" -exec grep -HnRIE$i "$regex" '{}' \; 2>/dev/null  | sed '/^.\{150\}./d' | sort | uniq | head -n 50 &
-        
+
         # Search in possible web folders (usually only 1 will exist)
         timeout 120 find /var/www /usr/local/www /usr/share/nginx /Library/WebServer/ -type f -not -path "*/node_modules/*" -exec grep -HnRIE$i "$regex" '{}' \; 2>/dev/null  | sed '/^.\{150\}./d' | sort | uniq | head -n 50 &
-        
+
         # Search in logs
         timeout 120 find /var/log /var/logs /Library/Logs -type f -not -path "*/node_modules/*" -exec grep -HnRIE$i "$regex" '{}' \; 2>/dev/null  | sed '/^.\{150\}./d' | sort | uniq | head -n 50 &
-        
+
         # Search in backups
         timeout 120 find $backup_folders_row -type f -not -path "*/node_modules/*" -exec grep -HnRIE$i "$regex" '{}' \; 2>/dev/null  | sed '/^.\{150\}./d' | sort | uniq | head -n 50 &
-        
+
         # Search in others folders (usually only /srv or /Applications will exist)
         timeout 120 find /tmp /srv /Applications -type f -not -path "*/node_modules/*" -exec grep -HnRIE$i "$regex" '{}' \; 2>/dev/null  | sed '/^.\{150\}./d' | sort | uniq | head -n 50 &
     fi

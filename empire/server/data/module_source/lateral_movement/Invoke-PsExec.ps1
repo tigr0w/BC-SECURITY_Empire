@@ -54,7 +54,7 @@ function Invoke-PsExec {
 
         PS C:\> Invoke-PsExec -ComputerName 192.168.50.200 -Command "dir C:\" -ServiceName Updater32 -ResultFile "results.txt"
 
-        Runs the "dir C:\" command on 192.168.50.200 with a temporary service named 'Updater32', 
+        Runs the "dir C:\" command on 192.168.50.200 with a temporary service named 'Updater32',
         and copies the result file to "results.txt" on the local path.
 
     .EXAMPLE
@@ -71,7 +71,7 @@ function Invoke-PsExec {
 #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $True)] 
+        [Parameter(Mandatory = $True)]
         [String]
         $ComputerName,
 
@@ -94,7 +94,7 @@ function Invoke-PsExec {
     $ErrorActionPreference = "Stop"
 
     #  http://stackingcode.com/blog/2011/10/27/quick-random-string
-    function Local:Get-RandomString 
+    function Local:Get-RandomString
     {
         param (
             [int]$Length = 12
@@ -113,11 +113,11 @@ function Invoke-PsExec {
         Param
         (
             [OutputType([Type])]
-            
+
             [Parameter( Position = 0)]
             [Type[]]
             $Parameters = (New-Object Type[](0)),
-            
+
             [Parameter( Position = 1 )]
             [Type]
             $ReturnType = [Void]
@@ -132,7 +132,7 @@ function Invoke-PsExec {
         $ConstructorBuilder.SetImplementationFlags('Runtime, Managed')
         $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
         $MethodBuilder.SetImplementationFlags('Runtime, Managed')
-        
+
         Write-Output $TypeBuilder.CreateType()
     }
 
@@ -142,11 +142,11 @@ function Invoke-PsExec {
         Param
         (
             [OutputType([IntPtr])]
-        
+
             [Parameter( Position = 0, Mandatory = $True )]
             [String]
             $Module,
-            
+
             [Parameter( Position = 1, Mandatory = $True )]
             [String]
             $Procedure
@@ -163,7 +163,7 @@ function Invoke-PsExec {
         $Kern32Handle = $GetModuleHandle.Invoke($null, @($Module))
         $tmpPtr = New-Object IntPtr
         $HandleRef = New-Object System.Runtime.InteropServices.HandleRef($tmpPtr, $Kern32Handle)
-        
+
         # Return the address of the function
         Write-Output $GetProcAddress.Invoke($null, @([System.Runtime.InteropServices.HandleRef]$HandleRef, $Procedure))
     }
@@ -172,7 +172,7 @@ function Invoke-PsExec {
     function Local:Invoke-PsExecCmd
     {
         param(
-            [Parameter(Mandatory = $True)] 
+            [Parameter(Mandatory = $True)]
             [String]
             $ComputerName,
 
@@ -188,19 +188,19 @@ function Invoke-PsExec {
         )
 
         # Declare/setup all the needed API function
-        # adapted heavily from http://www.exploit-monday.com/2012/05/accessing-native-windows-api-in.html 
+        # adapted heavily from http://www.exploit-monday.com/2012/05/accessing-native-windows-api-in.html
         $CloseServiceHandleAddr = Get-ProcAddress Advapi32.dll CloseServiceHandle
         $CloseServiceHandleDelegate = Get-DelegateType @( [IntPtr] ) ([Int])
-        $CloseServiceHandle = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CloseServiceHandleAddr, $CloseServiceHandleDelegate)    
+        $CloseServiceHandle = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CloseServiceHandleAddr, $CloseServiceHandleDelegate)
 
         $OpenSCManagerAAddr = Get-ProcAddress Advapi32.dll OpenSCManagerA
         $OpenSCManagerADelegate = Get-DelegateType @( [String], [String], [Int]) ([IntPtr])
         $OpenSCManagerA = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenSCManagerAAddr, $OpenSCManagerADelegate)
-        
+
         $OpenServiceAAddr = Get-ProcAddress Advapi32.dll OpenServiceA
         $OpenServiceADelegate = Get-DelegateType @( [IntPtr], [String], [Int]) ([IntPtr])
         $OpenServiceA = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenServiceAAddr, $OpenServiceADelegate)
-      
+
         $CreateServiceAAddr = Get-ProcAddress Advapi32.dll CreateServiceA
         $CreateServiceADelegate = Get-DelegateType @( [IntPtr], [String], [String], [Int], [Int], [Int], [Int], [String], [String], [Int], [Int], [Int], [Int]) ([IntPtr])
         $CreateServiceA = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateServiceAAddr, $CreateServiceADelegate)
@@ -280,7 +280,7 @@ function Invoke-PsExec {
                         # Step 6 - DeleteService()
                         # "[*] Deleting the service '$ServiceName'"
                         $val = $DeleteService.invoke($ServiceHandle)
-                        
+
                         if ($val -eq 0){
                             # error codes - http://msdn.microsoft.com/en-us/library/windows/desktop/ms681381(v=vs.85).aspx
                             $err = $GetLastError.Invoke()
@@ -290,8 +290,8 @@ function Invoke-PsExec {
                             # Write-Verbose "[*] Service successfully deleted"
                         }
                     }
-                    
-                    # Step 7 - CloseServiceHandle() for the service handle 
+
+                    # Step 7 - CloseServiceHandle() for the service handle
                     # "[*] Closing the service handle"
                     $val = $CloseServiceHandle.Invoke($ServiceHandle)
                     # Write-Verbose "[*] Service handle closed off"
@@ -324,7 +324,7 @@ function Invoke-PsExec {
         }
     }
 
-    if ($Command -and ($Command -ne "")) { 
+    if ($Command -and ($Command -ne "")) {
 
         if ($ResultFile -and ($ResultFile -ne "")) {
             # if we want to retrieve results from the invoked command
@@ -347,7 +347,7 @@ function Invoke-PsExec {
                 $RemoteResultFile = "\\$ComputerName\Admin$\Temp\$TempText"
                 "[*] Copying result file $RemoteResultFile to '$ResultFile'"
                 Copy-Item -Force -Path $RemoteResultFile -Destination $ResultFile
-                
+
                 # clean up the .txt and .bat files
                 # Write-Verbose "[*] Removing $RemoteResultFile"
                 Remove-Item -Force $RemoteResultFile

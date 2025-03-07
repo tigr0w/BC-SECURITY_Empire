@@ -29,7 +29,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-EncodedHexCommand encodes an input PowerShell scriptblock or path as a hexadecimal payload. It randomly chooses between .Split/-Split/array syntax to store the encoded payload in the final output. The purpose is to highlight to the Blue Team that there are more novel ways to encode a PowerShell command other than the most common Base64 approach.
@@ -123,7 +123,7 @@ http://www.danielbohannon.com
 
         [Switch]
         $Wow64,
-        
+
         [Switch]
         $Command,
 
@@ -134,7 +134,7 @@ http://www.danielbohannon.com
         [ValidateSet('Bypass', 'Unrestricted', 'RemoteSigned', 'AllSigned', 'Restricted')]
         [String]
         $ExecutionPolicy,
-        
+
         [Switch]
         $PassThru
     )
@@ -172,7 +172,7 @@ http://www.danielbohannon.com
 
     # Create printable version of $RandomDelimiters in random order to be used by final command.
     $RandomDelimitersToPrint = (Get-Random -Input $RandomDelimiters -Count $RandomDelimiters.Length) -Join ''
-    
+
     # Generate random case versions for necessary operations.
     $ForEachObject = Get-Random -Input @('ForEach','ForEach-Object','%')
     $StrJoin       = ([Char[]]'[String]::Join'      | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
@@ -193,7 +193,7 @@ http://www.danielbohannon.com
         $RandomDelimitersToPrintForDashSplit += ('-' + $Split + ' '*(Get-Random -Input @(0,1)) + "'" + $RandomDelimiter + "'" + ' '*(Get-Random -Input @(0,1)))
     }
     $RandomDelimitersToPrintForDashSplit = $RandomDelimitersToPrintForDashSplit.Trim()
-    
+
     # Randomly select between various conversion syntax options.
     $RandomStringSyntax = ([Char[]](Get-Random -Input @('[String]$_','$_.ToString()')) | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     $RandomConversionSyntax  = @()
@@ -236,7 +236,7 @@ http://www.danielbohannon.com
     $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + "'" + $DelimitedEncodedArray + "'." + $Split + "(" + ' '*(Get-Random -Input @(0,1)) + "'" + $RandomDelimitersToPrint + "'" + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomConversionSyntax + ')' +  ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')'
     $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + "'" + $DelimitedEncodedArray + "'" + ' '*(Get-Random -Input @(0,1)) + $RandomDelimitersToPrintForDashSplit + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomConversionSyntax + ')' +  ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')'
     $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + $EncodedArray + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomConversionSyntax + ')' +  ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')'
-    
+
     # Generate random JOIN syntax for all above options.
     $NewScriptArray   = @()
     $NewScriptArray  += (Get-Random -Input $BaseScriptArray) + ' '*(Get-Random -Input @(0,1)) + $Join + ' '*(Get-Random -Input @(0,1)) + "''"
@@ -268,7 +268,7 @@ http://www.danielbohannon.com
 
     # Randomize the case of selected invoke operation.
     $InvokeExpression = ([Char[]]$InvokeExpression | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
-    
+
     # Choose random Invoke-Expression/IEX syntax and ordering: IEX ($ScriptString) or ($ScriptString | IEX)
     $InvokeOptions  = @()
     $InvokeOptions += ' '*(Get-Random -Input @(0,1)) + $InvokeExpression + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $NewScript + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1))
@@ -338,7 +338,7 @@ http://www.danielbohannon.com
             $ExecutionPolicyFlag = Get-Random -Input $ExecutionPolicyFlags
             $PowerShellFlags += $ExecutionPolicyFlag + ' '*(Get-Random -Minimum 1 -Maximum 3) + $ArgumentValue
         }
-        
+
         # Randomize the order of the execution flags.
         # This is to prevent the Blue Team from placing false hope in simple signatures for ordering of these flags.
         If($CommandlineOptions.Count -gt 1)
@@ -381,7 +381,7 @@ http://www.danielbohannon.com
         {
                 Write-Warning "This command exceeds the cmd.exe maximum allowed length of $CmdMaxLength characters! Its length is $($CmdLineOutput.Length) characters."
         }
-        
+
         $NewScript = $CommandLineOutput
     }
 

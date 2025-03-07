@@ -25,7 +25,8 @@ options:
     required: true
     value: ''
   - name: SafeChecks
-    description: Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.
+    description: Checks for LittleSnitch or a SandBox, exit the staging process if
+      true. Defaults to True.
     required: true
     value: 'True'
     strict: true
@@ -33,11 +34,13 @@ options:
       - True
       - False
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: DaemonName
-    description: Name of the Launch Daemon to install. Name will also be used for the plist file.
+    description: Name of the Launch Daemon to install. Name will also be used for
+      the plist file.
     required: true
     value: com.proxy.initialize
 advanced:

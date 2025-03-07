@@ -3,7 +3,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Return all domain trusts for the current domain or a specified domain. Part of PowerView.
+description: Return all domain trusts for the current domain or a specified domain.
+  Part of PowerView.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482]
@@ -33,7 +34,8 @@ options:
     required: false
     value: ''
   - name: LDAPFilter
-    description: Specifies an LDAP query string that is used to filter Active Directory objects.
+    description: Specifies an LDAP query string that is used to filter Active Directory
+      objects.
     required: false
     value: ''
   - name: NET
@@ -41,19 +43,23 @@ options:
     required: false
     value: ''
   - name: Properties
-    description: Specifies the properties of the output object to retrieve from the server.
+    description: Specifies the properties of the output object to retrieve from the
+      server.
     required: false
     value: ''
   - name: SearchBase
-    description: The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local" Useful for OU queries.
+    description: The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"
+      Useful for OU queries.
     required: false
     value: ''
   - name: Server
-    description: Specifies an active directory server (domain controller) to bind to
+    description: Specifies an active directory server (domain controller) to bind
+      to
     required: false
     value: ''
   - name: SearchScope
-    description: Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)
+    description: Specifies the scope to search under, Base/OneLevel/Subtree (default
+      of Subtree)
     required: false
     value: ''
   - name: ResultPageSize
@@ -61,11 +67,13 @@ options:
     required: false
     value: ''
   - name: ServerTimeLimit
-    description: Specifies the maximum amount of time the server spends searching. Default of 120 seconds.
+    description: Specifies the maximum amount of time the server spends searching.
+      Default of 120 seconds.
     required: false
     value: ''
   - name: Tombstone
-    description: Specifies that the search should also return deleted/tombstoned objects.
+    description: Specifies that the search should also return deleted/tombstoned
+      objects.
     required: false
     value: 'False'
     strict: true
@@ -73,7 +81,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -84,4 +93,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Get-DomainTrust {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-DomainTrust completed'
+script_end: Get-DomainTrust {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Get-DomainTrust completed'

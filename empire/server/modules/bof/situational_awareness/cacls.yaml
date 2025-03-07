@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Display access control lists on specificed files. If a folder enumerates recursively 
+description: Display access control lists on specificed files. If a folder enumerates
+  recursively
 software: ''
 tactics: [TA0007]
 techniques: [T1083, T1106]

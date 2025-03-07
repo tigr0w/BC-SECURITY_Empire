@@ -1791,4 +1791,3 @@ Blog on this script: http://clymb3r.wordpress.com/2013/11/03/powershell-and-toke
     #Start the main function
     Main
 }
-

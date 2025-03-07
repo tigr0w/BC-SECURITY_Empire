@@ -5,9 +5,9 @@ Empire uses an [Encrypted Key Exchange](https://en.wikipedia.org/wiki/Encrypted_
 Key points in the staging process:
 1. The PowerShell agent uses RSA-based key exchange.
 2. The C#, Python, IronPython, and Go agents use Diffie-Hellman (DH) key exchange.
-3. A pre-shared key (PSK) is used to encrypt the routing packet with RC4. 
-4. Stage 1 involves session key negotiation and establishing an encrypted channel. 
-5. Stage 2 delivers the full agent to start beaconing. 
+3. A pre-shared key (PSK) is used to encrypt the routing packet with RC4.
+4. Stage 1 involves session key negotiation and establishing an encrypted channel.
+5. Stage 2 delivers the full agent to start beaconing.
 
 ## Stage 0 Request (Launcher Execution)
 The agent initiates communication by making a request to the control server at a predefined URI. The staging key (pre-shared key) is sent with the request.
@@ -25,7 +25,7 @@ The agent decrypts the AES session key and gathers system information. This syst
 sequenceDiagram
     participant ControlServer as Control Server
     participant Client as Client (Agent)
-    
+
     ControlServer->>Client: 1. GET /<stage0>
     Client-->>ControlServer: 2. Return encrypted stager (PSK + RC4)
     ControlServer->>Client: 3. Generate Key Pair (RSA or DH)\nEncrypt and Send Public Key

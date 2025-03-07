@@ -3,7 +3,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Monitors the clipboard on a specified interval for changes to copied text.
+description: Monitors the clipboard on a specified interval for changes to copied
+  text.
 software: ''
 tactics: [TA0009]
 techniques: [T1115, T1082]
@@ -21,11 +22,13 @@ options:
     required: true
     value: ''
   - name: CollectionLimit
-    description: Specifies the interval in minutes to capture clipboard text. Defaults to indefinite collection.
+    description: Specifies the interval in minutes to capture clipboard text. Defaults
+      to indefinite collection.
     required: false
     value: ''
   - name: PollInterval
-    description: Interval (in seconds) to check the clipboard for changes, defaults to 15 seconds.
+    description: Interval (in seconds) to check the clipboard for changes, defaults
+      to 15 seconds.
     required: true
     value: '15'
 script_path: collection/Get-ClipboardContents.ps1

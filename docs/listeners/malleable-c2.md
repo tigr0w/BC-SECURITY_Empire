@@ -48,4 +48,3 @@ We have also set up a [repository](https://github.com/BC-SECURITY/Malleable-C2-P
 ![Code excerpt from http\_malleable.py](https://i1.wp.com/www.bc-security.org/wp-content/uploads/2020/09/Screenshot_2020-09-06_21-15-26.png?resize=944%2C523&ssl=1)
 
 Similar to Cobalt Strike, Empire can only load a single profile per instance \(for now\). You can always spin up another instance of Empire if you want to run multiple Malleable Listeners at once. Otherwise, other listener types will still work while you have an active Malleable C2 Listener.
-

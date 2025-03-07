@@ -17,7 +17,7 @@ At the moment, the extra Starkiller sponsorship features include:
 
   ## Interactive agent shell
   <div align="left"><img width="800" src="https://user-images.githubusercontent.com/9831420/104983879-e37fc700-59ca-11eb-9c90-bd2d166c4ac5.gif"></div>
-  
+
   ## Process Browser
   <div align="left"><img width="800" src="https://user-images.githubusercontent.com/9831420/131264080-0264558d-59c4-44d9-8dae-7b518c47a9cb.gif"></div>
 

@@ -59,7 +59,7 @@ http://www.exploit-monday.com
     {
         Throw "Process does not exist!"
     }
-    
+
     # Confirm that the path to the dll exists
     try
     {
@@ -79,11 +79,11 @@ http://www.exploit-monday.com
         Param
         (
             [OutputType([Type])]
-            
+
             [Parameter( Position = 0)]
             [Type[]]
             $Parameters = (New-Object Type[](0)),
-            
+
             [Parameter( Position = 1 )]
             [Type]
             $ReturnType = [Void]
@@ -98,7 +98,7 @@ http://www.exploit-monday.com
         $ConstructorBuilder.SetImplementationFlags('Runtime, Managed')
         $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
         $MethodBuilder.SetImplementationFlags('Runtime, Managed')
-        
+
         Write-Output $TypeBuilder.CreateType()
     }
 
@@ -107,11 +107,11 @@ http://www.exploit-monday.com
         Param
         (
             [OutputType([IntPtr])]
-        
+
             [Parameter( Position = 0, Mandatory = $True )]
             [String]
             $Module,
-            
+
             [Parameter( Position = 1, Mandatory = $True )]
             [String]
             $Procedure
@@ -128,7 +128,7 @@ http://www.exploit-monday.com
         $Kern32Handle = $GetModuleHandle.Invoke($null, @($Module))
         $tmpPtr = New-Object IntPtr
         $HandleRef = New-Object System.Runtime.InteropServices.HandleRef($tmpPtr, $Kern32Handle)
-        
+
         # Return the address of the function
         Write-Output $GetProcAddress.Invoke($null, @([System.Runtime.InteropServices.HandleRef]$HandleRef, $Procedure))
     }
@@ -142,38 +142,38 @@ http://www.exploit-monday.com
             [String]
             $Path
         )
-    
+
         # Parse PE header to see if binary was compiled 32 or 64-bit
         $FileStream = New-Object System.IO.FileStream($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read)
-    
+
         [Byte[]] $MZHeader = New-Object Byte[](2)
         $FileStream.Read($MZHeader,0,2) | Out-Null
-    
+
         $Header = [System.Text.AsciiEncoding]::ASCII.GetString($MZHeader)
         if ($Header -ne 'MZ')
         {
             $FileStream.Close()
             Throw 'Invalid PE header.'
         }
-    
+
         # Seek to 0x3c - IMAGE_DOS_HEADER.e_lfanew (i.e. Offset to PE Header)
         $FileStream.Seek(0x3c, [System.IO.SeekOrigin]::Begin) | Out-Null
-    
+
         [Byte[]] $lfanew = New-Object Byte[](4)
-    
+
         # Read offset to the PE Header (will be read in reverse)
         $FileStream.Read($lfanew,0,4) | Out-Null
         $PEOffset = [Int] ('0x{0}' -f (( $lfanew[-1..-4] | % { $_.ToString('X2') } ) -join ''))
-    
+
         # Seek to IMAGE_FILE_HEADER.IMAGE_FILE_MACHINE
         $FileStream.Seek($PEOffset + 4, [System.IO.SeekOrigin]::Begin) | Out-Null
         [Byte[]] $IMAGE_FILE_MACHINE = New-Object Byte[](2)
-    
+
         # Read compiled architecture
         $FileStream.Read($IMAGE_FILE_MACHINE,0,2) | Out-Null
         $Architecture = '{0}' -f (( $IMAGE_FILE_MACHINE[-1..-2] | % { $_.ToString('X2') } ) -join '')
         $FileStream.Close()
-    
+
         if ($Architecture -eq '014C')
         {
             Write-Output 'X86'
@@ -188,7 +188,7 @@ http://www.exploit-monday.com
         }
     }
 
-    
+
     # Get addresses of and declare delegates for essential Win32 functions.
     $OpenProcessAddr = Get-ProcAddress kernel32.dll OpenProcess
     $OpenProcessDelegate = Get-DelegateType @([UInt32], [Bool], [UInt32]) ([IntPtr])
@@ -306,7 +306,7 @@ http://www.exploit-monday.com
     {
         Throw "Unable to launch remote thread. NTSTATUS: 0x$($Result.ToString('X8'))"
     }
-    
+
     $VirtualFreeEx.Invoke($hProcess, $RemoteMemAddr, $Dll.Length, 0x8000) | Out-Null # MEM_RELEASE (0x8000)
 
     # Close process handle

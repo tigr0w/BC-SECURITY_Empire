@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Load and execute a Python script from either a URL or base64 string, and optionally run a function within the script with parameters.
+description: Load and execute a Python script from either a URL or base64 string,
+  and optionally run a function within the script with parameters.
 software: S0194
 tactics:
   - TA0002
@@ -32,14 +33,14 @@ options:
     type: file
     depends_on:
       - name: ScriptType
-        values: [ 'File' ]
+        values: ['File']
   - name: ScriptUrl
     description: URL to download a Python script from.
     required: false
     value: ''
     depends_on:
       - name: ScriptType
-        values: [ 'URL' ]
+        values: ['URL']
   - name: FunctionCommand
     description: The function command to run after the script is loaded (optional).
     required: false

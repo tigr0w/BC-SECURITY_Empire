@@ -31,7 +31,7 @@ options:
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'CredID' ]
+        values: ['CredID']
   - name: Domain
     description: Optional domain.
     required: false
@@ -42,14 +42,14 @@ options:
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'Manual' ]
+        values: ['Manual']
   - name: Password
     description: Password for the specified username.
     required: false
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'Manual' ]
+        values: ['Manual']
   - name: Cmd
     description: Command to run.
     required: true

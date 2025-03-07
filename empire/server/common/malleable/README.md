@@ -35,13 +35,13 @@ An `Implementation` is the specific instantiation of an HTTP client-server `Tran
 - Stager: Download a payload stage
   - Client: metadata (Empty)
   - Server: output (Encoded payload stage)
-  
+
 ### Transaction
 
 A `Transaction` defines the core components of an interaction between a web client request and a web server response.  As such, a `Transaction` houses a `Client` and `Server` object, each holding the appropriate components included in their part of the transaction.
 
 - Client: url, verb scheme, host, port, path, parameters, headers, body
-  
+
 - Server: code, headers, body
 
 Each `Client` and `Server` object of a `Transaction` also includes the ability to *store* and *extract* encoded data within its structure, houseing the true value of a Malleable C2 profile.

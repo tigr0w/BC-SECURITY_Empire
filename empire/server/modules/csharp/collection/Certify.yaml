@@ -1,13 +1,13 @@
 name: Certify
 authors:
-- name: Anthony Rose
-  handle: Cx01N
-  link: https://twitter.com/Cx01N_
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
 description: Certify is a C# tool to enumerate and abuse misconfigurations in Active
   Directory Certificate Services (AD CS).
 software: ''
 tactics: [TA0043, TA0007]
-techniques: [T1590.001,T1590.003,T1482,T1106]
+techniques: [T1590.001, T1590.003, T1482, T1106]
 background: false
 output_extension:
 needs_admin: false
@@ -15,21 +15,21 @@ opsec_safe: true
 language: csharp
 min_language_version: ''
 options:
-- name: Command
-  description: Certify command to execute.
-  required: true
-  value: help
-  strict: false
-  suggested_values: []
+  - name: Command
+    description: Certify command to execute.
+    required: true
+    value: help
+    strict: false
+    suggested_values: []
 csharp:
   UnsafeCompile: false
   CompatibleDotNetVersions:
-  - Net40
+    - Net40
   Code: |
     using System;
     using System.IO;
     using Certify;
-    
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -38,7 +38,7 @@ csharp:
             string result = ExecuteCertifyCommand(command);
             Console.WriteLine(result);
         }
-    
+
         public static string ExecuteCertifyCommand(string command)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -47,13 +47,13 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
-    
+
                 try
                 {
                     string[] args = command.Split(' ');
-                    
+
                     Info.ShowLogo();
-    
+
                     var parsed = ArgumentParser.Parse(args);
                     if (!parsed.ParsedOk)
                     {
@@ -63,7 +63,7 @@ csharp:
                     {
                         var commandName = args.Length != 0 ? args[0] : "";
                         var commandFound = new CommandCollection().ExecuteCommand(commandName, parsed.Arguments);
-    
+
                         if (!commandFound)
                         {
                             Info.ShowUsage();
@@ -80,51 +80,51 @@ csharp:
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
                 }
-    
+
                 return stringWriter.ToString();
             }
         }
     }
   ReferenceSourceLibraries:
-  - Name: Certify
-    Description: Certify is a C# tool to enumerate and abuse misconfigurations in
-      Active Directory Certificate Services (AD CS).
-    Location: Certify\
-    Language: CSharp
-    CompatibleDotNetVersions:
-    - Net40
-    ReferenceAssemblies:
-    - Name: System.IdentityModel.dll
-      Location: net40\System.IdentityModel.dll
-      DotNetVersion: Net40
-    - Name: System.dll
-      Location: net40\System.dll
-      DotNetVersion: Net40
-    - Name: System.DirectoryServices.dll
-      Location: net40\System.DirectoryServices.dll
-      DotNetVersion: Net40
-    - Name: System.DirectoryServices.AccountManagement.dll
-      Location: net40\System.DirectoryServices.AccountManagement.dll
-      DotNetVersion: Net40
-    - Name: System.Core.dll
-      Location: net40\System.Core.dll
-      DotNetVersion: Net40
-    - Name: mscorlib.dll
-      Location: net40\mscorlib.dll
-      DotNetVersion: Net40
-    - Name: System.Web.Extensions.dll
-      Location: net40\System.Web.Extensions.dll
-      DotNetVersion: Net40
-    - Name: Interop.CERTENROLLLib.dll
-      Location: net40\Interop.CERTENROLLLib.dll
-      DotNetVersion: Net40
-    - Name: Interop.CERTCLILib.dll
-      Location: net40\Interop.CERTCLILib.dll
-      DotNetVersion: Net40
-    EmbeddedResources:
-    - Name: Interop.CERTENROLLLib.dll
-      Location: Interop.CERTENROLLLib.dll
-    - Name: Interop.CERTCLILib.dll
-      Location: Interop.CERTCLILib.dll
+    - Name: Certify
+      Description: Certify is a C# tool to enumerate and abuse misconfigurations
+        in Active Directory Certificate Services (AD CS).
+      Location: Certify\
+      Language: CSharp
+      CompatibleDotNetVersions:
+        - Net40
+      ReferenceAssemblies:
+        - Name: System.IdentityModel.dll
+          Location: net40\System.IdentityModel.dll
+          DotNetVersion: Net40
+        - Name: System.dll
+          Location: net40\System.dll
+          DotNetVersion: Net40
+        - Name: System.DirectoryServices.dll
+          Location: net40\System.DirectoryServices.dll
+          DotNetVersion: Net40
+        - Name: System.DirectoryServices.AccountManagement.dll
+          Location: net40\System.DirectoryServices.AccountManagement.dll
+          DotNetVersion: Net40
+        - Name: System.Core.dll
+          Location: net40\System.Core.dll
+          DotNetVersion: Net40
+        - Name: mscorlib.dll
+          Location: net40\mscorlib.dll
+          DotNetVersion: Net40
+        - Name: System.Web.Extensions.dll
+          Location: net40\System.Web.Extensions.dll
+          DotNetVersion: Net40
+        - Name: Interop.CERTENROLLLib.dll
+          Location: net40\Interop.CERTENROLLLib.dll
+          DotNetVersion: Net40
+        - Name: Interop.CERTCLILib.dll
+          Location: net40\Interop.CERTCLILib.dll
+          DotNetVersion: Net40
+      EmbeddedResources:
+        - Name: Interop.CERTENROLLLib.dll
+          Location: Interop.CERTENROLLLib.dll
+        - Name: Interop.CERTCLILib.dll
+          Location: Interop.CERTCLILib.dll
   ReferenceAssemblies: []
   EmbeddedResources: []

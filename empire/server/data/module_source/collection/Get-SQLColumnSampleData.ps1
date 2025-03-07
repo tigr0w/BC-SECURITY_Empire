@@ -1,10 +1,10 @@
 Function Get-ComputerNameFromInstance {
     [CmdletBinding()]
-    Param(          
+    Param(
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server instance.')]
         [string]$Instance
-    ) 
+    )
     If ($Instance){$ComputerName = $Instance.split('\')[0].split(',')[0]}
     else{$ComputerName = $env:COMPUTERNAME}
     Return $ComputerName
@@ -31,7 +31,7 @@ Function Get-SQLConnectionObject {
         HelpMessage = 'Connection timeout.')]
         [string]$TimeOut = 1
     )
-    Begin {           
+    Begin {
         if($DAC){$DacConn = 'ADMIN:'}else{$DacConn = ''}
         if(-not $Database){$Database = 'Master'}
     } Process {
@@ -50,7 +50,7 @@ Function Get-SQLConnectionObject {
             $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"
         }
         return $Connection
-    } End {                
+    } End {
     }
 }
 Function Get-SQLConnectionTest {
@@ -115,7 +115,7 @@ Function Get-SQLQuery2 {
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
-        [Parameter(Mandatory = $false,        
+        [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server query.')]
         [string]$Query,
         [Parameter(Mandatory = $false,
@@ -133,7 +133,7 @@ Function Get-SQLQuery2 {
     )
     Begin {
         $TblQueryResults = New-Object -TypeName System.Data.DataTable
-    } Process {      
+    } Process {
         if($DAC){$Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -TimeOut $TimeOut -DAC -Database $Database}
         else{$Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -TimeOut $TimeOut -Database $Database}
         $ConnectionString = $Connection.Connectionstring
@@ -143,18 +143,18 @@ Function Get-SQLQuery2 {
             "$Instance : Connection Success."
             $Command = New-Object -TypeName System.Data.SqlClient.SqlCommand -ArgumentList ($Query, $Connection)
             try {
-                $Results = $Command.ExecuteReader()                                             
-                $TblQueryResults.Load($Results)  
+                $Results = $Command.ExecuteReader()
+                $TblQueryResults.Load($Results)
             } catch {
                 #pass
-            }                                                                                    
+            }
             $Connection.Close()
-            $Connection.Dispose() 
+            $Connection.Dispose()
         }
         else{'No query provided to Get-SQLQuery function.';Break}
-    } End {   
+    } End {
         if($ReturnError){$ErrorMessage}
-        else{$TblQueryResults}                  
+        else{$TblQueryResults}
     }
 }
 Function  Get-SQLQuery {
@@ -612,7 +612,7 @@ Function Get-SQLServerInfo {
         if(-not $Instance) {
             $Instance = $env:COMPUTERNAME
         }
-        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password | 
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password |
         ? -FilterScript {
             $_.Status -eq 'Accessible'
         }
@@ -809,7 +809,7 @@ Function Get-SQLSysadminCheck {
         if(-not $Instance) {
             $Instance = $env:COMPUTERNAME
         }
-        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password | 
+        $TestConnection = Get-SQLConnectionTest -Instance $Instance -Username $Username -Password $Password |
         ? -FilterScript { $_.Status -eq 'Accessible' }
         if(-not $TestConnection) {
             "$Instance : Connection Failed."
@@ -883,7 +883,7 @@ Function Get-SQLColumnSampleData {
             if($NoDefaults) {
                 $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -DatabaseName $DatabaseName -ColumnNameSearch $Keywords -NoDefaults
             } else {
-                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -DatabaseName $DatabaseName -ColumnNameSearch $Keywords 
+                $Columns = Get-SQLColumn -Instance $Instance -Username $Username -Password $Password -DatabaseName $DatabaseName -ColumnNameSearch $Keywords
             }
         }
         if($Columns) {
@@ -897,12 +897,12 @@ Function Get-SQLColumnSampleData {
                 $AffectedTable = "[$sDatabaseName].[$sSchemaName].[$sTableName]"
                 $Query = "USE $sDatabaseName; SELECT TOP $SampleSize [$sColumnName] FROM $AffectedTable WHERE [$sColumnName] is not null"
                 $QueryRowCount = "USE $sDatabaseName; SELECT count(CAST([$sColumnName] as VARCHAR(200))) as NumRows FROM $AffectedTable WHERE [$sColumnName] is not null"
-                
+
                 "$Instance : - Table match: $AffectedTable "
                 "$Instance : - Column match: $AffectedColumn "
                 "$Instance : - Selecting $SampleSize rows of data sample from column $AffectedColumn. "
 
-                $RowCountOut = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Query $QueryRowCount 
+                $RowCountOut = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Query $QueryRowCount
                 $RowCount = $RowCountOut.NumRows
                 $SQLQuery = Get-SQLQuery -Instance $Instance -Username $Username -Password $Password -Query $Query
                 $SQLQuery.$sColumnName | % -Process {
@@ -915,14 +915,14 @@ Function Get-SQLColumnSampleData {
         "$Instance : END SEARCH DATA BY COLUMN "
     } End {
         ForEach ($Row in $TblData) {
-            "ComputerName : " + $Row.ComputerName 
-            "Instance     : " + $Row.Instance 
-            "Database     : " + $Row.Database 
-            "Schema       : " + $Row.Schema 
-            "Table        : " + $Row.Table 
-            "Column       : " + $Row.Column 
-            "Sample       : " + $Row.Sample 
-            "RowCount     : " + $Row.RowCount 
+            "ComputerName : " + $Row.ComputerName
+            "Instance     : " + $Row.Instance
+            "Database     : " + $Row.Database
+            "Schema       : " + $Row.Schema
+            "Table        : " + $Row.Table
+            "Column       : " + $Row.Column
+            "Sample       : " + $Row.Sample
+            "RowCount     : " + $Row.RowCount
             ""
         }
     }

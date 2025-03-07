@@ -27,27 +27,27 @@ namespace Wallpaper
 
    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
    private static extern int SystemParametersInfo (int uAction, int uParam, string lpvParam, int fuWinIni);
-   
+
    public static void SetWallpaper ( string path, Wallpaper.Style style ) {
      SystemParametersInfo( SetDesktopWallpaper, 0, path, UpdateIniFile | SendWinIniChange );
-     
+
      RegistryKey key = Registry.CurrentUser.OpenSubKey("Control Panel\\\\Desktop", true);
      switch( style )
      {
        case Style.Stretched :
-         key.SetValue(@"WallpaperStyle", "2") ; 
+         key.SetValue(@"WallpaperStyle", "2") ;
          key.SetValue(@"TileWallpaper", "0") ;
          break;
        case Style.Centered :
-         key.SetValue(@"WallpaperStyle", "1") ; 
-         key.SetValue(@"TileWallpaper", "0") ; 
+         key.SetValue(@"WallpaperStyle", "1") ;
+         key.SetValue(@"TileWallpaper", "0") ;
          break;
        case Style.Tiled :
-         key.SetValue(@"WallpaperStyle", "1") ; 
+         key.SetValue(@"WallpaperStyle", "1") ;
          key.SetValue(@"TileWallpaper", "1") ;
          break;
        case Style.Fit :
-         key.SetValue(@"WallpaperStyle", "6") ; 
+         key.SetValue(@"WallpaperStyle", "6") ;
          key.SetValue(@"TileWallpaper", "0") ;
          break;
      }
@@ -55,7 +55,7 @@ namespace Wallpaper
    }
   }
 }
-"@ 
+"@
 
     $null = [Wallpaper.Setter]::SetWallpaper( (Convert-Path $SavePath), "Fit" )
-} 
+}

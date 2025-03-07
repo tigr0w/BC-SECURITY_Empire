@@ -28,7 +28,7 @@ When uploaded to the original locations (thus overwriting the original document)
 https://github.com/jamcut/one-offs/blob/master/Find-TrustedDocuments.ps1
 
 #>
-    $BASE_EXCEL_REG_LOCATIONS = "HKCU:\Software\Microsoft\Office\11.0\Excel\Security", "HKCU:\Software\Microsoft\Office\12.0\Excel\Security", "HKCU:\Software\Microsoft\Office\14.0\Excel\Security", "HKCU:\Software\Microsoft\Office\15.0\Excel\Security" 
+    $BASE_EXCEL_REG_LOCATIONS = "HKCU:\Software\Microsoft\Office\11.0\Excel\Security", "HKCU:\Software\Microsoft\Office\12.0\Excel\Security", "HKCU:\Software\Microsoft\Office\14.0\Excel\Security", "HKCU:\Software\Microsoft\Office\15.0\Excel\Security"
 
     $verified_excel_base_reg_locations = @()
     $trusted_excel_documents = @()

@@ -14,9 +14,9 @@ function Get-DomainSearcher {
 <#
 .SYNOPSIS
 Helper used by various functions that builds a custom AD searcher object.
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: Get-Domain  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: Get-Domain
 .DESCRIPTION
 Takes a given domain and a number of customizations and returns a
 System.DirectoryServices.DirectorySearcher object. This function is used
@@ -253,9 +253,9 @@ function Convert-LDAPProperty {
 .SYNOPSIS
 Helper that converts specific LDAP property result fields and outputs
 a custom psobject.
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: None  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: None
 .DESCRIPTION
 Converts a set of raw LDAP properties results from ADSI/LDAP searches
 into a proper PSObject. Used by several of the Get-Domain* function.
@@ -369,9 +369,9 @@ function Get-Domain {
 <#
 .SYNOPSIS
 Returns the domain object for the current (or specified) domain.
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: None  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: None
 .DESCRIPTION
 Returns a System.DirectoryServices.ActiveDirectory.Domain object for the current
 domain or the domain specified with -Domain X.
@@ -457,9 +457,9 @@ function Get-DomainSPNTicket {
 
 Request the kerberos ticket for a specified service principal name (SPN).
 
-Author: machosec, Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: Invoke-UserImpersonation, Invoke-RevertToSelf  
+Author: machosec, Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: Invoke-UserImpersonation, Invoke-RevertToSelf
 
 .DESCRIPTION
 
@@ -579,7 +579,7 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         else {
             $TargetObject = $SPN
         }
-	
+
 	$RandNo = New-Object System.Random
 
         ForEach ($Object in $TargetObject) {
@@ -678,9 +678,9 @@ function Get-DomainUser {
 <#
 .SYNOPSIS
 Return all users or specific user objects in AD.
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: Get-DomainSearcher, Convert-ADName, Convert-LDAPProperty  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: Get-DomainSearcher, Convert-ADName, Convert-LDAPProperty
 .DESCRIPTION
 Builds a directory searcher object using Get-DomainSearcher, builds a custom
 LDAP filter based on targeting/filter parameters, and searches for all objects
@@ -1018,9 +1018,9 @@ function Invoke-Kerberoast {
 <#
 .SYNOPSIS
 Requests service tickets for kerberoast-able accounts and returns extracted ticket hashes.
-Author: Will Schroeder (@harmj0y), @machosec  
-License: BSD 3-Clause  
-Required Dependencies: Invoke-UserImpersonation, Invoke-RevertToSelf, Get-DomainUser, Get-DomainSPNTicket  
+Author: Will Schroeder (@harmj0y), @machosec
+License: BSD 3-Clause
+Required Dependencies: Invoke-UserImpersonation, Invoke-RevertToSelf, Get-DomainUser, Get-DomainSPNTicket
 .DESCRIPTION
 Uses Get-DomainUser to query for user accounts with non-null service principle
 names (SPNs) and uses Get-SPNTicket to request/extract the crackable ticket information.

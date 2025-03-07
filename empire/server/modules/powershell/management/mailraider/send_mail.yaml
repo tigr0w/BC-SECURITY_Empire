@@ -3,7 +3,8 @@ authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Sends emails using a custom or default template to specified target email addresses.
+description: Sends emails using a custom or default template to specified target
+  email addresses.
 software: ''
 tactics: [TA0042]
 techniques: [T1586.002, T1566]
@@ -22,8 +23,9 @@ options:
     required: true
     value: ''
   - name: Targets
-    description: Array of target email addresses. If Targets or TargetList parameter are not specified, a list of 100 email
-      addresses will be randomly selected from the Global Address List.
+    description: Array of target email addresses. If Targets or TargetList parameter
+      are not specified, a list of 100 email addresses will be randomly selected
+      from the Global Address List.
     required: false
     value: ''
   - name: TargetList
@@ -51,7 +53,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -62,4 +65,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Invoke-SendMail {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Invoke-SendMail completed!"
+script_end: Invoke-SendMail {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n
+  Invoke-SendMail completed!"

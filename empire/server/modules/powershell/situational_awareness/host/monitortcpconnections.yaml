@@ -3,8 +3,9 @@ authors:
   - name: ''
     handle: '@erikbarzdukas'
     link: ''
-description: Monitors hosts for TCP connections to a specified domain name or IPv4 address. Useful for session hijacking and
-  finding users interacting with sensitive services.
+description: Monitors hosts for TCP connections to a specified domain name or IPv4
+  address. Useful for session hijacking and finding users interacting with sensitive
+  services.
 software: ''
 tactics: [TA0007]
 techniques: [T1049]

@@ -6,8 +6,9 @@ authors:
   - name: Joseph Bialek
     handle: '@JosephBialek'
     link: https://twitter.com/JosephBialek
-description: "[!] WARNING: Experimental! Runs PowerSploit's Invoke-Mimikatz function to patch the Windows terminal service\
-  \ to allow multiple users to establish simultaneous RDP connections."
+description: "[!] WARNING: Experimental! Runs PowerSploit's Invoke-Mimikatz function
+  to patch the Windows terminal service to allow multiple users to establish simultaneous
+  RDP connections."
 software: ''
 tactics: [TA0005, TA0008]
 techniques: [T1021.001, T1562]

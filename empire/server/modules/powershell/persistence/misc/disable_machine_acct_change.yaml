@@ -3,7 +3,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Disables the machine account for the target system from changing its password automatically.
+description: Disables the machine account for the target system from changing its
+  password automatically.
 software: ''
 tactics: [TA0005, TA0004]
 techniques: [T1098]

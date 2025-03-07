@@ -1,10 +1,10 @@
 Function Get-ComputerNameFromInstance {
     [CmdletBinding()]
-    Param(          
+    Param(
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server instance.')]
         [string]$Instance
-    ) 
+    )
     If ($Instance){$ComputerName = $Instance.split('\')[0].split(',')[0]}
     else{$ComputerName = $env:COMPUTERNAME}
     Return $ComputerName
@@ -32,7 +32,7 @@ Function  Get-SQLConnectionObject {
         HelpMessage = 'Connection timeout.')]
         [string]$TimeOut = 1
     )
-    Begin {           
+    Begin {
         if($DAC){$DacConn = 'ADMIN:'}else{$DacConn = ''}
         if(-not $Database){$Database = 'Master'}
     } Process {
@@ -53,7 +53,7 @@ Function  Get-SQLConnectionObject {
             $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;User ID=$Username;Password=$Password;Connection Timeout=$TimeOut"
         }
         return $Connection
-    } End {                
+    } End {
     }
 }
 
@@ -69,7 +69,7 @@ Function Get-SQLQuery {
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
-        [Parameter(Mandatory = $false,        
+        [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server query.')]
         [string]$Query,
         [Parameter(Mandatory = $false,
@@ -87,7 +87,7 @@ Function Get-SQLQuery {
     )
     Begin {
         $TblQueryResults = New-Object -TypeName System.Data.DataTable
-    } Process {      
+    } Process {
         if($DAC){$Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -TimeOut $TimeOut -DAC -Database $Database}
         else{$Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -TimeOut $TimeOut -Database $Database}
         $ConnectionString = $Connection.Connectionstring
@@ -97,17 +97,17 @@ Function Get-SQLQuery {
             "$Instance : Connection Success."
             $Command = New-Object -TypeName System.Data.SqlClient.SqlCommand -ArgumentList ($Query, $Connection)
             try {
-                $Results = $Command.ExecuteReader()                                             
-                $TblQueryResults.Load($Results)  
+                $Results = $Command.ExecuteReader()
+                $TblQueryResults.Load($Results)
             } catch {
                 # pass
-            }                                                                                    
+            }
             $Connection.Close()
-            $Connection.Dispose() 
+            $Connection.Dispose()
         }
         else{'No query provided to Get-SQLQuery function.';Break}
-    } End {   
+    } End {
         if($ReturnError){$ErrorMessage}
-        else{$TblQueryResults.Column1}                  
+        else{$TblQueryResults.Column1}
     }
 }

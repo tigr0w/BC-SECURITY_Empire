@@ -12,10 +12,10 @@ on:
           - major
         required: true
       overrideVersion:
-        description: "Override the version number. If this is set, the bumpType will be ignored. example: 6.0.0-beta1"
+        description: "Override the version number. If this is set, the bumpType will
+          be ignored. example: 6.0.0-beta1"
         type: string
         required: false
-
 jobs:
   release_private:
     if: ${{ github.repository == 'BC-Security/Empire-Sponsors' }}
@@ -54,7 +54,7 @@ jobs:
           sed -i "s/$OLD_VERSION\ BC\ Security/$APP_VERSION\ BC\ Security/" empire/server/common/empire.py
       - name: Get release branch name
         run: |
-            echo "RELEASE_BRANCH=release/$APP_VERSION-private" >> $GITHUB_ENV
+          echo "RELEASE_BRANCH=release/$APP_VERSION-private" >> $GITHUB_ENV
       - name: Create release branch
         run: git checkout -b ${{ env.RELEASE_BRANCH }}
       - name: Update Changelog

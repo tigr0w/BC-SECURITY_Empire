@@ -31,8 +31,8 @@ options:
     required: false
     value: ''
   - name: ComputerName
-    description: Comma-separated hostnames to try username/password combinations against. Otherwise enumerate the domain for
-      machines.
+    description: Comma-separated hostnames to try username/password combinations
+      against. Otherwise enumerate the domain for machines.
     required: false
     value: ''
   - name: Password

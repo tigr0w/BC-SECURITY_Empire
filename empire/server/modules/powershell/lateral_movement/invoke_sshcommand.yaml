@@ -30,7 +30,7 @@ options:
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'CredID' ]
+        values: ['CredID']
   - name: IP
     description: Address of the target server.
     required: true
@@ -41,14 +41,14 @@ options:
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'Manual' ]
+        values: ['Manual']
   - name: Password
     description: The password to login with.
     required: false
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'Manual' ]
+        values: ['Manual']
   - name: Command
     description: The command to run on the remote host.
     required: true

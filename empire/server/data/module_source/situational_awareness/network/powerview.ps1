@@ -1258,9 +1258,9 @@ function Export-PowerViewCSV {
 Converts objects into a series of comma-separated (CSV) strings and saves the
 strings in a CSV file in a thread-safe manner.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: None  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: None
 
 .DESCRIPTION
 
@@ -1380,9 +1380,9 @@ function Resolve-IPAddress {
 
 Resolves a given hostename to its associated IPv4 address.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: None  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: None
 
 .DESCRIPTION
 
@@ -1448,9 +1448,9 @@ function ConvertTo-SID {
 
 Converts a given user/group name to a security identifier (SID).
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: Convert-ADName, Get-DomainObject, Get-Domain  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: Convert-ADName, Get-DomainObject, Get-Domain
 
 .DESCRIPTION
 
@@ -1577,9 +1577,9 @@ function ConvertFrom-SID {
 
 Converts a security identifier (SID) to a group/user name.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: Convert-ADName  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: Convert-ADName
 
 .DESCRIPTION
 
@@ -1753,10 +1753,10 @@ function Convert-ADName {
 
 Converts Active Directory object names between a variety of formats.
 
-Author: Bill Stewart, Pasquale Lantella  
-Modifications: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: None  
+Author: Bill Stewart, Pasquale Lantella
+Modifications: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: None
 
 .DESCRIPTION
 
@@ -1996,9 +1996,9 @@ function ConvertFrom-UACValue {
 
 Converts a UAC int value to human readable form.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: None  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: None
 
 .DESCRIPTION
 
@@ -2152,9 +2152,9 @@ function Get-PrincipalContext {
 Helper to take an Identity and return a DirectoryServices.AccountManagement.PrincipalContext
 and simplified identity.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: None  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: None
 
 .PARAMETER Identity
 
@@ -2247,9 +2247,9 @@ Pseudo "mounts" a connection to a remote path using the specified
 credential object, allowing for access of remote resources. If a -Path isn't
 specified, a -ComputerName is required to pseudo-mount IPC$.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: PSReflect  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: PSReflect
 
 .DESCRIPTION
 
@@ -2351,9 +2351,9 @@ function Remove-RemoteConnection {
 
 Destroys a connection created by New-RemoteConnection.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: PSReflect  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: PSReflect
 
 .DESCRIPTION
 
@@ -2430,9 +2430,9 @@ function Invoke-UserImpersonation {
 
 Creates a new "runas /netonly" type logon and impersonates the token.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: PSReflect  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: PSReflect
 
 .DESCRIPTION
 
@@ -2527,9 +2527,9 @@ function Invoke-RevertToSelf {
 
 Reverts any token impersonation.
 
-Author: Will Schroeder (@harmj0y)  
-License: BSD 3-Clause  
-Required Dependencies: PSReflect  
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: PSReflect
 
 .DESCRIPTION
 

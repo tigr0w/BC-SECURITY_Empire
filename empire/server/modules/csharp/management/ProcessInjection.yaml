@@ -1,8 +1,8 @@
 name: ProcessInjection
 authors:
-- name: Anthony Rose
-  handle: Cx01N
-  link: https://twitter.com/Cx01N_
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
 description: |
   The program is designed to perform process injection.
 software: ''
@@ -46,8 +46,8 @@ options:
     required: false
     value: 'mattifestation etw'
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -55,8 +55,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
   - name: pid
@@ -83,8 +83,8 @@ options:
 csharp:
   UnsafeCompile: true
   CompatibleDotNetVersions:
-  - Net35
-  - Net40
+    - Net35
+    - Net40
   Code: |
     using System;
     using System.IO;
@@ -124,45 +124,45 @@ csharp:
         }
     }
   ReferenceSourceLibraries:
-  - Name: ProcessInjection
-    Description: The program is designed to perform process injection.
-    Location: ProcessInjection\
-    Language: CSharp
-    CompatibleDotNetVersions:
-    - Net35
-    - Net40
-    ReferenceAssemblies:
-    - Name: System.dll
-      Location: net40\System.dll
-      DotNetVersion: Net40
-    - Name: System.Core.dll
-      Location: net40\System.Core.dll
-      DotNetVersion: Net40
-    - Name: mscorlib.dll
-      Location: net40\mscorlib.dll
-      DotNetVersion: Net40
-    - Name: mscorlib.dll
-      Location: net35\mscorlib.dll
-      DotNetVersion: Net35
-    - Name: System.Core.dll
-      Location: net35\System.Core.dll
-      DotNetVersion: Net35
-    - Name: System.dll
-      Location: net35\System.dll
-      DotNetVersion: Net35
-    - Name: System.Drawing.dll
-      Location: net40\System.Drawing.dll
-      DotNetVersion: Net40
-    - Name: System.Windows.Forms.dll
-      Location: net40\System.Windows.Forms.dll
-      DotNetVersion: Net40
-    - Name: System.Drawing.dll
-      Location: net35\System.Drawing.dll
-      DotNetVersion: Net35
-    - Name: System.Windows.Forms.dll
-      Location: net35\System.Windows.Forms.dll
-      DotNetVersion: Net35
-    EmbeddedResources: []
+    - Name: ProcessInjection
+      Description: The program is designed to perform process injection.
+      Location: ProcessInjection\
+      Language: CSharp
+      CompatibleDotNetVersions:
+        - Net35
+        - Net40
+      ReferenceAssemblies:
+        - Name: System.dll
+          Location: net40\System.dll
+          DotNetVersion: Net40
+        - Name: System.Core.dll
+          Location: net40\System.Core.dll
+          DotNetVersion: Net40
+        - Name: mscorlib.dll
+          Location: net40\mscorlib.dll
+          DotNetVersion: Net40
+        - Name: mscorlib.dll
+          Location: net35\mscorlib.dll
+          DotNetVersion: Net35
+        - Name: System.Core.dll
+          Location: net35\System.Core.dll
+          DotNetVersion: Net35
+        - Name: System.dll
+          Location: net35\System.dll
+          DotNetVersion: Net35
+        - Name: System.Drawing.dll
+          Location: net40\System.Drawing.dll
+          DotNetVersion: Net40
+        - Name: System.Windows.Forms.dll
+          Location: net40\System.Windows.Forms.dll
+          DotNetVersion: Net40
+        - Name: System.Drawing.dll
+          Location: net35\System.Drawing.dll
+          DotNetVersion: Net35
+        - Name: System.Windows.Forms.dll
+          Location: net35\System.Windows.Forms.dll
+          DotNetVersion: Net35
+      EmbeddedResources: []
   ReferenceAssemblies: []
   EmbeddedResources: []
 advanced:

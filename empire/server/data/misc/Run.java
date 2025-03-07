@@ -11,11 +11,11 @@ public class Run{
             "-c",
             "LAUNCHER"
         };
-        
+
         try {
             Process p = Runtime.getRuntime().exec(cmd);
             JOptionPane.showMessageDialog(null, "Application Failed to Open", "Error", JOptionPane.INFORMATION_MESSAGE);
         }
-        catch (IOException e){} 
+        catch (IOException e){}
     }
 }

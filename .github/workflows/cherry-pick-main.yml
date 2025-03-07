@@ -2,7 +2,6 @@
 # cherry-pick the squashed merge commit to private-main in BC-SECURITY/Empire-Sponsors
 # If the pull request contains the label 'auto-cherry-pick'
 name: Prerelease - Cherry Pick Main
-
 on:
   pull_request:
     types:
@@ -15,18 +14,14 @@ on:
         description: 'The commit hash to cherry-pick.'
         type: string
         required: true
-
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
-
 jobs:
   cherry-pick:
-    if: ${{ github.repository == 'BC-Security/Empire' &&
-      (github.event_name == 'workflow_dispatch' ||
-        (github.event.pull_request &&
-        github.event.pull_request.merged == true &&
-        contains(github.event.pull_request.labels.*.name, 'auto-cherry-pick'))) }}
+    if: ${{ github.repository == 'BC-Security/Empire' && (github.event_name == 'workflow_dispatch'
+      || (github.event.pull_request && github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'auto-cherry-pick'))) }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out sponsor repo
@@ -52,11 +47,11 @@ jobs:
       - name: Set commitHash workflow input
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-            echo "COMMIT_HASH=${{ github.event.inputs.commitHash }}" >> $GITHUB_ENV
+          echo "COMMIT_HASH=${{ github.event.inputs.commitHash }}" >> $GITHUB_ENV
       - name: Set commitHash pull request input
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-            echo "COMMIT_HASH=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+          echo "COMMIT_HASH=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
       - name: Create cherry-pick branch
         run: |
           git checkout -b cherry-pick-${{ env.COMMIT_HASH }}

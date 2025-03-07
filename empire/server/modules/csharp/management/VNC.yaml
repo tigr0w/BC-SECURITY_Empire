@@ -1,8 +1,8 @@
 name: VNCServer
 authors:
-- name: Anthony Rose
-  handle: Cx01N
-  link: https://twitter.com/Cx01N_
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
 description: |
   Installs and runs a C# VNC server on the victim.
 software: ''
@@ -36,8 +36,8 @@ options:
 csharp:
   UnsafeCompile: true
   CompatibleDotNetVersions:
-  - Net35
-  - Net40
+    - Net35
+    - Net40
   Code: |
     using System;
     using System.IO;
@@ -81,14 +81,46 @@ csharp:
         }
     }
   ReferenceSourceLibraries:
-  - Name: NVNC
-    Description: NVNC is a C# library implmenting a VNC Server.
-    Location: NVNC\NVNC\
-    Language: CSharp
-    CompatibleDotNetVersions:
-    - Net35
-    - Net40
-    ReferenceAssemblies:
+    - Name: NVNC
+      Description: NVNC is a C# library implmenting a VNC Server.
+      Location: NVNC\NVNC\
+      Language: CSharp
+      CompatibleDotNetVersions:
+        - Net35
+        - Net40
+      ReferenceAssemblies:
+        - Name: System.dll
+          Location: net40\System.dll
+          DotNetVersion: Net40
+        - Name: System.Core.dll
+          Location: net40\System.Core.dll
+          DotNetVersion: Net40
+        - Name: mscorlib.dll
+          Location: net40\mscorlib.dll
+          DotNetVersion: Net40
+        - Name: mscorlib.dll
+          Location: net35\mscorlib.dll
+          DotNetVersion: Net35
+        - Name: System.Core.dll
+          Location: net35\System.Core.dll
+          DotNetVersion: Net35
+        - Name: System.dll
+          Location: net35\System.dll
+          DotNetVersion: Net35
+        - Name: System.Drawing.dll
+          Location: net40\System.Drawing.dll
+          DotNetVersion: Net40
+        - Name: System.Windows.Forms.dll
+          Location: net40\System.Windows.Forms.dll
+          DotNetVersion: Net40
+        - Name: System.Drawing.dll
+          Location: net35\System.Drawing.dll
+          DotNetVersion: Net35
+        - Name: System.Windows.Forms.dll
+          Location: net35\System.Windows.Forms.dll
+          DotNetVersion: Net35
+      EmbeddedResources: []
+  ReferenceAssemblies:
     - Name: System.dll
       Location: net40\System.dll
       DotNetVersion: Net40
@@ -119,36 +151,4 @@ csharp:
     - Name: System.Windows.Forms.dll
       Location: net35\System.Windows.Forms.dll
       DotNetVersion: Net35
-    EmbeddedResources: []
-  ReferenceAssemblies:
-  - Name: System.dll
-    Location: net40\System.dll
-    DotNetVersion: Net40
-  - Name: System.Core.dll
-    Location: net40\System.Core.dll
-    DotNetVersion: Net40
-  - Name: mscorlib.dll
-    Location: net40\mscorlib.dll
-    DotNetVersion: Net40
-  - Name: mscorlib.dll
-    Location: net35\mscorlib.dll
-    DotNetVersion: Net35
-  - Name: System.Core.dll
-    Location: net35\System.Core.dll
-    DotNetVersion: Net35
-  - Name: System.dll
-    Location: net35\System.dll
-    DotNetVersion: Net35
-  - Name: System.Drawing.dll
-    Location: net40\System.Drawing.dll
-    DotNetVersion: Net40
-  - Name: System.Windows.Forms.dll
-    Location: net40\System.Windows.Forms.dll
-    DotNetVersion: Net40
-  - Name: System.Drawing.dll
-    Location: net35\System.Drawing.dll
-    DotNetVersion: Net35
-  - Name: System.Windows.Forms.dll
-    Location: net35\System.Windows.Forms.dll
-    DotNetVersion: Net35
   EmbeddedResources: []

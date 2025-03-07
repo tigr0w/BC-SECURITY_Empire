@@ -8,12 +8,12 @@ plugins:
         handle: "@Example"
         link: github.com/example
     description: |
-        Slack
-        ---
-        
-        This is a plugin that allows you to interact with Slack.
-      
-        # This Description supports markdown
+      Slack
+      ---
+
+      This is a plugin that allows you to interact with Slack.
+
+      # This Description supports markdown
     versions:
       - name: main
         git_url: https://github.com/bc-security/slack-plugin

@@ -10,11 +10,11 @@ function Invoke-ARPScan {
 .EXAMPLE
    Invoke an ARP Scan against a range of IPs specified in CIDR Format
     PS C:\> Invoke-ARPScan -CIDR 172.20.10.1/24
-    MAC                                                       Address                                                  
-    ---                                                       -------                                                  
-    14:10:9F:D5:1A:BF                                         172.20.10.2                                              
-    00:0C:29:93:10:B5                                         172.20.10.3                                              
-    00:0C:29:93:10:B5                                         172.20.10.15  
+    MAC                                                       Address
+    ---                                                       -------
+    14:10:9F:D5:1A:BF                                         172.20.10.2
+    00:0C:29:93:10:B5                                         172.20.10.3
+    00:0C:29:93:10:B5                                         172.20.10.15
 
 .LINK
 https://github.com/darkoperator/Posh-SecMod/blob/master/Discovery/Discovery.psm1
@@ -40,7 +40,7 @@ https://github.com/darkoperator/Posh-SecMod/blob/master/Discovery/Discovery.psm1
     )
 
 
-    Begin 
+    Begin
     {
 
         function New-IPv4Range
@@ -56,13 +56,13 @@ https://github.com/darkoperator/Posh-SecMod/blob/master/Discovery/Discovery.psm1
                            ValueFromPipelineByPropertyName=$true,
                            Position=0)]
                            $StartIP,
-                           
+
                 [Parameter(Mandatory=$true,
                            ValueFromPipelineByPropertyName=$true,
                            Position=2)]
-                           $EndIP          
+                           $EndIP
             )
-            
+
             # created by Dr. Tobias Weltner, MVP PowerShell
             $ip1 = ([System.Net.IPAddress]$StartIP).GetAddressBytes()
             [Array]::Reverse($ip1)
@@ -80,7 +80,7 @@ https://github.com/darkoperator/Posh-SecMod/blob/master/Discovery/Discovery.psm1
         }
 
 
-        function New-IPv4RangeFromCIDR 
+        function New-IPv4RangeFromCIDR
         {
             <#
             .Synopsis
@@ -133,22 +133,22 @@ public static class NetUtils
     public static string GetMacAddress(String addr)
     {
         try
-                {                   
+                {
                     IPAddress IPaddr = IPAddress.Parse(addr);
-                   
+
                     byte[] mac = new byte[6];
-                    
+
                     int L = 6;
-                    
+
                     SendARP(BitConverter.ToInt32(IPaddr.GetAddressBytes(), 0), 0, mac, ref L);
-                    
+
                     String macAddr = BitConverter.ToString(mac, 0, L);
-                    
+
                     return (macAddr.Replace('-',':'));
                 }
                 catch (Exception ex)
                 {
-                    return (ex.Message);              
+                    return (ex.Message);
                 }
     }
 }
@@ -176,7 +176,7 @@ public static class NetUtils
             $targets = New-IPv4RangeFromCIDR -Network $CIDR
         }
     }
-    Process 
+    Process
     {
 
 
@@ -188,19 +188,19 @@ public static class NetUtils
 
         $jobs = @()
 
-    
+
 
         $start = get-date
         write-verbose "Begin Scanning at $start"
 
         #Multithreading setup
 
-        # create a pool of maxThread runspaces   
-        $pool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads)   
+        # create a pool of maxThread runspaces
+        $pool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads)
         $pool.Open()
-  
-        $jobs = @()   
-        $ps = @()   
+
+        $jobs = @()
+        $ps = @()
         $wait = @()
 
         $i = 0
@@ -215,27 +215,27 @@ public static class NetUtils
             $record_progress = [int][Math]::Ceiling((($i / $record_count) * 100))
             # Write-Progress -Activity "Performing ARP Scan" -PercentComplete $record_progress -Status "Addresses Queried - $record_progress%" -Id 1;
 
-            while ($($pool.GetAvailableRunspaces()) -le 0) 
+            while ($($pool.GetAvailableRunspaces()) -le 0)
             {
                 Start-Sleep -milliseconds 500
             }
-    
+
             # create a "powershell pipeline runner"
             $ps += [powershell]::create()
 
-            # assign our pool of 3 runspaces to use   
+            # assign our pool of 3 runspaces to use
             $ps[$i].runspacepool = $pool
 
             # command to run
             [void]$ps[$i].AddScript($scancode).AddParameter('IPaddress', $IPAddress).AddParameter('IPHlp', $IPHlp)
             #[void]$ps[$i].AddParameter()
-    
+
             # start job
             $jobs += $ps[$i].BeginInvoke();
-     
-            # store wait handles for WaitForAll call   
+
+            # store wait handles for WaitForAll call
             $wait += $jobs[$i].AsyncWaitHandle
-    
+
             $i++
         }
 
@@ -243,30 +243,30 @@ public static class NetUtils
 
         $waitTimeout = get-date
 
-        while ($($jobs | ? {$_.IsCompleted -eq $false}).count -gt 0 -or $($($(get-date) - $waitTimeout).totalSeconds) -gt 60) 
+        while ($($jobs | ? {$_.IsCompleted -eq $false}).count -gt 0 -or $($($(get-date) - $waitTimeout).totalSeconds) -gt 60)
         {
                 Start-Sleep -milliseconds 500
-        } 
-  
-        # end async call   
-        for ($y = 0; $y -lt $i; $y++) {     
-  
-            try 
-            {   
-                # complete async job   
-                $ScanResults += $ps[$y].EndInvoke($jobs[$y])   
-  
-            } 
-            catch 
-            {   
-       
-                write-warning "error: $_"  
+        }
+
+        # end async call
+        for ($y = 0; $y -lt $i; $y++) {
+
+            try
+            {
+                # complete async job
+                $ScanResults += $ps[$y].EndInvoke($jobs[$y])
+
             }
-    
-            finally 
+            catch
+            {
+
+                write-warning "error: $_"
+            }
+
+            finally
             {
                 $ps[$y].Dispose()
-            }    
+            }
         }
 
         $pool.Dispose()

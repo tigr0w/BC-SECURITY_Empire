@@ -6,7 +6,7 @@ function Invoke-SpoolSample
         [ValidateNotNullorEmpty()]
         [String]
         $Target,
-		
+
 	[Parameter(Position = 1, Mandatory = $true)]
         [ValidateNotNullorEmpty()]
         [String]

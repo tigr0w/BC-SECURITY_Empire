@@ -3,8 +3,9 @@ authors:
   - name: ''
     handle: '@jaredhaight'
     link: ''
-description: Spawns a new, hidden PowerShell window that downloadsand executes a Metasploit payload. This relies on theexploit/multi/scripts/web_delivery
-  metasploit module.
+description: Spawns a new, hidden PowerShell window that downloadsand executes a
+  Metasploit payload. This relies on theexploit/multi/scripts/web_delivery metasploit
+  module.
 software: ''
 tactics: [TA0002]
 techniques: [T1055]

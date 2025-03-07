@@ -6,7 +6,7 @@ authors:
 description: Run a wmi query and display results in CSV format.
 software: ''
 tactics: [TA0007]
-techniques: [T1047,T1082]
+techniques: [T1047, T1082]
 background: false
 output_extension:
 needs_admin: false

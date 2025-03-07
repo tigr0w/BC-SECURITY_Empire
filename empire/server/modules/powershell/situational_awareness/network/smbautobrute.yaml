@@ -3,13 +3,14 @@ authors:
   - name: ''
     handle: '@curi0usJack'
     link: ''
-description: Runs an SMB brute against a list of usernames/passwords. Will check the DCs to interrogate the bad password count
-  of the users and will keep bruting until either a valid credential is discoverd or the bad password count reaches one below
-  the threshold. Run "shell net accounts" on a valid agent to determine the lockout threshold. VERY noisy! Generates a ton
-  of traffic on the DCs.
+description: Runs an SMB brute against a list of usernames/passwords. Will check
+  the DCs to interrogate the bad password count of the users and will keep bruting
+  until either a valid credential is discoverd or the bad password count reaches
+  one below the threshold. Run "shell net accounts" on a valid agent to determine
+  the lockout threshold. VERY noisy! Generates a ton of traffic on the DCs.
 software: ''
 tactics: [TA0006]
-techniques: [T1615,T1110.001]
+techniques: [T1615, T1110.001]
 background: true
 output_extension:
 needs_admin: false
@@ -23,8 +24,9 @@ options:
     required: true
     value: ''
   - name: UserList
-    description: File of users to brute (on the target), one per line. If not specified, autobrute will query a list of users
-      with badpwdcount < LockoutThreshold - 1 for each password brute. Wrap path in double quotes.
+    description: File of users to brute (on the target), one per line. If not specified,
+      autobrute will query a list of users with badpwdcount < LockoutThreshold -
+      1 for each password brute. Wrap path in double quotes.
     required: false
     value: ''
   - name: PasswordList
@@ -40,12 +42,13 @@ options:
       - True
       - False
   - name: LockoutThreshold
-    description: The max number of bad password attempts until the account locks. Autobrute will try till one less than this
-      setting.
+    description: The max number of bad password attempts until the account locks.
+      Autobrute will try till one less than this setting.
     required: true
     value: ''
   - name: Delay
-    description: Amount of time to wait (in milliseconds) between attempts. Default 100.
+    description: Amount of time to wait (in milliseconds) between attempts. Default
+      100.
     required: false
     value: ''
   - name: StopOnSuccess

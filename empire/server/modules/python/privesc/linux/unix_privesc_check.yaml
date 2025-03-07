@@ -6,8 +6,9 @@ authors:
   - name: ''
     handle: '@pentestmonkey'
     link: ''
-description: This script is intended to be executed locally ona Linux box to enumerate basic system info, and search for commonprivilege
-  escalation vectors with a all in one shell script.
+description: This script is intended to be executed locally ona Linux box to enumerate
+  basic system info, and search for commonprivilege escalation vectors with a all
+  in one shell script.
 software: ''
 tactics: []
 techniques:
@@ -42,7 +43,8 @@ options:
     required: true
     value: ''
   - name: ServeCount
-    description: Value to set GET request count of webserver (Can be helpful if multiple agents, only host webserver once).
+    description: Value to set GET request count of webserver (Can be helpful if multiple
+      agents, only host webserver once).
     required: true
     value: '1'
 script: |-

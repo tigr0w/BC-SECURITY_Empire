@@ -6,7 +6,7 @@ authors:
 description: Enumerate CAs and templates in the AD using ICertConfig COM object.
 software: ''
 tactics: [TA0043, TA0007]
-techniques: [T1590.001,T1590.003,T1482,T1559.001]
+techniques: [T1590.001, T1590.003, T1482, T1559.001]
 background: false
 output_extension:
 needs_admin: false

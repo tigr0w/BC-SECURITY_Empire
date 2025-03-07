@@ -1,8 +1,8 @@
 name: RunCoff
 authors:
-- name: Anthony Rose
-  handle: Cx01N
-  link: https://twitter.com/Cx01N_
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
 description: |
   This is a quick and dirty COFF loader (AKA Beacon Object Files).
 software: ''
@@ -26,23 +26,25 @@ options:
     required: false
     value: 'go'
   - name: Format String
-    description: The format string must only include the following characters b, i, s, z, Z
+    description: The format string must only include the following characters b,
+      i, s, z, Z
     required: false
     value: ''
   - name: Arguments
-    description: List of arguments that will be passed to the beacon. <arg1> [arg2] [arg2]
+    description: List of arguments that will be passed to the beacon. <arg1> [arg2]
+      [arg2]
     required: false
     value: ''
 csharp:
   UnsafeCompile: true
   CompatibleDotNetVersions:
-  - net40
+    - net40
   Code: |
     using System;
     using System.IO;
     using System.Linq;
     using CoffLoader;
-    
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -53,13 +55,13 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
-            
+
                 try
                 {
                     string functionName = args[0];
                     string coffData = args[1];
                     string argDataHex = args[2];
-    
+
                     // Console.WriteLine(functionName);
                     // Console.WriteLine(coffData);
                     // Console.WriteLine(argDataHex);
@@ -84,29 +86,30 @@ csharp:
         }
     }
   ReferenceSourceLibraries:
-  - Name: CoffLoader
-    Description: A tool to run object files, mainly beacon object files (BOF), in .Net.
-    Location: CS_COFFLoader\CoffLoader\
-    Language: CSharp
-    CompatibleDotNetVersions:
-    - net40
-    ReferenceAssemblies:
-    - Name: System.dll
-      Location: net40\System.dll
-      DotNetVersion: net40
-    - Name: System.Core.dll
-      Location: net40\System.Core.dll
-      DotNetVersion: net40
-    - Name: mscorlib.dll
-      Location: net40\mscorlib.dll
-      DotNetVersion: net40
-    - Name: System.Data.dll
-      Location: net40\System.Data.dll
-      DotNetVersion: net40
-    - Name: System.XML.dll
-      Location: net40\System.XML.dll
-      DotNetVersion: net40
-    EmbeddedResources: []
+    - Name: CoffLoader
+      Description: A tool to run object files, mainly beacon object files (BOF),
+        in .Net.
+      Location: CS_COFFLoader\CoffLoader\
+      Language: CSharp
+      CompatibleDotNetVersions:
+        - net40
+      ReferenceAssemblies:
+        - Name: System.dll
+          Location: net40\System.dll
+          DotNetVersion: net40
+        - Name: System.Core.dll
+          Location: net40\System.Core.dll
+          DotNetVersion: net40
+        - Name: mscorlib.dll
+          Location: net40\mscorlib.dll
+          DotNetVersion: net40
+        - Name: System.Data.dll
+          Location: net40\System.Data.dll
+          DotNetVersion: net40
+        - Name: System.XML.dll
+          Location: net40\System.XML.dll
+          DotNetVersion: net40
+      EmbeddedResources: []
   ReferenceAssemblies: []
   EmbeddedResources: []
 advanced:

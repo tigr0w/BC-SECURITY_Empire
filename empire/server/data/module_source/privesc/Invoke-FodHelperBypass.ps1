@@ -2,7 +2,7 @@ function Invoke-FodHelperBypass {
 <#
 .SYNOPSIS
 
-Bypasses UAC by performing an registry modification for FodHelper (based on https://winscripting.blog/2017/05/12/first-entry-welcome-and-uac-bypass/) 
+Bypasses UAC by performing an registry modification for FodHelper (based on https://winscripting.blog/2017/05/12/first-entry-welcome-and-uac-bypass/)
 
 Only tested on Windows 10
 
@@ -80,7 +80,7 @@ This will write out "Is Elevated: True" to C:\UACBypassTest.
             Write-Verbose "Started fodhelper.exe"
         }
 
-        #Sleep 5 seconds 
+        #Sleep 5 seconds
         Write-Verbose "Sleeping 5 seconds to trigger payload"
         if (-not $PSBoundParameters['WhatIf']) {
             Start-Sleep -Seconds 5

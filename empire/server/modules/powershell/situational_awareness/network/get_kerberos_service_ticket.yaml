@@ -3,8 +3,8 @@ authors:
   - name: ''
     handle: '@OneLogicalMyth'
     link: ''
-description: Retrieves IP addresses and usernames using event ID 4769 this can allow identification of a users machine. Can
-  only run on a domain controller.
+description: Retrieves IP addresses and usernames using event ID 4769 this can allow
+  identification of a users machine. Can only run on a domain controller.
 software: ''
 tactics: [TA0007]
 techniques: [T1018]
@@ -38,7 +38,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -49,5 +50,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/Get-KerberosServiceTicket.ps1
-script_end: Get-KerberosServiceTicket {{ PARAMS }} | Format-Table -AutoSize | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-KerberosServiceTicket
-  completed'
+script_end: Get-KerberosServiceTicket {{ PARAMS }} | Format-Table -AutoSize | {{
+  OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-KerberosServiceTicket completed'

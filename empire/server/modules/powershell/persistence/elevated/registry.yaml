@@ -6,8 +6,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Persist a stager (or script) via the HKLM:SOFTWARE\Microsoft\Windows\CurrentVersion\Run registry key. This has
-  an easy detection/removal rating.
+description: Persist a stager (or script) via the HKLM:SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+  registry key. This has an easy detection/removal rating.
 software: ''
 tactics: [TA0003]
 techniques: [T1547.001]
@@ -25,8 +25,8 @@ options:
     required: false
     value: ''
   - name: Obfuscate
-    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
-      only.
+    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
+      for obfuscation types. For powershell only.
     required: false
     value: 'False'
     strict: true
@@ -34,12 +34,13 @@ options:
       - True
       - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True. For powershell only.
     required: false
     value: Token\All\1
     depends_on:
       - name: Obfuscate
-        values: [ 'True' ]
+        values: ['True']
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
@@ -49,7 +50,8 @@ options:
     required: true
     value: Updater
   - name: RegPath
-    description: Registry location to store the script code. Last element is the key name.
+    description: Registry location to store the script code. Last element is the
+      key name.
     required: false
     value: HKLM:SOFTWARE\Microsoft\Windows\CurrentVersion\Debug
   - name: ADSPath
@@ -69,7 +71,8 @@ options:
       - True
       - False
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -77,7 +80,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
 advanced:

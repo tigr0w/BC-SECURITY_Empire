@@ -3,7 +3,8 @@ authors:
   - name: ''
     handle: '@jarrodcoulter'
     link: ''
-description: Installs an Empire launcher script in ~/.config/autostart on Linux versions with GUI.
+description: Installs an Empire launcher script in ~/.config/autostart on Linux versions
+  with GUI.
 software: ''
 tactics: []
 techniques:
@@ -35,7 +36,8 @@ options:
       - True
       - False
   - name: FileName
-    description: File name without extension that you would like created in ~/.config/autostart/ folder.
+    description: File name without extension that you would like created in ~/.config/autostart/
+      folder.
     required: false
     value: sec_start
 advanced:

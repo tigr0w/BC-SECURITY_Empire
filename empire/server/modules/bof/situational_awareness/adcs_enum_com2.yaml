@@ -3,10 +3,11 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Enumerate CAs and templates in the AD using IX509PolicyServerListManager COM object.
+description: Enumerate CAs and templates in the AD using IX509PolicyServerListManager
+  COM object.
 software: ''
 tactics: [TA0043, TA0007]
-techniques: [T1590.001,T1590.003,T1482,T1559.001]
+techniques: [T1590.001, T1590.003, T1482, T1559.001]
 background: false
 output_extension:
 needs_admin: false

@@ -6,8 +6,9 @@ authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: This module can be used to identify applications vulnerable to dylib hijacking on a target system. This has been
-  modified from the original to remove the dependancy for the macholib library.
+description: This module can be used to identify applications vulnerable to dylib
+  hijacking on a target system. This has been modified from the original to remove
+  the dependancy for the macholib library.
 software: ''
 tactics: []
 techniques:

@@ -3,7 +3,8 @@ authors:
   - name: 'Barrett Adams'
     handle: '@peewpw'
     link: 'https://x.com/peewpw'
-description: A PowerShell script to induce a Blue Screen of Death (BSOD) without admin privileges. Also enumerates Windows crash dump settings.
+description: A PowerShell script to induce a Blue Screen of Death (BSOD) without
+  admin privileges. Also enumerates Windows crash dump settings.
 software: ''
 tactics: [TA0040]
 techniques: [T1499]

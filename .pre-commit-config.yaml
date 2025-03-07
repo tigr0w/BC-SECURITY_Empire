@@ -1,17 +1,19 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-    - id: trailing-whitespace
-    - id: check-json
-    - id: check-yaml
-    - id: check-merge-conflict
-    - id: end-of-file-fixer
-
-repos:
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.9.6
-  hooks:
-    - id: ruff
-      args: [ --fix ]
-    - id: ruff-format
+      - id: trailing-whitespace
+      - id: check-json
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.14.0
+    hooks:
+      - id: yamlfmt
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

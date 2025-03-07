@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Load and execute a PowerShell script from either a URL or base64 string, then run a function within the script with parameters.
+description: Load and execute a PowerShell script from either a URL or base64 string,
+  then run a function within the script with parameters.
 software: S0194
 tactics: [TA0002]
 techniques: [T1059]
@@ -30,14 +31,14 @@ options:
     type: file
     depends_on:
       - name: ScriptType
-        values: [ 'File' ]
+        values: ['File']
   - name: ScriptUrl
     description: URL to download a PowerShell script from.
     required: false
     value: 'https://raw.githubusercontent.com/samratashok/nishang/master/Gather/Get-Information.ps1'
     depends_on:
       - name: ScriptType
-        values: [ 'URL' ]
+        values: ['URL']
   - name: FunctionCommand
     description: The function command and arguementsto run after the script is loaded.
     required: true

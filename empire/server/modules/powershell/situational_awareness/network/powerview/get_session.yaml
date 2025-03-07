@@ -3,7 +3,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Execute the NetSessionEnum Win32API call to query a given host for active sessions on the host. Part of PowerView.
+description: Execute the NetSessionEnum Win32API call to query a given host for active
+  sessions on the host. Part of PowerView.
 software: S0194
 tactics: [TA0007]
 techniques: [T1076, T1018, T1933]
@@ -25,7 +26,8 @@ options:
     required: false
     value: localhost
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -36,4 +38,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Get-NetSession {{ PARAMS }} | ft -wrap | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-NetSession completed'
+script_end: Get-NetSession {{ PARAMS }} | ft -wrap | {{ OUTPUT_FUNCTION }} | %{$_
+  + "`n"}; 'Get-NetSession completed'

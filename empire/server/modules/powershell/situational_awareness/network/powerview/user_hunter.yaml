@@ -3,7 +3,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Finds which machines users of a specified group are logged into. Part of PowerView.
+description: Finds which machines users of a specified group are logged into. Part
+  of PowerView.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615, T1018]
@@ -53,15 +54,18 @@ options:
     required: false
     value: ''
   - name: UserDomain
-    description: Specifies the domain to query for users to search for, defaults to the current domain.
+    description: Specifies the domain to query for users to search for, defaults
+      to the current domain.
     required: false
     value: ''
   - name: UserLDAPFilter
-    description: A customized ldap filter string to use for user enumeration, e.g. "(description=*admin*)"
+    description: A customized ldap filter string to use for user enumeration, e.g.
+      "(description=*admin*)"
     required: false
     value: ''
   - name: UserAllowDelegation
-    description: Switch. Return user accounts that are not marked as 'sensitive and not allowed for delegation'
+    description: Switch. Return user accounts that are not marked as 'sensitive and
+      not allowed for delegation'
     required: false
     value: ''
   - name: UserAdminCount
@@ -81,7 +85,8 @@ options:
     required: false
     value: ''
   - name: CheckAccess
-    description: Switch. Check if the current user has local admin access to found machines.
+    description: Switch. Check if the current user has local admin access to found
+      machines.
     required: false
     value: ''
   - name: Delay
@@ -93,11 +98,13 @@ options:
     required: false
     value: ''
   - name: Server
-    description: Active Directory server (domain controller) to reflect LDAP queries through.
+    description: Active Directory server (domain controller) to reflect LDAP queries
+      through.
     required: false
     value: ''
   - name: SearchScope
-    description: Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)
+    description: Specifies the scope to search under, Base/OneLevel/Subtree (default
+      of Subtree)
     required: false
     value: ''
   - name: ResultPageSize
@@ -105,15 +112,18 @@ options:
     required: false
     value: ''
   - name: ServerTimeLimit
-    description: Specifies the maximum amount of time the server spends searching. Default of 120 seconds.
+    description: Specifies the maximum amount of time the server spends searching.
+      Default of 120 seconds.
     required: false
     value: ''
   - name: Tombstone
-    description: Switch. Specifies that the search should also return deleted/tombstoned objects.
+    description: Switch. Specifies that the search should also return deleted/tombstoned
+      objects.
     required: false
     value: 'False'
   - name: Jitter
-    description: Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults to +/- 0.3.
+    description: Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults
+      to +/- 0.3.
     required: false
     value: ''
   - name: Stealth
@@ -133,7 +143,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -144,4 +155,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Find-DomainUserLocation {{ PARAMS }} | fl | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-DomainUserLocation completed'
+script_end: Find-DomainUserLocation {{ PARAMS }} | fl | {{ OUTPUT_FUNCTION }} | %{$_
+  + "`n"}; 'Find-DomainUserLocation completed'

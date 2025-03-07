@@ -204,7 +204,7 @@ namespace PsUtils
             if (!CredEnumerateW(Filter, Flags, out count, out pCredentials))
             {
                 Credentials = null;
-                return Marshal.GetHRForLastWin32Error(); 
+                return Marshal.GetHRForLastWin32Error();
             }
             CriticalCredentialHandle CredHandle = new CriticalCredentialHandle(pCredentials);
             Credentials = CredHandle.GetCredentials(count);
@@ -273,7 +273,7 @@ namespace PsUtils
         }
 
         /*
-         * Note: the Main() function is primarily for debugging and testing in a Visual 
+         * Note: the Main() function is primarily for debugging and testing in a Visual
          * Studio session.  Although it will work from PowerShell, it's not very useful.
          */
         public static void Main()
@@ -346,7 +346,7 @@ function Enum-Creds
     (
         [Parameter(Mandatory=$false)][AllowEmptyString()][String] $Filter = [String]::Empty
     )
-    
+
     [PsUtils.CredMan+Credential[]] $Creds = [Array]::CreateInstance([PsUtils.CredMan+Credential], 0)
     [Int] $Results = 0
     try
@@ -390,7 +390,7 @@ function CredManMain
     foreach($Cred in $Creds)
     {
         [String] $CredStr = @"
-        
+
 | UserName  | $($Cred.UserName)
 | Password  | $($Cred.CredentialBlob)
 | Target    | $($Cred.TargetName.Substring($Cred.TargetName.IndexOf("=")+1))

@@ -6,7 +6,7 @@ authors:
 description: Enumerate sessions on the local or specified computer.
 software: ''
 tactics: [TA0007]
-techniques: [T1049,T1087.002]
+techniques: [T1049, T1087.002]
 background: false
 output_extension:
 needs_admin: false

@@ -28,7 +28,7 @@ Function Get-WinUpdates
         $ComputerName = $env:computername
         )
         Begin
-        {             
+        {
                 function Test-ElevatedShell
                 {
                         $user = [Security.Principal.WindowsIdentity]::GetCurrent()

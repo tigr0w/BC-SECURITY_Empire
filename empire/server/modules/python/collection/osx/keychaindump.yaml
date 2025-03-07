@@ -3,7 +3,8 @@ authors:
   - name: Juuso Salonen
     handle: ''
     link: ''
-description: Searches for keychain candidates and attempts to decrypt the user's keychain.
+description: Searches for keychain candidates and attempts to decrypt the user's
+  keychain.
 software: ''
 tactics: []
 techniques:

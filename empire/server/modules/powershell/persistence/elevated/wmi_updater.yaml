@@ -12,7 +12,8 @@ authors:
   - name: ''
     handle: '@janit0rjoe'
     link: ''
-description: Persist a stager (or script) using a permanent WMI subscription. This has a difficult detection/removal rating.
+description: Persist a stager (or script) using a permanent WMI subscription. This
+  has a difficult detection/removal rating.
 software: ''
 tactics: [TA0003]
 techniques: [T1546.003]
@@ -42,7 +43,8 @@ options:
     required: false
     value: ''
   - name: DayOfWeek
-    description: Day of week to trigger the script (0-6). Sunday = 0. Optional to DailyTime.
+    description: Day of week to trigger the script (0-6). Sunday = 0. Optional to
+      DailyTime.
     required: false
     value: ''
   - name: SubName

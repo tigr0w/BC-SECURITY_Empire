@@ -6,7 +6,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: This module finds and parses any KeePass.config.xml (2.X) and KeePass.ini (1.X) files.
+description: This module finds and parses any KeePass.config.xml (2.X) and KeePass.ini
+  (1.X) files.
 software: ''
 tactics: [TA0007, TA0009]
 techniques: [T1119, T1083]
@@ -24,7 +25,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -35,4 +37,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: collection/vaults/KeePassConfig.ps1
-script_end: Find-KeePassconfig | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-KeePassconfig completed'
+script_end: Find-KeePassconfig | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Find-KeePassconfig completed'

@@ -37,7 +37,8 @@ options:
       - True
       - False
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
 advanced:

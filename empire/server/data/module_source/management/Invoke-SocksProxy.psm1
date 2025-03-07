@@ -2,29 +2,29 @@
 .SYNOPSIS
 
 Powershell Socks Proxy
- 
+
 Author: p3nt4 (https://twitter.com/xP3nt4)
 License: MIT
- 
+
 .DESCRIPTION
- 
+
 Creates a local or "reverse" Socks proxy using powershell.
- 
+
 Supports both Socks4 and Socks5 connections.
 This is only a subset of the Socks 4 and 5 protocols: It does not support authentication, It does not support UDP or bind requests.
- 
+
 New features will be implemented in the future. PRs are welcome.
- 
+
  .EXAMPLE_LOCAL
- 
+
 # Create a Socks proxy on port 1234:
 Invoke-SocksProxy -bindPort 1234
 # Change the number of threads from 200 to 400:
 Invoke-SocksProxy -bindPort 1234 -threads 400
 
  .EXAMPLE_REVERSE
- 
-# On the remote host: 
+
+# On the remote host:
 # Generate a private key and self signed cert
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout private.key -out cert.pem
 # Get the certificate fingerprint to verify it:
@@ -34,7 +34,7 @@ python ReverseSocksProxyHandler.py 443 1080 ./cert.pem ./private.key
 
 # On the local host:
 Import-Module .\Invoke-SocksProxy.psm1
-Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130 
+Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130
 # Go through the system proxy:
 Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130 -useSystemProxy
 # Validate certificate
@@ -42,9 +42,9 @@ Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130 -certFingerp
 # Give up after a number of failed connections to the handler:
 Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130 -maxRetries 10
 #>
- 
- 
- 
+
+
+
 [ScriptBlock]$SocksConnectionMgr = {
     param($vars)
     $Script = {
@@ -121,12 +121,12 @@ Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130 -maxRetries 
                 $buffer[5]=0
                 $cliStream.Write($buffer,0,10)
                 $cliStream.Flush()
-                $srvStream = $tmpServ.GetStream() 
+                $srvStream = $tmpServ.GetStream()
                 $AsyncJobResult2 = $srvStream.CopyToAsync($cliStream)
                 $AsyncJobResult = $cliStream.CopyToAsync($srvStream)
                 $AsyncJobResult.AsyncWaitHandle.WaitOne();
                 $AsyncJobResult2.AsyncWaitHandle.WaitOne();
-                
+
             }
             else{
                 $buffer[1]=4
@@ -151,7 +151,7 @@ Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130 -maxRetries 
                 $cliStream.Read($buffer,0,1)
             }
             $tmpServ = New-Object System.Net.Sockets.TcpClient($destHost, $destPort)
-            
+
             if($tmpServ.Connected){
                 $buffer[0]=0
                 $buffer[1]=90
@@ -159,7 +159,7 @@ Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130 -maxRetries 
                 $buffer[3]=0
                 $cliStream.Write($buffer,0,8)
                 $cliStream.Flush()
-                $srvStream = $tmpServ.GetStream() 
+                $srvStream = $tmpServ.GetStream()
                 $AsyncJobResult2 = $srvStream.CopyToAsync($cliStream)
                 $AsyncJobResult = $cliStream.CopyTo($srvStream)
                 $AsyncJobResult.AsyncWaitHandle.WaitOne();
@@ -182,17 +182,17 @@ Invoke-ReverseSocksProxy -remotePort 443 -remoteHost 192.168.49.130 -maxRetries 
         Exit;
     }
 }
- 
+
 
 function Invoke-SocksProxy{
     param (
- 
+
             [String]$bindIP = "0.0.0.0",
- 
+
             [Int]$bindPort = 1080,
 
             [Int]$threads = 200
- 
+
      )
     try{
         $listener = new-object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Parse($bindIP), $bindPort)
@@ -237,14 +237,14 @@ function Invoke-SocksProxy{
 function getProxyConnection{
 
     param (
- 
+
             [String]$remoteHost,
- 
+
             [Int]$remotePort
 
      )
     #Sleep -Milliseconds 500
-    $request = [System.Net.HttpWebRequest]::Create("http://" + $remoteHost + ":" + $remotePort ) 
+    $request = [System.Net.HttpWebRequest]::Create("http://" + $remoteHost + ":" + $remotePort )
     $request.Method = "CONNECT";
     $proxy = [System.Net.WebRequest]::GetSystemWebProxy();
     $proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;
@@ -267,9 +267,9 @@ function getProxyConnection{
 ## EXPERIMENTAL.....
 function Invoke-ReverseSocksProxy{
     param (
- 
+
             [String]$remoteHost = "127.0.0.1",
- 
+
             [Int]$remotePort = 1080,
 
             [Switch]$useSystemProxy = $false,
@@ -364,7 +364,7 @@ function Invoke-ReverseSocksProxy{
         }
     }
 }
- 
+
 
 
 function Get-IpAddress{

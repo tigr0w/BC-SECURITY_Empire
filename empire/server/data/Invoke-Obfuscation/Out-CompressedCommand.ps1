@@ -29,7 +29,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-CompressedCommand compresses an input PowerShell scriptblock or path and then base64 encodes the result. The purpose is to convert a multi-lined script into a one-liner command while also reducing the length for command-line character limit purposes.
@@ -125,7 +125,7 @@ http://www.danielbohannon.com
 
         [Switch]
         $Wow64,
-        
+
         [Switch]
         $Command,
 
@@ -136,7 +136,7 @@ http://www.danielbohannon.com
         [ValidateSet('Bypass', 'Unrestricted', 'RemoteSigned', 'AllSigned', 'Restricted')]
         [String]
         $ExecutionPolicy,
-        
+
         [Switch]
         $PassThru
     )
@@ -193,7 +193,7 @@ http://www.danielbohannon.com
     $NewScriptArray  += "(" + ' '*(Get-Random -Input @(0,1)) + "$NewObject " + ' '*(Get-Random -Input @(0,1)) + "$StreamReader(" + ' '*(Get-Random -Input @(0,1)) + "(" + ' '*(Get-Random -Input @(0,1)) + "$NewObject $DeflateStreamSyntax)" + ' '*(Get-Random -Input @(0,1)) + "," + ' '*(Get-Random -Input @(0,1)) + "[$Encoding]::$Ascii)" + ' '*(Get-Random -Input @(0,1)) + ").$ReadToEnd(" + ' '*(Get-Random -Input @(0,1)) + ")"
     $NewScriptArray  += "(" + ' '*(Get-Random -Input @(0,1)) + "$NewObject $DeflateStreamSyntax|" + ' '*(Get-Random -Input @(0,1)) + "$ForEachObject" + ' '*(Get-Random -Input @(0,1)) + "{" + ' '*(Get-Random -Input @(0,1)) + "$NewObject " + ' '*(Get-Random -Input @(0,1)) + "$StreamReader(" + ' '*(Get-Random -Input @(0,1)) + "`$_" + ' '*(Get-Random -Input @(0,1)) + "," + ' '*(Get-Random -Input @(0,1)) + "[$Encoding]::$Ascii" + ' '*(Get-Random -Input @(0,1)) + ")" + ' '*(Get-Random -Input @(0,1)) + "}" + ' '*(Get-Random -Input @(0,1)) + ").$ReadToEnd(" + ' '*(Get-Random -Input @(0,1)) + ")"
     $NewScriptArray  += "(" + ' '*(Get-Random -Input @(0,1)) + "$NewObject $DeflateStreamSyntax|" + ' '*(Get-Random -Input @(0,1)) + "$ForEachObject" + ' '*(Get-Random -Input @(0,1)) + "{" + ' '*(Get-Random -Input @(0,1)) + "$NewObject " + ' '*(Get-Random -Input @(0,1)) + "$StreamReader(" + ' '*(Get-Random -Input @(0,1)) + "`$_" + ' '*(Get-Random -Input @(0,1)) + "," + ' '*(Get-Random -Input @(0,1)) + "[$Encoding]::$Ascii" + ' '*(Get-Random -Input @(0,1)) + ")" + ' '*(Get-Random -Input @(0,1)) + "}" + ' '*(Get-Random -Input @(0,1)) + "|" + ' '*(Get-Random -Input @(0,1)) + "$ForEachObject2" + ' '*(Get-Random -Input @(0,1)) + "{" + ' '*(Get-Random -Input @(0,1)) + "`$_.$ReadToEnd(" + ' '*(Get-Random -Input @(0,1)) + ")" + ' '*(Get-Random -Input @(0,1)) + "}" + ' '*(Get-Random -Input @(0,1)) + ")"
-    
+
     # Randomly select one of the above commands.
     $NewScript = (Get-Random -Input $NewScriptArray)
 
@@ -212,13 +212,13 @@ http://www.danielbohannon.com
     $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @('$VerbosePreference.ToString()','([String]$VerbosePreference)')) + "[1,3]+'x'-Join'')"
     # Commenting below option since $env:Public differs in string value for non-English operating systems.
     #$InvokeExpressionSyntax += $InvocationOperator + "( `$env:Public[13]+`$env:Public[5]+'x')"
-    
+
     # Randomly choose from above invoke operation syntaxes.
     $InvokeExpression = (Get-Random -Input $InvokeExpressionSyntax)
 
     # Randomize the case of selected invoke operation.
     $InvokeExpression = ([Char[]]$InvokeExpression | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
-    
+
     # Choose random Invoke-Expression/IEX syntax and ordering: IEX ($ScriptString) or ($ScriptString | IEX)
     $InvokeOptions  = @()
     $InvokeOptions += ' '*(Get-Random -Input @(0,1)) + $InvokeExpression + ' '*(Get-Random -Input @(0,1)) + $NewScript + ' '*(Get-Random -Input @(0,1))
@@ -288,7 +288,7 @@ http://www.danielbohannon.com
             $ExecutionPolicyFlag = Get-Random -Input $ExecutionPolicyFlags
             $PowerShellFlags += $ExecutionPolicyFlag + ' '*(Get-Random -Minimum 1 -Maximum 3) + $ArgumentValue
         }
-        
+
         # Randomize the order of the execution flags.
         # This is to prevent the Blue Team from placing false hope in simple signatures for ordering of these flags.
         If($CommandlineOptions.Count -gt 1)
@@ -331,7 +331,7 @@ http://www.danielbohannon.com
         {
             Write-Warning "This command exceeds the cmd.exe maximum allowed length of $CmdMaxLength characters! Its length is $($CmdLineOutput.Length) characters."
         }
-        
+
         $NewScript = $CommandLineOutput
     }
 

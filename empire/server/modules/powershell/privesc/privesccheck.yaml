@@ -38,7 +38,8 @@ options:
       - HTML
       - CSV
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -49,4 +50,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: privesc/PrivescCheck.ps1
-script_end: Invoke-PrivescCheck {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'PrivescCheck completed'
+script_end: Invoke-PrivescCheck {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'PrivescCheck completed'

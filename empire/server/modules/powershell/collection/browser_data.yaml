@@ -48,7 +48,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: true
@@ -59,4 +60,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: collection/Get-BrowserData.ps1
-script_end: Get-BrowserInformation {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-BrowserData completed'
+script_end: Get-BrowserInformation {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ +
+  "`n"}; 'Get-BrowserData completed'

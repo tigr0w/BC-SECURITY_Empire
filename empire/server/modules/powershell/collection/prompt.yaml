@@ -43,7 +43,8 @@ options:
       - Exclamation
       - Information
   - name: Title
-    description: Title of the message box to display if not waiting for a process create.
+    description: Title of the message box to display if not waiting for a process
+      create.
     required: true
     value: ERROR - 0xA801B720
 script: |

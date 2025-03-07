@@ -3,7 +3,8 @@ authors:
   - name: Bryce Kunz
     handle: '@TweekFawkes'
     link: https://twitter.com/TweekFawkes
-description: Uses Python's socket.gethostbyname("example.com") function to resolve host names on a remote agent.
+description: Uses Python's socket.gethostbyname("example.com") function to resolve
+  host names on a remote agent.
 software: ''
 tactics: []
 techniques:

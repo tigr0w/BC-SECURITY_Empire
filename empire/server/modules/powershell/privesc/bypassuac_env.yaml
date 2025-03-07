@@ -3,8 +3,9 @@ authors:
   - name: Petr Medonos
     handle: ''
     link: ''
-description: Bypasses UAC (even with Always Notify level set) by by performing an registry modification of the "windir" value
-  in "Environment" based on James Forshaw findings(https://tyranidslair.blogspot.cz/2017/05/exploiting-environment-variables-in.html)
+description: Bypasses UAC (even with Always Notify level set) by by performing an
+  registry modification of the "windir" value in "Environment" based on James Forshaw
+  findings(https://tyranidslair.blogspot.cz/2017/05/exploiting-environment-variables-in.html)
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]
@@ -22,8 +23,8 @@ options:
     required: true
     value: ''
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
-      only.
+    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
+      for obfuscation types. For powershell only.
     required: false
     value: 'False'
     strict: true
@@ -31,18 +32,20 @@ options:
       - True
       - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True. For powershell only.
     required: false
     value: Token\All\1
     depends_on:
       - name: Obfuscate
-        values: [ 'True' ]
+        values: ['True']
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
     value: mattifestation etw
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -50,7 +53,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
 script_path: privesc/Invoke-EnvBypass.ps1

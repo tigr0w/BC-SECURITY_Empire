@@ -15,9 +15,9 @@ function Invoke-EgressCheck {
 
   .DESCRIPTION
 
-  This will attempt to asynchronously generate a connection on each port specified, using the 
-  protocol specified, to a target. This is most useful when attempting to identify breaches 
-  in a firewall from an egress perspective. Note that it is quite noisy, but it may be 
+  This will attempt to asynchronously generate a connection on each port specified, using the
+  protocol specified, to a target. This is most useful when attempting to identify breaches
+  in a firewall from an egress perspective. Note that it is quite noisy, but it may be
   appropriate in some situations.
 
   A listener on the destination IP address will be required. The EgressChecker tool could
@@ -57,7 +57,7 @@ function Invoke-EgressCheck {
   .PARAMETER delay
 
   The delay between sending packets. This injects a delay in milliseconds between
-  packets generated on a per-port per-protocol basis. 
+  packets generated on a per-port per-protocol basis.
   Example: -delay 100
   Default: 100
 
@@ -104,7 +104,7 @@ function Invoke-EgressCheck {
 
 function egress {
     [CmdletBinding()]
-    param([string]$ip, [int]$port, [int]$delay, [string]$protocol) 
+    param([string]$ip, [int]$port, [int]$delay, [string]$protocol)
 
     $protocol_case = $protocol.ToUpper()
 

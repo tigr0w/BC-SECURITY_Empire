@@ -24,7 +24,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -35,4 +36,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: privesc/Get-SiteListPassword.ps1
-script_end: Get-SiteListPassword {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SiteListPassword completed'
+script_end: Get-SiteListPassword {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Get-SiteListPassword completed'

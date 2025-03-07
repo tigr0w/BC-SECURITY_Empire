@@ -12,7 +12,7 @@ If there is a log message that you also want sent to the server log and console,
 also log it to the module logger with `log.info()`.
 
 To use the listener logger for the `http` listener, you can use the following command:
-`self.instance_log.info()`. 
+`self.instance_log.info()`.
 
 
 ## Formatters

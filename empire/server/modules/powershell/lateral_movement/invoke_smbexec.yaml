@@ -3,7 +3,8 @@ authors:
   - name: ''
     handle: '@rvrsh3ll'
     link: ''
-description: Executes a stager on remote hosts using SMBExec.ps1. This module requires a username and NTLM hash
+description: Executes a stager on remote hosts using SMBExec.ps1. This module requires
+  a username and NTLM hash
 software: ''
 tactics: [TA0008]
 techniques: [T1021.002, T1569.002, T1078.002]
@@ -40,7 +41,7 @@ options:
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'CredID' ]
+        values: ['CredID']
   - name: ComputerName
     description: Host[s] to execute the stager on, comma separated.
     required: true
@@ -51,7 +52,7 @@ options:
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'Manual' ]
+        values: ['Manual']
   - name: Domain
     description: Domain.
     required: true
@@ -62,7 +63,7 @@ options:
     value: ''
     depends_on:
       - name: Credentials
-        values: [ 'Manual' ]
+        values: ['Manual']
   - name: Service
     description: Name of service to create and delete. Defaults to 20 char random.
     required: false
@@ -73,17 +74,17 @@ options:
     value: ''
     depends_on:
       - name: Payload
-        values: [ 'Empire' ]
+        values: ['Empire']
   - name: Command
     description: Custom command to run.
     required: false
     value: ''
     depends_on:
       - name: Payload
-        values: [ 'Manual' ]
+        values: ['Manual']
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
-      only.
+    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
+      for obfuscation types. For powershell only.
     required: false
     value: 'False'
     strict: true
@@ -91,18 +92,20 @@ options:
       - True
       - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True. For powershell only.
     required: false
     value: Token\All\1
     depends_on:
       - name: Obfuscate
-        values: [ 'True' ]
+        values: ['True']
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
     value: mattifestation etw
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -110,11 +113,13 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false

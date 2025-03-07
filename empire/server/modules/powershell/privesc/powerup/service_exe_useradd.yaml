@@ -3,7 +3,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Backs up a service's binary and replaces the original with a binary that creates/adds a local administrator.
+description: Backs up a service's binary and replaces the original with a binary
+  that creates/adds a local administrator.
 software: S0194
 tactics: [TA0003, TA0004]
 techniques: [T1543.010, T1136.001, T1068]
@@ -37,7 +38,8 @@ options:
     required: false
     value: Administrators
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -48,4 +50,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: privesc/PowerUp.ps1
-script_end: Install-ServiceBinary {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Install-ServiceBinary completed'
+script_end: Install-ServiceBinary {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Install-ServiceBinary completed'

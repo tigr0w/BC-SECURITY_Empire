@@ -11,17 +11,17 @@ function Invoke-SMBScanner {
     Required Dependencies: None
     Optional Dependencies: None
     Version: 0.1.1
- 
+
 .DESCRIPTION
 
     Tests a username/password combination across a number of machines.
     If no machines are specified, the domain will be queries for active machines.
-    For domain accounts, specify a domain to query 
+    For domain accounts, specify a domain to query
 
 .EXAMPLE
 
     PS C:\> Invoke-SMBScanner -Domain 'Borgar.local' -ComputerName DC01 -Usernames 'kclark','Administrator','SQLSvc' -Password 'P@ssw0rd'
-    
+
     ComputerName Domain       Username      Password Valid
     ------------ ------       --------      -------- -----
     DC01         Borgar.local kclark        P@ssw0rd False
@@ -30,7 +30,7 @@ function Invoke-SMBScanner {
 
 
     PS C:\> Invoke-SMBScanner -ComputerName '127.0.0.1' -Usernames 'kclark','Administrator','localadmin' -Password 'P@sssw0rd'
-    
+
     ComputerName Domain Username      Password  Valid
     ------------ ------ --------      --------  -----
     127.0.0.1    <None> kclark        P@sssw0rd False
@@ -38,7 +38,7 @@ function Invoke-SMBScanner {
     127.0.0.1    <None> localadmin    P@sssw0rd True
 
 #>
-    
+
     [CmdletBinding()] Param(
         [Parameter(Mandatory = $False,ValueFromPipeline=$True)]
         [String[]] $ComputerName,
@@ -48,7 +48,7 @@ function Invoke-SMBScanner {
 
         [parameter(Mandatory = $True)]
         [String] $Password,
-		
+
         [parameter(Mandatory = $False)]
         [String] $Domain,
 
@@ -80,14 +80,14 @@ function Invoke-SMBScanner {
             $ComputerNames = @($ComputerName)
         }
 
-        foreach ($Computer in $ComputerNames){     
+        foreach ($Computer in $ComputerNames){
             try {
-                
+
                 Write-Verbose "Checking: $Computer"
 
                 $up = $true
                 if(-not $NoPing){
-                    $up = Test-Connection -count 1 -Quiet -ComputerName $Computer 
+                    $up = Test-Connection -count 1 -Quiet -ComputerName $Computer
                 }
                 if($up){
 
@@ -99,10 +99,10 @@ function Invoke-SMBScanner {
                         $Domain = "<None>"
                         $ContextType = [System.DirectoryServices.AccountManagement.ContextType]::Machine
                     }
-                
+
                     foreach($Username in $Usernames) {
                         $PrincipalContext = New-Object System.DirectoryServices.AccountManagement.PrincipalContext($ContextType, $Computer)
-                        $Valid = $PrincipalContext.ValidateCredentials($Username, $Password).ToString()           
+                        $Valid = $PrincipalContext.ValidateCredentials($Username, $Password).ToString()
 
                         $out = new-object psobject
                         $out | add-member Noteproperty 'ComputerName' $Computer

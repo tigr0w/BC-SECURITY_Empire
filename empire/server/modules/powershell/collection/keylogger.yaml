@@ -9,10 +9,10 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Logs keys pressed, time and the active window (when changed) to the keystrokes.txt file. This file is located
-  in the agents downloads directory Empire/downloads/<AgentName>/keystrokes.txt.
+description: Logs keys pressed, time and the active window (when changed) to the
+  keystrokes.txt file. This file is located in the agents downloads directory Empire/downloads/<AgentName>/keystrokes.txt.
 software: ''
-tactics: [TA0006,TA0009]
+tactics: [TA0006, TA0009]
 techniques: [T1056.001]
 background: true
 output_extension:
@@ -28,7 +28,8 @@ options:
     required: true
     value: ''
   - name: Sleep
-    description: Sleep time [ms] between key presses. Shorter times may increase CPU usage on the target.
+    description: Sleep time [ms] between key presses. Shorter times may increase
+      CPU usage on the target.
     required: false
     value: '0'
 script_path: collection/Get-Keystrokes.ps1

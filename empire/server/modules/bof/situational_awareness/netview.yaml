@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List reachable computers in the current domain.
 software: ''
-tactics: [TA0007,TA0043]
-techniques: [T1135,T1018]
+tactics: [TA0007, TA0043]
+techniques: [T1135, T1018]
 background: false
 output_extension:
 needs_admin: false

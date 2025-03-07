@@ -45,7 +45,8 @@ options:
       - true
       - false
   - name: duplicate-elevate
-    description: duplicate a low privileged existing LSASS handle and then elevate it
+    description: duplicate a low privileged existing LSASS handle and then elevate
+      it
     required: false
     value: false
     strict: true
@@ -61,7 +62,8 @@ options:
       - true
       - false
   - name: seclogon-leak-remote
-    description: leak an LSASS handle into another process via seclogon and duplicate it
+    description: leak an LSASS handle into another process via seclogon and duplicate
+      it
     required: false
     value: ''
     strict: false
@@ -111,7 +113,8 @@ options:
       - true
       - false
   - name: elevate-handle
-    description: open a handle to LSASS with low privileges and duplicate it to gain higher privileges
+    description: open a handle to LSASS with low privileges and duplicate it to gain
+      higher privileges
     required: false
     value: false
     strict: true

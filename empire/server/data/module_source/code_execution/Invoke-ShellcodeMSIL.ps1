@@ -10,7 +10,7 @@ function Invoke-ShellcodeMSIL
     License: BSD 3-Clause
     Required Dependencies: None
     Optional Dependencies: None
- 
+
 .DESCRIPTION
 
     Invoke-ShellcodeMSIL executes shellcode by using specially crafted MSIL opcodes to overwrite a JITed dummy method. This technique is compelling because unlike Invoke-Shellcode, Invoke-ShellcodeMSIL doesn't call any Win32 functions.

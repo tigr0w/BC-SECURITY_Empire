@@ -3,7 +3,8 @@ authors:
   - name: ''
     handle: '@sixdub'
     link: ''
-description: Starts the Resolver Backdoor. Attempts to resolve specified hostname. If the resolved ip address does not match it then calls back
+description: Starts the Resolver Backdoor. Attempts to resolve specified hostname.
+  If the resolved ip address does not match it then calls back
 software: S0194
 tactics: [TA0004]
 techniques: [T1546]

@@ -1,8 +1,8 @@
 name: SharpSC
 authors:
-- name: Anthony Rose
-  handle: Cx01N
-  link: https://twitter.com/Cx01N_
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
 description: Use a SharpSC command.
 software: ''
 tactics: [TA0007. TA0040]
@@ -14,22 +14,22 @@ opsec_safe: true
 language: csharp
 min_language_version: ''
 options:
-- name: Command
-  description: SharpSC command to execute.
-  required: false
-  value: action=query service=
-  strict: false
-  suggested_values:
-  - action=query service=
-  - action=start service=
-  - action=stop service=
-  - action=create service=
-  - action=delete service=
+  - name: Command
+    description: SharpSC command to execute.
+    required: false
+    value: action=query service=
+    strict: false
+    suggested_values:
+      - action=query service=
+      - action=start service=
+      - action=stop service=
+      - action=create service=
+      - action=delete service=
 csharp:
   UnsafeCompile: true
   CompatibleDotNetVersions:
-  - Net35
-  - Net40
+    - Net35
+    - Net40
   Code: |
     using System;
     using System.IO;
@@ -47,32 +47,32 @@ csharp:
         private static byte originalByte;
 
         public static Stream OutputStream { get; set; }
-    
+
         public static void Main(string[] args)
         {
             using (StringWriter stringWriter = new StringWriter())
             {
                 TextWriter originalOutput = Console.Out;
                 TextWriter originalError = Console.Error;
-    
+
                 StreamWriter outputStreamWriter = null;
                 if (OutputStream != null)
                 {
                     outputStreamWriter = new StreamWriter(OutputStream);
                     outputStreamWriter.AutoFlush = true;
                 }
-    
+
                 PatchEnvironmentExit();
-    
+
                 try
                 {
                     MultiTextWriter multiWriter = new MultiTextWriter(stringWriter, outputStreamWriter);
                     Console.SetOut(multiWriter);
                     Console.SetError(multiWriter);
-    
+
                     string allArgs = string.Join(" ", args);
                     string[] splitArgs = allArgs.Split(' ');
-    
+
                     typeof(SharpSC.Program).GetMethod("Main", BindingFlags.NonPublic | BindingFlags.Static)
                                    .Invoke(null, new object[] { splitArgs });
                 }
@@ -88,7 +88,7 @@ csharp:
                 {
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
-    
+
                     if (outputStreamWriter != null)
                     {
                         outputStreamWriter.Flush();
@@ -98,18 +98,18 @@ csharp:
                 }
             }
         }
-    
+
         private class MultiTextWriter : TextWriter
         {
             private readonly TextWriter _writer1;
             private readonly TextWriter _writer2;
-    
+
             public MultiTextWriter(TextWriter writer1, TextWriter writer2)
             {
                 _writer1 = writer1;
                 _writer2 = writer2;
             }
-    
+
             public override Encoding Encoding
             {
                 get
@@ -117,19 +117,19 @@ csharp:
                     return _writer1?.Encoding ?? Encoding.UTF8;
                 }
             }
-    
+
             public override void Write(char value)
             {
                 _writer1?.Write(value);
                 _writer2?.Write(value);
             }
-    
+
             public override void Write(string value)
             {
                 _writer1?.Write(value);
                 _writer2?.Write(value);
             }
-    
+
             public override void Flush()
             {
                 _writer1?.Flush();
@@ -225,38 +225,38 @@ csharp:
         }
     }
   ReferenceSourceLibraries:
-  - Name: SharpSC
-    Description: SharpSC is a .NET assembly to perform basic operations with services.
-    Location: SharpSC\
-    Language: CSharp
-    CompatibleDotNetVersions:
-    - Net35
-    - Net40
-    ReferenceAssemblies:
-    - Name: System.ServiceProcess.dll
-      Location: net40\System.ServiceProcess.dll
-      DotNetVersion: Net40
-    - Name: System.dll
-      Location: net40\System.dll
-      DotNetVersion: Net40
-    - Name: System.Core.dll
-      Location: net40\System.Core.dll
-      DotNetVersion: Net40
-    - Name: mscorlib.dll
-      Location: net40\mscorlib.dll
-      DotNetVersion: Net40
-    - Name: System.ServiceProcess.dll
-      Location: net35\System.ServiceProcess.dll
-      DotNetVersion: Net35
-    - Name: mscorlib.dll
-      Location: net35\mscorlib.dll
-      DotNetVersion: Net35
-    - Name: System.Core.dll
-      Location: net35\System.Core.dll
-      DotNetVersion: Net35
-    - Name: System.dll
-      Location: net35\System.dll
-      DotNetVersion: Net35
-    EmbeddedResources: []
+    - Name: SharpSC
+      Description: SharpSC is a .NET assembly to perform basic operations with services.
+      Location: SharpSC\
+      Language: CSharp
+      CompatibleDotNetVersions:
+        - Net35
+        - Net40
+      ReferenceAssemblies:
+        - Name: System.ServiceProcess.dll
+          Location: net40\System.ServiceProcess.dll
+          DotNetVersion: Net40
+        - Name: System.dll
+          Location: net40\System.dll
+          DotNetVersion: Net40
+        - Name: System.Core.dll
+          Location: net40\System.Core.dll
+          DotNetVersion: Net40
+        - Name: mscorlib.dll
+          Location: net40\mscorlib.dll
+          DotNetVersion: Net40
+        - Name: System.ServiceProcess.dll
+          Location: net35\System.ServiceProcess.dll
+          DotNetVersion: Net35
+        - Name: mscorlib.dll
+          Location: net35\mscorlib.dll
+          DotNetVersion: Net35
+        - Name: System.Core.dll
+          Location: net35\System.Core.dll
+          DotNetVersion: Net35
+        - Name: System.dll
+          Location: net35\System.dll
+          DotNetVersion: Net35
+      EmbeddedResources: []
   ReferenceAssemblies: []
   EmbeddedResources: []

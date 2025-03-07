@@ -54,8 +54,8 @@ options:
     required: false
     value: ''
   - name: Recurse
-    description: 'Recursively get files in subfolders eg. set True or leave blank (do
-    not use for Data exfil) '
+    description: 'Recursively get files in subfolders eg. set True or leave blank
+      (do not use for Data exfil) '
     required: false
     value: ''
 script_path: 'exfil/Invoke-ExfilDataToGitHub.ps1'

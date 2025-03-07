@@ -6,7 +6,7 @@ authors:
 description: TCP and UDP IPv4 listing ports.
 software: ''
 tactics: [TA0007]
-techniques: [T1049,T1016]
+techniques: [T1049, T1016]
 background: false
 output_extension:
 needs_admin: false

@@ -6,7 +6,8 @@ authors:
 description: Finds generic .DLL hijacking opportunities.
 software: S0194
 tactics: [TA0007]
-techniques: [T1087.001, T1574.001, T1574.007,T1574.008,T1574.009, T1057, T1012, T1068, T1082]
+techniques: [T1087.001, T1574.001, T1574.007, T1574.008, T1574.009, T1057, T1012,
+  T1068, T1082]
 background: true
 output_extension:
 needs_admin: false
@@ -25,7 +26,8 @@ options:
     required: false
     value: ''
   - name: ExcludeProgramFiles
-    description: Switch. Exclude paths from C:\Program Files\* and C:\Program Files (x86)\*
+    description: Switch. Exclude paths from C:\Program Files\* and C:\Program Files
+      (x86)\*
     required: false
     value: ''
   - name: ExcludeOwned
@@ -33,7 +35,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -44,4 +47,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: privesc/PowerUp.ps1
-script_end: Find-ProcessDLLHijack {{ PARAMS }} | ft -wrap | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-ProcessDLLHijack completed'
+script_end: Find-ProcessDLLHijack {{ PARAMS }} | ft -wrap | {{ OUTPUT_FUNCTION }}
+  | %{$_ + "`n"}; 'Find-ProcessDLLHijack completed'

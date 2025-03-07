@@ -459,7 +459,7 @@ Function  Get-SQLServerInfo {
             SYSTEM_USER as [Currentlogin],
             '$IsSysadmin' as [IsSysadmin],
         '$ActiveSessions' as [ActiveSessions]"
-        $TblServerInfoTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password 
+        $TblServerInfoTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
         $TblServerInfo = $TblServerInfo + $TblServerInfoTemp
     } End {
         $TblServerInfo
@@ -483,21 +483,21 @@ Function  Get-SQLServerLoginDefaultPw {
         $TblResults.Columns.Add('Computer') | Out-Null
         $TblResults.Columns.Add('Instance') | Out-Null
         $TblResults.Columns.Add('Username') | Out-Null
-        $TblResults.Columns.Add('Password') | Out-Null 
+        $TblResults.Columns.Add('Password') | Out-Null
         $TblResults.Columns.Add('IsSysAdmin') | Out-Null
 
         # Create table for database of defaults
         $DefaultPasswords = New-Object System.Data.DataTable
         $DefaultPasswords.Columns.Add('Instance') | Out-Null
         $DefaultPasswords.Columns.Add('Username') | Out-Null
-        $DefaultPasswords.Columns.Add('Password') | Out-Null        
+        $DefaultPasswords.Columns.Add('Password') | Out-Null
 
         # Populate DefaultPasswords data table
         $DefaultPasswords.Rows.Add("ACS","ej","ej") | Out-Null
         $DefaultPasswords.Rows.Add("ACT7","sa","sage") | Out-Null
         $DefaultPasswords.Rows.Add("AOM2","admin","ca_admin") | out-null
         $DefaultPasswords.Rows.Add("ARIS","ARIS9","*ARIS!1dm9n#") | out-null
-        $DefaultPasswords.Rows.Add("AutodeskVault","sa","AutodeskVault@26200") | Out-Null      
+        $DefaultPasswords.Rows.Add("AutodeskVault","sa","AutodeskVault@26200") | Out-Null
         $DefaultPasswords.Rows.Add("BOSCHSQL","sa","RPSsql12345") | Out-Null
         $DefaultPasswords.Rows.Add("BPASERVER9","sa","AutoMateBPA9") | Out-Null
         $DefaultPasswords.Rows.Add("CDRDICOM","sa","CDRDicom50!") | Out-Null
@@ -531,7 +531,7 @@ Function  Get-SQLServerLoginDefaultPw {
         $DefaultPasswords.Rows.Add("SIDEXIS_SQL","sa","2BeChanged") | Out-Null
         $DefaultPasswords.Rows.Add("SQL2K5","ovsd","ovsd") | Out-Null
         $DefaultPasswords.Rows.Add("SQLEXPRESS","admin","ca_admin") | out-null
-        $DefaultPasswords.Rows.Add("STANDARDDEV2014","test","test") | Out-Null 
+        $DefaultPasswords.Rows.Add("STANDARDDEV2014","test","test") | Out-Null
         $DefaultPasswords.Rows.Add("TEW_SQLEXPRESS","tew","tew") | Out-Null
         $DefaultPasswords.Rows.Add("vocollect","vocollect","vocollect") | Out-Null
         $DefaultPasswords.Rows.Add("VSDOTNET","sa","") | Out-Null
@@ -543,7 +543,7 @@ Function  Get-SQLServerLoginDefaultPw {
         if (-not $Instance) {
             $Instance = $env:COMPUTERNAME
         }
-       
+
         # Grab only the instance name
         $TargetInstance = $Instance.Split("\")[1]
 
@@ -552,20 +552,20 @@ Function  Get-SQLServerLoginDefaultPw {
             "$Instance : No instance match found."
             return
         }
-        $TblResultsTemp = $DefaultPasswords | Where-Object { $_.instance -eq "$TargetInstance"}        
+        $TblResultsTemp = $DefaultPasswords | Where-Object { $_.instance -eq "$TargetInstance"}
 
         if ($TblResultsTemp) {
-            "$Instance : Confirmed instance match."            
+            "$Instance : Confirmed instance match."
         } else {
             "$Instance : No instance match found."
-            return  
+            return
         }
         $CurrentUsername = $TblResultsTemp.username
         $CurrentPassword = $TblResultsTemp.password
         $LoginTest = Get-SQLServerInfo -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose
         if ($LoginTest) {
             "$Instance : Confirmed default credentials - $CurrentUsername/$CurrentPassword"
-            $SysadminStatus = $LoginTest | select IsSysadmin -ExpandProperty IsSysadmin                   
+            $SysadminStatus = $LoginTest | select IsSysadmin -ExpandProperty IsSysadmin
             $TblResults.Rows.Add(
                 $ComputerName,
                 $Instance,
@@ -578,11 +578,11 @@ Function  Get-SQLServerLoginDefaultPw {
         }
     } End {
         ForEach ($Result in $TblResults) {
-            "Computer   : " + $Result.Computer 
-            "Instance   : " + $Result.Instance 
-            "Username   : " + $Result.Username 
-            "Password   : " + $Result.Password 
-            "IsSysAdmin : " + $Result.IsSysAdmin 
+            "Computer   : " + $Result.Computer
+            "Instance   : " + $Result.Instance
+            "Username   : " + $Result.Username
+            "Password   : " + $Result.Password
+            "IsSysAdmin : " + $Result.IsSysAdmin
             ""
         }
     }

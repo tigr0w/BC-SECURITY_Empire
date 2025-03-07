@@ -1,8 +1,8 @@
 name: AssemblyReflect
 authors:
-- name: Anthony Rose
-  handle: Cx01N
-  link: https://twitter.com/Cx01N_
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
 description: Execute a dotnet Assembly method using reflection.
 software: ''
 tactics: [TA0002]
@@ -23,7 +23,8 @@ options:
     required: false
     value: ''
   - name: TypeName
-    description: The name of the Type that contains the method to execute (Typically takes the format of <Namespace>.<Class>).
+    description: The name of the Type that contains the method to execute (Typically
+      takes the format of <Namespace>.<Class>).
     required: true
     value: ''
   - name: MethodName
@@ -33,15 +34,15 @@ options:
 csharp:
   UnsafeCompile: false
   CompatibleDotNetVersions:
-  - Net35
-  - Net40
+    - Net35
+    - Net40
   Code: |
     using System;
     using System.IO;
     using System.Linq;
     using SharpSploit.Generic;
     using SharpSploit.Execution;
-    
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -50,11 +51,11 @@ csharp:
             string typeName = args.Length > 1 ? args[1] : "";
             string methodName = args.Length > 2 ? args[2] : "";
             string parameters = args.Length > 3 ? args[3] : "";
-    
+
             string result = ExecuteAssemblyMethod(assembly, typeName, methodName, parameters);
             Console.WriteLine(result);
         }
-    
+
         public static string ExecuteAssemblyMethod(string assembly, string typeName, string methodName, string parameters = "")
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -63,13 +64,13 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
-    
+
                 try
                 {
                     object[] args = !string.IsNullOrEmpty(parameters)
                         ? parameters.Split(',').Select(p => (object)p).ToArray()
                         : default;
-    
+
                     GenericObjectResult result = Assembly.AssemblyExecute(assembly, typeName, methodName, args);
                     stringWriter.WriteLine(result.ToString());
                 }
@@ -86,60 +87,60 @@ csharp:
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
                 }
-    
+
                 return stringWriter.ToString();
             }
         }
     }
   ReferenceSourceLibraries:
-  - Name: SharpSploit
-    Description: SharpSploit is a library for C# post-exploitation modules.
-    Location: SharpSploit\SharpSploit\
-    Language: CSharp
-    CompatibleDotNetVersions: null
-    ReferenceAssemblies:
-    - Name: System.Management.Automation.dll
-      Location: net35\System.Management.Automation.dll
-      DotNetVersion: Net35
-    - Name: System.Management.dll
-      Location: net40\System.Management.dll
-      DotNetVersion: Net40
-    - Name: System.Management.Automation.dll
-      Location: net40\System.Management.Automation.dll
-      DotNetVersion: Net40
-    - Name: System.IdentityModel.dll
-      Location: net40\System.IdentityModel.dll
-      DotNetVersion: Net40
-    - Name: System.dll
-      Location: net40\System.dll
-      DotNetVersion: Net40
-    - Name: System.DirectoryServices.dll
-      Location: net40\System.DirectoryServices.dll
-      DotNetVersion: Net40
-    - Name: System.Core.dll
-      Location: net40\System.Core.dll
-      DotNetVersion: Net40
-    - Name: mscorlib.dll
-      Location: net40\mscorlib.dll
-      DotNetVersion: Net40
-    - Name: System.Management.dll
-      Location: net35\System.Management.dll
-      DotNetVersion: Net35
-    - Name: mscorlib.dll
-      Location: net35\mscorlib.dll
-      DotNetVersion: Net35
-    - Name: System.Core.dll
-      Location: net35\System.Core.dll
-      DotNetVersion: Net35
-    - Name: System.DirectoryServices.dll
-      Location: net35\System.DirectoryServices.dll
-      DotNetVersion: Net35
-    - Name: System.dll
-      Location: net35\System.dll
-      DotNetVersion: Net35
-    - Name: System.IdentityModel.dll
-      Location: net35\System.IdentityModel.dll
-      DotNetVersion: Net35
-    EmbeddedResources: []
+    - Name: SharpSploit
+      Description: SharpSploit is a library for C# post-exploitation modules.
+      Location: SharpSploit\SharpSploit\
+      Language: CSharp
+      CompatibleDotNetVersions: null
+      ReferenceAssemblies:
+        - Name: System.Management.Automation.dll
+          Location: net35\System.Management.Automation.dll
+          DotNetVersion: Net35
+        - Name: System.Management.dll
+          Location: net40\System.Management.dll
+          DotNetVersion: Net40
+        - Name: System.Management.Automation.dll
+          Location: net40\System.Management.Automation.dll
+          DotNetVersion: Net40
+        - Name: System.IdentityModel.dll
+          Location: net40\System.IdentityModel.dll
+          DotNetVersion: Net40
+        - Name: System.dll
+          Location: net40\System.dll
+          DotNetVersion: Net40
+        - Name: System.DirectoryServices.dll
+          Location: net40\System.DirectoryServices.dll
+          DotNetVersion: Net40
+        - Name: System.Core.dll
+          Location: net40\System.Core.dll
+          DotNetVersion: Net40
+        - Name: mscorlib.dll
+          Location: net40\mscorlib.dll
+          DotNetVersion: Net40
+        - Name: System.Management.dll
+          Location: net35\System.Management.dll
+          DotNetVersion: Net35
+        - Name: mscorlib.dll
+          Location: net35\mscorlib.dll
+          DotNetVersion: Net35
+        - Name: System.Core.dll
+          Location: net35\System.Core.dll
+          DotNetVersion: Net35
+        - Name: System.DirectoryServices.dll
+          Location: net35\System.DirectoryServices.dll
+          DotNetVersion: Net35
+        - Name: System.dll
+          Location: net35\System.dll
+          DotNetVersion: Net35
+        - Name: System.IdentityModel.dll
+          Location: net35\System.IdentityModel.dll
+          DotNetVersion: Net35
+      EmbeddedResources: []
   ReferenceAssemblies: []
   EmbeddedResources: []

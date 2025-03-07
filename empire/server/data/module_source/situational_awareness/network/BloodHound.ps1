@@ -3455,7 +3455,7 @@ function Find-GPOLocation {
                 # $Object = Get-ADObject -SID $TargetSid -Domain $Domain -DomainController $DomainController -Credential $Credential -PageSize $PageSize
                 $Object = Get-ADObject -SID $TargetSid
                 if (-not $Object) {
-                    $Object = Get-ADObject -SID $TargetSid -Domain $Domain -DomainController $DomainController -Credential $Credential -PageSize $PageSize                        
+                    $Object = Get-ADObject -SID $TargetSid -Domain $Domain -DomainController $DomainController -Credential $Credential -PageSize $PageSize
                 }
                 if($Object) {
                     $MemberDN = $Object.distinguishedName
@@ -4525,7 +4525,7 @@ function New-ThreadedFunction {
         $ComputerName = $ComputerName | Where-Object { $_ -and ($_ -ne '') }
         Write-Verbose "[New-ThreadedFunction] Total number of hosts: $($ComputerName.count)"
 
-        # partition all hosts from -ComputerName into $Threads number of groups 
+        # partition all hosts from -ComputerName into $Threads number of groups
         if ($Threads -ge $ComputerName.Length) {
             $Threads = $ComputerName.Length
         }
@@ -4574,7 +4574,7 @@ function New-ThreadedFunction {
 
     END {
         Write-Verbose "[New-ThreadedFunction] Threads executing"
-        
+
         # continuously loop through each job queue, consuming output as appropriate
         Do {
             ForEach ($Job in $Jobs) {
@@ -5358,14 +5358,14 @@ function Invoke-BloodHound {
                                 #   WriteProperty/Self-Membership   -   modify group membership (bf9679c0-0de6-11d0-a285-00aa003049e2)
                                 #   WriteProperty/Script-Path       -   modify a user's script-path (bf9679a8-0de6-11d0-a285-00aa003049e2)
                                 if (
-                                        ( ($RawActiveDirectoryRights -match 'GenericAll|GenericWrite') -and (-not $_.ObjectAceType -or $_.ObjectAceType -eq '00000000-0000-0000-0000-000000000000') ) -or 
-                                        ($RawActiveDirectoryRights -match 'WriteDacl|WriteOwner') -or 
-                                        ( ($RawActiveDirectoryRights -match 'ExtendedRight') -and (-not $_.ObjectAceType -or $_.ObjectAceType -eq '00000000-0000-0000-0000-000000000000') ) -or 
+                                        ( ($RawActiveDirectoryRights -match 'GenericAll|GenericWrite') -and (-not $_.ObjectAceType -or $_.ObjectAceType -eq '00000000-0000-0000-0000-000000000000') ) -or
+                                        ($RawActiveDirectoryRights -match 'WriteDacl|WriteOwner') -or
+                                        ( ($RawActiveDirectoryRights -match 'ExtendedRight') -and (-not $_.ObjectAceType -or $_.ObjectAceType -eq '00000000-0000-0000-0000-000000000000') ) -or
                                         (($_.ObjectAceType -eq '00299570-246d-11d0-a768-00aa006e0529') -and ($RawActiveDirectoryRights -match 'ExtendedRight')) -or
                                         (($_.ObjectAceType -eq 'bf9679c0-0de6-11d0-a285-00aa003049e2') -and ($RawActiveDirectoryRights -match 'WriteProperty')) -or
                                         (($_.ObjectAceType -eq 'bf9679a8-0de6-11d0-a285-00aa003049e2') -and ($RawActiveDirectoryRights -match 'WriteProperty'))
                                     ) {
-                                    
+
                                     $PrincipalSid = $_.SecurityIdentifier.ToString()
                                     $PrincipalSimpleName, $PrincipalObjectClass, $ACEType = $Null
 
@@ -5678,7 +5678,7 @@ function Invoke-BloodHound {
 
     PROCESS {
         if ($TargetDomains -and (-not $SkipComputerEnumeration)) {
-            
+
             if($Statements) {
                 $Statements.Clear()
             }

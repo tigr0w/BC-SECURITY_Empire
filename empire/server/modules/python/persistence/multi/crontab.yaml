@@ -39,11 +39,11 @@ options:
       - False
 script: |-
   import subprocess
-  
+
   command = "{{Command}}"
   cron_settings = "{{CronSettings}}"
   delete = '{{Remove}}'
-  
+
   try:
       if delete.lower() == 'true':
           subprocess.call(['crontab', '-r'])
