@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-DEFAULT_SESSION_ID = 00000000
+DEFAULT_SESSION_ID = "00000000"
 
 
 class AgentCommunicationService:

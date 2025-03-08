@@ -11,6 +11,8 @@
   * [Dropbox](listeners/dropbox.md)
   * [OneDrive](listeners/onedrive.md)
   * [Malleable C2](listeners/malleable-c2.md)
+* [Stagers](stagers/README.MD)
+  * [multi_generate_agent](stagers/multi_generate_agent.md)
 * [Logging](logging/logging.md)
 * [Interfaces](interfaces/README.md)
   * [Starkiller](interfaces/starkiller/README.md)

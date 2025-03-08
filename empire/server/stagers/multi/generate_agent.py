@@ -14,7 +14,7 @@ class Stager:
                     "Link": "https://twitter.com/Cx01N_",
                 },
             ],
-            "Description": "Generates an agent code instance for a specified listener, pre-staged, and register the agent in the db. This allows the agent to begin beconing behavior immediately.",
+            "Description": "A stageless stager that generates a fully-formed agent for Python, IronPython, and PowerShell by combining stage 0, stage 1, and stage 2 into a single file. Unlike traditional stagers, it performs the key exchange without executing the passed code, making it ideal for debugging or pre-staging agents. This does not apply to C# or Go agents, as they are already compiled and prestaged.",
             "Comments": [],
         }
 

@@ -329,9 +329,42 @@ def test_generate_jar(stager_generation_service):
     assert len(result) > 1000  # noqa: PLR2004
 
 
+@pytest.mark.parametrize(
+    ("language", "expected_substrings"),
+    [
+        ("python", ["def run(", "server=", "class Stage"]),
+        ("ironpython", ["def run(", "server=", "class Stage"]),
+        (
+            "powershell",
+            [
+                "function Invoke-Empire {",
+                "function Start-Negotiate {",
+                '$ErrorActionPreference = "SilentlyContinue"',
+            ],
+        ),
+    ],
+)
+def test_generate_stageless(stager_generation_service, language, expected_substrings):
+    """
+    Test the generate_stageless function for different supported languages.
+    """
+    options = {
+        "Listener": {"Value": "new-listener-1"},
+        "Language": {"Value": language},
+    }
+
+    result = stager_generation_service.generate_stageless(options)
+
+    assert result is not None, f"Stageless agent generation failed for {language}."
+    assert isinstance(result, str), (
+        f"Generated stageless agent for {language} should be a string."
+    )
+
+    for substring in expected_substrings:
+        assert substring in result, (
+            f"Expected '{substring}' in the generated {language} agent."
+        )
+
+
 def test_generate_upload(stager_generation_service):
-    pass
-
-
-def test_generate_stageless(stager_generation_service):
     pass

