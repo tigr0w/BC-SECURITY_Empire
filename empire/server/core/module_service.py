@@ -954,7 +954,7 @@ class ModuleService:
         return paths
 
     def remove_preobfuscated_modules(self, _language: str):
-        shutil.rmtree(self._obfuscated_module_source_path)
+        shutil.rmtree(self._obfuscated_module_source_path, ignore_errors=True)
 
     def finalize_module(
         self,
