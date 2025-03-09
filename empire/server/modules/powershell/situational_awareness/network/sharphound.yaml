@@ -1,18 +1,17 @@
-name: Invoke-BloodHound
+name: Sharphound (CE)
 authors:
-  - name: Will Schroeder
+  - name: Anthony Rose
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-  - name: Andy Robbins
-    handle: '@_wald0'
-    link: https://twitter.com/_wald0
-  - name: Rohan Vazarkar
-    handle: '@cptjesus'
-    link: https://twitter.com/cptjesus
-  - name: rafff
-    handle: ''
-    link: ''
-description: Execute BloodHound data collection (ingestor for version 3).
+description: BloodHound uses graph theory to reveal the hidden and often unintended
+  relationships within an Active Directory or Azure environment. Attackers can use
+  BloodHound to quickly identify highly complex attack paths that would otherwise
+  be impossible to find. Defenders can use BloodHound to identify and eliminate those
+  same attack paths. Both red and blue teams can use BloodHound to better understand
+  privileged relationships in an Active Directory or Azure environment. SharpHound
+  is designed targeting .Net 4.6.2. SharpHound must be run from the context of a
+  domain user, either directly through a logon or through another method such as
+  RUNAS.
 software: ''
 tactics: [TA0007]
 techniques: [T1087.001, T1087.002, T1560, T1059.001, T1482, T1615, T1106, T1201,

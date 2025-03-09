@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated stageless agents to work with python, ironpython, and powershell with the new staging process.
 -   Update tactics and techniques on all modules
 -   Add a yaml formatter and run pre-commit across all files
+-   Added sharphound ingestor for CE and tagged bloodhound with legacy
 
 ## [6.0.0-beta3] - 2025-03-02
 
