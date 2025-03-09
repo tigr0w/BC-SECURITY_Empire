@@ -13,37 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Security** in case of vulnerabilities.
 
 ## [Unreleased]
--   Remove outdated listeners
-  - HTTP COM only supports powershell agent and uses an older COM object that isn't used often
-  - OneDrive has new APIs and Microsoft hs made registration harder. May return in the future with revisions.
-  - Dropbox has new APIs and may return in the future with revisions.
--   Revised the staging process for agents. Session IDs are provided by the server and all packets are wrapped in routing packets.
--   Updated stageless agents to work with python, ironpython, and powershell with the new staging process.
--   Update tactics and techniques on all modules
--   Add a yaml formatter and run pre-commit across all files
--   Added sharphound ingestor for CE and tagged bloodhound with legacy
-
-## [6.0.0-beta3] - 2025-03-02
-
--   Simplify option_util.validate_options, fixes a bug where an optional file option was treated as required
--   Fix issue loading a plugin that has multiple files
--   Convert many parts of codebase to be compliant with flake8-use-pathlib
-
-## [6.0.0-beta2] - 2025-02-21
-
-### Changed
-
--   Combined config with config_manager
--   Remove empire_config.directories.module_source and empire_config.directories.obfuscated_module_source
--   Add pytest-env to set TEST_MODE
--   module_service execute_module returns a pydantic model
--   agent_task_service functions take a user model instead of user id
--   All writeable data moved out of the install path into `~/.local/share/empire`
--   Pass output path to dotnet compiler, only compile the requested version
--   Csharp and bof tasks attach the executable as a 'download' with a tag 'task:input'
--   Fixed issue with permissions caused by git operations being done with de-elevated permissions
-
-## [6.0.0-beta1] - 2025-01-11
 
 ### Highlights
 
@@ -68,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added dynamic options to modules
 -   Added module `code_execution/invoke-script` for remote ps1 script execution
 -   Added module `python/code_execution/invoke-script` for remote py script execution
+-   Added sharphound ingestor for CE and tagged bloodhound with legacy
 
 ### Changed
 
@@ -77,6 +47,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated parsing for bof formatting to use bof_pack
 -   Moved bash and pyinstaller stagers to linux folder
 -   Change formatter to ruff to consolidate developer tooling
+-   Revised the staging process for agents. Session IDs are provided by the server and all packets are wrapped in routing packets.
+    -   Updated stageless agents to work with python, ironpython, and powershell with the new staging process.
+-   Updated tactics and techniques on all modules
+-   Added a yaml formatter and run pre-commit across all files
+-   Combined config with config_manager
+-   Converted many parts of codebase to be compliant with flake8-use-pathlib
+-   Csharp and bof tasks attach the executable as a 'download' with a tag 'task:input'
+-   Pass output path to dotnet compiler, only compile the requested version
 
 #### Breaking
 
@@ -88,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Moved Plugin Task handling from `PluginService` to `PluginTaskService`
 -   Moved socks management to `AgentSocksService`
     -   Renamed socks properties on `AgentSocksService` to use plural naming
--   Remove `update_lastseen` parameter from `handle_agent_request`
+-   Removed `update_lastseen` parameter from `handle_agent_request`
 -   Renamed all config properties in client and server configs to use snake_case
 -   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
 -   `ip_whitelist` and `ip_blacklist` are now `ip_allow_list` and `ip_deny_list` and are lists instead of comma separated strings
@@ -100,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Moved EmpireCompiler compression from application to the server
     -   Moved EmpireCompiler from install script to startup with autoupdate functionality
     -   Replaced csharpserver plugin with `DotnetCompiler` class in `empire.server.common`
+-   module_service.execute_module returns a pydantic model
+-   agent_task_service functions take a user model instead of user id
+-   All writeable data moved out of the install path into `~/.local/share/empire`
 
 ### Deprecated
 
@@ -116,6 +97,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   windows/launcher_sct
     -   windows/ms16-051
     -   windows/reverseshell
+-   Removed the following listeners
+    -   HTTP COM only supports powershell agent and uses an older COM object that isn't used often
+    -   OneDrive has new APIs and Microsoft hs made registration harder. May return in the future with revisions.
+    -   Dropbox has new APIs and may return in the future with revisions.
+-   Removed empire_config.directories.module_source and empire_config.directories.obfuscated_module_source
 
 #### Breaking
 
@@ -131,6 +117,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 -   Fixed Powershell agent overwritting results for C# taskings
+-   Simplify option_util.validate_options, fixes a bug where an optional file option was treated as required
+-   Fixed issue loading a plugin that has multiple files
+-   Fixed issue with permissions caused by git operations being done with de-elevated permissions
 
 ### Security
 
@@ -1072,13 +1061,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta3...HEAD
-
-[6.0.0-beta3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta2...v6.0.0-beta3
-
-[6.0.0-beta2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-beta1...v6.0.0-beta2
-
-[6.0.0-beta1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...v6.0.0-beta1
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...HEAD
 
 [5.12.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...v5.12.2
 
