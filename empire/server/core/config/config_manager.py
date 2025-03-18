@@ -80,7 +80,7 @@ def valid_ip(v: str):
 
 
 class DatabaseDefaultsConfig(EmpireBaseModel):
-    staging_key: str = "RANDOM"
+    staging_key: str = ""
     username: str = "empireadmin"
     password: str = "password123"
     obfuscation: list[DatabaseDefaultObfuscationConfig] = []

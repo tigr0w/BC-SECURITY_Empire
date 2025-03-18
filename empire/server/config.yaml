@@ -14,8 +14,7 @@ database:
     location: empire.db
   defaults:
     # staging key will first look at OS environment variables, then here.
-    # If empty, will be prompted (like Empire <3.7).
-    staging_key: RANDOM
+    staging_key: ""
     username: empireadmin
     password: password123
     obfuscation:

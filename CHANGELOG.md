@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-  Removed BLANK and RANDOM options for staging_keys (wasn't documented anyway)
+-  Limited staging key space to letters and numbers to avoid invalid combinations
+
 ## [6.0.0-rc1] - 2025-03-09
 
 ### Highlights
