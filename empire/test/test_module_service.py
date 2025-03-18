@@ -24,7 +24,7 @@ def main_menu_mock(models, install_path):
     return main_menu
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def module_service(main_menu_mock):
     from empire.server.core.module_service import ModuleService
 
@@ -106,7 +106,7 @@ def test_execute_module_with_script_in_path_modified_powershell(
 def test_execute_module_custom_generate_no_obfuscation_config_powershell_agent(
     main_menu_mock, module_service, agent_mock
 ):
-    agent_mock.language = "powershell"
+    agent_mock.language = "python"
     params = {"Agent": agent_mock.session_id}
     module_id = "python_collection_osx_search_email"
 
@@ -306,12 +306,13 @@ def test_execute_module_task_command_unsupported_agent_language(
         "BooSource": "Hello World",
     }
     module_id = "powershell_code_execution_invoke_boolang"
-    res, err = module_service.execute_module(
-        None, agent_mock, module_id, params, True, True, None
-    )
 
-    assert res is None
-    assert err == "Unsupported agent language: unsupported_language"
+    with pytest.raises(ModuleValidationException) as excinfo:
+        module_service.execute_module(
+            None, agent_mock, module_id, params, True, True, None
+        )
+
+    assert "Unsupported agent language 'unsupported_language'" in str(excinfo.value)
 
 
 def test_execute_module_with_non_ascii_characters(module_service, agent_mock):
@@ -345,6 +346,8 @@ def test_execute_disabled_module(module_service, agent_mock):
         None, agent_mock, module_id, params, True, True, None
     )
 
+    module.enabled = True
+
     assert res is None
     assert err == "Cannot execute disabled module"
 
@@ -375,3 +378,205 @@ def test_execute_module_with_empty_params(module_service, agent_mock):
         )
 
     assert "required option missing: Agent" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    ("agent_language", "module_language", "should_raise"),
+    [
+        # Valid combinations
+        ("go", "bof", False),
+        ("go", "powershell", False),
+        ("go", "csharp", False),
+        ("ironpython", "bof", False),
+        ("ironpython", "powershell", False),
+        ("ironpython", "csharp", False),
+        ("ironpython", "python", False),
+        ("powershell", "bof", False),
+        ("powershell", "powershell", False),
+        ("powershell", "csharp", False),
+        ("csharp", "bof", False),
+        ("csharp", "powershell", False),
+        ("csharp", "csharp", False),
+        ("python", "python", False),
+        # Invalid combinations
+        ("go", "python", True),
+        ("go", "ironpython", True),
+        ("powershell", "python", True),
+        ("powershell", "ironpython", True),
+        ("csharp", "python", True),
+        ("csharp", "ironpython", True),
+        ("python", "powershell", True),
+        ("python", "csharp", True),
+        ("python", "bof", True),
+    ],
+)
+def test_validate_agent_module_language_compatibility(
+    module_service, agent_mock, agent_language, module_language, should_raise
+):
+    agent_mock.language = agent_language
+    agent_mock.language_version = "5.1"
+
+    module_mock = Mock()
+    module_mock.language = module_language
+    module_mock.min_language_version = "5.0"
+    module_mock.needs_admin = False
+    module_mock.options = {}
+
+    params = {"Agent": agent_mock.session_id}
+
+    if should_raise:
+        with pytest.raises(ModuleValidationException) as excinfo:
+            module_service._validate_module_params(
+                None, module_mock, agent_mock, params
+            )
+        assert (
+            f"agent language '{agent_language}' cannot run module language '{module_language}'"
+            in str(excinfo.value)
+        )
+    else:
+        options, err = module_service._validate_module_params(
+            None, module_mock, agent_mock, params
+        )
+        assert err is None
+        assert options is not None
+
+
+@pytest.mark.parametrize(
+    ("needs_admin", "high_integrity", "ignore_admin_check", "should_raise"),
+    [
+        (
+            True,
+            False,
+            False,
+            True,
+        ),  # Needs admin, no high integrity, no ignore -> should raise
+        (
+            True,
+            False,
+            True,
+            False,
+        ),  # Needs admin, no high integrity, but ignored -> should not raise
+        (
+            True,
+            True,
+            False,
+            False,
+        ),  # Needs admin, has high integrity -> should not raise
+        (False, False, False, False),  # Does not need admin -> should not raise
+    ],
+)
+def test_validate_module_admin_check(
+    module_service,
+    agent_mock,
+    needs_admin,
+    high_integrity,
+    ignore_admin_check,
+    should_raise,
+):
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5.1"
+    agent_mock.high_integrity = high_integrity
+
+    module_mock = Mock()
+    module_mock.language = "powershell"
+    module_mock.min_language_version = "5.0"
+    module_mock.needs_admin = needs_admin
+    module_mock.options = {}
+
+    params = {"Agent": agent_mock.session_id}
+
+    if needs_admin and not high_integrity and not ignore_admin_check:
+        with pytest.raises(ModuleValidationException) as excinfo:
+            module_service._validate_module_params(
+                None,
+                module_mock,
+                agent_mock,
+                params,
+                ignore_admin_check=ignore_admin_check,
+            )
+        assert "module needs to run in an elevated context" in str(excinfo.value)
+    else:
+        options, err = module_service._validate_module_params(
+            None, module_mock, agent_mock, params, ignore_admin_check=ignore_admin_check
+        )
+        assert err is None
+        assert options is not None
+
+
+@pytest.mark.parametrize(
+    (
+        "agent_language",
+        "module_language",
+        "agent_version",
+        "module_version",
+        "ignore_version_check",
+        "should_raise",
+    ),
+    [
+        ("powershell", "powershell", "4.0", "5.0", False, True),  # Version too low
+        ("powershell", "powershell", "5.0", "5.0", False, False),  # Matching versions
+        (
+            "powershell",
+            "powershell",
+            "6.0",
+            "5.0",
+            False,
+            False,
+        ),  # Agent version higher than required
+        (
+            "powershell",
+            "powershell",
+            "4.0",
+            "5.0",
+            True,
+            False,
+        ),  # Ignoring version check
+        ("csharp", "csharp", "3.0", "3.5", False, True),  # C# version too low
+        ("csharp", "csharp", "3.5", "3.5", False, False),  # C# version matches
+        ("csharp", "csharp", "4.0", "3.5", False, False),  # C# agent version higher
+    ],
+)
+def test_validate_module_version_check(
+    module_service,
+    agent_mock,
+    agent_language,
+    module_language,
+    agent_version,
+    module_version,
+    ignore_version_check,
+    should_raise,
+):
+    agent_mock.language = agent_language
+    agent_mock.language_version = agent_version
+
+    module_mock = Mock()
+    module_mock.language = module_language
+    module_mock.min_language_version = module_version
+    module_mock.needs_admin = False
+    module_mock.options = {}
+
+    params = {"Agent": agent_mock.session_id}
+
+    if should_raise:
+        with pytest.raises(ModuleValidationException) as excinfo:
+            module_service._validate_module_params(
+                None,
+                module_mock,
+                agent_mock,
+                params,
+                ignore_language_version_check=ignore_version_check,
+            )
+        assert (
+            f"module requires language version {module_version} but agent running language version {agent_version}"
+            in str(excinfo.value)
+        )
+    else:
+        options, err = module_service._validate_module_params(
+            None,
+            module_mock,
+            agent_mock,
+            params,
+            ignore_language_version_check=ignore_version_check,
+        )
+        assert err is None
+        assert options is not None

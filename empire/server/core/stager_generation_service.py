@@ -3,7 +3,6 @@ import errno
 import logging
 import os
 import shutil
-import string
 import typing
 from itertools import cycle
 from pathlib import Path
@@ -727,8 +726,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             listener_name
         )
 
-        chars = string.ascii_uppercase + string.digits
-        session_id = helpers.random_string(length=8, charset=chars)
+        session_id = "00000000"
         staging_key = active_listener.options["StagingKey"]["Value"]
         delay = active_listener.options["DefaultDelay"]["Value"]
         jitter = active_listener.options["DefaultJitter"]["Value"]

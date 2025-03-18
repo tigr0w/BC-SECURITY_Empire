@@ -282,6 +282,28 @@ class ModuleService:
         :param params: the execution parameters set by the user
         :return: tuple with options and the error message (if applicable)
         """
+
+        # Define valid agent/module language compatibility
+        valid_language_mapping = {
+            "go": {"bof", "powershell", "csharp"},
+            "ironpython": {"bof", "powershell", "csharp", "python"},
+            "powershell": {"bof", "powershell", "csharp"},
+            "csharp": {"bof", "powershell", "csharp"},
+            "python": {"python"},
+        }
+
+        # Ensure the agent's language is supported
+        if agent.language not in valid_language_mapping:
+            raise ModuleValidationException(
+                f"Unsupported agent language '{agent.language}'."
+            )
+
+        # Ensure the module language is compatible with the agent's language
+        if module.language not in valid_language_mapping.get(agent.language, {}):
+            raise ModuleValidationException(
+                f"agent language '{agent.language}' cannot run module language '{module.language}'."
+            )
+
         converted_options = convert_module_options(module.options)
 
         options, err = validate_options(
@@ -291,9 +313,10 @@ class ModuleService:
         if err:
             return None, err
 
-        if not ignore_language_version_check:
+        if not ignore_language_version_check and module.language == agent.language:
             module_version = parse(module.min_language_version or "0")
             agent_version = parse(agent.language_version or "0")
+
             # check if the agent/module PowerShell versions are compatible
             if module_version > agent_version:
                 raise ModuleValidationException(
