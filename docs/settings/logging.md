@@ -1,12 +1,13 @@
 Logging
 ----
 
-The logging for the server is logged to the file `empire/server/downloads/logs/empire_server.log` and to the console. By default, the logging level is set to `INFO`. The client has its own logging to the file `empire/client/downloads/logs/empire_server.log` and by default is set to `INFO`.
+The logging for the server is logged to the file `~/.local/share/empire/logs/empire_server.log` and to the console.
+By default, the logging level is set to `INFO`.
 
 
 ## Listener Logging
 Listeners have their own logging configuration. All logs `debug` and above are written to
-the file `empire/server/downloads/logs/listener_<listener_name>.log`, and all logs `warning` and obove will go to the console.
+the file `~/.local/share/empire/logs/listener_<listener_name>.log`, and all logs `warning` and obove will go to the console.
 
 If there is a log message that you also want sent to the server log and console,
 also log it to the module logger with `log.info()`.
@@ -59,7 +60,7 @@ almost always be using the `logging` module instead of a print statement.
 Not all print statements have been removed from the code yet, simply because there was just a lot of code to convert.
 If you find a print statement that should be removed: either replace it with logging, remove it, or see if it should be returned via the api (such as in stager generation).
 
-## Possible future features (5.1 and beyond)
+## Possible future features
 
 ### JSON Logging
 Add support for logging in JSON format to make it easier to parse the logs and integrate with other tools, such as with [structlog](https://www.structlog.org/en/stable/) or [python-json-logger](https://github.com/madzak/python-json-logger).

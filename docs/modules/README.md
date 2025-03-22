@@ -7,11 +7,25 @@ Modules in Empire are reusable pieces of code that allow operators to perform ta
 ## Running External Scripts without a Dedicated Module
 You can import and execute external scripts such as PowerShell or Python without the need to create a fully dedicated module. This is useful for quick operations where you want to load and execute a script on the fly.
 
-### Example: Importing and Executing PowerShell Scripts
-![](../.gitbook/assets/powershell_invoke_script.gif)
+### Examples
 
-### Example: Importing and Executing Python Scripts
-![](../.gitbook/assets/python_invoke_script.gif)
 
-### Example: Running a .NET Assembly
-![](../.gitbook/assets/execute_assembly.gif)
+{% tab title="PowerShell" %}
+Importing and Executing PowerShell Scripts
+
+![](../.gitbook/assets/modules/powershell_invoke_script.gif)
+{% endtab %}
+
+{% tab title="Python" %}
+Importing and Executing Python Scripts
+
+![](../.gitbook/assets/modules/python_invoke_script.gif)
+{% endtab %}
+
+{% tab title=".NET Assembly" %}
+Example: Running a .NET Assembly
+
+![](../.gitbook/assets/modules/execute_assembly.gif)
+{% endtab %}
+
+{% endtabs %}

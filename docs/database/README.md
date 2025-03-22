@@ -2,7 +2,7 @@
 
 Beginning in Empire 5.0, MySQL is the default database. Trying to support multi-user setups and expanding our usage of the database started to reach limitations in SQLite. SQLite is still supported, and we run the full test suite against it, but is not recommended.
 
-For database configuration see the [Configuration](../configuration/server.md) section.
+For database configuration see the [Configuration](../quickstart/server.md) section.
 
 ## Setup
 The install script will install MySQL if you install on one of the supported operating systems. If you want to switch between MySQL and SQLite, change the `use` property in the `database` section of the configuration file.

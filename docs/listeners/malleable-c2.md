@@ -12,34 +12,14 @@ The parser takes the profile and executes the set of transforms that were script
 
 ![Listener transform functionality from transformation.py](https://i1.wp.com/www.bc-security.org/wp-content/uploads/2020/09/Screenshot_2020-09-06_21-14-54.png?resize=586%2C324&ssl=1)
 
-Launching a Malleable C2 Listener can be simply done by using the Empire Command Line Interface \(CLI\) and typing:
+As of 6.0 malleable profiles can be easily managed from the malleable profiles tab under **listeners**. Here you can manually enter a profile by clicking on create and pasting in the profile configuration. You can also directly edit profiles by clicking on loaded profile and making changes then hitting **submit**
 
-```text
-uselistener http_malleable
-```
+![](<../.gitbook/assets/listeners/Malleable_C2/malleable_profiles.png>)
 
-![Starting http\_malleable listener in Empire](https://i1.wp.com/www.bc-security.org/wp-content/uploads/2020/09/Screenshot_2020-09-06_21-11-10.png?resize=1170%2C668&ssl=1)
+Launching a Malleable C2 Listener can be simply done by selecting http_malleable from the dropdown options when selecting a listener. The info page should look familiar since it uses similar settings as the standard HTTP listener, just with the addition **Profiles** dropdown. Profiles are managed from the malleable tab under listeners:
 
-The info page should look familiar since it uses similar settings as the standard HTTP listener, just with the addition **Profiles**. Profiles are loaded through your directory by using :
+![](<../.gitbook/assets/listeners/Malleable_C2/malleable_listener.png>)
 
-```text
-set Profile apt1.profile
-```
-
-**Tip:** Double click tab and it will autocomplete whatever you are typing.
-
-![Loading APT1.Profile as a Malleable Listener](https://i0.wp.com/www.bc-security.org/wp-content/uploads/2020/09/Screenshot_2020-09-06_21-11-46.png?resize=1170%2C392&ssl=1)
-
-Once you have your listener configured, you can run it and inspect it before launching your campaign. You can check out the serialized version of the profile by typing:
-
-```text
-listeners
-info http_malleable
-```
-
-![Serialized Profile for APT1.Profile](https://i0.wp.com/www.bc-security.org/wp-content/uploads/2020/09/Screenshot_2020-09-06_21-12-25.png?resize=1170%2C749&ssl=1)
-
-Seems simple enough, right? But a peek behind the curtain will give some insight into how the agent is being constructed. For example, the serialized data is ingested to build the listener and configure the agent according to the profile. Now, this is not a perfect process, \(and we have managed to get the parser to nearly 100%\) we occasionally come across profiles that are not compatible. If you happen to be a Cobalt Strike user, the c2lint tool is invaluable for checking if profiles are correctly formatted.
 
 One of the areas that still needs some improvement is when the listener tries to ingest serialized profiles. Occasionally Empire will successfully start the listener, but the agent will fail to properly stage when using a launcher. We are always trying to improve Empire functionality, so please [submit any issues](https://github.com/BC-SECURITY/Empire/issues) to our Github, since we heavily rely on users to help us identify areas for improvement.
 

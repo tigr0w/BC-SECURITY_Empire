@@ -1,15 +1,16 @@
 # Installation
 
-We recommend the use of [Kali](https://www.kali.org/downloads/), [Poetry](https://python-poetry.org/docs/), or our [Docker images](https://hub.docker.com/r/bcsecurity/empire) to run Empire. Kali Linux users and [Direct Sponsors](https://github.com/sponsors/BC-SECURITY) will receive 30-day early access to new Empire and Starkiller features.
+We recommend using the installation script or the Docker images to run Empire.
+Alternatively, you can install Empire via [Kali](https://www.kali.org/downloads/)'s package manager.
 
-The following operating systems have been tested for Empire compatibility. We will be unable to provide support for other OSs at this time. Consider using our Prebuilt Docker containers which can run on any system.
+The following operating systems have been tested for Empire compatibility.
 
-* Kali Linux Rolling
 * Ubuntu 20.04 / 22.04
 * Debian 11 / 12
+* Kali Linux
 * ParrotOS
 
-As of Empire 6.0, Python 3.11 is the minimum Python version required.
+As of Empire 6.0, Python 3.13 is the minimum Python version required.
 
 ## Github
 
@@ -65,11 +66,8 @@ If you want to run Empire using a pre-built docker container.
 # Pull the latest image
 docker pull bcsecurity/empire:latest
 
-# Run the server with the rest api and socket ports open
-docker run -it -p 1337:1337 -p 5000:5000 bcsecurity/empire:latest
-
-# Run the client
-docker run -it -p 1337:1337 -p 5000:5000 bcsecurity/empire:latest client
+# Run the server with the rest api port open
+docker run -it -p 1337:1337 bcsecurity/empire:latest
 
 # To run the client against the already running server container
 docker container ls
@@ -78,10 +76,10 @@ docker exec -it {container-id} ./ps-empire client
 # with persistent storage
 docker pull bcsecurity/empire:latest
 docker create -v /empire --name data bcsecurity/empire:latest
-docker run -it -p 1337:1337 -p 5000:5000 --volumes-from data bcsecurity/empire:latest
+docker run -it -p 1337:1337 --volumes-from data bcsecurity/empire:latest
 
 # if you prefer to be dropped into bash instead of directly into empire
-docker run -it -p 1337:1337 -p 5000:5000 --volumes-from data --entrypoint /bin/bash bcsecurity/empire:latest
+docker run -it -p 1337:1337 --volumes-from data --entrypoint /bin/bash bcsecurity/empire:latest
 ```
 
 Note: These are example basic commands to get started with docker. Depending on the use case of the individual, one may need to reference the [Docker documentation](https://docs.docker.com).

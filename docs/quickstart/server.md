@@ -20,9 +20,21 @@ api:
   secure: false
 ```
 
-* **database** - Configure Empire's database. Empire defaults to SQLite and has the ability to run with MySQL. For more info on the database, see the [Database](database/README.md) section.
+* **database** - Configure Empire's database. Empire utilizes MySQL by default for high performance database operations. It can be configured to use sqlite for more lightweight implementations if required For more info on the database, see the [Database](database/README.md) section.
 
-SQLite - The location of the SQLite db file is configurable.
+MySQL supports customizing the default url, username, password, and database name. By default these are set to
+```yaml
+database:
+  use: mysql
+  mysql:
+    url: localhost:3306
+    username: empire_user
+    password: empire_password
+    database_name: empire
+```
+
+
+If using SQLite the database location is customizable with the default setting:
 
 ```yaml
 database:
@@ -31,19 +43,10 @@ database:
     location: empire/server/data/empire.db
 ```
 
-MySQL - The url, username, password, and database name are all configurable.
 
-```yaml
-database:
-  use: mysql
-  mysql:
-    url: localhost
-    username:
-    password:
-    database_name:
-```
 
-The defaults block defines the properties that are initially loaded into the database when it is first created.
+
+The defaults block defines the properties that are initially loaded into the database when it is first created. These include the staging key, default user and password and obfuscation settings.
 
 ```yaml
 database:
@@ -96,7 +99,19 @@ plugins:
       options:
         report: all
 ```
+* **plugin_marketplace** - This points the server to where Empire should look for additionl available plugins to install. This defaults to the BC Security plugin marketplace but can point to a private marketplace as well.
+name - the display name for the marketplace in Empire
+git_url - git project to pull plugins from
 
+
+```yaml
+plugin_marketplace:
+  registries:
+    - name: BC-SECURITY
+      git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
+      ref: main
+      file: registry.yaml
+```
 * **directories** - Control where Empire should read and write specific data.
 
 ```yaml
@@ -104,7 +119,7 @@ directories:
   downloads: downloads
 ```
 
-* **logging** - See [Logging](../../logging/logging.md) for more information on logging configuration.
+* **logging** - See [Logging](../logging/logging.md) for more information on logging configuration.
 
 * **submodules** - Control if submodules wil be auto updated on startup.
 

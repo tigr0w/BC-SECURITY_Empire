@@ -2,30 +2,44 @@
 
 The **Autorun** feature allows users to predefine modules to automatically run when an agent becomes active.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/xTRhLt4DO5o" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+{% embed url="https://www.youtube.com/embed/xTRhLt4DO5o?autoplay=1" %}
 
 ## Steps to Configure AutoRun
 
-1. **Navigate to Listeners**
+{% stepper %}
+{% step %}
+### Navigate to Listeners
    - From the sidebar, click on the "Listeners" icon.
    - You will be taken to the Listeners list screen, where all the active listeners are shown.
+{% endstep %}
 
-2. **Select a Listener**
+{% step %}
+### Select a Listener
    - Choose the listener you want to configure from the list. If no listener exists, create one by clicking on the "Create" button at the top right.
+{% endstep %}
 
-3. **Access Autorun**
+{% step %}
+### Access Autorun
    - Once inside the listener’s details, you’ll notice an option for the **AutoRun Modules** as a tab.
    - Click on this tab to configure what should happen automatically when the listener is engaged.
+{% endstep %}
 
-4. **Choose Modules for AutoRun**
+{% step %}
+### Choose Modules for AutoRun
    - In the Autorun screen, you can select specific modules that will automatically run whenever an agent first connects.
+{% endstep %}
 
-5. **Confirm Selection**
+{% step %}
+### Confirm Selection
    - After selecting your desired modules, confirm your choices. Empire will automatically link these modules to the listener.
+{% endstep %}
 
-6. **Running**
+{% step %}
+### Running
    - When the listener is activated, the selected modules will now automatically run on any new agent.
    - You can view the tasks in real time from Starkiller.
+{% endstep %}
+{% endstepper %}
 
 ## Use Cases for AutoRun
 
