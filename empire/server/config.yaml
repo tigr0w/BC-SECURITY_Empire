@@ -13,8 +13,6 @@ database:
   sqlite:
     location: empire.db
   defaults:
-    # staging key will first look at OS environment variables, then here.
-    staging_key: ""
     username: empireadmin
     password: password123
     obfuscation:

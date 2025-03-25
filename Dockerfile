@@ -7,12 +7,12 @@
 # 2) create volume storage: `docker create -v /empire --name data bcsecurity/empire`
 # 3) run out container: `docker run -it --volumes-from data bcsecurity/empire /bin/bash`
 
-FROM python:3.13.1-bullseye
+FROM python:3.13.2-bullseye
 
 LABEL maintainer="bc-security"
 LABEL description="Dockerfile for Empire server and client. https://bc-security.gitbook.io/empire-wiki/quickstart/installation#docker"
 
-ENV STAGING_KEY=RANDOM DEBIAN_FRONTEND=noninteractive DOTNET_CLI_TELEMETRY_OPTOUT=1
+ENV DEBIAN_FRONTEND=noninteractive DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 SHELL ["/bin/bash", "-c"]
 

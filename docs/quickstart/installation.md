@@ -93,3 +93,32 @@ All image versions can be found at: [https://hub.docker.com/r/bcsecurity/empire/
 ## Community-Supported Operating Systems
 
 At this time, we are choosing to only support Kali, ParrotOS, Debian 10/11/12, and Ubuntu 20.04/22.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
+
+## Common Issues
+
+
+### Issue
+
+```
+Current Python version (3.12.2) is not allowed by the project (>=3.13,<3.14).
+Please change python executable via the "env use" command.
+```
+
+#### Solution
+
+```
+sudo rm -rf .venv
+poetry install
+```
+
+
+### Issue
+
+```
+[*] Updating goenv
+fatal: not a git repository (or any of the parent directories): git
+```
+
+#### Solution
+
+Open a new terminal, the install script should have set `$GOENV_ROOT` in your bashrc or zshrc file.

@@ -14,12 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--   Add check that module can be ran on the agent based on language
--   Fixed go agent using a preshared session id
--   Removed BLANK and RANDOM options for staging_keys (wasn't documented anyway)
--   Limited staging key space to letters and numbers to avoid invalid combinations
-
-## [6.0.0-rc1] - 2025-03-09
+## [6.0.0] - 2025-03-25
 
 ### Highlights
 
@@ -45,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added module `code_execution/invoke-script` for remote ps1 script execution
 -   Added module `python/code_execution/invoke-script` for remote py script execution
 -   Added sharphound ingestor for CE and tagged bloodhound with legacy
+-   Added check that module can be ran on the agent based on language
 
 ### Changed
 
@@ -62,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Converted many parts of codebase to be compliant with flake8-use-pathlib
 -   Csharp and bof tasks attach the executable as a 'download' with a tag 'task:input'
 -   Pass output path to dotnet compiler, only compile the requested version
+-   Limited staging key space to letters and numbers to avoid invalid combinations
 
 #### Breaking
 
@@ -109,6 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   OneDrive has new APIs and Microsoft hs made registration harder. May return in the future with revisions.
     -   Dropbox has new APIs and may return in the future with revisions.
 -   Removed empire_config.directories.module_source and empire_config.directories.obfuscated_module_source
+-   Removed BLANK and RANDOM options for staging_keys (wasn't documented anyway)
 
 #### Breaking
 
@@ -127,6 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Simplify option_util.validate_options, fixes a bug where an optional file option was treated as required
 -   Fixed issue loading a plugin that has multiple files
 -   Fixed issue with permissions caused by git operations being done with de-elevated permissions
+-   Fixed go agent using a preshared session id
 
 ### Security
 
@@ -1068,9 +1067,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-rc1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0...HEAD
 
-[6.0.0-rc1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...v6.0.0-rc1
+[6.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...v6.0.0
 
 [5.12.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...v5.12.2
 
