@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2025-03-25
+
 -   Add check that module can be ran on the agent based on language
 -   Fixed go agent using a preshared session id
 -   Removed BLANK and RANDOM options for staging_keys (wasn't documented anyway)
@@ -1068,7 +1070,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-rc1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0...HEAD
+
+[6.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0-rc1...v6.0.0
 
 [6.0.0-rc1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...v6.0.0-rc1
 
