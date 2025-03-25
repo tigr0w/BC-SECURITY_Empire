@@ -1,25 +1,24 @@
-import contextlib
-import fnmatch
 import logging
-import os
 import subprocess
 import tempfile
-from pathlib import Path
+import typing
 
 import python_obfuscator
 from python_obfuscator.techniques import one_liner, variable_renamer
 from sqlalchemy.orm import Session
 
-from empire.server.core.config import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
 
 
 class ObfuscationService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
     @staticmethod
@@ -87,67 +86,6 @@ class ObfuscationService:
 
         return db_obf_config, None
 
-    def preobfuscate_modules(self, language: str, reobfuscate=False):
-        """
-        Preobfuscate PowerShell module_source files
-        """
-        if not data_util.is_powershell_installed():
-            err = "PowerShell is not installed and is required to use obfuscation, please install it first."
-            log.error(err)
-            return err
-
-        with SessionLocal.begin() as db:
-            db_obf_config = self.get_obfuscation_config(db, language)
-            files = self._get_module_source_files(db_obf_config.language)
-
-            for file in files:
-                if reobfuscate or not self._is_obfuscated(file):
-                    message = f"Obfuscating {os.path.basename(file)}..."
-                    log.info(message)
-                else:
-                    log.warning(
-                        f"{os.path.basename(file)} was already obfuscated. Not reobfuscating."
-                    )
-                self.obfuscate_module(file, db_obf_config.command, reobfuscate)
-            return None
-
-    # this is still written in a way that its only used for PowerShell
-    # to make it work for other languages, we probably want to just pass in the db_obf_config
-    # and delegate to language specific functions
-    def obfuscate_module(
-        self, module_source, obfuscation_command="", force_reobfuscation=False
-    ):
-        if self._is_obfuscated(module_source) and not force_reobfuscation:
-            return None
-
-        try:
-            with open(module_source) as f:
-                module_code = f.read()
-        except Exception:
-            log.error(f"Could not read module source path at: {module_source}")
-            return ""
-
-        # Get the random function name generated at install and patch the stager with the proper function name
-        module_code = self.obfuscate_keywords(module_code)
-
-        # obfuscate and write to obfuscated source path
-        obfuscated_code = self.obfuscate(module_code, obfuscation_command)
-
-        obfuscated_source = module_source.replace(
-            str(empire_config.directories.module_source),
-            str(empire_config.directories.obfuscated_module_source),
-        )
-
-        try:
-            Path(obfuscated_source).parent.mkdir(parents=True, exist_ok=True)
-            with open(obfuscated_source, "w") as f:
-                f.write(obfuscated_code)
-        except Exception:
-            log.error(
-                f"Could not write obfuscated module source path at: {obfuscated_source}"
-            )
-            return ""
-
     def obfuscate(self, ps_script, obfuscation_command):
         """
         Obfuscate PowerShell scripts using Invoke-Obfuscation
@@ -162,9 +100,10 @@ class ObfuscationService:
         ps_script = self.obfuscate_keywords(ps_script)
 
         # When obfuscating large scripts, command line length is too long. Need to save to temp file
-        with tempfile.NamedTemporaryFile(
-            "r+"
-        ) as toObfuscateFile, tempfile.NamedTemporaryFile("r+") as obfuscatedFile:
+        with (
+            tempfile.NamedTemporaryFile("r+") as toObfuscateFile,
+            tempfile.NamedTemporaryFile("r+") as obfuscatedFile,
+        ):
             toObfuscateFile.write(ps_script)
 
             # Obfuscate using Invoke-Obfuscation w/ PowerShell
@@ -179,15 +118,6 @@ class ObfuscationService:
             obfuscatedFile.seek(0)
             return obfuscatedFile.read()[0:-1]
 
-    def remove_preobfuscated_modules(self, language: str):
-        """
-        Remove preobfuscated PowerShell module_source files
-        """
-        files = self._get_obfuscated_module_source_files(language)
-        for file in files:
-            with contextlib.suppress(Exception):
-                os.remove(file)
-
     def obfuscate_keywords(self, data):
         if data:
             with SessionLocal.begin() as db:
@@ -197,47 +127,6 @@ class ObfuscationService:
                     data = data.replace(keyword.keyword, keyword.replacement)
 
         return data
-
-    def _get_module_source_files(self, language: str):
-        """
-        Get the filepaths of PowerShell module_source files located
-        in the data/module_source directory.
-        """
-        paths = []
-        # This logic will need to be updated later. Right now we're only doing powershell.
-        pattern = "*.ps1"
-        for root, _dirs, files in os.walk(empire_config.directories.module_source):
-            for filename in fnmatch.filter(files, pattern):
-                paths.append(os.path.join(root, filename))
-
-        return paths
-
-    def _get_obfuscated_module_source_files(self, language: str):
-        """
-        Get the filepaths of PowerShell module_source files located
-        in the data/module_source directory.
-        """
-        paths = []
-        # This logic will need to be updated later. Right now we're only doing powershell.
-        pattern = "*.ps1"
-        for root, _dirs, files in os.walk(
-            empire_config.directories.obfuscated_module_source
-        ):
-            for filename in fnmatch.filter(files, pattern):
-                paths.append(os.path.join(root, filename))
-
-        return paths
-
-    def _is_obfuscated(self, module_source: str | Path):
-        if isinstance(module_source, Path):
-            module_source = str(module_source)
-
-        obfuscated_source = module_source.replace(
-            str(empire_config.directories.module_source),
-            str(empire_config.directories.obfuscated_module_source),
-        )
-
-        return Path(obfuscated_source).exists()
 
     def _convert_obfuscation_command(self, obfuscate_command):
         return (

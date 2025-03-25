@@ -3,7 +3,6 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 from json import JSONEncoder
-from pathlib import Path
 
 import socketio
 import uvicorn
@@ -11,10 +10,10 @@ from fastapi import FastAPI
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 
-from empire.scripts.sync_starkiller import sync_starkiller
 from empire.server.api.middleware import EmpireCORSMiddleware
 from empire.server.api.v2.websocket.socketio import setup_socket_events
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
+from empire.server.core.config.data_manager import sync_starkiller
 
 log = logging.getLogger(__name__)
 
@@ -43,9 +42,9 @@ class MyJsonEncoder(JSONEncoder):
         return JSONEncoder.default(self, o)
 
 
-def load_starkiller(v2App, ip, port):
+def load_starkiller(app, port):
     try:
-        sync_starkiller(empire_config.model_dump())
+        starkiller_dir = sync_starkiller(empire_config.starkiller)
     except Exception as e:
         log.warning("Failed to load Starkiller: %s", e, exc_info=True)
         log.warning(
@@ -55,31 +54,40 @@ def load_starkiller(v2App, ip, port):
             "https://docs.github.com/en/github/authenticating-to-github"
             "/connecting-to-github-with-ssh"
         )
+        return
 
-    if (Path(empire_config.starkiller.directory) / "dist").exists():
-        v2App.mount(
-            "/",
-            StaticFiles(directory=f"{empire_config.starkiller.directory}/dist"),
-            name="static",
-        )
-        log.info("Starkiller served at the same ip and port as Empire Server")
-        log.info(f"Starkiller served at http://localhost:{port}/index.html")
+    app.mount(
+        "/",
+        StaticFiles(directory=f"{starkiller_dir!s}/dist", html=True),
+        name="static",
+    )
+
+    log.info("Starkiller served at the same ip and port as Empire Server")
+    log.info(f"Starkiller served at http://localhost:{port}/")
 
 
-def initialize(  # noqa: PLR0915
-    secure: bool = False, ip: str = "0.0.0.0", port: int = 1337, run: bool = True
-):
+def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
+    ip = empire_config.api.ip
+    port = empire_config.api.port
+    secure = empire_config.api.secure
+
     # Not pretty but allows us to use main_menu by delaying the import
+    from empire.server.api.v2.admin import admin_api
     from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
     from empire.server.api.v2.bypass import bypass_api
     from empire.server.api.v2.credential import credential_api
     from empire.server.api.v2.download import download_api
     from empire.server.api.v2.host import host_api, process_api
+    from empire.server.api.v2.ip import ip_api
     from empire.server.api.v2.listener import listener_api, listener_template_api
     from empire.server.api.v2.meta import meta_api
     from empire.server.api.v2.module import module_api
     from empire.server.api.v2.obfuscation import obfuscation_api
-    from empire.server.api.v2.plugin import plugin_api, plugin_task_api
+    from empire.server.api.v2.plugin import (
+        plugin_api,
+        plugin_registry_api,
+        plugin_task_api,
+    )
     from empire.server.api.v2.profile import profile_api
     from empire.server.api.v2.stager import stager_api, stager_template_api
     from empire.server.api.v2.tag import tag_api
@@ -96,30 +104,33 @@ def initialize(  # noqa: PLR0915
             log.info("Shutting down SocketIO...")
             await sio.shutdown()
 
-    v2App = FastAPI(lifespan=lifespan)
+    app = FastAPI(lifespan=lifespan)
 
-    v2App.include_router(listener_template_api.router)
-    v2App.include_router(listener_api.router)
-    v2App.include_router(stager_template_api.router)
-    v2App.include_router(stager_api.router)
-    v2App.include_router(agent_task_api.router)
-    v2App.include_router(agent_api.router)
-    v2App.include_router(agent_file_api.router)
-    v2App.include_router(user_api.router)
-    v2App.include_router(module_api.router)
-    v2App.include_router(bypass_api.router)
-    v2App.include_router(obfuscation_api.router)
-    v2App.include_router(process_api.router)
-    v2App.include_router(profile_api.router)
-    v2App.include_router(credential_api.router)
-    v2App.include_router(host_api.router)
-    v2App.include_router(download_api.router)
-    v2App.include_router(meta_api.router)
-    v2App.include_router(plugin_task_api.router)
-    v2App.include_router(plugin_api.router)
-    v2App.include_router(tag_api.router)
+    app.include_router(listener_template_api.router)
+    app.include_router(listener_api.router)
+    app.include_router(stager_template_api.router)
+    app.include_router(stager_api.router)
+    app.include_router(agent_task_api.router)
+    app.include_router(agent_api.router)
+    app.include_router(agent_file_api.router)
+    app.include_router(user_api.router)
+    app.include_router(module_api.router)
+    app.include_router(bypass_api.router)
+    app.include_router(obfuscation_api.router)
+    app.include_router(process_api.router)
+    app.include_router(profile_api.router)
+    app.include_router(credential_api.router)
+    app.include_router(host_api.router)
+    app.include_router(download_api.router)
+    app.include_router(meta_api.router)
+    app.include_router(plugin_task_api.router)
+    app.include_router(plugin_api.router)
+    app.include_router(plugin_registry_api.router)
+    app.include_router(tag_api.router)
+    app.include_router(ip_api.router)
+    app.include_router(admin_api.router)
 
-    v2App.add_middleware(
+    app.add_middleware(
         EmpireCORSMiddleware,
         allow_origins=[
             "*",
@@ -133,7 +144,7 @@ def initialize(  # noqa: PLR0915
         expose_headers=["content-disposition"],
     )
 
-    v2App.add_middleware(GZipMiddleware, minimum_size=500)
+    app.add_middleware(GZipMiddleware, minimum_size=500)
 
     sio = socketio.AsyncServer(
         async_mode="asgi",
@@ -144,35 +155,24 @@ def initialize(  # noqa: PLR0915
         json=MyJsonWrapper,
     )
     sio_app = socketio.ASGIApp(
-        socketio_server=sio, other_asgi_app=v2App, socketio_path="/socket.io/"
+        socketio_server=sio, other_asgi_app=app, socketio_path="/socket.io/"
     )
 
-    v2App.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
-    v2App.add_websocket_route("/socket.io/", sio_app)
+    app.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
+    app.add_websocket_route("/socket.io/", sio_app)
 
     setup_socket_events(sio, main)
 
     if empire_config.starkiller.enabled:
         log.info("Starkiller enabled. Loading.")
-        load_starkiller(v2App, ip, port)
+        load_starkiller(app, port)
     else:
         log.info("Starkiller disabled. Not loading.")
 
-    cert_path = Path(empire_config.api.cert_path)
-
     if run:
-        if not secure:
+        if secure and cert_path:
             uvicorn.run(
-                v2App,
-                host=ip,
-                port=port,
-                log_config=None,
-                lifespan="on",
-                # log_level="info",
-            )
-        else:
-            uvicorn.run(
-                v2App,
+                app,
                 host=ip,
                 port=port,
                 log_config=None,
@@ -181,5 +181,14 @@ def initialize(  # noqa: PLR0915
                 ssl_certfile=f"{cert_path}/empire-chain.pem",
                 # log_level="info",
             )
+        else:
+            uvicorn.run(
+                app,
+                host=ip,
+                port=port,
+                log_config=None,
+                lifespan="on",
+                # log_level="info",
+            )
 
-    return v2App
+    return app

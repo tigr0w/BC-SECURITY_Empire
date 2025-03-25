@@ -3,7 +3,7 @@
 function Get-KeePassDatabaseKey {
 <#
     .SYNOPSIS
-        
+
         Retrieves database mastey key information for unlocked KeePass database.
 
         Function: Get-KeePassDatabaseKey
@@ -13,7 +13,7 @@ function Get-KeePassDatabaseKey {
         Optional Dependencies: None
 
     .DESCRIPTION
-        
+
         Enumerates any KeePass 2.X (.NET) processes currently open, or takes a process object on the pipeline.
         Loades the C# KeeTheft assembly into memory and for each open KeePass process executes the GetKeePassMasterKeys()
         method on it. GetKeePassMasterKeys() will attach to the target KeePass process using CLR MD and enumerate
@@ -80,14 +80,14 @@ function Get-KeePassDatabaseKey {
         KeyType              : KcpUserAccount
         ....
 #>
-    [CmdletBinding()] 
+    [CmdletBinding()]
     param (
         [Parameter(Position = 0, ValueFromPipeline = $True)]
         [System.Diagnostics.Process[]]
         [ValidateNotNullOrEmpty()]
         $Process
     )
-    
+
     BEGIN {
         if(-not $PSBoundParameters['Process']) {
             try {

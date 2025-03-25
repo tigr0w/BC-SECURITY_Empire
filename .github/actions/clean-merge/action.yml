@@ -1,5 +1,6 @@
 name: 'Clean Merge'
-description: 'Merge a branch into another branch without creating a merge commit. Fail if the merge would create merge conflicts.'
+description: 'Merge a branch into another branch without creating a merge commit.
+  Fail if the merge would create merge conflicts.'
 inputs:
   from-branch:
     description: 'The branch to merge from'

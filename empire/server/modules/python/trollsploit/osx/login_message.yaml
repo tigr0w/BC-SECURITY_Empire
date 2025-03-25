@@ -55,4 +55,3 @@ script: |
   except Exception as e:
       print("Module failed")
       print(e)
-

@@ -3,7 +3,8 @@ authors:
   - name: ''
     handle: '@rvrsh3ll'
     link: ''
-description: Port of huntergregal mimipenguin. Harvest's current user's cleartext credentials.
+description: Port of huntergregal mimipenguin. Harvest's current user's cleartext
+  credentials.
 software: S0179
 tactics: []
 techniques:

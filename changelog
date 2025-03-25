@@ -165,7 +165,7 @@ This changelog will no longer be updated. See CHANGELOG.md for future updates!
         - Integrated server and client into Empire (@Cx01N, @Vinnybod)
         - Introduced C# agents (@Hubbl3)
         - Integrated Covenant Roslyn compiler for task compilation (@Hubbl3)
-        - Covenant Task compatibility (@Hubbl3, @Vinnybod) 
+        - Covenant Task compatibility (@Hubbl3, @Vinnybod)
         - Added support for 'suggested values' on the server and auto completing the suggested values in the CLI (@Vinnybod)
         - Added new launch parameters for starting server/client (@Cx01N, @Vinnybod)
         - Added Offensive DLR Modules: IronPython, ClearScript, & Boolang (@Cx01N)
@@ -577,9 +577,9 @@ Please contact us at Empire@bc-security.org if credit is incorrectly cited.
 	- Fixed issues with http_Hop listener (@Cx01N)
 	- Fixed issues with redirector listener (@Cx01N)
 	- Fixed typos in default http listener payloads (@Hubbl3)
-	- Fixed psinject AV recognition (@Hubbl3) 
+	- Fixed psinject AV recognition (@Hubbl3)
 	- Updated Invoke-Obfuscation to version 1.8 (@phra)
-	- Updated Invoke-Kerberoast (@Zero1t0) 
+	- Updated Invoke-Kerberoast (@Zero1t0)
 	- Added ability to uselisteners on main menu (@Cx01N, @Hubbl3)
 	- Added Get-Subnet_Ranges (@benichmt1)
 	- Added Get-WinUpdates (@classity)
@@ -601,8 +601,8 @@ Please contact us at Empire@bc-security.org if credit is incorrectly cited.
 	- Added HostRecon (@RootUp)
 	- Added more informative PS agent directory listing (@winnie22)
 
-Credit was given based on Commit Author if something is credited incorrectly or we missed an update 
-please contact us at info@bc-security.org 
+Credit was given based on Commit Author if something is credited incorrectly or we missed an update
+please contact us at info@bc-security.org
 
 03/15/2018
 ------------
@@ -610,7 +610,7 @@ please contact us at info@bc-security.org
 	- Patched launcher generation bug
 	- Added OSX Mic record module #893 (@s0lst1c3)
 	- More robust password handling in ssh_command and ssh_launcher modules (@retro-engineer)
-	- Updated server responses for http listener (@xorrior) 
+	- Updated server responses for http listener (@xorrior)
 	- Template search bug fix (@DakotaNelson)
 	- bug fix to properly assign taskIDs (@shakagoolu)
 	- Kali & powershell install fix (@SadProcessor)
@@ -623,7 +623,7 @@ please contact us at info@bc-security.org
 	- Updated http_com listener to server IIS7 default page and added response headers to evade nessus scans (@s0lst1c3)
 	- Fixed script generation bug for all powerview modules (@xorrior)
 	- Modify the minidump module to allow for non-admin users to dump memory (@ThePirateWhoSmellsOfSunflowers)
-	- Removed background downloads feature for powershell agent 
+	- Removed background downloads feature for powershell agent
 	- Added linux persistence module via the ~/.config/autostart directory (@jarrodcoulter)
 	- Added download command to REST API (@shakagoolu)
 	- Added support for '&&' and ';' characters in shell commands for python agent (@cleb-sfdcsec)
@@ -633,7 +633,7 @@ please contact us at info@bc-security.org
 	- Added a sleep and jitter parameter to the Invoke-Kerberoast module (@Retrospected)
 	- Added capability to update agent comms dynamically (@xorrior)
 	- Added onedrive listener for powershell agent (@mr64bit)
-	- Added opsec-safe aliases for ls, pwd, rm, mkdir, whoami, and getuid in the python agent 
+	- Added opsec-safe aliases for ls, pwd, rm, mkdir, whoami, and getuid in the python agent
 	- Updated office macro stager for python agent (@import-au)
 
 01/04/2018
@@ -651,10 +651,10 @@ please contact us at info@bc-security.org
 	- Proxy settings fix #788 (@m7x)
 	- Updated mimikatz binary in Invoke-Mimikatz to version 2.1.1 20171106
 	- Updated install.sh
-	- Updated PowerView.ps1 source and all related modules 
+	- Updated PowerView.ps1 source and all related modules
 	- powershell install fix, Invoke-obfuscation updates, Improve ScriptBlockLogging bypass (@cobbr)
 	- Custom header support for http_com listener (@leeloobeek)
-	- Allow for distinct values between the Host and Port options (@jetsecurity) 
+	- Allow for distinct values between the Host and Port options (@jetsecurity)
 	- Added pwd and cat aliases for the python agent (@xorrior)
 	- Added redirector listener, formerly known as the redirector module (@xorrior)
 	- Added exception handling for wmi call in powershell stager #827
@@ -687,7 +687,7 @@ please contact us at info@bc-security.org
 --------
 - Version 2.2 Master Release
 	- Update crontab to work hourly #667
-	- Update keylogger to log to disk on server side by @clr2of8 
+	- Update keylogger to log to disk on server side by @clr2of8
 	- Fix macro launcher #681
 	- Fixes vbscript string literal quoting. #702
 	- Add option to host a stager payload in the http listener @424f424f
@@ -702,7 +702,7 @@ please contact us at info@bc-security.org
 	- Improve Get-ChromeDump #734 @ThePirateWhoSmellsOfSunFlowers
 	- Fix Eternal Blue Issue #656
 	- Merge Invoke-Kerberoast: Print hashes only. Formatting with a text editor is no longer required. #663
-	- Fix Macro syntax error per @utkusen issue #664 
+	- Fix Macro syntax error per @utkusen issue #664
 	- Fix Better powershell install, obfuscation bug fixes, fixed vbs/macro launchers #686 @cobbr
 	- Fix creds manual add parsing with whitespace in password
 	- Fix validate length parameter attribute for Invoke-PSInject.ps1d
@@ -791,7 +791,7 @@ please contact us at info@bc-security.org
 
 -New nested "routing/metadata" packet structure introduced in prep for additional transports
     -all packetes now wrapped with an HMAC'ed RC4 "routing" packet that uses the staging key
-        -this is so all agents can decrypt 'routing' information for future p2p comms 
+        -this is so all agents can decrypt 'routing' information for future p2p comms
     -increases flexibilty for malleable comms (i.e. sessionid removed from POST requests)
     -removes the need to keep track of which URIs are used for tasking/post/staging
 
@@ -838,7 +838,7 @@ please contact us at info@bc-security.org
 -the external/generate_agent module will now generate a staged agent and preregister it (only for PowerShell at this time)
 -PowerView code updated
 -PowerUp code updated
--new tables -> results and taskings to separate out stuff for the RESTful API 
+-new tables -> results and taskings to separate out stuff for the RESTful API
 -CLI/RESTful API broken, needs testing
 
 
@@ -868,7 +868,7 @@ please contact us at info@bc-security.org
 -fix for issue #258 - "interact AGENT" now works globally in every menu except an active agent menu
 -fix for issue #221 - hop listeners
 -fix for issue #252 - management/invoke_script now no longer requires an external script
--fix for issue #257 - sysinfo now executed after running the steal_token command 
+-fix for issue #257 - sysinfo now executed after running the steal_token command
 
 6/24/2016
 ---------
@@ -886,8 +886,8 @@ please contact us at info@bc-security.org
 5/27/2016
 ---------
 -Fixed format issues with Get-ComputerDetails.ps1
--More verbose output added to PowerUp's Invoke-ServiceCMD 
--Made Get-SPN PowerShell 2.0 compatible 
+-More verbose output added to PowerUp's Invoke-ServiceCMD
+-Made Get-SPN PowerShell 2.0 compatible
 -Updated RunAs to include an argument parameter
 -Merged @tristandostaler's /api/map feature to the Rest API
 -Merged in @andrew-morris's installer update to include -Y switch for apt-get commands
@@ -1067,7 +1067,7 @@ please contact us at info@bc-security.org
 -Fix in case module returns None
 -Merged debian setup.sh fix
 -Merged non-interactive cert generation and added to setup.sh
--Fixed nested menu bug that caused buildup of "Agent X not active." 
+-Fixed nested menu bug that caused buildup of "Agent X not active."
 -Main display menu now shows each time "main" menu is entered
 
 11/8/2015
@@ -1210,11 +1210,11 @@ please contact us at info@bc-security.org
 -Fixed tab completion of usestager module
 -Added dependencies for Ubuntu 14.04
 -Fixed IP Whitelisting set from file
--Added "Lost Agent Detection". Allows the ability for an agent to die after a certain number of missed checkins. This is implemented via the "lostlimit" command. Default set to 60 missed checkins. 
+-Added "Lost Agent Detection". Allows the ability for an agent to die after a certain number of missed checkins. This is implemented via the "lostlimit" command. Default set to 60 missed checkins.
 
 8/9/2015
 ----------
--Fixed flaw in crypto allowing a DOS condition. 
+-Fixed flaw in crypto allowing a DOS condition.
 -Added authentication to the AES crypto scheme to verify integrity of messages
 
 8/6/2015

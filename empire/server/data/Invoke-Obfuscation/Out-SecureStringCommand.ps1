@@ -29,7 +29,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-SecureStringCommand encrypts an input PowerShell scriptblock or path as a SecureString object. It randomly selects between three different syntaxes for accomplishing this. The purpose is to highlight to the Blue Team that there are more novel ways to encode/encrypt a PowerShell command other than the most common Base64 approach.
@@ -134,7 +134,7 @@ http://www.danielbohannon.com
         [ValidateSet('Bypass', 'Unrestricted', 'RemoteSigned', 'AllSigned', 'Restricted')]
         [String]
         $ExecutionPolicy,
-        
+
         [Switch]
         $PassThru
     )
@@ -152,13 +152,13 @@ http://www.danielbohannon.com
 
     # Convert $ScriptString to a SecureString object.
     $SecureString = ConvertTo-SecureString $ScriptString -AsPlainText -Force
-    
+
     # Randomly select the key length. Supported key lengths for SecureString (AES) are 16, 24 and 32.
     $KeyLength = Get-Random @(16,24,32)
-    
+
     # Randomly select the key value and how it will be formatted.
     Switch(Get-Random -Minimum 1 -Maximum 3)
-    { 
+    {
         1 {
             # Generate random key of length $KeyLength.
             $SecureStringKey = @()
@@ -181,7 +181,7 @@ http://www.danielbohannon.com
           }
         default {Write-Error "An invalid random number was generated for switch block."; Exit;}
     }
-    
+
     # Convert SecureString object to text that we can load on target system.
     $SecureStringText = $SecureString | ConvertFrom-SecureString -Key $SecureStringKey
 
@@ -246,7 +246,7 @@ http://www.danielbohannon.com
 
     # Randomize the case of selected invoke operation.
     $InvokeExpression = ([Char[]]$InvokeExpression | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
-    
+
     # Generate random Invoke-Expression/IEX syntax and ordering: IEX ($ScriptString) or ($ScriptString | IEX)
     $InvokeOptions  = @()
     $InvokeOptions += ' '*(Get-Random -Input @(0,1)) + $InvokeExpression + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $NewScript + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1))
@@ -316,7 +316,7 @@ http://www.danielbohannon.com
             $ExecutionPolicyFlag = Get-Random -Input $ExecutionPolicyFlags
             $PowerShellFlags += $ExecutionPolicyFlag + ' '*(Get-Random -Minimum 1 -Maximum 3) + $ArgumentValue
         }
-        
+
         # Randomize the order of the execution flags.
         # This is to prevent the Blue Team from placing false hope in simple signatures for ordering of these flags.
         If($CommandlineOptions.Count -gt 1)
@@ -359,7 +359,7 @@ http://www.danielbohannon.com
         {
                 Write-Warning "This command exceeds the cmd.exe maximum allowed length of $CmdMaxLength characters! Its length is $($CmdLineOutput.Length) characters."
         }
-        
+
         $NewScript = $CommandLineOutput
     }
 

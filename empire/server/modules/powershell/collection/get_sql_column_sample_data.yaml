@@ -6,12 +6,11 @@ authors:
   - name: ''
     handle: '@0xbadjuju'
     link: ''
-description: Returns column information from target SQL Servers. Supports search by keywords, sampling data, and validating
-  credit card numbers.
+description: Returns column information from target SQL Servers. Supports search
+  by keywords, sampling data, and validating credit card numbers.
 software: ''
-tactics: []
-techniques:
-  - T1046
+tactics: [TA0009]
+techniques: [T1213]
 background: true
 output_extension:
 needs_admin: false
@@ -54,7 +53,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false

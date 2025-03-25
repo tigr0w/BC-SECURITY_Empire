@@ -29,7 +29,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Show-AsciiArt, Show-HelpMenu, Show-Menu, Show-OptionsMenu, Show-Tutorial and Out-ScriptContents (all located in Invoke-Obfuscation.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Invoke-Obfuscation orchestrates the application of all obfuscation functions to provided PowerShell script block or script path contents to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments and common parent-child process relationships.
@@ -88,13 +88,13 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptPath,
-        
+
         [String]
         $Command,
-        
+
         [Switch]
         $NoExit,
-        
+
         [Switch]
         $Quiet
     )
@@ -179,19 +179,19 @@ http://www.danielbohannon.com
 
     # Maximum size for cmd.exe and clipboard.
     $CmdMaxLength = 8190
-    
+
     # Build interactive menus.
     $LineSpacing = '[*] '
-    
+
     # Main Menu.
     $MenuLevel =   @()
     $MenuLevel+= , @($LineSpacing, 'TOKEN'    , 'Obfuscate PowerShell command <Tokens>')
-    $MenuLevel+= , @($LineSpacing, 'AST'      , "`tObfuscate PowerShell <Ast> nodes <(PS3.0+)>")    
+    $MenuLevel+= , @($LineSpacing, 'AST'      , "`tObfuscate PowerShell <Ast> nodes <(PS3.0+)>")
     $MenuLevel+= , @($LineSpacing, 'STRING'   , 'Obfuscate entire command as a <String>')
     $MenuLevel+= , @($LineSpacing, 'ENCODING' , 'Obfuscate entire command via <Encoding>')
     $MenuLevel+= , @($LineSpacing, 'COMPRESS'       , 'Convert entire command to one-liner and <Compress>')
     $MenuLevel+= , @($LineSpacing, 'LAUNCHER'       , 'Obfuscate command args w/<Launcher> techniques (run once at end)')
-    
+
     # Main\Token Menu.
     $MenuLevel_Token                 =   @()
     $MenuLevel_Token                += , @($LineSpacing, 'STRING'     , 'Obfuscate <String> tokens (suggested to run first)')
@@ -203,44 +203,44 @@ http://www.danielbohannon.com
     $MenuLevel_Token                += , @($LineSpacing, 'COMMENT'    , 'Remove all <Comment> tokens')
     $MenuLevel_Token                += , @($LineSpacing, 'WHITESPACE' , 'Insert random <Whitespace> (suggested to run last)')
     $MenuLevel_Token                += , @($LineSpacing, 'ALL   '     , 'Select <All> choices from above (random order)')
-    
+
     $MenuLevel_Token_String          =   @()
     $MenuLevel_Token_String         += , @($LineSpacing, '1' , "Concatenate --> e.g. <('co'+'ffe'+'e')>"                           , @('Out-ObfuscatedTokenCommand', 'String', 1))
     $MenuLevel_Token_String         += , @($LineSpacing, '2' , "Reorder     --> e.g. <('{1}{0}'-f'ffee','co')>"                    , @('Out-ObfuscatedTokenCommand', 'String', 2))
-    
+
     $MenuLevel_Token_Command         =   @()
     $MenuLevel_Token_Command        += , @($LineSpacing, '1' , 'Ticks                   --> e.g. <Ne`w-O`Bject>'                   , @('Out-ObfuscatedTokenCommand', 'Command', 1))
     $MenuLevel_Token_Command        += , @($LineSpacing, '2' , "Splatting + Concatenate --> e.g. <&('Ne'+'w-Ob'+'ject')>"          , @('Out-ObfuscatedTokenCommand', 'Command', 2))
     $MenuLevel_Token_Command        += , @($LineSpacing, '3' , "Splatting + Reorder     --> e.g. <&('{1}{0}'-f'bject','New-O')>"   , @('Out-ObfuscatedTokenCommand', 'Command', 3))
-    
+
     $MenuLevel_Token_Argument        =   @()
     $MenuLevel_Token_Argument       += , @($LineSpacing, '1' , 'Random Case --> e.g. <nEt.weBclIenT>'                              , @('Out-ObfuscatedTokenCommand', 'CommandArgument', 1))
     $MenuLevel_Token_Argument       += , @($LineSpacing, '2' , 'Ticks       --> e.g. <nE`T.we`Bc`lIe`NT>'                          , @('Out-ObfuscatedTokenCommand', 'CommandArgument', 2))
     $MenuLevel_Token_Argument       += , @($LineSpacing, '3' , "Concatenate --> e.g. <('Ne'+'t.We'+'bClient')>"                    , @('Out-ObfuscatedTokenCommand', 'CommandArgument', 3))
     $MenuLevel_Token_Argument       += , @($LineSpacing, '4' , "Reorder     --> e.g. <('{1}{0}'-f'bClient','Net.We')>"             , @('Out-ObfuscatedTokenCommand', 'CommandArgument', 4))
-    
+
     $MenuLevel_Token_Member          =   @()
     $MenuLevel_Token_Member         += , @($LineSpacing, '1' , 'Random Case --> e.g. <dOwnLoAdsTRing>'                             , @('Out-ObfuscatedTokenCommand', 'Member', 1))
     $MenuLevel_Token_Member         += , @($LineSpacing, '2' , 'Ticks       --> e.g. <d`Ow`NLoAd`STRin`g>'                         , @('Out-ObfuscatedTokenCommand', 'Member', 2))
     $MenuLevel_Token_Member         += , @($LineSpacing, '3' , "Concatenate --> e.g. <('dOwnLo'+'AdsT'+'Ring').Invoke()>"          , @('Out-ObfuscatedTokenCommand', 'Member', 3))
     $MenuLevel_Token_Member         += , @($LineSpacing, '4' , "Reorder     --> e.g. <('{1}{0}'-f'dString','Downloa').Invoke()>"   , @('Out-ObfuscatedTokenCommand', 'Member', 4))
-    
+
     $MenuLevel_Token_Variable        =   @()
     $MenuLevel_Token_Variable       += , @($LineSpacing, '1' , 'Random Case + {} + Ticks --> e.g. <${c`hEm`eX}>'                   , @('Out-ObfuscatedTokenCommand', 'Variable', 1))
-    
+
     $MenuLevel_Token_Type            =   @()
     $MenuLevel_Token_Type           += , @($LineSpacing, '1' , "Type Cast + Concatenate --> e.g. <[Type]('Con'+'sole')>"           , @('Out-ObfuscatedTokenCommand', 'Type', 1))
     $MenuLevel_Token_Type           += , @($LineSpacing, '2' , "Type Cast + Reordered   --> e.g. <[Type]('{1}{0}'-f'sole','Con')>" , @('Out-ObfuscatedTokenCommand', 'Type', 2))
-    
+
     $MenuLevel_Token_Whitespace      =   @()
     $MenuLevel_Token_Whitespace     += , @($LineSpacing, '1' , "`tRandom Whitespace --> e.g. <.( 'Ne'  +'w-Ob' +  'ject')>"        , @('Out-ObfuscatedTokenCommand', 'RandomWhitespace', 1))
-    
+
     $MenuLevel_Token_Comment         =   @()
     $MenuLevel_Token_Comment        += , @($LineSpacing, '1' , "Remove Comments   --> e.g. self-explanatory"                       , @('Out-ObfuscatedTokenCommand', 'Comment', 1))
 
     $MenuLevel_Token_All             =   @()
     $MenuLevel_Token_All            += , @($LineSpacing, '1' , "`tExecute <ALL> Token obfuscation techniques (random order)"       , @('Out-ObfuscatedTokenCommandAll', '', ''))
-    
+
     # Main\Token Menu.
     $MenuLevel_Ast                            =   @()
     $MenuLevel_Ast                           += , @($LineSpacing, 'NamedAttributeArgumentAst' , 'Obfuscate <NamedAttributeArgumentAst> nodes')
@@ -254,7 +254,7 @@ http://www.danielbohannon.com
     $MenuLevel_Ast                           += , @($LineSpacing, 'TypeExpressionAst'         , "`tObfuscate <TypeExpressionAst> nodes")
     $MenuLevel_Ast                           += , @($LineSpacing, 'TypeConstraintAst'         , "`tObfuscate <TypeConstraintAst> nodes")
     $MenuLevel_Ast                           += , @($LineSpacing, 'ALL'                       , "`t`t`tSelect <All> choices from above")
-    
+
     $MenuLevel_Ast_NamedAttributeArgumentAst  =   @()
     $MenuLevel_Ast_NamedAttributeArgumentAst += , @($LineSpacing, '1' , 'Reorder e.g. <[Parameter(Mandatory, ValueFromPipeline = $True)]> --> <[Parameter(Mandatory = $True, ValueFromPipeline)]>'                     , @('Out-ObfuscatedAst', @('System.Management.Automation.Language.NamedAttributeArgumentAst'), 1))
 
@@ -269,16 +269,16 @@ http://www.danielbohannon.com
 
     $MenuLevel_Ast_BinaryExpressionAst        =   @()
     $MenuLevel_Ast_BinaryExpressionAst       += , @($LineSpacing, '1' , 'Reorder e.g. <(2 + 3) * 4> --> <4 * (3 + 2)>'                                                                                                 , @('Out-ObfuscatedAst', @('System.Management.Automation.Language.BinaryExpressionAst'), 1))
-    
+
     $MenuLevel_Ast_HashtableAst               =   @()
     $MenuLevel_Ast_HashtableAst              += , @($LineSpacing, '1' , "Reorder e.g. <@{ProviderName = 'Microsoft-Windows-PowerShell'; Id = 4104}> --> <@{Id = 4104; ProviderName = 'Microsoft-Windows-PowerShell'}>" , @('Out-ObfuscatedAst', @('System.Management.Automation.Language.HashtableAst'), 1))
 
     $MenuLevel_Ast_CommandAst                 =   @()
     $MenuLevel_Ast_CommandAst                += , @($LineSpacing, '1' , 'Reorder e.g. <Get-Random -Min 1 -Max 100> --> <Get-Random -Max 100 -Min 1>'                                                                   , @('Out-ObfuscatedAst', @('System.Management.Automation.Language.CommandAst'), 1))
-    
+
     $MenuLevel_Ast_AssignmentStatementAst     =   @()
     $MenuLevel_Ast_AssignmentStatementAst    += , @($LineSpacing, '1' , 'Rename e.g. <$Example = "Example"> --> <Set-Variable -Name Example -Value ("Example")>'                                                       , @('Out-ObfuscatedAst', @('System.Management.Automation.Language.AssignmentStatementAst'), 1))
-    
+
     $MenuLevel_Ast_TypeExpressionAst          =   @()
     $MenuLevel_Ast_TypeExpressionAst         += , @($LineSpacing, '1' , 'Rename e.g. <[ScriptBlock]> --> <[Management.Automation.ScriptBlock]>'                                                                        , @('Out-ObfuscatedAst', @('System.Management.Automation.Language.TypeExpressionAst'), 1))
 
@@ -287,7 +287,7 @@ http://www.danielbohannon.com
 
     $MenuLevel_Ast_All                        =   @()
     $MenuLevel_Ast_All                       += , @($LineSpacing, '1' , "`tExecute <ALL> Ast obfuscation techniques"                                                                                                   , @('Out-ObfuscatedAst', @('System.Management.Automation.Language.NamedAttributeArgumentAst', 'System.Management.Automation.Language.ParamBlockAst', 'System.Management.Automation.Language.ScriptBlockAst', 'System.Management.Automation.Language.AttributeAst', 'System.Management.Automation.Language.BinaryExpressionAst', 'System.Management.Automation.Language.HashtableAst', 'System.Management.Automation.Language.CommandAst', 'System.Management.Automation.Language.AssignmentStatementAst', 'System.Management.Automation.Language.TypeExpressionAst', 'System.Management.Automation.Language.TypeConstraintAst'), ''))
-    
+
     # Main\String Menu.
     $MenuLevel_String                =   @()
     $MenuLevel_String               += , @($LineSpacing, '1' , '<Concatenate> entire command'                                      , @('Out-ObfuscatedStringCommand', '', 1))
@@ -308,7 +308,7 @@ http://www.danielbohannon.com
     # Main\Compress Menu.
     $MenuLevel_Compress              =   @()
     $MenuLevel_Compress             += , @($LineSpacing, '1' , "Convert entire command to one-liner and <compress>"                , @('Out-CompressedCommand'             , '', ''))
-    
+
     # Main\Launcher Menu.
     $MenuLevel_Launcher              =   @()
     $MenuLevel_Launcher             += , @($LineSpacing, 'PS'            , "`t<PowerShell>")
@@ -395,7 +395,7 @@ http://www.danielbohannon.com
     ${MenuLevel_Launcher_STDIN+}    += , @($LineSpacing, '6' , '-WindowStyle Hidden'                                         , @('Out-PowerShellLauncher', '', '6'))
     ${MenuLevel_Launcher_STDIN+}    += , @($LineSpacing, '7' , '-ExecutionPolicy Bypass'                                     , @('Out-PowerShellLauncher', '', '6'))
     ${MenuLevel_Launcher_STDIN+}    += , @($LineSpacing, '8' , '-Wow64 (to path 32-bit powershell.exe)'                      , @('Out-PowerShellLauncher', '', '6'))
-    
+
     ${MenuLevel_Launcher_CLIP+}      =   @()
     ${MenuLevel_Launcher_CLIP+}     += , @("Enter string of numbers with all desired flags to pass to function. (e.g. 23459)`n", ''  , ''   , @('', '', ''))
     ${MenuLevel_Launcher_CLIP+}     += , @($LineSpacing, '0' , 'NO EXECUTION FLAGS'                                          , @('Out-PowerShellLauncher', '', '7'))
@@ -407,7 +407,7 @@ http://www.danielbohannon.com
     ${MenuLevel_Launcher_CLIP+}     += , @($LineSpacing, '6' , '-WindowStyle Hidden'                                         , @('Out-PowerShellLauncher', '', '7'))
     ${MenuLevel_Launcher_CLIP+}     += , @($LineSpacing, '7' , '-ExecutionPolicy Bypass'                                     , @('Out-PowerShellLauncher', '', '7'))
     ${MenuLevel_Launcher_CLIP+}     += , @($LineSpacing, '8' , '-Wow64 (to path 32-bit powershell.exe)'                      , @('Out-PowerShellLauncher', '', '7'))
-    
+
     ${MenuLevel_Launcher_VAR++}      =   @()
     ${MenuLevel_Launcher_VAR++}     += , @("Enter string of numbers with all desired flags to pass to function. (e.g. 23459)`n", ''  , ''   , @('', '', ''))
     ${MenuLevel_Launcher_VAR++}     += , @($LineSpacing, '0' , 'NO EXECUTION FLAGS'                                          , @('Out-PowerShellLauncher', '', '8'))
@@ -483,7 +483,7 @@ http://www.danielbohannon.com
     $HomeMenuInputOptions         = @(@('home','main')                         , "Return to <Home> Menu                     `t  " )
     # For Version 1.0 ASCII art is not necessary.
     #$ShowAsciiArtInputOptions     = @(@('ascii')                               , "Display random <ASCII> art for the lulz :)`t")
-    
+
     # Add all above input options lists to be displayed in SHOW OPTIONS menu.
     $AllAvailableInputOptionsLists   = @()
     $AllAvailableInputOptionsLists  += , $TutorialInputOptions
@@ -495,7 +495,7 @@ http://www.danielbohannon.com
     $AllAvailableInputOptionsLists  += , $OutputToDiskInputOptions
     $AllAvailableInputOptionsLists  += , $ResetObfuscationInputOptions
     $AllAvailableInputOptionsLists  += , $UndoObfuscationInputOptions
-    $AllAvailableInputOptionsLists  += , $BackCommandInputOptions    
+    $AllAvailableInputOptionsLists  += , $BackCommandInputOptions
     $AllAvailableInputOptionsLists  += , $ExitCommandInputOptions
     $AllAvailableInputOptionsLists  += , $HomeMenuInputOptions
     # For Version 1.0 ASCII art is not necessary.
@@ -504,14 +504,14 @@ http://www.danielbohannon.com
     # Input options to change interactive menus.
     $ExitInputOptions = $ExitCommandInputOptions[0]
     $MenuInputOptions = $BackCommandInputOptions[0]
-    
+
     # Obligatory ASCII Art.
     Show-AsciiArt
     Start-Sleep -Seconds 2
-    
+
     # Show Help Menu once at beginning of script.
     Show-HelpMenu
-    
+
     # Main loop for user interaction. Show-Menu function displays current function along with acceptable input options (defined in arrays instantiated above).
     # User input and validation is handled within Show-Menu.
     $UserResponse = ''
@@ -534,7 +534,7 @@ http://www.danielbohannon.com
             Write-Error "The variable MenuLevel$UserResponse does not exist."
             $UserResponse = 'quit'
         }
-        
+
         If(($UserResponse -eq 'quit') -AND $CliWasSpecified -AND !$NoExitWasSpecified)
         {
             Write-Output $Script:ObfuscatedCommand.Trim("`n")
@@ -545,7 +545,7 @@ http://www.danielbohannon.com
 
 
 # Get location of this script no matter what the current directory is for the process executing this script.
-$ScriptDir = [System.IO.Path]::GetDirectoryName($myInvocation.MyCommand.Definition) 
+$ScriptDir = [System.IO.Path]::GetDirectoryName($myInvocation.MyCommand.Definition)
 
 
 Function Show-Menu
@@ -560,7 +560,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Show-Menu displays current menu with obfuscation navigation and application options for Invoke-Obfuscation.
@@ -617,7 +617,7 @@ http://www.danielbohannon.com
     }
 
     $UserInput = $NULL
-    
+
     While($AcceptableInput -NotContains $UserInput)
     {
         # Format custom breadcrumb prompt.
@@ -677,7 +677,7 @@ http://www.danielbohannon.com
             }
             $BreadCrumb = '\' + $BreadCrumb
         }
-        
+
         # Output menu heading.
         $FirstLine = "Choose one of the below "
         If($BreadCrumb -ne '')
@@ -685,7 +685,7 @@ http://www.danielbohannon.com
             $FirstLine = $FirstLine + $BreadCrumb.Trim('\') + ' '
         }
         Write-Host "$FirstLine" -NoNewLine
-        
+
         # Change color and verbiage if selection will execute command.
         If($SelectionContainsCommand)
         {
@@ -699,7 +699,7 @@ http://www.danielbohannon.com
             Write-Host "options" -NoNewLine -ForegroundColor Yellow
         }
         Write-Host ":`n"
-    
+
         ForEach($Line in $Menu)
         {
             $LineSpace  = $Line[0]
@@ -712,7 +712,7 @@ http://www.danielbohannon.com
             {
                 Write-Host ($BreadCrumb.ToUpper().Trim('\') + '\') -NoNewLine
             }
-            
+
             # Change color if selection will execute command.
             If($SelectionContainsCommand)
             {
@@ -722,7 +722,7 @@ http://www.danielbohannon.com
             {
                 Write-Host $LineOption -NoNewLine -ForegroundColor Yellow
             }
-            
+
             # Add additional coloring to string encapsulated by <> if it exists in $LineValue.
             If($LineValue.Contains('<') -AND $LineValue.Contains('>'))
             {
@@ -759,12 +759,12 @@ http://www.danielbohannon.com
                 Write-Host "`t$LineValue"
             }
         }
-        
+
         # Prompt for user input with custom breadcrumb prompt.
         Write-Host ''
         If($UserInput -ne '') {Write-Host ''}
         $UserInput = ''
-        
+
         While(($UserInput -eq '') -AND ($Script:CompoundCommand.Count -eq 0))
         {
             # Output custom prompt.
@@ -818,7 +818,7 @@ http://www.danielbohannon.com
                 If(($Script:CliCommands.Count -eq 0) -AND !$UserInput.ToLower().StartsWith('set ') -AND $UserInput.Contains(','))
                 {
                     $Script:CliCommands = $UserInput.Split(',')
-                    
+
                     # Reset $UserInput so current While loop will be traversed once more and process UserInput command as a CliCommand.
                     $UserInput = ''
                 }
@@ -860,7 +860,7 @@ http://www.danielbohannon.com
                     # If there are more commands left in compound command then it won't be a string (above IF block).
                     # In this else block we get the next command from CompoundCommand array.
                     $NextCompoundCommand = ([String]$Script:CompoundCommand[0]).Trim()
-                    
+
                     # Set remaining commands back into CompoundCommand.
                     $Temp = $Script:CompoundCommand
                     $Script:CompoundCommand = @()
@@ -949,7 +949,7 @@ http://www.danielbohannon.com
         {
             $OverrideAcceptableInput = $TRUE
         }
-        
+
         If($ExitInputOptions -Contains $UserInput.ToLower())
         {
             Return $ExitInputOptions[0]
@@ -972,7 +972,7 @@ http://www.danielbohannon.com
             $UserInputOptionName  = $NULL
             $UserInputOptionValue = $NULL
             $HasError = $FALSE
-    
+
             $UserInputMinusSet = $UserInput.SubString(4).Trim()
             If($UserInputMinusSet.IndexOf(' ') -eq -1)
             {
@@ -997,15 +997,15 @@ http://www.danielbohannon.com
                         {
                             # Reset ScriptBlock in case it contained a value.
                             $Script:ScriptBlock = ''
-                        
+
                             # Check if user-input ScriptPath is a URL or a directory.
                             If($UserInputOptionValue -Match '(http|https)://')
                             {
                                 # ScriptPath is a URL.
-                            
+
                                 # Download content.
                                 $Script:ScriptBlock = (New-Object Net.WebClient).DownloadString($UserInputOptionValue)
-                            
+
                                 # Set script-wide variables for future reference.
                                 $Script:ScriptPath                = $UserInputOptionValue
                                 $Script:ObfuscatedCommand         = $Script:ScriptBlock
@@ -1014,7 +1014,7 @@ http://www.danielbohannon.com
                                 $Script:CliSyntax                 = @()
                                 $Script:ExecutionCommands         = @()
                                 $Script:LauncherApplied           = $FALSE
-                            
+
                                 Write-Host "`n`nSuccessfully set ScriptPath (as URL):" -ForegroundColor Cyan
                                 Write-Host $Script:ScriptPath -ForegroundColor Magenta
                             }
@@ -1031,7 +1031,7 @@ http://www.danielbohannon.com
                                 # Read contents from user-input ScriptPath value.
                                 Get-ChildItem $UserInputOptionValue -ErrorAction Stop | Out-Null
                                 $Script:ScriptBlock = [IO.File]::ReadAllText((Resolve-Path $UserInputOptionValue))
-                        
+
                                 # Set script-wide variables for future reference.
                                 $Script:ScriptPath                = $UserInputOptionValue
                                 $Script:ObfuscatedCommand         = $Script:ScriptBlock
@@ -1040,7 +1040,7 @@ http://www.danielbohannon.com
                                 $Script:CliSyntax                 = @()
                                 $Script:ExecutionCommands         = @()
                                 $Script:LauncherApplied           = $FALSE
-                            
+
                                 Write-Host "`n`nSuccessfully set ScriptPath:" -ForegroundColor Cyan
                                 Write-Host $Script:ScriptPath -ForegroundColor Magenta
                             }
@@ -1084,7 +1084,7 @@ http://www.danielbohannon.com
                         $Script:CliSyntax                 = @()
                         $Script:ExecutionCommands         = @()
                         $Script:LauncherApplied           = $FALSE
-                    
+
                         Write-Host "`n`nSuccessfully set ScriptBlock:" -ForegroundColor Cyan
                         Write-Host $Script:ScriptBlock -ForegroundColor Magenta
                     }
@@ -1107,13 +1107,13 @@ http://www.danielbohannon.com
                 Write-Host " $UserInputOptionName" -NoNewLine -ForegroundColor Cyan
                 Write-Host " is not a settable option." -NoNewLine
             }
-    
+
             If($HasError)
             {
                 Write-Host "`n       Correct syntax is" -NoNewLine
                 Write-Host ' SET OPTIONNAME VALUE' -NoNewLine -ForegroundColor Green
                 Write-Host '.' -NoNewLine
-        
+
                 Write-Host "`n       Enter" -NoNewLine
                 Write-Host ' SHOW OPTIONS' -NoNewLine -ForegroundColor Yellow
                 Write-Host ' for more details.'
@@ -1177,7 +1177,7 @@ http://www.danielbohannon.com
                     {
                         $ObfCommandScriptBlock = $ExecutionContext.InvokeCommand.NewScriptBlock($Script:ObfuscatedCommand)
                     }
-                    
+
                     # Validate that user has set SCRIPTPATH or SCRIPTBLOCK (by seeing if $Script:ObfuscatedCommand is empty).
                     If($Script:ObfuscatedCommand -eq '')
                     {
@@ -1283,7 +1283,7 @@ http://www.danielbohannon.com
                             'Out-PowerShellLauncher'            {
                                 # Extract numbers from string so we can output proper flag syntax in ExecutionCommands history.
                                 $SwitchesAsStringArray = [char[]]$Token | Sort-Object -Unique | Where-Object {$_ -ne ' '}
-                                
+
                                 If($SwitchesAsStringArray -Contains '0')
                                 {
                                     $CmdToPrint = @("Out-PowerShellLauncher -ScriptBlock "," $ObfLevel")
@@ -1310,9 +1310,9 @@ http://www.danielbohannon.com
                                     $SwitchesToPrint =  $SwitchesToPrint -Join ' '
                                     $CmdToPrint = @("Out-PowerShellLauncher -ScriptBlock "," $SwitchesToPrint $ObfLevel")
                                 }
-                                
+
                                 $Script:ObfuscatedCommand = Out-PowerShellLauncher -ScriptBlock $ObfCommandScriptBlock -SwitchesAsString $Token $ObfLevel
-                                
+
                                 # Only set LauncherApplied to true if before/after are different (i.e. no warnings prevented launcher from being applied).
                                 If($ObfuscatedCommandBefore -ne $Script:ObfuscatedCommand)
                                 {
@@ -1333,10 +1333,10 @@ http://www.danielbohannon.com
                         {
                             # Add to $Script:ObfuscatedCommandHistory if a change took place for the current ObfuscatedCommand.
                             $Script:ObfuscatedCommandHistory += , $Script:ObfuscatedCommand
-    
+
                             # Convert UserInput to CLI syntax to store in CliSyntax variable if obfuscation occurred.
                             $CliSyntaxCurrentCommand = $UserInput.Trim('_ ').Replace('_','\')
-    
+
                             # Add CLI command syntax to $Script:CliSyntax to maintain a history of commands to arrive at current obfuscated command for CLI syntax.
                             $Script:CliSyntax += $CliSyntaxCurrentCommand
 
@@ -1391,7 +1391,7 @@ http://www.danielbohannon.com
                     $Script:ObfuscatedCommandHistory = @($Script:ScriptBlock)
                     $Script:CliSyntax         = @()
                     $Script:ExecutionCommands = @()
-                    
+
                     Write-Host "`n`nSuccessfully reset ObfuscatedCommand." -ForegroundColor Cyan
                 }
             }
@@ -1475,7 +1475,7 @@ http://www.danielbohannon.com
                     {
                         # Get file path information from user interactively.
                         $UserInputOutputFilePath = Read-Host "`n`nEnter path for output file (or leave blank for default)"
-                    }                    
+                    }
                     # Decipher if user input a full file path, just a file name or nothing (default).
                     If($UserInputOutputFilePath.Trim() -eq '')
                     {
@@ -1492,7 +1492,7 @@ http://www.danielbohannon.com
                         # User input is a full file path.
                         $OutputFilePath = $UserInputOutputFilePath
                     }
-                    
+
                     # Write ObfuscatedCommand out to disk.
                     Write-Output $Script:ObfuscatedCommand > $OutputFilePath
 
@@ -1573,7 +1573,7 @@ http://www.danielbohannon.com
                             If($Script:CliSyntax -gt 0) {Start-Sleep 2}
                         }
                     }
-                    
+
                     $Script:CliSyntax += 'clip'
                 }
                 ElseIf($Script:ObfuscatedCommand -eq '')
@@ -1583,7 +1583,7 @@ http://www.danielbohannon.com
                     Write-Host " SHOW OPTIONS" -NoNewLine -ForegroundColor Yellow
                     Write-Host " and look at ObfuscatedCommand." -NoNewLine
                 }
-                
+
             }
             ElseIf($ExecutionInputOptions[0] -Contains $UserInput)
             {
@@ -1602,7 +1602,7 @@ http://www.danielbohannon.com
                 {
                     If($Script:ObfuscatedCommand -ceq $Script:ScriptBlock) {Write-Host "`n`nInvoking (though you haven't obfuscated anything yet):"}
                     Else {Write-Host "`n`nInvoking:"}
-                    
+
                     Out-ScriptContents $Script:ObfuscatedCommand
                     Write-Host ''
                     $null = Invoke-Expression $Script:ObfuscatedCommand
@@ -1663,7 +1663,7 @@ http://www.danielbohannon.com
             }
         }
     }
-    
+
     Return $UserInput.ToLower()
 }
 
@@ -1680,7 +1680,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Show-OptionsMenu displays options menu for Invoke-Obfuscation.
@@ -1721,7 +1721,7 @@ http://www.danielbohannon.com
 
         $Counter++
     }
-    
+
     # Output menu.
     Write-Host "`n`nSHOW OPTIONS" -NoNewLine -ForegroundColor Cyan
     Write-Host " ::" -NoNewLine
@@ -1734,14 +1734,14 @@ http://www.danielbohannon.com
         $OptionTitle = $Option[0]
         $OptionValue = $Option[1]
         $CanSetValue = $Option[2]
-      
+
         Write-Host $LineSpacing -NoNewLine
-        
+
         # For options that can be set by user, output as Yellow.
         If($CanSetValue) {Write-Host $OptionTitle -NoNewLine -ForegroundColor Yellow}
         Else {Write-Host $OptionTitle -NoNewLine}
         Write-Host ": " -NoNewLine
-        
+
         # Handle coloring and multi-value output for ExecutionCommands and ObfuscationLength.
         If($OptionTitle -eq 'ObfuscationLength')
         {
@@ -1789,11 +1789,11 @@ http://www.danielbohannon.com
             {
                 $Counter++
                 If($ExecutionCommand.Length -eq 0) {Write-Host ''; Continue}
-            
+
                 $ExecutionCommand = $ExecutionCommand.Replace('$ScriptBlock','~').Split('~')
                 Write-Host "    $($ExecutionCommand[0])" -NoNewLine -ForegroundColor Cyan
                 Write-Host '$ScriptBlock' -NoNewLine -ForegroundColor Magenta
-                
+
                 # Handle output formatting when SHOW OPTIONS is run.
                 If(($OptionValue.Count -gt 0) -AND ($Counter -lt $OptionValue.Count))
                 {
@@ -1816,7 +1816,7 @@ http://www.danielbohannon.com
             Write-Host $OptionValue -ForegroundColor Magenta
         }
     }
-    
+
 }
 
 
@@ -1832,7 +1832,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Show-HelpMenu displays help menu for Invoke-Obfuscation.
@@ -1875,7 +1875,7 @@ http://www.danielbohannon.com
         {
             Write-Host "$LineSpacing $InputOptionsDescription" -NoNewLine
         }
-        
+
         $Counter = 0
         ForEach($Command in $InputOptionsCommands)
         {
@@ -1900,7 +1900,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Show-Tutorial displays tutorial information for Invoke-Obfuscation.
@@ -1920,11 +1920,11 @@ http://www.danielbohannon.com
 
     Write-Host "`n`nTUTORIAL" -NoNewLine -ForegroundColor Cyan
     Write-Host " :: Here is a quick tutorial showing you how to get your obfuscation on:"
-    
+
     Write-Host "`n1) " -NoNewLine -ForegroundColor Cyan
     Write-Host "Load a scriptblock (SET SCRIPTBLOCK) or a script path/URL (SET SCRIPTPATH)."
     Write-Host "   SET SCRIPTBLOCK Write-Host 'This is my test command' -ForegroundColor Green" -ForegroundColor Green
-    
+
     Write-Host "`n2) " -NoNewLine -ForegroundColor Cyan
     Write-Host "Navigate through the obfuscation menus where the options are in" -NoNewLine
     Write-Host " YELLOW" -NoNewLine -ForegroundColor Yellow
@@ -1944,7 +1944,7 @@ http://www.danielbohannon.com
     Write-Host " & then" -NoNewLine
     Write-Host " 5" -NoNewLine -ForegroundColor Green
     Write-Host " to apply SecureString obfuscation."
-    
+
     Write-Host "`n3) " -NoNewLine -ForegroundColor Cyan
     Write-Host "Enter" -NoNewLine
     Write-Host " TEST" -NoNewLine -ForegroundColor Yellow
@@ -1953,7 +1953,7 @@ http://www.danielbohannon.com
     Write-Host " to test the obfuscated command locally.`n   Enter" -NoNewLine
     Write-Host " SHOW" -NoNewLine -ForegroundColor Yellow
     Write-Host " to see the currently obfuscated command."
-    
+
     Write-Host "`n4) " -NoNewLine -ForegroundColor Cyan
     Write-Host "Enter" -NoNewLine
     Write-Host " COPY" -NoNewLine -ForegroundColor Yellow
@@ -1963,7 +1963,7 @@ http://www.danielbohannon.com
     Write-Host "   Enter" -NoNewLine
     Write-Host " OUT" -NoNewLine -ForegroundColor Yellow
     Write-Host " to write obfuscated command out to disk."
-    
+
     Write-Host "`n5) " -NoNewLine -ForegroundColor Cyan
     Write-Host "Enter" -NoNewLine
     Write-Host " RESET" -NoNewLine -ForegroundColor Yellow
@@ -1974,7 +1974,7 @@ http://www.danielbohannon.com
     Write-Host "/" -NoNewLine
     Write-Host "?" -NoNewLine -ForegroundColor Yellow
     Write-Host " for help menu."
-    
+
     Write-Host "`nAnd finally the obligatory `"Don't use this for evil, please`"" -NoNewLine -ForegroundColor Cyan
     Write-Host " :)" -ForegroundColor Green
 }
@@ -1992,7 +1992,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ScriptContents displays current obfuscated command for Invoke-Obfuscation.
@@ -2031,13 +2031,13 @@ http://www.danielbohannon.com
     {
         # Output ScriptContents, handling if the size of ScriptContents exceeds $CmdMaxLength characters.
         $RedactedPrintLength = $CmdMaxLength/5
-        
+
         # Handle printing redaction message in middle of screen. #OCD
         $CmdLineWidth = (Get-Host).UI.RawUI.BufferSize.Width
         $RedactionMessage = "<REDACTED: ObfuscatedLength = $($ScriptContents.Length)>"
         $CenteredRedactionMessageStartIndex = (($CmdLineWidth-$RedactionMessage.Length)/2) - "[*] ObfuscatedCommand: ".Length
         $CurrentRedactionMessageStartIndex = ($RedactedPrintLength % $CmdLineWidth)
-        
+
         If($CurrentRedactionMessageStartIndex -gt $CenteredRedactionMessageStartIndex)
         {
             $RedactedPrintLength = $RedactedPrintLength-($CurrentRedactionMessageStartIndex-$CenteredRedactionMessageStartIndex)
@@ -2046,7 +2046,7 @@ http://www.danielbohannon.com
         {
             $RedactedPrintLength = $RedactedPrintLength+($CenteredRedactionMessageStartIndex-$CurrentRedactionMessageStartIndex)
         }
-    
+
         Write-Host $ScriptContents.SubString(0,$RedactedPrintLength) -NoNewLine -ForegroundColor Magenta
         Write-Host $RedactionMessage -NoNewLine -ForegroundColor Yellow
         Write-Host $ScriptContents.SubString($ScriptContents.Length-$RedactedPrintLength) -ForegroundColor Magenta
@@ -2067,7 +2067,7 @@ http://www.danielbohannon.com
             Write-Host " characters." -ForegroundColor Red
         }
     }
-}          
+}
 
 
 Function Show-AsciiArt
@@ -2082,7 +2082,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Show-AsciiArt displays random ASCII art for Invoke-Obfuscation, and also displays ASCII art during script startup.
@@ -2119,7 +2119,7 @@ http://www.danielbohannon.com
     $InvokeObfuscationAscii += $Spacing + ' / / / / __ \/ /_/ / / / ___/ ___/ __ `/ __/ / __ \/ __ \'
     $InvokeObfuscationAscii += $Spacing + '/ /_/ / /_/ / __/ /_/ (__  ) /__/ /_/ / /_/ / /_/ / / / /'
     $InvokeObfuscationAscii += $Spacing + '\____/_.___/_/  \__,_/____/\___/\__,_/\__/_/\____/_/ /_/ '
-    
+
     # Ascii art to run only during script startup.
     If(!$PSBoundParameters['Random'])
     {
@@ -2134,7 +2134,7 @@ http://www.danielbohannon.com
         Start-Sleep -Milliseconds 650
         ForEach($Line in $ArrowAscii) {Write-Host $Line -NoNewline; Write-Host $Line -NoNewline; Write-Host $Line -NoNewline; Write-Host $Line}
         Start-Sleep -Milliseconds 100
-        
+
         Write-Host "`$N7 =[char[ ] ] `"noisserpxE-ekovnI| )93]rahC[,'pQm'ecalpeR-  43]rahC[,'bg0'ecalpeR- )')pQm'+'nepQ'+'m+pQme'+'rGpQm'+' ( '+'roloCdnu'+'orger'+'oF- )bg0nbg0'+'+ bg0oibg0'+'  +  bg0tacbg0'+'+'+'bg0sufbO-b'+'g'+'0+'+'bg0ek'+'ovn'+'bg0+ bg0Ib'+'g'+'0 '+' ( )'+'bg'+'0tsO'+'bg0'+' + bg'+'0H'+'-'+'ebg0 '+' '+'+ b'+'g0'+'tIRwb'+'g0(. '((`";[Array]::Reverse(`$N7 ) ; IEX (`$N7-Join '' )" -ForegroundColor Magenta
         Start-Sleep -Milliseconds 650
         ForEach($Line in $ArrowAscii) {Write-Host $Line -NoNewline; Write-Host $Line -NoNewline; Write-Host $Line}
@@ -2149,7 +2149,7 @@ http://www.danielbohannon.com
         Start-Sleep -Milliseconds 650
         ForEach($Line in $ArrowAscii) {Write-Host $Line}
         Start-Sleep -Milliseconds 100
-        
+
         # Write out below string in interactive format.
         Start-Sleep -Milliseconds 100
         ForEach($Char in [Char[]]'Invoke-Obfuscation')
@@ -2157,7 +2157,7 @@ http://www.danielbohannon.com
             Start-Sleep -Milliseconds (Get-Random -Input @(25..200))
             Write-Host $Char -NoNewline -ForegroundColor Green
         }
-        
+
         Start-Sleep -Milliseconds 900
         Write-Host ""
         Start-Sleep -Milliseconds 300

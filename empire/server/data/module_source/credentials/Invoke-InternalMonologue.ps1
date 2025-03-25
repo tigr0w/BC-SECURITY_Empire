@@ -6,7 +6,7 @@ Retrieves NTLMv1 challenge-response for all available users
 
 .DESCRIPTION
 Downgrades to NTLMv1, impersonates all available users and retrieves a challenge-response for each.
-	
+
 Author: Elad Shamir (https://linkedin.com/in/eladshamir)
 
 .EXAMPLE
@@ -37,13 +37,13 @@ Param(
 	[Parameter(Position = 0)]
 	[String]
 	$Challenge,
-	
+
 	[Switch]
 	$Downgrade,
-	
+
 	[Switch]
 	$Impersonate,
-	
+
 	[Switch]
 	$Restore
 )
@@ -127,7 +127,7 @@ namespace InternalMonologue
         [DllImport("secur32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         static extern int InitializeSecurityContext(
             ref SECURITY_HANDLE phCredential,
-            ref SECURITY_HANDLE phContext,  
+            ref SECURITY_HANDLE phContext,
             string pszTargetName,
             int fContextReq,
             int Reserved1,
@@ -251,7 +251,7 @@ namespace InternalMonologue
 
                 return SID;
             }
-            catch 
+            catch
             {
                 CloseHandle(token);
                 return null;
@@ -375,7 +375,7 @@ namespace InternalMonologue
                                     else if (verbose == true) { Console.WriteLine("Got blank response for user " + WindowsIdentity.GetCurrent().Name); }
                                 }
                             }
-                            catch 
+                            catch
                             { /*Does not need to do anything if it fails*/ }
                             finally
                             {

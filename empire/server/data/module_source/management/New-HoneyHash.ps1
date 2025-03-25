@@ -61,7 +61,7 @@ New-HoneyHash -Domain linux.org -Username root
     $ProcessInformation = $SafeNativeMethods.GetNestedType('PROCESS_INFORMATION', [Reflection.BindingFlags] 'NonPublic')
 
     $Flags = [Activator]::CreateInstance($LogonFlags)
-    $Flags.value__ = 2 # LOGON_NETCREDENTIALS_ONLY 
+    $Flags.value__ = 2 # LOGON_NETCREDENTIALS_ONLY
     $StartInfo = [Activator]::CreateInstance($StartupInfo)
     $ProcInfo = [Activator]::CreateInstance($ProcessInformation)
 
@@ -74,7 +74,7 @@ New-HoneyHash -Domain linux.org -Username root
     $Result = $CreateProcessWithLogonW.Invoke($null, @([String] $UserName,
                                              [String] $Domain,
                                              [IntPtr] $PasswordPtr,
-                                             ($Flags -as $LogonFlags),     # LOGON_NETCREDENTIALS_ONLY 
+                                             ($Flags -as $LogonFlags),     # LOGON_NETCREDENTIALS_ONLY
                                              $null,
                                              [Text.StringBuilder] $StrBuilder,
                                              0x08000000, # Don't display a window

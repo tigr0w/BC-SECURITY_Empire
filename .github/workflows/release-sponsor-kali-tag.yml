@@ -5,10 +5,10 @@ on:
       - closed
     branches:
       - sponsors-main
-
 jobs:
   tag_release:
-    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/') && github.repository == 'BC-Security/Empire-Sponsors'
+    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')
+      && github.repository == 'BC-Security/Empire-Sponsors'
     runs-on: ubuntu-latest
     steps:
       - name: Get tag name
@@ -41,7 +41,7 @@ jobs:
           release_name: v${{ env.TAG_NAME }}
           body: |
             ${{ steps.extract_release_notes.outputs.release_notes }}
-            
+
             ### Sponsors Only
             ${{ steps.extract_release_notes_sponsors.outputs.release_notes }}
           draft: false

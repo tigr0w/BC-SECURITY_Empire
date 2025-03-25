@@ -3,7 +3,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: 'Pillages the current user for their bash_history, ssh known hosts, recent folders, etc. '
+description: 'Pillages the current user for their bash_history, ssh known hosts,
+  recent folders, etc. '
 software: ''
 tactics: []
 techniques:
@@ -21,7 +22,8 @@ options:
     required: true
     value: ''
   - name: Sleep
-    description: Sleep the agent's normal interval between downloads, otherwise use one blast.
+    description: Sleep the agent's normal interval between downloads, otherwise use
+      one blast.
     required: false
     value: 'True'
     strict: true

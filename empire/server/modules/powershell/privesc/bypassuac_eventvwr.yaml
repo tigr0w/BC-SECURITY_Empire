@@ -3,12 +3,11 @@ authors:
   - name: ''
     handle: '@enigma0x3'
     link: ''
-description: Bypasses UAC by performing an image hijack on the .msc file extension and starting eventvwr.exe. No files are
-  dropped to disk, making this opsec safe.
+description: Bypasses UAC by performing an image hijack on the .msc file extension
+  and starting eventvwr.exe. No files are dropped to disk, making this opsec safe.
 software: ''
-tactics: []
-techniques:
-  - T1088
+tactics: [TA0004]
+techniques: [T1548.002]
 background: true
 output_extension:
 needs_admin: false
@@ -18,17 +17,13 @@ min_language_version: '2'
 comments:
   - https://enigma0x3.net/2016/08/15/fileless-uac-bypass-using-eventvwr-exe-and-registry-hijacking/
 options:
-  - name: Agent
-    description: Agent to run module on.
-    required: true
-    value: ''
   - name: Listener
     description: Listener to use.
     required: true
     value: ''
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
-      only.
+    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
+      for obfuscation types. For powershell only.
     required: false
     value: 'False'
     strict: true
@@ -36,15 +31,20 @@ options:
       - True
       - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True. For powershell only.
     required: false
     value: Token\All\1
+    depends_on:
+      - name: Obfuscate
+        values: ['True']
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
     value: mattifestation etw
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -52,7 +52,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
 script_path: privesc/Invoke-EventVwrBypass.ps1

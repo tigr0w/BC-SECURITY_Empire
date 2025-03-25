@@ -6,11 +6,11 @@ authors:
   - name: ''
     handle: '@snovvcrash'
     link: ''
-description: Query a DACL of an ADIDNS node or zone in the specified domain. Part of Powermad.
+description: Query a DACL of an ADIDNS node or zone in the specified domain. Part
+  of Powermad.
 software: ''
-tactics: []
-techniques:
-  - T1069
+tactics: [TA0007]
+techniques: [T1069]
 background: true
 output_extension:
 needs_admin: false
@@ -25,16 +25,18 @@ options:
     required: true
     value: ''
   - name: DistinguishedName
-    description: Distinguished name for the ADIDNS zone. Do not include the node name.
+    description: Distinguished name for the ADIDNS zone. Do not include the node
+      name.
     required: false
     value: ''
   - name: Domain
-    description: The targeted domain in DNS format. This parameter is required when using an IP address in the DomainController
-      parameter.
+    description: The targeted domain in DNS format. This parameter is required when
+      using an IP address in the DomainController parameter.
     required: false
     value: ''
   - name: DomainController
-    description: Domain controller to target. This parameter is mandatory on a non-domain attached system.
+    description: Domain controller to target. This parameter is mandatory on a non-domain
+      attached system.
     required: false
     value: ''
   - name: Node
@@ -42,8 +44,8 @@ options:
     required: false
     value: ''
   - name: Partition
-    description: (DomainDNSZones,ForestDNSZones,System) The AD partition name where the zone is stored. By default, this function
-      will loop through all three partitions.
+    description: (DomainDNSZones,ForestDNSZones,System) The AD partition name where
+      the zone is stored. By default, this function will loop through all three partitions.
     required: false
     value: ''
   - name: Zone
@@ -51,7 +53,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -62,4 +65,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powermad.ps1
-script_end: Get-ADIDNSPermission {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-ADIDNSPermission completed'
+script_end: Get-ADIDNSPermission {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Get-ADIDNSPermission completed'

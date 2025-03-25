@@ -5,10 +5,10 @@ on:
       - closed
     branches:
       - main
-
 jobs:
   tag_release:
-    if: ${{ github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/') && github.repository == 'BC-Security/Empire' }}
+    if: ${{ github.event.pull_request.merged == true && startsWith(github.head_ref,
+      'release/') && github.repository == 'BC-Security/Empire' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out code

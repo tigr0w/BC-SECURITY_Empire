@@ -3,12 +3,12 @@ authors:
   - name: ''
     handle: '@p3nt4'
     link: ''
-description: The reverse proxy creates a TCP tunnel by initiating outbound SSL connections that can go through the system's
-  proxy. The tunnel can then be used as a socks proxy on the remote host to pivot into the local host's network.
+description: The reverse proxy creates a TCP tunnel by initiating outbound SSL connections
+  that can go through the system's proxy. The tunnel can then be used as a socks
+  proxy on the remote host to pivot into the local host's network.
 software: ''
-tactics: []
-techniques:
-  - T1090
+tactics: [TA0011]
+techniques: [T1090]
 background: true
 output_extension:
 needs_admin: false

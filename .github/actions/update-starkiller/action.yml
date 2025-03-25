@@ -25,11 +25,8 @@ runs:
         sed -i "s|repo:.*|repo: ${{ inputs.repo }}|" empire/server/config.yaml
     - name: Update config.yaml ref
       shell: bash
-      # this depends on there not being any other keys in the config named ref
-      # if there are, this will break. We could be safer to load/dump the yaml,
-      # but would lose the comments.
       run: |
-        sed -i "s/ref: .*/ref: ${{ inputs.starkiller-version }}/" empire/server/config.yaml
+        sed -i '0,/ref: .*/s//ref: ${{ inputs.starkiller-version }}/' empire/server/config.yaml
     - name: Update changelog
       shell: bash
       run: |

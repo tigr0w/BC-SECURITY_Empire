@@ -45,7 +45,8 @@ options:
     required: true
     value: /usr/lib/libSystem.B.dylib
   - name: Debug
-    description: Enable to get verbose message status (Dont enable OutputExtension for this).
+    description: Enable to get verbose message status (Dont enable OutputExtension
+      for this).
     required: true
     value: 'False'
     strict: true

@@ -57,7 +57,7 @@ class Stager:
                 "Value": "",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -107,12 +107,12 @@ class Stager:
             raise TypeError('Invalid version provided. Accepts "new" and "old"') from e
 
         # generate the python launcher code
-        pylauncher = self.mainMenu.stagers.generate_launcher(
+        pylauncher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language="python",
             encode=True,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if pylauncher == "":

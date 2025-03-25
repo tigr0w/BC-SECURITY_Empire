@@ -3,6 +3,24 @@ from starlette import status
 
 from empire.server.core.db.models import PluginTaskStatus
 
+PLUGIN_ID = "basic_reporting"
+
+
+@pytest.fixture
+def plugin_task(main, session_local, models):
+    with session_local.begin() as db:
+        plugin_task = models.PluginTask(
+            plugin_id=PLUGIN_ID,
+            input="This is the trimmed input for the task.",
+            input_full="This is the full input for the task.",
+            user_id=1,
+        )
+        db.add(plugin_task)
+        db.flush()
+        task_id = plugin_task.id
+
+    return task_id  # noqa RET504
+
 
 def _test_add_tag(client, admin_auth_header, path, taggable_id):
     resp = client.post(
@@ -13,9 +31,6 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
     assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     actual = resp.json()
-    for detail in actual["detail"]:
-        detail.pop("url")
-
     assert actual == {
         "detail": [
             {
@@ -128,9 +143,6 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
     assert resp_bad.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     actual = resp_bad.json()
-    for detail in actual["detail"]:
-        detail.pop("url")
-
     assert actual == {
         "detail": [
             {
@@ -291,8 +303,8 @@ def test_download_delete_tag(client, admin_auth_header, download):
     _test_delete_tag(client, admin_auth_header, "/api/v2/downloads", download)
 
 
-@pytest.fixture(scope="function")
-def _create_tags(
+@pytest.fixture
+def create_tags(
     client,
     admin_auth_header,
     listener,
@@ -340,8 +352,8 @@ def _create_tags(
         assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_get_tags(client, admin_auth_header, _create_tags):
-    expected_tags = _create_tags
+def test_get_tags(client, admin_auth_header, create_tags):
+    expected_tags = create_tags
     resp = client.get("/api/v2/tags?order_by=name", headers=admin_auth_header)
     assert resp.status_code == status.HTTP_200_OK
 
@@ -349,17 +361,14 @@ def test_get_tags(client, admin_auth_header, _create_tags):
     for tag in actual_tags:
         tag.pop("id")
 
-    expected_tags = sorted(expected_tags, key=lambda k: k["name"])
-    assert actual_tags == expected_tags
+    for tag in expected_tags:
+        assert tag in actual_tags
 
 
-@pytest.fixture(scope="function")
-def _create_agent_tasks_with_tags(
+@pytest.fixture
+def create_agent_tasks_with_tags(
     client, admin_auth_header, agent, session_local, models
 ):
-    with session_local.begin() as db:
-        db.query(models.AgentTask).delete()
-
     agent_id = agent
     agent_tasks = []
     tags = []
@@ -381,25 +390,11 @@ def _create_agent_tasks_with_tags(
         assert resp.status_code == status.HTTP_201_CREATED
         tags.append((agent_task, resp.json()))
 
-    yield agent_tasks
-
-    for task, tag in tags:
-        resp = client.delete(
-            f"/api/v2/agents/{agent_id}/tasks/{task['id']}/tags/{tag['id']}",
-            headers=admin_auth_header,
-        )
-        assert resp.status_code == status.HTTP_204_NO_CONTENT
-
-    for agent_task in agent_tasks:
-        resp = client.delete(
-            f"/api/v2/agents/{agent_id}/tasks/{agent_task['id']}",
-            headers=admin_auth_header,
-        )
-        assert resp.status_code == status.HTTP_204_NO_CONTENT
+    return agent_tasks
 
 
 def test_get_agent_tasks_tag_filter(
-    client, admin_auth_header, agent, _create_agent_tasks_with_tags
+    client, admin_auth_header, agent, create_agent_tasks_with_tags
 ):
     resp = client.get(f"/api/v2/agents/{agent}/tasks", headers=admin_auth_header)
 
@@ -441,15 +436,13 @@ def test_get_agent_tasks_tag_filter(
     )
 
 
-@pytest.fixture(scope="function")
-def _create_plugin_tasks_with_tags(
-    models, session_local, client, admin_auth_header, plugin_name
-):
+@pytest.fixture
+def create_plugin_tasks_with_tags(models, session_local, client, admin_auth_header):
     plugin_tasks = []
     tags = []
     for i in range(3):
         plugin_task = models.PluginTask(
-            plugin_id=plugin_name,
+            plugin_id=PLUGIN_ID,
             input=f"input {i}",
             input_full=f"input {i}",
             user_id=None,
@@ -462,7 +455,7 @@ def _create_plugin_tasks_with_tags(
 
     for i, plugin_task in enumerate(plugin_tasks):
         resp = client.post(
-            f"/api/v2/plugins/{plugin_name}/tasks/{plugin_task['id']}/tags",
+            f"/api/v2/plugins/{PLUGIN_ID}/tasks/{plugin_task['id']}/tags",
             headers=admin_auth_header,
             json={"name": f"test_tag_{i}", "value": f"test_value_{i}"},
         )
@@ -473,26 +466,23 @@ def _create_plugin_tasks_with_tags(
 
     for task, tag in tags:
         resp = client.delete(
-            f"/api/v2/plugins/{plugin_name}/tasks/{task['id']}/tags/{tag['id']}",
+            f"/api/v2/plugins/{PLUGIN_ID}/tasks/{task['id']}/tags/{tag['id']}",
             headers=admin_auth_header,
         )
         assert resp.status_code == status.HTTP_204_NO_CONTENT
 
-    with session_local.begin() as db:
-        db.query(models.PluginTask).delete()
-
 
 def test_get_plugin_tasks_tag_filter(
-    client, admin_auth_header, plugin_name, _create_plugin_tasks_with_tags
+    client, admin_auth_header, create_plugin_tasks_with_tags
 ):
-    resp = client.get(f"/api/v2/plugins/{plugin_name}/tasks", headers=admin_auth_header)
+    resp = client.get(f"/api/v2/plugins/{PLUGIN_ID}/tasks", headers=admin_auth_header)
 
     task_count = 3
     assert resp.status_code == status.HTTP_200_OK
-    assert len(resp.json()["records"]) == task_count
+    assert len(resp.json()["records"]) > task_count
 
     resp = client.get(
-        f"/api/v2/plugins/{plugin_name}/tasks?tags=test_tag_0:test_value_0",
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks?tags=test_tag_0:test_value_0",
         headers=admin_auth_header,
     )
 
@@ -502,7 +492,7 @@ def test_get_plugin_tasks_tag_filter(
     assert resp.json()["records"][0]["tags"][0]["name"] == "test_tag_0"
 
     resp = client.get(
-        f"/api/v2/plugins/{plugin_name}/tasks?tags=test_tag_0:test_value_0&tags=test_tag_1:test_value_1",
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks?tags=test_tag_0:test_value_0&tags=test_tag_1:test_value_1",
         headers=admin_auth_header,
     )
 
@@ -516,7 +506,7 @@ def test_get_plugin_tasks_tag_filter(
 
     # Test tag value bad
     resp = client.get(
-        f"/api/v2/plugins/{plugin_name}/tasks?tags=test_tag_0",
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks?tags=test_tag_0",
         headers=admin_auth_header,
     )
 
@@ -526,16 +516,10 @@ def test_get_plugin_tasks_tag_filter(
     )
 
 
-@pytest.fixture(scope="function")
-def _create_downloads_with_tags(models, session_local, client, admin_auth_header):
+@pytest.fixture
+def create_downloads_with_tags(models, session_local, client, admin_auth_header):
     downloads = []
     tags = []
-    with session_local.begin() as db:
-        # Unsure why this is needed, but it is.
-        # Some other test must be adding a download and not removing it.
-        db.query(models.upload_download_assc).delete()
-        db.query(models.Download).delete()
-
     for i in range(3):
         download = models.Download(
             location=f"path/{i}", filename=f"filename_{i}", size=1
@@ -563,19 +547,15 @@ def _create_downloads_with_tags(models, session_local, client, admin_auth_header
         )
         assert resp.status_code == status.HTTP_204_NO_CONTENT
 
-    with session_local.begin() as db:
-        db.query(models.download_tag_assc).delete()
-        db.query(models.Download).delete()
-
 
 def test_get_downloads_tag_filter(
-    client, admin_auth_header, _create_downloads_with_tags
+    client, admin_auth_header, create_downloads_with_tags
 ):
     resp = client.get("/api/v2/downloads/", headers=admin_auth_header)
 
     download_count = 3
     assert resp.status_code == status.HTTP_200_OK
-    assert len(resp.json()["records"]) == download_count
+    assert len(resp.json()["records"]) > download_count
 
     resp = client.get(
         "/api/v2/downloads?tags=test_tag_0:test_value_0",

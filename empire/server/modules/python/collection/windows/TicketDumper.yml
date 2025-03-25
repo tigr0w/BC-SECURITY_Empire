@@ -3,7 +3,7 @@ authors:
   - name: 'Jake Krasnov'
     handle: '@hubbl3'
     link: ''
-description: uses IronPython to dump tickets in the same way that klist.exe does 
+description: uses IronPython to dump tickets in the same way that klist.exe does
 tactics: []
 techniques:
   - T1558
@@ -13,9 +13,9 @@ needs_admin: true
 opsec_safe: true
 language: python
 min_language_version: '3'
-comments: 
- - https://github.com/Hubbl3/IronOffense
- - https://gitlab.com/KevinJClark/csharptoolbox/-/blob/master/Kex.cs?ref_type=heads
+comments:
+  - https://github.com/Hubbl3/IronOffense
+  - https://gitlab.com/KevinJClark/csharptoolbox/-/blob/master/Kex.cs?ref_type=heads
 options:
   - name: Agent
     description: Agent to execute module on.

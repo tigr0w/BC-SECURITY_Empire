@@ -4,19 +4,119 @@ import pytest
 from starlette import status
 
 
-@pytest.fixture(scope="module", autouse=True)
-def cleanup_stagers(session_local, models):
-    yield
+def get_base_stager():
+    return {
+        "name": "MyStager",
+        "template": "multi_launcher",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "powershell",
+            "StagerRetries": "0",
+            "OutFile": "",
+            "Base64": "True",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "SafeChecks": "True",
+            "UserAgent": "default",
+            "Proxy": "default",
+            "ProxyCreds": "default",
+            "Bypasses": "mattifestation etw",
+        },
+    }
 
-    with session_local.begin() as db:
-        db.query(models.stager_download_assc).delete()
-        db.query(models.upload_download_assc).delete()
-        db.query(models.Stager).delete()
-        db.query(models.Download).delete()
+
+def get_base_stager_dll():
+    return {
+        "name": "MyStager2",
+        "template": "windows_dll",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "powershell",
+            "StagerRetries": "0",
+            "Arch": "x86",
+            "OutFile": "my-windows-dll.dll",
+            "Base64": "True",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "SafeChecks": "True",
+            "UserAgent": "default",
+            "Proxy": "default",
+            "ProxyCreds": "default",
+            "Bypasses": "mattifestation etw",
+        },
+    }
+
+
+def get_base_stager_malleable():
+    return {
+        "name": "MyStager",
+        "template": "multi_launcher",
+        "options": {
+            "Listener": "malleable_listener_1",
+            "Language": "powershell",
+            "StagerRetries": "0",
+            "OutFile": "",
+            "Base64": "True",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "SafeChecks": "True",
+            "UserAgent": "default",
+            "Proxy": "default",
+            "ProxyCreds": "default",
+            "Bypasses": "mattifestation etw",
+        },
+    }
+
+
+def get_bat_stager():
+    return {
+        "name": "bat_stager",
+        "template": "windows_launcher_bat",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "powershell",
+            "OutFile": "my-bat.bat",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "Bypasses": "mattifestation etw",
+        },
+    }
+
+
+def get_windows_macro_stager():
+    return {
+        "name": "macro_stager",
+        "template": "windows_macro",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "powershell",
+            "DocumentType": "word",
+            "Trigger": "autoopen",
+            "OutFile": "document_macro.txt",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "Bypasses": "mattifestation etw",
+            "SafeChecks": "True",
+        },
+    }
+
+
+def get_pyinstaller_stager():
+    return {
+        "name": "MyStager3",
+        "template": "linux_pyinstaller",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "python",
+            "OutFile": "empire",
+            "SafeChecks": "True",
+            "UserAgent": "default",
+        },
+    }
 
 
 def test_get_stager_templates(client, admin_auth_header):
-    min_stagers = 36
+    min_stagers = 30
     response = client.get(
         "/api/v2/stager-templates/",
         headers=admin_auth_header,
@@ -36,9 +136,8 @@ def test_get_stager_template(client, admin_auth_header):
     assert isinstance(response.json()["options"], dict)
 
 
-def test_create_stager_validation_fails_required_field(
-    client, base_stager, admin_auth_header
-):
+def test_create_stager_validation_fails_required_field(client, admin_auth_header):
+    base_stager = get_base_stager()
     base_stager["options"]["Listener"] = ""
     response = client.post(
         "/api/v2/stagers/", headers=admin_auth_header, json=base_stager
@@ -47,9 +146,8 @@ def test_create_stager_validation_fails_required_field(
     assert response.json()["detail"] == "required option missing: Listener"
 
 
-def test_create_stager_validation_fails_strict_field(
-    client, base_stager, admin_auth_header
-):
+def test_create_stager_validation_fails_strict_field(client, admin_auth_header):
+    base_stager = get_base_stager()
     base_stager["options"]["Language"] = "ABCDEF"
     response = client.post(
         "/api/v2/stagers/", headers=admin_auth_header, json=base_stager
@@ -69,7 +167,8 @@ def test_create_stager_validation_fails_strict_field(
 #     assert response.json()['detail'] == 'Error generating'
 
 
-def test_create_stager_template_not_found(client, base_stager, admin_auth_header):
+def test_create_stager_template_not_found(client, admin_auth_header):
+    base_stager = get_base_stager()
     base_stager["template"] = "qwerty"
 
     response = client.post(
@@ -79,7 +178,8 @@ def test_create_stager_template_not_found(client, base_stager, admin_auth_header
     assert response.json()["detail"] == "Stager Template qwerty not found"
 
 
-def test_create_stager_one_liner(client, base_stager, admin_auth_header):
+def test_create_stager_one_liner(client, admin_auth_header):
+    base_stager = get_base_stager()
     # test that it ignore extra params
     base_stager["options"]["xyz"] = "xyz"
 
@@ -96,9 +196,8 @@ def test_create_stager_one_liner(client, base_stager, admin_auth_header):
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
-def test_create_malleable_stager_one_liner(
-    client, base_stager_malleable, admin_auth_header
-):
+def test_create_malleable_stager_one_liner(client, admin_auth_header):
+    base_stager_malleable = get_base_stager_malleable()
     # test that it ignore extra params
     base_stager_malleable["options"]["xyz"] = "xyz"
 
@@ -117,7 +216,8 @@ def test_create_malleable_stager_one_liner(
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
-def test_create_obfuscated_stager_one_liner(client, base_stager, admin_auth_header):
+def test_create_obfuscated_stager_one_liner(client, admin_auth_header):
+    base_stager = get_base_stager()
     # test that it ignore extra params
     base_stager["options"]["xyz"] = "xyz"
 
@@ -137,9 +237,8 @@ def test_create_obfuscated_stager_one_liner(client, base_stager, admin_auth_head
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
-def test_create_obfuscated_malleable_stager_one_liner(
-    client, base_stager_malleable, admin_auth_header
-):
+def test_create_obfuscated_malleable_stager_one_liner(client, admin_auth_header):
+    base_stager_malleable = get_base_stager_malleable()
     # test that it ignore extra params
     base_stager_malleable["options"]["xyz"] = "xyz"
 
@@ -161,7 +260,8 @@ def test_create_obfuscated_malleable_stager_one_liner(
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
-def test_create_stager_file(client, base_stager_dll, admin_auth_header):
+def test_create_stager_file(client, admin_auth_header):
+    base_stager_dll = get_base_stager_dll()
     # test that it ignore extra params
     base_stager_dll["options"]["xyz"] = "xyz"
 
@@ -178,7 +278,8 @@ def test_create_stager_file(client, base_stager_dll, admin_auth_header):
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
-def test_create_stager_name_conflict(client, base_stager, admin_auth_header):
+def test_create_stager_name_conflict(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
@@ -191,13 +292,14 @@ def test_create_stager_name_conflict(client, base_stager, admin_auth_header):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
         response.json()["detail"]
-        == f'Stager with name {base_stager["name"]} already exists.'
+        == f"Stager with name {base_stager['name']} already exists."
     )
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
-def test_create_stager_save_false(client, base_stager, admin_auth_header):
+def test_create_stager_save_false(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=false", headers=admin_auth_header, json=base_stager
     )
@@ -209,7 +311,8 @@ def test_create_stager_save_false(client, base_stager, admin_auth_header):
     )
 
 
-def test_get_stager(client, admin_auth_header, base_stager):
+def test_get_stager(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
@@ -236,7 +339,8 @@ def test_get_stager_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Stager not found for id 9999"
 
 
-def test_update_stager_not_found(client, base_stager, admin_auth_header):
+def test_update_stager_not_found(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.put(
         "/api/v2/stagers/9999", headers=admin_auth_header, json=base_stager
     )
@@ -244,7 +348,8 @@ def test_update_stager_not_found(client, base_stager, admin_auth_header):
     assert response.json()["detail"] == "Stager not found for id 9999"
 
 
-def test_download_stager_one_liner(client, admin_auth_header, base_stager):
+def test_download_stager_one_liner(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
@@ -268,7 +373,8 @@ def test_download_stager_one_liner(client, admin_auth_header, base_stager):
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
-def test_download_stager_file(client, admin_auth_header, base_stager_dll):
+def test_download_stager_file(client, admin_auth_header):
+    base_stager_dll = get_base_stager_dll()
     response = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
@@ -295,9 +401,8 @@ def test_download_stager_file(client, admin_auth_header, base_stager_dll):
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
-def test_update_stager_allows_edits_and_generates_new_file(
-    client, admin_auth_header, base_stager
-):
+def test_update_stager_allows_edits_and_generates_new_file(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
@@ -329,7 +434,8 @@ def test_update_stager_allows_edits_and_generates_new_file(
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
-def test_update_stager_name_conflict(client, admin_auth_header, base_stager):
+def test_update_stager_name_conflict(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
@@ -379,7 +485,8 @@ def test_update_stager_name_conflict(client, admin_auth_header, base_stager):
     client.delete(f"/api/v2/stagers/{stager_id_2}", headers=admin_auth_header)
 
 
-def test_get_stagers(client, admin_auth_header, base_stager):
+def test_get_stagers(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
@@ -413,7 +520,8 @@ def test_get_stagers(client, admin_auth_header, base_stager):
     client.delete(f"/api/v2/stagers/{stager_id_2}", headers=admin_auth_header)
 
 
-def test_delete_stager(client, admin_auth_header, base_stager):
+def test_delete_stager(client, admin_auth_header):
+    base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
@@ -433,7 +541,8 @@ def test_delete_stager(client, admin_auth_header, base_stager):
     assert stager_id not in [stager["id"] for stager in response.json()["records"]]
 
 
-def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_header):
+def test_pyinstaller_stager_creation(client, admin_auth_header):
+    pyinstaller_stager = get_pyinstaller_stager()
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=pyinstaller_stager
     )
@@ -469,7 +578,8 @@ def test_pyinstaller_stager_creation(client, pyinstaller_stager, admin_auth_head
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
-def test_bat_stager_creation(client, bat_stager, admin_auth_header):
+def test_bat_stager_creation(client, admin_auth_header):
+    bat_stager = get_bat_stager()
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=bat_stager
     )
@@ -510,7 +620,7 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
 
 
 @pytest.mark.parametrize(
-    "document_type, trigger_function, expected_trigger",
+    ("document_type", "trigger_function", "expected_trigger"),
     [
         ("word", "autoopen", "Sub AutoOpen()"),
         ("word", "autoclose", "Sub AutoClose()"),
@@ -520,12 +630,12 @@ def test_bat_stager_creation(client, bat_stager, admin_auth_header):
 )
 def test_macro_stager_generation(
     client,
-    windows_macro_stager,
     admin_auth_header,
     document_type,
     trigger_function,
     expected_trigger,
 ):
+    windows_macro_stager = get_windows_macro_stager()
     windows_macro_stager["options"]["DocType"] = document_type
     windows_macro_stager["options"]["Trigger"] = trigger_function
 

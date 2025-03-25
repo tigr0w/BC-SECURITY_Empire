@@ -14,6 +14,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2025-03-25
+-   Updated Starkiller to v3.0.0
+
+### Highlights
+
+-   Plugin Marketplace
+-   Go agents
+-   Empire Compiler for C#
+-   Command line client removed
+
+### Added
+
+-   Added support for plugin registries and installing plugins via the API
+    -   See the Plugin Marketplace in Starkiller 3.0!
+-   New allow/deny list implementation that properly supports IPv4, IPv6, Ranges, and CIDRs
+-   Added API endpoints for managing autorun commands on agent checkin
+-   Added `api.ip` and `api.secure` as server config options
+-   Added Go agents
+    -   Added Go to install script
+    -   Added new stager type `multi_go_exe`
+    -   Added Go is an option for `multi_launcher`
+    -   Added new compiler class `GoCompiler`
+-   Added `-f` flag for install script to force install as root
+-   Added dynamic options to modules
+-   Added module `code_execution/invoke-script` for remote ps1 script execution
+-   Added module `python/code_execution/invoke-script` for remote py script execution
+-   Added sharphound ingestor for CE and tagged bloodhound with legacy
+-   Added check that module can be ran on the agent based on language
+
+### Changed
+
+-   Changed minimum Python version to 3.13
+-   Updated module_service logic for tasking types
+-   Swapped C# module RunOF for COFFLoader
+-   Updated parsing for bof formatting to use bof_pack
+-   Moved bash and pyinstaller stagers to linux folder
+-   Change formatter to ruff to consolidate developer tooling
+-   Revised the staging process for agents. Session IDs are provided by the server and all packets are wrapped in routing packets.
+    -   Updated stageless agents to work with python, ironpython, and powershell with the new staging process.
+-   Updated tactics and techniques on all modules
+-   Added a yaml formatter and run pre-commit across all files
+-   Combined config with config_manager
+-   Converted many parts of codebase to be compliant with flake8-use-pathlib
+-   Csharp and bof tasks attach the executable as a 'download' with a tag 'task:input'
+-   Pass output path to dotnet compiler, only compile the requested version
+-   Limited staging key space to letters and numbers to avoid invalid combinations
+
+#### Breaking
+
+-   Many improvements to plugins - see the `plugin-development` wiki page
+-   Moved `Agents` class to `AgentCommunicationService`
+    -   Refactored many of the functions and parameter names
+-   Moved `Stagers` class to `StagerGenerationService`
+    -   Refactored many of the funtions and parameter names
+-   Moved Plugin Task handling from `PluginService` to `PluginTaskService`
+-   Moved socks management to `AgentSocksService`
+    -   Renamed socks properties on `AgentSocksService` to use plural naming
+-   Removed `update_lastseen` parameter from `handle_agent_request`
+-   Renamed all config properties in client and server configs to use snake_case
+-   Starkiller is now accessed at `{api_url}/` instead of `{api_url}/index.html`
+-   `ip_whitelist` and `ip_blacklist` are now `ip_allow_list` and `ip_deny_list` and are lists instead of comma separated strings
+-   Using a new and improved [Empire-Compiler] for C# compilation
+    -   Downloads pre-compiled Empire-Compiler to eliminate `dotnet` as an OS dependency
+    -   Updated shortened task results to show the C# command ran and full input to show directory of the file
+    -   Updated C# tasks into folders and split yaml configs to be one per module and match Empire yaml format
+    -   All C# module code has been moved as submodules of Empire-Compiler
+    -   Moved EmpireCompiler compression from application to the server
+    -   Moved EmpireCompiler from install script to startup with autoupdate functionality
+    -   Replaced csharpserver plugin with `DotnetCompiler` class in `empire.server.common`
+-   module_service.execute_module returns a pydantic model
+-   agent_task_service functions take a user model instead of user id
+-   All writeable data moved out of the install path into `~/.local/share/empire`
+
+### Deprecated
+
+### Removed
+
+-   Removed autorun config options which haven't been used since Empire 3
+-   Removed install support for Debian 10
+-   Removed `nim` stager from Empire and install script
+-   Removed slack notifications from listeners
+-   Removed the following stagers
+    -   osx/pkg
+    -   windows/backdoorlnkmacro
+    -   windows/launcher_lnk
+    -   windows/launcher_sct
+    -   windows/ms16-051
+    -   windows/reverseshell
+-   Removed the following listeners
+    -   HTTP COM only supports powershell agent and uses an older COM object that isn't used often
+    -   OneDrive has new APIs and Microsoft hs made registration harder. May return in the future with revisions.
+    -   Dropbox has new APIs and may return in the future with revisions.
+-   Removed empire_config.directories.module_source and empire_config.directories.obfuscated_module_source
+-   Removed BLANK and RANDOM options for staging_keys (wasn't documented anyway)
+
+#### Breaking
+
+-   Removed the command line client. Use Starkiller instead.
+-   Removed `Listeners` class
+-   Removed `Credentials` class
+-   Removed functions from `Agents` class that were marked as deprecated in 5.x
+-   Removed `--restip` and `--restport` options from the command line. Use the config file instead.
+-   Removed `socketport` config option on the client which was no longer being used
+-   Removed script and module upload to memory in favor of modules with same functionality
+-   Removed reverseshellserver plugin
+
+### Fixed
+
+-   Fixed Powershell agent overwritting results for C# taskings
+-   Simplify option_util.validate_options, fixes a bug where an optional file option was treated as required
+-   Fixed issue loading a plugin that has multiple files
+-   Fixed issue with permissions caused by git operations being done with de-elevated permissions
+-   Fixed go agent using a preshared session id
+
+### Security
+
 ## [5.12.2] - 2025-01-12
 
 ### Fixed
@@ -67,7 +183,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed Rubeus error where only first arg was being used (@Cx01N)
 -   Fixed background jobs checking in continuously (@Cx01N)
--   Fixed Rubeus killing agent when certain options were given that use System.Environment.Exit (@Cx01N) 
+-   Fixed Rubeus killing agent when certain options were given that use System.Environment.Exit (@Cx01N)
 -   Fixed option parsing error in credential/tokens module (@Cx01N)
 -   Removed requirement for credid for mimikatz/pth (@Cx01N)
 
@@ -137,7 +253,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 -   Removed BypassUACGrunt due to compatibility with only Covenant (@Cx01N)
--   Removed BypassUACCommand due to compatibility with only Covenant (@Cx01N) 
+-   Removed BypassUACCommand due to compatibility with only Covenant (@Cx01N)
 
 ## [5.10.2] - 2024-05-05
 -   Updated Starkiller to v2.8.1
@@ -966,7 +1082,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0...HEAD
+
+[6.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...v6.0.0
 
 [5.12.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.1...v5.12.2
 

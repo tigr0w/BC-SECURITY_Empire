@@ -3,12 +3,12 @@ authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: This module will dump any saved passwords from Firefox to the console. This should work for any versionof Firefox
-  above version 32. This will only be successful if the master password is blank or has not been set.
+description: This module will dump any saved passwords from Firefox to the console.
+  This should work for any versionof Firefox above version 32. This will only be
+  successful if the master password is blank or has not been set.
 software: ''
-tactics: []
-techniques:
-  - T1503
+tactics: [TA0006]
+techniques: [T1555.03]
 background: true
 output_extension:
 needs_admin: false
@@ -28,7 +28,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: true
@@ -39,4 +40,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: collection/Get-FoxDump.ps1
-script_end: Get-FoxDump {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-FoxDump completed'
+script_end: Get-FoxDump {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-FoxDump
+  completed'

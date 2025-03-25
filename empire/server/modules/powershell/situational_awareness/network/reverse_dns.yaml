@@ -5,9 +5,8 @@ authors:
     link: ''
 description: Performs a DNS Reverse Lookup of a given IPv4 IP Range.
 software: ''
-tactics: []
-techniques:
-  - T1046
+tactics: [TA0007]
+techniques: [T1046, T1590.005]
 background: true
 output_extension:
 needs_admin: false
@@ -30,7 +29,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -42,5 +42,6 @@ options:
       - ConvertTo-Xml
 script_path: situational_awareness/network/Invoke-ReverseDNSLookup.ps1
 script_end: Invoke-ReverseDNSLookup {{ PARAMS }} | % {try{$entry=$_; $ipObj = [System.Net.IPAddress]::parse($entry.HostName);
-  if(-not [System.Net.IPAddress]::tryparse([string]$_.HostName, [ref]$ipObj)) { $entry }} catch{$entry} } | Select-Object
-  HostName, AddressList | ft -autosize | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-ReverseDNSLookup completed'
+  if(-not [System.Net.IPAddress]::tryparse([string]$_.HostName, [ref]$ipObj)) { $entry
+  }} catch{$entry} } | Select-Object HostName, AddressList | ft -autosize | {{ OUTPUT_FUNCTION
+  }} | %{$_ + "`n"}; 'Invoke-ReverseDNSLookup completed'

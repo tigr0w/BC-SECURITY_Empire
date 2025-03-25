@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List local groups from the local or specified computer.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0007]
+techniques: [T1069.001]
 background: false
 output_extension:
 needs_admin: false
@@ -32,6 +32,7 @@ bof:
   x86: bof/situational_awareness/netlocalgroup/netlocalgroup.x86.o
   x64: bof/situational_awareness/netlocalgroup/netlocalgroup.x64.o
   entry_point: ''
+  format_string: sZZ
 script_path: ''
 script_end: ''
 advanced:

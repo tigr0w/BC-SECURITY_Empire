@@ -1,5 +1,5 @@
-import os
 import shutil
+import typing
 from operator import and_
 from pathlib import Path
 
@@ -12,13 +12,17 @@ from empire.server.api.v2.download.download_dto import (
     DownloadSourceFilter,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 
 class DownloadService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
+        self.tag_service = main_menu.tagsv2
 
     @staticmethod
     def get_by_id(db: Session, uid: int):
@@ -115,13 +119,14 @@ class DownloadService:
 
         return results, total
 
-    def create_download_from_text(
+    def create_download_from_text(  # noqa: PLR0913
         self,
         db: Session,
         user: models.User,
         file: str,
         filename: str,
         subdirectory: str | None = None,
+        tags: list[str] | None = None,
     ):
         """
         Upload the file to the downloads directory and save a reference to the db.
@@ -133,20 +138,24 @@ class DownloadService:
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 
-        filename, location = self._increment_filename(filename, location)
+        filename, location = self._increment_filename(location)
 
         with location.open("w") as buffer:
             buffer.write(file)
 
-        return self._save_download(db, filename, location)
+        return self._save_download(db, filename, location, tags)
 
-    def create_download(self, db: Session, user: models.User, file: UploadFile | Path):
+    def create_download(
+        self,
+        db: Session,
+        user: models.User,
+        file: UploadFile | Path,
+        tags: list[str] | None = None,
+    ):
         """
         Upload the file to the downloads directory and save a reference to the db.
-        :param db:
-        :param user:
-        :param file:
-        :return:
+        Tags strings will be split on the first colon and the first part will be the
+        name and the second part will be the value.
         """
         filename = file.name if isinstance(file, Path) else file.filename
 
@@ -155,7 +164,7 @@ class DownloadService:
         )
         location.parent.mkdir(parents=True, exist_ok=True)
 
-        filename, location = self._increment_filename(filename, location)
+        filename, location = self._increment_filename(location)
 
         with location.open("wb") as buffer:
             if isinstance(file, Path):
@@ -164,27 +173,34 @@ class DownloadService:
             else:
                 shutil.copyfileobj(file.file, buffer)
 
-        return self._save_download(db, filename, location)
+        return self._save_download(db, filename, location, tags)
 
     @staticmethod
-    def _increment_filename(filename, location):
-        filename, file_extension = os.path.splitext(filename)
+    def _increment_filename(location: Path) -> tuple[str, Path]:
+        filename_stem = location.stem
+        file_extension = location.suffix
         i = 1
-        while os.path.isfile(location):
-            temp_name = f"{filename}({i}){file_extension}"
+        while location.exists():
+            temp_name = f"{filename_stem}({i}){file_extension}"
             location = location.parent / temp_name
             i += 1
         filename = location.name
 
         return filename, location
 
-    @staticmethod
-    def _save_download(db, filename, location):
+    def _save_download(
+        self, db: Session, filename: str, location: Path, tags: list[str] | None
+    ):
         download = models.Download(
-            location=str(location), filename=filename, size=os.path.getsize(location)
+            location=str(location), filename=filename, size=location.stat().st_size
         )
         db.add(download)
         db.flush()
+
+        for tag in tags or []:
+            tag_name, tag_value = tag.split(":", 1)
+            self.tag_service.add_tag(db, download, tag_name, tag_value)
+
         db.execute(models.upload_download_assc.insert().values(download_id=download.id))
 
         return download

@@ -3,11 +3,11 @@ authors:
   - name: ''
     handle: '@obscuresec'
     link: ''
-description: Play's a hidden version of AC/DC's Thunderstruck video while maxing out a computer's volume.
+description: Play's a hidden version of AC/DC's Thunderstruck video while maxing
+  out a computer's volume.
 software: ''
-tactics: []
-techniques:
-  - T1491
+tactics: [TA0040]
+techniques: [T1491.001]
 background: true
 output_extension:
 needs_admin: false

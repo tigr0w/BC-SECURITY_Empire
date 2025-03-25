@@ -5,9 +5,8 @@ authors:
     link: ''
 description: Enumerates UAC level
 software: ''
-tactics: []
-techniques:
-  - T1033
+tactics: [TA0007]
+techniques: [T1012, T1082]
 background: false
 output_extension:
 needs_admin: false
@@ -22,7 +21,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -73,4 +73,5 @@ script: |
           "Unknown"
       }
   }
-script_end: Get-UACLevel {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-UACLevel completed'
+script_end: Get-UACLevel {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-UACLevel
+  completed'

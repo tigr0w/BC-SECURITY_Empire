@@ -11,55 +11,55 @@ function Invoke-ThreadedFunction
         [Int]$Threads = 20,
         [Int]$Timeout = 100
     )
-    
+
     begin
     {
-        
+
         if ($PSBoundParameters['Debug'])
         {
             $DebugPreference = 'Continue'
         }
-        
+
         Write-Verbose "[*] Total number of hosts: $($ComputerName.count)"
-        
+
         # Adapted from:
         #   http://powershell.org/wp/forums/topic/invpke-parallel-need-help-to-clone-the-current-runspace/
         $SessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
         $SessionState.ApartmentState = [System.Threading.Thread]::CurrentThread.GetApartmentState()
-        
+
         # threading adapted from
         # https://github.com/darkoperator/Posh-SecMod/blob/master/Discovery/Discovery.psm1#L407
         #   Thanks Carlos!
         # create a pool of maxThread runspaces
         $Pool = [runspacefactory]::CreateRunspacePool(1, $Threads, $SessionState, $Host)
         $Pool.Open()
-        
+
         $Jobs = @()
         $PS = @()
         $Wait = @()
-        
+
         $Counter = 0
     }
-    
+
     process
     {
-        
+
         ForEach ($Computer in $ComputerName)
         {
-            
+
             # make sure we get a server name
             if ($Computer -ne '')
             {
-                
+
                 While ($($Pool.GetAvailableRunspaces()) -le 0)
                 {
                     Start-Sleep -MilliSeconds $Timeout
                 }
-                
+
                 # create a "powershell pipeline runner"
                 $PS += [powershell]::create()
                 $PS[$Counter].runspacepool = $Pool
-                
+
                 # add the script block + arguments
                 $Null = $PS[$Counter].AddScript($ScriptBlock).AddParameter('ComputerName', $Computer)
                 if ($ScriptParameters)
@@ -69,38 +69,38 @@ function Invoke-ThreadedFunction
                         $Null = $PS[$Counter].AddParameter($Param.Name, $Param.Value)
                     }
                 }
-                
+
                 # start job
                 $Jobs += $PS[$Counter].BeginInvoke();
-                
+
                 # store wait handles for WaitForAll call
                 $Wait += $Jobs[$Counter].AsyncWaitHandle
             }
             $Counter = $Counter + 1
         }
     }
-    
+
     end
     {
-        
+
         Write-Verbose "Waiting for scanning threads to finish..."
         $WaitTimeout = Get-Date
-        
+
         # set a 60 second timeout for the scanning threads
         while ($($Jobs | Where-Object { $_.IsCompleted -eq $False }).count -gt 0 -or $($($(Get-Date) - $WaitTimeout).totalSeconds) -gt 60)
         {
             Start-Sleep -MilliSeconds $Timeout
         }
-        
+
         # end async call
         for ($y = 0; $y -lt $Counter; $y++)
         {
-            
+
             try
             {
                 # complete async job
                 $PS[$y].EndInvoke($Jobs[$y])
-                
+
             }
             catch
             {
@@ -111,13 +111,13 @@ function Invoke-ThreadedFunction
                 $PS[$y].Dispose()
             }
         }
-        
+
         $Pool.Dispose()
         Write-Verbose "All threads completed!"
     }
 }
 
-function Find-Fruit 
+function Find-Fruit
 
 {
 
@@ -170,10 +170,10 @@ C:\PS> Find-Fruit -Rhosts 192.168.1.0/24 -Path dictionary.txt -Port 443 -Timeout
 .NOTES
 Credits to mattifestation for Get-HttpStatus
 HTTP Status Codes: 100 - Informational * 200 - Success * 300 - Redirection * 400 - Client Error * 500 - Server Error
-    
+
 
 #>
-    
+
 [CmdletBinding()]
 
 param (
@@ -188,38 +188,38 @@ param (
     [Switch]$NoPing,
     [Switch]$FoundOnly
 )
-    
+
     begin
-    {   
+    {
         $hostList = New-Object System.Collections.ArrayList
-        
+
         $iHosts = $Rhosts -split ","
-        
+
         foreach ($iHost in $iHosts)
         {
             $iHost = $iHost.Replace(" ", "")
-            
+
             if (!$iHost)
             {
                 continue
             }
-            
+
             if ($iHost.contains("/"))
             {
                 $netPart = $iHost.split("/")[0]
                 [uint32]$maskPart = $iHost.split("/")[1]
-                
+
                 $address = [System.Net.IPAddress]::Parse($netPart)
                 if ($maskPart -ge $address.GetAddressBytes().Length * 8)
                 {
                     throw "Bad host mask"
                 }
-                
+
                 $numhosts = [System.math]::Pow(2, (($address.GetAddressBytes().Length * 8) - $maskPart))
-                
+
                 $startaddress = $address.GetAddressBytes()
                 [array]::Reverse($startaddress)
-                
+
                 $startaddress = [System.BitConverter]::ToUInt32($startaddress, 0)
                 [uint32]$startMask = ([System.math]::Pow(2, $maskPart) - 1) * ([System.Math]::Pow(2, (32 - $maskPart)))
                 $startAddress = $startAddress -band $startMask
@@ -227,9 +227,9 @@ param (
                 $startAddress = [System.BitConverter]::GetBytes($startaddress)[0..3]
                 [array]::Reverse($startaddress)
                 $address = [System.Net.IPAddress][byte[]]$startAddress
-                
+
                 $Null = $hostList.Add($address.IPAddressToString)
-                
+
                 for ($i = 0; $i -lt $numhosts - 1; $i++)
                 {
                     $nextAddress = $address.GetAddressBytes()
@@ -240,19 +240,19 @@ param (
                     [array]::Reverse($nextAddress)
                     $address = [System.Net.IPAddress][byte[]]$nextAddress
                     $Null = $hostList.Add($address.IPAddressToString)
-                    
+
                 }
-                
+
             }
             else
             {
-                $Null = $hostList.Add($iHost) 
+                $Null = $hostList.Add($iHost)
             }
         }
-            
+
         $HostEnumBlock = {
             param($ComputerName, $UseSSL, $Port, $Path, $Timeout, $FoundOnly)
-            
+
             if ($UseSSL -and $Port -eq 0)
             {
                 # Default to 443 if SSL is specified but no port is specified
@@ -263,8 +263,8 @@ param (
                 # Default to port 80 if no port is specified
                 $Port = 80
             }
-            
-            
+
+
             if ($UseSSL)
             {
                 $SSL = 's'
@@ -275,7 +275,7 @@ param (
             {
                 $SSL = ''
             }
-            
+
             if (($Port -eq 80) -or ($Port -eq 443))
             {
                 $PortNum = ''
@@ -284,7 +284,7 @@ param (
             {
                 $PortNum = ":$Port"
             }
-            
+
             if ($Path)
             {
                 if (!(Test-Path -Path $Path)) { Throw "File doesnt exist" }
@@ -310,18 +310,18 @@ param (
                 $VulnLinks = $VulnLinks + "data/login" # Dell iDrac
                 $Vulnlinks = $Vulnlinks + "CFIDE/administrator/index.cfm" #ColdFusion
             }
-            
+
             # Check Http status for each entry in the ditionary file
             foreach ($Target in $ComputerName)
             {
-                                
-                
+
+
                 foreach ($Item in $Vulnlinks)
                 {
-                    
+
                     $WebTarget = "http$($SSL)://$($Target)$($PortNum)/$($Item)"
                     $URI = New-Object Uri($WebTarget)
-                    
+
                     try
                     {
                         $WebRequest = [System.Net.WebRequest]::Create($URI)
@@ -334,7 +334,7 @@ param (
                     catch
                     {
                         $WebStatus = $Error[0].Exception.InnerException.Response.StatusCode
-                        
+
                         if ($WebStatus -eq $null)
                         {
                             # Not every exception returns a StatusCode.
@@ -347,14 +347,14 @@ param (
                         Status = $WebStatus;
                         URL = $WebTarget
                     }
-                    
+
                     if ($FoundOnly) {
                         New-Object -TypeName PSObject -Property $Result | Where-Object {$_.Status -eq 'OK'}
-                                          
+
                     } else {
                         New-Object -TypeName PSObject -Property $Result
                     }
-                    
+
                 }
             }
         }
@@ -389,5 +389,3 @@ param (
         }
     }
 }
-
-

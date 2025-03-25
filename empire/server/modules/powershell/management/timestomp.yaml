@@ -5,9 +5,8 @@ authors:
     link: ''
 description: Executes time-stomp like functionality by invoking Set-MacAttribute.
 software: ''
-tactics: []
-techniques:
-  - T1099
+tactics: [TA0005]
+techniques: [T1070.006]
 background: false
 output_extension:
 needs_admin: false
@@ -46,7 +45,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -57,4 +57,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/Set-MacAttribute.ps1
-script_end: Set-MacAttribute {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Timestomp completed'
+script_end: Set-MacAttribute {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Timestomp completed'

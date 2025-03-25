@@ -3,7 +3,8 @@ authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will use the current user context to query active directory for a list of users in a group.
+description: This module will use the current user context to query active directory
+  for a list of users in a group.
 software: ''
 tactics: []
 techniques:

@@ -1,7 +1,8 @@
+import base64
 import json
 import logging
 import threading
-import time
+import typing
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -15,23 +16,26 @@ from empire.server.api.v2.agent.agent_task_dto import (
     ModulePostRequest,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.common import helpers
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
-from empire.server.core.listener_service import ListenerService
-from empire.server.core.module_service import ModuleService
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
 
 
 class AgentTaskService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
-        self.module_service: ModuleService = main_menu.modulesv2
-        self.listener_service: ListenerService = main_menu.listenersv2
+        self.module_service = main_menu.modulesv2
+        self.listener_service = main_menu.listenersv2
+        self.agent_socks_service = main_menu.agentsocksv2
+        self.agent_service = main_menu.agentsv2
+        self.download_service = main_menu.downloadsv2
 
         # { agent_id: [TemporaryTask] }
         self.temporary_tasks = defaultdict(list)
@@ -151,85 +155,92 @@ class AgentTaskService:
         agent: models.Agent,
         command: str,
         literal: bool = False,
-        user_id: int = 0,
+        user: models.User | None = None,
     ):
         if literal and not command.startswith("shell"):
             command = f"shell {command}"
-        return self.add_task(db, agent, "TASK_SHELL", command, user_id=user_id)
+        return self.add_task(db, agent, "TASK_SHELL", command, user=user)
 
     def create_task_upload(
-        self, db: Session, agent: models.Agent, file_data: str, directory: str, user_id
+        self,
+        db: Session,
+        agent: models.Agent,
+        file_data: str,
+        directory: str,
+        user: models.User | None = None,
     ):
         data = f"{directory}|{file_data}"
-        return self.add_task(db, agent, "TASK_UPLOAD", data, user_id=user_id)
+        return self.add_task(db, agent, "TASK_UPLOAD", data, user=user)
 
     def create_task_download(
-        self, db: Session, agent: models.Agent, path_to_file: str, user_id: int
+        self,
+        db: Session,
+        agent: models.Agent,
+        path_to_file: str,
+        user: models.User | None = None,
     ):
-        return self.add_task(db, agent, "TASK_DOWNLOAD", path_to_file, user_id=user_id)
+        return self.add_task(db, agent, "TASK_DOWNLOAD", path_to_file, user=user)
 
-    def create_task_script_import(
-        self, db: Session, agent: models.Agent, file_data: str, user_id: int
+    def create_task_sysinfo(
+        self, db: Session, agent: models.Agent, user: models.User | None = None
     ):
-        if agent.language != "powershell":
-            return None, "Only PowerShell agents support script imports"
+        return self.add_task(db, agent, "TASK_SYSINFO", user=user)
 
-        # strip out comments and blank lines from the imported script
-        file_data = helpers.strip_powershell_comments(file_data)
-
-        return self.add_task(
-            db, agent, "TASK_SCRIPT_IMPORT", file_data, user_id=user_id
-        )
-
-    def create_task_script_command(
-        self, db: Session, agent: models.Agent, command: str, user_id: int
+    def create_task_jobs(
+        self, db: Session, agent: models.Agent, user: models.User | None = None
     ):
-        return self.add_task(db, agent, "TASK_SCRIPT_COMMAND", command, user_id=user_id)
-
-    def create_task_sysinfo(self, db: Session, agent: models.Agent, user_id: int):
-        return self.add_task(db, agent, "TASK_SYSINFO", user_id=user_id)
-
-    def create_task_jobs(self, db: Session, agent: models.Agent, user_id: int):
-        return self.add_task(db, agent, "TASK_GETJOBS", user_id=user_id)
+        return self.add_task(db, agent, "TASK_GETJOBS", user=user)
 
     def create_task_kill_job(
-        self, db: Session, agent: models.Agent, user_id: int, job_id: str
+        self,
+        db: Session,
+        agent: models.Agent,
+        job_id: str,
+        user: models.User | None = None,
     ):
-        return self.add_task(db, agent, "TASK_STOPJOB", job_id, user_id=user_id)
+        return self.add_task(db, agent, "TASK_STOPJOB", job_id, user=user)
 
-    def create_task_exit(self, db, agent: models.Agent, current_user_id: int):
-        resp, err = self.add_task(db, agent, "TASK_EXIT", user_id=current_user_id)
+    def create_task_exit(
+        self, db: Session, agent: models.Agent, user: models.User | None = None
+    ):
+        resp, err = self.add_task(db, agent, "TASK_EXIT", user=user)
         agent.archived = True
 
-        # Close socks client
-        if (agent.session_id in self.main_menu.agents.socksthread) and agent.stale:
-            agent.socks = False
-            self.main_menu.agents.socksclient[agent.session_id].shutdown()
-            time.sleep(1)
-            self.main_menu.agents.socksthread[agent.session_id].kill()
+        self.agent_socks_service.close_socks_client(agent)
+
         return resp, err
 
     def create_task_socks(
-        self, db, agent: models.Agent, socks_port, current_user_id: int
+        self,
+        db: Session,
+        agent: models.Agent,
+        socks_port,
+        user: models.User | None = None,
     ):
         agent.socks = True
         agent.socks_port = socks_port
-        resp, err = self.add_task(db, agent, "TASK_SOCKS", user_id=current_user_id)
+        resp, err = self.add_task(db, agent, "TASK_SOCKS", user=user)
         return resp, err
 
     def create_task_socks_data(self, agent_id: str, data: str):
         return self.add_temporary_task(agent_id, "TASK_SOCKS_DATA", data)
 
     def create_task_smb(
-        self, db, agent: models.Agent, pipe_name, current_user_id: int = 0
+        self,
+        db: Session,
+        agent: models.Agent,
+        pipe_name,
+        user: models.User | None = None,
     ):
-        resp, err = self.add_task(
-            db, agent, "TASK_SMB_SERVER", pipe_name, user_id=current_user_id
-        )
+        resp, err = self.add_task(db, agent, "TASK_SMB_SERVER", pipe_name, user=user)
         return resp, err
 
     def create_task_update_comms(
-        self, db: Session, agent: models.Agent, new_listener_id: int, user_id: int
+        self,
+        db: Session,
+        agent: models.Agent,
+        new_listener_id: int,
+        user: models.User | None = None,
     ):
         listener = self.listener_service.get_by_id(db, new_listener_id)
 
@@ -245,15 +256,16 @@ class AgentTaskService:
             listener.id
         ].generate_comms(listener.options, agent.language)
 
-        self.add_task(
-            db, agent, "TASK_UPDATE_LISTENERNAME", listener.name, user_id=user_id
-        )
-        return self.add_task(
-            db, agent, "TASK_SWITCH_LISTENER", new_comms, user_id=user_id
-        )
+        self.add_task(db, agent, "TASK_UPDATE_LISTENERNAME", listener.name, user=user)
+        return self.add_task(db, agent, "TASK_SWITCH_LISTENER", new_comms, user=user)
 
     def create_task_update_sleep(
-        self, db: Session, agent: models.Agent, delay: int, jitter: float, user_id: int
+        self,
+        db: Session,
+        agent: models.Agent,
+        delay: int,
+        jitter: float,
+        user: models.User | None = None,
     ):
         agent.delay = delay
         agent.jitter = jitter
@@ -263,15 +275,15 @@ class AgentTaskService:
                 agent,
                 "TASK_SHELL",
                 f"Set-Delay {delay!s} {jitter!s}",
-                user_id=user_id,
+                user=user,
             )
         if agent.language in ["python", "ironpython"]:
             return self.add_task(
                 db,
                 agent,
-                "TASK_CMD_WAIT",
+                "TASK_PYTHON_CMD_WAIT",
                 f"global agent; agent.delay={delay}; agent.jitter={jitter}; print('delay/jitter set to {delay}/{jitter}')",
-                user_id=user_id,
+                user=user,
             )
         if agent.language == "csharp":
             return self.add_task(
@@ -279,22 +291,30 @@ class AgentTaskService:
                 agent,
                 "TASK_SHELL",
                 f"Set-Delay {delay!s} {jitter!s}",
-                user_id=user_id,
+                user=user,
             )
 
         return None, "Unsupported language."
 
     def create_task_update_kill_date(
-        self, db: Session, agent: models.Agent, kill_date: str, user_id: int
+        self,
+        db: Session,
+        agent: models.Agent,
+        kill_date: str,
+        user: models.User | None = None,
     ):
         # todo handle different languages
         agent.kill_date = kill_date
         return self.add_task(
-            db, agent, "TASK_SHELL", f"Set-KillDate {kill_date}", user_id=user_id
+            db, agent, "TASK_SHELL", f"Set-KillDate {kill_date}", user=user
         )
 
     def create_task_update_working_hours(
-        self, db: Session, agent: models.Agent, working_hours: str, user_id: int
+        self,
+        db: Session,
+        agent: models.Agent,
+        working_hours: str,
+        user: models.User | None = None,
     ):
         # todo handle different languages.
         agent.working_hours = working_hours
@@ -303,7 +323,7 @@ class AgentTaskService:
             agent,
             "TASK_SHELL",
             f"Set-WorkingHours {working_hours}",
-            user_id=user_id,
+            user=user,
         )
 
     def create_task_module(
@@ -311,7 +331,7 @@ class AgentTaskService:
         db: Session,
         agent: models.Agent,
         module_req: ModulePostRequest,
-        user_id: int = 0,
+        user: models.User | None = None,
     ):
         module_req.options["Agent"] = agent.session_id
         resp, err = self.module_service.execute_module(
@@ -330,24 +350,21 @@ class AgentTaskService:
         return self.add_task(
             db,
             agent,
-            task_name=resp["command"],
-            task_input=resp["data"],
+            task_name=resp.command,
+            task_input=resp.data,
             module_name=module_req.module_id,
-            user_id=user_id,
+            user=user,
+            files=resp.files,
         )
 
     def create_task_directory_list(
-        self, db: Session, agent: models.Agent, path: str, user_id: int
+        self,
+        db: Session,
+        agent: models.Agent,
+        path: str,
+        user: models.User | None = None,
     ):
-        return self.add_task(db, agent, "TASK_DIR_LIST", path, user_id=user_id)
-
-    def create_task_proxy_list(
-        self, db: Session, agent: models.Agent, body: dict, user_id: int
-    ):
-        agent.proxies = body
-        return self.add_task(
-            db, agent, "TASK_SET_PROXY", json.dumps(body), user_id=user_id
-        )
+        return self.add_task(db, agent, "TASK_DIR_LIST", path, user=user)
 
     class TemporaryTask(BaseModel):
         """
@@ -355,9 +372,7 @@ class AgentTaskService:
         functions to retrieve tasks.
         """
 
-        id: int = (
-            0  # We don't need an ID for these, but it is used in agents.py:1206, so we just initialize it to 0
-        )
+        id: int = 0  # We don't need an ID for these, but it is used in agents.py:1206, so we just initialize it to 0
         agent_id: str
         task_name: str
         input_full: str
@@ -387,17 +402,19 @@ class AgentTaskService:
         task_name,
         task_input="",
         module_name: str | None = None,
-        user_id: int = 0,
+        user: models.User | None = None,
+        files: list[Path] | None = None,
     ) -> tuple[models.AgentTask | None, str | None]:
         """
         Task an agent. Adapted from agents.py
         """
+        files = files or []
         if agent.archived:
             return None, f"[!] Agent {agent.session_id} is archived."
 
         message = f"Tasked {agent.session_id} to run {task_name}"
         log.info(message)
-        self.main_menu.agents.save_agent_log(agent.session_id, message)
+        self.agent_service.save_agent_log(agent.session_id, message)
 
         pk = (
             db.query(func.max(models.AgentTask.id))
@@ -409,23 +426,65 @@ class AgentTaskService:
             pk = 0
         pk = (pk + 1) % 65536
 
-        task = models.AgentTask(
-            id=pk,
-            agent_id=agent.session_id,
-            input=task_input[:100],
-            input_full=task_input,
-            user_id=user_id if user_id else None,
-            module_name=module_name,
-            task_name=task_name,
-            status=AgentTaskStatus.queued,
-        )
+        if task_name in ["TASK_CSHARP_CMD_JOB", "TASK_CSHARP_CMD_WAIT"]:
+            compiled_path, arguments = task_input.split("|")
+            arguments = arguments.lstrip(",").strip()
+
+            if module_name.startswith("bof_"):
+                decoded_arguments = base64.b64decode(arguments).decode("UTF-8")
+                data_dict = json.loads(decoded_arguments)
+                base64_data = data_dict.get("base64_bof_data", "")
+                truncated_base64_data = (
+                    base64_data[:15] + "..."
+                    if len(base64_data) > 10  # noqa: PLR2004
+                    else base64_data
+                )
+                data_dict["base64_bof_data"] = truncated_base64_data
+                short_task_input = f"{module_name} {json.dumps(data_dict)}"
+
+            else:
+                filename = compiled_path.rsplit("/", 1)[-1].split(".")[0].split("_")[0]
+                short_task_input = f"{filename} " + base64.b64decode(
+                    arguments.encode("UTF-8")
+                ).decode("UTF-8")
+
+            task = models.AgentTask(
+                id=pk,
+                agent_id=agent.session_id,
+                input=short_task_input[:150],
+                input_full=task_input,
+                user_id=user.id if user else None,
+                module_name=module_name,
+                task_name=task_name,
+                status=AgentTaskStatus.queued,
+            )
+        else:
+            task = models.AgentTask(
+                id=pk,
+                agent_id=agent.session_id,
+                input=task_input[:100],
+                input_full=task_input,
+                user_id=user.id if user else None,
+                module_name=module_name,
+                task_name=task_name,
+                status=AgentTaskStatus.queued,
+            )
         db.add(task)
+        db.flush()
+
+        for path in files:
+            task.downloads.append(
+                self.download_service.create_download(
+                    db, user, path, tags=["task:input"]
+                )
+            )
         db.flush()
 
         last_task_config = empire_config.debug.last_task
         if last_task_config.enabled:
             with self.last_task_lock:
                 location = Path(last_task_config.file)
+                location.parent.mkdir(parents=True, exist_ok=True)
                 location.write_text(task_input)
 
         hooks.run_hooks(hooks.AFTER_TASKING_HOOK, db, task)

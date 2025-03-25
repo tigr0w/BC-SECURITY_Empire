@@ -10,10 +10,9 @@ authors:
     handle: '@monogas'
     link: ''
 description: Injects a PIC shellcode payload into a target process, via Invoke-Shellcode
-software: ''
-tactics: []
-techniques:
-  - T1055
+software: S0194
+tactics: [TA0005]
+techniques: [T1620]
 background: true
 output_extension:
 needs_admin: false
@@ -24,24 +23,45 @@ comments:
   - comment
   - ''
 options:
-  - name: Agent
-    description: Agent to run the module on.
+  - name: Process
+    description: ProcessID or name.
     required: true
-    value: ''
+    value: 'ProcId'
+    strict: true
+    internal: true
+    suggested_values:
+      - ProcId
+      - ProcName
   - name: ProcId
     description: ProcessID to inject into.
-    required: true
+    required: false
     value: ''
+    depends_on:
+      - name: Process
+        values: ['ProcId']
+  - name: ProcName
+    description: Process name to inject into.
+    required: false
+    value: ''
+    depends_on:
+      - name: Process
+        values: ['ProcName']
   - name: Arch
     description: Architecture of the target process.
     required: true
-    value: ''
+    value: both
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+      - both
   - name: Listener
     description: Listener to use.
     required: true
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -49,7 +69,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
 script_path: code_execution/Invoke-Shellcode.ps1

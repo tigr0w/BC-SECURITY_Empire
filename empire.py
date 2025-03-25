@@ -2,28 +2,19 @@
 
 import sys
 
-from empire import arguments, config_manager
+from empire import arguments
+from empire.server.core.config import config_manager
+from empire.server.core.config.data_manager import sync_empire_compiler, sync_starkiller
 
 if __name__ == "__main__":
     args = arguments.args
-    config_manager.config_init()
 
     if args.subparser_name == "server":
         from empire.server import server
 
         server.run(args)
-    elif args.subparser_name == "sync-starkiller":
-        import yaml
-
-        from empire.scripts.sync_starkiller import sync_starkiller
-
-        with open(config_manager.CONFIG_SERVER_PATH) as f:
-            config = yaml.safe_load(f)
-
-        sync_starkiller(config)
-    elif args.subparser_name == "client":
-        from empire.client import client
-
-        client.start(args)
+    if args.subparser_name == "setup":
+        sync_starkiller(config_manager.empire_config.starkiller)
+        sync_empire_compiler(config_manager.empire_config.empire_compiler)
 
     sys.exit(0)

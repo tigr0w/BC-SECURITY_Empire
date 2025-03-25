@@ -40,18 +40,18 @@ class Stager:
             },
             "OutFile": {
                 "Description": "File to output HTA to, otherwise displayed on the screen.",
-                "Required": False,
-                "Value": "",
+                "Required": True,
+                "Value": "launcher.hta",
             },
             "Base64": {
-                "Description": "Switch. Base64 encode the output.",
+                "Description": "Base64 encode the output.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
                 "Strict": True,
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -113,7 +113,7 @@ class Stager:
                 )
                 return ""
 
-            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
@@ -122,16 +122,16 @@ class Stager:
             )
 
         elif language == "powershell":
-            launcher = self.mainMenu.stagers.generate_launcher(
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=encode,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
             )
 
         if launcher == "":

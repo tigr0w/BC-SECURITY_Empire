@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Finds sensitive files on the domain.
 software: ''
-tactics: []
-techniques:
-  - T1083
+tactics: [TA0007]
+techniques: [T1083, T1135, T1039]
 background: true
 output_extension:
 needs_admin: false
@@ -70,7 +69,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: true
@@ -81,4 +81,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Find-InterestingFile {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-InterestingFile completed'
+script_end: Find-InterestingFile {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Find-InterestingFile completed'

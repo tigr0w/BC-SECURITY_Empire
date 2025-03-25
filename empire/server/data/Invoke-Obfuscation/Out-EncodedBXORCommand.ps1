@@ -29,7 +29,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-EncodedBXORCommand encodes an input PowerShell scriptblock or path as an bitwise XOR'd payload. It randomly chooses between .Split/-Split/array syntax to store the encoded payload in the final output. The purpose is to highlight to the Blue Team that there are more novel ways to encode a PowerShell command other than the most common Base64 approach.
@@ -126,7 +126,7 @@ http://www.danielbohannon.com
 
         [Switch]
         $Wow64,
-        
+
         [Switch]
         $Command,
 
@@ -137,7 +137,7 @@ http://www.danielbohannon.com
         [ValidateSet('Bypass', 'Unrestricted', 'RemoteSigned', 'AllSigned', 'Restricted')]
         [String]
         $ExecutionPolicy,
-        
+
         [Switch]
         $PassThru
     )
@@ -159,14 +159,14 @@ http://www.danielbohannon.com
 
     # Add letters a-z with random case to $RandomDelimiters.
     @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z') | ForEach-Object {$UpperLowerChar = $_; If(((Get-Random -Input @(1..2))-1 -eq 0)) {$UpperLowerChar = $UpperLowerChar.ToUpper()} $RandomDelimiters += $UpperLowerChar}
-    
+
     # Only use a subset of current delimiters to randomize what you see in every iteration of this script's output.
     $RandomDelimiters = (Get-Random -Input $RandomDelimiters -Count ($RandomDelimiters.Count/4))
 
     # Generate random hex value for BXOR. Keep from 0x00 to 0x5F to avoid character representations on the command line that are unsupported by PowerShell.
     $HexDigitRange = @(0,1,2,3,4,5,6,7,8,9,'a','A','b','B','c','C','d','D','e','E','f','F')
     $BXORValue  = '0x' + (Get-Random -Input @(0..5)) + (Get-Random -Input $HexDigitRange)
-    
+
     # Convert $ScriptString to delimited and BXOR'd ASCII values in [Char] array separated by random delimiter from defined list $RandomDelimiters.
     $DelimitedEncodedArray = ''
     ([Char[]]$ScriptString) | ForEach-Object {$DelimitedEncodedArray += ([String]([Int][Char]$_ -BXOR $BXORValue) + (Get-Random -Input $RandomDelimiters))}
@@ -176,7 +176,7 @@ http://www.danielbohannon.com
 
     # Create printable version of $RandomDelimiters in random order to be used by final command.
     $RandomDelimitersToPrint = (Get-Random -Input $RandomDelimiters -Count $RandomDelimiters.Length) -Join ''
-    
+
     # Generate random case versions for necessary operations.
     $ForEachObject = Get-Random -Input @('ForEach','ForEach-Object','%')
     $StrJoin       = ([Char[]]'[String]::Join' | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
@@ -205,7 +205,7 @@ http://www.danielbohannon.com
         }
 
         # Randomize case of full syntax from above If/Else block.
-        $Split = ([Char[]]$Split | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join '' 
+        $Split = ([Char[]]$Split | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
         $RandomDelimitersToPrintForDashSplit = ([Char[]]$RandomDelimitersToPrintForDashSplit | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     }
     $RandomDelimitersToPrintForDashSplit = $RandomDelimitersToPrintForDashSplit.Trim()
@@ -246,7 +246,7 @@ http://www.danielbohannon.com
     $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + "'" + $DelimitedEncodedArray + "'." + $Split + "(" + ' '*(Get-Random -Input @(0,1)) + "'" + $RandomDelimitersToPrint + "'" + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + $BXORConversion + ' '*(Get-Random -Input @(0,1)) + ')'
     $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + "'" + $DelimitedEncodedArray + "'" + ' '*(Get-Random -Input @(0,1)) + $RandomDelimitersToPrintForDashSplit + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + $BXORConversion + ' '*(Get-Random -Input @(0,1)) + ')'
     $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + $EncodedArray + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + $BXORConversion + ' '*(Get-Random -Input @(0,1)) + ')'
-    
+
     # Generate random JOIN syntax for all above options.
     $NewScriptArray   = @()
     $NewScriptArray  += (Get-Random -Input $BaseScriptArray) + ' '*(Get-Random -Input @(0,1)) + $Join + ' '*(Get-Random -Input @(0,1)) + "''"
@@ -278,7 +278,7 @@ http://www.danielbohannon.com
 
     # Randomize the case of selected invoke operation.
     $InvokeExpression = ([Char[]]$InvokeExpression | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
-    
+
     # Choose random Invoke-Expression/IEX syntax and ordering: IEX ($ScriptString) or ($ScriptString | IEX)
     $InvokeOptions  = @()
     $InvokeOptions += ' '*(Get-Random -Input @(0,1)) + $InvokeExpression + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $NewScript + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1))
@@ -348,7 +348,7 @@ http://www.danielbohannon.com
             $ExecutionPolicyFlag = Get-Random -Input $ExecutionPolicyFlags
             $PowerShellFlags += $ExecutionPolicyFlag + ' '*(Get-Random -Minimum 1 -Maximum 3) + $ArgumentValue
         }
-        
+
         # Randomize the order of the execution flags.
         # This is to prevent the Blue Team from placing false hope in simple signatures for ordering of these flags.
         If($CommandlineOptions.Count -gt 1)
@@ -391,7 +391,7 @@ http://www.danielbohannon.com
         {
                 Write-Warning "This command exceeds the cmd.exe maximum allowed length of $CmdMaxLength characters! Its length is $($CmdLineOutput.Length) characters."
         }
-        
+
         $NewScript = $CommandLineOutput
     }
 

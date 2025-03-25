@@ -8,9 +8,8 @@ authors:
     link: ''
 description: Executes a command or stager on remote hosts using xp_cmdshell.
 software: ''
-tactics: []
-techniques:
-  - T1505
+tactics: [TA0002, TA0008]
+techniques: [T1505.001]
 background: true
 output_extension:
 needs_admin: false
@@ -48,7 +47,8 @@ options:
     required: false
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -56,7 +56,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
   - name: Bypasses

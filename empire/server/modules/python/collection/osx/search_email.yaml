@@ -3,7 +3,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Searches for Mail .emlx messages, optionally only returning messages with the specified SearchTerm.
+description: Searches for Mail .emlx messages, optionally only returning messages
+  with the specified SearchTerm.
 software: ''
 tactics: []
 techniques:

@@ -3,11 +3,11 @@ authors:
   - name: ''
     handle: '@sixdub'
     link: ''
-description: Starts the event-loop backdoor.
+description: Starts the event-loop backdoor. Monitors security logs for trigger and
+  calls back when seen
 software: ''
-tactics: []
-techniques:
-  - T1084
+tactics: [TA0004]
+techniques: [T1546.003]
 background: false
 output_extension:
 needs_admin: true

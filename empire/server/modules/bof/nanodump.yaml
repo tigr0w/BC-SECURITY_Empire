@@ -5,8 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: A flexible tool that creates a minidump of the LSASS process.
 software: ''
-tactics: []
-techniques: []
+tactics: [TA0006]
+techniques: [T1003.001]
 background: false
 output_extension:
 needs_admin: true
@@ -16,6 +16,10 @@ min_language_version: ''
 comments:
   - https://github.com/fortra/nanodump
 options:
+  - name: pid
+    description: Process ID
+    required: false
+    value: ''
   - name: write
     description: filename of the dump
     required: false
@@ -28,6 +32,10 @@ options:
     suggested_values:
       - true
       - false
+  - name: chunksize
+    description: chunksize
+    required: false
+    value: 0
   - name: duplicate
     description: duplicate a high privileged existing LSASS handle
     required: false
@@ -37,7 +45,8 @@ options:
       - true
       - false
   - name: duplicate-elevate
-    description: duplicate a low privileged existing LSASS handle and then elevate it
+    description: duplicate a low privileged existing LSASS handle and then elevate
+      it
     required: false
     value: false
     strict: true
@@ -53,7 +62,8 @@ options:
       - true
       - false
   - name: seclogon-leak-remote
-    description: leak an LSASS handle into another process via seclogon and duplicate it
+    description: leak an LSASS handle into another process via seclogon and duplicate
+      it
     required: false
     value: ''
     strict: false
@@ -103,7 +113,8 @@ options:
       - true
       - false
   - name: elevate-handle
-    description: open a handle to LSASS with low privileges and duplicate it to gain higher privileges
+    description: open a handle to LSASS with low privileges and duplicate it to gain
+      higher privileges
     required: false
     value: false
     strict: true
@@ -118,11 +129,11 @@ options:
     suggested_values:
       - true
       - false
-    format: i
 bof:
   x86: bof/nanodump/nanodump.x86.o
   x64: bof/nanodump/nanodump.x64.o
   entry_point: ''
+  format_string: iziiiiiiiiiiiziiizi
 script_path: ''
 script_end: ''
 advanced:

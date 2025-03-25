@@ -29,7 +29,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-EncapsulatedInvokeExpression (located in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedStringCommand orchestrates the application of all string-based obfuscation functions (casting ENTIRE command to a string a performing string obfuscation functions) to provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. If no $ObfuscationLevel is defined then Out-ObfuscatedStringCommand will automatically choose a random obfuscation level.
@@ -48,7 +48,7 @@ Specifies the path to your payload.
 
 .PARAMETER ObfuscationLevel
 
-(Optional) Specifies the obfuscation level for the given input PowerShell payload. If not defined then Out-ObfuscatedStringCommand will automatically choose a random obfuscation level. 
+(Optional) Specifies the obfuscation level for the given input PowerShell payload. If not defined then Out-ObfuscatedStringCommand will automatically choose a random obfuscation level.
 The available ObfuscationLevel/function mappings are:
 1 --> Out-StringDelimitedAndConcatenated
 2 --> Out-StringDelimitedConcatenatedAndReordered
@@ -109,10 +109,10 @@ http://www.danielbohannon.com
 
     # Set valid obfuscation levels for current token type.
     $ValidObfuscationLevels = @(0,1,2,3)
-    
+
     # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
-    If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}  
-    
+    If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
+
     Switch($ObfuscationLevel)
     {
         0 {Continue}
@@ -138,7 +138,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-ConcatenatedString (located in Out-ObfuscatedTokenCommand.ps1), Out-EncapsulatedInvokeExpression (located in Out-ObfuscatedStringCommand.ps1), Out-RandomCase (located in Out-ObfuscatedToken.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-StringDelimitedAndConcatenated delimits and concatenates an input PowerShell command. The purpose is to highlight to the Blue Team that there are more novel ways to encode a PowerShell command other than the most common Base64 approach.
@@ -206,17 +206,17 @@ http://www.danielbohannon.com
 
         Return $ScriptString
     }
-    
+
     # Characters we will use to generate random delimiters to replace the above characters.
     # For simplicity do NOT include single- or double-quotes in this array.
     $CharsToReplaceWith  = @(0..9)
     $CharsToReplaceWith += @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z')
     $CharsToReplaceWith += @('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z')
     $DelimiterLength = 3
-    
+
     # Multi-dimensional table containing delimiter/replacement key pairs for building final command to reverse substitutions.
     $DelimiterTable = @()
-    
+
     # Iterate through and replace each character in $CharsToReplace in $ScriptString with randomly generated delimiters.
     ForEach($CharToReplace in $CharsToReplace)
     {
@@ -225,7 +225,7 @@ http://www.danielbohannon.com
             # Create random delimiter of length $DelimiterLength with characters from $CharsToReplaceWith.
             If($CharsToReplaceWith.Count -lt $DelimiterLength) {$DelimiterLength = $CharsToReplaceWith.Count}
             $Delim = (Get-Random -Input $CharsToReplaceWith -Count $DelimiterLength) -Join ''
-            
+
             # Keep generating random delimiters until we find one that is not a substring of $ScriptString.
             While($ScriptString.ToLower().Contains($Delim.ToLower()))
             {
@@ -235,7 +235,7 @@ http://www.danielbohannon.com
                     $DelimiterLength++
                 }
             }
-            
+
             # Add current delimiter/replacement key pair for building final command to reverse substitutions.
             $DelimiterTable += , @($Delim,$CharToReplace)
 
@@ -250,10 +250,10 @@ http://www.danielbohannon.com
     {
         $Delimiter    = $DelimiterArray[0]
         $OriginalChar = $DelimiterArray[1]
-        
+
         # Randomly choose between a single quote and double quote.
         $RandomQuote = Get-Random -InputObject @("'","`"")
-        
+
         # Make sure $RandomQuote is opposite of $OriginalChar contents if it is a single- or double-quote.
         If($OriginalChar -eq "'") {$RandomQuote = '"'}
         Else {$RandomQuote = "'"}
@@ -261,14 +261,14 @@ http://www.danielbohannon.com
         # Add quotes.
         $Delimiter = $RandomQuote + $Delimiter + $RandomQuote
         $OriginalChar = $RandomQuote + $OriginalChar + $RandomQuote
-        
+
         # Add random quotes to delimiters in $DelimiterTable.
         $DelimiterTableWithQuotes += , @($Delimiter,$OriginalChar)
     }
 
     # Reverse the delimiters when building back out the reversing command.
     [Array]::Reverse($DelimiterTable)
-    
+
     # Select random method for building command to reverse the above substitutions to execute the original command.
     # Avoid using the -f format operator (switch option 3) if curly braces are found in $ScriptString.
     If(($ScriptString.Contains('{')) -AND ($ScriptString.Contains('}')))
@@ -297,7 +297,7 @@ http://www.danielbohannon.com
             {
                 $Delimiter    = $DelimiterArray[0]
                 $OriginalChar = $DelimiterArray[1]
-                
+
                 # Randomly decide if $OriginalChar will be displayed in ASCII representation or plaintext in $ReversingCommand.
                 # This is to allow for simpler string manipulation on the command line.
                 # Place priority on handling if $OriginalChar is a single- and double-quote.
@@ -317,8 +317,8 @@ http://www.danielbohannon.com
                         $OriginalChar = "[$StringStr][$CharStr]" + [Int][Char]$OriginalChar[1]
                     }
                 }
-                
-                # Randomly select if $Delimiter will be displayed in ASCII representation instead of plaintext in $ReversingCommand. 
+
+                # Randomly select if $Delimiter will be displayed in ASCII representation instead of plaintext in $ReversingCommand.
                 If(Get-Random -Input (0..1))
                 {
                     # Convert $Delimiter string into a concatenation of [Char] representations of each characters.
@@ -330,7 +330,7 @@ http://www.danielbohannon.com
                     }
                     $Delimiter = '(' + $DelimiterCharSyntax.Trim('+') + ')'
                 }
-                
+
                 # Add reversing commands to $ReversingCommand.
                 $ReversingCommand = ".$ReplaceStr($Delimiter,$OriginalChar)" + $ReversingCommand
             }
@@ -352,7 +352,7 @@ http://www.danielbohannon.com
             {
                 $Delimiter    = $DelimiterArray[0]
                 $OriginalChar = $DelimiterArray[1]
-                
+
                 # Randomly decide if $OriginalChar will be displayed in ASCII representation or plaintext in $ReversingCommand.
                 # This is to allow for simpler string manipulation on the command line.
                 # Place priority on handling if $OriginalChar is a single- or double-quote.
@@ -368,8 +368,8 @@ http://www.danielbohannon.com
                 {
                     $OriginalChar = "[$CharStr]" + [Int][Char]$OriginalChar[1]
                 }
-                
-                # Randomly select if $Delimiter will be displayed in ASCII representation instead of plaintext in $ReversingCommand. 
+
+                # Randomly select if $Delimiter will be displayed in ASCII representation instead of plaintext in $ReversingCommand.
                 If(Get-Random -Input (0..1))
                 {
                     # Convert $Delimiter string into a concatenation of [Char] representations of each characters.
@@ -381,12 +381,12 @@ http://www.danielbohannon.com
                     }
                     $Delimiter = '(' + $DelimiterCharSyntax.Trim('+') + ')'
                 }
-                
+
                 # Randomly choose between -Replace and the lesser-known case-sensitive -CReplace.
                 $Replace = (Get-Random -Input @("-$ReplaceStr","-$CReplaceStr"))
 
                 # Add reversing commands to $ReversingCommand. Whitespace before and after $Replace is optional.
-                $ReversingCommand = ' '*(Get-Random -Minimum 0 -Maximum 3) + $Replace + ' '*(Get-Random -Minimum 0 -Maximum 3) + "$Delimiter,$OriginalChar" + $ReversingCommand                
+                $ReversingCommand = ' '*(Get-Random -Minimum 0 -Maximum 3) + $Replace + ' '*(Get-Random -Minimum 0 -Maximum 3) + "$Delimiter,$OriginalChar" + $ReversingCommand
             }
 
             # Concatenate $ScriptString as a string and then encapsulate with parentheses.
@@ -407,12 +407,12 @@ http://www.danielbohannon.com
             For($i=$DelimiterTableWithQuotes.Count-1; $i -ge 0; $i--)
             {
                 $DelimiterArray = $DelimiterTableWithQuotes[$i]
-                
+
                 $Delimiter    = $DelimiterArray[0]
                 $OriginalChar = $DelimiterArray[1]
-                
+
                 $DelimiterNoQuotes = $Delimiter.SubString(1,$Delimiter.Length-2)
-                
+
                 # Randomly decide if $OriginalChar will be displayed in ASCII representation or plaintext in $ReversingCommand.
                 # This is to allow for simpler string manipulation on the command line.
                 # Place priority on handling if $OriginalChar is a single- or double-quote.
@@ -428,7 +428,7 @@ http://www.danielbohannon.com
                 {
                     $OriginalChar = "[$CharStr]" + [Int][Char]$OriginalChar[1]
                 }
-                
+
                 # Build out delimiter order to add as arguments to the final -f format operator.
                 $ReversingCommand = $ReversingCommand + ",$OriginalChar"
 
@@ -437,14 +437,14 @@ http://www.danielbohannon.com
 
                 $Counter++
             }
-            
+
             # Trim leading comma from $ReversingCommand.
             $ReversingCommand = $ReversingCommand.Trim(',')
 
             # Concatenate $ScriptString as a string and then encapsulate with parentheses.
             $ScriptString = Out-ConcatenatedString $ScriptString "'"
             $ScriptString = '(' + $ScriptString + ')'
-            
+
             # Add reversing commands to $ScriptString. Whitespace before and after -f format operator is optional.
             $FormatOperator = (Get-Random -Input @('-f','-F'))
 
@@ -452,7 +452,7 @@ http://www.danielbohannon.com
         }
         default {Write-Error "An invalid `$RandomInput value ($RandomInput) was passed to switch block."; Exit;}
     }
-    
+
     # Encapsulate $ScriptString in necessary IEX/Invoke-Expression(s) if -PassThru switch was not specified.
     If(!$PSBoundParameters['PassThru'])
     {
@@ -475,7 +475,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-StringDelimitedAndConcatenated (located in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-StringDelimitedConcatenatedAndReordered delimits, concatenates and reorders the concatenated substrings of an input PowerShell command. The purpose is to highlight to the Blue Team that there are more novel ways to encode a PowerShell command other than the most common Base64 approach.
@@ -573,7 +573,7 @@ http://www.danielbohannon.com
 
     # Randomize the order of the concatenated strings.
     $RandomIndexes = (Get-Random -Input (0..$($ConcatenatedStringsArray.Count-1)) -Count $ConcatenatedStringsArray.Count)
-    
+
     $Arguments1 = ''
     $Arguments2 = @('')*$ConcatenatedStringsArray.Count
     For($i=0; $i -lt $ConcatenatedStringsArray.Count; $i++)
@@ -582,7 +582,7 @@ http://www.danielbohannon.com
         $Arguments1 += '{' + $RandomIndex + '}'
         $Arguments2[$RandomIndex] = "'" + $ConcatenatedStringsArray[$i] + "'"
     }
-    
+
     # Whitespace is not required before or after the -f operator.
     $ScriptStringReordered = '(' + '"' + $Arguments1 + '"' + ' '*(Get-Random @(0..1)) + '-f' + ' '*(Get-Random @(0..1)) + ($Arguments2 -Join ',') + ')'
 
@@ -605,7 +605,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-ConcatenatedString, Out-RandomCase (both are located in Out-ObfuscatedToken.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-StringReversed concatenates and reverses an input PowerShell command. The purpose is to highlight to the Blue Team that there are more novel ways to encode a PowerShell command other than the most common Base64 approach.
@@ -643,7 +643,7 @@ http://www.danielbohannon.com
 
     # Reverse $ScriptString.
     $ScriptStringReversed = $ScriptString[-1..-($ScriptString.Length)] -Join ''
-    
+
     # Characters we will use to generate random variable names.
     # For simplicity do NOT include single- or double-quotes in this array.
     $CharsToRandomVarName  = @(0..9)
@@ -651,7 +651,7 @@ http://www.danielbohannon.com
 
     # Randomly choose variable name starting length.
     $RandomVarLength = (Get-Random -Input @(3..6))
-   
+
     # Create random variable with characters from $CharsToRandomVarName.
     If($CharsToRandomVarName.Count -lt $RandomVarLength) {$RandomVarLength = $CharsToRandomVarName.Count}
     $RandomVarName = ((Get-Random -Input $CharsToRandomVarName -Count $RandomVarLength) -Join '').Replace(' ','')
@@ -680,19 +680,19 @@ http://www.danielbohannon.com
     $RandomVarSetSyntax  = @()
     $RandomVarSetSyntax += '$' + $RandomVarName + ' '*(Get-Random @(0..2)) + '=' + ' '*(Get-Random @(0..2)) + $RandomVarValPlaceholder
     $RandomVarSetSyntax += (Get-Random -Input @('Set-Variable','SV','Set')) + ' '*(Get-Random @(1..2)) + $RandomVarNameMaybeConcatenated + ' '*(Get-Random @(1..2)) + '(' + ' '*(Get-Random @(0..2)) + $RandomVarValPlaceholder + ' '*(Get-Random @(0..2)) + ')'
-    
+
     # Randomly choose from above variable syntaxes.
     $RandomVarSet = (Get-Random -Input $RandomVarSetSyntax)
 
     # Randomize the case of selected variable syntaxes.
     $RandomVarSet = Out-RandomCase $RandomVarSet
-    
+
     # Generate random variable GET syntax.
     $RandomVarGetSyntax  = @()
     $RandomVarGetSyntax += '$' + $RandomVarName
     $RandomVarGetSyntax += '(' + ' '*(Get-Random @(0..2)) + (Get-Random -Input @('Get-Variable','Variable')) + ' '*(Get-Random @(1..2)) + $RandomVarNameMaybeConcatenated + (Get-Random -Input ((' '*(Get-Random @(0..2)) + ').Value'),(' '*(Get-Random @(1..2)) + ('-ValueOnly'.SubString(0,(Get-Random -Minimum 3 -Maximum ('-ValueOnly'.Length+1)))) + ' '*(Get-Random @(0..2)) + ')')))
     $RandomVarGetSyntax += '(' + ' '*(Get-Random @(0..2)) + (Get-Random -Input @('DIR','Get-ChildItem','GCI','ChildItem','LS','Get-Item','GI','Item')) + ' '*(Get-Random @(1..2)) + $RandomVarNameMaybeConcatenatedWithVariablePrepended + ' '*(Get-Random @(0..2)) + ').Value'
-    
+
     # Randomly choose from above variable syntaxes.
     $RandomVarGet = (Get-Random -Input $RandomVarGetSyntax)
 
@@ -733,13 +733,13 @@ http://www.danielbohannon.com
     Switch(Get-Random -Input (1..3)) {
         1 {
             # 1) $StringVar = $String; $StringVar[-1..-($StringVar.Length)] -Join ''
-            
+
             # Replace placeholder with appropriate value for this Switch statement.
             $RandomVarSet = $RandomVarSet.Replace($RandomVarValPlaceholder,('"' + ' '*(Get-Random -Input @(0,1)) + $ScriptStringReversed + ' '*(Get-Random -Input @(0,1)) + '"'))
 
             # Set $ScriptStringReversed as environment variable $Random.
             $ScriptString = $RandomVarSet + ' '*(Get-Random -Input @(0,1)) + ';' + ' '*(Get-Random -Input @(0,1))
-            
+
             $RandomVarGet = $RandomVarGet + '[' + ' '*(Get-Random -Input @(0,1)) + '-' + ' '*(Get-Random -Input @(0,1)) + '1' + ' '*(Get-Random -Input @(0,1)) + '..' + ' '*(Get-Random -Input @(0,1)) + '-' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomVarGet + ".$LengthStr" + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + ']'
 
             # Build out random syntax depending on whether -Join is prepended or -Join '' is appended.
@@ -750,15 +750,15 @@ http://www.danielbohannon.com
             $JoinOptions += "[$StringStr]::$JoinStr" + '(' + ' '*(Get-Random -Input @(0,1)) + "''" + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + (Get-Random -Input $RandomVarGet) + ' '*(Get-Random -Input @(0,1)) + ')'
             $JoinOptions += '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVar + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"' + ' '*(Get-Random -Input @(0,1)) + '+' + ' '*(Get-Random -Input @(0,1)) + "[$StringStr]" + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomVarGet + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '+' + '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVarBack + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"'
             $JoinOption = (Get-Random -Input $JoinOptions)
-            
+
             # Encapsulate in necessary IEX/Invoke-Expression(s).
             $JoinOption = Out-EncapsulatedInvokeExpression $JoinOption
-            
+
             $ScriptString = $ScriptString + $JoinOption
         }
         2 {
             # 2) $StringVar = [Char[]]$String; [Array]::Reverse($StringVar); $StringVar -Join ''
-            
+
             # Replace placeholder with appropriate value for this Switch statement.
             $RandomVarSet = $RandomVarSet.Replace($RandomVarValPlaceholder,("[$CharStr[" + ' '*(Get-Random -Input @(0,1)) + ']' + ' '*(Get-Random -Input @(0,1)) + ']' + ' '*(Get-Random -Input @(0,1)) + '"' + $ScriptStringReversed + '"'))
 
@@ -774,10 +774,10 @@ http://www.danielbohannon.com
             $JoinOptions += "[$StringStr]::$JoinStr" + '(' + ' '*(Get-Random -Input @(0,1)) + "''" + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + $RandomVarGet + ' '*(Get-Random -Input @(0,1)) + ')'
             $JoinOptions += '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVar + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"' + ' '*(Get-Random -Input @(0,1)) + '+' + ' '*(Get-Random -Input @(0,1)) + "[$StringStr]" + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomVarGet + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '+' + '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVarBack + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"'
             $JoinOption = (Get-Random -Input $JoinOptions)
-            
+
             # Encapsulate in necessary IEX/Invoke-Expression(s).
             $JoinOption = Out-EncapsulatedInvokeExpression $JoinOption
-            
+
             $ScriptString = $ScriptString + $JoinOption
         }
         3 {
@@ -792,7 +792,7 @@ http://www.danielbohannon.com
             {
                 $RightToLeft = "'$RightToLeftStr'"
             }
-            
+
             # Build out random syntax depending on whether -Join is prepended or -Join '' is appended.
             # Now also includes [String]::Join .Net syntax and [String] syntax after modifying $OFS variable to ''.
             $JoinOptions  = @()
@@ -801,13 +801,13 @@ http://www.danielbohannon.com
             $JoinOptions += ' '*(Get-Random -Input @(0,1)) + "[$StringStr]::$JoinStr(" + ' '*(Get-Random -Input @(0,1)) + "''" + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + "[$RegexStr]::$MatchesStr(" + ' '*(Get-Random -Input @(0,1)) + '"' + $ScriptStringReversed + '"' + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + "'.'" + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + $RightToLeft + ' '*(Get-Random -Input @(0,1)) + ")" + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '$_' + ".$ValueStr" + ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1))
             $JoinOptions += '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVar + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"' + ' '*(Get-Random -Input @(0,1)) + '+' +          ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + "[$StringStr]" + ' '*(Get-Random -Input @(0,1)) + "[$RegexStr]::$MatchesStr(" + ' '*(Get-Random -Input @(0,1)) + '"' + $ScriptStringReversed + '"' + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + "'.'" + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + $RightToLeft + ' '*(Get-Random -Input @(0,1)) + ")" + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '$_' + ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')'             + ' '*(Get-Random -Input @(0,1)) + '+' + '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVarBack + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"'
             $ScriptString = (Get-Random -Input $JoinOptions)
-            
+
             # Encapsulate in necessary IEX/Invoke-Expression(s).
             $ScriptString = Out-EncapsulatedInvokeExpression $ScriptString
         }
         default {Write-Error "An invalid value was passed to switch block."; Exit;}
     }
-    
+
     # Perform final check to remove ticks if they now precede lowercase special characters after the string is reversed.
     # E.g. "testin`G" in reverse would be "G`nitset" where `n would be interpreted as a newline character.
     $SpecialCharacters = @('a','b','f','n','r','u','t','v','0')
@@ -818,7 +818,7 @@ http://www.danielbohannon.com
             $ScriptString = $ScriptString.Replace("``"+$SpecialChar,$SpecialChar)
         }
     }
-    
+
     Return $ScriptString
 }
 
@@ -835,7 +835,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-EncapsulatedInvokeExpression generates random syntax for invoking input PowerShell command. It uses a combination of IEX and Invoke-Expression as well as ordering (IEX $Command , $Command | IEX).
@@ -892,7 +892,7 @@ http://www.danielbohannon.com
 
     # Randomize the case of selected invoke operation.
     $InvokeExpression = Out-RandomCase $InvokeExpression
-    
+
     # Choose random Invoke-Expression/IEX syntax and ordering: IEX ($ScriptString) or ($ScriptString | IEX)
     $InvokeOptions  = @()
     $InvokeOptions += ' '*(Get-Random -Input @(0,1)) + $InvokeExpression + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $ScriptString + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1))

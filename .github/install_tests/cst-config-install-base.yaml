@@ -25,16 +25,7 @@ commandTests:
   - name: "poetry python version"
     command: "poetry"
     args: ["run", "python3", "--version"]
-    expectedOutput: ["Python 3.12.*"]
-  # dotnet
-  - name: "dotnet which"
-    command: "which"
-    args: ["dotnet"]
-    expectedOutput: ["/usr/bin/dotnet"]
-  - name: "dotnet version"
-    command: "dotnet"
-    args: [ "--version" ]
-    expectedOutput: ["6.0.*"]
+    expectedOutput: ["Python 3.13.*"]
   # powershell
   - name: "powershell which"
     command: "which"
@@ -49,15 +40,15 @@ commandTests:
     command: "which"
     args: ["mysql"]
     expectedOutput: ["/usr/bin/mysql"]
-  # nim
-  - name: "nim which"
+  # go
+  - name: "go which"
     command: "which"
-    args: ["nim"]
-    expectedOutput: ["/usr/bin/nim"]
-  - name: "nim version"
-    command: "nim"
-    args: ["--version"]
-    expectedOutput: ["Nim Compiler Version 1.6.*"]
+    args: ["go"]
+    expectedOutput: ["/usr/bin/go"]
+  - name: "go version"
+    command: "go"
+    args: ["version"]
+    expectedOutput: ["go version go1.23.* linux/*"]
   # run
   - name: "ps-empire help"
     command: "./ps-empire"
@@ -66,11 +57,8 @@ commandTests:
   - name: "ps-empire version"
     command: "./ps-empire"
     args: ["server", "--version"]
-    expectedOutput: ["5.* BC Security Fork"]
+    expectedOutput: ["6.* BC Security Fork"]
 fileExistenceTests:
   - name: 'profiles'
     path: '/empire/empire/server/data/profiles/'
-    shouldExist: true
-  - name: 'sharpire'
-    path: '/empire/empire/server/csharp/Covenant/Data/ReferenceSourceLibraries/Sharpire'
     shouldExist: true

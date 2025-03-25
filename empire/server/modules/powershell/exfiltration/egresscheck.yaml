@@ -3,12 +3,11 @@ authors:
   - name: Stuart Morgan <stuart.morgan@mwrinfosecurity.com>
     handle: ''
     link: ''
-description: This module will generate traffic on a provided range of ports and supports both TCP and UDP. Useful to identify
-  direct egress channels.
+description: This module will generate traffic on a provided range of ports and supports
+  both TCP and UDP. Useful to identify direct egress channels.
 software: ''
-tactics: []
-techniques:
-  - T1041
+tactics: [TA0007]
+techniques: [T1016.001]
 background: false
 output_extension:
 needs_admin: false
@@ -31,7 +30,8 @@ options:
     required: true
     value: TCP
   - name: portrange
-    description: The range of ports to connect on. This can be a comma separated list or dash-separated ranges.
+    description: The range of ports to connect on. This can be a comma separated
+      list or dash-separated ranges.
     required: true
     value: 22-25,53,80,443,445,3306,3389
   - name: delay

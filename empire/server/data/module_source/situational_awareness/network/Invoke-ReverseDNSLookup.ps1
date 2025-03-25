@@ -57,13 +57,13 @@ function Invoke-ReverseDNSLookup
                            ValueFromPipelineByPropertyName=$true,
                            Position=0)]
                            $StartIP,
-                           
+
                 [Parameter(Mandatory=$true,
                            ValueFromPipelineByPropertyName=$true,
                            Position=2)]
-                           $EndIP          
+                           $EndIP
             )
-            
+
             # created by Dr. Tobias Weltner, MVP PowerShell
             $ip1 = ([System.Net.IPAddress]$StartIP).GetAddressBytes()
             [Array]::Reverse($ip1)
@@ -81,7 +81,7 @@ function Invoke-ReverseDNSLookup
         }
 
 
-        function New-IPv4RangeFromCIDR 
+        function New-IPv4RangeFromCIDR
         {
             <#
             .Synopsis
@@ -145,12 +145,12 @@ function Invoke-ReverseDNSLookup
 
         #Multithreading setup
 
-        # create a pool of maxThread runspaces   
-        $pool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads)   
+        # create a pool of maxThread runspaces
+        $pool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads)
         $pool.Open()
-  
-        $jobs = @()   
-        $ps = @()   
+
+        $jobs = @()
+        $ps = @()
         $wait = @()
 
         $i = 0
@@ -166,27 +166,27 @@ function Invoke-ReverseDNSLookup
             $record_progress = [int][Math]::Ceiling((($i / $record_count) * 100))
             Write-Progress -Activity "Performing DNS Reverse Lookup Discovery" -PercentComplete $record_progress -Status "Reverse Lookup - $record_progress%" -Id 1;
 
-            while ($($pool.GetAvailableRunspaces()) -le 0) 
+            while ($($pool.GetAvailableRunspaces()) -le 0)
             {
                 Start-Sleep -milliseconds 500
             }
-    
-            # create a "powershell pipeline runner"   
+
+            # create a "powershell pipeline runner"
             $ps += [powershell]::create()
 
-            # assign our pool of 3 runspaces to use   
+            # assign our pool of 3 runspaces to use
             $ps[$i].runspacepool = $pool
 
             # command to run
             [void]$ps[$i].AddScript($RvlScripBlock).AddParameter('ip', $ip)
             #[void]$ps[$i].AddParameter('ping', $ping)
-    
+
             # start job
             $jobs += $ps[$i].BeginInvoke();
-     
-            # store wait handles for WaitForAll call   
+
+            # store wait handles for WaitForAll call
             $wait += $jobs[$i].AsyncWaitHandle
-    
+
             $i++
         }
 
@@ -194,28 +194,28 @@ function Invoke-ReverseDNSLookup
 
         while ($($jobs | ? {$_.IsCompleted -eq $false}).count -gt 0 -or $($($(get-date) - $waitTimeout).totalSeconds) -gt 60) {
                 Start-Sleep -milliseconds 500
-            } 
-  
-        # end async call   
-        for ($y = 0; $y -lt $i; $y++) {     
-  
-            try 
-            {   
-                # complete async job   
-                $ScanResults += $ps[$y].EndInvoke($jobs[$y])   
-  
-            } 
-            catch 
-            {   
-       
-                # oops-ee!   
-                write-warning "error: $_"  
             }
-    
-            finally 
+
+        # end async call
+        for ($y = 0; $y -lt $i; $y++) {
+
+            try
+            {
+                # complete async job
+                $ScanResults += $ps[$y].EndInvoke($jobs[$y])
+
+            }
+            catch
+            {
+
+                # oops-ee!
+                write-warning "error: $_"
+            }
+
+            finally
             {
                 $ps[$y].Dispose()
-            }    
+            }
         }
 
         $pool.Dispose()

@@ -33,17 +33,17 @@ options:
     description: Remove the cron job.
     required: false
     value: 'False'
-    suggested_values:
-      - 'True'
-      - 'False'
     strict: true
+    suggested_values:
+      - True
+      - False
 script: |-
   import subprocess
-  
+
   command = "{{Command}}"
   cron_settings = "{{CronSettings}}"
   delete = '{{Remove}}'
-  
+
   try:
       if delete.lower() == 'true':
           subprocess.call(['crontab', '-r'])

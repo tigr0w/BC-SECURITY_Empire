@@ -5,10 +5,8 @@ authors:
     link: ''
 description: Kills Event Log Service Threads
 software: ''
-tactics: []
-techniques:
-  - T1070
-  - T1089
+tactics: [TA0005]
+techniques: [T1562.006]
 background: false
 output_extension:
 needs_admin: true
@@ -23,7 +21,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -34,4 +33,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/Invoke-Phant0m.ps1
-script_end: Invoke-Phant0m {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-Phant0m completed'
+script_end: Invoke-Phant0m {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-Phant0m
+  completed'

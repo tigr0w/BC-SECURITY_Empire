@@ -5,9 +5,10 @@ import pytest
 from empire.server.core.hooks import hooks
 
 
-@pytest.fixture(scope="function")
-def existing_processes(session_local, models, host):
+@pytest.fixture
+def _existing_processes(session_local, models, host):
     with session_local.begin() as db:
+        db.query(models.HostProcess).delete()
         existing_processes = [
             models.HostProcess(
                 host_id=host,
@@ -39,7 +40,8 @@ def existing_processes(session_local, models, host):
         db.query(models.HostProcess).delete()
 
 
-def test_ps_hook(client, session_local, models, host, agent, existing_processes):
+@pytest.mark.usefixtures("_existing_processes")
+def test_ps_hook(client, session_local, models, host, agent):
     with session_local.begin() as db:
         output = json.dumps(
             [

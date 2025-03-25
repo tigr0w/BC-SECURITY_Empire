@@ -17,8 +17,8 @@ class Module:
         user_agent = params["UserAgent"]
 
         # generate the launcher code
-        launcher = main_menu.stagers.generate_launcher(
-            listener_name, language="python", userAgent=user_agent
+        launcher = main_menu.stagergenv2.generate_launcher(
+            listener_name, language="python", user_agent=user_agent
         )
 
         if launcher == "":

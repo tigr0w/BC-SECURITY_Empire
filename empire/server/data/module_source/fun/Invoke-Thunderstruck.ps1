@@ -6,9 +6,9 @@ Function Invoke-Thunderstruck
         [ValidateNotNullOrEmpty()]
         [String] $VideoURL = "https://www.youtube.com/watch?v=leJ_wj7mDa0"
     )
-    
+
     Function Set-Speaker($Volume){$wshShell = new-object -com wscript.shell;1..50 | % {$wshShell.SendKeys([char]174)};1..$Volume | % {$wshShell.SendKeys([char]175)}}
-    Set-Speaker -Volume 50   
+    Set-Speaker -Volume 50
 
     #Create hidden IE Com Object
     $IEComObject = New-Object -com "InternetExplorer.Application"

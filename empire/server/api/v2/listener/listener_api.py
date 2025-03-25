@@ -5,6 +5,7 @@ from starlette.status import HTTP_204_NO_CONTENT
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
 from empire.server.api.v2.listener.listener_dto import (
+    AutorunConfig,
     Listener,
     ListenerPostRequest,
     Listeners,
@@ -127,3 +128,26 @@ async def delete_listener(
     db_listener: models.Listener = Depends(get_listener),
 ):
     listener_service.delete_listener(db, db_listener)
+
+
+@router.put("/{uid}/autorun", response_model=Listener)
+async def update_listener_autorun(
+    uid: int,
+    autorun_config: AutorunConfig,
+    db: CurrentSession,
+    db_listener: models.Listener = Depends(get_listener),
+):
+    module_list_serializable = [
+        module.model_dump() for module in autorun_config.records
+    ]
+    db_listener.autorun_tasks = module_list_serializable
+    return domain_to_dto_listener(db_listener)
+
+
+@router.get("/{uid}/autorun", response_model=AutorunConfig)
+async def get_listener_autorun(
+    uid: int,
+    db_listener: models.Listener = Depends(get_listener),
+):
+    autorun_tasks = db_listener.autorun_tasks or []
+    return AutorunConfig(records=autorun_tasks)

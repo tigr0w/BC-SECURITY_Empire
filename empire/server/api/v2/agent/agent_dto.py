@@ -3,7 +3,6 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from empire.server.api.v2.shared_dto import PROXY_ID
 from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 from empire.server.core.db import models
 
@@ -38,7 +37,6 @@ def domain_to_dto_agent(agent: models.Agent):
         children=agent.children,
         servers=agent.servers,
         profile=agent.profile,
-        functions=agent.functions,
         kill_date=agent.kill_date,
         working_hours=agent.working_hours,
         lost_limit=agent.lost_limit,
@@ -46,23 +44,8 @@ def domain_to_dto_agent(agent: models.Agent):
         architecture=agent.architecture,
         stale=agent.stale,
         archived=agent.archived,
-        # Could make this a typed class later to match the schema
-        proxies=to_proxy_dto(agent.proxies),
         tags=[domain_to_dto_tag(x) for x in agent.tags],
     )
-
-
-def to_proxy_dto(proxies):
-    if proxies:
-        converted = []
-        for p in proxies["proxies"]:
-            p_copy = p.copy()
-            p_copy["proxy_type"] = PROXY_ID[p["proxy_type"]]
-            converted.append(p_copy)
-
-        return {"proxies": converted}
-
-    return {}
 
 
 def domain_to_dto_agent_checkin(agent_checkin: models.AgentCheckIn):
@@ -111,7 +94,6 @@ class Agent(BaseModel):
     architecture: str | None = None
     archived: bool
     stale: bool
-    proxies: dict | None = None
     tags: list[Tag]
 
 

@@ -29,7 +29,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedTokenCommand orchestrates the tokenization and application of all token-based obfuscation functions to provided PowerShell script and places obfuscated tokens back into the provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. If no $TokenTypeToObfuscate is defined then Out-ObfuscatedTokenCommand will automatically perform ALL token obfuscation functions in random order at the highest obfuscation level.
@@ -48,7 +48,7 @@ Specifies the path to your payload.
 
 .PARAMETER ObfuscationLevel
 
-(Optional) Specifies the obfuscation level for the given TokenTypeToObfuscate. If not defined then Out-ObfuscatedTokenCommand will automatically perform obfuscation function at the highest available obfuscation level. 
+(Optional) Specifies the obfuscation level for the given TokenTypeToObfuscate. If not defined then Out-ObfuscatedTokenCommand will automatically perform obfuscation function at the highest available obfuscation level.
 Each token has different available obfuscation levels:
 'Argument' 1-4
 'Command' 1-3
@@ -109,7 +109,7 @@ http://www.danielbohannon.com
     {
         $ScriptString = [String]$ScriptBlock
     }
-    
+
     # If $TokenTypeToObfuscate was not defined then we will automate randomly calling all available obfuscation functions in Out-ObfuscatedTokenCommand.
     If($TokenTypeToObfuscate.Length -eq 0)
     {
@@ -122,8 +122,8 @@ http://www.danielbohannon.com
         $ObfuscationChoices += 'CommandArgument'
         $ObfuscationChoices += 'Variable'
         $ObfuscationChoices += 'Type'
-        
-        # Create new array with 'String' plus all obfuscation types above in random order. 
+
+        # Create new array with 'String' plus all obfuscation types above in random order.
         $ObfuscationTypeOrder = @()
         # Run 'Comment' first since it will be the least number of tokens to iterate through, and comments may be introduced as obfuscation technique in future revisions.
         $ObfuscationTypeOrder += 'Comment'
@@ -132,7 +132,7 @@ http://www.danielbohannon.com
         $ObfuscationTypeOrder += (Get-Random -Input $ObfuscationChoices -Count $ObfuscationChoices.Count)
 
         # Apply each randomly-ordered $ObfuscationType from above step.
-        ForEach($ObfuscationType in $ObfuscationTypeOrder) 
+        ForEach($ObfuscationType in $ObfuscationTypeOrder)
         {
             $ScriptString = Out-ObfuscatedTokenCommand ([ScriptBlock]::Create($ScriptString)) $ObfuscationType $ObfuscationLevel
         }
@@ -141,7 +141,7 @@ http://www.danielbohannon.com
 
     # Parse out and obfuscate tokens (in reverse to make indexes simpler for adding in obfuscated tokens).
     $Tokens = [System.Management.Automation.PSParser]::Tokenize($ScriptString,[ref]$null)
-    
+
     # Handle fringe case of retrieving count of all tokens used when applying random whitespace.
     $TokenCount = ([System.Management.Automation.PSParser]::Tokenize($ScriptString,[ref]$null) | Where-Object {$_.Type -eq $TokenTypeToObfuscate}).Count
     $TokensForInsertingWhitespace = @('Operator','GroupStart','GroupEnd','StatementSeparator')
@@ -151,7 +151,7 @@ http://www.danielbohannon.com
     # Additional script-wide variable ($Script:TypeTokenVariableArray) allows each unique Type token to only be set once per command/script for efficiency and to create less items to create indicators off of.
     $Script:TypeTokenScriptStringGrowth = 0
     $Script:TypeTokenVariableArray = @()
-    
+
     If($TokenTypeToObfuscate -eq 'RandomWhitespace')
     {
         # If $TokenTypeToObfuscate='RandomWhitespace' then calculate $TokenCount for output by adding token count for all tokens in $TokensForInsertingWhitespace.
@@ -184,7 +184,7 @@ http://www.danielbohannon.com
     $OutputCount = 0
     $IterationsToOutputOn = 100
     $DifferenceForEvenOutput = $TokenCount % $IterationsToOutputOn
-    
+
     For($i=$Tokens.Count-1; $i -ge 0; $i--)
     {
         $Token = $Tokens[$i]
@@ -204,7 +204,7 @@ http://www.danielbohannon.com
 
         $ObfuscatedToken = ""
 
-        If(($Token.Type -eq 'String') -AND ($TokenTypeToObfuscate.ToLower() -eq 'string')) 
+        If(($Token.Type -eq 'String') -AND ($TokenTypeToObfuscate.ToLower() -eq 'string'))
         {
             $Counter--
 
@@ -215,12 +215,12 @@ http://www.danielbohannon.com
             {
                 Continue
             }
-            
+
             # Set valid obfuscation levels for current token type.
             $ValidObfuscationLevels = @(0,1,2)
 
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
-            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}  
+            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
 
             # The below Parameter Binding Validation Attributes cannot have their string values formatted with the -f format operator unless treated as a scriptblock.
             # When we find strings following these Parameter Binding Validation Attributes then if we are using a -f format operator we will treat the result as a scriptblock.
@@ -252,13 +252,13 @@ http://www.danielbohannon.com
             }
 
         }
-        ElseIf(($Token.Type -eq 'Member') -AND ($TokenTypeToObfuscate.ToLower() -eq 'member')) 
+        ElseIf(($Token.Type -eq 'Member') -AND ($TokenTypeToObfuscate.ToLower() -eq 'member'))
         {
             $Counter--
 
             # Set valid obfuscation levels for current token type.
             $ValidObfuscationLevels = @(0,1,2,3,4)
-            
+
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
             If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
 
@@ -293,16 +293,16 @@ http://www.danielbohannon.com
                 default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for token type $($Token.Type)."; Exit;}
             }
         }
-        ElseIf(($Token.Type -eq 'CommandArgument') -AND ($TokenTypeToObfuscate.ToLower() -eq 'commandargument')) 
+        ElseIf(($Token.Type -eq 'CommandArgument') -AND ($TokenTypeToObfuscate.ToLower() -eq 'commandargument'))
         {
             $Counter--
 
             # Set valid obfuscation levels for current token type.
             $ValidObfuscationLevels = @(0,1,2,3,4)
-            
+
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
-            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1} 
-            
+            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
+
             Switch($ObfuscationLevel)
             {
                 0 {Continue}
@@ -313,13 +313,13 @@ http://www.danielbohannon.com
                 default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for token type $($Token.Type)."; Exit;}
             }
         }
-        ElseIf(($Token.Type -eq 'Command') -AND ($TokenTypeToObfuscate.ToLower() -eq 'command')) 
+        ElseIf(($Token.Type -eq 'Command') -AND ($TokenTypeToObfuscate.ToLower() -eq 'command'))
         {
             $Counter--
 
             # Set valid obfuscation levels for current token type.
             $ValidObfuscationLevels = @(0,1,2,3)
-            
+
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
             If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
 
@@ -329,7 +329,7 @@ http://www.danielbohannon.com
             {
                 $ObfuscationLevel = 1
             }
-            
+
             Switch($ObfuscationLevel)
             {
                 0 {Continue}
@@ -345,9 +345,9 @@ http://www.danielbohannon.com
 
             # Set valid obfuscation levels for current token type.
             $ValidObfuscationLevels = @(0,1)
-            
+
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
-            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1} 
+            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
 
             Switch($ObfuscationLevel)
             {
@@ -356,15 +356,15 @@ http://www.danielbohannon.com
                 default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for token type $($Token.Type)."; Exit;}
             }
         }
-        ElseIf(($Token.Type -eq 'Type') -AND ($TokenTypeToObfuscate.ToLower() -eq 'type')) 
+        ElseIf(($Token.Type -eq 'Type') -AND ($TokenTypeToObfuscate.ToLower() -eq 'type'))
         {
             $Counter--
 
             # Set valid obfuscation levels for current token type.
             $ValidObfuscationLevels = @(0,1,2)
-            
+
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
-            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1} 
+            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
 
             # The below Type value substrings are part of Types that cannot be direct Type casted, so we will not perform direct Type casting on Types containing these values.
             $TypesThatCannotByDirectTypeCasted  = @()
@@ -379,15 +379,15 @@ http://www.danielbohannon.com
                 default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for token type $($Token.Type)."; Exit;}
             }
         }
-        ElseIf(($TokensForInsertingWhitespace -Contains $Token.Type) -AND ($TokenTypeToObfuscate.ToLower() -eq 'randomwhitespace')) 
+        ElseIf(($TokensForInsertingWhitespace -Contains $Token.Type) -AND ($TokenTypeToObfuscate.ToLower() -eq 'randomwhitespace'))
         {
             $Counter--
 
             # Set valid obfuscation levels for current token type.
             $ValidObfuscationLevels = @(0,1)
-            
+
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
-            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1} 
+            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
 
             Switch($ObfuscationLevel)
             {
@@ -402,17 +402,17 @@ http://www.danielbohannon.com
 
             # Set valid obfuscation levels for current token type.
             $ValidObfuscationLevels = @(0,1)
-            
+
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
-            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1} 
-            
+            If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
+
             Switch($ObfuscationLevel)
             {
                 0 {Continue}
                 1 {$ScriptString = Out-RemoveComments $ScriptString $Token}
                 default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for token type $($Token.Type)."; Exit;}
             }
-        }    
+        }
     }
 
     Return $ScriptString
@@ -431,7 +431,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-StringDelimitedAndConcatenated, Out-StringDelimitedConcatenatedAndReordered (both located in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedStringTokenLevel1 obfuscates a given string token and places it back into the provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -531,7 +531,7 @@ http://www.danielbohannon.com
         ForEach($Parameter in $ParameterValidationAttributesToTreatStringAsScriptblock)
         {
             $SubStringLength = $Parameter.Length
-                
+
             # Add 10 more to $SubStringLength in case there is excess whitespace between the = sign.
             $SubStringLength += 10
 
@@ -554,7 +554,7 @@ http://www.danielbohannon.com
 
     # Do nothing if the token has length <= 1 (e.g. Write-Host "", single-character tokens, etc.).
     If($Token.Content.Length -le 1) {Return $ScriptString}
-    
+
     # Do nothing if the token has length <= 3 and $ObfuscationLevel is 2 (reordering).
     If(($Token.Content.Length -le 3) -AND $ObfuscationLevel -eq 2) {Return $ScriptString}
 
@@ -584,7 +584,7 @@ http://www.danielbohannon.com
         # E.g. "string ${var name with whitespace} string" or "string $(gci *whitespace_in_command*) string"
         $TokenContentSplit = $TokenContent.Split(' ')
         $ContainsVariableSpecialCases = (($TokenContent.Contains('$(') -OR $TokenContent.Contains('${')) -AND ($ScriptString[$Token.Start] -eq '"'))
-        
+
         If($ContainsVariableSpecialCases)
         {
             $TokenContentSplit = $TokenContent
@@ -593,7 +593,7 @@ http://www.danielbohannon.com
         ForEach($SubToken in $TokenContentSplit)
         {
             $Counter++
-            
+
             $ObfuscatedSubToken = $SubToken
 
             # Determine if use case of variable inside of double quotes is present as this will be handled differently below.
@@ -611,7 +611,7 @@ http://www.danielbohannon.com
                 # Concatenate each $SubToken via Out-StringDelimitedAndConcatenated so it will handle any replacements for special characters.
                 # Define -PassThru flag so an invocation is not added to $ObfuscatedSubToken.
                 $ObfuscatedSubToken = Out-StringDelimitedAndConcatenated $ObfuscatedSubToken -PassThru
-            
+
                 # Evenly trim leading/trailing parentheses.
                 While($ObfuscatedSubToken.StartsWith('(') -AND $ObfuscatedSubToken.EndsWith(')'))
                 {
@@ -785,7 +785,7 @@ http://www.danielbohannon.com
     {
         $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ObfuscatedToken + $ScriptString.SubString($Token.Start+$Token.Length)
     }
-    
+
     Return $ScriptString
 }
 
@@ -802,7 +802,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-StringDelimitedAndConcatenated, Out-StringDelimitedConcatenatedAndReordered (both located in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedCommandTokenLevel2 obfuscates a given command token and places it back into the provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -851,7 +851,7 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken]
@@ -871,7 +871,7 @@ http://www.danielbohannon.com
 
     # Convert $Token to character array for easier manipulation.
     $TokenArray = [Char[]]$TokenContent
-    
+
     # Randomly upper- and lower-case characters in current token.
     $ObfuscatedToken = Out-RandomCase $TokenArray
 
@@ -883,7 +883,7 @@ http://www.danielbohannon.com
         2 {$ObfuscatedToken = Out-StringDelimitedConcatenatedAndReordered $TokenContent -PassThru}
         default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for Command Token Obfuscation."; Exit}
     }
-     
+
     # Evenly trim leading/trailing parentheses.
     While($ObfuscatedToken.StartsWith('(') -AND $ObfuscatedToken.EndsWith(')'))
     {
@@ -892,7 +892,7 @@ http://www.danielbohannon.com
 
     # Encapsulate $ObfuscatedToken with parentheses.
     $ObfuscatedToken = '(' + $ObfuscatedToken + ')'
-    
+
     # Check if the command is already prepended with an invocation operator. If it is then do not add an invocation operator.
     # E.g. & powershell -Sta -Command $cmd
     # E.g. https://github.com/adaptivethreat/Empire/blob/master/data/module_source/situational_awareness/host/Invoke-WinEnum.ps1#L139
@@ -915,19 +915,19 @@ http://www.danielbohannon.com
     If(!$InvokeOperatorAlreadyPresent)
     {
         # Randomly choose between the & and . Invoke Operators.
-        # In certain large scripts where more than one parameter are being passed into a custom function 
+        # In certain large scripts where more than one parameter are being passed into a custom function
         # (like Add-SignedIntAsUnsigned in Invoke-Mimikatz.ps1) then using . will cause errors but & will not.
         # For now we will default to only & if $ScriptString.Length -gt 10000
         If($ScriptString.Length -gt 10000) {$RandomInvokeOperator = '&'}
         Else {$RandomInvokeOperator = Get-Random -InputObject @('&','.')}
-    
+
         # Add invoke operator (and potentially whitespace) to complete splatting command.
         $ObfuscatedToken = $RandomInvokeOperator + $ObfuscatedToken
     }
 
     # Add the obfuscated token back to $ScriptString.
     $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ObfuscatedToken + $ScriptString.SubString($Token.Start+$Token.Length)
-    
+
     Return $ScriptString
 }
 
@@ -944,7 +944,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedWithTicks obfuscates given input as a helper function to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -982,7 +982,7 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken]
@@ -994,7 +994,7 @@ http://www.danielbohannon.com
     {
         Return $ScriptString
     }
-    
+
     # The Parameter Attributes in $MemberTokensToOnlyRandomCase (defined at beginning of script) cannot be obfuscated like other Member Tokens
     # For these tokens we will only randomize the case and then return as is.
     # Source: https://social.technet.microsoft.com/wiki/contents/articles/15994.powershell-advanced-function-parameter-attributes.aspx
@@ -1012,7 +1012,7 @@ http://www.danielbohannon.com
     {
         $EncapsulateWithDoubleQuotes = $TRUE
     }
-    
+
     # Convert $Token to character array for easier manipulation.
     $TokenArray = [Char[]]$Token.Content
 
@@ -1021,7 +1021,7 @@ http://www.danielbohannon.com
 
     # Choose a random percentage of characters to obfuscate with ticks in current token.
     $ObfuscationPercent = Get-Random -Minimum 15 -Maximum 30
-    
+
     # Convert $ObfuscationPercent to the exact number of characters to obfuscate in the current token.
     $NumberOfCharsToObfuscate = [int]($Token.Length*($ObfuscationPercent/100))
 
@@ -1030,10 +1030,10 @@ http://www.danielbohannon.com
 
     # Select random character indexes to obfuscate with ticks (excluding first and last character in current token).
     $CharIndexesToObfuscate = (Get-Random -InputObject (1..($TokenArray.Length-2)) -Count $NumberOfCharsToObfuscate)
-    
+
     # Special characters in PowerShell must be upper-cased before adding a tick before the character.
     $SpecialCharacters = @('a','b','f','n','r','u','t','v','0')
- 
+
     # Remove the possibility of a single tick being placed only before the token string.
     # This would leave the string value completely intact, thus defeating the purpose of the tick obfuscation.
     $ObfuscatedToken = '' #$NULL
@@ -1045,10 +1045,10 @@ http://www.danielbohannon.com
         {
             # Set current character to upper case in case it is in $SpecialCharacters (i.e., `N instead of `n so it's not treated as a newline special character)
             If($SpecialCharacters -Contains $CurrentChar) {$CurrentChar = ([string]$CurrentChar).ToUpper()}
-            
+
             # Skip adding a tick if character is a special character where case does not apply.
             If($CurrentChar -eq '0') {$ObfuscatedToken += $CurrentChar; Continue}
-            
+
             # Add tick.
             $ObfuscatedToken += '`' + $CurrentChar
         }
@@ -1073,7 +1073,7 @@ http://www.danielbohannon.com
 
     # Add the obfuscated token back to $ScriptString.
     $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ObfuscatedToken + $ScriptString.SubString($Token.Start+$Token.Length)
-    
+
     Return $ScriptString
 }
 
@@ -1090,7 +1090,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-StringDelimitedAndConcatenated, Out-StringDelimitedConcatenatedAndReordered (both located in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedMemberTokenLevel3 obfuscates a given token and places it back into the provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -1143,12 +1143,12 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken[]]
         $Tokens,
-        
+
         [Parameter(Position = 2, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [Int]
@@ -1172,7 +1172,7 @@ http://www.danielbohannon.com
         Return $ScriptString
     }
 
-    # If $Token immediately follows a . or :: (and does not begin $ScriptString) of if followed by [] type cast within 
+    # If $Token immediately follows a . or :: (and does not begin $ScriptString) of if followed by [] type cast within
     #   parentheses then only allow Member token to be obfuscated with ticks and quotes.
     # The exception to this is when the $Token is immediately followed by an opening parenthese, like in .DownloadString(
     # E.g. both InvokeCommand and InvokeScript in $ExecutionContext.InvokeCommand.InvokeScript
@@ -1185,7 +1185,7 @@ http://www.danielbohannon.com
 
     # Parse out $SubSubString to make next If block a little cleaner for handling fringe cases in which we will revert to ticks instead of concatenation or reordering of the Member token value.
     $SubSubString = $ScriptString.SubString($Token.Start+$Token.Length,$RemainingSubString)
-    
+
     If(($Token.Content.ToLower() -eq 'invoke') `
     -OR ($Token.Content.ToLower() -eq 'computehash') `
     -OR ($Token.Content.ToLower() -eq 'tobase64string') `
@@ -1195,15 +1195,15 @@ http://www.danielbohannon.com
     -OR (($Token.Start -gt 1) -AND ($ScriptString.SubString($Token.Start-2,2) -eq '::'))) `
     -AND (($ScriptString.Length -ge $Token.Start+$Token.Length+1) -AND (($SubSubString.SubString(0,1) -ne '(') -OR (($SubSubString.Contains('[')) -AND !($SubSubString.SubString(0,$SubSubString.IndexOf('[')).Contains(')')))))))
     {
-        # We will use the scriptString length prior to obfuscating 'invoke' to help extract the this token after obfuscation so we can add quotes before re-inserting it. 
+        # We will use the scriptString length prior to obfuscating 'invoke' to help extract the this token after obfuscation so we can add quotes before re-inserting it.
         $PrevLength = $ScriptString.Length
 
         # Obfuscate 'invoke' token with ticks.
         $ScriptString = Out-ObfuscatedWithTicks $ScriptString $Token
-        
+
         #$TokenLength = 'invoke'.Length + ($ScriptString.Length - $PrevLength)
         $TokenLength = $Token.Length + ($ScriptString.Length - $PrevLength)
-        
+
         # Encapsulate obfuscated and extracted token with double quotes if it is not already.
         $ObfuscatedTokenExtracted =  $ScriptString.SubString($Token.Start,$TokenLength)
         If($ObfuscatedTokenExtracted.StartsWith('"') -AND $ObfuscatedTokenExtracted.EndsWith('"'))
@@ -1220,7 +1220,7 @@ http://www.danielbohannon.com
 
     # Set $Token.Content in a separate variable so it can be modified since Content is a ReadOnly property of $Token.
     $TokenContent = $Token.Content
-    
+
     # If ticks are already present in current Token then remove so they will not interfere with string concatenation.
     If($TokenContent.Contains('`')) {$TokenContent = $TokenContent.Replace('`','')}
 
@@ -1229,7 +1229,7 @@ http://www.danielbohannon.com
 
     # Randomly upper- and lower-case characters in current token.
     $TokenArray = Out-RandomCase $TokenArray
-    
+
     # User input $ObfuscationLevel (1-2) will choose between concatenating Member token value string or reordering it with the -F format operator.
     # I am leaving out Out-ObfuscatedStringCommand's option 3 since that may introduce a Type token unnecessarily ([Regex]).
     Switch($ObfuscationLevel)
@@ -1238,7 +1238,7 @@ http://www.danielbohannon.com
         2 {$ObfuscatedToken = Out-StringDelimitedConcatenatedAndReordered $TokenContent -PassThru}
         default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for Member Token Obfuscation."; Exit}
     }
-    
+
     # Evenly trim leading/trailing parentheses -- .Trim does this unevenly.
     While($ObfuscatedToken.StartsWith('(') -AND $ObfuscatedToken.EndsWith(')'))
     {
@@ -1254,13 +1254,13 @@ http://www.danielbohannon.com
     $TokenLengthIncrease = $ObfuscatedToken.Length - $Token.Content.Length
 
     # Add .Invoke if Member token was originally immediately followed by '('
-    If(($Index -lt $Tokens.Count) -AND ($Tokens[$Index+1].Content -eq '(') -AND ($Tokens[$Index+1].Type -eq 'GroupStart')) 
+    If(($Index -lt $Tokens.Count) -AND ($Tokens[$Index+1].Content -eq '(') -AND ($Tokens[$Index+1].Type -eq 'GroupStart'))
     {
         $ObfuscatedToken = $ObfuscatedToken + '.Invoke'
     }
-    
+
     # Add the obfuscated token back to $ScriptString.
-    $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ObfuscatedToken + $ScriptString.SubString($Token.Start+$Token.Length)  
+    $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ObfuscatedToken + $ScriptString.SubString($Token.Start+$Token.Length)
 
     Return $ScriptString
 }
@@ -1278,7 +1278,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-StringDelimitedAndConcatenated, Out-StringDelimitedConcatenatedAndReordered (both located in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedCommandArgumentTokenLevel3 obfuscates a given token and places it back into the provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -1327,7 +1327,7 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken]
@@ -1349,7 +1349,7 @@ http://www.danielbohannon.com
 
     # Set $Token.Content in a separate variable so it can be modified since Content is a ReadOnly property of $Token.
     $TokenContent = $Token.Content
-    
+
     # If ticks are already present in current Token then remove so they will not interfere with string concatenation.
     If($TokenContent.Contains('`')) {$TokenContent = $TokenContent.Replace('`','')}
 
@@ -1361,7 +1361,7 @@ http://www.danielbohannon.com
         2 {$ObfuscatedToken = Out-StringDelimitedConcatenatedAndReordered $TokenContent -PassThru}
         default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for Argument Token Obfuscation."; Exit}
     }
-    
+
     # Evenly trim leading/trailing parentheses -- .Trim does this unevenly.
     While($ObfuscatedToken.StartsWith('(') -AND $ObfuscatedToken.EndsWith(')'))
     {
@@ -1370,10 +1370,10 @@ http://www.danielbohannon.com
 
     # Encapsulate $ObfuscatedToken with parentheses.
     $ObfuscatedToken = '(' + $ObfuscatedToken + ')'
-    
+
     # Add the obfuscated token back to $ScriptString.
     $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ObfuscatedToken + $ScriptString.SubString($Token.Start+$Token.Length)
-    
+
     Return $ScriptString
 }
 
@@ -1392,7 +1392,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-StringDelimitedAndConcatenated, Out-StringDelimitedConcatenatedAndReordered (both located in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedTypeToken obfuscates a given token and places it back into the provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -1442,7 +1442,7 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken]
@@ -1501,7 +1501,7 @@ http://www.danielbohannon.com
             2 {$ObfuscatedToken = Out-StringDelimitedConcatenatedAndReordered $TokenContent -PassThru}
             default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for Type Token Obfuscation."; Exit}
         }
-        
+
         # Evenly trim leading/trailing parentheses.
         While($ObfuscatedToken.StartsWith('(') -AND $ObfuscatedToken.EndsWith(')'))
         {
@@ -1518,7 +1518,7 @@ http://www.danielbohannon.com
 
         # Randomly choose variable name starting length.
         $RandomVarLength = (Get-Random -Input @(3..6))
-   
+
         # Create random variable with characters from $CharsToRandomVarName.
         If($CharsToRandomVarName.Count -lt $RandomVarLength) {$RandomVarLength = $CharsToRandomVarName.Count}
         $RandomVarName = ((Get-Random -Input $CharsToRandomVarName -Count $RandomVarLength) -Join '').Replace(' ','')
@@ -1543,7 +1543,7 @@ http://www.danielbohannon.com
         $RandomVarNameMaybeConcatenated = '(' + (Out-ConcatenatedString $RandomVarName (Get-Random -Input @('"',"'"))) + ')'
         $RandomVarNameMaybeConcatenatedWithVariablePrepended = '(' + (Out-ConcatenatedString "variable:$RandomVarName" (Get-Random -Input @('"',"'"))) + ')'
     }
-    
+
     # Generate random variable SET syntax.
     $RandomVarSetSyntax  = @()
     $RandomVarSetSyntax += '$' + $RandomVarName + ' '*(Get-Random @(0..2)) + '=' + ' '*(Get-Random @(0..2)) + $ObfuscatedTokenTypeCast
@@ -1555,13 +1555,13 @@ http://www.danielbohannon.com
 
     # Randomize the case of selected variable syntaxes.
     $RandomVarSet = Out-RandomCase $RandomVarSet
-  
+
     # Generate random variable GET syntax.
     $RandomVarGetSyntax  = @()
     $RandomVarGetSyntax += '$' + $RandomVarName
     $RandomVarGetSyntax += '(' + ' '*(Get-Random @(0..2)) + (Get-Random -Input @('Get-Variable','Variable')) + ' '*(Get-Random @(1..2)) + $RandomVarNameMaybeConcatenated + (Get-Random -Input ((' '*(Get-Random @(0..2)) + ').Value'),(' '*(Get-Random @(1..2)) + ('-ValueOnly'.SubString(0,(Get-Random -Minimum 3 -Maximum ('-ValueOnly'.Length+1)))) + ' '*(Get-Random @(0..2)) + ')')))
     $RandomVarGetSyntax += '(' + ' '*(Get-Random @(0..2)) + (Get-Random -Input @('DIR','Get-ChildItem','GCI','ChildItem','LS','Get-Item','GI','Item')) + ' '*(Get-Random @(1..2)) + $RandomVarNameMaybeConcatenatedWithVariablePrepended + ' '*(Get-Random @(0..2)) + ').Value'
-    
+
     # Randomly choose from above variable syntaxes.
     $RandomVarGet = (Get-Random -Input $RandomVarGetSyntax)
 
@@ -1597,7 +1597,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ObfuscatedVariableTokenLevel1 obfuscates a given token and places it back into the provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -1635,7 +1635,7 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken]
@@ -1651,7 +1651,7 @@ http://www.danielbohannon.com
     # Length of pre-obfuscated ScriptString will be important in extracting out the obfuscated token before we add curly braces.
     $PrevLength = $ScriptString.Length
 
-    $ScriptString = Out-ObfuscatedWithTicks $ScriptString $Token   
+    $ScriptString = Out-ObfuscatedWithTicks $ScriptString $Token
 
     # Pull out ObfuscatedToken from ScriptString and add curly braces around obfuscated variable token.
     $ObfuscatedToken = $ScriptString.SubString($Token.Start,$Token.Length+($ScriptString.Length-$PrevLength))
@@ -1676,7 +1676,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-RandomCaseToken obfuscates given input as a helper function to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -1714,25 +1714,25 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken]
         $Token
     )
-                
+
     # Convert $Token to character array for easier manipulation.
     $TokenArray = [Char[]]$Token.Content
-    
+
     # Randomly upper- and lower-case characters in current token.
     $TokenArray = Out-RandomCase $TokenArray
-    
+
     # Convert character array back to string.
     $ObfuscatedToken = $TokenArray -Join ''
-    
+
     # Add the obfuscated token back to $ScriptString.
     $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ObfuscatedToken + $ScriptString.SubString($Token.Start+$Token.Length)
-    
+
     Return $ScriptString
 }
 
@@ -1749,7 +1749,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-ConcatenatedString obfuscates given input as a helper function to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -1784,7 +1784,7 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $InputVal,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [Char]
@@ -1796,7 +1796,7 @@ http://www.danielbohannon.com
     # But a string "'G'+'" passed to this function as 'G'+' will have all quotes remain as part of the $InputVal string.
     If($InputVal.Contains("'")) {$InputVal = $InputVal.Replace("'","`'")}
     If($InputVal.Contains('"')) {$InputVal = $InputVal.Replace('"','`"')}
-    
+
     # Do nothing if string is of length 2 or less
     $ObfuscatedToken = ''
     If($InputVal.Length -le 2)
@@ -1819,19 +1819,19 @@ http://www.danielbohannon.com
     {
         $ConcatPercent = Get-Random -Minimum 15 -Maximum 30
     }
-    
+
     # Convert $ConcatPercent to the exact number of characters to concatenate in the current token.
     $ConcatCount =  [Int]($InputVal.Length*($ConcatPercent/100))
 
     # Guarantee that at least one concatenation will occur.
-    If($ConcatCount -eq 0) 
+    If($ConcatCount -eq 0)
     {
         $ConcatCount = 1
     }
 
     # Select random indexes on which to concatenate.
     $CharIndexesToConcat = (Get-Random -InputObject (1..($InputVal.Length-1)) -Count $ConcatCount) | Sort-Object
-  
+
     # Perform inline concatenation.
     $LastIndex = 0
 
@@ -1839,7 +1839,7 @@ http://www.danielbohannon.com
     {
         # Extract substring to concatenate with $ObfuscatedToken.
         $SubString = $InputVal.SubString($LastIndex,$IndexToObfuscate-$LastIndex)
-       
+
         # Concatenate with quotes and addition operator.
         $ObfuscatedToken += $SubString + $Quote + "+" + $Quote
 
@@ -1855,7 +1855,7 @@ http://www.danielbohannon.com
     {
         $ObfuscatedToken = $Quote + $ObfuscatedToken + $Quote
     }
-   
+
     # Remove any existing leading or trailing empty string concatenation.
     If($ObfuscatedToken.StartsWith("''+"))
     {
@@ -1865,7 +1865,7 @@ http://www.danielbohannon.com
     {
         $ObfuscatedToken = $ObfuscatedToken.SubString(0,$ObfuscatedToken.Length-3)
     }
-    
+
     Return $ObfuscatedToken
 }
 
@@ -1882,7 +1882,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-RandomCase obfuscates given input as a helper function to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -1927,7 +1927,7 @@ http://www.danielbohannon.com
         [Char[]]
         $InputVal
     )
-    
+
     If($PSBoundParameters['InputValStr'])
     {
         # Convert string to char array for easier manipulation.
@@ -1953,7 +1953,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-RandomWhitespace adds random whitespace before/after a given token and places it back into the provided PowerShell script to evade detection by simple IOCs and process execution monitoring relying solely on command-line arguments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -1995,22 +1995,22 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken[]]
         $Tokens,
-        
+
         [Parameter(Position = 2, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [Int]
         $Index
     )
-        
+
     $Token = $Tokens[$Index]
 
     $ObfuscatedToken = $Token.Content
-    
+
     # Do not add DEFAULT setting in below Switch block.
     Switch($Token.Content) {
         '(' {$ObfuscatedToken = $ObfuscatedToken + ' '*(Get-Random -Minimum 0 -Maximum 3)}
@@ -2024,15 +2024,15 @@ http://www.danielbohannon.com
             # Retrieve character in script immediately preceding the current token
             If($Index -eq 0) {$PrevChar = ' '}
             Else {$PrevChar = $ScriptString.SubString($Token.Start-1,1)}
-            
+
             # Only add randomized whitespace to . if it is acting as a standalone invoke operator (either at the beginning of the script or immediately preceded by ; or whitespace)
             If(($PrevChar -eq ' ') -OR ($PrevChar -eq ';')) {$ObfuscatedToken = ' '*(Get-Random -Minimum 0 -Maximum 3) + $ObfuscatedToken + ' '*(Get-Random -Minimum 0 -Maximum 3)}
         }
     }
-    
+
     # Add the obfuscated token back to $ScriptString.
     $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ObfuscatedToken + $ScriptString.SubString($Token.Start+$Token.Length)
-    
+
     Return $ScriptString
 }
 
@@ -2049,7 +2049,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-RemoveComments obfuscates a given token by removing all comment tokens from the provided PowerShell script to evade detection by simple IOCs or A/V signatures based on strings in PowerShell script comments. For the most complete obfuscation all tokens in a given PowerShell script or script block (cast as a string object) should be obfuscated via the corresponding obfuscation functions and desired obfuscation levels in Out-ObfuscatedTokenCommand.ps1.
@@ -2087,15 +2087,15 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [String]
         $ScriptString,
-    
+
         [Parameter(Position = 1, Mandatory = $True)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSToken]
         $Token
     )
-    
+
     # Remove current Comment token.
     $ScriptString = $ScriptString.SubString(0,$Token.Start) + $ScriptString.SubString($Token.Start+$Token.Length)
-    
+
     Return $ScriptString
 }

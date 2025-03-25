@@ -37,7 +37,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 PowerShell module file for importing all required modules for the Invoke-Obfuscation framework.
@@ -85,7 +85,7 @@ ForEach($Function in $RequiredFunctions)
         {
             # Import module.
             Import-Module $ScriptDir\$Function.ps1
-            
+
             # Re-check if $Function is loaded.
             If((Get-Command * | Where-Object {$_.Name -like $Function}).Name)
             {
@@ -116,7 +116,7 @@ If($UnloadedFunctionExists)
 Else
 {
     Write-Host "`n[*] All modules loaded and ready to run " -NoNewLine
-    
+
     # Write output below string in interactive format.
     ForEach($Char in [Char[]]'Invoke-Obfuscation')
     {

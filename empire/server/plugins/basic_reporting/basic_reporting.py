@@ -1,31 +1,16 @@
 import csv
 import io
+from typing import override
 
-from empire.server.common.empire import MainMenu
-from empire.server.common.plugins import Plugin
 from empire.server.core.db import models
 from empire.server.core.db.models import PluginTaskStatus
-from empire.server.core.plugin_service import PluginService
+from empire.server.core.plugins import BasePlugin
 
 
-class Plugin(Plugin):
-    def onLoad(self):
-        self.info = {
-            "Name": "basic_reporting",
-            "Authors": [
-                {
-                    "Name": "Vincent Rose",
-                    "Handle": "@vinnybod",
-                    "Link": "https://github.com/vinnybod",
-                }
-            ],
-            "Description": "Generates credentials.csv, sessions.csv, and master.log. Writes to server/data directory.",
-            "Software": "",
-            "Techniques": [],
-            "Comments": [],
-        }
-
-        self.options = {
+class Plugin(BasePlugin):
+    @override
+    def on_load(self, db):
+        self.execution_options = {
             "report": {
                 "Description": "Reports to generate.",
                 "Required": True,
@@ -34,17 +19,17 @@ class Plugin(Plugin):
                 "Strict": True,
             }
         }
-        self.install_path = ""
 
+    @override
     def execute(self, command, **kwargs):
         """
         Parses commands from the API
         """
         user = kwargs["user"]
         db = kwargs["db"]
-        input = f'Generating reports for: {command["report"]}'
+        input = f"Generating reports for: {command['report']}"
         plugin_task = models.PluginTask(
-            plugin_id=self.info["Name"],
+            plugin_id=self.info.id,
             input=input,
             input_full=input,
             user_id=user.id,
@@ -72,15 +57,6 @@ class Plugin(Plugin):
         plugin_task.downloads = db_downloads
         db.add(plugin_task)
         db.flush()
-
-    def register(self, mainMenu: MainMenu):
-        """
-        Any modifications to the mainMenu go here - e.g.
-        registering functions to be run by user commands
-        """
-        self.install_path = mainMenu.installPath
-        self.main_menu = mainMenu
-        self.plugin_service: PluginService = mainMenu.pluginsv2
 
     def session_report(self, db, user):
         out = io.StringIO()
@@ -126,13 +102,6 @@ class Plugin(Plugin):
         return self.main_menu.downloadsv2.create_download_from_text(
             db, user, output_str, "master.log", "basic_reporting"
         )
-
-    def shutdown(self):
-        """
-        Kills additional processes that were spawned
-        """
-        # If the plugin spawns a process provide a shutdown method for when Empire exits else leave it as pass
-        pass
 
 
 def xstr(s):

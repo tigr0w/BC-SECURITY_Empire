@@ -5,10 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Executes a stager on remote hosts using PsExec type functionality.
 software: S0029
-tactics: []
-techniques:
-  - T1035
-  - T1077
+tactics: [TA0008]
+techniques: [T1569.002, T1021.002]
 background: true
 output_extension:
 needs_admin: false
@@ -18,17 +16,25 @@ min_language_version: '2'
 comments:
   - https://github.com/rapid7/metasploit-framework/blob/master/tools/psexec.rb
 options:
-  - name: Agent
-    description: Agent to run module on.
+  - name: Payload
+    description: Manually build command or use Empire.
     required: true
-    value: ''
+    value: 'Empire'
+    strict: true
+    internal: true
+    suggested_values:
+      - Manual
+      - Empire
   - name: Listener
     description: Listener to use.
     required: false
     value: ''
+    depends_on:
+      - name: Payload
+        values: ['Empire']
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
-      only.
+    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
+      for obfuscation types. For powershell only.
     required: false
     value: 'False'
     strict: true
@@ -36,9 +42,13 @@ options:
       - True
       - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True. For powershell only.
     required: false
     value: Token\All\1
+    depends_on:
+      - name: Obfuscate
+        values: ['True']
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
@@ -55,24 +65,39 @@ options:
     description: Custom command to execute on remote hosts.
     required: false
     value: ''
+    depends_on:
+      - name: Payload
+        values: ['Manual']
   - name: ResultFile
     description: Name of the file to write the results to on agent machine.
     required: false
     value: ''
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
+    depends_on:
+      - name: Payload
+        values: ['Empire']
   - name: Proxy
     description: Proxy to use for request (default, none, or other).
     required: false
     value: default
+    depends_on:
+      - name: Payload
+        values: ['Empire']
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
+    depends_on:
+      - name: Payload
+        values: ['Empire']
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false

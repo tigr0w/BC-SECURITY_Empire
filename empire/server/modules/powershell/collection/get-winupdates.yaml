@@ -6,11 +6,11 @@ authors:
   - name: ''
     handle: '@classityinfosec'
     link: ''
-description: This module will list the Microsoft update history, including pending updates, of the machine
+description: This module will list the Microsoft update history, including pending
+  updates, of the machine
 software: ''
-tactics: []
-techniques:
-  - T1082
+tactics: [TA0009]
+techniques: [T1082]
 background: true
 output_extension:
 needs_admin: true
@@ -25,11 +25,13 @@ options:
     required: true
     value: ''
   - name: ComputerName
-    description: The ComputerName this agents user has admin access to that must be queried for updates
+    description: The ComputerName this agents user has admin access to that must
+      be queried for updates
     required: true
     value: localhost
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: true
@@ -40,4 +42,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: collection/Get-WinUpdates.ps1
-script_end: Get-WinUpdates {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-WinUpdates completed'
+script_end: Get-WinUpdates {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-WinUpdates
+  completed'

@@ -6,12 +6,12 @@ authors:
   - name: ''
     handle: '@classityinfosec'
     link: ''
-description: This module will logon to a member server using the agents account or a provided account, fetch the local accounts
-  and perform a network based brute force attack.
+description: This module will logon to a member server using the agents account or
+  a provided account, fetch the local accounts and perform a network based brute
+  force attack.
 software: ''
-tactics: []
-techniques:
-  - T1110
+tactics: [TA0006, TA0007]
+techniques: [T1087.001, T1110.001]
 background: true
 output_extension:
 needs_admin: false
@@ -19,15 +19,17 @@ opsec_safe: true
 language: powershell
 min_language_version: '2'
 comments:
-  - Inspired by Xfocus X-Scan. Recent Windows versions won't allow you to query userinfo using regular domain accounts, but
-    on 2003/2008 member servers, the module might prove to be useful.
+  - Inspired by Xfocus X-Scan. Recent Windows versions won't allow you to query userinfo
+    using regular domain accounts, but on 2003/2008 member servers, the module might
+    prove to be useful.
 options:
   - name: Agent
     description: Agent to run the module on.
     required: true
     value: ''
   - name: Loginacc
-    description: Allows you to query the servers using credentials other than the credentials the agent is running as
+    description: Allows you to query the servers using credentials other than the
+      credentials the agent is running as
     required: false
     value: ''
   - name: Loginpass
@@ -35,15 +37,18 @@ options:
     required: false
     value: ''
   - name: ServerType
-    description: Allows you to narrow down the scope. It defaults to all windows servers.
+    description: Allows you to narrow down the scope. It defaults to all windows
+      servers.
     required: false
     value: Window*Server*
   - name: Passlist
-    description: Comma seperated password list that should be tested against each account found
+    description: Comma seperated password list that should be tested against each
+      account found
     required: true
     value: Welcome123,Password01,Test123!,Welcome2018
   - name: Verbose
-    description: Want to see failed logon attempts? And found users? Set this to any value.
+    description: Want to see failed logon attempts? And found users? Set this to
+      any value.
     required: false
     value: 'False'
     strict: true

@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import os
 import random
@@ -7,7 +6,7 @@ import string
 from passlib import pwd
 from passlib.context import CryptContext
 
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 
 database_config = empire_config.database.defaults
@@ -34,12 +33,8 @@ def get_default_user():
 def get_default_config():
     return models.Config(
         staging_key=get_staging_key(),
-        ip_whitelist=database_config.ip_whitelist,
-        ip_blacklist=database_config.ip_blacklist,
-        autorun_command="",
-        autorun_data="",
-        rootuser=True,
         jwt_secret_key=pwd.genword(length=32, charset="hex"),
+        ip_filtering=True,
     )
 
 
@@ -77,25 +72,43 @@ def get_default_obfuscation_config():
     return obfuscation_configs
 
 
+def get_default_ips():
+    allows = database_config.ip_allow_list
+    denies = database_config.ip_deny_list
+    ips = []
+
+    for ip in allows:
+        ips.append(models.IP(ip_address=ip, list="allow"))
+
+    for ip in denies:
+        ips.append(models.IP(ip_address=ip, list="deny"))
+
+    return ips
+
+
 def get_staging_key():
-    # Staging Key is set up via environmental variable or config.yaml. By setting RANDOM a randomly selected password
-    # will automatically be selected.
+    expected_length = 32
+
+    # Staging Key is set up via environmental variable or config.yaml.
     staging_key = os.getenv("STAGING_KEY") or database_config.staging_key
-    punctuation = "!#%&()*+,-./:;<=>?@[]^_{|}~"
+    valid_chars = string.ascii_letters + string.digits
 
-    if staging_key == "BLANK":
-        choice = input(
-            "\n [>] Enter server negotiation password, enter for random generation: "
-        )
-        if choice not in ("", "RANDOM"):
-            return hashlib.md5(choice.encode("utf-8")).hexdigest()
-        return None
-
-    if staging_key == "RANDOM":
+    if not staging_key:
         log.info("Generating random staging key")
-        return "".join(
-            random.sample(string.ascii_letters + string.digits + punctuation, 32)
+        return "".join(random.choices(valid_chars, k=expected_length))
+
+    log.info("Using preset staging key")
+
+    # Validate provided staging key
+    if not all(c in valid_chars for c in staging_key):
+        log.error("Invalid staging key: contains unsupported characters")
+        raise ValueError(
+            "Staging key must only contain letters (A-Z, a-z) and numbers (0-9)"
         )
 
-    log.info("Using configured staging key: {staging_key}")
+    if len(staging_key) != expected_length:
+        log.error("Invalid staging key: must be exactly 32 characters long")
+        raise ValueError("Staging key must be exactly 32 characters long")
+
+    log.info(f"Using configured staging key: {staging_key}")
     return staging_key

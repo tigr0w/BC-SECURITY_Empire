@@ -11,7 +11,7 @@ function Invoke-HostRecon{
     License: BSD 3-Clause
     Required Dependencies: None
     Optional Dependencies: None
-    
+
     .DESCRIPTION
 
     This function runs a number of checks on a system to help provide situational awareness to a penetration tester during the reconnaissance phase. It gathers information about the local system, users, and domain information. It does not use any 'net', 'ipconfig', 'whoami', 'netstat', or other system commands to help avoid detection.
@@ -19,7 +19,7 @@ function Invoke-HostRecon{
     .PARAMETER Portscan
 
     If this flag is added an outbound portscan will be initiated from the target system to allports.exposed. The top 50 ports as specified by the Nmap project will be scanned. This is useful in determining any egress filtering in use.
-    
+
     .PARAMETER TopPorts
 
     This flag specifies the number of "top ports" to be scanned outbound from the system. Valid entries are 1-128. Default is 50.
@@ -43,7 +43,7 @@ function Invoke-HostRecon{
     #>
 
     Param(
-        
+
         [Parameter(Position = 0, Mandatory = $false)]
         [switch]
         $Portscan,
@@ -86,7 +86,7 @@ function Invoke-HostRecon{
     #All local users
 
     Write-Output "[*] Local Users of this system"
-    $locals = Get-WmiObject -Class Win32_UserAccount -Filter  "LocalAccount='True'" | Select-Object Name 
+    $locals = Get-WmiObject -Class Win32_UserAccount -Filter  "LocalAccount='True'" | Select-Object Name
     $locals
     Write-Output "`n"
 
@@ -100,36 +100,36 @@ function Invoke-HostRecon{
     #Netstat Information
     #Some code here borrowed from: http://techibee.com/powershell/query-list-of-listening-ports-in-windows-using-powershell/2344
         Write-Output "[*] Active Network Connections"
-        $TCPProperties = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties()            
-        $Connections = $TCPProperties.GetActiveTcpConnections()            
+        $TCPProperties = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties()
+        $Connections = $TCPProperties.GetActiveTcpConnections()
         $objarray = @()
-        foreach($Connection in $Connections) {            
-            if($Connection.LocalEndPoint.AddressFamily -eq "InterNetwork" ) { $IPType = "IPv4" } else { $IPType = "IPv6" }            
-            $OutputObj = New-Object -TypeName PSobject            
-            $OutputObj | Add-Member -MemberType NoteProperty -Name "LocalAddress" -Value $Connection.LocalEndPoint.Address            
-            $OutputObj | Add-Member -MemberType NoteProperty -Name "LocalPort" -Value $Connection.LocalEndPoint.Port            
-            $OutputObj | Add-Member -MemberType NoteProperty -Name "RemoteAddress" -Value $Connection.RemoteEndPoint.Address            
-            $OutputObj | Add-Member -MemberType NoteProperty -Name "RemotePort" -Value $Connection.RemoteEndPoint.Port            
-            $OutputObj | Add-Member -MemberType NoteProperty -Name "State" -Value $Connection.State            
-            $OutputObj | Add-Member -MemberType NoteProperty -Name "IPV4Or6" -Value $IPType            
+        foreach($Connection in $Connections) {
+            if($Connection.LocalEndPoint.AddressFamily -eq "InterNetwork" ) { $IPType = "IPv4" } else { $IPType = "IPv6" }
+            $OutputObj = New-Object -TypeName PSobject
+            $OutputObj | Add-Member -MemberType NoteProperty -Name "LocalAddress" -Value $Connection.LocalEndPoint.Address
+            $OutputObj | Add-Member -MemberType NoteProperty -Name "LocalPort" -Value $Connection.LocalEndPoint.Port
+            $OutputObj | Add-Member -MemberType NoteProperty -Name "RemoteAddress" -Value $Connection.RemoteEndPoint.Address
+            $OutputObj | Add-Member -MemberType NoteProperty -Name "RemotePort" -Value $Connection.RemoteEndPoint.Port
+            $OutputObj | Add-Member -MemberType NoteProperty -Name "State" -Value $Connection.State
+            $OutputObj | Add-Member -MemberType NoteProperty -Name "IPV4Or6" -Value $IPType
             $objarray += $OutputObj
             }
             $activeconnections = $objarray | Format-Table -Wrap | Out-String
             $activeconnections
 
-       Write-Output "[*] Active TCP Listeners"            
-        $ListenConnections = $TCPProperties.GetActiveTcpListeners()            
+       Write-Output "[*] Active TCP Listeners"
+        $ListenConnections = $TCPProperties.GetActiveTcpListeners()
         $objarraylisten = @()
-            foreach($Connection in $ListenConnections) {            
-            if($Connection.address.AddressFamily -eq "InterNetwork" ) { $IPType = "IPv4" } else { $IPType = "IPv6" }                 
-            $OutputObjListen = New-Object -TypeName PSobject            
-            $OutputObjListen | Add-Member -MemberType NoteProperty -Name "LocalAddress" -Value $connection.Address            
-            $OutputObjListen | Add-Member -MemberType NoteProperty -Name "ListeningPort" -Value $Connection.Port            
-            $OutputObjListen | Add-Member -MemberType NoteProperty -Name "IPV4Or6" -Value $IPType            
+            foreach($Connection in $ListenConnections) {
+            if($Connection.address.AddressFamily -eq "InterNetwork" ) { $IPType = "IPv4" } else { $IPType = "IPv6" }
+            $OutputObjListen = New-Object -TypeName PSobject
+            $OutputObjListen | Add-Member -MemberType NoteProperty -Name "LocalAddress" -Value $connection.Address
+            $OutputObjListen | Add-Member -MemberType NoteProperty -Name "ListeningPort" -Value $Connection.Port
+            $OutputObjListen | Add-Member -MemberType NoteProperty -Name "IPV4Or6" -Value $IPType
             $objarraylisten += $OutputObjListen }
             $listeners = $objarraylisten | Format-Table -Wrap | Out-String
             $listeners
-        
+
     Write-Output "`n"
 
     #DNS Cache Information
@@ -158,7 +158,7 @@ function Invoke-HostRecon{
 
     Write-Output "[*] List of scheduled tasks"
     $schedule = new-object -com("Schedule.Service")
-    $schedule.connect() 
+    $schedule.connect()
     $tasks = $schedule.getfolder("\").gettasks(0) | Select-Object Name | Format-Table -Wrap | Out-String
     If ($tasks.count -eq 0)
         {
@@ -192,7 +192,7 @@ function Invoke-HostRecon{
 
     Write-Output "[*] Checking if AV is installed"
 
-    $AV = Get-WmiObject -Namespace "root\SecurityCenter2" -Query "SELECT * FROM AntiVirusProduct" 
+    $AV = Get-WmiObject -Namespace "root\SecurityCenter2" -Query "SELECT * FROM AntiVirusProduct"
 
     If ($AV -ne "")
         {
@@ -243,7 +243,7 @@ function Invoke-HostRecon{
 
     Write-Output "[*] Running Processes"
 
-    $processes = Get-Process | Select-Object ProcessName,Id,Description,Path 
+    $processes = Get-Process | Select-Object ProcessName,Id,Description,Path
     $processout = $processes | Format-Table -Wrap | Out-String
     $processout
     Write-Output "`n"
@@ -315,7 +315,7 @@ function Invoke-HostRecon{
             if ($ps.ProcessName -like "*bds-vision*")
                 {
                 Write-Output ("Possible BDS Vision behavioral analysis process " + $ps.ProcessName + " is running.")
-                } 
+                }
             if ($ps.ProcessName -like "*Triumfant*")
                 {
                 Write-Output ("Possible Triumfant behavioral analysis process " + $ps.ProcessName + " is running.")
@@ -328,21 +328,21 @@ function Invoke-HostRecon{
             if ($ps.ProcessName -like "*ossec*")
                 {
                 Write-Output ("Possible OSSEC intrusion detection process " + $ps.ProcessName + " is running.")
-                } 
+                }
             #Firewall
             if ($ps.ProcessName -like "*TmPfw*")
                 {
                 Write-Output ("Possible Trend Micro firewall process " + $ps.ProcessName + " is running.")
-                } 
+                }
             #DLP
             if (($ps.ProcessName -like "dgagent") -or ($ps.ProcessName -like "DgService") -or ($ps.ProcessName -like "DgScan"))
                 {
                 Write-Output ("Possible Verdasys Digital Guardian DLP process " + $ps.ProcessName + " is running.")
-                }   
+                }
             if ($ps.ProcessName -like "kvoop")
                 {
                 Write-Output ("Possible Unknown DLP process " + $ps.ProcessName + " is running.")
-                }                       
+                }
             }
     Write-Output "`n"
 
@@ -352,7 +352,7 @@ function Invoke-HostRecon{
 
     $domain = "$env:USERDOMAIN"
     Write-Output "[*] Domain Password Policy"
-            Try 
+            Try
             {
                 $DomainContext = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("domain",$domain)
                 $DomainObject =[System.DirectoryServices.ActiveDirectory.Domain]::GetDomain($DomainContext)
@@ -368,9 +368,9 @@ function Invoke-HostRecon{
 	            $CurrentDomain | Select-Object $Name,$MinPassLen,$MinPassAge,$MaxPassAge,$PassHistory,$AcctLockoutThreshold,$AcctLockoutDuration,$ResetAcctLockoutCounter | format-list | Out-String
 
             }
-            catch 
+            catch
             {
-                Write-Output "Error connecting to the domain while retrieving password policy."    
+                Write-Output "Error connecting to the domain while retrieving password policy."
 
             }
     Write-Output "`n"
@@ -378,7 +378,7 @@ function Invoke-HostRecon{
     #Domain Controllers
 
     Write-Output "[*] Domain Controllers"
-            Try 
+            Try
             {
                 $DomainContext = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("domain",$domain)
                 $DomainObject =[System.DirectoryServices.ActiveDirectory.Domain]::GetDomain($DomainContext)
@@ -387,31 +387,31 @@ function Invoke-HostRecon{
                 {
                     $dc.Name
                 }
-            
+
             }
-            catch 
+            catch
             {
-                Write-Output "Error connecting to the domain while retrieving listing of Domain Controllers."    
+                Write-Output "Error connecting to the domain while retrieving listing of Domain Controllers."
 
             }
        Write-Output "`n"
-   
+
     #Domain Admins
 
     Write-Output "[*] Domain Admins"
-            Try 
+            Try
             {
                 $DomainContext = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("domain",$domain)
                 $DomainObject =[System.DirectoryServices.ActiveDirectory.Domain]::GetDomain($DomainContext)
-            
+
                 $DAgroup = ([adsi]"WinNT://$domain/Domain Admins,group")
                 $Members = @($DAgroup.psbase.invoke("Members"))
                 [Array]$MemberNames = $Members | ForEach{([ADSI]$_).InvokeGet("Name")}
                 $MemberNames
             }
-            catch 
+            catch
             {
-                Write-Output "Error connecting to the domain while retrieving Domain Admins group members."    
+                Write-Output "Error connecting to the domain while retrieving Domain Admins group members."
 
             }
        Write-Output "`n"
@@ -522,7 +522,7 @@ Disable the random delay between connection attempts.
         $ports = $tcp_top128[0..$PortDiff]
         Write-Host -NoNewline "[*] Scanning $Hostname ($ip), top $TopPorts popular ports : "
     }
-    
+
     $total = 0
     $tcp_count = 0
     foreach ($port in Get-Random -input $ports -count $ports.Count) {

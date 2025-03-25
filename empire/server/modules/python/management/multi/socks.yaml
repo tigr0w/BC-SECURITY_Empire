@@ -15,8 +15,8 @@ opsec_safe: true
 language: python
 min_language_version: '3'
 comments:
-  - You must set up a standalone AlmondRocks server for this to connect to! Refer to the AlmondRocks Github project for more
-    details.
+  - You must set up a standalone AlmondRocks server for this to connect to! Refer
+    to the AlmondRocks Github project for more details.
   - 'Repo: https://github.com/Cx01N/AlmondRocks/'
 options:
   - name: Agent

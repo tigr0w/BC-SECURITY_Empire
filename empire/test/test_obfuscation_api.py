@@ -1,10 +1,9 @@
 import os
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
 from starlette import status
-
-from empire.test.conftest import patch_config
 
 
 def test_get_keyword_not_found(client, admin_auth_header):
@@ -203,9 +202,18 @@ def test_preobfuscate_post_not_preobfuscatable(
     )
 
 
+@contextmanager
+def patch_main_source_path(main, path):
+    old_path = main.modulesv2.module_source_path
+    main.modulesv2.module_source_path = path
+    yield
+    main.modulesv2.module_source_path = old_path
+
+
 @pytest.mark.slow
-def test_preobfuscate_post(client, admin_auth_header, empire_config):
-    with patch_config(empire_config):
+def test_preobfuscate_post(client, admin_auth_header, empire_config, main):
+    module_source_dir = Path("empire/test/data/module_source")
+    with patch_main_source_path(main, module_source_dir):
         response = client.post(
             "/api/v2/obfuscation/global/powershell/preobfuscate",
             headers=admin_auth_header,
@@ -214,15 +222,14 @@ def test_preobfuscate_post(client, admin_auth_header, empire_config):
         # It is run as a background task, but in tests it runs synchronously.
         assert response.status_code == status.HTTP_202_ACCEPTED
 
-        module_dir = empire_config.directories.module_source
-        obf_module_dir = empire_config.directories.obfuscated_module_source
+        obf_module_dir = main.modulesv2._obfuscated_module_source_path
 
         count = 0
-        for root, _dirs, files in os.walk(module_dir):
+        for root, _dirs, files in os.walk(module_source_dir):
             for file in files:
                 if not file.endswith(".ps1"):
                     continue
-                root_rep = root.replace(str(module_dir), str(obf_module_dir))
+                root_rep = root.replace(str(module_source_dir), str(obf_module_dir))
                 assert (Path(root_rep) / file).exists()
                 count += 1
 
@@ -243,19 +250,19 @@ def test_preobfuscate_delete_not_preobfuscatable(
     )
 
 
-def test_preobfuscate_delete(client, admin_auth_header, empire_config):
-    with patch_config(empire_config):
-        response = client.delete(
-            "/api/v2/obfuscation/global/powershell/preobfuscate",
-            headers=admin_auth_header,
-        )
+def test_preobfuscate_delete(main, client, admin_auth_header, empire_config):
+    response = client.delete(
+        "/api/v2/obfuscation/global/powershell/preobfuscate",
+        headers=admin_auth_header,
+    )
 
-        assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
-        module_dir = empire_config.directories.module_source
-        obf_module_dir = empire_config.directories.obfuscated_module_source
+    module_dir = main.modulesv2.module_source_path
+    obf_module_dir = main.modulesv2._obfuscated_module_source_path
 
-        for root, _dirs, files in os.walk(module_dir):
-            for file in files:
-                root_rep = root.replace(str(module_dir), str(obf_module_dir))
-                assert not os.path.exists(root_rep + "/" + file)
+    for root, _dirs, files in os.walk(module_dir):
+        for file in files:
+            root_rep = root.replace(str(module_dir), str(obf_module_dir))
+            path = Path(root_rep + "/" + file)
+            assert not path.exists()

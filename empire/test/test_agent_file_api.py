@@ -2,44 +2,7 @@ import pytest
 from starlette import status
 
 
-@pytest.fixture(scope="function")
-def agent_no_files(session_local, models, main):
-    with session_local.begin() as db:
-        agent = models.Agent(
-            name="EMPTY",
-            session_id="EMPTY",
-            delay=1,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=True,
-            archived=False,
-        )
-        db.add(agent)
-        db.add(models.AgentCheckIn(agent_id=agent.session_id))
-
-        main.agents.agents["EMPTY"] = {
-            "sessionKey": agent.session_key,
-            "functions": agent.functions,
-        }
-
-        agent_id = agent.session_id
-
-    yield agent_id
-
-    with session_local.begin() as db:
-        db.query(models.Agent).delete()
-
-
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture
 def files(session_local, models, agent):
     with session_local.begin() as db:
         root_file = models.AgentFile(
@@ -101,19 +64,19 @@ def test_get_root_agent_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Agent not found for id abc"
 
 
-def test_get_root_not_found(client, admin_auth_header, agent_no_files):
+def test_get_root_not_found(client, admin_auth_header, agent):
     response = client.get(
-        f"/api/v2/agents/{agent_no_files}/files/root",
+        f"/api/v2/agents/{agent}/files/root",
         headers=admin_auth_header,
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert (
         response.json()["detail"]
-        == f'File not found for agent {agent_no_files} and file path "/"'
+        == f'File not found for agent {agent} and file path "/"'
     )
 
 
-def test_get_root(client, admin_auth_header, agent):
+def test_get_root(client, admin_auth_header, agent, files):
     expected_children = 2
     response = client.get(
         f"/api/v2/agents/{agent}/files/root", headers=admin_auth_header

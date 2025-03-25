@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def is_stale(lastseen: datetime, delay: int, jitter: float):
@@ -11,4 +11,4 @@ def is_stale(lastseen: datetime, delay: int, jitter: float):
 
 
 def getutcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)

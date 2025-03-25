@@ -63,10 +63,10 @@ class Stager:
             "OutFile": {
                 "Description": "File to output dll to.",
                 "Required": True,
-                "Value": "/tmp/launcher.dll",
+                "Value": "launcher.dll",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -129,7 +129,7 @@ class Stager:
                 )
                 return ""
 
-            launcher = self.mainMenu.stagers.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
@@ -139,16 +139,16 @@ class Stager:
 
         elif language == "powershell":
             # generate the PowerShell one-liner with all of the proper options set
-            launcher = self.mainMenu.stagers.generate_launcher(
-                listenerName=listener_name,
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
                 language=language,
                 encode=True,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
 
@@ -157,4 +157,4 @@ class Stager:
             return ""
 
         launcher_code = launcher.split(" ")[-1]
-        return self.mainMenu.stagers.generate_dll(launcher_code, arch)
+        return self.mainMenu.stagergenv2.generate_dll(launcher_code, arch)

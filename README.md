@@ -17,7 +17,6 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 
 ### Features
 - Server/Client Architecture for Multiplayer Support
-- Supports GUI & CLI Clients
 - Fully encrypted communications
 - HTTP/S, Malleable HTTP, OneDrive, Dropbox, and PHP Listeners
 - Massive library (400+) of supported tools in PowerShell, C#, & Python
@@ -37,6 +36,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - Python 3
 - C#
 - IronPython 3
+- Go
 
 ### Modules
 - [Assembly Execution](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/data/module_source/code_execution/Invoke-Assembly.ps1)
@@ -91,16 +91,6 @@ Instructions can be found [here](https://docs.github.com/en/github/authenticatin
 
 # Help
 ./ps-empire server -h
-```
-
-#### Client
-
-```bash
-# Start Client
-./ps-empire client
-
-# Help
-./ps-empire client -h
 ```
 
 Check out the [Empire Docs](https://bc-security.gitbook.io/empire-wiki/) for more instructions on installing and using with Empire.

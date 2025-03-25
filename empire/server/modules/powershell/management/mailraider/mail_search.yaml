@@ -3,12 +3,11 @@ authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Searches the given Outlook folder for items (Emails, Contacts, Tasks, Notes, etc. *Depending on the folder*)
-  and returns any matches found.
+description: Searches the given Outlook folder for items (Emails, Contacts, Tasks,
+  Notes, etc. *Depending on the folder*) and returns any matches found.
 software: ''
-tactics: []
-techniques:
-  - T1114
+tactics: [TA0007, TA0009]
+techniques: [T1114]
 background: true
 output_extension:
 needs_admin: false
@@ -48,7 +47,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -59,4 +59,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Invoke-MailSearch {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Invoke-MailSearch completed!"
+script_end: Invoke-MailSearch {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n
+  Invoke-MailSearch completed!"

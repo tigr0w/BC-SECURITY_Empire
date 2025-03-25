@@ -5,9 +5,8 @@ authors:
     link: ''
 description: Performs an ARP scan against a given range of IPv4 IP Addresses.
 software: S0099
-tactics: []
-techniques:
-  - T1016
+tactics: [TA0007]
+techniques: [T1016, T1018]
 background: true
 output_extension:
 needs_admin: false
@@ -30,7 +29,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -41,5 +41,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/Invoke-ARPScan.ps1
-script_end: Invoke-ARPScan {{ PARAMS }} | Select-Object MAC, Address | ft -autosize | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
-  'Invoke-ARPScan completed'
+script_end: Invoke-ARPScan {{ PARAMS }} | Select-Object MAC, Address | ft -autosize
+  | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-ARPScan completed'

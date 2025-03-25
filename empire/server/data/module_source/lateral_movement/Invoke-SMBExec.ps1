@@ -13,7 +13,7 @@ Username to use for authentication.
 
 .PARAMETER Domain
 Domain to use for authentication. This parameter is not needed with local accounts or when using @domain after the
-username. 
+username.
 
 .PARAMETER Hash
 NTLM password hash for authentication. This module will accept either LM:NTLM or NTLM format.
@@ -136,7 +136,7 @@ function Get-PacketSMBNegotiateProtocolRequest()
     }
     else
     {
-        [Byte[]]$packet_byte_count = 0x22,0x00  
+        [Byte[]]$packet_byte_count = 0x22,0x00
     }
 
     $packet_SMBNegotiateProtocolRequest = New-Object System.Collections.Specialized.OrderedDictionary
@@ -182,7 +182,7 @@ function Get-PacketSMBSessionSetupAndXRequest()
     $packet_SMBSessionSetupAndXRequest.Add("SMBSessionSetupAndXRequest_NativeOS",[Byte[]](0x00,0x00,0x00))
     $packet_SMBSessionSetupAndXRequest.Add("SMBSessionSetupAndXRequest_NativeLANManage",[Byte[]](0x00,0x00))
 
-    return $packet_SMBSessionSetupAndXRequest 
+    return $packet_SMBSessionSetupAndXRequest
 }
 
 function Get-PacketSMBTreeConnectAndXRequest()
@@ -380,7 +380,7 @@ function Get-PacketSMB2SessionSetupRequest()
     $packet_SMB2SessionSetupRequest.Add("SMB2SessionSetupRequest_PreviousSessionID",[Byte[]](0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00))
     $packet_SMB2SessionSetupRequest.Add("SMB2SessionSetupRequest_Buffer",$packet_security_blob)
 
-    return $packet_SMB2SessionSetupRequest 
+    return $packet_SMB2SessionSetupRequest
 }
 
 function Get-PacketSMB2TreeConnectRequest()
@@ -732,7 +732,7 @@ function Get-PacketSCMOpenSCManagerW()
     $packet_SCMOpenSCManagerW.Add("SCMOpenSCManagerW_Database",[Byte[]](0x53,0x00,0x65,0x00,0x72,0x00,0x76,0x00,0x69,0x00,0x63,0x00,0x65,0x00,0x73,0x00,0x41,0x00,0x63,0x00,0x74,0x00,0x69,0x00,0x76,0x00,0x65,0x00,0x00,0x00))
     $packet_SCMOpenSCManagerW.Add("SCMOpenSCManagerW_Unknown",[Byte[]](0xbf,0xbf))
     $packet_SCMOpenSCManagerW.Add("SCMOpenSCManagerW_AccessMask",[Byte[]](0x3f,0x00,0x00,0x00))
-    
+
     return $packet_SCMOpenSCManagerW
 }
 
@@ -740,7 +740,7 @@ function Get-PacketSCMCreateServiceW()
 {
     param([Byte[]]$packet_context_handle,[Byte[]]$packet_service,[Byte[]]$packet_service_length,
             [Byte[]]$packet_command,[Byte[]]$packet_command_length)
-                
+
     $packet_referent_ID = [String](1..2 | ForEach-Object {"{0:X2}" -f (Get-Random -Minimum 1 -Maximum 255)})
     $packet_referent_ID = $packet_referent_ID.Split(" ") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}
     $packet_referent_ID += 0x00,0x00
@@ -853,13 +853,13 @@ if($SMB_client.Connected)
 
     while($SMB_client_stage -ne 'exit')
     {
-        
+
         switch ($SMB_client_stage)
         {
 
             'NegotiateSMB'
-            {          
-                $packet_SMB_header = Get-PacketSMBHeader 0x72 0x18 0x01,0x48 0xff,0xff $process_ID_bytes 0x00,0x00       
+            {
+                $packet_SMB_header = Get-PacketSMBHeader 0x72 0x18 0x01,0x48 0xff,0xff $process_ID_bytes 0x00,0x00
                 $packet_SMB_data = Get-PacketSMBNegotiateProtocolRequest $SMB_version
                 $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                 $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
@@ -867,7 +867,7 @@ if($SMB_client.Connected)
                 $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
                 $SMB_client_send = $NetBIOS_session_service + $SMB_header + $SMB_data
                 $SMB_client_stream.Write($SMB_client_send,0,$SMB_client_send.Length) > $null
-                $SMB_client_stream.Flush()    
+                $SMB_client_stream.Flush()
                 $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
 
                 if([System.BitConverter]::ToString($SMB_client_receive[4..7]) -eq 'ff-53-4d-42')
@@ -917,7 +917,7 @@ if($SMB_client.Connected)
                 $SMB2_tree_ID = 0x00,0x00,0x00,0x00
                 $SMB_session_ID = 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
                 $SMB2_message_ID = 1
-                $packet_SMB2_header = Get-PacketSMB2Header 0x00,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID  
+                $packet_SMB2_header = Get-PacketSMB2Header 0x00,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                 $packet_SMB2_data = Get-PacketSMB2NegotiateProtocolRequest
                 $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
                 $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
@@ -925,13 +925,13 @@ if($SMB_client.Connected)
                 $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
                 $SMB_client_send = $NetBIOS_session_service + $SMB2_header + $SMB2_data
                 $SMB_client_stream.Write($SMB_client_send,0,$SMB_client_send.Length) > $null
-                $SMB_client_stream.Flush()    
+                $SMB_client_stream.Flush()
                 $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                 $SMB_client_stage = 'NTLMSSPNegotiate'
             }
-                
+
             'NTLMSSPNegotiate'
-            { 
+            {
                 if($SMB_version -eq 'SMB1')
                 {
                     $packet_SMB_header = Get-PacketSMBHeader 0x73 0x18 0x07,0xc8 0xff,0xff $process_ID_bytes 0x00,0x00
@@ -943,7 +943,7 @@ if($SMB_client.Connected)
 
                     $packet_NTLMSSP_negotiate = Get-PacketNTLMSSPNegotiate $SMB_negotiate_flags
                     $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
-                    $NTLMSSP_negotiate = ConvertFrom-PacketOrderedDictionary $packet_NTLMSSP_negotiate       
+                    $NTLMSSP_negotiate = ConvertFrom-PacketOrderedDictionary $packet_NTLMSSP_negotiate
                     $packet_SMB_data = Get-PacketSMBSessionSetupAndXRequest $NTLMSSP_negotiate
                     $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                     $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $SMB_data.Length
@@ -956,7 +956,7 @@ if($SMB_client.Connected)
                     $packet_SMB2_header = Get-PacketSMB2Header 0x01,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                     $packet_NTLMSSP_negotiate = Get-PacketNTLMSSPNegotiate $SMB_negotiate_flags
                     $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                    $NTLMSSP_negotiate = ConvertFrom-PacketOrderedDictionary $packet_NTLMSSP_negotiate       
+                    $NTLMSSP_negotiate = ConvertFrom-PacketOrderedDictionary $packet_NTLMSSP_negotiate
                     $packet_SMB2_data = Get-PacketSMB2SessionSetupRequest $NTLMSSP_negotiate
                     $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                     $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $SMB2_data.Length
@@ -965,11 +965,11 @@ if($SMB_client.Connected)
                 }
 
                 $SMB_client_stream.Write($SMB_client_send,0,$SMB_client_send.Length) > $null
-                $SMB_client_stream.Flush()    
+                $SMB_client_stream.Flush()
                 $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                 $SMB_client_stage = 'exit'
             }
-            
+
         }
 
     }
@@ -1079,7 +1079,7 @@ if($SMB_client.Connected)
         $packet_SMB_header["SMBHeader_UserID"] = $SMB_user_ID
         $packet_NTLMSSP_negotiate = Get-PacketNTLMSSPAuth $NTLMSSP_response
         $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
-        $NTLMSSP_negotiate = ConvertFrom-PacketOrderedDictionary $packet_NTLMSSP_negotiate      
+        $NTLMSSP_negotiate = ConvertFrom-PacketOrderedDictionary $packet_NTLMSSP_negotiate
         $packet_SMB_data = Get-PacketSMBSessionSetupAndXRequest $NTLMSSP_negotiate
         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $SMB_data.Length
@@ -1092,7 +1092,7 @@ if($SMB_client.Connected)
         $packet_SMB2_header = Get-PacketSMB2Header 0x01,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
         $packet_NTLMSSP_auth = Get-PacketNTLMSSPAuth $NTLMSSP_response
         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-        $NTLMSSP_auth = ConvertFrom-PacketOrderedDictionary $packet_NTLMSSP_auth        
+        $NTLMSSP_auth = ConvertFrom-PacketOrderedDictionary $packet_NTLMSSP_auth
         $packet_SMB2_data = Get-PacketSMB2SessionSetupRequest $NTLMSSP_auth
         $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $SMB2_data.Length
@@ -1171,11 +1171,11 @@ if($SMB_client.Connected)
             else
             {
                 $SMB_service_bytes += 0x00,0x00,0x00,0x00
-                
+
             }
 
         }
-        
+
         $SMB_service_length = [System.BitConverter]::GetBytes($SMB_service.Length + 1)
 
         if($CommandCOMSPEC -eq 'Y')
@@ -1196,22 +1196,22 @@ if($SMB_client.Connected)
         else
         {
             $SMBExec_command += '00-00-00-00'
-        }    
-        
-        $SMBExec_command_bytes = $SMBExec_command.Split("-") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}  
+        }
+
+        $SMBExec_command_bytes = $SMBExec_command.Split("-") | ForEach-Object{[Char][System.Convert]::ToInt16($_,16)}
         $SMBExec_command_length_bytes = [System.BitConverter]::GetBytes($SMBExec_command_bytes.Length / 2)
         $SMB_split_index = 4256
-        
+
         if($SMB_version -eq 'SMB1')
         {
             $SMB_client_stage = 'TreeConnectAndXRequest'
 
             :SMB_execute_loop while ($SMB_client_stage -ne 'exit')
             {
-            
+
                 switch ($SMB_client_stage)
                 {
-            
+
                     'TreeConnectAndXRequest'
                     {
                         $packet_SMB_header = Get-PacketSMBHeader 0x75 0x18 0x01,0x48 0xff,0xff $process_ID_bytes $SMB_user_ID
@@ -1220,12 +1220,12 @@ if($SMB_client.Connected)
                         {
                             $MD5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = 2 
+                            $SMB_signing_counter = 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
 
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBTreeConnectAndXRequest $SMB_path_bytes
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $SMB_data.Length
@@ -1233,7 +1233,7 @@ if($SMB_client.Connected)
 
                         if($SMB_signing)
                         {
-                            $SMB_sign = $session_key + $SMB_header + $SMB_data 
+                            $SMB_sign = $session_key + $SMB_header + $SMB_data
                             $SMB_signature = $MD5.ComputeHash($SMB_sign)
                             $SMB_signature = $SMB_signature[0..7]
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signature
@@ -1246,7 +1246,7 @@ if($SMB_client.Connected)
                         $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                         $SMB_client_stage = 'CreateAndXRequest'
                     }
-                  
+
                     'CreateAndXRequest'
                     {
                         $SMB_named_pipe_bytes = 0x5c,0x73,0x76,0x63,0x63,0x74,0x6c,0x00 # \svcctl
@@ -1261,7 +1261,7 @@ if($SMB_client.Connected)
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
 
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBNTCreateAndXRequest $SMB_named_pipe_bytes
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $SMB_data.Length
@@ -1269,7 +1269,7 @@ if($SMB_client.Connected)
 
                         if($SMB_signing)
                         {
-                            $SMB_sign = $session_key + $SMB_header + $SMB_data 
+                            $SMB_sign = $session_key + $SMB_header + $SMB_data
                             $SMB_signature = $MD5.ComputeHash($SMB_sign)
                             $SMB_signature = $SMB_signature[0..7]
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signature
@@ -1282,7 +1282,7 @@ if($SMB_client.Connected)
                         $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                         $SMB_client_stage = 'RPCBind'
                     }
-                
+
                     'RPCBind'
                     {
                         $SMB_FID = $SMB_client_receive[42,43]
@@ -1291,7 +1291,7 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
@@ -1321,7 +1321,7 @@ if($SMB_client.Connected)
                         $SMB_client_stage = 'ReadAndXRequest'
                         $SMB_client_stage_next = 'OpenSCManagerW'
                     }
-               
+
                     'ReadAndXRequest'
                     {
                         Start-Sleep -m $Sleep
@@ -1330,12 +1330,12 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
 
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBReadAndXRequest $SMB_FID
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $SMB_data.Length
@@ -1343,7 +1343,7 @@ if($SMB_client.Connected)
 
                         if($SMB_signing)
                         {
-                            $SMB_sign = $session_key + $SMB_header + $SMB_data 
+                            $SMB_sign = $session_key + $SMB_header + $SMB_data
                             $SMB_signature = $MD5.ComputeHash($SMB_sign)
                             $SMB_signature = $SMB_signature[0..7]
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signature
@@ -1356,7 +1356,7 @@ if($SMB_client.Connected)
                         $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                         $SMB_client_stage = $SMB_client_stage_next
                     }
-                
+
                     'OpenSCManagerW'
                     {
                         $packet_SMB_header = Get-PacketSMBHeader 0x2f 0x18 0x05,0x28 $SMB_tree_ID $process_ID_bytes $SMB_user_ID
@@ -1364,7 +1364,7 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
@@ -1373,9 +1373,9 @@ if($SMB_client.Connected)
                         $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
                         $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x01,0x00,0x00,0x00 0x00,0x00 0x0f,0x00
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBWriteAndXRequest $SMB_FID ($RPC_data.Length + $SCM_data.Length)
-                        $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data 
+                        $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $RPC_data_length = $SMB_data.Length + $SCM_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -1394,7 +1394,7 @@ if($SMB_client.Connected)
                         $SMB_client_stream.Flush()
                         $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                         $SMB_client_stage = 'ReadAndXRequest'
-                        $SMB_client_stage_next = 'CheckAccess'           
+                        $SMB_client_stage_next = 'CheckAccess'
                     }
 
                     'CheckAccess'
@@ -1406,7 +1406,7 @@ if($SMB_client.Connected)
 
                             if($SMB_execute)
                             {
-                                Write-Verbose "$output_username is a local administrator on $Target"  
+                                Write-Verbose "$output_username is a local administrator on $Target"
                                 $packet_SCM_data = Get-PacketSCMCreateServiceW $SMB_service_manager_context_handle $SMB_service_bytes $SMB_service_length $SMBExec_command_bytes $SMBExec_command_length_bytes
                                 $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
 
@@ -1440,7 +1440,7 @@ if($SMB_client.Connected)
                         }
 
                     }
-                
+
                     'CreateServiceW'
                     {
                         $packet_SMB_header = Get-PacketSMBHeader 0x2f 0x18 0x05,0x28 $SMB_tree_ID $process_ID_bytes $SMB_user_ID
@@ -1448,7 +1448,7 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
@@ -1457,10 +1457,10 @@ if($SMB_client.Connected)
                         $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
                         $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x02,0x00,0x00,0x00 0x00,0x00 0x0c,0x00
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBWriteAndXRequest $SMB_FID ($RPC_data.Length + $SCM_data.Length)
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
-                             
+
                         $RPC_data_length = $SMB_data.Length + $SCM_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -1490,7 +1490,7 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
@@ -1502,7 +1502,7 @@ if($SMB_client.Connected)
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                         $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBWriteAndXRequest $SMB_FID $RPC_data.Length
-                        $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data     
+                        $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $RPC_data_length = $SMB_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -1541,7 +1541,7 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
@@ -1553,7 +1553,7 @@ if($SMB_client.Connected)
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                         $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBWriteAndXRequest $SMB_FID $RPC_data.Length
-                        $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data     
+                        $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $RPC_data_length = $SMB_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -1590,15 +1590,15 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
 
                         $SCM_data_last = $SCM_data[$SMB_split_index_tracker..$SCM_data.Length]
                         $packet_RPC_data = Get-PacketRPCRequest 0x02 0 0 0 0x02,0x00,0x00,0x00 0x00,0x00 0x0c,0x00 $SCM_data_last
-                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data 
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBWriteAndXRequest $SMB_FID $RPC_data.Length
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $RPC_data_length = $SMB_data.Length + $RPC_data.Length
@@ -1624,7 +1624,7 @@ if($SMB_client.Connected)
 
                     'StartServiceW'
                     {
-                    
+
                         if([System.BitConverter]::ToString($SMB_client_receive[112..115]) -eq '00-00-00-00')
                         {
                             Write-Verbose "Service $SMB_service created on $Target"
@@ -1634,7 +1634,7 @@ if($SMB_client.Connected)
                             if($SMB_signing)
                             {
                                 $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                                $SMB_signing_counter = $SMB_signing_counter + 2 
+                                $SMB_signing_counter = $SMB_signing_counter + 2
                                 [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                                 $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                             }
@@ -1643,10 +1643,10 @@ if($SMB_client.Connected)
                             $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
                             $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x03,0x00,0x00,0x00 0x00,0x00 0x13,0x00
                             $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
-                            $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                            $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                             $packet_SMB_data = Get-PacketSMBWriteAndXRequest $SMB_FID ($RPC_data.Length + $SCM_data.Length)
                             $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
-                             
+
                             $RPC_data_length = $SMB_data.Length + $SCM_data.Length + $RPC_data.Length
                             $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $RPC_data_length
                             $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -1666,7 +1666,7 @@ if($SMB_client.Connected)
                             $SMB_client_stream.Flush()
                             $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                             $SMB_client_stage = 'ReadAndXRequest'
-                            $SMB_client_stage_next = 'DeleteServiceW'  
+                            $SMB_client_stage_next = 'DeleteServiceW'
                         }
                         elseif([System.BitConverter]::ToString($SMB_client_receive[112..115]) -eq '31-04-00-00')
                         {
@@ -1678,11 +1678,11 @@ if($SMB_client.Connected)
                             Write-Output "Service creation fault context mismatch"
                             $SMBExec_failed = $true
                         }
-    
+
                     }
-                
+
                     'DeleteServiceW'
-                    { 
+                    {
 
                         if([System.BitConverter]::ToString($SMB_client_receive[88..91]) -eq '1d-04-00-00')
                         {
@@ -1698,7 +1698,7 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
@@ -1707,9 +1707,9 @@ if($SMB_client.Connected)
                         $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
                         $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x04,0x00,0x00,0x00 0x00,0x00 0x02,0x00
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBWriteAndXRequest $SMB_FID ($RPC_data.Length + $SCM_data.Length)
-                        $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data 
+                        $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $RPC_data_length = $SMB_data.Length + $SCM_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -1751,7 +1751,7 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
@@ -1759,7 +1759,7 @@ if($SMB_client.Connected)
                         $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
                         $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x05,0x00,0x00,0x00 0x00,0x00 0x00,0x00
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBWriteAndXRequest $SMB_FID ($RPC_data.Length + $SCM_data.Length)
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $RPC_data_length = $SMB_data.Length + $SCM_data.Length + $RPC_data.Length
@@ -1793,7 +1793,7 @@ if($SMB_client.Connected)
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
 
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBCloseRequest 0x00,0x40
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $SMB_data.Length
@@ -1801,7 +1801,7 @@ if($SMB_client.Connected)
 
                         if($SMB_signing)
                         {
-                            $SMB_sign = $session_key + $SMB_header + $SMB_data 
+                            $SMB_sign = $session_key + $SMB_header + $SMB_data
                             $SMB_signature = $MD5.ComputeHash($SMB_sign)
                             $SMB_signature = $SMB_signature[0..7]
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signature
@@ -1827,7 +1827,7 @@ if($SMB_client.Connected)
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
 
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBTreeDisconnectRequest
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $SMB_data.Length
@@ -1835,7 +1835,7 @@ if($SMB_client.Connected)
 
                         if($SMB_signing)
                         {
-                            $SMB_sign = $session_key + $SMB_header + $SMB_data 
+                            $SMB_sign = $session_key + $SMB_header + $SMB_data
                             $SMB_signature = $MD5.ComputeHash($SMB_sign)
                             $SMB_signature = $SMB_signature[0..7]
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signature
@@ -1856,12 +1856,12 @@ if($SMB_client.Connected)
                         if($SMB_signing)
                         {
                             $packet_SMB_header["SMBHeader_Flags2"] = 0x05,0x48
-                            $SMB_signing_counter = $SMB_signing_counter + 2 
+                            $SMB_signing_counter = $SMB_signing_counter + 2
                             [Byte[]]$SMB_signing_sequence = [System.BitConverter]::GetBytes($SMB_signing_counter) + 0x00,0x00,0x00,0x00
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signing_sequence
                         }
 
-                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header   
+                        $SMB_header = ConvertFrom-PacketOrderedDictionary $packet_SMB_header
                         $packet_SMB_data = Get-PacketSMBLogoffAndXRequest
                         $SMB_data = ConvertFrom-PacketOrderedDictionary $packet_SMB_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB_header.Length $SMB_data.Length
@@ -1869,7 +1869,7 @@ if($SMB_client.Connected)
 
                         if($SMB_signing)
                         {
-                            $SMB_sign = $session_key + $SMB_header + $SMB_data 
+                            $SMB_sign = $session_key + $SMB_header + $SMB_data
                             $SMB_signature = $MD5.ComputeHash($SMB_sign)
                             $SMB_signature = $SMB_signature[0..7]
                             $packet_SMB_header["SMBHeader_Signature"] = $SMB_signature
@@ -1884,18 +1884,18 @@ if($SMB_client.Connected)
                     }
 
                 }
-            
+
                 if($SMBExec_failed)
                 {
                     BREAK SMB_execute_loop
                 }
-            
+
             }
 
-        }  
+        }
         else
         {
-            
+
             $SMB_client_stage = 'TreeConnect'
 
             :SMB_execute_loop while ($SMB_client_stage -ne 'exit')
@@ -1903,7 +1903,7 @@ if($SMB_client.Connected)
 
                 switch ($SMB_client_stage)
                 {
-            
+
                     'TreeConnect'
                     {
                         $SMB2_message_ID++
@@ -1912,18 +1912,18 @@ if($SMB_client.Connected)
 
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $packet_SMB2_data = Get-PacketSMB2TreeConnectRequest $SMB_path_bytes
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data    
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $SMB2_data.Length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
 
                         if($SMB_signing)
                         {
-                            $SMB2_sign = $SMB2_header + $SMB2_data 
+                            $SMB2_sign = $SMB2_header + $SMB2_data
                             $SMB2_signature = $HMAC_SHA256.ComputeHash($SMB2_sign)
                             $SMB2_signature = $SMB2_signature[0..15]
                             $packet_SMB2_header["SMB2Header_Signature"] = $SMB2_signature
@@ -1936,7 +1936,7 @@ if($SMB_client.Connected)
                         $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                         $SMB_client_stage = 'CreateRequest'
                     }
-                  
+
                     'CreateRequest'
                     {
                         $SMB2_tree_ID = 0x01,0x00,0x00,0x00
@@ -1944,22 +1944,22 @@ if($SMB_client.Connected)
                         $SMB2_message_ID++
                         $packet_SMB2_header = Get-PacketSMB2Header 0x05,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                    
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $packet_SMB2_data = Get-PacketSMB2CreateRequestFile $SMB_named_pipe_bytes
-                        $packet_SMB2_data["SMB2CreateRequestFile_Share_Access"] = 0x07,0x00,0x00,0x00  
+                        $packet_SMB2_data["SMB2CreateRequestFile_Share_Access"] = 0x07,0x00,0x00,0x00
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data  
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $SMB2_data.Length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
 
                         if($SMB_signing)
                         {
-                            $SMB2_sign = $SMB2_header + $SMB2_data  
+                            $SMB2_sign = $SMB2_header + $SMB2_data
                             $SMB2_signature = $HMAC_SHA256.ComputeHash($SMB2_sign)
                             $SMB2_signature = $SMB2_signature[0..15]
                             $packet_SMB2_header["SMB2Header_Signature"] = $SMB2_signature
@@ -1972,7 +1972,7 @@ if($SMB_client.Connected)
                         $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                         $SMB_client_stage = 'RPCBind'
                     }
-                
+
                     'RPCBind'
                     {
                         $SMB_named_pipe_bytes = 0x73,0x00,0x76,0x00,0x63,0x00,0x63,0x00,0x74,0x00,0x6c,0x00 # \svcctl
@@ -1980,17 +1980,17 @@ if($SMB_client.Connected)
                         $SMB2_message_ID++
                         $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                    
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $packet_RPC_data = Get-PacketRPCBind 1 0xb8,0x10 0x01 0x00,0x00 $SMB_named_pipe_UUID 0x02,0x00
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                         $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID $RPC_data.Length
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data 
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $RPC_data_length = $SMB2_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -2011,7 +2011,7 @@ if($SMB_client.Connected)
                         $SMB_client_stage = 'ReadRequest'
                         $SMB_client_stage_next = 'OpenSCManagerW'
                     }
-               
+
                     'ReadRequest'
                     {
 
@@ -2020,28 +2020,28 @@ if($SMB_client.Connected)
                         $packet_SMB2_header = Get-PacketSMB2Header 0x08,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
                         $packet_SMB2_header["SMB2Header_CreditCharge"] = 0x10,0x00
-                    
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $packet_SMB2_data = Get-PacketSMB2ReadRequest $SMB_file_ID
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data 
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $SMB2_data.Length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
 
                         if($SMB_signing)
                         {
-                            $SMB2_sign = $SMB2_header + $SMB2_data 
+                            $SMB2_sign = $SMB2_header + $SMB2_data
                             $SMB2_signature = $HMAC_SHA256.ComputeHash($SMB2_sign)
                             $SMB2_signature = $SMB2_signature[0..15]
                             $packet_SMB2_header["SMB2Header_Signature"] = $SMB2_signature
                             $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
                         }
 
-                        $SMB_client_send = $NetBIOS_session_service + $SMB2_header + $SMB2_data 
+                        $SMB_client_send = $NetBIOS_session_service + $SMB2_header + $SMB2_data
                         $SMB_client_stream.Write($SMB_client_send,0,$SMB_client_send.Length) > $null
                         $SMB_client_stream.Flush()
                         $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
@@ -2067,25 +2067,25 @@ if($SMB_client.Connected)
                         }
 
                     }
-                
+
                     'OpenSCManagerW'
                     {
                         $SMB2_message_ID = 30
                         $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                    
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $packet_SCM_data = Get-PacketSCMOpenSCManagerW $SMB_service_bytes $SMB_service_length
                         $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
                         $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x01,0x00,0x00,0x00 0x00,0x00 0x0f,0x00
-                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data 
+                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                         $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID ($RPC_data.Length + $SCM_data.Length)
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data 
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $RPC_data_length = $SMB2_data.Length + $SCM_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -2104,7 +2104,7 @@ if($SMB_client.Connected)
                         $SMB_client_stream.Flush()
                         $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                         $SMB_client_stage = 'ReadRequest'
-                        $SMB_client_stage_next = 'CheckAccess'        
+                        $SMB_client_stage_next = 'CheckAccess'
                     }
 
                     'CheckAccess'
@@ -2114,7 +2114,7 @@ if($SMB_client.Connected)
                         {
 
                             $SMB_service_manager_context_handle = $SMB_client_receive[108..127]
-                            
+
                             if($SMB_execute -eq $true)
                             {
                                 Write-Verbose "$output_username is a local administrator on $Target"
@@ -2152,19 +2152,19 @@ if($SMB_client.Connected)
                         }
 
                     }
-                
+
                     'CreateServiceW'
                     {
-                        
+
                         if($SMBExec_command_bytes.Length -lt $SMB_split_index)
                         {
                             $SMB2_message_ID += 20
                             $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                             $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                        
+
                             if($SMB_signing)
                             {
-                                $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                                $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                             }
 
                             $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x01,0x00,0x00,0x00 0x00,0x00 0x0c,0x00
@@ -2194,8 +2194,8 @@ if($SMB_client.Connected)
                         }
                         else
                         {
-                            
-                            
+
+
                         }
                     }
 
@@ -2205,20 +2205,20 @@ if($SMB_client.Connected)
                         $SMB2_message_ID += 20
                         $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                        
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $SCM_data_first = $SCM_data[0..($SMB_split_index - 1)]
                         $packet_RPC_data = Get-PacketRPCRequest 0x01 0 0 0 0x01,0x00,0x00,0x00 0x00,0x00 0x0c,0x00 $SCM_data_first
                         $packet_RPC_data["RPCRequest_AllocHint"] = [System.BitConverter]::GetBytes($SCM_data.Length)
                         $SMB_split_index_tracker = $SMB_split_index
-                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data 
+                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                         $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID $RPC_data.Length
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data 
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $RPC_data_length = $SMB2_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -2255,10 +2255,10 @@ if($SMB_client.Connected)
                         $SMB2_message_ID++
                         $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                        
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $SCM_data_middle = $SCM_data[$SMB_split_index_tracker..($SMB_split_index_tracker + $SMB_split_index - 1)]
@@ -2268,7 +2268,7 @@ if($SMB_client.Connected)
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                         $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID $RPC_data.Length
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data    
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $RPC_data_length = $SMB2_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -2303,10 +2303,10 @@ if($SMB_client.Connected)
                         $SMB2_message_ID++
                         $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                        
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $SCM_data_last = $SCM_data[$SMB_split_index_tracker..$SCM_data.Length]
@@ -2314,7 +2314,7 @@ if($SMB_client.Connected)
                         $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                         $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID $RPC_data.Length
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data    
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $RPC_data_length = $SMB2_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -2338,7 +2338,7 @@ if($SMB_client.Connected)
 
                     'StartServiceW'
                     {
-                    
+
                         if([System.BitConverter]::ToString($SMB_client_receive[132..135]) -eq '00-00-00-00')
                         {
                             Write-Verbose "Service $SMB_service created on $Target"
@@ -2346,10 +2346,10 @@ if($SMB_client.Connected)
                             $SMB2_message_ID += 20
                             $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                             $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                        
+
                             if($SMB_signing)
                             {
-                                $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                                $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                             }
 
                             $packet_SCM_data = Get-PacketSCMStartServiceW $SMB_service_context_handle
@@ -2358,7 +2358,7 @@ if($SMB_client.Connected)
                             $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                             $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID ($RPC_data.Length + $SCM_data.Length)
                             $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                            $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data   
+                            $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                             $RPC_data_length = $SMB2_data.Length + $SCM_data.Length + $RPC_data.Length
                             $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $RPC_data_length
                             $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -2378,7 +2378,7 @@ if($SMB_client.Connected)
                             $SMB_client_stream.Flush()
                             $SMB_client_stream.Read($SMB_client_receive,0,$SMB_client_receive.Length) > $null
                             $SMB_client_stage = 'ReadRequest'
-                            $SMB_client_stage_next = 'DeleteServiceW'     
+                            $SMB_client_stage_next = 'DeleteServiceW'
                         }
                         elseif([System.BitConverter]::ToString($SMB_client_receive[132..135]) -eq '31-04-00-00')
                         {
@@ -2390,11 +2390,11 @@ if($SMB_client.Connected)
                             Write-Output "Service creation fault context mismatch"
                             $SMBExec_failed = $true
                         }
- 
+
                     }
-                
+
                     'DeleteServiceW'
-                    { 
+                    {
 
                         if([System.BitConverter]::ToString($SMB_client_receive[108..111]) -eq '1d-04-00-00')
                         {
@@ -2408,7 +2408,7 @@ if($SMB_client.Connected)
                         $SMB2_message_ID += 20
                         $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                        
+
                         if($SMB_signing)
                         {
                             $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
@@ -2417,10 +2417,10 @@ if($SMB_client.Connected)
                         $packet_SCM_data = Get-PacketSCMDeleteServiceW $SMB_service_context_handle
                         $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
                         $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x01,0x00,0x00,0x00 0x00,0x00 0x02,0x00
-                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data 
+                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
                         $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID ($RPC_data.Length + $SCM_data.Length)
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data 
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $RPC_data_length = $SMB2_data.Length + $SCM_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -2462,18 +2462,18 @@ if($SMB_client.Connected)
 
                         $packet_SMB2_header = Get-PacketSMB2Header 0x09,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                    
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
 
                         $SCM_data = ConvertFrom-PacketOrderedDictionary $packet_SCM_data
                         $packet_RPC_data = Get-PacketRPCRequest 0x03 $SCM_data.Length 0 0 0x01,0x00,0x00,0x00 0x00,0x00 0x00,0x00
-                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data 
-                        $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID ($RPC_data.Length + $SCM_data.Length)     
+                        $RPC_data = ConvertFrom-PacketOrderedDictionary $packet_RPC_data
+                        $packet_SMB2_data = Get-PacketSMB2WriteRequest $SMB_file_ID ($RPC_data.Length + $SCM_data.Length)
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
-                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data 
+                        $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
                         $RPC_data_length = $SMB2_data.Length + $SCM_data.Length + $RPC_data.Length
                         $packet_NetBIOS_session_service = Get-PacketNetBIOSSessionService $SMB2_header.Length $RPC_data_length
                         $NetBIOS_session_service = ConvertFrom-PacketOrderedDictionary $packet_NetBIOS_session_service
@@ -2498,12 +2498,12 @@ if($SMB_client.Connected)
                         $SMB2_message_ID += 20
                         $packet_SMB2_header = Get-PacketSMB2Header 0x06,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                    
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
-      
+
                         $packet_SMB2_data = Get-PacketSMB2CloseRequest $SMB_file_ID
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
                         $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
@@ -2531,12 +2531,12 @@ if($SMB_client.Connected)
                         $SMB2_message_ID++
                         $packet_SMB2_header = Get-PacketSMB2Header 0x04,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                    
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
-          
+
                         $packet_SMB2_data = Get-PacketSMB2TreeDisconnectRequest
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
                         $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
@@ -2564,12 +2564,12 @@ if($SMB_client.Connected)
                         $SMB2_message_ID += 20
                         $packet_SMB2_header = Get-PacketSMB2Header 0x02,0x00 $SMB2_message_ID $SMB2_tree_ID $SMB_session_ID
                         $packet_SMB2_header["SMB2Header_CreditRequest"] = 0x7f,0x00
-                    
+
                         if($SMB_signing)
                         {
-                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00      
+                            $packet_SMB2_header["SMB2Header_Flags"] = 0x08,0x00,0x00,0x00
                         }
-         
+
                         $packet_SMB2_data = Get-PacketSMB2SessionLogoffRequest
                         $SMB2_header = ConvertFrom-PacketOrderedDictionary $packet_SMB2_header
                         $SMB2_data = ConvertFrom-PacketOrderedDictionary $packet_SMB2_data
@@ -2593,12 +2593,12 @@ if($SMB_client.Connected)
                     }
 
                 }
-                
+
                 if($SMBExec_failed)
                 {
                     BREAK SMB_execute_loop
                 }
-            
+
             }
 
         }

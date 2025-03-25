@@ -6,7 +6,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: This module extracts out the trigger specifications from a KeePass 2.X configuration XML file.
+description: This module extracts out the trigger specifications from a KeePass 2.X
+  configuration XML file.
 software: ''
 tactics: []
 techniques:
@@ -25,7 +26,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -36,5 +38,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: collection/vaults/KeePassConfig.ps1
-script_end: Find-KeePassconfig | Get-KeePassConfigTrigger | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-KeePassconfig
-  completed'
+script_end: Find-KeePassconfig | Get-KeePassConfigTrigger | Format-List | {{ OUTPUT_FUNCTION
+  }} | %{$_ + "`n"}; 'Get-KeePassconfig completed'

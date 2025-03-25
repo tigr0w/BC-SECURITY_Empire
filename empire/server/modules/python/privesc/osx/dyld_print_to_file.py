@@ -25,11 +25,11 @@ class Module:
         user_agent = params["UserAgent"]
         safe_checks = params["SafeChecks"]
 
-        launcher = main_menu.stagers.generate_launcher(
+        launcher = main_menu.stagergenv2.generate_launcher(
             listenername,
             language="python",
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
         if launcher == "":
             log.error("Error in launcher generation")

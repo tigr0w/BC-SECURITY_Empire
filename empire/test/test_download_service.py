@@ -1,6 +1,8 @@
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from empire.server.core.download_service import DownloadService
+if TYPE_CHECKING:
+    from empire.server.core.download_service import DownloadService
 
 
 def test__increment_filename(tmp_path):
@@ -8,21 +10,21 @@ def test__increment_filename(tmp_path):
 
     path = tmp_path / "test.txt"
 
-    filename, location = DownloadService._increment_filename("test.txt", path)
+    filename, location = DownloadService._increment_filename(path)
 
     assert filename == "test.txt"
     assert location == path
 
     path.write_text("test")
 
-    filename, location = DownloadService._increment_filename("test.txt", path)
+    filename, location = DownloadService._increment_filename(path)
 
     assert filename == "test(1).txt"
     assert location == tmp_path / "test(1).txt"
 
     location.write_text("test")
 
-    filename, location = DownloadService._increment_filename("test.txt", path)
+    filename, location = DownloadService._increment_filename(path)
 
     assert filename == "test(2).txt"
     assert location == tmp_path / "test(2).txt"
@@ -38,7 +40,7 @@ def test_create_download_from_path(main, session_local, models):
         assert download.id > 0
         assert download.filename.startswith("test-upload")
         assert download.filename.endswith(".yaml")
-        assert f"empire/test/downloads/uploads/{user.username}/" in download.location
+        assert f"downloads/uploads/{user.username}/" in download.location
         assert download.location.endswith(".yaml")
 
         db.delete(download)

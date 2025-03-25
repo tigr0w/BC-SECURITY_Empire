@@ -1,7 +1,6 @@
-suppress-self-cert-warning: true
+suppress_self_cert_warning: true
 api:
   port: 1337
-  cert_path: empire/server/data/
 database:
   use: mysql
   mysql:
@@ -10,11 +9,10 @@ database:
     password: empire_password
     database_name: test_empire
   sqlite:
-    location: empire/test/test_empire.db
+    location: test_empire.db
   defaults:
     # staging key will first look at OS environment variables, then here.
-    # If empty, will be prompted (like Empire <3.7).
-    staging-key: RANDOM
+    staging_key: ""
     username: empireadmin
     password: password123
     obfuscation:
@@ -36,41 +34,31 @@ database:
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
-    # an IP white list to ONLY accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-whitelist: ""
-    # an IP black list to reject accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-blacklist: ""
+empire_compiler:
+  archive: https://github.com/BC-SECURITY/Empire-Compiler/releases/download/v0.3.2/EmpireCompiler-{{platform}}-v0.3.2.tgz
 starkiller:
-  repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+  enabled: true
+  repo: https://github.com/BC-SECURITY/Starkiller.git
   # Can be a branch, tag, or commit hash
-  ref: 5.0-dev-sponsors
-  # for private-main, instead of updating the submodule, just work out of a local copy.
-  # So devs can work off the latest changes and not worry about accidentally updating the submodule
-  # for the downstream main branches.
-  use_temp_dir: false
-  auto_update: true
+  ref: v2.8.2
 submodules:
   auto_update: true
+plugin_marketplace:
+  registries:
+    - name: BC-SECURITY
+      location: test_registry_1.yaml
+    - name: BC-SECURITY-TEST
+      location: test_registry_2.yaml
 directories:
-  downloads: empire/test/downloads/
-  module_source: empire/server/data/module_source/
-  obfuscated_module_source: empire/test/data/obfuscated_module_source/
+  downloads: downloads
 keyword_obfuscation:
   # List of keywords to obfuscate
   - Invoke-Empire
   - Invoke-Mimikatz
-plugins:
-  # Auto-load plugin with defined settings
-  example:
-    status: start
-    message: hello there
 logging:
   level: INFO
-  directory: empire/test/downloads/logs/
   simple_console: true
 debug:
   last_task:
     enabled: true
-    file: empire/test/downloads/logs/last_task.txt
+    file: debug/last_task.txt

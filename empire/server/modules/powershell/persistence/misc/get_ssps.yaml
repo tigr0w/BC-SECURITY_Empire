@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/mattifestation
 description: Enumerates all loaded security packages (SSPs).
 software: ''
-tactics: []
-techniques:
-  - T1101
+tactics: [TA0004]
+techniques: [T1101.005]
 background: true
 output_extension:
 needs_admin: false
@@ -22,7 +21,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -165,4 +165,5 @@ script: |
           $SecPackage
       }
   }
-script_end: Get-SecurityPackages {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SecurityPackages completed'
+script_end: Get-SecurityPackages {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Get-SecurityPackages completed'

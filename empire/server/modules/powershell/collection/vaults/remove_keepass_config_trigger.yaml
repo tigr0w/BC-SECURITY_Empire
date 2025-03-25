@@ -8,9 +8,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: This module removes all triggers from all KeePass configs found by Find-KeePassConfig.
 software: ''
-tactics: []
-techniques:
-  - T1033
+tactics: [TA0005]
+techniques: [T1070.009]
 background: true
 output_extension: ''
 needs_admin: false
@@ -25,7 +24,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -36,5 +36,6 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: collection/vaults/KeePassConfig.ps1
-script_end: Get-Process *keepass* | Stop-Process -Force; Find-KeePassconfig | Remove-KeePassConfigTrigger | Format-List |
-  {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Remove-KeePassConfigTrigger completed'
+script_end: Get-Process *keepass* | Stop-Process -Force; Find-KeePassconfig | Remove-KeePassConfigTrigger
+  | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Remove-KeePassConfigTrigger
+  completed'

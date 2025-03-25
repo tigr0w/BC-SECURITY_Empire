@@ -21,6 +21,7 @@ from empire.server.core.db import models
 from empire.server.server import main
 
 obfuscation_service = main.obfuscationv2
+module_service = main.modulesv2
 
 router = APIRouter(
     prefix="/api/v2/obfuscation",
@@ -153,7 +154,7 @@ async def preobfuscate_modules(
         )
 
     background_tasks.add_task(
-        obfuscation_service.preobfuscate_modules, language, reobfuscate
+        module_service.preobfuscate_modules, language, reobfuscate
     )
 
 
@@ -172,4 +173,4 @@ async def remove_preobfuscated_modules(
             detail=f"Obfuscation language {language} is not preobfuscatable.",
         )
 
-    obfuscation_service.remove_preobfuscated_modules(language)
+    module_service.remove_preobfuscated_modules(language)

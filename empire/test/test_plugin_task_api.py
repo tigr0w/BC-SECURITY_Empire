@@ -1,12 +1,14 @@
 import pytest
 from starlette import status
 
+PLUGIN_ID = "basic_reporting"
 
-@pytest.fixture(scope="module", autouse=True)
-def plugin_task_1(main, session_local, models, plugin_name):
+
+@pytest.fixture
+def plugin_task(main, session_local, models):
     with session_local.begin() as db:
         task = models.PluginTask(
-            plugin_id=plugin_name,
+            plugin_id=PLUGIN_ID,
             input="This is the trimmed input for the task.",
             input_full="This is the full input for the task.",
             user_id=1,
@@ -16,10 +18,7 @@ def plugin_task_1(main, session_local, models, plugin_name):
 
         task_id = task.id
 
-    yield task_id
-
-    with session_local.begin() as db:
-        db.query(models.PluginTask).delete()
+    return task_id  # noqa RET504
 
 
 def test_get_tasks_for_plugin_not_found(client, admin_auth_header):
@@ -28,23 +27,13 @@ def test_get_tasks_for_plugin_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Plugin not found for id abc"
 
 
-def test_get_tasks_for_plugin(client, admin_auth_header, plugin_name):
+def test_get_tasks_for_plugin(client, admin_auth_header, plugin_task):
     response = client.get(
-        f"/api/v2/plugins/{plugin_name}/tasks", headers=admin_auth_header
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks", headers=admin_auth_header
     )
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 0
-    assert (
-        len(
-            list(
-                filter(
-                    lambda x: x["plugin_id"] != plugin_name,
-                    response.json()["records"],
-                )
-            )
-        )
-        == 0
-    )
+    assert all(x["plugin_id"] == PLUGIN_ID for x in response.json()["records"])
 
 
 def test_get_task_for_plugin_plugin_not_found(client, admin_auth_header):
@@ -53,22 +42,22 @@ def test_get_task_for_plugin_plugin_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Plugin not found for id abc"
 
 
-def test_get_task_for_plugin_not_found(client, admin_auth_header, plugin_name):
+def test_get_task_for_plugin_not_found(client, admin_auth_header):
     response = client.get(
-        f"/api/v2/plugins/{plugin_name}/tasks/9999", headers=admin_auth_header
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks/9999", headers=admin_auth_header
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert (
         response.json()["detail"]
-        == f"Task not found for plugin {plugin_name} and task id 9999"
+        == f"Task not found for plugin {PLUGIN_ID} and task id 9999"
     )
 
 
-def test_get_task_for_plugin(client, admin_auth_header, plugin_name, db, plugin_task_1):
+def test_get_task_for_plugin(client, admin_auth_header, plugin_task):
     response = client.get(
-        f"/api/v2/plugins/{plugin_name}/tasks/{plugin_task_1}",
+        f"/api/v2/plugins/{PLUGIN_ID}/tasks/{plugin_task}",
         headers=admin_auth_header,
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["id"] == plugin_task_1
-    assert response.json()["plugin_id"] == plugin_name
+    assert response.json()["id"] == plugin_task
+    assert response.json()["plugin_id"] == PLUGIN_ID

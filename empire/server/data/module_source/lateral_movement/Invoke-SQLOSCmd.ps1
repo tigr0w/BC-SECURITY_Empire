@@ -1,17 +1,17 @@
 Function Get-ComputerNameFromInstance
 {
     [CmdletBinding()]
-    Param(          
+    Param(
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server instance.')]
         [string]$Instance
-    ) 
+    )
     If ($Instance){$ComputerName = $Instance.split('\')[0].split(',')[0]}
     else{$ComputerName = $env:COMPUTERNAME}
     Return $ComputerName
 }
 
-Function  Get-SQLConnectionObject 
+Function  Get-SQLConnectionObject
 {
     [CmdletBinding()]
     Param(
@@ -22,7 +22,7 @@ Function  Get-SQLConnectionObject
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
@@ -40,7 +40,7 @@ Function  Get-SQLConnectionObject
         [string]$TimeOut = 1
     )
     Begin
-    {           
+    {
         if($DAC){$DacConn = 'ADMIN:'}else{$DacConn = ''}
         if(-not $Database){$Database = 'Master'}
     }
@@ -54,16 +54,16 @@ Function  Get-SQLConnectionObject
             $UserDomain = [Environment]::UserDomainName
             $Username = [Environment]::UserName
             $ConnectionectUser = "$UserDomain\$Username"
-            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1"                                
-        }       
-        return $Connection                     
+            $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=1"
+        }
+        return $Connection
     }
     End
-    {                
+    {
     }
 }
 
-Function  Get-SQLQuery 
+Function  Get-SQLQuery
 {
     [CmdletBinding()]
     Param(
@@ -74,12 +74,12 @@ Function  Get-SQLQuery
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server or domain account password to authenticate with.')]
         [string]$Password,
-        
+
         [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server instance to connection to.')]
         [string]$Instance,
-        
-        [Parameter(Mandatory = $false,        
+
+        [Parameter(Mandatory = $false,
         HelpMessage = 'SQL Server query.')]
         [string]$Query,
 
@@ -104,7 +104,7 @@ Function  Get-SQLQuery
         $TblQueryResults = New-Object -TypeName System.Data.DataTable
     }
     Process
-    {      
+    {
         if($DAC){$Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -TimeOut $TimeOut -DAC -Database $Database}
         else{$Connection = Get-SQLConnectionObject -Instance $Instance -Username $Username -Password $Password -TimeOut $TimeOut -Database $Database}
         $ConnectionString = $Connection.Connectionstring
@@ -114,20 +114,20 @@ Function  Get-SQLQuery
             $Connection.Open()
             $Command = New-Object -TypeName System.Data.SqlClient.SqlCommand -ArgumentList ($Query, $Connection)
             try {
-                $Results = $Command.ExecuteReader()                                             
-                $TblQueryResults.Load($Results)  
+                $Results = $Command.ExecuteReader()
+                $TblQueryResults.Load($Results)
             } catch {
                 #pass
-            }                                                                                    
+            }
             $Connection.Close()
-            $Connection.Dispose() 
+            $Connection.Dispose()
         }
         else{'No query provided to Get-SQLQuery function.';Break}
     }
     End
-    {   
+    {
         if($ReturnError){$ErrorMessage}
-        else{$TblQueryResults}                  
+        else{$TblQueryResults}
     }
 }
 
@@ -183,10 +183,10 @@ Function  Invoke-SQLOSCmd
         "$Instance : Connection Success."
         $DisableShowAdvancedOptions = 0
         $DisableXpCmdshell = 0
-                
+
         $Query = "SELECT    '$ComputerName' as [ComputerName],
             '$Instance' as [Instance],
-            CASE 
+            CASE
             WHEN IS_SRVROLEMEMBER('sysadmin') =  0 THEN 'No'
             ELSE 'Yes'
         END as IsSysadmin"

@@ -6,13 +6,13 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: CVE-2020-1472 or ZeroLogon exploits a flaw in the Netlogon protocol to allow anyone on the network to reset the
-  domain administrators hash and elevate their privileges. This will change the password of the domain controller account
+description: CVE-2020-1472 or ZeroLogon exploits a flaw in the Netlogon protocol
+  to allow anyone on the network to reset the domain administrators hash and elevate
+  their privileges. This will change the password of the domain controller account
   and may break communication with other domain controllers. So, be careful!
 software: ''
-tactics: []
-techniques:
-  - T1548
+tactics: [TA0004]
+techniques: [T1068]
 background: false
 output_extension: ''
 needs_admin: false

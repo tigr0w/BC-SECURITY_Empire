@@ -8,9 +8,8 @@ authors:
     link: https://twitter.com/mattifestation
 description: Gets SYSTEM privileges with one of two methods.
 software: S0194
-tactics: []
-techniques:
-  - T1103
+tactics: [TA0004]
+techniques: [T1134.001]
 background: false
 output_extension:
 needs_admin: true
@@ -28,7 +27,8 @@ options:
     required: true
     value: ''
   - name: Technique
-    description: Technique to use, 'NamedPipe' for service named pipe impersonation or 'Token' for adjust token privs.
+    description: Technique to use, 'NamedPipe' for service named pipe impersonation
+      or 'Token' for adjust token privs.
     required: false
     value: 'NamedPipe'
     strict: true
@@ -60,7 +60,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -71,4 +72,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: privesc/Get-System.ps1
-script_end: Get-System {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-System completed'
+script_end: Get-System {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-System
+  completed'

@@ -1,15 +1,16 @@
 - Name: CSharpPS
   Aliases: []
-  Description: Generate a PowerShell C# solution with embedded stager code that compiles to an exe
+  Description: Generate a PowerShell C# solution with embedded stager code that compiles
+    to an exe
   Author:
-      Name: Cx01N
-      Handle: Cx01N
-      Link: https://twitter.com/_Cx01N
+    Name: Cx01N
+    Handle: Cx01N
+    Link: https://twitter.com/_Cx01N
   Help:
   Language: CSharp
   CompatibleDotNetVersions:
-  - Net40
-  - Net35
+    - Net40
+    - Net35
   Code: |
     using System;
     using System.Resources;

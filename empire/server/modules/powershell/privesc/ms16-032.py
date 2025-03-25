@@ -29,13 +29,13 @@ class Module:
         proxy_creds = params["ProxyCreds"]
 
         # generate the PowerShell one-liner with all of the proper options set
-        launcher = main_menu.stagers.generate_launcher(
-            listenerName=listener_name,
+        launcher = main_menu.stagergenv2.generate_launcher(
+            listener_name=listener_name,
             language="powershell",
             encode=False,
-            userAgent=user_agent,
+            user_agent=user_agent,
             proxy=proxy,
-            proxyCreds=proxy_creds,
+            proxy_creds=proxy_creds,
         )
         # need to escape characters
         launcher_code = launcher.replace("`", "``").replace("$", "`$").replace('"', "'")

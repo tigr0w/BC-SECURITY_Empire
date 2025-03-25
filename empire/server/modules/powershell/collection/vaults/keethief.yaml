@@ -6,11 +6,11 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: This module retrieves database mastey key information for unlocked KeePass database.
+description: This module retrieves database mastey key information for unlocked KeePass
+  database.
 software: ''
-tactics: []
-techniques:
-  - T1033
+tactics: [TA0006, TA0007]
+techniques: [T1055, T1555.005, T1057]
 background: true
 output_extension: ''
 needs_admin: false
@@ -25,7 +25,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -36,4 +37,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: collection/vaults/KeeThief.ps1
-script_end: Get-KeePassDatabaseKey | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-KeePassDatabaseKey completed'
+script_end: Get-KeePassDatabaseKey | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-KeePassDatabaseKey
+  completed'

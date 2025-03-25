@@ -6,7 +6,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Launches a specified application with an prompt for credentials with osascript.
+description: Launches a specified application with an prompt for credentials with
+  osascript.
 software: ''
 tactics: []
 techniques:

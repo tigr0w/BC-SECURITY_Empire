@@ -17,7 +17,7 @@ The `PacketHandler` class is responsible for creating, parsing, and processing p
 
 ### `rc4(key, data)`
 
-Encrypts or decrypts the input `data` with the given `key` using the RC4 algorithm. 
+Encrypts or decrypts the input `data` with the given `key` using the RC4 algorithm.
 
 ### `parse_routing_packet(staging_key, data)`
 

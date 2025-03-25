@@ -3,12 +3,12 @@ authors:
   - name: ''
     handle: '@jamcut'
     link: ''
-description: This module will enumerate the appropriate registry keys to determine what, if any, trusted documents exist on
-  the host.  It will also enumerate trusted locations.
+description: This module will enumerate the appropriate registry keys to determine
+  what, if any, trusted documents exist on the host.  It will also enumerate trusted
+  locations.
 software: ''
-tactics: []
-techniques:
-  - T1135
+tactics: [TA0007]
+techniques: [T1012, T1083]
 background: false
 output_extension:
 needs_admin: false
@@ -24,7 +24,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -35,4 +36,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/host/Find-TrustedDocuments.ps1
-script_end: Find-TrustedDocuments | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-TrustedDocuments completed'
+script_end: Find-TrustedDocuments | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Find-TrustedDocuments
+  completed'

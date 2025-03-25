@@ -27,7 +27,7 @@ function Invoke-Paranoia {
         }
         return $enumd_groups
     }
-    
+
     function process_proc {
         param($proc,$group_members)
         $userdom = ($proc.getOwner().Domain + "\" + $proc.getOwner().User).tolower()

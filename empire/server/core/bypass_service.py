@@ -1,6 +1,7 @@
 import fnmatch
 import logging
-import os
+import typing
+from pathlib import Path
 
 import yaml
 from sqlalchemy.orm import Session
@@ -9,56 +10,52 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils.data_util import ps_convert_to_oneliner
 
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 log = logging.getLogger(__name__)
 
 
 class BypassService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
         with SessionLocal.begin() as db:
             self.load_bypasses(db)
 
     def load_bypasses(self, db: Session):
-        root_path = f"{self.main_menu.installPath}/bypasses/"
+        root_path = Path(self.main_menu.installPath) / "bypasses"
         log.info(f"v2: Loading bypasses from: {root_path}")
 
-        for root, _dirs, files in os.walk(root_path):
-            for filename in files:
-                if not filename.lower().endswith(
-                    ".yaml"
-                ) and not filename.lower().endswith(".yml"):
-                    continue
+        for file_path in root_path.rglob("*.yaml"):
+            filename = file_path.name
 
-                file_path = os.path.join(root, filename)
+            # don't load up any of the templates
+            if fnmatch.fnmatch(filename, "*template.yaml"):
+                continue
 
-                # don't load up any of the templates
-                if fnmatch.fnmatch(filename, "*template.yaml"):
-                    continue
+            try:
+                yaml2 = yaml.safe_load(file_path.read_text())
+                yaml_bypass = {k: v for k, v in yaml2.items() if v is not None}
 
-                try:
-                    with open(file_path) as stream:
-                        yaml2 = yaml.safe_load(stream)
-                        yaml_bypass = {k: v for k, v in yaml2.items() if v is not None}
-
-                        if (
-                            db.query(models.Bypass)
-                            .filter(models.Bypass.name == yaml_bypass["name"])
-                            .first()
-                            is None
-                        ):
-                            yaml_bypass["script"] = ps_convert_to_oneliner(
-                                yaml_bypass["script"]
-                            )
-                            my_model = models.Bypass(
-                                name=yaml_bypass["name"],
-                                authors=yaml_bypass["authors"],
-                                code=yaml_bypass["script"],
-                                language=yaml_bypass["language"],
-                            )
-                            db.add(my_model)
-                except Exception as e:
-                    log.error(e)
+                if (
+                    db.query(models.Bypass)
+                    .filter(models.Bypass.name == yaml_bypass["name"])
+                    .first()
+                    is None
+                ):
+                    yaml_bypass["script"] = ps_convert_to_oneliner(
+                        yaml_bypass["script"]
+                    )
+                    my_model = models.Bypass(
+                        name=yaml_bypass["name"],
+                        authors=yaml_bypass["authors"],
+                        code=yaml_bypass["script"],
+                        language=yaml_bypass["language"],
+                    )
+                    db.add(my_model)
+            except Exception as e:
+                log.error(e)
 
     @staticmethod
     def get_all(db: Session):

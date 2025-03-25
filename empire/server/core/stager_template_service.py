@@ -1,17 +1,23 @@
 import fnmatch
 import importlib.util
 import logging
-import os
+import typing
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from empire.server.core.db.base import SessionLocal
+from empire.server.utils.string_util import slugify
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 
 log = logging.getLogger(__name__)
 
 
 class StagerTemplateService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
         # loaded stager format:
@@ -28,6 +34,10 @@ class StagerTemplateService:
                 value["SuggestedValues"] = []
             if value.get("Strict") is None:
                 value["Strict"] = False
+            if value.get("Internal") is None:
+                value["Internal"] = False
+            if value.get("Depends_on") is None:
+                value["Depends_on"] = []
 
         return instance
 
@@ -43,36 +53,31 @@ class StagerTemplateService:
         """
         Load stagers from the install + "/stagers/*" path
         """
-        root_path = f"{self.main_menu.installPath}/stagers/"
-        pattern = "*.py"
-
+        root_path = Path(self.main_menu.installPath) / "stagers"
         log.info(f"v2: Loading stager templates from: {root_path}")
 
-        for root, _dirs, files in os.walk(root_path):
-            for filename in fnmatch.filter(files, pattern):
-                file_path = os.path.join(root, filename)
+        for file_path in root_path.rglob("*.py"):
+            filename = file_path.name
 
-                # don't load up any of the templates
-                if fnmatch.fnmatch(filename, "*template.py"):
-                    continue
+            # don't load up any of the templates
+            if fnmatch.fnmatch(filename, "*template.py"):
+                continue
 
-                # extract just the module name from the full path
-                stager_name = file_path.split("/stagers/")[-1][0:-3]
+            # instantiate the module and save it to the internal cache
+            stager_name = file_path.relative_to(root_path).with_suffix("").as_posix()
+            spec = importlib.util.spec_from_file_location(stager_name, file_path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
 
-                # instantiate the module and save it to the internal cache
-                spec = importlib.util.spec_from_file_location(stager_name, file_path)
-                mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(mod)
+            stager = mod.Stager(self.main_menu)
+            for value in stager.options.values():
+                if value.get("SuggestedValues") is None:
+                    value["SuggestedValues"] = []
+                if value.get("Strict") is None:
+                    value["Strict"] = False
+                if value.get("Internal") is None:
+                    value["Internal"] = False
+                if value.get("Depends_on") is None:
+                    value["Depends_on"] = []
 
-                stager = mod.Stager(self.main_menu)
-                for value in stager.options.values():
-                    if value.get("SuggestedValues") is None:
-                        value["SuggestedValues"] = []
-                    if value.get("Strict") is None:
-                        value["Strict"] = False
-
-                self._loaded_stager_templates[slugify(stager_name)] = stager
-
-
-def slugify(stager_name: str):
-    return stager_name.lower().replace("/", "_")
+            self._loaded_stager_templates[slugify(stager_name)] = stager

@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List visible windows in the current user session.
 software: ''
-tactics: []
-techniques:
-  - T1010
+tactics: [TA0007]
+techniques: [T1010]
 background: false
 output_extension:
 needs_admin: false
@@ -37,6 +36,7 @@ bof:
   x86: bof/situational_awareness/windowlist/windowlist.x86.o
   x64: bof/situational_awareness/windowlist/windowlist.x64.o
   entry_point: ''
+  format_string: i
 script_path: ''
 script_end: ''
 advanced:

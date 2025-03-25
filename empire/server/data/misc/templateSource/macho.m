@@ -15,9 +15,9 @@ int main(int argc, const char * argv[]) {
     Py_SetProgramName(argv[0]);
     Py_Initialize();
     PyRun_SimpleString(command);
-    
+
     Py_Finalize();
-    
-    
+
+
     return 0;
 }

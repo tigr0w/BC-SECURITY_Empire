@@ -1,20 +1,24 @@
 import copy
-import os
+import typing
 import uuid
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from empire.server.core.config import empire_config
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
-from empire.server.core.download_service import DownloadService
-from empire.server.core.listener_service import ListenerService
-from empire.server.core.stager_template_service import StagerTemplateService
 from empire.server.utils.option_util import set_options, validate_options
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+    from empire.server.core.download_service import DownloadService
+    from empire.server.core.listener_service import ListenerService
+    from empire.server.core.stager_template_service import StagerTemplateService
 
 
 class StagerService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
         self.stager_template_service: StagerTemplateService = (
@@ -50,7 +54,7 @@ class StagerService:
         if params.get("Listener") and not self.listener_service.get_by_name(
             db, params["Listener"]
         ):
-            return None, f'Listener {params["Listener"]} not found'
+            return None, f"Listener {params['Listener']} not found"
 
         template_instance = self.stager_template_service.new_instance(template)
         cleaned_options, err = validate_options(
@@ -101,7 +105,7 @@ class StagerService:
         download = models.Download(
             location=generated,
             filename=generated.split("/")[-1],
-            size=os.path.getsize(generated),
+            size=Path(generated).stat().st_size,
         )
         db.add(download)
         db.flush()
@@ -141,7 +145,7 @@ class StagerService:
         download = models.Download(
             location=generated,
             filename=generated.split("/")[-1],
-            size=os.path.getsize(generated),
+            size=Path(generated).stat().st_size,
         )
         db.add(download)
         db.flush()
@@ -168,7 +172,7 @@ class StagerService:
         )
         file_name.parent.mkdir(parents=True, exist_ok=True)
         mode = "w" if isinstance(resp, str) else "wb"
-        with open(file_name, mode) as f:
+        with file_name.open(mode) as f:
             f.write(resp)
 
         return str(file_name), None

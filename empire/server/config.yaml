@@ -1,7 +1,8 @@
-suppress-self-cert-warning: true
+suppress_self_cert_warning: true
 api:
+  ip: 0.0.0.0
   port: 1337
-  cert_path: empire/server/data/
+  secure: false
 database:
   use: mysql
   mysql:
@@ -10,11 +11,8 @@ database:
     password: empire_password
     database_name: empire
   sqlite:
-    location: empire/server/data/empire.db
+    location: empire.db
   defaults:
-    # staging key will first look at OS environment variables, then here.
-    # If empty, will be prompted (like Empire <3.7).
-    staging-key: RANDOM
     username: empireadmin
     password: password123
     obfuscation:
@@ -36,34 +34,29 @@ database:
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
-    # an IP white list to ONLY accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-whitelist: ""
-    # an IP black list to reject accept clients from
-    #   format is "192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8"
-    ip-blacklist: ""
+    ip_allow_list: []
+    ip_deny_list: []
+empire_compiler:
+  archive: https://github.com/BC-SECURITY/Empire-Compiler/releases/download/v0.3.2/EmpireCompiler-{{platform}}-v0.3.2.tgz
 starkiller:
   enabled: true
   repo: https://github.com/BC-SECURITY/Starkiller.git
-  directory: empire/server/api/v2/starkiller
   # Can be a branch, tag, or commit hash
-  ref: v2.8.2
-  auto_update: true
+  ref: v3.0.0
 submodules:
   auto_update: true
-plugins:
-  # Auto-load plugin with defined settings
-  csharpserver:
-    status: start
+plugin_marketplace:
+  registries:
+    - name: BC-SECURITY
+      git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
+      ref: main
+      file: registry.yaml
 directories:
-  downloads: empire/server/downloads/
-  module_source: empire/server/data/module_source/
-  obfuscated_module_source: empire/server/data/obfuscated_module_source/
+  downloads: downloads
 logging:
   level: INFO
-  directory: empire/server/downloads/logs/
   simple_console: true
 debug:
   last_task:
     enabled: false
-    file: empire/server/data/last_task.txt
+    file: debug/last_task.txt

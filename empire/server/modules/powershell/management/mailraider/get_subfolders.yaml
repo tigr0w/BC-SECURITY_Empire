@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/xorrior
 description: Returns a list of all the folders in the specified top level folder.
 software: ''
-tactics: []
-techniques:
-  - T1114
+tactics: [TA0009]
+techniques: [T1114]
 background: true
 output_extension:
 needs_admin: false
@@ -27,7 +26,8 @@ options:
     required: true
     value: Inbox
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -38,4 +38,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Get-SubFolders {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Get-SubFolders completed!"
+script_end: Get-SubFolders {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n
+  Get-SubFolders completed!"

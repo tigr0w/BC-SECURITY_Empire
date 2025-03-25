@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import logging
-import os
-import pwd
 import shutil
 import signal
 import subprocess
@@ -12,11 +10,11 @@ from pathlib import Path
 import urllib3
 
 from empire.server.common import empire
-from empire.server.core.config import empire_config
+from empire.server.core.config import config_manager
+from empire.server.core.config.config_manager import CONFIG_DIR, DATA_DIR, empire_config
 from empire.server.core.db import base
-from empire.server.utils import file_util
 from empire.server.utils.file_util import run_as_user
-from empire.server.utils.log_util import LOG_FORMAT, SIMPLE_LOG_FORMAT, ColorFormatter
+from empire.server.utils.log_util import setup_logging
 
 log = logging.getLogger(__name__)
 main = None
@@ -27,75 +25,10 @@ if empire_config.supress_self_cert_warning:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def setup_logging(args):
-    if args.log_level:
-        log_level = logging.getLevelName(args.log_level.upper())
-    else:
-        log_level = logging.getLevelName(empire_config.logging.level.upper())
-
-    log_dir = empire_config.logging.directory
-    log_dir.mkdir(parents=True, exist_ok=True)
-    root_log_file = log_dir / "empire_server.log"
-    root_logger = logging.getLogger()
-    # If this isn't set to DEBUG, then we won't see debug messages from the listeners.
-    root_logger.setLevel(logging.DEBUG)
-
-    root_logger_file_handler = logging.FileHandler(root_log_file)
-    root_logger_file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
-    root_logger.addHandler(root_logger_file_handler)
-
-    simple_console = empire_config.logging.simple_console
-    stream_format = SIMPLE_LOG_FORMAT if simple_console else LOG_FORMAT
-    root_logger_stream_handler = logging.StreamHandler()
-    root_logger_stream_handler.setFormatter(ColorFormatter(stream_format))
-    root_logger_stream_handler.setLevel(log_level)
-    root_logger.addHandler(root_logger_stream_handler)
-
-    try:
-        user = os.getenv("SUDO_USER")
-        if user:
-            user_info = pwd.getpwnam(user)
-            os.chown(root_log_file, user_info.pw_uid, user_info.pw_gid)
-            log.debug(f"Log file owner changed to {user}.")
-        else:
-            log.warning("Log file owner not changed. SUDO_USER not found.")
-    except KeyError:
-        log.error("User not found. Log file owner not changed.")
-    except PermissionError:
-        log.error("Permission denied. You need root privileges to change file owner.")
-
-
-CSHARP_DIR_BASE = os.path.join(os.path.dirname(__file__), "csharp/Covenant")
-
-
 def reset():
     base.reset_db()
-
-    file_util.remove_dir_contents(empire_config.directories.downloads)
-
-    if os.path.exists(f"{CSHARP_DIR_BASE}/bin"):
-        shutil.rmtree(f"{CSHARP_DIR_BASE}/bin")
-
-    if os.path.exists(f"{CSHARP_DIR_BASE}/obj"):
-        shutil.rmtree(f"{CSHARP_DIR_BASE}/obj")
-
-    file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net35")
-    file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net40")
-    file_util.remove_dir_contents(f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/net45")
-    file_util.remove_dir_contents(
-        f"{CSHARP_DIR_BASE}/Data/Tasks/CSharp/Compiled/netcoreapp3.0"
-    )
-
-    file_util.clear_file_contents(
-        f"{CSHARP_DIR_BASE}/Data/EmbeddedResources/launcher.txt"
-    )
-
-    if os.path.exists(empire_config.starkiller.directory):
-        shutil.rmtree(empire_config.starkiller.directory)
-
-    file_util.remove_file("data/sessions.csv")
-    file_util.remove_file("data/credentials.csv")
-    file_util.remove_file("data/master.log")
+    shutil.rmtree(CONFIG_DIR, ignore_errors=True)
+    shutil.rmtree(DATA_DIR, ignore_errors=True)
 
 
 def shutdown_handler(signum, frame):
@@ -117,7 +50,7 @@ signal.signal(signal.SIGINT, shutdown_handler)
 
 def check_submodules():
     log.info("Checking submodules...")
-    if not os.path.exists(Path(".git")):
+    if not Path(".git").exists():
         log.info("No .git directory found. Skipping submodule check.")
         return
 
@@ -133,7 +66,7 @@ def check_submodules():
 
 
 def fetch_submodules():
-    if not os.path.exists(Path(".git")):
+    if not Path(".git").exists():
         log.info("No .git directory found. Skipping submodule fetch.")
         return
     command = ["git", "submodule", "update", "--init", "--recursive"]
@@ -150,6 +83,10 @@ def check_recommended_configuration():
 
 
 def run(args):
+    if args.version:
+        print(empire.VERSION)
+        sys.exit()
+
     setup_logging(args)
 
     if empire_config.submodules.auto_update:
@@ -161,22 +98,7 @@ def run(args):
     check_submodules()
     check_recommended_configuration()
 
-    if not args.restport:
-        args.restport = empire_config.api.port
-    else:
-        args.restport = int(args.restport[0])
-
-    if not args.restip:
-        args.restip = "0.0.0.0"
-    else:
-        args.restip = args.restip[0]
-
-    if args.version:
-        # log to stdout instead of stderr
-        print(empire.VERSION)
-        sys.exit()
-
-    elif args.reset:
+    if args.reset:
         choice = input(
             "\x1b[1;33m[>] Would you like to reset your Empire Server instance? [y/N]: \x1b[0m"
         )
@@ -195,13 +117,15 @@ def run(args):
         if main is None:
             main = empire.MainMenu(args=args)
 
-        if not (Path(empire_config.api.cert_path) / "empire-chain.pem").exists():
+        cert_path = config_manager.DATA_DIR / "cert"
+        cert_path.mkdir(parents=True, exist_ok=True)
+        if not (Path(cert_path) / "empire-chain.pem").exists():
             log.info("Certificate not found. Generating...")
-            subprocess.call(["./setup/cert.sh", empire_config.api.cert_path])
+            subprocess.call(["./setup/cert.sh", str(cert_path)])
             time.sleep(3)
 
         from empire.server.api import app
 
-        app.initialize(secure=args.secure_api, ip=args.restip, port=args.restport)
+        app.initialize(cert_path=cert_path)
 
     sys.exit()

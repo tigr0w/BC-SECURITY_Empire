@@ -1,28 +1,36 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 from starlette import status
 
+from empire.server.utils.string_util import get_random_string
+
 log = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def agents(session_local, host, models):
     agent_ids = []
     with session_local.begin() as db:
         for n in range(agent_count):
-            agent_id = f"agent_{n}"
+            agent_id = f"agent_{get_random_string(5)}_{n}"
             agent_ids.append(agent_id)
             default_agent(agent_id, models, db, host)
-            log.info(f"agent_{n}")
 
     yield agent_ids
 
     with session_local.begin() as db:
-        db.query(models.AgentCheckIn).delete()
-        db.query(models.Agent).delete()
+        db.query(models.AgentCheckIn).filter(
+            models.AgentCheckIn.agent_id.in_(agent_ids)
+        ).delete()
+
+        # Keep One check in for each agent
+        for agent_id in agent_ids:
+            db.add(
+                models.AgentCheckIn(agent_id=agent_id, checkin_time=datetime.now(UTC))
+            )
 
 
 def default_agent(session_id, models, db, host):
@@ -62,7 +70,7 @@ async def _create_checkins(session_local, models, agent_ids):
 agent_count = 2
 time_delta = 20  # 4320 checkins per agent per day
 days_back = 3
-end_time = datetime(2023, 1, 8, tzinfo=timezone.utc)
+end_time = datetime(2023, 1, 8, tzinfo=UTC)
 start_time = end_time - timedelta(days=days_back)
 
 
@@ -89,31 +97,33 @@ def test_get_agent_checkins_agent_not_found(client, admin_auth_header):
 
 @pytest.mark.slow
 def test_get_agent_checkins_with_limit_and_page(
-    client, admin_auth_header, agent, session_local, models
+    client, admin_auth_header, agents, session_local, models
 ):
-    asyncio.run(_create_checkins(session_local, models, [agent]))
+    asyncio.run(_create_checkins(session_local, models, agents))
 
     response = client.get(
-        f"/api/v2/agents/{agent}/checkins?limit=10&page=1", headers=admin_auth_header
+        f"/api/v2/agents/{agents[0]}/checkins?limit=10&page=1",
+        headers=admin_auth_header,
     )
 
     checkin_count = 10
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) == checkin_count
-    assert response.json()["total"] > days_back * 4320
+    assert response.json()["total"] >= days_back * 4320
     assert response.json()["page"] == 1
 
     page1 = response.json()["records"]
 
     response = client.get(
-        f"/api/v2/agents/{agent}/checkins?limit=10&page=2", headers=admin_auth_header
+        f"/api/v2/agents/{agents[0]}/checkins?limit=10&page=2",
+        headers=admin_auth_header,
     )
 
     checkin_count = 10
     page_count = 2
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) == checkin_count
-    assert response.json()["total"] > days_back * 4320
+    assert response.json()["total"] >= days_back * 4320
     assert response.json()["page"] == page_count
 
     page2 = response.json()["records"]

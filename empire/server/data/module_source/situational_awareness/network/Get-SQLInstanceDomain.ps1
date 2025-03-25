@@ -190,7 +190,7 @@ Function  Get-SQLInstanceDomain {
         $null = $TblSQLServerSpns.Columns.Add('Description')
     } Process {
         "Grabbing SPNs from the domain for SQL Servers (MSSQL*)..."
-        $TblSQLServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSSQL*' -SuppressVerbose | 
+        $TblSQLServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSSQL*' -SuppressVerbose |
         ? -FilterScript { $_.service -like 'MSSQL*' }
         "Parsing SQL Server instances from SPNs..."
         $TblSQLServers | % -Process {
@@ -234,8 +234,8 @@ Function  Get-SQLInstanceDomain {
             $InstanceCount = $Tbl3.rows.count
             "$InstanceCount instances were found."
             ForEach ($Row in $Tbl3){
-                "ComputerName     : " + $Row.ComputerName 
-                "Instance         : " + $Row.Instance 
+                "ComputerName     : " + $Row.ComputerName
+                "Instance         : " + $Row.Instance
                 ""
             }
             $Tbl3
@@ -243,15 +243,15 @@ Function  Get-SQLInstanceDomain {
             $InstanceCount = $TblSQLServerSpns.rows.count
             "$InstanceCount instances were found."
             ForEach ($Row in $TblSQLServerSpns) {
-                "ComputerName     : " + $Row.ComputerName 
-                "Instance         : " + $Row.Instance 
-                "DomainAccountSid : " + $Row.DomainAccountSid 
-                "DomainAccount    : " + $Row.DomainAccount 
-                "DomainAccountCn  : " + $Row.DomainAccountCn 
-                "Service          : " + $Row.Service 
-                "Spn              : " + $Row.Spn 
-                "LastLogon        : " + $Row.LastLogon 
-                "Description      : " + $Row.Description 
+                "ComputerName     : " + $Row.ComputerName
+                "Instance         : " + $Row.Instance
+                "DomainAccountSid : " + $Row.DomainAccountSid
+                "DomainAccount    : " + $Row.DomainAccount
+                "DomainAccountCn  : " + $Row.DomainAccountCn
+                "Service          : " + $Row.Service
+                "Spn              : " + $Row.Spn
+                "LastLogon        : " + $Row.LastLogon
+                "Description      : " + $Row.Description
                 ""
             }
             $TblSQLServerSpns

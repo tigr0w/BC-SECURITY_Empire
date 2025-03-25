@@ -3,11 +3,11 @@ authors:
   - name: Rich Lundeen
     handle: ''
     link: ''
-description: Does a simple port scan using regular sockets, based (pretty) loosely on nmap.
+description: Does a simple port scan using regular sockets, based (pretty) loosely
+  on nmap.
 software: ''
-tactics: []
-techniques:
-  - T1046
+tactics: [TA0007]
+techniques: [T1046]
 background: true
 output_extension:
 needs_admin: false
@@ -87,7 +87,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -99,4 +100,5 @@ options:
       - ConvertTo-Xml
 script_path: situational_awareness/network/Invoke-Portscan.ps1
 script_end: Invoke-PortScan -noProgressMeter -f {{ PARAMS }} | Select-Object HostName,@{name='OpenPorts';expression={$_.openPorts
-  -join ','}} | ft -wrap | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-Portscan completed'
+  -join ','}} | ft -wrap | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-Portscan
+  completed'

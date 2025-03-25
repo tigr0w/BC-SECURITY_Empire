@@ -14,7 +14,7 @@ class Stager:
                     "Link": "https://twitter.com/Cx01N_",
                 },
             ],
-            "Description": "Generates an agent code instance for a specified listener, pre-staged, and register the agent in the db. This allows the agent to begin beconing behavior immediately.",
+            "Description": "A stageless stager that generates a fully-formed agent for Python, IronPython, and PowerShell by combining stage 0, stage 1, and stage 2 into a single file. Unlike traditional stagers, it performs the key exchange without executing the passed code, making it ideal for debugging or pre-staging agents. This does not apply to C# or Go agents, as they are already compiled and prestaged.",
             "Comments": [],
         }
 
@@ -57,7 +57,7 @@ class Stager:
                 "Value": "agent.txt",
             },
             "Obfuscate": {
-                "Description": "Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
+                "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell only.",
                 "Required": False,
                 "Value": "False",
                 "SuggestedValues": ["True", "False"],
@@ -103,17 +103,17 @@ class Stager:
         staged = self.options["Staged"]["Value"].lower() == "true"
 
         if not staged:
-            launcher = self.mainMenu.stagers.generate_stageless(self.options)
+            launcher = self.mainMenu.stagergenv2.generate_stageless(self.options)
         else:
-            launcher = self.mainMenu.stagers.generate_launcher(
+            launcher = self.mainMenu.stagergenv2.generate_launcher(
                 listener_name,
                 language=language,
                 encode=False,
                 obfuscate=False,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
-                stagerRetries=stager_retries,
+                proxy_creds=proxy_creds,
+                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
 

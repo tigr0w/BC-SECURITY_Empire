@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class LanguageEnum(str, Enum):
@@ -28,7 +28,8 @@ class EmpireModuleOption(BaseModel):
     suggested_values: list[str] = []
     strict: bool = False
     type: str | None = None
-    format: str | None = None
+    internal: bool = False
+    depends_on: list[dict[str, str | list[str]]] | None = None
 
     # Ensure the functionality of pydantic v1 coercing values to strings
     # https://github.com/pydantic/pydantic/issues/5606
@@ -44,22 +45,33 @@ class EmpireModuleOption(BaseModel):
         return [str(value) for value in v]
 
 
-class EmpireModuleAuthor(BaseModel):
-    name: str
-    handle: str
-    link: str
+class EmpireAuthor(BaseModel):
+    name: str | None = ""
+    handle: str | None = ""
+    link: str | None = ""
 
 
 class BofModuleOption(BaseModel):
     x86: str | None = None
     x64: str | None = None
     entry_point: str | None = None
+    format_string: str | None = None
+
+
+class CSharpOption(BaseModel):
+    UnsafeCompile: bool = False
+    CompatibleDotNetVersions: list[str] = []
+    Code: str = ""
+    ReferenceSourceLibraries: list[dict] | None = []
+    ReferenceAssemblies: list[dict] | None = []
+    EmbeddedResources: list[dict] | None = []
 
 
 class EmpireModule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     id: str
     name: str
-    authors: list[EmpireModuleAuthor] = []
+    authors: list[EmpireAuthor] = []
     description: str = ""
     software: str = ""
     techniques: list[str] = []
@@ -79,23 +91,4 @@ class EmpireModule(BaseModel):
     enabled: bool = True
     advanced: EmpireModuleAdvanced = EmpireModuleAdvanced()
     compiler_yaml: str | None = None
-
-    def matches(self, query: str, parameter: str = "any") -> bool:
-        query = query.lower()
-        match = {
-            "name": query in self.name.lower(),
-            "description": query in self.description.lower(),
-            "comments": any(query in comment.lower() for comment in self.comments),
-            "authors": any(query in author.lower() for author in self.authors),
-        }
-
-        if parameter == "any":
-            return any(match.values())
-
-        return match[parameter]
-
-    @property
-    def info(self) -> dict:
-        desc = self.dict(include={"name", "authors", "description", "comments"})
-        desc["options"] = [option.model_dump() for option in self.options]
-        return desc
+    csharp: CSharpOption | None = None

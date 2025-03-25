@@ -3,11 +3,11 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Adds a domain user or a local user to the current (or remote) machine, if permissions allow,
+description: Adds a domain user or a local user to the current (or remote) machine,
+  if permissions allow,
 software: ''
-tactics: []
-techniques:
-  - T1033
+tactics: [TA0003]
+techniques: [T1136.001, T1136.002]
 background: true
 output_extension:
 needs_admin: false
@@ -42,7 +42,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -53,4 +54,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Add-NetUser {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Add-NetUser completed'
+script_end: Add-NetUser {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Add-NetUser
+  completed'

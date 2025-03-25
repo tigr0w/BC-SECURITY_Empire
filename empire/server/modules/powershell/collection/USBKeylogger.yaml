@@ -8,9 +8,8 @@ authors:
     link: ''
 description: Logs USB keys pressed using Event Tracing for Windows (ETW)
 software: ''
-tactics: []
-techniques:
-  - T1056
+tactics: [TA0006, TA0009]
+techniques: [T1056.001]
 background: true
 output_extension:
 needs_admin: true

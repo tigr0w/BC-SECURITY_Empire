@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List local groups from the local or specified computer.
 software: ''
-tactics: []
-techniques:
-  - T1069
+tactics: [TA0007]
+techniques: [T1069.001]
 background: false
 output_extension:
 needs_admin: false
@@ -28,7 +27,7 @@ options:
   - name: Group
     description: Group to query.
     required: true
-    value: ''
+    value: 'Administrators'
   - name: Server
     description: Server to query.
     required: false
@@ -37,6 +36,7 @@ bof:
   x86: bof/situational_awareness/netlocalgroup/netlocalgroup.x86.o
   x64: bof/situational_awareness/netlocalgroup/netlocalgroup.x64.o
   entry_point: ''
+  format_string: sZZ
 script_path: ''
 script_end: ''
 advanced:

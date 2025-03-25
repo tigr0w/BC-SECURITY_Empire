@@ -3,12 +3,11 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Backdoor a specified .LNK file with a version that launches the original binary and then an Empire stager.
+description: Backdoor a specified .LNK file with a version that launches the original
+  binary and then an Empire stager.
 software: ''
-tactics: []
-techniques:
-  - T1204
-  - T1023
+tactics: [TA0004]
+techniques: [T1204.001, T1547.009]
 background: true
 output_extension:
 needs_admin: false
@@ -21,17 +20,13 @@ comments:
   - https://github.com/samratashok/nishang
   - http://blog.trendmicro.com/trendlabs-security-intelligence/black-magic-windows-powershell-used-again-in-new-attack/
 options:
-  - name: Agent
-    description: Agent to run module on.
-    required: true
-    value: ''
   - name: Listener
     description: Listener to use.
     required: true
     value: ''
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types. For powershell
-      only.
+    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
+      for obfuscation types. For powershell only.
     required: false
     value: 'False'
     strict: true
@@ -39,9 +34,13 @@ options:
       - True
       - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True. For powershell only.
     required: false
     value: Token\All\1
+    depends_on:
+      - name: Obfuscate
+        values: ['True']
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
@@ -51,7 +50,8 @@ options:
     required: true
     value: ''
   - name: RegPath
-    description: Registry location to store the script code. Last element is the key name.
+    description: Registry location to store the script code. Last element is the
+      key name.
     required: true
     value: HKCU:\Software\Microsoft\Windows\debug
   - name: ExtFile
@@ -67,7 +67,8 @@ options:
       - True
       - False
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -75,7 +76,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
 script_path: persistence/Invoke-BackdoorLNK.ps1

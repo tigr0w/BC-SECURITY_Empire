@@ -3,11 +3,11 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Set reversible encryption on a given domain account and then force the password to be set on next user login.
+description: Set reversible encryption on a given domain account and then force the
+  password to be set on next user login.
 software: ''
-tactics: []
-techniques:
-  - T1098
+tactics: [TA0003]
+techniques: [T1098]
 background: true
 output_extension:
 needs_admin: false
@@ -41,7 +41,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -52,4 +53,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Invoke-DowngradeAccount {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n Invoke-DowngradeAccount completed!"
+script_end: Invoke-DowngradeAccount {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ +
+  "`n"};"`n Invoke-DowngradeAccount completed!"

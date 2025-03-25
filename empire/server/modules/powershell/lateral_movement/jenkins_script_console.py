@@ -22,15 +22,15 @@ class Module:
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         # generate the launcher code
-        launcher = main_menu.stagers.generate_launcher(
-            listenerName=listener_name,
+        launcher = main_menu.stagergenv2.generate_launcher(
+            listener_name=listener_name,
             language="powershell",
             encode=True,
             obfuscate=launcher_obfuscate,
             obfuscation_command=launcher_obfuscate_command,
-            userAgent=user_agent,
+            user_agent=user_agent,
             proxy=proxy,
-            proxyCreds=proxy_creds,
+            proxy_creds=proxy_creds,
             bypasses=params["Bypasses"],
         )
 

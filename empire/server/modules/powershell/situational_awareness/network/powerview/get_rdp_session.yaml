@@ -3,12 +3,12 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: "Query a given RDP remote service for active sessions and originating IPs (replacement for qwinsta). Note: needs\
-  \ admin rights on the remote server you're querying"
+description: "Query a given RDP remote service for active sessions and originating
+  IPs (replacement for qwinsta). Note: needs admin rights on the remote server you're
+  querying"
 software: S0194
-tactics: []
-techniques:
-  - T1076
+tactics: [TA0007]
+techniques: [T1076, T1018, T1933]
 background: true
 output_extension:
 needs_admin: false
@@ -27,7 +27,8 @@ options:
     required: true
     value: localhost
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -38,4 +39,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/network/powerview.ps1
-script_end: Get-NetRDPSession {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-NetRDPSession completed'
+script_end: Get-NetRDPSession {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Get-NetRDPSession completed'

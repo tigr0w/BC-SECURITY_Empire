@@ -45,14 +45,13 @@ The `main` branch in `BC-SECURITY/Empire` automatically syncs.
 
 ### Code Formatting and Linting
 
-* We are using [psf/black](https://github.com/psf/black) for code formatting.
-* We are using [charliermarsh/ruff](https://github.com/charliermarsh/ruff) for linting.
+* We are using [astral-sh/ruff](https://github.com/astral-sh/ruff) for linting and formatting.
 * After implementing your changes:
-    1. run `ruff . --fix` (or `poetry run ruff . --fix`).
-    2. run `black .` (or `poetry run black .`).
+    1. run `ruff check . --fix` (or `poetry run ruff check . --fix`).
+    2. run `ruff format .` (or `poetry run ruff format .`).
 * The repo is also configured to use [pre-commit](https://pre-commit.com/) to automatically format code.
   * Once you have pre-commit installed, you can run `pre-commit install` to install the pre-commit hooks.
-  * Then pre-commit will execute black and ruff automatically before committing.
+  * Then pre-commit will execute ruff automatically before committing.
 
 ### Tests
 

@@ -11,9 +11,15 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        script_file, script_end = main_menu.modulesv2.generate_bof_data(
-            module=module, params=params, obfuscate=obfuscate
-        )
+        params_dict = {
+            "Architecture": params["Architecture"],
+            "ScriptType": "0",
+            "Server": params["Server"],
+            "AdditionalParam": "",
+        }
 
-        script_end += f" -s:0 -Z:{params['Server']} -Z: "
-        return f"{script_file}|{script_end}"
+        return main_menu.modulesv2.generate_script_bof(
+            module=module,
+            params=params_dict,
+            obfuscate=obfuscate,
+        )

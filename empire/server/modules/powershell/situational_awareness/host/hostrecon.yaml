@@ -3,12 +3,12 @@ authors:
   - name: ''
     handle: '@mishradhiraj_'
     link: ''
-description: Invoke-HostRecon runs a number of checks on a system to help provide situational awareness to a penetration tester
-  during the reconnaissance phase It gathers information about the local system, users, and domain information.
+description: Invoke-HostRecon runs a number of checks on a system to help provide
+  situational awareness to a penetration tester during the reconnaissance phase It
+  gathers information about the local system, users, and domain information.
 software: ''
-tactics: []
-techniques:
-  - T1082
+tactics: [TA0007]
+techniques: [T1082]
 background: false
 output_extension:
 needs_admin: false
@@ -24,7 +24,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -35,4 +36,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: situational_awareness/host/HostRecon.ps1
-script_end: Invoke-HostRecon {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Invoke-HostRecon completed'
+script_end: Invoke-HostRecon {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Invoke-HostRecon completed'

@@ -6,8 +6,9 @@ authors:
   - name: ''
     handle: '@Cx01N'
     link: ''
-description: This script is intended to be executed locally ona Linux box to enumerate basic system info, and search for commonprivilege
-  escalation vectors with pure python.
+description: This script is intended to be executed locally ona Linux box to enumerate
+  basic system info, and search for commonprivilege escalation vectors with pure
+  python.
 software: ''
 tactics: []
 techniques:

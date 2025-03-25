@@ -19,7 +19,7 @@ function Invoke-DownloadFile {
 
 .ICONURI
 
-.EXTERNALMODULEDEPENDENCIES 
+.EXTERNALMODULEDEPENDENCIES
 
 .REQUIREDSCRIPTS
 
@@ -30,16 +30,16 @@ Fixed current dir paths
 
 .PRIVATEDATA
 
-#> 
+#>
 
 
 
 
 
-<# 
+<#
 
-.DESCRIPTION 
- Download files from the internet through PowerShell. 
+.DESCRIPTION
+ Download files from the internet through PowerShell.
 
 #>
 
@@ -147,7 +147,7 @@ catch [Exception] {
     $ErrorDetails = $_
 
     switch ($ErrorDetails.FullyQualifiedErrorId) {
-        "ArgumentNullException" { 
+        "ArgumentNullException" {
             Write-Error -Exception "ArgumentNullException" -ErrorId "ArgumentNullException" -Message "Either the Url or Path is null." -Category InvalidArgument -TargetObject $Downloader -ErrorAction Stop
         }
         "WebException" {

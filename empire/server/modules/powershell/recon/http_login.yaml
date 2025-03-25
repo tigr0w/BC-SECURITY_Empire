@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/424f424f
 description: Tests credentials against Basic Authentication.
 software: ''
-tactics: []
-techniques:
-  - T1071
+tactics: [TA0006, TA0007]
+techniques: [T1110.001, T1110.004]
 background: true
 output_extension:
 needs_admin: false
@@ -66,7 +65,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -77,4 +77,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: recon/HTTP-Login.ps1
-script_end: Test-Login {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'HTTP-Login completed'
+script_end: Test-Login {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'HTTP-Login
+  completed'

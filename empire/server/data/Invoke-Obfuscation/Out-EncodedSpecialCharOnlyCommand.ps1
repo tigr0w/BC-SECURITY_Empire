@@ -30,7 +30,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-EncodedSpecialCharOnlyCommand encodes an input PowerShell scriptblock or path as a Special-Character-Only payload. The purpose is to highlight to the Blue Team that there are more novel ways to encode a PowerShell command other than the most common Base64 approach.
@@ -124,7 +124,7 @@ http://www.danielbohannon.com
 
         [Switch]
         $Wow64,
-        
+
         [Switch]
         $Command,
 
@@ -135,7 +135,7 @@ http://www.danielbohannon.com
         [ValidateSet('Bypass', 'Unrestricted', 'RemoteSigned', 'AllSigned', 'Restricted')]
         [String]
         $ExecutionPolicy,
-        
+
         [Switch]
         $PassThru
     )
@@ -206,7 +206,7 @@ http://www.danielbohannon.com
 
     # Convert $ScriptString into a character array and then convert each character into ASCII integer representations substituted with our special character variables for each character.
     $CharEncoded = ([Char[]]$ScriptString | ForEach-Object {'${"}'+ ([Int]$_  -Replace "0",'${=}' -Replace "1",'${+}' -Replace "2",'${@}' -Replace "3",'${.}' -Replace "4",'${[}' -Replace "5",'${]}' -Replace "6",'${(}' -Replace "7",'${)}' -Replace "8",'${&}' -Replace "9",'${|}')}) -Join ' + '
-    
+
     # Randomly choose between . and & invocation operators.
     $InvocationSyntax = (Get-Random -Input @('.','&'))
 
@@ -219,7 +219,7 @@ http://www.danielbohannon.com
 
     # Randomly select one of the above commands.
     $CharEncodedRandom  = (Get-Random -Input $CharEncodedSyntax)
-    
+
     # Combine variable instantion $SetupCommand and our encoded command.
     $NewScriptTemp = $SetupCommand + $CharEncodedRandom
 
@@ -229,7 +229,7 @@ http://www.danielbohannon.com
         $NewScript += $_ + ' '*(Get-Random -Input @(0,2))
     }
 
-    # Substitute existing character placement with randomized variables names consisting of randomly selected special characters.    
+    # Substitute existing character placement with randomized variables names consisting of randomly selected special characters.
     $DefaultCharacters = @(';','=','+','@','.','[',']','(',')','&','|','"')
 
     # Do not add ':' '?' '>' '<' '|' '&' ':' '_' ',' or '^' to this $NewCharacters list.
@@ -343,7 +343,7 @@ http://www.danielbohannon.com
             $ExecutionPolicyFlag = Get-Random -Input $ExecutionPolicyFlags
             $PowerShellFlags += $ExecutionPolicyFlag + ' '*(Get-Random -Minimum 1 -Maximum 3) + $ArgumentValue
         }
-        
+
         # Randomize the order of the execution flags.
         # This is to prevent the Blue Team from placing false hope in simple signatures for ordering of these flags.
         If($CommandlineOptions.Count -gt 1)
@@ -386,7 +386,7 @@ http://www.danielbohannon.com
         {
                 Write-Warning "This command exceeds the cmd.exe maximum allowed length of $CmdMaxLength characters! Its length is $($CmdLineOutput.Length) characters."
         }
-        
+
         $NewScript = $CommandLineOutput
     }
 

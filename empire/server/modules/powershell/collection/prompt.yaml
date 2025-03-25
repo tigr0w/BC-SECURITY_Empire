@@ -12,10 +12,8 @@ authors:
 description: |
   Prompts the current user to enter their credentials in a forms box and returns the results.
 software:
-tactics: []
-techniques:
-  - T1141
-  - T1514
+tactics: [TA0006]
+techniques: [T1056.002]
 background: false
 output_extension:
 needs_admin: false
@@ -45,7 +43,8 @@ options:
       - Exclamation
       - Information
   - name: Title
-    description: Title of the message box to display if not waiting for a process create.
+    description: Title of the message box to display if not waiting for a process
+      create.
     required: true
     value: ERROR - 0xA801B720
 script: |

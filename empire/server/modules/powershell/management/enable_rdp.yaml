@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/harmj0y
 description: Enables RDP on the remote machine and adds a firewall exception.
 software: ''
-tactics: []
-techniques:
-  - T1076
+tactics: [TA0005, TA0008]
+techniques: [T1021.001, T1112]
 background: false
 output_extension:
 needs_admin: true

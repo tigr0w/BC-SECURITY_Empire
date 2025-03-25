@@ -17,7 +17,7 @@ function Get-SiteListPassword {
         Optional path to a SiteList.xml file.
 
     .EXAMPLE
-    
+
         PS C:\> Get-SiteListPassword
 
         EncPassword : jWbTyS7BL1Hj7PkO5Di/QhhYmcGj5cOoZ2OkDTrFXsR/abAFPM9B3Q==
@@ -77,7 +77,7 @@ function Get-SiteListPassword {
 
         # declare the encoding/crypto providers we need
         $Encoding = [System.Text.Encoding]::ASCII
-        $SHA1 = New-Object System.Security.Cryptography.SHA1CryptoServiceProvider 
+        $SHA1 = New-Object System.Security.Cryptography.SHA1CryptoServiceProvider
         $3DES = New-Object System.Security.Cryptography.TripleDESCryptoServiceProvider
 
         # static McAfee key XOR key LOL
@@ -124,7 +124,7 @@ function Get-SiteListPassword {
             if($SiteListXml.InnerXml -Like "*password*") {
                 Write-Verbose "Potential password in found in $Path"
 
-                $SiteListXml.SiteLists.SiteList.ChildNodes | Foreach-Object {                    
+                $SiteListXml.SiteLists.SiteList.ChildNodes | Foreach-Object {
                     try {
                         $PasswordRaw = $_.Password.'#Text'
 
@@ -173,6 +173,6 @@ function Get-SiteListPassword {
 
     $XmlFiles | Where-Object { $_ } | Foreach-Object {
         Write-Verbose "Parsing SiteList.xml file '$($_.Fullname)'"
-        Get-SitelistFields -Path $_.Fullname        
+        Get-SitelistFields -Path $_.Fullname
     }
 }

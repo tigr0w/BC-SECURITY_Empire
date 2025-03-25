@@ -72,25 +72,25 @@ Release Notes
 -------------
 v1.0 - 2016-09-25 DerbyCon 6.0 (Louisville, Kentucky USA): PUBLIC Release of Invoke-Obfuscation.
 
-v1.1 - 2016-10-09 SANS DFIR Summit (Prague, Czech Republic): Added -f format operator re-ordering 
-functionality to all applicable TOKEN obfuscation functions. Also added additional 
+v1.1 - 2016-10-09 SANS DFIR Summit (Prague, Czech Republic): Added -f format operator re-ordering
+functionality to all applicable TOKEN obfuscation functions. Also added additional
 syntax options for setting variable values.
 
-v1.2 - 2016-10-20 CODE BLUE (Tokyo, Japan): Added Type TOKEN obfuscation (direct type 
+v1.2 - 2016-10-20 CODE BLUE (Tokyo, Japan): Added Type TOKEN obfuscation (direct type
 casting with string obfuscation options for type name).
 
-v1.3 - 2016-10-22 Hacktivity (Budapest, Hungary): Added two new LAUNCHERs: CLIP+ and CLIP++. 
-Also added additional (and simpler) array char conversion syntax for all ENCODING 
+v1.3 - 2016-10-22 Hacktivity (Budapest, Hungary): Added two new LAUNCHERs: CLIP+ and CLIP++.
+Also added additional (and simpler) array char conversion syntax for all ENCODING
 functions that does not require For-EachObject/%.
 
-v1.4 - 2016-10-28 BruCON (Ghent, Belgium): Added new BXOR ENCODING function. Also enhanced 
-randomized case for all components of all ENCODING functions as well as for 
-PowerShell execution flags for all LAUNCHERs. Finally, added -EP shorthand option 
-for -ExecutionPolicy to all LAUNCHERs as well as the optional integer representation 
-of the -WindowStyle PowerShell execution flag: Normal (0), Hidden (1), Minimized (2), 
+v1.4 - 2016-10-28 BruCON (Ghent, Belgium): Added new BXOR ENCODING function. Also enhanced
+randomized case for all components of all ENCODING functions as well as for
+PowerShell execution flags for all LAUNCHERs. Finally, added -EP shorthand option
+for -ExecutionPolicy to all LAUNCHERs as well as the optional integer representation
+of the -WindowStyle PowerShell execution flag: Normal (0), Hidden (1), Minimized (2),
 Maximized (3).
 
-v1.5 - 2016-11-04 Blue Hat (Redmond, Washington USA): Added WMIC LAUNCHER with some 
+v1.5 - 2016-11-04 Blue Hat (Redmond, Washington USA): Added WMIC LAUNCHER with some
 randomization of WMIC command line arguments.
 
 v1.6 - 2017-01-24 Blue Hat IL (Tel Aviv, Israel):
@@ -101,7 +101,7 @@ Encoding\1,Launcher\Stdin++\234,Clip' -Quiet -NoExit
 - Removed Whitespace obfuscation from Token\All\1 to speed up large script obfuscation.
 - Added Process Argument Tree output for all launchers to aid defenders.
 - Added base menu auto-detect functionality to avoid needing to use BACK or HOME:
-E.g., if you ran TOKEN then ALL then 1, then just type LAUNCHER and you will get to 
+E.g., if you ran TOKEN then ALL then 1, then just type LAUNCHER and you will get to
 the LAUNCHER menu without needing to type HOME or BACK to get back to the home menu.
 - Added multi-command syntax utilized by CLI and interactive mode:
 E.g., Token\All\1,String\3,Encoding\5,Launcher\Ps\234,Clip
@@ -109,18 +109,18 @@ E.g., Token\All\1,String\3,Encoding\5,Launcher\Ps\234,Clip
 E.g., Token\*\*,String\[13],Encoding\(1|6),Launcher\.*[+]{2}\234,Clip
 - Added OUT FILEPATH single command functionality.
 - Added decoding if powershell -enc syntax is entered as a SCRIPTBLOCK value.
-- Added alias ForEach to ForEach-Object/% randomized syntax options in all ENCODING 
+- Added alias ForEach to ForEach-Object/% randomized syntax options in all ENCODING
 functions.
 - Added -Key -Ke -K KEY substring syntax options to Out-SecureStringCommand.ps1.
 - Added more thorough case randomization to all \Home\String obfuscation functions.
-- Added -ST/-STA (Single-Threaded Apartment) flags to CLIP+ and CLIP++ launcher 
+- Added -ST/-STA (Single-Threaded Apartment) flags to CLIP+ and CLIP++ launcher
 functions since they are required if running on PowerShell 2.0.
-- Added Get-Item/GI/Item syntax everywhere where Get-ChildItem is used to get 
+- Added Get-Item/GI/Item syntax everywhere where Get-ChildItem is used to get
 variable values.
 - Added Set-Item variable instantiation syntax to TYPE obfuscation function.
-- Added additional Invoke-Expression/IEX syntax using PowerShell automatic variables 
-and environment variable value concatenations in Out-ObfuscatedStringCommand.ps1's 
-Out-EncapsulatedInvokeExpression function and copied to all launchers, STRING and 
+- Added additional Invoke-Expression/IEX syntax using PowerShell automatic variables
+and environment variable value concatenations in Out-ObfuscatedStringCommand.ps1's
+Out-EncapsulatedInvokeExpression function and copied to all launchers, STRING and
 ENCODING functions to add numerous command-line syntaxes for IEX.
 - Added two new JOIN syntaxes for String\Reverse and all ENCODING obfuscation options:
 1) Added [String]::Join('',$string) JOIN syntax
@@ -135,8 +135,8 @@ ENCODING functions to add numerous command-line syntaxes for IEX.
 4) PtrToStringUni , ([Runtime.InteropServices.Marshal].GetMembers()[4].Name).Invoke
 5) PtrToStringAnsi, ([Runtime.InteropServices.Marshal].GetMembers()[0].Name).Invoke
 6) PtrToStringAnsi, ([Runtime.InteropServices.Marshal].GetMembers()[1].Name).Invoke
-- Updated Out-ObfuscatedTokenCommand.ps1 so that VARIABLE obfuscation won't 
-encapsulate variables in ${} if they are already encapsulated (so ${${var}} won't 
+- Updated Out-ObfuscatedTokenCommand.ps1 so that VARIABLE obfuscation won't
+encapsulate variables in ${} if they are already encapsulated (so ${${var}} won't
 happen as this causes errors).
 - Replaced Invoke-Obfuscation.psm1 with Invoke-Obfuscation.psd1 (thanks @Carlos_Perez).
 - Fixed several TOKEN-level obfuscation bugs reported by @cobbr_io and @IISResetMe.
@@ -149,8 +149,8 @@ v1.8 - 2017-07-27 Black Hat (Las Vegas, Nevada USA):
 - Added 2 new ENCODING options: Special Characters and Whitespace
 
 v1.8.1 - 2017-12-19:
-- Added COMPRESS function for easier conversion of multi-line scripts to a one-liner 
-command while drastically reducing the command length for cmd.exe command line length 
+- Added COMPRESS function for easier conversion of multi-line scripts to a one-liner
+command while drastically reducing the command length for cmd.exe command line length
 limitation purposes.
 
 v1.8.2 - 2018-01-04:

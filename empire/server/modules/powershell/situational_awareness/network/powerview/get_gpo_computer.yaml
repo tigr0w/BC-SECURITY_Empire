@@ -6,12 +6,12 @@ authors:
   - name: ''
     handle: '@byt3bl33d3r'
     link: https://twitter.com/byt3bl33d3r
-description: 'Takes a GPO GUID and returns the computers the GPO is applied to. (Note: This function was removed in PowerView.
-  This now uses a combination of two CmdLets to achieve the same functionality)'
+description: 'Takes a GPO GUID and returns the computers the GPO is applied to. (Note:
+  This function was removed in PowerView. This now uses a combination of two CmdLets
+  to achieve the same functionality)'
 software: S0194
-tactics: []
-techniques:
-  - T1484
+tactics: [TA0007]
+techniques: [T1615]
 background: true
 output_extension:
 needs_admin: false
@@ -34,11 +34,13 @@ options:
     required: false
     value: ''
   - name: Server
-    description: Specifies an active directory server (domain controller) to bind to
+    description: Specifies an active directory server (domain controller) to bind
+      to
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false

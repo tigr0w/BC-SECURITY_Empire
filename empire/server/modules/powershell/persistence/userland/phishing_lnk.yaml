@@ -3,11 +3,11 @@ authors:
   - name: 0xFFaraday
     handle: '0xFFaraday'
     link: ''
-description: Adds an additional .LNK file to the targeted user's desktop and backdoors it to launch a stager of your choice. This lets the operator have the availability to spawn a new agent from the end user clicking a new "useful" shortcut.
-tactics: [TA0002]
-techniques:
-  - T1059
-  - T1204
+description: Adds an additional .LNK file to the targeted user's desktop and backdoors
+  it to launch a stager of your choice. This lets the operator have the availability
+  to spawn a new agent from the end user clicking a new "useful" shortcut.
+tactics: [TA0004]
+techniques: [T1204.001]
 background: true
 output_extension:
 needs_admin: false
@@ -15,7 +15,7 @@ opsec_safe: false
 language: powershell
 min_language_version: '2'
 comments:
- - https://www.hull1.com/scriptit/2020/08/15/customize-shortcut-icon.html
+  - https://www.hull1.com/scriptit/2020/08/15/customize-shortcut-icon.html
 options:
   - name: Agent
     description: Agent to run module on.
@@ -26,19 +26,23 @@ options:
     required: true
     value: ''
   - name: Application
-    description: The program path that you want the user to be "expecting". For Example, C:\windows\System32\calc.exe
+    description: The program path that you want the user to be "expecting". For Example,
+      C:\windows\System32\calc.exe
     required: true
     value: ''
   - name: TargetedUser
-    description: User that you want to put the malicious LNK in their Desktop. For example, IEUser
+    description: User that you want to put the malicious LNK in their Desktop. For
+      example, IEUser
     required: true
     value: ''
   - name: Icon
-    description: The icon that is used for the newly created LNK. Defaults to 27 which is the logout icon, 32 is a full recycling bin, and 4 is an folder. More info can be found here -> https://www.hull1.com/scriptit/2020/08/15/customize-shortcut-icon.html
+    description: The icon that is used for the newly created LNK. Defaults to 27
+      which is the logout icon, 32 is a full recycling bin, and 4 is an folder. More
+      info can be found here -> https://www.hull1.com/scriptit/2020/08/15/customize-shortcut-icon.html
     required: true
     value: ''
   - name: StagerCommand
     description: Copy the command for your powershell / ironpython stager
     required: true
-    value: ''    
+    value: ''
 script_path: persistence/Invoke-PhishingLNK.ps1

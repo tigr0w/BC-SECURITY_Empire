@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/Cx01N_
 description: List running processes including PID, PPID, and ComandLine (uses wmi).
 software: ''
-tactics: []
-techniques:
-  - T1057
+tactics: [TA0007]
+techniques: [T1057]
 background: false
 output_extension:
 needs_admin: false
@@ -29,10 +28,10 @@ options:
     description: Computer to query for processes.
     required: false
     value: ''
-    format: Z
 bof:
   x86: bof/situational_awareness/tasklist/tasklist.x86.o
   x64: bof/situational_awareness/tasklist/tasklist.x64.o
   entry_point: ''
+  format_string: Z
 script_path: ''
 script_end: ''

@@ -1,4 +1,5 @@
 import logging
+import typing
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
@@ -7,6 +8,10 @@ from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.api.v2.tag.tag_dto import TagOrderOptions, TagSourceFilter
 from empire.server.core.db import models
 from empire.server.core.hooks import hooks
+
+if typing.TYPE_CHECKING:
+    from empire.server.common.empire import MainMenu
+
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +26,7 @@ Taggable = (
 
 
 class TagService:
-    def __init__(self, main_menu):
+    def __init__(self, main_menu: "MainMenu"):
         self.main_menu = main_menu
 
     def get_by_id(self, db: Session, tag_id: int):
@@ -97,9 +102,11 @@ class TagService:
         self,
         db: Session,
         taggable: Taggable,
-        tag_req,
+        name: str,
+        value: str,
+        color: str | None = None,
     ):
-        tag = models.Tag(name=tag_req.name, value=tag_req.value, color=tag_req.color)
+        tag = models.Tag(name=name, value=value, color=color)
         taggable.tags.append(tag)
         db.flush()
 

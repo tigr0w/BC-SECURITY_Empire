@@ -103,7 +103,7 @@ function Out-ObfuscatedAst
         [Switch] $DisableNestedObfuscation
     )
     Process {
-        If ($ScriptString) { $AbstractSyntaxTree = Get-Ast -ScriptString $ScriptString } 
+        If ($ScriptString) { $AbstractSyntaxTree = Get-Ast -ScriptString $ScriptString }
         ElseIf ($ScriptBlock) {
             $AbstractSyntaxTree = Get-Ast -ScriptBlock $ScriptBlock
         }
@@ -113,7 +113,7 @@ function Out-ObfuscatedAst
         ElseIf ($ScriptUri) {
             $AbstractSyntaxTree = Get-Ast -ScriptUri $ScriptUri
         }
-        
+
         Switch ($AbstractSyntaxTree.GetType().Name) {
             "ArrayExpressionAst" {
                 If ($DisableNestedObfuscation) { Out-ObfuscatedArrayExpressionAst -Ast $AbstractSyntaxTree -AstTypesToObfuscate $AstTypesToObfuscate -DisableNestedObfuscation }
@@ -166,7 +166,7 @@ function Out-ObfuscatedAst
             "CommandBaseAst" {
                 If ($DisableNestedObfuscation) { Out-ObfuscatedCommandBaseAst -Ast $AbstractSyntaxTree -AstTypesToObfuscate $AstTypesToObfuscate -DisableNestedObfuscation }
                 Else { Out-ObfuscatedCommandBaseAst -Ast $AbstractSyntaxTree -AstTypesToObfuscate $AstTypesToObfuscate }
-            } 
+            }
             "CommandElementAst" {
                 If ($DisableNestedObfuscation) { Out-ObfuscatedCommandElementAst -Ast $AbstractSyntaxTree -AstTypesToObfuscate $AstTypesToObfuscate -DisableNestedObfuscation }
                 Else { Out-ObfuscatedCommandElementAst -Ast $AbstractSyntaxTree -AstTypesToObfuscate $AstTypesToObfuscate }
@@ -421,7 +421,7 @@ function Out-ObfuscatedAttributeBaseAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the AttributeBaseAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -444,7 +444,7 @@ function Out-ObfuscatedAttributeBaseAst {
 
     #>
     Param (
-        
+
         [Parameter(Position = 0, ValueFromPipeline, Mandatory)]
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
@@ -494,7 +494,7 @@ function Out-ObfuscatedCatchClauseAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the CatchClauseAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -557,7 +557,7 @@ function Out-ObfuscatedCommandElementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the CommandElementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -629,7 +629,7 @@ function Out-ObfuscatedMemberAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the MemberAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -692,7 +692,7 @@ function Out-ObfuscatedNamedAttributeArgumentAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the NamedAttributeArgumentAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -767,7 +767,7 @@ function Out-ObfuscatedNamedBlockAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the NamedBlockAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -830,7 +830,7 @@ function Out-ObfuscatedParamBlockAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ParamBlockAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -878,7 +878,7 @@ function Out-ObfuscatedParamBlockAst {
             # For some reason 'Attribute' children do not exist within the ParamBlockAst Extent. Very frustrating.
             $ChildrenNotAttributes = $Children | ? { -not ($_ -in $AbstractSyntaxTree.Attributes) }
             $ChildrenAttributes = $Children | ? { $_ -in $AbstractSyntaxTree.Attributes }
-            
+
             Out-ObfuscatedAstsReordered -ParentAst $AbstractSyntaxTree -ChildrenAsts $ChildrenNotAttributes -AstTypesToObfuscate $AstTypesToObfuscate
         }
         Else { $AbstractSyntaxTree.Extent.Text }
@@ -904,7 +904,7 @@ function Out-ObfuscatedParameterAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ParameterAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -967,7 +967,7 @@ function Out-ObfuscatedRedirectionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the RedirectionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -994,7 +994,7 @@ function Out-ObfuscatedRedirectionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.RedirectionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1030,7 +1030,7 @@ function Out-ObfuscatedScriptBlockAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ScriptBlockAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1057,7 +1057,7 @@ function Out-ObfuscatedScriptBlockAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ScriptBlockAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1127,7 +1127,7 @@ function Out-ObfuscatedStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the StatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1154,7 +1154,7 @@ function Out-ObfuscatedStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.StatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1190,7 +1190,7 @@ function Out-ObfuscatedStatementBlockAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the StatementBlockAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1217,7 +1217,7 @@ function Out-ObfuscatedStatementBlockAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.StatementBlockAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1255,7 +1255,7 @@ function Out-ObfuscatedAttributeAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the AttributeAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1282,7 +1282,7 @@ function Out-ObfuscatedAttributeAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.AttributeAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1343,7 +1343,7 @@ function Out-ObfuscatedTypeConstraintAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the TypeConstraintAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1370,7 +1370,7 @@ function Out-ObfuscatedTypeConstraintAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.TypeConstraintAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1464,7 +1464,7 @@ function Out-ObfuscatedCommandParameterAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the CommandParameterAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1491,7 +1491,7 @@ function Out-ObfuscatedCommandParameterAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.CommandParameterAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1527,7 +1527,7 @@ function Out-ObfuscatedExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1554,7 +1554,7 @@ function Out-ObfuscatedExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1646,7 +1646,7 @@ function Out-ObfuscatedArrayExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ArrayExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1673,7 +1673,7 @@ function Out-ObfuscatedArrayExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ArrayExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1709,7 +1709,7 @@ function Out-ObfuscatedArrayLiteralAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ArrayLiteralAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1736,7 +1736,7 @@ function Out-ObfuscatedArrayLiteralAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ArrayLiteralAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1772,7 +1772,7 @@ function Out-ObfuscatedAttributedExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the AttributedExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1799,7 +1799,7 @@ function Out-ObfuscatedAttributedExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.AttributedExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1840,7 +1840,7 @@ function Out-ObfuscatedBinaryExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the BinaryExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1867,7 +1867,7 @@ function Out-ObfuscatedBinaryExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.BinaryExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1932,7 +1932,7 @@ function Out-ObfuscatedConstantExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ConstantExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -1959,7 +1959,7 @@ function Out-ObfuscatedConstantExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ConstantExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -1995,7 +1995,7 @@ function Out-ObfuscatedErrorExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ErrorExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2022,7 +2022,7 @@ function Out-ObfuscatedErrorExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ErrorExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2058,7 +2058,7 @@ function Out-ObfuscatedExpandableStringExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ExpandableStringExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2085,7 +2085,7 @@ function Out-ObfuscatedExpandableStringExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ExpandableStringExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2121,7 +2121,7 @@ function Out-ObfuscatedHashtableAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the HashtableAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2148,7 +2148,7 @@ function Out-ObfuscatedHashtableAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.HashtableAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2212,7 +2212,7 @@ function Out-ObfuscatedIndexExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the IndexExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2239,7 +2239,7 @@ function Out-ObfuscatedIndexExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.IndexExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2275,7 +2275,7 @@ function Out-ObfuscatedMemberExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the MemberExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2302,7 +2302,7 @@ function Out-ObfuscatedMemberExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.MemberExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2338,7 +2338,7 @@ function Out-ObfuscatedParenExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ParenExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2365,7 +2365,7 @@ function Out-ObfuscatedParenExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ParenExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2401,7 +2401,7 @@ function Out-ObfuscatedScriptBlockExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ScriptBlockExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2428,7 +2428,7 @@ function Out-ObfuscatedScriptBlockExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ScriptBlockExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2464,7 +2464,7 @@ function Out-ObfuscatedSubExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the SubExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2491,7 +2491,7 @@ function Out-ObfuscatedSubExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.SubExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2527,7 +2527,7 @@ function Out-ObfuscatedTypeExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the TypeExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2554,7 +2554,7 @@ function Out-ObfuscatedTypeExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.TypeExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2645,7 +2645,7 @@ function Out-ObfuscatedUnaryExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the UnaryExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2672,7 +2672,7 @@ function Out-ObfuscatedUnaryExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.UnaryExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2708,7 +2708,7 @@ function Out-ObfuscatedUsingExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the UsingExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2735,7 +2735,7 @@ function Out-ObfuscatedUsingExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.UsingExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2771,7 +2771,7 @@ function Out-ObfuscatedVariableExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the VariableExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2798,7 +2798,7 @@ function Out-ObfuscatedVariableExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.VariableExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2836,7 +2836,7 @@ function Out-ObfuscatedConvertExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ConvertExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2863,7 +2863,7 @@ function Out-ObfuscatedConvertExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ConvertExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2901,7 +2901,7 @@ function Out-ObfuscatedStringConstantExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the StringConstantExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2928,7 +2928,7 @@ function Out-ObfuscatedStringConstantExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.StringConstantExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -2966,7 +2966,7 @@ function Out-ObfuscatedInvokeMemberExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the InvokeMemberExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -2993,7 +2993,7 @@ function Out-ObfuscatedInvokeMemberExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.InvokeMemberExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3031,7 +3031,7 @@ function Out-ObfuscatedBaseCtorInvokeMemberExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the BaseCtorInvokeMemberExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3058,7 +3058,7 @@ function Out-ObfuscatedBaseCtorInvokeMemberExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.BaseCtorInvokeMemberExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3096,7 +3096,7 @@ function Out-ObfuscatedFunctionMemberAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the FunctionMemberAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3123,7 +3123,7 @@ function Out-ObfuscatedFunctionMemberAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.FunctionMemberAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3159,7 +3159,7 @@ function Out-ObfuscatedPropertyMemberAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the PropertyMemberAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3186,7 +3186,7 @@ function Out-ObfuscatedPropertyMemberAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.PropertyMemberAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3224,7 +3224,7 @@ function Out-ObfuscatedFileRedirectionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the FileRedirectionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3251,7 +3251,7 @@ function Out-ObfuscatedFileRedirectionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.FileRedirectionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3287,7 +3287,7 @@ function Out-ObfuscatedMergingRedirectionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the MergingRedirectionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3314,7 +3314,7 @@ function Out-ObfuscatedMergingRedirectionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.MergingRedirectionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3352,7 +3352,7 @@ function Out-ObfuscatedBlockStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the BlockStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3379,7 +3379,7 @@ function Out-ObfuscatedBlockStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.BlockStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3415,7 +3415,7 @@ function Out-ObfuscatedBreakStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the BreakStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3442,7 +3442,7 @@ function Out-ObfuscatedBreakStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.BreakStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3478,7 +3478,7 @@ function Out-ObfuscatedCommandBaseAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the CommandBaseAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3505,7 +3505,7 @@ function Out-ObfuscatedCommandBaseAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.CommandBaseAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3541,7 +3541,7 @@ function Out-ObfuscatedConfigurationDefinitionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ConfigurationDefinitionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3568,7 +3568,7 @@ function Out-ObfuscatedConfigurationDefinitionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ConfigurationDefinitionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3604,7 +3604,7 @@ function Out-ObfuscatedContinueStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ContinueStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3631,7 +3631,7 @@ function Out-ObfuscatedContinueStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ContinueStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3667,7 +3667,7 @@ function Out-ObfuscatedDataStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the DataStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3694,7 +3694,7 @@ function Out-ObfuscatedDataStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.DataStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3730,7 +3730,7 @@ function Out-ObfuscatedDynamicKeywordStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the DynamicKeywordStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3757,7 +3757,7 @@ function Out-ObfuscatedDynamicKeywordStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.DynamicKeywordStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3793,7 +3793,7 @@ function Out-ObfuscatedExitStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ExitStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3820,7 +3820,7 @@ function Out-ObfuscatedExitStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ExitStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3856,7 +3856,7 @@ function Out-ObfuscatedFunctionDefinitionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the FunctionDefinitionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3883,7 +3883,7 @@ function Out-ObfuscatedFunctionDefinitionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.FunctionDefinitionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3919,7 +3919,7 @@ function Out-ObfuscatedIfStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the IfStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -3946,7 +3946,7 @@ function Out-ObfuscatedIfStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.IfStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -3982,7 +3982,7 @@ function Out-ObfuscatedLabeledStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the LabeledStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4009,7 +4009,7 @@ function Out-ObfuscatedLabeledStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.LabeledStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4045,7 +4045,7 @@ function Out-ObfuscatedPipelineBaseAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the PipelineBaseAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4072,7 +4072,7 @@ function Out-ObfuscatedPipelineBaseAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.PipelineBaseAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4108,7 +4108,7 @@ function Out-ObfuscatedReturnStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ReturnStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4135,7 +4135,7 @@ function Out-ObfuscatedReturnStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ReturnStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4171,7 +4171,7 @@ function Out-ObfuscatedThrowStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ThrowStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4198,7 +4198,7 @@ function Out-ObfuscatedThrowStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ThrowStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4234,7 +4234,7 @@ function Out-ObfuscatedTrapStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the TrapStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4261,7 +4261,7 @@ function Out-ObfuscatedTrapStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.TrapStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4297,7 +4297,7 @@ function Out-ObfuscatedTryStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the TryStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4324,7 +4324,7 @@ function Out-ObfuscatedTryStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.TryStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4360,7 +4360,7 @@ function Out-ObfuscatedTypeDefinitionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the TypeDefinitionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4387,7 +4387,7 @@ function Out-ObfuscatedTypeDefinitionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.TypeDefinitionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4423,7 +4423,7 @@ function Out-ObfuscatedUsingStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the UsingStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4450,7 +4450,7 @@ function Out-ObfuscatedUsingStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.UsingStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4488,7 +4488,7 @@ function Out-ObfuscatedCommandAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the CommandAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4515,7 +4515,7 @@ function Out-ObfuscatedCommandAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.CommandAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4603,7 +4603,7 @@ function Out-ObfuscatedCommandExpressionAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the CommandExpressionAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4630,7 +4630,7 @@ function Out-ObfuscatedCommandExpressionAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.CommandExpressionAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4668,7 +4668,7 @@ function Out-ObfuscatedLoopStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the LoopStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4695,7 +4695,7 @@ function Out-ObfuscatedLoopStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.LoopStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4732,7 +4732,7 @@ function Out-ObfuscatedSwitchStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the SwitchStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4759,7 +4759,7 @@ function Out-ObfuscatedSwitchStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.SwitchStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4797,7 +4797,7 @@ function Out-ObfuscatedDoUntilStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the DoUntilStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4824,7 +4824,7 @@ function Out-ObfuscatedDoUntilStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.DoUntilStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4860,7 +4860,7 @@ function Out-ObfuscatedDoWhileStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the DoWhileStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4887,7 +4887,7 @@ function Out-ObfuscatedDoWhileStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.DoWhileStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4923,7 +4923,7 @@ function Out-ObfuscatedForEachStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ForEachStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -4950,7 +4950,7 @@ function Out-ObfuscatedForEachStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ForEachStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -4986,7 +4986,7 @@ function Out-ObfuscatedForStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ForStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -5013,7 +5013,7 @@ function Out-ObfuscatedForStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ForStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -5049,7 +5049,7 @@ function Out-ObfuscatedWhileStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the WhileStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -5076,7 +5076,7 @@ function Out-ObfuscatedWhileStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.WhileStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -5114,7 +5114,7 @@ function Out-ObfuscatedAssignmentStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the AssignmentStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -5141,7 +5141,7 @@ function Out-ObfuscatedAssignmentStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.AssignmentStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -5273,7 +5273,7 @@ function Out-ObfuscatedErrorStatementAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the ErrorStatementAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -5300,7 +5300,7 @@ function Out-ObfuscatedErrorStatementAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.ErrorStatementAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -5336,7 +5336,7 @@ function Out-ObfuscatedPipelineAst {
     .PARAMETER AbstractSyntaxTree
 
     Specifies the PipelineAst to be obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -5363,7 +5363,7 @@ function Out-ObfuscatedPipelineAst {
         [ValidateNotNullOrEmpty()]
         [Alias('Ast')]
         [System.Management.Automation.Language.PipelineAst] $AbstractSyntaxTree,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -5407,7 +5407,7 @@ function Out-ObfuscatedAstsReordered {
     .PARAMETER ChildrenAsts
 
     Specifies the ChildrenAsts within the ParentAst that can be re-ordered.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -5438,7 +5438,7 @@ function Out-ObfuscatedAstsReordered {
         [Parameter(Position = 1, Mandatory)]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.Language.Ast[]] $ChildrenAsts,
-        
+
         [Parameter(Position = 2)]
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
@@ -5463,7 +5463,7 @@ function Out-ObfuscatedAstsReordered {
             $LengthDifference = $ObfuscatedString.Length - $ParentAst.Extent.Text.Length
             $BeginLength = ($ChildrenAsts[$i].Extent.StartOffset - $ParentAst.Extent.StartOffset) + $LengthDifference
             $EndStartIndex = ($ChildrenAsts[$i].Extent.StartOffset - $ParentAst.Extent.StartOffset) + $ChildrenAsts[$i].Extent.Text.Length
-            
+
             $ObfuscatedString = [String] $ObfuscatedString.SubString(0, $BeginLength)
             $ObfuscatedString += [String] $ChildrenObfuscatedExtents[$i]
             $ObfuscatedString += [String] $ParentAst.Extent.Text.Substring($EndStartIndex)
@@ -5682,7 +5682,7 @@ function Out-ObfuscatedChildrenAst {
     .PARAMETER ChildrenAsts
 
     Optionally specifies the ChildrenAsts within the ParentAst that should be recursively obfuscated.
-    
+
     .PARAMETER AstTypesToObfuscate
 
     Specifies the Ast Types within the root Ast that obfuscation should be applied to. Defaults to all types with obfuscation implemented.
@@ -5717,7 +5717,7 @@ function Out-ObfuscatedChildrenAst {
         [ValidateNotNullOrEmpty()]
         [Alias('AstTypes', 'Types')]
         [System.Type[]] $AstTypesToObfuscate = @('System.Management.Automation.Language.NamedAttributeArgumentAst', 'System.Management.Automation.Language.ParamBlockAst', 'System.Management.Automation.Language.ScriptBlockAst', 'System.Management.Automation.Language.AttributeAst', 'System.Management.Automation.Language.BinaryExpressionAst', 'System.Management.Automation.Language.HashtableAst', 'System.Management.Automation.Language.CommandAst', 'System.Management.Automation.Language.AssignmentStatementAst', 'System.Management.Automation.Language.TypeExpressionAst', 'System.Management.Automation.Language.TypeConstraintAst'),
-        
+
         [Switch] $DisableNestedObfuscation
     )
     Process {

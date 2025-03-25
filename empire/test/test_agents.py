@@ -3,14 +3,13 @@ import logging
 import struct
 import time
 import zlib
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from sqlalchemy.exc import IntegrityError
 
 from empire.server.common.empire import MainMenu
-from empire.server.utils.string_util import is_valid_session_id
 
 log = logging.getLogger(__name__)
 
@@ -60,157 +59,26 @@ class compress:
         return header + data
 
 
-@pytest.fixture(scope="function", autouse=True)
-def agents(session_local, models, host):
+def test_stale_expression(empire_config, session_local, models):
     with session_local.begin() as db:
-        db_host = db.query(models.Host).filter(models.Host.id == host).first()
-        agent = models.Agent(
-            name="TEST123",
-            session_id="TEST123",
-            delay=60,
-            jitter=0.1,
-            internal_ip=db_host.internal_ip,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host_id=host,
-            archived=False,
+        agents = db.query(models.Agent).all()
+
+        # assert one of the agents is stale via its hybrid property
+        assert any(agent.stale for agent in agents)
+        # assert any one of the agents is not stale via its hybrid property
+        assert any(not agent.stale for agent in agents)
+        # assert we can filter on stale via the hybrid expressions
+
+        stale = (
+            db.query(models.Agent).filter(models.Agent.stale == True).all()  # noqa: E712
         )
+        assert all(agent.stale for agent in stale)
 
-        agent2 = models.Agent(
-            name="SECOND",
-            session_id="SECOND",
-            delay=60,
-            jitter=0.1,
-            internal_ip=db_host.internal_ip,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host_id=host,
-            archived=False,
+        # assert we can filter on stale via the hybrid expression
+        not_stale = (
+            db.query(models.Agent).filter(models.Agent.stale == False).all()  # noqa: E712
         )
-
-        agent3 = models.Agent(
-            name="archived",
-            session_id="archived",
-            delay=60,
-            jitter=0.1,
-            internal_ip=db_host.internal_ip,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host_id=host,
-            archived=True,
-        )
-
-        agent4 = models.Agent(
-            name="STALE",
-            session_id="STALE",
-            delay=1,
-            jitter=0.1,
-            internal_ip=db_host.internal_ip,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host_id=host,
-            archived=False,
-        )
-
-        db.add(agent)
-        db.add(agent2)
-        db.add(agent3)
-        db.add(agent4)
-        db.add(models.AgentCheckIn(agent_id=agent.session_id))
-        db.add(models.AgentCheckIn(agent_id=agent2.session_id))
-        db.add(models.AgentCheckIn(agent_id=agent3.session_id))
-        db.add(
-            models.AgentCheckIn(
-                agent_id=agent4.session_id,
-                checkin_time=datetime.now(timezone.utc) - timedelta(days=2),
-            )
-        )
-        db.flush()
-        agents = [agent, agent2, agent3, agent4]
-
-        agent_ids = [agent.session_id for agent in agents]
-
-    yield agent_ids
-
-    with session_local.begin() as db:
-        db.query(models.Agent).delete()
-
-
-def test_stale_expression(empire_config):
-    from empire.server.core.db import models
-    from empire.server.core.db.base import SessionLocal
-
-    db = SessionLocal()
-
-    # assert all 4 agents are in the database
-    expected_agents = 4
-    agents = db.query(models.Agent).all()
-    assert len(agents) == expected_agents
-
-    # assert one of the agents is stale via its hybrid property
-    assert any(agent.stale for agent in agents)
-
-    # assert we can filter on stale via the hybrid expressions
-    expected_stale = 1
-    stale = (
-        db.query(models.Agent).filter(models.Agent.stale == True).all()  # noqa: E712
-    )
-    assert len(stale) == expected_stale
-
-    # assert we can filter on stale via the hybrid expression
-    expected_not_stale = 3
-    not_stale = (
-        db.query(models.Agent).filter(models.Agent.stale == False).all()  # noqa: E712
-    )
-    assert len(not_stale) == expected_not_stale
+        assert all(not agent.stale for agent in not_stale)
 
 
 def test_large_internal_ip_works(session_local, host, models, agent):
@@ -229,20 +97,21 @@ def test_large_internal_ip_works(session_local, host, models, agent):
 
 
 def test_duplicate_host(session_local, models, host):
-    with pytest.raises(IntegrityError), session_local.begin() as db:
+    with session_local.begin() as db:
         db_host = db.query(models.Host).filter(models.Host.id == host).first()
         host2 = models.Host(name=db_host.name, internal_ip=db_host.internal_ip)
-
         db.add(host2)
-        db.flush()
+
+        with pytest.raises(IntegrityError):
+            db.flush()
 
 
 def test_duplicate_checkin_raises_exception(session_local, models, agent):
-    with pytest.raises(IntegrityError), session_local.begin() as db:
+    with session_local.begin() as db:
         db_agent = (
             db.query(models.Agent).filter(models.Agent.session_id == agent).first()
         )
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         checkin = models.AgentCheckIn(
             agent_id=db_agent.session_id, checkin_time=timestamp
         )
@@ -252,7 +121,9 @@ def test_duplicate_checkin_raises_exception(session_local, models, agent):
 
         db.add(checkin)
         db.add(checkin2)
-        db.flush()
+
+        with pytest.raises(IntegrityError):
+            db.flush()
 
 
 def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
@@ -265,8 +136,8 @@ def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
         # as the original checkin
         time.sleep(2)
 
-        main.agents.update_agent_lastseen_db(db_agent.session_id, db)
-        main.agents.update_agent_lastseen_db(db_agent.session_id, db)
+        main.agentsv2.update_agent_lastseen(db, db_agent.session_id)
+        main.agentsv2.update_agent_lastseen(db, db_agent.session_id)
 
     with session_local.begin() as db:
         db_agent = (
@@ -295,7 +166,7 @@ def test_update_dir_list(session_local, models, agent, main: MainMenu):
                 },
             ],
         }
-        main.agents.update_dir_list(agent, message, db)
+        main.agentcommsv2._update_dir_list(db, agent, message)
 
         file, _ = main.agentfilesv2.get_file_by_path(
             db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
@@ -329,7 +200,7 @@ def test_update_dir_list_with_existing_joined_file(
                 },
             ],
         }
-        main.agents.update_dir_list(agent, message, db)
+        main.agentcommsv2._update_dir_list(db, agent, message)
 
         file, _ = main.agentfilesv2.get_file_by_path(
             db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
@@ -345,7 +216,7 @@ def test_update_dir_list_with_existing_joined_file(
         )
 
         # This previously raised a Foreign Key Constraint error, but should succeed now.
-        main.agents.update_dir_list(agent, message, db)
+        main.agentcommsv2._update_dir_list(db, agent, message)
 
         file2, _ = main.agentfilesv2.get_file_by_path(
             db, agent, "C:\\Users\\vinnybod\\Desktop\\test.txt"
@@ -363,51 +234,32 @@ def test_update_dir_list_with_existing_joined_file(
         db.query(models.AgentFile).delete()
 
 
-@pytest.mark.parametrize(
-    "session_id,expected",
-    [
-        ("ABCDEFGH", True),
-        ("12345678", True),
-        ("ABCDEF1H", True),
-        ("A1B2C3D4", True),
-        ("ABCDEFG", False),
-        ("ABCDEFGHI", False),
-        ("ABCD_EFG", False),
-        ("       ", False),
-        ("", False),
-        (12345678, False),
-        (None, False),
-        ("./../../", False),
-    ],
-)
-def test_is_valid_session_id(session_id, expected):
-    assert (
-        is_valid_session_id(session_id) == expected
-    ), f"Test failed for session_id: {session_id}"
+def test_skywalker_exploit_protection(caplog, agent, session_local, main: MainMenu):
+    with session_local.begin() as db:
+        # Malicious file path attempting directory traversal
+        malicious_directory = (
+            main.installPath + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
+        )
+        encodedPart = b"test"
+        c = compress()
+        start_crc32 = c.crc32_data(encodedPart)
+        comp_data = c.comp_data(encodedPart)
+        encodedPart = c.build_header(comp_data, start_crc32)
+        encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
 
+        malicious_data = "|".join(
+            [
+                "0",
+                malicious_directory,
+                "6",
+                encodedPart,
+            ]
+        )
 
-def test_skywalker_exploit_protection(caplog, agent, db, main: MainMenu):
-    # Malicious file path attempting directory traversal
-    malicious_directory = (
-        main.installPath + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
-    )
-    encodedPart = b"test"
-    c = compress()
-    start_crc32 = c.crc32_data(encodedPart)
-    comp_data = c.comp_data(encodedPart)
-    encodedPart = c.build_header(comp_data, start_crc32)
-    encodedPart = base64.b64encode(encodedPart).decode("UTF-8")
+        main.agentcommsv2._process_agent_packet(
+            db, agent, "TASK_DOWNLOAD", "1", malicious_data
+        )
 
-    malicious_data = "|".join(
-        [
-            "0",
-            malicious_directory,
-            "6",
-            encodedPart,
-        ]
-    )
+        expected_message_part = "attempted skywalker exploit!"
 
-    main.agents.process_agent_packet(agent, "TASK_DOWNLOAD", "1", malicious_data, db)
-
-    expected_message_part = "attempted skywalker exploit!"
     assert any(expected_message_part in message for message in caplog.messages)

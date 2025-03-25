@@ -29,7 +29,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-ObfuscatedTokenCommand, Out-EncapsulatedInvokeExpression (used for WMIC launcher -- located in Out-ObfuscatedStringCommand.ps1), Out-ConcatenatedString (used for WMIC and MSHTA launchers -- located in Out-ObfuscatedTokenCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-PowerShellLauncher obfuscates a given PowerShell command (via stdin, process-level environment variables, clipboard, etc.) while wrapping it in syntax to be launched directly from cmd.exe. Some techniques also push command line arguments to powershell.exe's parent (denoted with +) or even grandparent (denoted with ++) process command line arguments.
@@ -111,7 +111,7 @@ http://www.danielbohannon.com
         [ValidateNotNullOrEmpty()]
         [ScriptBlock]
         $ScriptBlock,
-        
+
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty()]
         [ValidateSet(1,2,3,4,5,6,7,8,9,10,11,12)]
@@ -143,7 +143,7 @@ http://www.danielbohannon.com
         [ValidateSet('Bypass', 'Unrestricted', 'RemoteSigned', 'AllSigned', 'Restricted')]
         [String]
         $ExecutionPolicy,
-        
+
         [Parameter(Position = 2)]
         [String]
         $SwitchesAsString
@@ -154,7 +154,7 @@ http://www.danielbohannon.com
 
     # Convert ScriptBlock to a String.
     $ScriptString = [String]$ScriptBlock
-    
+
     # Check and throw warning message if input $ScriptString contains new line characters.
     If($ScriptString.Contains([Char]13+[Char]10))
     {
@@ -194,12 +194,12 @@ http://www.danielbohannon.com
     For($i=$Tokens.Count-1; $i -ge 0; $i--)
     {
         $Token = $Tokens[$i]
-        
+
         # Manually extract token since tokenization will remove certain characters and whitespace which we want to retain.
         $PreTokenStr    = $ScriptString.SubString(0,$Token.Start)
         $ExtractedToken = $ScriptString.SubString($Token.Start,$Token.Length)
         $PostTokenStr   = $ScriptString.SubString($Token.Start+$Token.Length)
-        
+
         # Escape certain characters that will be problematic on the command line for powershell.exe (\) and cmd.exe (^).
         # Single cmd escaping (^) for strings encapsulated by double quotes. For all other tokens apply double layer escaping (^^^).
         If($Token.Type -eq 'String' -AND !($ExtractedToken.StartsWith("'") -AND $ExtractedToken.EndsWith("'")))
@@ -210,7 +210,7 @@ http://www.danielbohannon.com
             }
 
             If($ExtractedToken.Contains('\')) {$ExtractedToken = $ExtractedToken.Replace('\','\\')}
-            
+
             If($ExtractedToken.Contains('"')) {$ExtractedToken = '\"' + $ExtractedToken.SubString(1,$ExtractedToken.Length-1-1) + '\"'}
         }
         Else
@@ -236,11 +236,11 @@ http://www.danielbohannon.com
                 If($ExtractedToken.Contains($Char)) {$ExtractedToken = $ExtractedToken.Replace($Char,"^^^$Char")}
             }
         }
-        
+
         # Add $ExtractedToken back into context in $ScriptString
         $ScriptString = $PreTokenStr + $ExtractedToken + $PostTokenStr
     }
- 
+
     # Randomly select PowerShell execution flag argument substrings and randomize the order for all flags passed to this function.
     # This is to prevent the Blue Team from placing false hope in simple signatures for the shortest form of these arguments or consistent ordering.
     $PowerShellFlags = New-Object String[](0)
@@ -324,7 +324,7 @@ http://www.danielbohannon.com
     $PowerShellFlags = ($PowerShellFlags | ForEach-Object {$_ + ' '*(Get-Random -Minimum 1 -Maximum 3)}) -Join ''
     $PowerShellFlags = ' '*(Get-Random -Minimum 1 -Maximum 3) + $PowerShellFlags + ' '*(Get-Random -Minimum 1 -Maximum 3)
 
-    # Build out paths to binaries depending if 32-bit or 64-bit options were selected.    
+    # Build out paths to binaries depending if 32-bit or 64-bit options were selected.
     $WinPath      = "C:\WINDOWS"
     $System32Path = "C:\WINDOWS\system32"
     $PathToRunDll = Get-Random -Input @("$System32Path\rundll32"  , "$System32Path\rundll32.exe"  , "rundll32" , "rundll32.exe")
@@ -332,7 +332,7 @@ http://www.danielbohannon.com
     $PathToCmd    = Get-Random -Input @("$System32Path\cmd"       , "$System32Path\cmd.exe"       , "cmd.exe"  , "cmd")
     $PathToClip   = Get-Random -Input @("$System32Path\clip"      , "$System32Path\clip.exe"      , "clip"     , "clip.exe")
     $PathToWmic   = Get-Random -Input @("$System32Path\WBEM\wmic" , "$System32Path\WBEM\wmic.exe" , "wmic"     , "wmic.exe")
-    
+
     # If you use cmd or cmd.exe instead of the pathed version, then you don't need to put a whitespace between cmd and and cmd flags. E.g. cmd/c or cmd.exe/c.
     If($PathToCmd.Contains('\'))
     {
@@ -401,7 +401,7 @@ http://www.danielbohannon.com
 
               # Build out command line syntax in reverse so we can display the process argument tree at the end of this Switch block.
               $PSCmdSyntax = $PowerShellFlags + '"' + $ScriptString + '"'
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToPowerShell, $PSCmdSyntax)
 
@@ -426,7 +426,7 @@ http://www.danielbohannon.com
               # Build out command line syntax in reverse so we can display the process argument tree at the end of this Switch block.
               $PSCmdSyntax = $PowerShellFlags + '"' + $ScriptString + '"'
               $CmdSyntax   = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + $PathToPowerShell + $PSCmdSyntax
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToPowerShell, $PSCmdSyntax)
@@ -471,7 +471,7 @@ http://www.danielbohannon.com
                   If($ScriptString.Contains('$'))
                   {
                       $ScriptString = $ScriptString.Replace('$','`$')
-                         
+
                       # Double escape any $ characters that were already escaped prior to above escaping step.
                       If($ScriptString.Contains('``$'))
                       {
@@ -511,7 +511,7 @@ http://www.danielbohannon.com
 
                           # Randomly choose variable name starting length.
                           $RandomVarLength = (Get-Random -Input @(1..2))
-   
+
                           # Create random variable with characters from $CharsToRandomVarName.
                           If($CharsToRandomVarName.Count -lt $RandomVarLength) {$RandomVarLength = $CharsToRandomVarName.Count}
                           $RandomVarName = ((Get-Random -Input $CharsToRandomVarName -Count $RandomVarLength) -Join '').Replace(' ','')
@@ -534,7 +534,7 @@ http://www.danielbohannon.com
                           $RandomVarSetSyntax  = @()
                           $RandomVarSetSyntax += '$' + $RandomVarName + ' '*(Get-Random @(0..2)) + '=' + ' '*(Get-Random @(0..2)) + $CharCastDoubleQuote
                           $RandomVarSetSyntax += (Get-Random -Input @('Set-Variable','SV','Set')) + ' '*(Get-Random @(1..2)) + $RandomVarNameMaybeConcatenated + ' '*(Get-Random @(1..2)) + '(' + ' '*(Get-Random @(0..2)) + $CharCastDoubleQuote + ' '*(Get-Random @(0..2)) + ')'
-    
+
                           # Randomly choose from above variable syntaxes.
                           $RandomVarSet = (Get-Random -Input $RandomVarSetSyntax)
 
@@ -543,7 +543,7 @@ http://www.danielbohannon.com
                           $ScriptString = $ScriptString.Replace('"',"`${$RandomVarName}")
                       }
                   }
-                  
+
                   # Randomly select a syntax for the Char conversion of a comma ASCII value and then ramdomize the case.
                   $CharCastComma= ([Char[]](Get-Random -Input @('[String][Char]44','([Char]44).ToString()')) | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
                   If($ScriptString.Length-$ScriptString.Replace(',','').Length -le 5)
@@ -561,7 +561,7 @@ http://www.danielbohannon.com
 
                       # Randomly choose variable name starting length.
                       $RandomVarLength = (Get-Random -Input @(1..2))
-   
+
                       # Create random variable with characters from $CharsToRandomVarName.
                       If($CharsToRandomVarName.Count -lt $RandomVarLength) {$RandomVarLength = $CharsToRandomVarName.Count}
                       $RandomVarName = ((Get-Random -Input $CharsToRandomVarName -Count $RandomVarLength) -Join '').Replace(' ','')
@@ -627,7 +627,7 @@ http://www.danielbohannon.com
               # Build out command line syntax in reverse so we can display the process argument tree at the end of this Switch block.
               $PSCmdSyntax   = $PowerShellFlags + $ScriptString
               $WmicCmdSyntax = ' '*(Get-Random -Minimum 1 -Maximum 4) + $WmicArguments + ' '*(Get-Random -Minimum 1 -Maximum 4) + '"' + $PathToPowerShell + $PSCmdSyntax + '"'
-    
+
               # Set argument info for process tree output after this Switch block.
               # Even though wmic.exe will show in command line arguments, it will not be the parent process of powershell.exe. Instead, the already-existing instance of WmiPrvSE.exe will spawn powershell.exe.
               $ArgsDefenderWillSee += , @("[Unrelated to WMIC.EXE execution] C:\WINDOWS\system32\wbem\wmiprvse.exe", " -secured -Embedding")
@@ -657,11 +657,11 @@ http://www.danielbohannon.com
 
               # Put the execution flags in the format required by rundll32.exe: each argument separately encapusulated in double quotes.
               $ExecutionFlagsRunDllSyntax = ($PowerShellFlagsArray | Where-Object {$_.Trim().Length -gt 0} | ForEach-Object {'"' + ' '*(Get-Random -Minimum 0 -Maximum 3) + $_ + ' '*(Get-Random -Minimum 0 -Maximum 3) + '"' + ' '*(Get-Random -Minimum 1 -Maximum 4)}) -Join ''
- 
+
               # Build out command line syntax in reverse so we can display the process argument tree at the end of this Switch block.
               $PSCmdSyntax     = ' '*(Get-Random -Minimum 1 -Maximum 4) + $ExecutionFlagsRunDllSyntax + ' '*(Get-Random -Minimum 1 -Maximum 4) + "`"$ScriptString`""
               $RunDllCmdSyntax = ' '*(Get-Random -Minimum 1 -Maximum 4) + $Shell32Dll + (Get-Random -Input @(',',' ', ((Get-Random -Input @(',',',',',',' ',' ',' ') -Count (Get-Random -Input @(4..6)))-Join''))) + 'ShellExec_RunDLL' + ' '*(Get-Random -Minimum 1 -Maximum 4) + "`"$PathToPowerShell`"" + $PSCmdSyntax
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToRunDll          , $RunDllCmdSyntax)
               $ArgsDefenderWillSee += , @("`"$PathToPowerShell`"", $PSCmdSyntax.Replace('^',''))
@@ -682,7 +682,7 @@ http://www.danielbohannon.com
               {
                   $ScriptString = $ScriptString.Replace('^^^^','^^')
               }
-                        
+
               # Switch cmd.exe escape with powershell.exe escape of double-quote.
               If($ScriptString.Contains('\"')) {$ScriptString = $ScriptString.Replace('\"','"')}
 
@@ -705,7 +705,7 @@ http://www.danielbohannon.com
               # Build out command line syntax in reverse so we can display the process argument tree at the end of this Switch block.
               $PSCmdSyntax = $PowerShellFlags + $InvokeVariableSyntax
               $CmdSyntax   = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + '"' + $SetSyntax + $ScriptString + '&&' + ' '*(Get-Random -Minimum 0 -Maximum 4) + $PathToPowerShell + $PSCmdSyntax + '"'
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToPowerShell, $PSCmdSyntax.Replace('^',''))
@@ -719,14 +719,14 @@ http://www.danielbohannon.com
 
               # Switch cmd.exe escape with powershell.exe escape of double-quote.
               If($ScriptString.Contains('\"')) {$ScriptString = $ScriptString.Replace('\"','"')}
-             
+
               # Choose random syntax for invoking powershell.exe's StdIn.
               $PowerShellStdin = Out-RandomPowerShellStdInInvokeSyntax
-              
+
               # Build out command line syntax in reverse so we can display the process argument tree at the end of this Switch block.
               $PSCmdSyntax = $PowerShellFlags + $PowerShellStdin
               $CmdSyntax   = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + '"'  + ' '*(Get-Random -Minimum 0 -Maximum 3) + $Echo + (Get-Random -Input ('/','\',' '*(Get-Random -Minimum 1 -Maximum 3))) + $ScriptString + ' '*(Get-Random -Minimum 1 -Maximum 3) + '|' + ' '*(Get-Random -Minimum 1 -Maximum 3) + $PathToPowerShell + $PSCmdSyntax + '"'
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToPowerShell, $PSCmdSyntax.Replace('^',''))
@@ -740,14 +740,14 @@ http://www.danielbohannon.com
 
               # Switch cmd.exe escape with powershell.exe escape of double-quote.
               If($ScriptString.Contains('\"')) {$ScriptString = $ScriptString.Replace('\"','"')}
-             
+
               # Choose random syntax for invoking powershell.exe's StdIn.
               $PowerShellClip = Out-RandomClipboardInvokeSyntax
 
               # If this launcher is run in PowerShell 2.0 then Single-Threaded Apartment must be specified with -st or -sta.
               # Otherwise you will get the following error: "Current thread must be set to single thread apartment (STA) mode before OLE calls can be made."
               # Since Invoke-Obfuscation output is designed to run on any PowerShell version then for this launcher we will add the -st/-sta flag to $PowerShellFlags.
-              
+
               # If selected then the -Command flag needs to remain last (where it currently is).
               $CommandFlagValue = $NULL
               If($PSBoundParameters['Command'] -OR $Command)
@@ -769,7 +769,7 @@ http://www.danielbohannon.com
 
               # Add in -st/-sta to PowerShellFlags.
               $PowerShellFlags += (Get-Random -Input @('-st','-sta'))
-              
+
               # Randomize the order of the command-line arguments.
               # This is to prevent the Blue Team from placing false hope in simple signatures for consistent ordering of these arguments.
               If($PowerShellFlags.Count -gt 1)
@@ -796,7 +796,7 @@ http://www.danielbohannon.com
               # Build out command line syntax in reverse so we can display the process argument tree at the end of this Switch block.
               $PSCmdSyntax = $PowerShellFlags + $PowerShellClip
               $CmdSyntax   = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + '"'  + ' '*(Get-Random -Minimum 0 -Maximum 3) + $Echo + (Get-Random -Input ('/','\',' '*(Get-Random -Minimum 1 -Maximum 3))) + $ScriptString + ' '*(Get-Random -Minimum 0 -Maximum 2) + '|' + ' '*(Get-Random -Minimum 0 -Maximum 2) + $PathToClip + ' '*(Get-Random -Minimum 0 -Maximum 2) + '&&' + ' '*(Get-Random -Minimum 1 -Maximum 3) + $PathToPowerShell + $PSCmdSyntax + '"'
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToPowerShell, $PSCmdSyntax.Replace('^',''))
@@ -820,7 +820,7 @@ http://www.danielbohannon.com
 
               # Switch cmd.exe escape with powershell.exe escape of double-quote.
               If($ScriptString.Contains('\"')) {$ScriptString = $ScriptString.Replace('\"','"')}
-              
+
               # Choose random syntax for invoking command stored in process-level environment variable.
               # Generate random variable names to store the $ScriptString command and PowerShell syntax.
               $CharsForVarName = @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z')
@@ -840,7 +840,7 @@ http://www.danielbohannon.com
               $SetSyntax2    = ([Char[]]$SetSyntax2.ToLower()    | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
               $VariableName  = ([Char[]]$VariableName.ToLower()  | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
               $VariableName2 = ([Char[]]$VariableName2.ToLower() | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
-    
+
               # Generate random syntax for invoking process-level environment variable syntax.
               $InvokeOption = Out-RandomInvokeRandomEnvironmentVariableSyntax $VariableName
 
@@ -857,7 +857,7 @@ http://www.danielbohannon.com
               $PSCmdSyntax = $PowerShellFlags + ' '*(Get-Random -Minimum 1 -Maximum 3) + $InvokeOption
               $CmdSyntax2  = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 2) + "%$VariableName2%"
               $CmdSyntax   = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + '"' + $SetSyntax + $ScriptString + '&&' + $SetSyntax2 + $PathToPowerShell + $PSCmdSyntax + '&&' + ' '*(Get-Random -Minimum 0 -Maximum 4) + $PathToCmd + $CmdSyntax2 + '"'
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax2)
@@ -869,10 +869,10 @@ http://www.danielbohannon.com
               #############
               ## STDIN++ ##
               #############
-              
+
               # Switch cmd.exe escape with powershell.exe escape of double-quote.
               If($ScriptString.Contains('\"')) {$ScriptString = $ScriptString.Replace('\"','"')}
-              
+
               # Choose random syntax for invoking command stored in process-level environment variable.
               # Generate random variable names to store the $ScriptString command and PowerShell syntax.
               $CharsForVarName = @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z')
@@ -921,12 +921,12 @@ http://www.danielbohannon.com
 
               # Choose random syntax for invoking powershell.exe's StdIn.
               $PowerShellStdin = Out-RandomPowerShellStdInInvokeSyntax
-              
+
               # Undo some escaping from beginning of function.
               ForEach($Char in $CharsToEscape)
               {
                   If($ScriptString.Contains("^^^$Char")) {$ScriptString = $ScriptString.Replace("^^^$Char","^$Char")}
-    
+
                   If($PowerShellStdin.Contains("^$Char")) {$PowerShellStdin = $PowerShellStdin.Replace("^$Char","^^^$Char")}
               }
               If($ScriptString.Contains('^^^^'))
@@ -938,7 +938,7 @@ http://www.danielbohannon.com
               $PSCmdSyntax = $PowerShellFlags + ' '*(Get-Random -Minimum 1 -Maximum 3) + $PowerShellStdin + ' '*(Get-Random -Minimum 0 -Maximum 3)
               $CmdSyntax2  = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 2) + "%$VariableName2%"
               $CmdSyntax   = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + '"' + $SetSyntax + ' '*(Get-Random -Minimum 0 -Maximum 3)+ $ScriptString + ' '*(Get-Random -Minimum 0 -Maximum 3) + '&&' + ' '*(Get-Random -Minimum 0 -Maximum 3) + $SetSyntax2 + $Echo + ' '*(Get-Random -Minimum 1 -Maximum 3) + $InvokeOption + ' '*(Get-Random -Minimum 0 -Maximum 3) + '^|' + ' '*(Get-Random -Minimum 0 -Maximum 3) + $PathToPowerShell + $PSCmdSyntax + '&&' + ' '*(Get-Random -Minimum 0 -Maximum 3) + $PathToCmd + $CmdSyntax2 + '"'
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax2)
@@ -953,7 +953,7 @@ http://www.danielbohannon.com
 
               # Switch cmd.exe escape with powershell.exe escape of double-quote.
               If($ScriptString.Contains('\"')) {$ScriptString = $ScriptString.Replace('\"','"')}
-             
+
               # Choose random syntax for invoking powershell.exe's StdIn.
               $PowerShellClip = Out-RandomClipboardInvokeSyntax
 
@@ -961,7 +961,7 @@ http://www.danielbohannon.com
               ForEach($Char in @('<','>','|','&'))
               {
                   # Remove single escaping and then escape all characters. This will handle single-escaped and not-escaped characters.
-                  If($PowerShellClip.Contains("^$Char")) 
+                  If($PowerShellClip.Contains("^$Char"))
                   {
                       $PowerShellClip = $PowerShellClip.Replace("^$Char","^^^$Char")
                   }
@@ -970,7 +970,7 @@ http://www.danielbohannon.com
               # If this launcher is run in PowerShell 2.0 then Single-Threaded Apartment must be specified with -st or -sta.
               # Otherwise you will get the following error: "Current thread must be set to single thread apartment (STA) mode before OLE calls can be made."
               # Since Invoke-Obfuscation output is designed to run on any PowerShell version then for this launcher we will add the -st/-sta flag to $PowerShellFlags.
-              
+
               # If selected then the -Command flag needs to remain last (where it currently is).
               $CommandFlagValue = $NULL
               If($PSBoundParameters['Command'] -OR $Command)
@@ -992,7 +992,7 @@ http://www.danielbohannon.com
 
               # Add in -st/-sta to PowerShellFlags.
               $PowerShellFlags += (Get-Random -Input @('-st','-sta'))
-              
+
               # Randomize the order of the command-line arguments.
               # This is to prevent the Blue Team from placing false hope in simple signatures for consistent ordering of these arguments.
               If($PowerShellFlags.Count -gt 1)
@@ -1020,7 +1020,7 @@ http://www.danielbohannon.com
               $PSCmdSyntax = $PowerShellFlags + $PowerShellClip
               $CmdSyntax2  = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + $PathToPowerShell + $PsCmdSyntax
               $CmdSyntax   = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + '"'  + ' '*(Get-Random -Minimum 0 -Maximum 3) + $Echo + (Get-Random -Input ('/','\',' '*(Get-Random -Minimum 1 -Maximum 3))) + $ScriptString + ' '*(Get-Random -Minimum 0 -Maximum 2) + '|' + ' '*(Get-Random -Minimum 0 -Maximum 2) + $PathToClip + ' '*(Get-Random -Minimum 0 -Maximum 2) + '&&' + $PathToCmd + $CmdSyntax2 + '"'
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax2)
@@ -1047,21 +1047,21 @@ http://www.danielbohannon.com
 
               # Switch cmd.exe escape with powershell.exe escape of double-quote.
               If($ScriptString.Contains('\"')) {$ScriptString = $ScriptString.Replace('\"','"')}
-              
+
               # Choose random syntax for invoking command stored in process-level environment variable.
               # Generate random variable names to store the $ScriptString command and PowerShell syntax.
               $CharsForVarName = @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z')
               $VariableName  = (Get-Random -Input $CharsForVarName -Count ($CharsForVarName.Count/(Get-Random -Input @(5..10)))) -Join ''
               $VariableName  = ([Char[]]$VariableName.ToLower() | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
-              
+
               # Generate random case syntax for setting the above random variable names.
               $SetSyntax  = ([Char[]]'set' | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
               $SetSyntax  = $SetSyntax + ' '*(Get-Random -Minimum 2 -Maximum 4) + $VariableName + '='
-              
+
               # Randomize the case of the following variables.
               $SetSyntax     = ([Char[]]$SetSyntax.ToLower()     | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
               $VariableName  = ([Char[]]$VariableName.ToLower()  | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
-              
+
               # Generate random syntax for invoking process-level environment variable syntax.
               $InvokeOption = (Out-RandomInvokeRandomEnvironmentVariableSyntax $VariableName).Replace('\"',"'").Replace('`','')
 
@@ -1070,12 +1070,12 @@ http://www.danielbohannon.com
 
               # Put the execution flags in the format required by rundll32.exe: each argument separately encapusulated in double quotes.
               $ExecutionFlagsRunDllSyntax = ($PowerShellFlagsArray | Where-Object {$_.Trim().Length -gt 0} | ForEach-Object {'"' + ' '*(Get-Random -Minimum 0 -Maximum 3) + $_ + ' '*(Get-Random -Minimum 0 -Maximum 3) + '"' + ' '*(Get-Random -Minimum 1 -Maximum 4)}) -Join ''
- 
+
               # Build out command line syntax in reverse so we can display the process argument tree at the end of this Switch block.
               $PSCmdSyntax     = ' '*(Get-Random -Minimum 1 -Maximum 4) + $ExecutionFlagsRunDllSyntax + ' '*(Get-Random -Minimum 1 -Maximum 4) + "`"$InvokeOption`""
               $RundllCmdSyntax = ' '*(Get-Random -Minimum 1 -Maximum 4) + $Shell32Dll + (Get-Random -Input @(',',' ', ((Get-Random -Input @(',',',',',',' ',' ',' ') -Count (Get-Random -Input @(4..6)))-Join''))) + 'ShellExec_RunDLL' + ' '*(Get-Random -Minimum 1 -Maximum 4) + "`"$PathToPowerShell`"" + $PSCmdSyntax
               $CmdSyntax       = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + '"' + $SetSyntax + $ScriptString + '&&' + $PathToRunDll + $RundllCmdSyntax
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd             , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToRunDll          , $RundllCmdSyntax)
@@ -1100,21 +1100,21 @@ http://www.danielbohannon.com
 
               # Switch cmd.exe escape with powershell.exe escape of double-quote.
               If($ScriptString.Contains('\"')) {$ScriptString = $ScriptString.Replace('\"','"')}
-              
+
               # Choose random syntax for invoking command stored in process-level environment variable.
               # Generate random variable names to store the $ScriptString command and PowerShell syntax.
               $CharsForVarName = @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z')
               $VariableName  = (Get-Random -Input $CharsForVarName -Count ($CharsForVarName.Count/(Get-Random -Input @(5..10)))) -Join ''
               $VariableName  = ([Char[]]$VariableName.ToLower() | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
-              
+
               # Generate random case syntax for setting the above random variable names.
               $SetSyntax  = ([Char[]]'set' | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
               $SetSyntax  = $SetSyntax + ' '*(Get-Random -Minimum 2 -Maximum 4) + $VariableName + '='
-              
+
               # Randomize the case of the following variables.
               $SetSyntax     = ([Char[]]$SetSyntax.ToLower()     | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
               $VariableName  = ([Char[]]$VariableName.ToLower()  | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
-              
+
               # Generate random syntax for invoking process-level environment variable syntax.
               # Keep calling Out-RandomInvokeRandomEnvironmentVariableSyntax until we get the shorter syntax (not using $ExecutionContext syntax) since mshta.exe has a short argument size limitation.
               $InvokeOption = (Out-RandomInvokeRandomEnvironmentVariableSyntax $VariableName).Replace('\"',"'").Replace('`','')
@@ -1129,7 +1129,7 @@ http://www.danielbohannon.com
               $Run          = ([Char[]]'.Run'                  | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
               $TrueString   = ([Char[]]'True'                  | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
               $WindowClose  = ([Char[]]'Window.Close'          | ForEach-Object {$Char = $_; If(Get-Random -Input (0..1)){$Char = $Char.ToString().ToUpper()} $Char}) -Join ''
-            
+
               # Randomly decide whether to concatenate WScript.Shell or just encapsulate it with double quotes.
               If((Get-Random -Input @(0..1)) -eq 0)
               {
@@ -1183,7 +1183,7 @@ http://www.danielbohannon.com
               $PSCmdSyntax    = $PowerShellFlags + ' '*(Get-Random -Minimum 0 -Maximum 3) + $InvokeOption + '",' + $One + ',' + $TrueString + ")($WindowClose)"
               $MshtaCmdSyntax = ' '*(Get-Random -Minimum 1 -Maximum 4) + $CreateObject + "($WScriptShell)" + $Run + '("' + $PathToPowerShell + $PSCmdSyntax + '"'
               $CmdSyntax      = $SlashC + ' '*(Get-Random -Minimum 0 -Maximum 4) + '"' + $SetSyntax + $ScriptString + '&&' + $PathToMshta + $MshtaCmdSyntax
-    
+
               # Set argument info for process tree output after this Switch block.
               $ArgsDefenderWillSee += , @($PathToCmd       , $CmdSyntax)
               $ArgsDefenderWillSee += , @($PathToMshta     , $MshtaCmdSyntax)
@@ -1198,7 +1198,7 @@ http://www.danielbohannon.com
     If($ArgsDefenderWillSee.Count -gt 0)
     {
         Write-Host "`n`nProcess Argument Tree of ObfuscatedCommand with current launcher:"
-    
+
         $Counter = -1
         ForEach($Line in $ArgsDefenderWillSee)
         {
@@ -1230,13 +1230,13 @@ http://www.danielbohannon.com
             {
                 # Output Part2, handling if the size of Part2 exceeds $CmdMaxLength characters.
                 $RedactedPrintLength = $CmdMaxLength/5
-        
+
                 # Handle printing redaction message in middle of screen. #OCD
                 $CmdLineWidth = (Get-Host).UI.RawUI.BufferSize.Width
                 $RedactionMessage = "<REDACTED: ArgumentLength = $($Part1.Length + $Part2.Length)>"
                 $CenteredRedactionMessageStartIndex = (($CmdLineWidth-$RedactionMessage.Length)/2) - ($Part1.Length+$LineSpacing.Length)
                 $CurrentRedactionMessageStartIndex = ($RedactedPrintLength % $CmdLineWidth)
-        
+
                 If($CurrentRedactionMessageStartIndex -gt $CenteredRedactionMessageStartIndex)
                 {
                     $RedactedPrintLength = $RedactedPrintLength-($CurrentRedactionMessageStartIndex-$CenteredRedactionMessageStartIndex)
@@ -1245,7 +1245,7 @@ http://www.danielbohannon.com
                 {
                     $RedactedPrintLength = $RedactedPrintLength+($CenteredRedactionMessageStartIndex-$CurrentRedactionMessageStartIndex)
                 }
-    
+
                 Write-Host $Part2.SubString(0,$RedactedPrintLength) -NoNewLine -ForegroundColor Cyan
                 Write-Host $RedactionMessage -NoNewLine -ForegroundColor Magenta
                 Write-Host $Part2.SubString($Part2.Length-$RedactedPrintLength) -ForegroundColor Cyan
@@ -1286,7 +1286,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-ObfuscatedTokenCommand, Out-EncapsulatedInvokeExpression (found in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-RandomInvokeRandomEnvironmentVariableSyntax generates random invoke syntax and random process-level environment variable retrieval syntax for invoking command contents that are stored in a user-input process-level environment variable. This function is primarily used as a helper function for Out-PowerShellLauncher.
@@ -1333,7 +1333,7 @@ http://www.danielbohannon.com
     $GetRandomVariableSyntax  = @()
     $GetRandomVariableSyntax += '(' + (Get-Random -Input @('DIR','Get-ChildItem','GCI','ChildItem','LS','Get-Item','GI','Item')) + ' ' + 'env:' + $EnvVarName + ').Value'
     $GetRandomVariableSyntax += ('(' + '[Environment]::GetEnvironmentVariable(' + "'$EnvVarName'" + ',' + "'Process'" + ')' + ')')
-    
+
     # Select random option from above.
     $GetRandomVariableSyntax = Get-Random -Input $GetRandomVariableSyntax
 
@@ -1360,23 +1360,23 @@ http://www.danielbohannon.com
         $InvokeOption = Out-ObfuscatedTokenCommand -ScriptBlock ([ScriptBlock]::Create($InvokeOption))
         $InvokeOption = Out-ObfuscatedTokenCommand -ScriptBlock ([ScriptBlock]::Create($InvokeOption)) 'RandomWhitespace' 1
     }
-    
+
     # For obfuscated commands generated for $InvokeOption syntax, single-escape & < > and | characters for cmd.exe.
     ForEach($Char in @('<','>','|','&'))
     {
         # Remove single escaping and then escape all characters. This will handle single-escaped and not-escaped characters.
-        If($InvokeOption.Contains("$Char")) 
+        If($InvokeOption.Contains("$Char"))
         {
             $InvokeOption = $InvokeOption.Replace("$Char","^$Char")
         }
     }
-    
+
     # Escape double-quote with backslash for powershell.exe.
     If($InvokeOption.Contains('"'))
     {
         $InvokeOption = $InvokeOption.Replace('"','\"')
     }
-    
+
     Return $InvokeOption
 }
 
@@ -1393,7 +1393,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-ObfuscatedTokenCommand, Out-EncapsulatedInvokeExpression (found in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-RandomPowerShellStdInInvokeSyntax generates random PowerShell syntax for invoking a command passed to powershell.exe via standard input. This technique is included to show the Blue Team that powershell.exe's command line arguments may not contain any contents of the command itself, but these could be stored in the parent process if passed to powershell.exe via standard input.
@@ -1413,7 +1413,7 @@ This is a personal project developed by Daniel Bohannon while an employee at MAN
 
 http://www.danielbohannon.com
 #>
-    
+
     # Build out random PowerShell stdin syntax like:
     # | powershell -      <-- default to this if $NoExit flag is defined because this will cause an error for the other options
     # | powershell IEX $Input
@@ -1462,17 +1462,17 @@ http://www.danielbohannon.com
         $InvokeOption = Out-ObfuscatedTokenCommand -ScriptBlock ([ScriptBlock]::Create($InvokeOption))
         $InvokeOption = Out-ObfuscatedTokenCommand -ScriptBlock ([ScriptBlock]::Create($InvokeOption)) 'RandomWhitespace' 1
     }
-    
+
     # For obfuscated commands generated for $PowerShellStdIn syntax, single-escape & < > and | characters for cmd.exe.
     ForEach($Char in @('<','>','|','&'))
     {
         # Remove single escaping and then escape all characters. This will handle single-escaped and not-escaped characters.
-        If($PowerShellStdIn.Contains("$Char")) 
+        If($PowerShellStdIn.Contains("$Char"))
         {
             $PowerShellStdIn = $PowerShellStdIn.Replace("$Char","^$Char")
         }
     }
-    
+
     # Escape double-quote with backslash for powershell.exe.
     If($PowerShellStdIn.Contains('"'))
     {
@@ -1495,7 +1495,7 @@ Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: Out-ObfuscatedTokenCommand, Out-EncapsulatedInvokeExpression (found in Out-ObfuscatedStringCommand.ps1)
 Optional Dependencies: None
- 
+
 .DESCRIPTION
 
 Out-RandomClipboardInvokeSyntax generates random PowerShell syntax for invoking a command stored in the clipboard. This technique is included to show the Blue Team that powershell.exe's command line arguments may not contain any contents of the command itself, but these could be stored in the parent/grandparent process if passed to powershell.exe via clipboard.
@@ -1520,7 +1520,7 @@ http://www.danielbohannon.com
     $ReflectionAssembly    = Get-Random -Input @('System.Reflection.Assembly','Reflection.Assembly')
     $WindowsClipboard      = Get-Random -Input @('Windows.Clipboard','System.Windows.Clipboard')
     $WindowsFormsClipboard = Get-Random -Input @('System.Windows.Forms.Clipboard','Windows.Forms.Clipboard')
-    
+
     # Randomly select flag argument substring for Add-Type -AssemblyCore.
     $FullArgument = "-AssemblyName"
     # Take into account the shorted flag of -AN as well.
@@ -1539,7 +1539,7 @@ http://www.danielbohannon.com
 
     # Randomly choose variable name starting length.
     $RandomVarLength = (Get-Random -Input @(3..6))
-   
+
     # Create random variable with characters from $CharsToRandomVarName.
     If($CharsToRandomVarName.Count -lt $RandomVarLength) {$RandomVarLength = $CharsToRandomVarName.Count}
     $RandomVarName = ((Get-Random -Input $CharsToRandomVarName -Count $RandomVarLength) -Join '').Replace(' ','')
@@ -1568,7 +1568,7 @@ http://www.danielbohannon.com
         }
         default {Write-Error "An invalid RandomClipSyntaxValue value ($RandomClipSyntaxValue) was passed to switch block for Out-RandomClipboardInvokeSyntax."; Exit;}
     }
-    
+
     # Generate syntax options for invoking clipboard contents, including numerous ways to invoke with $ExecutionContext as a variable, including Get-Variable varname, Get-ChildItem Variable:varname, Get-Item Variable:varname, etc.
     $ExecContextVariables  = @()
     $ExecContextVariables += '(' + (Get-Random -Input @('DIR','Get-ChildItem','GCI','ChildItem','LS','Get-Item','GI','Item')) + ' ' + "'variable:" + (Get-Random -Input @('ex*xt','ExecutionContext')) + "').Value"
@@ -1594,7 +1594,7 @@ http://www.danielbohannon.com
 
     # Set final syntax for invoking clipboard contents.
     $PowerShellClip = $LoadClipboardClassOption + ' '*(Get-Random -Minimum 0 -Maximum 3) + ';' + ' '*(Get-Random -Minimum 0 -Maximum 3) + $InvokeOption
-    
+
     # Add syntax for clearing clipboard contents.
     $PowerShellClip = $PowerShellClip + ' '*(Get-Random -Minimum 0 -Maximum 3) + ';' + ' '*(Get-Random -Minimum 0 -Maximum 3) + $ClearClipboardOption
 
@@ -1606,17 +1606,17 @@ http://www.danielbohannon.com
     $PowerShellClip = Out-ObfuscatedTokenCommand -ScriptBlock ([ScriptBlock]::Create($PowerShellClip)) 'Variable'
     $PowerShellClip = Out-ObfuscatedTokenCommand -ScriptBlock ([ScriptBlock]::Create($PowerShellClip)) 'String'
     $PowerShellClip = Out-ObfuscatedTokenCommand -ScriptBlock ([ScriptBlock]::Create($PowerShellClip)) 'RandomWhitespace'
-    
+
     # For obfuscated commands generated for $PowerShellClip syntax, single-escape & < > and | characters for cmd.exe.
     ForEach($Char in @('<','>','|','&'))
     {
         # Remove single escaping and then escape all characters. This will handle single-escaped and not-escaped characters.
-        If($PowerShellClip.Contains("$Char")) 
+        If($PowerShellClip.Contains("$Char"))
         {
             $PowerShellClip = $PowerShellClip.Replace("$Char","^$Char")
         }
     }
-    
+
     # Escape double-quote with backslash for powershell.exe.
     If($PowerShellClip.Contains('"'))
     {

@@ -1,3 +1,4 @@
+import typing
 from enum import Enum
 from typing import Annotated, Any
 
@@ -7,7 +8,8 @@ from pydantic import (
     ConfigDict,
 )
 
-from empire.server.core.db import models
+if typing.TYPE_CHECKING:
+    from empire.server.core.db import models
 
 
 class BadRequestResponse(BaseModel):
@@ -34,13 +36,21 @@ def coerce_to_string(v: Any):
     return str(v)
 
 
+class DependentOption(BaseModel):
+    name: str
+    values: list[str] | None
+
+
 class CustomOptionSchema(BaseModel):
     description: str
     required: bool
     value: Annotated[str, BeforeValidator(coerce_to_string)]
     suggested_values: Annotated[list[str], BeforeValidator(coerce_to_string)]
     strict: bool
+    editable: bool = True
     value_type: ValueType
+    internal: bool
+    depends_on: list[DependentOption] = []
 
 
 class OrderDirection(str, Enum):
@@ -61,7 +71,7 @@ class Author(BaseModel):
     link: str | None = None
 
 
-def domain_to_dto_download_description(download: models.Download):
+def domain_to_dto_download_description(download: "models.Download"):
     if download.filename:
         filename = download.filename
     else:
@@ -102,21 +112,3 @@ def to_string(value):
 #   validation.
 # This could be removed in Empire 6 as a breaking change.
 coerced_dict = dict[str, Annotated[str, BeforeValidator(to_string)]]
-
-
-# Set proxy IDs
-PROXY_NAME = {
-    "SOCKS4": 1,
-    "SOCKS5": 2,
-    "HTTP": 3,
-    "SSL": 4,
-    "SSL_WEAK": 5,
-    "SSL_ANON": 6,
-    "TOR": 7,
-    "HTTPS": 8,
-    "HTTP_CONNECT": 9,
-    "HTTPS_CONNECT": 10,
-}
-
-# inverse of PROXY_NAME
-PROXY_ID = {v: k for k, v in PROXY_NAME.items()}

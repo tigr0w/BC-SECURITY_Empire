@@ -11,10 +11,14 @@ empire/server/data/obfuscated_module_source/*.ps1
 empire/server/data/misc/ToObfuscate.ps1
 empire/server/data/misc/Obfuscated.ps1
 empire/server/data/generated-stagers/*
+empire/server/data/cti**
+empire/server/data/agent/gopire/*.go
+
 empire/server/downloads/*
 empire/server/api/static/*
 empire/server/api/v2/starkiller-temp
 empire/server/api/v2/starkiller
+empire/server/Empire-Compiler
 
 # client
 empire/client/generated-stagers/*
@@ -30,6 +34,9 @@ empire/client/downloads/*
 # test
 empire/test/downloads
 empire/test/data/obfuscated_module_source
+.coverage
+htmlcov/
+empire/server/plugins/example_2/
 
 # misc
 *.log

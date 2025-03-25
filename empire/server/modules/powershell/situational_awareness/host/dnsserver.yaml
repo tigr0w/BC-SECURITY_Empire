@@ -5,10 +5,8 @@ authors:
     link: ''
 description: Enumerates the DNS Servers used by a system.
 software: ''
-tactics: []
-techniques:
-  - T1482
-  - T1018
+tactics: [TA0007, TA0043]
+techniques: [T1590.002]
 background: false
 output_extension:
 needs_admin: false
@@ -23,7 +21,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -71,4 +70,5 @@ script: |
       }
       $DNSServerAddresses
   }
-script_end: Get-SystemDNSServer {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-SystemDNSServer completed'
+script_end: Get-SystemDNSServer {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Get-SystemDNSServer completed'

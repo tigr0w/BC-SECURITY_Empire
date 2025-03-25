@@ -27,7 +27,7 @@ Limit the number of event log entries returned.
 .PARAMETER ToString
 
 Switch: Outputs the data as text instead of objects, good if you are using this script through a backdoor.
-    
+
 .EXAMPLE
 
 Get-ComputerDetails
@@ -37,7 +37,7 @@ Get-ComputerDetails -ToString
 Gets information about the computer and outputs it as raw text.
 
 .NOTES
-This script is useful for fingerprinting a server to see who connects to this server (from where), and where users on this server connect to. 
+This script is useful for fingerprinting a server to see who connects to this server (from where), and where users on this server connect to.
 You can also use it to find Powershell scripts and executables which are typically run, and then use this to backdoor those files.
 
 .LINK
@@ -50,7 +50,7 @@ Github repo: https://github.com/clymb3r/PowerShell
     Param(
         [Parameter(Mandatory=$false)]
         [int]$Limit,
-        
+
         [Parameter(Mandatory=$false)]
         [Switch]
         $ToString
@@ -100,7 +100,7 @@ function Find-4648Logons
 <#
 .SYNOPSIS
 
-Retrieve the unique 4648 logon events. This will often find cases where a user is using remote desktop to connect to another computer. It will give the 
+Retrieve the unique 4648 logon events. This will often find cases where a user is using remote desktop to connect to another computer. It will give the
 the account that RDP was launched with and the account name of the account being used to connect to the remote computer. This is useful
 for identifying normal authenticaiton patterns. Other actions that will trigger this include any runas action.
 
@@ -112,7 +112,7 @@ Version: 1.1
 
 .DESCRIPTION
 
-Retrieve the unique 4648 logon events. This will often find cases where a user is using remote desktop to connect to another computer. It will give the 
+Retrieve the unique 4648 logon events. This will often find cases where a user is using remote desktop to connect to another computer. It will give the
 the account that RDP was launched with and the account name of the account being used to connect to the remote computer. This is useful
 for identifying normal authenticaiton patterns. Other actions that will trigger this include any runas action.
 
@@ -522,7 +522,7 @@ Function Find-RDPClientConnections
 <#
 .SYNOPSIS
 
-Search the registry to find saved RDP client connections. This shows you what connections an RDP client has remembered, indicating what servers the user 
+Search the registry to find saved RDP client connections. This shows you what connections an RDP client has remembered, indicating what servers the user
 usually RDP's to.
 
 Function: Find-RDPClientConnections
@@ -533,7 +533,7 @@ Version: 1.1
 
 .DESCRIPTION
 
-Search the registry to find saved RDP client connections. This shows you what connections an RDP client has remembered, indicating what servers the user 
+Search the registry to find saved RDP client connections. This shows you what connections an RDP client has remembered, indicating what servers the user
 usually RDP's to.
 
 .EXAMPLE
@@ -562,7 +562,7 @@ Github repo: https://github.com/clymb3r/PowerShell
         {
             $Server = $Server.PSChildName
             $UsernameHint = (Get-ItemProperty -Path "HKU:\$($UserSid)\Software\Microsoft\Terminal Server Client\Servers\$($Server)").UsernameHint
-                
+
             $Key = $UserSid + "::::" + $Server + "::::" + $UsernameHint
 
             if (!$ReturnInfo.ContainsKey($Key))

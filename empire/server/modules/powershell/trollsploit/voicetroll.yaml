@@ -5,9 +5,8 @@ authors:
     link: https://twitter.com/424f424f
 description: Reads text aloud via synthesized voice on target.
 software: ''
-tactics: []
-techniques:
-  - T1491
+tactics: [TA0040]
+techniques: [T1491.001]
 background: true
 output_extension:
 needs_admin: false

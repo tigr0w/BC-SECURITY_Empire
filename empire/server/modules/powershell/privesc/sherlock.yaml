@@ -5,9 +5,8 @@ authors:
     link: 'https://twitter.com/_rastamouse'
 description: Find Windows local privilege escalation vulnerabilities.
 software: ''
-tactics: []
-techniques:
-  - T1046
+tactics: [TA0007]
+techniques: [T1012, T1518, T11082]
 background: true
 output_extension:
 needs_admin: false
@@ -22,7 +21,8 @@ options:
     required: true
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false

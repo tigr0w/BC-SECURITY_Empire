@@ -19,11 +19,11 @@ class Module:
         safe_checks = params["SafeChecks"]
 
         # generate the launcher code
-        launcher = main_menu.stagers.generate_launcher(
+        launcher = main_menu.stagergenv2.generate_launcher(
             listener_name,
             language="python",
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
         launcher = launcher.replace("'", "\\'")
         launcher = launcher.replace('"', '\\"')

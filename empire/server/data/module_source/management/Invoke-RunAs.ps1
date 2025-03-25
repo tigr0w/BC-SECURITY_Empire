@@ -62,7 +62,7 @@ Invoke-RunAs -username administrator -password "P@$$word!" -domain CORPA -Cmd no
                 $startinfo.Password = $sec_password
                 $startinfo.Domain = $domain
             }
-            
+
             [System.Diagnostics.Process]::Start($startinfo) | out-string
         }
         catch {

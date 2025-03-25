@@ -18,7 +18,8 @@ opsec_safe: true
 language: python
 min_language_version: '2.6'
 comments:
-  - Using SQLite3 iMessage has a decent standard to correlate users to messages and isnt encrypted.
+  - Using SQLite3 iMessage has a decent standard to correlate users to messages and
+    isnt encrypted.
 options:
   - name: Agent
     description: Agent to run from.

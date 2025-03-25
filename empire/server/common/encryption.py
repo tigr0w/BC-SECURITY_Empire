@@ -371,6 +371,7 @@ class DiffieHellman:
 
         s = hashlib.sha256()
         s.update(bytes(_sharedSecretBytes))
+
         self.key = s.digest()
 
     def getKey(self):

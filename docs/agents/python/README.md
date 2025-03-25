@@ -85,5 +85,3 @@ In this process, multiple encryption schemes are at play:
 - **[MainAgent](mainagentclass.md)**: The core of the agent's functionality, it continuously communicates with the server, processes commands, and returns results.
 
 - **[PacketHandler](packethandlerclass.md) & [ExtendedPacketHandler](extendedpackethandlerclass.md)**: Manages the encrypted communication between the agent and the server.
-
-

@@ -25,19 +25,19 @@ class Module:
 
         if language == "powershell":
             # generate the launcher script
-            launcher = main_menu.stagers.generate_launcher(
-                listenerName=listener_name,
+            launcher = main_menu.stagergenv2.generate_launcher(
+                listener_name=listener_name,
                 language=language,
                 encode=True,
                 obfuscate=launcher_obfuscate,
                 obfuscation_command=launcher_obfuscate_command,
-                userAgent=user_agent,
+                user_agent=user_agent,
                 proxy=proxy,
-                proxyCreds=proxy_creds,
+                proxy_creds=proxy_creds,
                 bypasses=params["Bypasses"],
             )
         elif language in ["csharp", "ironpython"]:
-            launcher = main_menu.stagers.generate_exe_oneliner(
+            launcher = main_menu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=obfuscate,
                 obfuscation_command=launcher_obfuscate,
