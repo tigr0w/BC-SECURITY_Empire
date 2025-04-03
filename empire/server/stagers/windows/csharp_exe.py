@@ -39,7 +39,7 @@ class Stager:
                 "Description": "Language of the stager to generate(powershell, csharp).",
                 "Required": True,
                 "Value": "net40",
-                "SuggestedValues": ["net35", "net40"],
+                "SuggestedValues": ["net40", "net45"],
                 "Strict": True,
             },
             "Listener": {

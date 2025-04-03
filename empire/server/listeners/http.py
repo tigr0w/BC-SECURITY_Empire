@@ -485,13 +485,19 @@ class Listener:
             stager_yaml = stager_yaml.decode("UTF-8")
             stager_yaml = (
                 stager_yaml.replace("{{ REPLACE_ADDRESS }}", host)
-                .replace("{{ REPLACE_SESSIONKEY }}", staging_key)
+                .replace("{{ REPLACE_STAGINGKEY }}", staging_key)
                 .replace("{{ REPLACE_PROFILE }}", profile)
                 .replace("{{ REPLACE_WORKINGHOURS }}", workingHours)
                 .replace("{{ REPLACE_KILLDATE }}", killDate)
                 .replace("{{ REPLACE_DELAY }}", str(delay))
                 .replace("{{ REPLACE_JITTER }}", str(jitter))
                 .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
+                .replace(
+                    "{{ REPLACE_DEFAULTRESPONSE }}",
+                    base64.b64encode(self.default_response().encode("UTF-8")).decode(
+                        "UTF-8"
+                    ),
+                )
             )
 
             return str(

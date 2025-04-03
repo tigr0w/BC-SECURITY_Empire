@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.1] - 2025-04-03
+
+### Fixed
+
+-   Fixed issue generating Sharpire exes
+
 ## [6.0.0] - 2025-03-25
 -   Updated Starkiller to v3.0.0
 
@@ -1082,7 +1088,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.1...HEAD
+
+[6.0.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0...v6.0.1
 
 [6.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v5.12.2...v6.0.0
 
