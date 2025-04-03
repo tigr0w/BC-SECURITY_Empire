@@ -115,6 +115,27 @@ def get_pyinstaller_stager():
     }
 
 
+def get_base_csharp_exe_stager():
+    return {
+        "name": "CSharpExeStager",
+        "template": "windows_csharp_exe",
+        "options": {
+            "Listener": "new-listener-1",
+            "Language": "csharp",
+            "DotNetVersion": "net40",
+            "StagerRetries": "0",
+            "OutFile": "Sharpire.exe",
+            "Obfuscate": "False",
+            "ObfuscateCommand": "Token\\All\\1",
+            "UserAgent": "default",
+            "Proxy": "default",
+            "ProxyCreds": "default",
+            "Bypasses": "mattifestation etw",
+            "Staged": "True",
+        },
+    }
+
+
 def test_get_stager_templates(client, admin_auth_header):
     min_stagers = 30
     response = client.get(
@@ -688,3 +709,44 @@ def _expected_http_bat_launcher():
         del "%~f0"
         """
     ).strip()
+
+
+def test_csharp_stager_creation(client, admin_auth_header):
+    base_stager = get_base_csharp_exe_stager()
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
+    )
+
+    # Check if the stager is successfully created
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["id"] != 0
+
+    stager_id = response.json()["id"]
+
+    response = client.get(
+        f"/api/v2/stagers/{stager_id}",
+        headers=admin_auth_header,
+    )
+
+    # Check if we can successfully retrieve the stager
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["id"] == stager_id
+
+    response = client.get(
+        response.json()["downloads"][0]["link"],
+        headers=admin_auth_header,
+    )
+
+    # Check if the file is downloaded successfully
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers.get("content-type").split(";")[0] in [
+        "application/x-msdownload",
+        "application/x-msdos-program",
+    ]
+    assert isinstance(response.content, bytes)
+
+    # Check if the downloaded file is not empty
+    assert len(response.content) > 0
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
