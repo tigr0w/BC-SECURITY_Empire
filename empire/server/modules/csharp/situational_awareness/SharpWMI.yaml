@@ -44,111 +44,65 @@ csharp:
     {
         private static byte originalByte;
 
-        public static Stream OutputStream { get; set; }
-
         public static void Main(string[] args)
         {
-            using (StringWriter stringWriter = new StringWriter())
-            {
-                TextWriter originalOutput = Console.Out;
-                TextWriter originalError = Console.Error;
+              PatchEnvironmentExit();
 
-                StreamWriter outputStreamWriter = null;
-                if (OutputStream != null)
-                {
-                    outputStreamWriter = new StreamWriter(OutputStream);
-                    outputStreamWriter.AutoFlush = true;
-                }
+              try
+              {
+                  Console.WriteLine("\n[DEBUG] Original args (before normalization):");
+                  for (int i = 0; i < args.Length; i++)
+                  {
+                      Console.WriteLine($"  args[{i}]: '{args[i]}'");
+                  }
 
-                PatchEnvironmentExit();
+                  // Normalize double-double quotes ("") to single quotes (")
+                  string normalizedArgs = args[0].Replace("\"\"", "\"");
 
-                try
-                {
-                    MultiTextWriter multiWriter = new MultiTextWriter(stringWriter, outputStreamWriter);
-                    Console.SetOut(multiWriter);
-                    Console.SetError(multiWriter);
+                  Console.WriteLine("\n[DEBUG] Normalized args:");
+                  Console.WriteLine($"  '{normalizedArgs}'");
 
-                    string allArgs = string.Join(" ", args);
-                    string[] splitArgs = Regex.Matches(allArgs, @"[^\s""=]+=""[^""]*""|[^\s""=]+=[^\s]+")
-                                              .Cast<Match>()
-                                              .Select(m => m.Value.Replace("= ", "="))  // Fix any accidental spaces after `=`
-                                              .ToArray();
+                  // Now properly split arguments
+                  string[] manuallySplitArgs = Regex.Matches(normalizedArgs, @"[^\s=]+=""[^""]*""|[^\s=]+=[^\s""]+")
+                                                    .Cast<Match>()
+                                                    .Select(m => m.Value)
+                                                    .ToArray();
 
-                    for (int i = 0; i < splitArgs.Length; i++)
-                    {
-                        if (splitArgs[i].StartsWith("query="))
-                        {
-                            splitArgs[i] = splitArgs[i].Replace("\"", "");
-                        }
-                    }
+                  Console.WriteLine("\n[DEBUG] Manually split args:");
+                  for (int i = 0; i < manuallySplitArgs.Length; i++)
+                  {
+                      Console.WriteLine($"  manuallySplitArgs[{i}]: '{manuallySplitArgs[i]}'");
+                  }
 
-                    foreach (string arg in splitArgs)
-                    {
-                        Console.WriteLine($"[>] Argument: {arg}");
-                    }
+                  // Parse key-value pairs explicitly
+                  var parsedArgs = manuallySplitArgs.Select(arg =>
+                  {
+                      int idx = arg.IndexOf('=');
+                      if (idx > -1)
+                      {
+                          string key = arg.Substring(0, idx);
+                          string val = arg.Substring(idx + 1).Trim('"');
+                          return $"{key}={val}";
+                      }
+                      return arg;
+                  }).ToArray();
 
-                    typeof(SharpWMI.Program).GetMethod("Main", BindingFlags.NonPublic | BindingFlags.Static)
-                                   .Invoke(null, new object[] { splitArgs });
-                }
-                catch (Exception ex)
-                {
-                    stringWriter.WriteLine($"Error: {ex.Message}");
-                    if (ex.InnerException != null)
-                    {
-                        stringWriter.WriteLine($"Inner Exception: {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}");
-                    }
-                }
-                finally
-                {
-                    Console.SetOut(originalOutput);
-                    Console.SetError(originalError);
+                  Console.WriteLine("\n[DEBUG] Parsed Arguments:");
+                  foreach (string arg in parsedArgs)
+                  {
+                      Console.WriteLine($"[>] Argument: {arg}");
+                  }
 
-                    if (outputStreamWriter != null)
-                    {
-                        outputStreamWriter.Flush();
-                        outputStreamWriter.Close();
-                    }
-                    Console.WriteLine(stringWriter.ToString());
-                }
-            }
-        }
+                  // Finally invoke SharpWMI
+                  typeof(SharpWMI.Program)
+                      .GetMethod("Main", BindingFlags.NonPublic | BindingFlags.Static)
+                      .Invoke(null, new object[] { parsedArgs });
 
-        private class MultiTextWriter : TextWriter
-        {
-            private readonly TextWriter _writer1;
-            private readonly TextWriter _writer2;
-
-            public MultiTextWriter(TextWriter writer1, TextWriter writer2)
-            {
-                _writer1 = writer1;
-                _writer2 = writer2;
-            }
-
-            public override Encoding Encoding
-            {
-                get
-                {
-                    return _writer1?.Encoding ?? Encoding.UTF8;
-                }
-            }
-
-            public override void Write(char value)
-            {
-                _writer1?.Write(value);
-                _writer2?.Write(value);
-            }
-
-            public override void Write(string value)
-            {
-                _writer1?.Write(value);
-                _writer2?.Write(value);
-            }
-
-            public override void Flush()
-            {
-                _writer1?.Flush();
-                _writer2?.Flush();
-            }
+              }
+              catch (Exception ex)
+              {
+                  Console.WriteLine($"Error: {ex.Message}");
+              }
         }
 
         private static void PatchEnvironmentExit()

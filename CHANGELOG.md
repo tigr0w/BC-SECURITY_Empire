@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.2] - 2025-04-07
+
+-   Fixed issue where C# modules on powershell agent would be improperly formatted
+-   Fixed SharpWMI argument errors when using escaped quotes
+-   Updated result parser on SharpWMI to not use StreamWriter due to messing up results
+
 ## [6.0.1] - 2025-04-03
 
 ### Fixed
@@ -1088,7 +1094,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.2...HEAD
+
+[6.0.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.1...v6.0.2
 
 [6.0.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.0...v6.0.1
 
