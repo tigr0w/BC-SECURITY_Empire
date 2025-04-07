@@ -14,10 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fixed issue where C# modules on powershell agent would be improperly formatted
 -   Fixed SharpWMI argument errors when using escaped quotes
 -   Updated result parser on SharpWMI to not use StreamWriter due to messing up results
 
 ## [6.0.1] - 2025-04-03
+
 
 ### Fixed
 
