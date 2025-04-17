@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fixed SMB listener not sending start task
+
 ## [6.0.2] - 2025-04-07
 
 -   Fixed issue where C# modules on powershell agent would be improperly formatted

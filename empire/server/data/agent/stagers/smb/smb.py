@@ -34,7 +34,6 @@ class Stage:
             hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None
 
         self.session_id = b'00000000'
-        self.session_id = self.generate_session_id()
         self.key = None
         self.headers = self.initialize_headers(self.profile)
         self.packet_handler = ExtendedPacketHandler(None, staging_key=self.staging_key, session_id=self.session_id, headers=self.headers, server=self.server, taskURIs=self.taskURIs)

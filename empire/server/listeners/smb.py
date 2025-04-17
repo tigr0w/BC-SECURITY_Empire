@@ -415,7 +415,7 @@ class Listener:
             name = self.options["Name"]["Value"]
             tempOptions = copy.deepcopy(self.options)
 
-            with SessionLocal() as db:
+            with SessionLocal.begin() as db:
                 agent = self.mainMenu.agentsv2.get_by_id(
                     db, self.options["Agent"]["Value"]
                 )
