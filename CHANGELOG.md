@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 -   Fixed SMB listener not sending start task
+-   Fixed ironpython shell commands running as cmd instead of powershell
+-   Added literal interpretation for shell commands to ironpython agent
+-   Fixed multi_launcher not being able to build smb agent
 
 ## [6.0.2] - 2025-04-07
 
