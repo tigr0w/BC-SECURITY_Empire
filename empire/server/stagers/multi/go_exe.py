@@ -30,10 +30,10 @@ class Stager:
                 "Value": "Gopire.exe",
             },
             "GOOS": {
-                "Description": "Target operating system (e.g., linux, windows, darwin).",
+                "Description": "Target operating system.",
                 "Required": True,
-                "Value": "linux",
-                "SuggestedValues": ["linux", "windows", "darwin"],
+                "Value": "windows",
+                "SuggestedValues": ["windows"],
                 "Strict": True,
             },
             "GOARCH": {

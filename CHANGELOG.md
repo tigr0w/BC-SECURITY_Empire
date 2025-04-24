@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed ironpython shell commands running as cmd instead of powershell
 -   Added literal interpretation for shell commands to ironpython agent
 -   Fixed multi_launcher not being able to build smb agent
+-   Removed linux as go agent option as its not implemented yet
 
 ## [6.0.2] - 2025-04-07
 
