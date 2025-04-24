@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.3] - 2025-04-24
+
 -   Fixed SMB listener not sending start task
 -   Fixed ironpython shell commands running as cmd instead of powershell
 -   Added literal interpretation for shell commands to ironpython agent
@@ -1085,7 +1087,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.3...HEAD
+
+[6.0.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.2...v6.0.3
 
 [6.0.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.1...v6.0.2
 
