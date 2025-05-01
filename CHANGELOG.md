@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 -   Use pyyaml's C extension for loading/dumping module yamls
+-   Remove unused files
 
 ## [6.0.3] - 2025-04-24
 
