@@ -17,17 +17,19 @@ from empire.server.api.v2.plugin.plugin_dto import (
     PluginUpdateRequest,
     domain_to_dto_plugin,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
 )
-from empire.server.core.plugin_service import PluginHolder
-from empire.server.server import main
+from empire.server.core.plugin_service import PluginHolder, PluginService
 from empire.server.utils.git_util import GitOperationException
 
-plugin_service = main.pluginsv2
+
+def get_plugin_service(main: AppCtx) -> PluginService:
+    return main.pluginsv2
+
 
 router = APIRouter(
     prefix="/api/v2/plugins",
@@ -40,7 +42,11 @@ router = APIRouter(
 )
 
 
-async def get_plugin(plugin_id: str, db: CurrentSession) -> PluginHolder:
+async def get_plugin(
+    plugin_id: str,
+    db: CurrentSession,
+    plugin_service: PluginService = Depends(get_plugin_service),
+) -> PluginHolder:
     plugin = plugin_service.get_by_id(db, plugin_id)
 
     if plugin:
@@ -63,14 +69,19 @@ CurrentPlugin = Annotated[PluginHolder, Depends(get_plugin)]
 
 
 @router.get("/", response_model=Plugins)
-async def read_plugins(db: CurrentSession):
-    plugins = [domain_to_dto_plugin(x, db) for x in plugin_service.get_all(db)]
-
-    return {"records": plugins}
+async def read_plugins(
+    db: CurrentSession, plugin_service: PluginService = Depends(get_plugin_service)
+):
+    plugins = plugin_service.get_all(db)
+    return {"records": [domain_to_dto_plugin(x, db) for x in plugins]}
 
 
 @router.get("/{plugin_id}")
-async def read_plugin(plugin_id: str, db: CurrentSession, plugin: CurrentPlugin):
+async def read_plugin(
+    plugin_id: str,
+    db: CurrentSession,
+    plugin: PluginHolder = Depends(get_plugin),
+):
     return domain_to_dto_plugin(plugin, db)
 
 
@@ -80,7 +91,8 @@ async def execute_plugin(
     plugin_req: PluginExecutePostRequest,
     db: CurrentSession,
     current_user: CurrentUser,
-    plugin: LoadedPlugin,
+    plugin: PluginHolder = Depends(get_loaded_plugin),
+    plugin_service: PluginService = Depends(get_plugin_service),
 ):
     try:
         results, err = plugin_service.execute_plugin(
@@ -106,6 +118,7 @@ async def update_plugin(
     plugin_update_req: PluginUpdateRequest,
     db: CurrentSession,
     plugin: LoadedPlugin,
+    plugin_service: PluginService = Depends(get_plugin_service),
 ):
     try:
         plugin_service.update_plugin_enabled(db, plugin, plugin_update_req.enabled)
@@ -122,6 +135,7 @@ async def update_plugin_settings(
     plugin_settings: dict,
     db: CurrentSession,
     plugin: LoadedPlugin,
+    plugin_service: PluginService = Depends(get_plugin_service),
 ):
     try:
         plugin_service.update_plugin_settings(db, plugin, plugin_settings)
@@ -130,13 +144,20 @@ async def update_plugin_settings(
 
 
 @router.post("/reload", status_code=204, response_class=Response)
-async def reload_plugins(db: CurrentSession):
+async def reload_plugins(
+    db: CurrentSession,
+    plugin_service: PluginService = Depends(get_plugin_service),
+):
     plugin_service.shutdown()
     plugin_service.load_plugins(db)
 
 
 @router.post("/install/git")
-async def install_plugin_git(req: PluginInstallGitRequest, db: CurrentSession):
+async def install_plugin_git(
+    req: PluginInstallGitRequest,
+    db: CurrentSession,
+    plugin_service: PluginService = Depends(get_plugin_service),
+):
     try:
         plugin_service.install_plugin_from_git(db, req.url, req.subdirectory, req.ref)
     except GitOperationException as e:
@@ -148,7 +169,11 @@ async def install_plugin_git(req: PluginInstallGitRequest, db: CurrentSession):
 
 
 @router.post("/install/tar")
-async def install_plugin_tar(req: PluginInstallTarRequest, db: CurrentSession):
+async def install_plugin_tar(
+    req: PluginInstallTarRequest,
+    db: CurrentSession,
+    plugin_service: PluginService = Depends(get_plugin_service),
+):
     try:
         plugin_service.install_plugin_from_tar(db, req.url, req.subdirectory)
     except PluginValidationException as e:

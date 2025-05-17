@@ -10,12 +10,15 @@ from empire.server.api.v2.profile.profile_dto import (
     Profiles,
     ProfileUpdateRequest,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.db import models
-from empire.server.server import main
+from empire.server.core.profile_service import ProfileService
 
-profile_service = main.profilesv2
+
+def get_profile_service(main: AppCtx) -> ProfileService:
+    return main.profilesv2
+
 
 router = APIRouter(
     prefix="/api/v2/malleable-profiles",
@@ -28,7 +31,11 @@ router = APIRouter(
 )
 
 
-async def get_profile(uid: int, db: CurrentSession):
+async def get_profile(
+    uid: int,
+    db: CurrentSession,
+    profile_service: ProfileService = Depends(get_profile_service),
+):
     profile = profile_service.get_by_id(db, uid)
 
     if profile:
@@ -43,7 +50,9 @@ async def read_profile(uid: int, db_profile: models.Profile = Depends(get_profil
 
 
 @router.get("/", response_model=Profiles)
-async def read_profiles(db: CurrentSession):
+async def read_profiles(
+    db: CurrentSession, profile_service: ProfileService = Depends(get_profile_service)
+):
     profiles = profile_service.get_all(db)
 
     return {"records": profiles}
@@ -54,7 +63,11 @@ async def read_profiles(db: CurrentSession):
     status_code=201,
     response_model=Profile,
 )
-async def create_profile(profile_req: ProfilePostRequest, db: CurrentSession):
+async def create_profile(
+    profile_req: ProfilePostRequest,
+    db: CurrentSession,
+    profile_service: ProfileService = Depends(get_profile_service),
+):
     resp, err = profile_service.create_profile(db, profile_req)
 
     if err:
@@ -69,6 +82,7 @@ async def update_profile(
     profile_req: ProfileUpdateRequest,
     db: CurrentSession,
     db_profile: models.Profile = Depends(get_profile),
+    profile_service: ProfileService = Depends(get_profile_service),
 ):
     resp, err = profile_service.update_profile(db, db_profile, profile_req)
 
@@ -87,6 +101,7 @@ async def delete_profile(
     uid: str,
     db: CurrentSession,
     db_profile: models.Profile = Depends(get_profile),
+    profile_service: ProfileService = Depends(get_profile_service),
 ):
     profile_service.delete_profile(db, db_profile)
 
@@ -98,6 +113,7 @@ async def delete_profile(
 )
 async def reload_profiles(
     db: CurrentSession,
+    profile_service: ProfileService = Depends(get_profile_service),
 ):
     profile_service.load_malleable_profiles(db)
 
@@ -109,6 +125,7 @@ async def reload_profiles(
 )
 async def reset_profiles(
     db: CurrentSession,
+    profile_service: ProfileService = Depends(get_profile_service),
 ):
     profile_service.delete_all_profiles(db)
     profile_service.load_malleable_profiles(db)

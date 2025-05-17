@@ -8,13 +8,20 @@ from empire.server.api.v2.plugin.plugin_registry_dto import (
     MarketplaceResponse,
     PluginInstallRequest,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.exceptions import PluginValidationException
-from empire.server.server import main
+from empire.server.core.plugin_registry_service import PluginRegistryService
+from empire.server.core.plugin_service import PluginService
 
-plugin_registry_service = main.pluginregistriesv2
-plugin_service = main.pluginsv2
+
+def get_plugin_registry_service(main: AppCtx) -> PluginRegistryService:
+    return main.pluginregistriesv2
+
+
+def get_plugin_service(main: AppCtx) -> PluginService:
+    return main.pluginsv2
+
 
 router = APIRouter(
     prefix="/api/v2/plugin-registries",
@@ -28,14 +35,25 @@ router = APIRouter(
 
 
 @router.get("/marketplace", response_model=MarketplaceResponse)
-async def get_marketplace(db: CurrentSession):
+async def get_marketplace(
+    db: CurrentSession,
+    plugin_registry_service: PluginRegistryService = Depends(
+        get_plugin_registry_service
+    ),
+):
     return MarketplaceResponse.model_validate(
         plugin_registry_service.get_marketplace(db)
     )
 
 
 @router.post("/marketplace/install")
-async def install_plugin(install_req: PluginInstallRequest, db: CurrentSession):
+async def install_plugin(
+    install_req: PluginInstallRequest,
+    db: CurrentSession,
+    plugin_registry_service: PluginRegistryService = Depends(
+        get_plugin_registry_service
+    ),
+):
     try:
         plugin_registry_service.install_plugin(
             db, install_req.name, install_req.version, install_req.registry

@@ -11,6 +11,22 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 
 from empire.server.api.middleware import EmpireCORSMiddleware
+from empire.server.api.v2.admin import admin_api
+from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
+from empire.server.api.v2.bypass import bypass_api
+from empire.server.api.v2.credential import credential_api
+from empire.server.api.v2.download import download_api
+from empire.server.api.v2.host import host_api, process_api
+from empire.server.api.v2.ip import ip_api
+from empire.server.api.v2.listener import listener_api, listener_template_api
+from empire.server.api.v2.meta import meta_api
+from empire.server.api.v2.module import module_api
+from empire.server.api.v2.obfuscation import obfuscation_api
+from empire.server.api.v2.plugin import plugin_api, plugin_registry_api, plugin_task_api
+from empire.server.api.v2.profile import profile_api
+from empire.server.api.v2.stager import stager_api, stager_template_api
+from empire.server.api.v2.tag import tag_api
+from empire.server.api.v2.user import user_api
 from empire.server.api.v2.websocket.socketio import setup_socket_events
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.config.data_manager import sync_starkiller
@@ -71,27 +87,6 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
     port = empire_config.api.port
     secure = empire_config.api.secure
 
-    # Not pretty but allows us to use main_menu by delaying the import
-    from empire.server.api.v2.admin import admin_api
-    from empire.server.api.v2.agent import agent_api, agent_file_api, agent_task_api
-    from empire.server.api.v2.bypass import bypass_api
-    from empire.server.api.v2.credential import credential_api
-    from empire.server.api.v2.download import download_api
-    from empire.server.api.v2.host import host_api, process_api
-    from empire.server.api.v2.ip import ip_api
-    from empire.server.api.v2.listener import listener_api, listener_template_api
-    from empire.server.api.v2.meta import meta_api
-    from empire.server.api.v2.module import module_api
-    from empire.server.api.v2.obfuscation import obfuscation_api
-    from empire.server.api.v2.plugin import (
-        plugin_api,
-        plugin_registry_api,
-        plugin_task_api,
-    )
-    from empire.server.api.v2.profile import profile_api
-    from empire.server.api.v2.stager import stager_api, stager_template_api
-    from empire.server.api.v2.tag import tag_api
-    from empire.server.api.v2.user import user_api
     from empire.server.server import main
 
     @asynccontextmanager
@@ -106,29 +101,29 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
 
     app = FastAPI(lifespan=lifespan)
 
-    app.include_router(listener_template_api.router)
-    app.include_router(listener_api.router)
-    app.include_router(stager_template_api.router)
-    app.include_router(stager_api.router)
-    app.include_router(agent_task_api.router)
+    app.include_router(admin_api.router)
     app.include_router(agent_api.router)
     app.include_router(agent_file_api.router)
-    app.include_router(user_api.router)
-    app.include_router(module_api.router)
+    app.include_router(agent_task_api.router)
     app.include_router(bypass_api.router)
-    app.include_router(obfuscation_api.router)
-    app.include_router(process_api.router)
-    app.include_router(profile_api.router)
     app.include_router(credential_api.router)
-    app.include_router(host_api.router)
     app.include_router(download_api.router)
+    app.include_router(host_api.router)
+    app.include_router(ip_api.router)
+    app.include_router(listener_api.router)
+    app.include_router(listener_template_api.router)
     app.include_router(meta_api.router)
-    app.include_router(plugin_task_api.router)
+    app.include_router(module_api.router)
+    app.include_router(obfuscation_api.router)
     app.include_router(plugin_api.router)
     app.include_router(plugin_registry_api.router)
+    app.include_router(plugin_task_api.router)
+    app.include_router(process_api.router)
+    app.include_router(profile_api.router)
+    app.include_router(stager_api.router)
+    app.include_router(stager_template_api.router)
     app.include_router(tag_api.router)
-    app.include_router(ip_api.router)
-    app.include_router(admin_api.router)
+    app.include_router(user_api.router)
 
     app.add_middleware(
         EmpireCORSMiddleware,
@@ -149,9 +144,6 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
     sio = socketio.AsyncServer(
         async_mode="asgi",
         cors_allowed_origins="*",
-        # logger=True,
-        # engineio_logger=True,
-        # https://github.com/miguelgrinberg/flask-socketio/issues/274#issuecomment-231206374
         json=MyJsonWrapper,
     )
     sio_app = socketio.ASGIApp(
@@ -179,7 +171,6 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
                 lifespan="on",
                 ssl_keyfile=f"{cert_path}/empire-priv.key",
                 ssl_certfile=f"{cert_path}/empire-chain.pem",
-                # log_level="info",
             )
         else:
             uvicorn.run(
@@ -188,7 +179,6 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
                 port=port,
                 log_config=None,
                 lifespan="on",
-                # log_level="info",
             )
 
     return app

@@ -11,14 +11,17 @@ from empire.server.api.v2.credential.credential_dto import (
     CredentialUpdateRequest,
     domain_to_dto_credential,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.tag import tag_api
 from empire.server.api.v2.tag.tag_dto import TagStr
+from empire.server.core.credential_service import CredentialService
 from empire.server.core.db import models
-from empire.server.server import main
 
-credential_service = main.credentialsv2
+
+def get_credential_service(main: AppCtx) -> CredentialService:
+    return main.credentialsv2
+
 
 router = APIRouter(
     prefix="/api/v2/credentials",
@@ -31,7 +34,11 @@ router = APIRouter(
 )
 
 
-async def get_credential(uid: int, db: CurrentSession):
+async def get_credential(
+    uid: int,
+    db: CurrentSession,
+    credential_service: CredentialService = Depends(get_credential_service),
+):
     credential = credential_service.get_by_id(db, uid)
 
     if credential:
@@ -53,6 +60,7 @@ async def read_credential(
 @router.get("/", response_model=Credentials)
 async def read_credentials(
     db: CurrentSession,
+    credential_service: CredentialService = Depends(get_credential_service),
     search: str | None = None,
     credtype: str | None = None,
     tags: list[TagStr] | None = Query(None),
@@ -70,7 +78,11 @@ async def read_credentials(
     status_code=201,
     response_model=Credential,
 )
-async def create_credential(credential_req: CredentialPostRequest, db: CurrentSession):
+async def create_credential(
+    credential_req: CredentialPostRequest,
+    db: CurrentSession,
+    credential_service: CredentialService = Depends(get_credential_service),
+):
     resp, err = credential_service.create_credential(db, credential_req)
 
     if err:
@@ -85,6 +97,7 @@ async def update_credential(
     credential_req: CredentialUpdateRequest,
     db: CurrentSession,
     db_credential: models.Credential = Depends(get_credential),
+    credential_service: CredentialService = Depends(get_credential_service),
 ):
     resp, err = credential_service.update_credential(db, db_credential, credential_req)
 
@@ -103,5 +116,6 @@ async def delete_credential(
     uid: str,
     db: CurrentSession,
     db_credential: models.Credential = Depends(get_credential),
+    credential_service: CredentialService = Depends(get_credential_service),
 ):
     credential_service.delete_credential(db, db_credential)

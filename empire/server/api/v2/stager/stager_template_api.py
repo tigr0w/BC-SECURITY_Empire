@@ -2,15 +2,19 @@ from fastapi import Depends, HTTPException
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
+from empire.server.api.v2.shared_dependencies import AppCtx
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.stager.stager_dto import (
     StagerTemplate,
     StagerTemplates,
     domain_to_dto_template,
 )
-from empire.server.server import main
+from empire.server.core.stager_template_service import StagerTemplateService
 
-stager_template_service = main.stagertemplatesv2
+
+def get_stager_template_service(main: AppCtx) -> StagerTemplateService:
+    return main.stagertemplatesv2
+
 
 router = APIRouter(
     prefix="/api/v2/stager-templates",
@@ -24,7 +28,11 @@ router = APIRouter(
 
 
 @router.get("/", response_model=StagerTemplates)
-async def get_stager_templates():
+async def get_stager_templates(
+    stager_template_service: StagerTemplateService = Depends(
+        get_stager_template_service
+    ),
+):
     templates = [
         domain_to_dto_template(x[1], x[0])
         for x in stager_template_service.get_stager_templates().items()
@@ -37,7 +45,12 @@ async def get_stager_templates():
     "/{uid}",
     response_model=StagerTemplate,
 )
-async def get_stager_template(uid: str):
+async def get_stager_template(
+    uid: str,
+    stager_template_service: StagerTemplateService = Depends(
+        get_stager_template_service
+    ),
+):
     template = stager_template_service.get_stager_template(uid)
 
     if not template:

@@ -3,15 +3,20 @@ from fastapi import Depends, HTTPException
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
 from empire.server.api.v2.agent.agent_file_dto import AgentFile, domain_to_dto_file
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.agent_file_service import AgentFileService
 from empire.server.core.agent_service import AgentService
 from empire.server.core.db import models
-from empire.server.server import main
 
-agent_file_service: AgentFileService = main.agentfilesv2
-agent_service: AgentService = main.agentsv2
+
+def get_agent_file_service(main: AppCtx) -> AgentFileService:
+    return main.agentfilesv2
+
+
+def get_agent_service(main: AppCtx) -> AgentService:
+    return main.agentsv2
+
 
 router = APIRouter(
     prefix="/api/v2/agents/{agent_id}/files",
@@ -24,7 +29,11 @@ router = APIRouter(
 )
 
 
-async def get_agent(agent_id: str, db: CurrentSession):
+async def get_agent(
+    agent_id: str,
+    db: CurrentSession,
+    agent_service: AgentService = Depends(get_agent_service),
+):
     agent = agent_service.get_by_id(db, agent_id)
 
     if agent:
@@ -34,7 +43,10 @@ async def get_agent(agent_id: str, db: CurrentSession):
 
 
 async def get_file(
-    uid: int, db: CurrentSession, db_agent: models.Agent = Depends(get_agent)
+    uid: int,
+    db: CurrentSession,
+    db_agent: models.Agent = Depends(get_agent),
+    agent_file_service: AgentFileService = Depends(get_agent_file_service),
 ):
     file = agent_file_service.get_file(db, db_agent.session_id, uid)
 
@@ -48,7 +60,9 @@ async def get_file(
 
 @router.get("/root")
 async def read_file_root(
-    db: CurrentSession, db_agent: models.Agent = Depends(get_agent)
+    db: CurrentSession,
+    db_agent: models.Agent = Depends(get_agent),
+    agent_file_service: AgentFileService = Depends(get_agent_file_service),
 ):
     file = agent_file_service.get_file_by_path(db, db_agent.session_id, "/")
 

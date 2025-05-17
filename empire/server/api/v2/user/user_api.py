@@ -15,7 +15,7 @@ from empire.server.api.jwt_auth import (
     get_current_active_user,
     get_password_hash,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.user.user_dto import (
     User,
@@ -26,9 +26,12 @@ from empire.server.api.v2.user.user_dto import (
     domain_to_dto_user,
 )
 from empire.server.core.db import models
-from empire.server.server import main
+from empire.server.core.user_service import UserService
 
-user_service = main.usersv2
+
+def get_user_service(main: AppCtx) -> UserService:
+    return main.usersv2
+
 
 # no prefix so /token can be at root.
 # Might also just move auth out of user router.
@@ -41,7 +44,9 @@ router = APIRouter(
 )
 
 
-async def get_user(uid: int, db: CurrentSession):
+async def get_user(
+    uid: int, db: CurrentSession, user_service: UserService = Depends(get_user_service)
+):
     user = user_service.get_by_id(db, uid)
 
     if user:
@@ -79,7 +84,9 @@ async def read_user_me(current_user: CurrentActiveUser):
     response_model=Users,
     dependencies=[Depends(get_current_active_user)],
 )
-async def read_users(db: CurrentSession):
+async def read_users(
+    db: CurrentSession, user_service: UserService = Depends(get_user_service)
+):
     users = [domain_to_dto_user(x) for x in user_service.get_all(db)]
 
     return {"records": users}
@@ -99,7 +106,11 @@ async def read_user(uid: int, db_user: models.User = Depends(get_user)):
     status_code=201,
     dependencies=[Depends(get_current_active_admin_user)],
 )
-async def create_user(user: UserPostRequest, db: CurrentSession):
+async def create_user(
+    user: UserPostRequest,
+    db: CurrentSession,
+    user_service: UserService = Depends(get_user_service),
+):
     resp, err = user_service.create_user(
         db, user.username, get_password_hash(user.password), user.is_admin
     )
@@ -117,6 +128,7 @@ async def update_user(
     current_user: CurrentActiveUser,
     db: CurrentSession,
     db_user: models.User = Depends(get_user),
+    user_service: UserService = Depends(get_user_service),
 ):
     if not (current_user.admin or current_user.id == uid):
         raise HTTPException(
@@ -145,6 +157,7 @@ async def update_user_password(
     current_user: CurrentActiveUser,
     db: CurrentSession,
     db_user: models.User = Depends(get_user),
+    user_service: UserService = Depends(get_user_service),
 ):
     if not current_user.id == uid:
         raise HTTPException(
@@ -168,6 +181,7 @@ async def create_avatar(
     user: CurrentActiveUser,
     db: CurrentSession,
     file: UploadFile = File(...),
+    user_service: UserService = Depends(get_user_service),
 ):
     if not user.id == uid:
         raise HTTPException(

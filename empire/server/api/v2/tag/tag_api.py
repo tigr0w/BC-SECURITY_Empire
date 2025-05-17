@@ -6,7 +6,7 @@ from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -20,9 +20,11 @@ from empire.server.api.v2.tag.tag_dto import (
     domain_to_dto_tag,
 )
 from empire.server.core.db import models
-from empire.server.server import main
+from empire.server.core.tag_service import TagService
 
-tag_service = main.tagsv2
+
+def get_tag_service(main: AppCtx) -> TagService:
+    return main.tagsv2
 
 
 router = APIRouter(
@@ -45,6 +47,7 @@ async def get_tags(
     order_by: TagOrderOptions = TagOrderOptions.updated_at,
     query: str | None = None,
     sources: list[TagSourceFilter] | None = Query(None),
+    tag_service: TagService = Depends(get_tag_service),
 ):
     tags, total = tag_service.get_all(
         db=db,
@@ -68,7 +71,11 @@ async def get_tags(
 
 
 def add_endpoints_to_taggable(router, path, get_taggable):
-    async def get_tag(tag_id: int, db: CurrentSession):
+    async def get_tag(
+        tag_id: int,
+        db: CurrentSession,
+        tag_service: TagService = Depends(get_tag_service),
+    ):
         tag = tag_service.get_by_id(db, tag_id)
 
         if tag:
@@ -81,6 +88,7 @@ def add_endpoints_to_taggable(router, path, get_taggable):
         tag_req: TagRequest,
         db: CurrentSession,
         db_taggable=Depends(get_taggable),
+        tag_service: TagService = Depends(get_tag_service),
     ):
         tag = tag_service.add_tag(
             db, db_taggable, tag_req.name, tag_req.value, tag_req.color
@@ -94,6 +102,7 @@ def add_endpoints_to_taggable(router, path, get_taggable):
         db: CurrentSession,
         db_taggable=Depends(get_taggable),
         db_tag: models.Tag = Depends(get_tag),
+        tag_service: TagService = Depends(get_tag_service),
     ):
         tag = tag_service.update_tag(db, db_tag, db_taggable, tag_req)
 
@@ -104,6 +113,7 @@ def add_endpoints_to_taggable(router, path, get_taggable):
         tag_id: int,
         db: CurrentSession,
         db_taggable=Depends(get_taggable),
+        tag_service: TagService = Depends(get_tag_service),
     ):
         tag_service.delete_tag(db, db_taggable, tag_id)
 

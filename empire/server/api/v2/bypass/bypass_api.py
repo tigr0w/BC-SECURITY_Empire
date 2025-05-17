@@ -11,12 +11,15 @@ from empire.server.api.v2.bypass.bypass_dto import (
     BypassUpdateRequest,
     domain_to_dto_bypass,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
+from empire.server.core.bypass_service import BypassService
 from empire.server.core.db import models
-from empire.server.server import main
 
-bypass_service = main.bypassesv2
+
+def get_bypass_service(main: AppCtx) -> BypassService:
+    return main.bypassesv2
+
 
 router = APIRouter(
     prefix="/api/v2/bypasses",
@@ -29,7 +32,11 @@ router = APIRouter(
 )
 
 
-async def get_bypass(uid: int, db: CurrentSession):
+async def get_bypass(
+    uid: int,
+    db: CurrentSession,
+    bypass_service: BypassService = Depends(get_bypass_service),
+):
     bypass = bypass_service.get_by_id(db, uid)
 
     if bypass:
@@ -44,14 +51,20 @@ async def read_bypass(uid: int, db_bypass: models.Bypass = Depends(get_bypass)):
 
 
 @router.get("/", response_model=Bypasses)
-async def read_bypasses(db: CurrentSession):
+async def read_bypasses(
+    db: CurrentSession, bypass_service: BypassService = Depends(get_bypass_service)
+):
     bypasses = [domain_to_dto_bypass(x) for x in bypass_service.get_all(db)]
 
     return {"records": bypasses}
 
 
 @router.post("/", status_code=201, response_model=Bypass)
-async def create_bypass(bypass_req: BypassPostRequest, db: CurrentSession):
+async def create_bypass(
+    bypass_req: BypassPostRequest,
+    db: CurrentSession,
+    bypass_service: BypassService = Depends(get_bypass_service),
+):
     resp, err = bypass_service.create_bypass(db, bypass_req)
 
     if err:
@@ -66,6 +79,7 @@ async def update_bypass(
     bypass_req: BypassUpdateRequest,
     db: CurrentSession,
     db_bypass: models.Bypass = Depends(get_bypass),
+    bypass_service: BypassService = Depends(get_bypass_service),
 ):
     resp, err = bypass_service.update_bypass(db, db_bypass, bypass_req)
 
@@ -80,16 +94,21 @@ async def delete_bypass(
     uid: str,
     db: CurrentSession,
     db_bypass: models.Bypass = Depends(get_bypass),
+    bypass_service: BypassService = Depends(get_bypass_service),
 ):
     bypass_service.delete_bypass(db, db_bypass)
 
 
 @router.post("/reset", status_code=HTTP_204_NO_CONTENT, response_class=Response)
-async def reset_bypasses(db: CurrentSession):
+async def reset_bypasses(
+    db: CurrentSession, bypass_service: BypassService = Depends(get_bypass_service)
+):
     bypass_service.delete_all_bypasses(db)
     bypass_service.load_bypasses(db)
 
 
 @router.post("/reload", status_code=HTTP_204_NO_CONTENT, response_class=Response)
-async def reload_bypasses(db: CurrentSession):
+async def reload_bypasses(
+    db: CurrentSession, bypass_service: BypassService = Depends(get_bypass_service)
+):
     bypass_service.load_bypasses(db)

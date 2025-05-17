@@ -12,7 +12,7 @@ from empire.server.api.v2.download.download_dto import (
     DownloadSourceFilter,
     domain_to_dto_download,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -21,9 +21,12 @@ from empire.server.api.v2.shared_dto import (
 from empire.server.api.v2.tag import tag_api
 from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.db import models
-from empire.server.server import main
+from empire.server.core.download_service import DownloadService
 
-download_service = main.downloadsv2
+
+def get_download_service(main: AppCtx) -> DownloadService:
+    return main.downloadsv2
+
 
 router = APIRouter(
     prefix="/api/v2/downloads",
@@ -36,7 +39,11 @@ router = APIRouter(
 )
 
 
-async def get_download(uid: int, db: CurrentSession):
+async def get_download(
+    uid: int,
+    db: CurrentSession,
+    download_service: DownloadService = Depends(get_download_service),
+):
     download = download_service.get_by_id(db, uid)
 
     if download:
@@ -84,6 +91,7 @@ async def read_downloads(
     query: str | None = None,
     sources: list[DownloadSourceFilter] | None = Query(None),
     tags: list[TagStr] | None = Query(None),
+    download_service: DownloadService = Depends(get_download_service),
 ):
     downloads, total = download_service.get_all(
         db=db,
@@ -112,5 +120,6 @@ async def create_download(
     user: CurrentActiveUser,
     db: CurrentSession,
     file: UploadFile = File(...),
+    download_service: DownloadService = Depends(get_download_service),
 ):
     return domain_to_dto_download(download_service.create_download(db, user, file))
