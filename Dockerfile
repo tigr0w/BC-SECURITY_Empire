@@ -29,7 +29,12 @@ RUN apt-get update && \
     default-jdk \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v7.3.9/powershell-7.3.9-linux-${TARGETARCH}.tar.gz && \
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        PS_ARCH="x64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        PS_ARCH="arm64"; \
+    fi && \
+    curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v7.3.9/powershell-7.3.9-linux-${PS_ARCH}.tar.gz && \
     mkdir -p /opt/microsoft/powershell/7 && \
     tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7 && \
     chmod +x /opt/microsoft/powershell/7/pwsh && \
