@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Use pyyaml's C extension for loading/dumping module yamls make startup and tests faster
 -   Simplified Dockerfile by using TARGETARCH variable
 -   Cleanup API code
+-   Use a new version of donut that supports arm64
+-   Update all deps
 
 ### Removed
 
