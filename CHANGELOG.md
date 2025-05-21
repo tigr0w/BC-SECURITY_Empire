@@ -14,7 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Added support for Ubuntu 24.04 in the install script
+
+### Fixed
+
+-   Fixed issue launching powershell on some distros by installing libicu
+
 ## [6.1.1] - 2025-05-21
+
+### Fixed
 
 -   Fix issue caused by ordering of API routers
 
@@ -22,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
--   Use pyyaml's C extension for loading/dumping module yamls make startup and tests faster
+-   Use pyyaml's C extension for loading/dumping module yamls to make startup and tests faster
 -   Simplified Dockerfile by using TARGETARCH variable
 -   Cleanup API code
 -   Use a new version of donut that supports arm64
