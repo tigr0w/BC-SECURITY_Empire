@@ -36,6 +36,15 @@ def test_get_tasks_for_plugin(client, admin_auth_header, plugin_task):
     assert all(x["plugin_id"] == PLUGIN_ID for x in response.json()["records"])
 
 
+def test_get_tasks_for_plugin_through_all_endpoint(
+    client, admin_auth_header, plugin_task
+):
+    response = client.get("/api/v2/plugins/tasks", headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["records"]) > 0
+    assert all(x["plugin_id"] == PLUGIN_ID for x in response.json()["records"])
+
+
 def test_get_task_for_plugin_plugin_not_found(client, admin_auth_header):
     response = client.get("/api/v2/plugins/abc/tasks/1", headers=admin_auth_header)
     assert response.status_code == status.HTTP_404_NOT_FOUND
