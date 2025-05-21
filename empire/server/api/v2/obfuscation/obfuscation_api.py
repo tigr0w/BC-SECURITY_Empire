@@ -15,13 +15,20 @@ from empire.server.api.v2.obfuscation.obfuscation_dto import (
     ObfuscationConfigUpdateRequest,
     domain_to_dto_obfuscation_config,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.db import models
-from empire.server.server import main
+from empire.server.core.module_service import ModuleService
+from empire.server.core.obfuscation_service import ObfuscationService
 
-obfuscation_service = main.obfuscationv2
-module_service = main.modulesv2
+
+def get_obfuscation_service(main: AppCtx) -> ObfuscationService:
+    return main.obfuscationv2
+
+
+def get_module_service(main: AppCtx) -> ModuleService:
+    return main.modulesv2
+
 
 router = APIRouter(
     prefix="/api/v2/obfuscation",
@@ -34,7 +41,11 @@ router = APIRouter(
 )
 
 
-async def get_keyword(uid: int, db: CurrentSession):
+async def get_keyword(
+    uid: int,
+    db: CurrentSession,
+    obfuscation_service: ObfuscationService = Depends(get_obfuscation_service),
+):
     keyword = obfuscation_service.get_keyword_by_id(db, uid)
 
     if keyword:
@@ -49,14 +60,20 @@ async def read_keyword(uid: int, db_keyword: models.Keyword = Depends(get_keywor
 
 
 @router.get("/keywords", response_model=Keywords)
-async def read_keywords(db: CurrentSession):
+async def read_keywords(
+    db: CurrentSession,
+    obfuscation_service: ObfuscationService = Depends(get_obfuscation_service),
+):
     keywords = obfuscation_service.get_all_keywords(db)
-
     return {"records": keywords}
 
 
-@router.post("/keywords", status_code=201, response_model=Keyword)
-async def create_keyword(keyword_req: KeywordPostRequest, db: CurrentSession):
+@router.post("/keywords", response_model=Keyword, status_code=201)
+async def create_keyword(
+    keyword_req: KeywordPostRequest,
+    db: CurrentSession,
+    obfuscation_service: ObfuscationService = Depends(get_obfuscation_service),
+):
     resp, err = obfuscation_service.create_keyword(db, keyword_req)
 
     if err:
@@ -71,6 +88,7 @@ async def update_keyword(
     keyword_req: KeywordUpdateRequest,
     db: CurrentSession,
     db_keyword: models.Keyword = Depends(get_keyword),
+    obfuscation_service: ObfuscationService = Depends(get_obfuscation_service),
 ):
     resp, err = obfuscation_service.update_keyword(db, db_keyword, keyword_req)
 
@@ -81,17 +99,23 @@ async def update_keyword(
 
 
 @router.delete(
-    "/keywords/{uid}", status_code=HTTP_204_NO_CONTENT, response_class=Response
+    "/keywords/{uid}",
+    status_code=HTTP_204_NO_CONTENT,
 )
 async def delete_keyword(
     uid: str,
     db: CurrentSession,
     db_keyword: models.Keyword = Depends(get_keyword),
+    obfuscation_service: ObfuscationService = Depends(get_obfuscation_service),
 ):
     obfuscation_service.delete_keyword(db, db_keyword)
 
 
-async def get_obfuscation_config(language: str, db: CurrentSession):
+async def get_obfuscation_config(
+    language: str,
+    db: CurrentSession,
+    obfuscation_service: ObfuscationService = Depends(get_obfuscation_service),
+):
     obf_config = obfuscation_service.get_obfuscation_config(db, language)
 
     if obf_config:
@@ -104,7 +128,10 @@ async def get_obfuscation_config(language: str, db: CurrentSession):
 
 
 @router.get("/global", response_model=ObfuscationConfigs)
-async def read_obfuscation_configs(db: CurrentSession):
+async def read_obfuscation_configs(
+    db: CurrentSession,
+    obfuscation_service: ObfuscationService = Depends(get_obfuscation_service),
+):
     obf_configs = obfuscation_service.get_all_obfuscation_configs(db)
 
     return {"records": obf_configs}
@@ -124,6 +151,7 @@ async def update_obfuscation_config(
     obf_req: ObfuscationConfigUpdateRequest,
     db: CurrentSession,
     db_obf_config: models.ObfuscationConfig = Depends(get_obfuscation_config),
+    obfuscation_service: ObfuscationService = Depends(get_obfuscation_service),
 ):
     resp, err = obfuscation_service.update_obfuscation_config(
         db, db_obf_config, obf_req
@@ -146,6 +174,7 @@ async def preobfuscate_modules(
     db: CurrentSession,
     reobfuscate: bool = False,
     db_obf_config: models.ObfuscationConfig = Depends(get_obfuscation_config),
+    module_service: ModuleService = Depends(get_module_service),
 ):
     if not db_obf_config.preobfuscatable:
         raise HTTPException(
@@ -166,6 +195,7 @@ async def preobfuscate_modules(
 async def remove_preobfuscated_modules(
     language: str,
     db_obf_config: models.ObfuscationConfig = Depends(get_obfuscation_config),
+    module_service: ModuleService = Depends(get_module_service),
 ):
     if not db_obf_config.preobfuscatable:
         raise HTTPException(

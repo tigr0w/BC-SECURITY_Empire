@@ -5,9 +5,6 @@ from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
 from empire.server.api.v2.meta.meta_dto import EmpireVersion
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
-from empire.server.server import main
-
-listener_service = main.listenersv2
 
 router = APIRouter(
     prefix="/api/v2/meta",

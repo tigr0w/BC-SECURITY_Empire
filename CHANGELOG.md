@@ -14,6 +14,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.2] - 2025-05-21
+
+### Added
+
+-   Added support for Ubuntu 24.04 in the install script
+
+### Fixed
+
+-   Fixed issue launching powershell on some distros by installing libicu
+
+## [6.1.1] - 2025-05-21
+
+### Fixed
+
+-   Fix issue caused by ordering of API routers
+
+## [6.1.0] - 2025-05-20
+
+### Changed
+
+-   Use pyyaml's C extension for loading/dumping module yamls to make startup and tests faster
+-   Simplified Dockerfile by using TARGETARCH variable
+-   Cleanup API code
+-   Use a new version of donut that supports arm64
+-   Update all deps
+
+### Removed
+
+-   Remove unused files
+
 ## [6.0.3] - 2025-04-24
 
 -   Fixed SMB listener not sending start task
@@ -1102,7 +1132,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.2...HEAD
+
+[6.1.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.1...v6.1.2
+
+[6.1.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.0...v6.1.1
+
+[6.1.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.3...v6.1.0
 
 [6.0.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.0.2...v6.0.3
 

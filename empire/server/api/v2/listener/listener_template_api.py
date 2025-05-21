@@ -7,10 +7,14 @@ from empire.server.api.v2.listener.listener_dto import (
     ListenerTemplates,
     domain_to_dto_template,
 )
+from empire.server.api.v2.shared_dependencies import AppCtx
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
-from empire.server.server import main
+from empire.server.core.listener_template_service import ListenerTemplateService
 
-listener_template_service = main.listenertemplatesv2
+
+def get_listener_template_service(main: AppCtx) -> ListenerTemplateService:
+    return main.listenertemplatesv2
+
 
 router = APIRouter(
     prefix="/api/v2/listener-templates",
@@ -27,7 +31,11 @@ router = APIRouter(
     "/",
     response_model=ListenerTemplates,
 )
-async def get_listener_templates():
+async def get_listener_templates(
+    listener_template_service: ListenerTemplateService = Depends(
+        get_listener_template_service
+    ),
+):
     templates = [
         domain_to_dto_template(x[1], x[0])
         for x in listener_template_service.get_listener_templates().items()
@@ -40,7 +48,12 @@ async def get_listener_templates():
     "/{uid}",
     response_model=ListenerTemplate,
 )
-async def get_listener_template(uid: str):
+async def get_listener_template(
+    uid: str,
+    listener_template_service: ListenerTemplateService = Depends(
+        get_listener_template_service
+    ),
+):
     template = listener_template_service.get_listener_template(uid)
 
     if not template:

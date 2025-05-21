@@ -16,18 +16,21 @@ from empire.server.api.v2.agent.agent_dto import (
     domain_to_dto_agent_checkin,
     domain_to_dto_agent_checkin_agg,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
     OrderDirection,
 )
 from empire.server.api.v2.tag import tag_api
+from empire.server.core.agent_service import AgentService
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
-from empire.server.server import main
 
-agent_service = main.agentsv2
+
+def get_agent_service(main: AppCtx) -> AgentService:
+    return main.agentsv2
+
 
 router = APIRouter(
     prefix="/api/v2/agents",
@@ -40,7 +43,11 @@ router = APIRouter(
 )
 
 
-async def get_agent(uid: str, db: CurrentSession):
+async def get_agent(
+    uid: str,
+    db: CurrentSession,
+    agent_service: AgentService = Depends(get_agent_service),
+):
     agent = agent_service.get_by_id(db, uid)
 
     if agent:
@@ -55,6 +62,7 @@ tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_agent)
 @router.get("/checkins", response_model=AgentCheckIns)
 def read_agent_checkins_all(
     db: CurrentSession,
+    agent_service: AgentService = Depends(get_agent_service),
     agents: list[str] = Query(None),
     limit: int = 1000,
     page: int = 1,
@@ -79,6 +87,7 @@ def read_agent_checkins_all(
 @router.get("/checkins/aggregate", response_model=AgentCheckInsAggregate)
 def read_agent_checkins_aggregate(
     db: CurrentSession,
+    agent_service: AgentService = Depends(get_agent_service),
     agents: list[str] = Query(None),
     start_date: datetime | None = None,
     end_date: datetime | None = None,
@@ -111,6 +120,7 @@ async def read_agent(uid: str, db_agent: models.Agent = Depends(get_agent)):
 @router.get("/", response_model=Agents)
 async def read_agents(
     db: CurrentSession,
+    agent_service: AgentService = Depends(get_agent_service),
     include_archived: bool = False,
     include_stale: bool = True,
 ):
@@ -128,6 +138,7 @@ async def update_agent(
     agent_req: AgentUpdateRequest,
     db: CurrentSession,
     db_agent: models.Agent = Depends(get_agent),
+    agent_service: AgentService = Depends(get_agent_service),
 ):
     resp, err = agent_service.update_agent(db, db_agent, agent_req)
 
@@ -141,6 +152,7 @@ async def update_agent(
 def read_agent_checkins(
     db: CurrentSession,
     db_agent: models.Agent = Depends(get_agent),
+    agent_service: AgentService = Depends(get_agent_service),
     limit: int = -1,
     page: int = 1,
     start_date: datetime | None = None,

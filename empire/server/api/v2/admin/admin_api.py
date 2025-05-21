@@ -5,11 +5,14 @@ from empire.server.api.jwt_auth import (
     get_current_active_admin_user,
     get_current_active_user,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
-from empire.server.server import main
+from empire.server.core.ip_service import IpService
 
-ip_service = main.ipsv2
+
+def get_ip_service(main: AppCtx) -> IpService:
+    return main.ipsv2
+
 
 router = APIRouter(
     prefix="/api/v2/admin",
@@ -23,10 +26,12 @@ router = APIRouter(
 
 
 @router.put("/ip_filtering", dependencies=[Depends(get_current_active_admin_user)])
-def toggle_ip_filtering(db: CurrentSession, enabled: bool):
+def toggle_ip_filtering(
+    db: CurrentSession, enabled: bool, ip_service: IpService = Depends(get_ip_service)
+):
     ip_service.toggle_ip_filtering(db, enabled)
 
 
 @router.get("/ip_filtering", dependencies=[Depends(get_current_active_user)])
-def get_ip_filtering():
+def get_ip_filtering(ip_service: IpService = Depends(get_ip_service)):
     return {"enabled": ip_service.ip_filtering}

@@ -19,6 +19,13 @@ services:
         BASE_IMAGE: ubuntu:22.04
     image: bcsecurity/empire-test-ubuntu2204
     <<: *common-platform
+  ubuntu2404:
+    build:
+      <<: *common-build
+      args:
+        BASE_IMAGE: ubuntu:24.04
+    image: bcsecurity/empire-test-ubuntu2404
+    <<: *common-platform
   debian11:
     build:
       <<: *common-build

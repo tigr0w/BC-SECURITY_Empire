@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "6.0.3"
+version = "6.1.2"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -13,46 +13,52 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.13,<3.14"
-urllib3 = "^2.3.0"
+urllib3 = "^2.4.0"
 requests = "^2.32.3"
 macholib = "^1.16.3"
-pyOpenSSL = "^25.0.0"
+pyOpenSSL = "^25.1.0"
 zlib_wrapper = "^0.1.3"
 jinja2 = "^3.1.6"
-pyparsing = "^3.2.1"
+pyparsing = "^3.2.3"
 PyMySQL = "^1.1.1"
-SQLAlchemy = "^2.0.39"
+SQLAlchemy = "^2.0.41"
 PyYAML = "^6.0.2"
 SQLAlchemy-Utc = "^0.14.0"
 terminaltables = "^3.1.10"
-pycryptodome = "^3.22.0"
-cryptography = "^44.0.2"
-fastapi = "^0.115.11"
-uvicorn = "^0.34.0"
+pycryptodome = "^3.23.0"
+cryptography = "^44.0.3"
+fastapi = "^0.115.12"
+uvicorn = "^0.34.2"
 jq = "^1.8.0"
 aiofiles = "^24.1.0"
 python-multipart = "^0.0.20"
 python-jose = {version = "^3.4.0", extras = ["cryptography"]}
 passlib = {version = "^1.7.4", extras = ["bcrypt"]}
-python-socketio = "^5.12.1"
-Flask = "^3.1.0"
+python-socketio = "^5.13.0"
+Flask = "^3.1.1"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev = "da5be0e"}
-donut-shellcode = { version = "^1.1", markers = "platform_machine == 'x86_64' or platform_machine == 'amd64'" }
+# The official donut-shellcode release doesn't support arm64
+# and on newer linux kernels, it's starting to fail due to
+# security restrictions with execstack.
+# https://github.com/TheWover/donut/issues/139
+donut-shellcode = { git = "https://github.com/BC-SECURITY/donut.git", rev = "b361c0d3" }
 python-obfuscator = "^0.0.2"
-pyinstaller = "^6.12.0"
+pyinstaller = "^6.13.0"
 packaging = "^24.2"
 netaddr = "^1.3.0"
-bcrypt = "4.0.1" # Locked to 4.0.1 due to passlib no longer being updated https://github.com/pyca/bcrypt/issues/684
+# Locked to 4.0.1 due to passlib no longer being updated
+# https://github.com/pyca/bcrypt/issues/684
+bcrypt = "4.0.1"
 requests-file = "^2.1.0"
 
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.28.1" # For starlette TestClient
 pytest = "^8.3.5"
-pytest-timeout = "^2.3.1"
-ruff = "^0.11.2"
-pytest-cov = "^6.0.0"
-coverage = {version = "^7.7.1", extras = ["toml"]}
+pytest-timeout = "^2.4.0"
+ruff = "^0.11.10"
+pytest-cov = "^6.1.1"
+coverage = {version = "^7.8.0", extras = ["toml"]}
 pytest-env = "^1.1.5"
 
 [build-system]

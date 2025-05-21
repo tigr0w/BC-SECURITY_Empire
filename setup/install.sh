@@ -120,6 +120,10 @@ function install_poetry() {
 
 function install_powershell() {
   echo -e "\x1b[1;34m[*] Installing PowerShell\x1b[0m"
+  # To deal with the following error:
+  # Couldn't find a valid ICU package installed on the system.
+  # Please install libicu (or icu-libs) using your package manager and try again.
+  sudo apt-get install libicu-dev
 
   # https://learn.microsoft.com/en-us/powershell/scripting/install/install-other-linux?view=powershell-7.4#binary-archives
   ARCH=$(uname -m)
@@ -222,10 +226,10 @@ if VERSION_ID=$(grep -oP '^(11|12)' /etc/debian_version 2>/dev/null); then
 elif grep -i "NAME=\"Ubuntu\"" /etc/os-release 2>/dev/null; then
   OS_NAME=UBUNTU
   VERSION_ID=$(grep -i VERSION_ID /etc/os-release | grep -o -E "[[:digit:]]+\\.[[:digit:]]+")
-  if [[ "$VERSION_ID" == "20.04" || "$VERSION_ID" == "22.04" ]]; then
+  if [[ "$VERSION_ID" == "20.04" || "$VERSION_ID" == "22.04" || "$VERSION_ID" == "24.04" ]]; then
     echo -e "\x1b[1;34m[*] Detected Ubuntu ${VERSION_ID}\x1b[0m"
   else
-    echo -e '\x1b[1;31m[!] Ubuntu must be 20.04 or 22.04\x1b[0m' && exit
+    echo -e '\x1b[1;31m[!] Ubuntu must be 20.04, 22.04, or 24.04 \x1b[0m' && exit
   fi
 elif grep -i "Kali" /etc/os-release 2>/dev/null; then
   echo -e "\x1b[1;34m[*] Detected Kali\x1b[0m"

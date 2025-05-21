@@ -12,7 +12,7 @@ from empire.server.api.v2.plugin.plugin_task_dto import (
     PluginTasks,
     domain_to_dto_plugin_task,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -25,11 +25,19 @@ from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.download_service import DownloadService
 from empire.server.core.plugin_service import PluginService
 from empire.server.core.plugin_task_service import PluginTaskService
-from empire.server.server import main
 
-download_service: DownloadService = main.downloadsv2
-plugin_service: PluginService = main.pluginsv2
-plugin_task_service: PluginTaskService = main.plugintasksv2
+
+def get_plugin_task_service(main: AppCtx) -> PluginTaskService:
+    return main.plugintasksv2
+
+
+def get_plugin_service(main: AppCtx) -> PluginService:
+    return main.pluginsv2
+
+
+def get_download_service(main: AppCtx) -> DownloadService:
+    return main.downloadsv2
+
 
 router = APIRouter(
     prefix="/api/v2/plugins",
@@ -42,7 +50,12 @@ router = APIRouter(
 )
 
 
-async def get_task(uid: int, db: CurrentSession, plugin: CurrentPlugin):
+async def get_task(
+    uid: int,
+    db: CurrentSession,
+    plugin: CurrentPlugin,
+    plugin_task_service: PluginTaskService = Depends(get_plugin_task_service),
+):
     task = plugin_task_service.get_task(db, plugin.db_plugin.id, uid)
 
     if task:
@@ -71,6 +84,7 @@ async def read_tasks_all_plugins(
     users: list[int] | None = Query(None),
     tags: list[TagStr] | None = Query(None),
     query: str | None = None,
+    plugin_task_service: PluginTaskService = Depends(get_plugin_task_service),
 ):
     tasks, total = plugin_task_service.get_tasks(
         db,
@@ -116,6 +130,7 @@ async def read_tasks(
     users: list[int] | None = Query(None),
     tags: list[TagStr] | None = Query(None),
     query: str | None = None,
+    plugin_task_service: PluginTaskService = Depends(get_plugin_task_service),
 ):
     tasks, total = plugin_task_service.get_tasks(
         db,

@@ -9,6 +9,13 @@ import warnings
 from pathlib import Path
 
 import yaml
+
+try:
+    from yaml import CSafeDumper as Dumper
+    from yaml import CSafeLoader as Loader
+except ImportError:
+    from yaml import Dumper, Loader
+
 from packaging.version import parse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -714,9 +721,9 @@ class ModuleService:
         modified_module.script_path = None
 
         if modified_module.language == LanguageEnum.csharp:
-            compiler_dict = yaml.safe_load(modified_module.compiler_yaml)
+            compiler_dict = yaml.load(modified_module.compiler_yaml, Loader=Loader)
             compiler_dict[0]["Code"] = modified_input
-            modified_module.compiler_yaml = yaml.safe_dump(compiler_dict)
+            modified_module.compiler_yaml = yaml.dump(compiler_dict, Dumper=Dumper)
 
         return modified_module
 
@@ -731,7 +738,7 @@ class ModuleService:
 
             # instantiate the module and save it to the internal cache
             try:
-                yaml2 = yaml.safe_load(file_path.read_text())
+                yaml2 = yaml.load(file_path.read_text(), Loader=Loader)
                 yaml_module = {k: v for k, v in yaml2.items() if v is not None}
                 self._load_module(db, yaml_module, root_path, file_path)
             except Exception as e:
@@ -778,6 +785,7 @@ class ModuleService:
                 sort_keys=False,
                 default_flow_style=False,
                 allow_unicode=True,
+                Dumper=Dumper,
             )
 
             my_model = EmpireModule(**yaml_module)

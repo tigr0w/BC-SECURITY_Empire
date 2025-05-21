@@ -30,7 +30,7 @@ from empire.server.api.v2.agent.agent_task_dto import (
     WorkingHoursPostRequest,
     domain_to_dto_task,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -47,12 +47,20 @@ from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
 )
-from empire.server.server import main
 from empire.server.utils.data_util import is_port_in_use
 
-agent_task_service: AgentTaskService = main.agenttasksv2
-agent_service: AgentService = main.agentsv2
-download_service: DownloadService = main.downloadsv2
+
+def get_agent_task_service(main: AppCtx) -> AgentTaskService:
+    return main.agenttasksv2
+
+
+def get_agent_service(main: AppCtx) -> AgentService:
+    return main.agentsv2
+
+
+def get_download_service(main: AppCtx) -> DownloadService:
+    return main.downloadsv2
+
 
 router = APIRouter(
     prefix="/api/v2/agents",
@@ -65,7 +73,11 @@ router = APIRouter(
 )
 
 
-async def get_agent(agent_id: str, db: CurrentSession):
+async def get_agent(
+    agent_id: str,
+    db: CurrentSession,
+    agent_service: AgentService = Depends(get_agent_service),
+):
     agent = agent_service.get_by_id(db, agent_id)
 
     if agent:
@@ -75,7 +87,10 @@ async def get_agent(agent_id: str, db: CurrentSession):
 
 
 async def get_task(
-    uid: int, db: CurrentSession, db_agent: models.Agent = Depends(get_agent)
+    uid: int,
+    db: CurrentSession,
+    db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     task = agent_task_service.get_task_for_agent(db, db_agent.session_id, uid)
 
@@ -106,6 +121,7 @@ async def read_tasks_all_agents(
     users: list[int] | None = Query(None),
     tags: list[TagStr] | None = Query(None),
     query: str | None = None,
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     tasks, total = agent_task_service.get_tasks(
         db,
@@ -156,6 +172,7 @@ async def read_tasks(
     tags: list[TagStr] | None = Query(None),
     db_agent: models.Agent = Depends(get_agent),
     query: str | None = None,
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     tasks, total = agent_task_service.get_tasks(
         db,
@@ -208,6 +225,7 @@ async def create_task_jobs(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_jobs(db, db_agent, current_user)
 
@@ -220,6 +238,7 @@ async def create_task_kill_job(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     kill_job = str(jobs.id)
     resp, err = agent_task_service.create_task_kill_job(
@@ -235,6 +254,7 @@ async def create_task_shell(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     """
     Executes a command on the agent. If literal is true, it will ignore the built-in aliases
@@ -256,6 +276,7 @@ async def create_task_module(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     try:
         resp, err = agent_task_service.create_task_module(
@@ -286,6 +307,8 @@ async def create_task_upload(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    download_service: DownloadService = Depends(get_download_service),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     download = download_service.get_by_id(db, upload_request.file_id)
 
@@ -324,6 +347,7 @@ async def create_task_download(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_download(
         db, db_agent, download_request.path_to_file, current_user
@@ -341,6 +365,7 @@ async def create_task_sysinfo(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_sysinfo(db, db_agent, current_user)
 
@@ -358,6 +383,7 @@ async def create_task_update_comms(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_update_comms(
         db, db_agent, comms_request.new_listener_id, current_user
@@ -375,6 +401,7 @@ async def create_task_update_sleep(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_update_sleep(
         db, db_agent, sleep_request.delay, sleep_request.jitter, current_user
@@ -392,6 +419,7 @@ async def create_task_update_kill_date(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_update_kill_date(
         db, db_agent, kill_date_request.kill_date, current_user
@@ -411,6 +439,7 @@ async def create_task_update_working_hours(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_update_working_hours(
         db, db_agent, working_hours_request.working_hours, current_user
@@ -430,6 +459,7 @@ async def create_task_update_directory_list(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_directory_list(
         db, db_agent, directory_list_request.path, current_user
@@ -447,6 +477,7 @@ async def create_task_exit(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     resp, err = agent_task_service.create_task_exit(db, db_agent, current_user)
 
@@ -463,6 +494,7 @@ async def delete_task(
     uid: int,
     db: CurrentSession,
     db_task: models.AgentTask = Depends(get_task),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     if db_task.status != AgentTaskStatus.queued:
         raise HTTPException(
@@ -478,6 +510,7 @@ async def create_task_socks(
     db: CurrentSession,
     current_user: CurrentUser,
     db_agent: models.Agent = Depends(get_agent),
+    agent_task_service: AgentTaskService = Depends(get_agent_task_service),
 ):
     if is_port_in_use(socks.port):
         raise HTTPException(status_code=400, detail="Socks port is in use")

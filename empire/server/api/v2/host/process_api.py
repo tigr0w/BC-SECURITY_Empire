@@ -7,13 +7,20 @@ from empire.server.api.v2.host.process_dto import (
     Processes,
     domain_to_dto_process,
 )
-from empire.server.api.v2.shared_dependencies import CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.db import models
-from empire.server.server import main
+from empire.server.core.host_process_service import HostProcessService
+from empire.server.core.host_service import HostService
 
-host_process_service = main.processesv2
-host_service = main.hostsv2
+
+def get_host_process_service(main: AppCtx) -> HostProcessService:
+    return main.processesv2
+
+
+def get_host_service(main: AppCtx) -> HostService:
+    return main.hostsv2
+
 
 router = APIRouter(
     prefix="/api/v2/hosts/{host_id}/processes",
@@ -26,7 +33,11 @@ router = APIRouter(
 )
 
 
-async def get_host(host_id: int, db: CurrentSession):
+async def get_host(
+    host_id: int,
+    db: CurrentSession,
+    host_service: HostService = Depends(get_host_service),
+):
     host = host_service.get_by_id(db, host_id)
 
     if host:
@@ -36,7 +47,10 @@ async def get_host(host_id: int, db: CurrentSession):
 
 
 async def get_process(
-    uid: int, db: CurrentSession, db_host: models.Host = Depends(get_host)
+    uid: int,
+    db: CurrentSession,
+    db_host: models.Host = Depends(get_host),
+    host_process_service: HostProcessService = Depends(get_host_process_service),
 ):
     process = host_process_service.get_process_for_host(db, db_host, uid)
 
@@ -54,7 +68,11 @@ async def read_process(uid: int, db_process: models.HostProcess = Depends(get_pr
 
 
 @router.get("/", response_model=Processes)
-async def read_processes(db: CurrentSession, db_host: models.Host = Depends(get_host)):
+async def read_processes(
+    db: CurrentSession,
+    db_host: models.Host = Depends(get_host),
+    host_process_service: HostProcessService = Depends(get_host_process_service),
+):
     processes = [
         domain_to_dto_process(x)
         for x in host_process_service.get_processes_for_host(db, db_host)

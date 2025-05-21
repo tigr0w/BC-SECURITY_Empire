@@ -910,6 +910,19 @@ def test_get_tasks_for_agent(client, admin_auth_header, agent, agent_task):
     )
 
 
+def test_get_tasks_for_agent_through_all_endpoint(
+    client, admin_auth_header, agent, agent_task
+):
+    response = client.get(
+        "/api/v2/agents/tasks",
+        headers=admin_auth_header,
+        params={"agents": agent},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["records"]) > 0
+    assert all(x["agent_id"] == agent for x in response.json()["records"])
+
+
 def test_get_task_for_agent_agent_not_found(client, admin_auth_header, agent):
     response = client.get("/api/v2/agents/abc/tasks/1", headers=admin_auth_header)
     assert response.status_code == status.HTTP_404_NOT_FOUND
