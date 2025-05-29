@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-  Fixed PowerShell agent having base64 encoded Cookie name for HTTP listener
+
 ## [6.1.2] - 2025-05-21
 
 ### Added
