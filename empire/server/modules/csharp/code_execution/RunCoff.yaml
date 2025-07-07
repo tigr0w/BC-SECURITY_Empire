@@ -4,12 +4,15 @@ authors:
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  This is a quick and dirty COFF loader (AKA Beacon Object Files).
+  C# implementation of a COFF loader that provides compatibility with Cobalt
+  Strike Beacon Object Files. This allows for CS BOF files to be used in  outside
+  frameworks. COFF loader allows for the execution of C/C++ programs as position independent
+  code. The user must pass in the Format String, Entry Point, and Arguments.
 software: ''
 tactics: [TA0002]
 techniques: [T1106, T1620]
 background: true
-output_extension: null
+output_extension: ''
 needs_admin: false
 opsec_safe: true
 language: csharp
@@ -24,7 +27,7 @@ options:
   - name: EntryPoint
     description: Name of the function exported to execute in the beacon object file.
     required: false
-    value: 'go'
+    value: go
   - name: Format String
     description: The format string must only include the following characters b,
       i, s, z, Z
