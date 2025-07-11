@@ -241,11 +241,9 @@ class Listener:
         customHeaders = profile.split("|")[2:]
 
         cookie = listenerOptions["Cookie"]["Value"]
-        # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
         if cookie == "":
-            generate = listener_util.generate_cookie()
-            listenerOptions["Cookie"]["Value"] = generate
-            cookie = generate
+            cookie = "session"
+            listenerOptions["Cookie"]["Value"] = cookie
 
         if language == "powershell":
             # PowerShell
@@ -432,7 +430,7 @@ class Listener:
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
 
                         # add the RC4 packet to a cookie
-                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
+                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "{cookie}={b64RoutingPacket}")];\n'
                     else:
                         username = proxy_creds.split(":")[0]
                         password = proxy_creds.split(":")[1]
@@ -441,7 +439,7 @@ class Listener:
                             proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
                             proxy_auth_handler.add_password(None,'{proxy}','{username}','{password}');
                             o = urllib.request.build_opener(proxy, proxy_auth_handler);
-                            o.addheaders=[('User-Agent',UA), ("Cookie", "session={b64RoutingPacket}")];
+                            o.addheaders=[('User-Agent',UA), ("Cookie", "{cookie}={b64RoutingPacket}")];
                             """
                         )
 
@@ -978,7 +976,7 @@ class Listener:
             if cookie and cookie != "":
                 try:
                     # see if we can extract the 'routing packet' from the specified cookie location
-                    # NOTE: this can be easily moved to a paramter, another cookie value, etc.
+                    # NOTE: this can be easily moved to a parameter, another cookie value, etc.
                     if self.session_cookie in cookie:
                         listenerName = self.options["Name"]["Value"]
                         message = f"{listenerName}: GET cookie value from {clientIP} : {cookie}"
