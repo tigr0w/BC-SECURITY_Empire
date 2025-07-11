@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [6.1.3] - 2025-07-11
--   Updated Starkiller to v3.0.1
 
+-   Updated Starkiller to v3.0.1
 -   Fixed PowerShell agent having base64 encoded Cookie name for HTTP listener
 
 ## [6.1.2] - 2025-05-21
