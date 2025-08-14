@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed C# execution in iron python agent to use ordered arguements
 -   Removed redundant C# function from iron python agent
 -   Cleaned up Rubeus and RunCoff yamls
+-   Fixed port normalization to allow host port and bind port to be different
 
 ## [6.1.4] - 2025-08-16
 
