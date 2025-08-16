@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.4] - 2025-08-16
+
 ## [6.1.3] - 2025-07-11
 
 -   Fixed PowerShell agent having base64 encoded Cookie name for HTTP listener
@@ -1121,7 +1123,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.4...HEAD
+
+[6.1.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.3...v6.1.4
 
 [6.1.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.2...v6.1.3
 
