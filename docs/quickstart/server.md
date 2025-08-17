@@ -99,7 +99,7 @@ plugins:
       options:
         report: all
 ```
-* **plugin_marketplace** - This points the server to where Empire should look for additionl available plugins to install. This defaults to the BC Security plugin marketplace but can point to a private marketplace as well.
+* **plugin_marketplace** - This points the server to where Empire should look for additional available plugins to install. This defaults to the BC Security plugin marketplace but can point to a private marketplace as well.
 name - the display name for the marketplace in Empire
 git_url - git project to pull plugins from
 
@@ -121,7 +121,7 @@ directories:
 
 * **logging** - See [Logging](../logging/logging.md) for more information on logging configuration.
 
-* **submodules** - Control if submodules wil be auto updated on startup.
+* **submodules** - Control if submodules will be auto updated on startup.
 
 ```
 submodules:

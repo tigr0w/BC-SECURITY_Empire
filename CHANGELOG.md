@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Added clean and reset options to the server
+
 ## [6.1.4] - 2025-08-16
 
 ## [6.1.3] - 2025-07-11
