@@ -103,6 +103,7 @@ options:
       - powershell
       - csharp
       - ironpython
+      - go
 script_path: management/Invoke-RunAs.ps1
 advanced:
   custom_generate: true
