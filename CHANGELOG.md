@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 -   Added clean and reset options to the server
+-   Added other agent language support to fodhelper
+-   Added go support to spawn and spawnas
+-   Fixed launcher_bat when go agent is used
+-   Fixed install script where goenv breaks in wsl
 
 ## [6.1.4] - 2025-08-16
 
