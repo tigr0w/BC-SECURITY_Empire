@@ -67,12 +67,9 @@ class Stager:
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
     def generate(self):
-        # Extract options
         options = self.options
         listener_name = options["Listener"]["Value"]
         obfuscate_command = options["ObfuscateCommand"]["Value"]

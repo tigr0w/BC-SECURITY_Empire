@@ -13,7 +13,6 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        # read in the common module source code
         script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
@@ -38,8 +37,6 @@ class Module:
                     params["UserName"] = cred.username
                 if cred.password != "":
                     params["Password"] = cred.password
-
-        # extract all of our options
 
         launcher = main_menu.stagertemplatesv2.new_instance("windows_launcher_bat")
         launcher.options["Listener"]["Value"] = params["Listener"]
