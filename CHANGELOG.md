@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added go support to spawn and spawnas
 -   Fixed launcher_bat when go agent is used
 -   Fixed install script where goenv breaks in wsl
+-   Fixed issue where gopire doesn't detect high integrity agents
 
 ## [6.1.4] - 2025-08-16
 
