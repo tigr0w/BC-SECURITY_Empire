@@ -35,7 +35,9 @@ class Module:
             lang = language.lower()
 
             if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
-                raise ModuleValidationException(f"[!] Invalid listener: {listener_name}")
+                raise ModuleValidationException(
+                    f"[!] Invalid listener: {listener_name}"
+                )
 
             if lang == "powershell":
                 launcher = main_menu.stagergenv2.generate_launcher(
@@ -69,10 +71,14 @@ class Module:
                 raise ModuleValidationException(f"Language '{language}' not supported.")
 
             if not launcher:
-                raise ModuleValidationException("[!] Error in launcher command generation.")
+                raise ModuleValidationException(
+                    "[!] Error in launcher command generation."
+                )
         else:
             if not command_param:
-                raise ModuleValidationException("Either Listener or Command must be specified.")
+                raise ModuleValidationException(
+                    "Either Listener or Command must be specified."
+                )
             launcher = command_param
 
         enc_script = launcher.split(" ")[-1]
