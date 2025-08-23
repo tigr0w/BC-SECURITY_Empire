@@ -37,7 +37,7 @@ function install_goenv() {
     echo -e "\x1b[1;32m[+] goenv is already installed in $HOME/.goenv, skipping clone\x1b[0m"
   else
     rm -rf "$HOME/.goenv"
-    git clone core.autocrlf=false https://github.com/go-nv/goenv.git "$HOME/.goenv"
+    git clone https://github.com/go-nv/goenv.git "$HOME/.goenv"
   fi
 
   export GOENV_ROOT="$HOME/.goenv"
