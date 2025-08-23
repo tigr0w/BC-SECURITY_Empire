@@ -31,56 +31,43 @@ function command_exists() {
 }
 
 function install_goenv() {
-  echo -e "\x1b[1;34m[*] Installing goenv\x1b[0m"
+    echo -e "\x1b[1;34m[*] Installing goenv\x1b[0m"
 
-  if [ -d "$HOME/.goenv" ] && [ -x "$HOME/.goenv/bin/goenv" ]; then
-    echo -e "\x1b[1;32m[+] goenv is already installed in $HOME/.goenv, skipping clone\x1b[0m"
-  else
-    rm -rf "$HOME/.goenv"
-    git clone https://github.com/go-nv/goenv.git "$HOME/.goenv"
-  fi
+    if [ -d "$HOME/.goenv" ]; then
+        echo -e "\x1b[1;32m[+] goenv is already installed in $HOME/.goenv, skipping clone\x1b[0m"
+    else
+        git clone https://github.com/go-nv/goenv.git ~/.goenv
+    fi
 
-  export GOENV_ROOT="$HOME/.goenv"
-  export PATH="$GOENV_ROOT/bin:$PATH"
-  eval "$("$GOENV_ROOT/bin/goenv" init -)"
-  hash -r
+    export GOENV_ROOT="$HOME/.goenv"
+    export PATH="$GOENV_ROOT/bin:$PATH"
+    eval "$(goenv init -)"
 
-  # rc files (use absolute init so it works even if PATH isn’t ready)
-  {
-    echo 'export GOENV_ROOT="$HOME/.goenv"'
-    echo 'export PATH="$GOENV_ROOT/bin:$PATH"'
-    echo 'eval "$(\"$GOENV_ROOT/bin/goenv\" init -)"'
-  } >> ~/.bashrc
-  {
-    echo 'export GOENV_ROOT="$HOME/.goenv"'
-    echo 'export PATH="$GOENV_ROOT/bin:$PATH"'
-    echo 'eval "$(\"$GOENV_ROOT/bin/goenv\" init -)"'
-  } >> ~/.zshrc
+    echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.bashrc
+    echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.bashrc
+    echo 'eval "$(goenv init -)"' >> ~/.bashrc
 
-  # Only do these in Docker or if you truly need system-wide links; otherwise skip.
-  sudo ln -sf "$HOME/.goenv/shims/go"    /usr/bin/go    || true
-  sudo ln -sf "$HOME/.goenv/shims/gofmt" /usr/bin/gofmt || true
-  sudo ln -sf "$HOME/.goenv/bin/goenv"   /usr/bin/goenv || true
+    echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.zshrc
+    echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.zshrc
+    echo 'eval "$(goenv init -)"' >> ~/.zshrc
+
+    # These are for the Docker builds since
+    # the bashrc and zshrc files are not sourced
+    sudo ln -s $HOME/.goenv/shims/go /usr/bin/go || true
+    sudo ln -s $HOME/.goenv/shims/gofmt /usr/bin/gofmt || true
+    sudo ln -s $HOME/.goenv/bin/goenv /usr/bin/goenv || true
 }
 
 function update_goenv() {
   echo -e "\x1b[1;34m[*] Updating goenv\x1b[0m"
-  export GOENV_ROOT="${GOENV_ROOT:-$HOME/.goenv}"
-  [ -d "$GOENV_ROOT/.git" ] || return 0
-  git -C "$GOENV_ROOT" fetch --all && git -C "$GOENV_ROOT" pull
+
+  cd $GOENV_ROOT && git fetch --all && git pull && cd -
 }
 
 function install_go() {
   echo -e "\x1b[1;34m[*] Installing Go\x1b[0m"
-  export GOENV_ROOT="${GOENV_ROOT:-$HOME/.goenv}"
-  export PATH="$GOENV_ROOT/bin:$PATH"
-  eval "$("$GOENV_ROOT/bin/goenv" init -)"
-  hash -r
 
-  local GOVERSION
-  GOVERSION="$(cat "$PARENT_PATH/.go-version")"
-  "$GOENV_ROOT/bin/goenv" install -s "$GOVERSION"
-  "$GOENV_ROOT/bin/goenv" global "$GOVERSION"
+  goenv install $(cat .go-version) -s
 }
 
 function install_pyenv() {
