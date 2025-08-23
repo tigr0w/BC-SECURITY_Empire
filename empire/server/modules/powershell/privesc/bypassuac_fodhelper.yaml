@@ -42,10 +42,10 @@ options:
     value: powershell
     strict: true
     suggested_values:
-    - powershell
-    - csharp
-    - ironpython
-    - go
+      - powershell
+      - csharp
+      - ironpython
+      - go
   - name: Obfuscate
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types. For powershell only.
@@ -53,8 +53,8 @@ options:
     value: 'False'
     strict: true
     suggested_values:
-    - true
-    - false
+      - true
+      - false
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use (only when Obfuscate=True
       and Language=powershell).
@@ -79,8 +79,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default,
-      none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
 script_path: privesc/Invoke-FodHelperBypass.ps1
