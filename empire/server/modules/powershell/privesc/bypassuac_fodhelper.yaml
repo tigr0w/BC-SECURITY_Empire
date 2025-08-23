@@ -1,8 +1,8 @@
 name: Invoke-FodHelperBypass
 authors:
-- name: Petr Medonos
-  handle: ''
-  link: ''
+  - name: Petr Medonos
+    handle: ''
+    link: ''
 description: |
   A privilege escalation module that bypasses User Account Control (UAC)
   by exploiting the Windows Features on Demand Helper (FodHelper.exe).
@@ -30,7 +30,7 @@ opsec_safe: false
 language: powershell
 min_language_version: '2'
 comments:
-- https://winscripting.blog/2017/05/12/first-entry-welcome-and-uac-bypass/
+  - https://winscripting.blog/2017/05/12/first-entry-welcome-and-uac-bypass/
 options:
   - name: Listener
     description: Listener to use.
@@ -47,8 +47,8 @@ options:
     - ironpython
     - go
   - name: Obfuscate
-    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand for
-      obfuscation types. For powershell only.
+    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
+      for obfuscation types. For powershell only.
     required: false
     value: 'False'
     strict: true
@@ -56,22 +56,22 @@ options:
     - true
     - false
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use (only when Obfuscate=True and
-      Language=powershell).
+    description: The Invoke-Obfuscation command to use (only when Obfuscate=True
+      and Language=powershell).
     required: false
     value: Token\All\1
     depends_on:
-    - name: Language
-      values: [powershell]
-    - name: Obfuscate
-      values: ['True']
+  - name: Language
+    values: [powershell]
+  - name: Obfuscate
+    values: ['True']
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
     value: mattifestation etw
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or
-      other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
