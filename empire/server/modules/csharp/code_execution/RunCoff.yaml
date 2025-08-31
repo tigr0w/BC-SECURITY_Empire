@@ -65,10 +65,6 @@ csharp:
                     string coffData = args[1];
                     string argDataHex = args[2];
 
-                    // Console.WriteLine(functionName);
-                    // Console.WriteLine(coffData);
-                    // Console.WriteLine(argDataHex);
-
                     string result = CoffLoader.Program.RunCoff(functionName, coffData, argDataHex);
 
                     Console.WriteLine(result);
