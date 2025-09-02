@@ -40,6 +40,7 @@ options:
       - powershell
       - csharp
       - ironpython
+      - go
   - name: Obfuscate
     description: Obfuscate the launcher code to evade signature-based detection.
     required: false

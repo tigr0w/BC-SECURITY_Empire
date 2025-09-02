@@ -14,7 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
--   Fixed port normalization to allow host port and bind port to be different.
+## [6.2.0] - 2025-09-02
+
+-   Updated Starkiller to v3.1.0
+-   Added clean and reset options to the server
+-   Added other agent language support to fodhelper
+-   Added go support to spawn and spawnas
+-   Fixed launcher_bat when go agent is used
+-   Fixed issue where gopire doesn't detect high integrity agents
+-   Fixed C# execution in iron python agent to use ordered arguements
+-   Removed redundant C# function from iron python agent
+-   Cleaned up Rubeus and RunCoff yamls
+-   Fixed port normalization to allow host port and bind port to be different
+-   Allow 'X-Empire-Token' as an alternative header to 'Authorization'
+-   Remove abandoned passlib library and use bcrypt directly
 
 ## [6.1.3] - 2025-07-11
 
@@ -1139,7 +1152,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.3...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.2.0...HEAD
+
+[6.2.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.4...v6.2.0
+
+[6.1.4]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.3...v6.1.4
 
 [6.1.3]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.1.2...v6.1.3
 

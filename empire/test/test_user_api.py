@@ -1,6 +1,57 @@
 from pathlib import Path
 
+import pytest
 from starlette import status
+
+from empire.server.common.helpers import random_string
+
+
+@pytest.fixture
+def test_user_credentials():
+    username = f"regular-user-{random_string(4)}"
+    password = random_string(12)
+    return {"username": username, "password": password}
+
+
+@pytest.fixture(autouse=True)
+def test_user_id(client, admin_auth_header, test_user_credentials):
+    """Module-scoped fixture that creates a non-admin test user and returns the user ID"""
+    response = client.post(
+        "/api/v2/users/",
+        headers=admin_auth_header,
+        json={
+            "username": test_user_credentials["username"],
+            "password": test_user_credentials["password"],
+            "is_admin": False,
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    user_data = response.json()
+    return user_data["id"]
+
+
+@pytest.fixture
+def test_user_auth_token(client, test_user_credentials):
+    """Module-scoped fixture that provides auth token for the test user"""
+    response = client.post(
+        "/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "grant_type": "password",
+            "username": test_user_credentials["username"],
+            "password": test_user_credentials["password"],
+        },
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def test_user_auth_header(test_user_auth_token):
+    """Module-scoped fixture that provides Authorization header for the test user"""
+    return {"X-Empire-Token": f"Bearer {test_user_auth_token}"}
 
 
 def test_create_user(client, admin_auth_header):
@@ -25,10 +76,10 @@ def test_create_user_name_conflict(client, admin_auth_header):
     assert response.json()["detail"] == "A user with name empireadmin already exists."
 
 
-def test_create_user_not_an_admin(client, regular_auth_token):
+def test_create_user_not_an_admin(client, test_user_auth_header):
     response = client.post(
         "/api/v2/users/",
-        headers={"Authorization": f"Bearer {regular_auth_token}"},
+        headers=test_user_auth_header,
         json={"username": "vinnybod2", "password": "hunter2", "admin": False},
     )
 
@@ -51,14 +102,14 @@ def test_get_user(client, admin_auth_header):
     assert response.json()["username"] == "empireadmin"
 
 
-def test_get_me(client, regular_auth_token):
+def test_get_me(client, test_user_auth_header, test_user_credentials):
     response = client.get(
         "/api/v2/users/me",
-        headers={"Authorization": f"Bearer {regular_auth_token}"},
+        headers=test_user_auth_header,
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["username"] == "vinnybod"
+    assert response.json()["username"] == test_user_credentials["username"]
 
 
 def test_update_user_not_found(client, admin_auth_header):
@@ -85,10 +136,10 @@ def test_update_user_as_admin(client, admin_auth_header):
     assert response.json()["username"] == "empireadmin-2.0"
 
 
-def test_update_user_as_not_admin_not_me(client, regular_auth_token):
+def test_update_user_as_not_admin_not_me(client, test_user_auth_header):
     response = client.put(
         "/api/v2/users/1",
-        headers={"Authorization": f"Bearer {regular_auth_token}"},
+        headers=test_user_auth_header,
         json={"username": "regular-user", "enabled": True, "is_admin": False},
     )
 
@@ -99,10 +150,10 @@ def test_update_user_as_not_admin_not_me(client, regular_auth_token):
     )
 
 
-def test_update_user_as_not_admin_me(client, regular_auth_token):
+def test_update_user_as_not_admin_me(client, test_user_auth_header, test_user_id):
     response = client.put(
-        "/api/v2/users/3",
-        headers={"Authorization": f"Bearer {regular_auth_token}"},
+        f"/api/v2/users/{test_user_id}",
+        headers=test_user_auth_header,
         json={"username": "xyz", "enabled": True, "is_admin": True},
     )
 
@@ -112,10 +163,10 @@ def test_update_user_as_not_admin_me(client, regular_auth_token):
     )
 
 
-def test_update_user_password_not_me(client, regular_auth_token):
+def test_update_user_password_not_me(client, test_user_auth_header):
     response = client.put(
         "/api/v2/users/1/password",
-        headers={"Authorization": f"Bearer {regular_auth_token}"},
+        headers=test_user_auth_header,
         json={"password": "QWERTY"},
     )
 
@@ -126,19 +177,19 @@ def test_update_user_password_not_me(client, regular_auth_token):
     )
 
 
-def test_update_user_password(client):
+def test_update_user_password(client, test_user_credentials, test_user_id):
     response = client.post(
         "/token",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         data={
             "grant_type": "password",
-            "username": "empireadmin-2.0",
-            "password": "hunter2",
+            "username": test_user_credentials["username"],
+            "password": test_user_credentials["password"],
         },
     )
 
     response = client.put(
-        "/api/v2/users/2/password",
+        f"/api/v2/users/{test_user_id}/password",
         headers={"Authorization": f"Bearer {response.json()['access_token']}"},
         json={"password": "QWERTY"},
     )
@@ -150,7 +201,7 @@ def test_update_user_password(client):
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         data={
             "grant_type": "password",
-            "username": "empireadmin-2.0",
+            "username": test_user_credentials["username"],
             "password": "QWERTY",
         },
     )
@@ -158,10 +209,10 @@ def test_update_user_password(client):
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_upload_user_avatar_not_me(client, regular_auth_token):
+def test_upload_user_avatar_not_me(client, test_user_auth_header):
     response = client.post(
         "/api/v2/users/1/avatar",
-        headers={"Authorization": f"Bearer {regular_auth_token}"},
+        headers=test_user_auth_header,
         files={
             "file": (
                 "avatar.png",

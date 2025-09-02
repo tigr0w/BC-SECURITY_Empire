@@ -4,6 +4,7 @@
 * [Quickstart](quickstart/README.md)
   * [Installation](quickstart/installation.md)
   * [Server](quickstart/server.md)
+  * [Resetting](quickstart/resetting.md)
 * [Starkiller](starkiller/README.md)
   * [Introduction](starkiller/introduction.md)
   * [Agent Tasks](starkiller/agent-tasks.md)

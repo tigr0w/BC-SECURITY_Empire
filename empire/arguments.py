@@ -36,7 +36,12 @@ general_group.add_argument(
 general_group.add_argument(
     "--reset",
     action="store_true",
-    help="Resets Empire's database and deletes any app data accumulated over previous runs.",
+    help="Drop and reinitialize the database. Keep config and Starkiller/Empire-Compiler files intact.",
+)
+general_group.add_argument(
+    "--clean",
+    action="store_true",
+    help="Drop and reinitialize the database. Removes Starkiller/Empire-Compiler files.",
 )
 general_group.add_argument(
     "-v", "--version", action="store_true", help="Display current Empire version."

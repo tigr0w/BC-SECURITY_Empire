@@ -25,10 +25,14 @@ if empire_config.supress_self_cert_warning:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def reset():
+def clean():
     base.reset_db()
     shutil.rmtree(CONFIG_DIR, ignore_errors=True)
     shutil.rmtree(DATA_DIR, ignore_errors=True)
+
+
+def reset():
+    base.reset_db()
 
 
 def shutdown_handler(signum, frame):
@@ -104,6 +108,15 @@ def run(args):
         )
         if choice.lower() == "y":
             reset()
+
+        sys.exit()
+
+    if args.clean:
+        choice = input(
+            "\x1b[1;33m[>] Would you like to reset your Empire Server instance? [y/N]: \x1b[0m"
+        )
+        if choice.lower() == "y":
+            clean()
 
         sys.exit()
 
