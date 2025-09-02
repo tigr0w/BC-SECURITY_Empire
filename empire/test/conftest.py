@@ -114,14 +114,19 @@ def admin_auth_token(client):
 
 @pytest.fixture(scope="session")
 def admin_auth_header(admin_auth_token):
-    return {"Authorization": f"Bearer {admin_auth_token}"}
+    return {"X-Empire-Token": f"Bearer {admin_auth_token}"}
+
+
+@pytest.fixture(scope="session")
+def regular_auth_header(regular_auth_token):
+    return {"X-Empire-Token": f"Bearer {regular_auth_token}"}
 
 
 @pytest.fixture(scope="session")
 def regular_auth_token(client, admin_auth_token):
     client.post(
         "/api/v2/users/",
-        headers={"Authorization": f"Bearer {admin_auth_token}"},
+        headers={"X-Empire-Token": f"Bearer {admin_auth_token}"},
         json={"username": "vinnybod", "password": "hunter2", "is_admin": False},
     )
 

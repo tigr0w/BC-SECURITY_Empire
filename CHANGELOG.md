@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed redundant C# function from iron python agent
 -   Cleaned up Rubeus and RunCoff yamls
 -   Fixed port normalization to allow host port and bind port to be different
+-   Allow 'X-Empire-Token' as an alternative header to 'Authorization'
+-   Remove abandoned passlib library and use bcrypt directly
 
 ## [6.1.4] - 2025-08-16
 
