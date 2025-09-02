@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [6.2.0] - 2025-09-02
--   Updated Starkiller to v3.1.0
 
+-   Updated Starkiller to v3.1.0
 -   Added clean and reset options to the server
 -   Added other agent language support to fodhelper
 -   Added go support to spawn and spawnas
