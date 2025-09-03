@@ -90,9 +90,9 @@ def get_token_from_headers(request: Request) -> str:
     )
 
 
-async def get_current_user(
+async def get_current_user_from_token(
     db: CurrentSession,
-    request: Request,
+    token: str,
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -101,7 +101,6 @@ async def get_current_user(
     )
 
     try:
-        token = get_token_from_headers(request)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
@@ -116,6 +115,14 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+async def get_current_user(
+    db: CurrentSession,
+    request: Request,
+):
+    token = get_token_from_headers(request)
+    return await get_current_user_from_token(db, token)
 
 
 CurrentUser = Annotated[models.User, Depends(get_current_user)]
