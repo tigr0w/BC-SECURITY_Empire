@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Add support for overriding all config values with environment variables
+-   Fix typo in variable name `suppress_self_cert_warning`
+
 ## [6.2.1] - 2025-09-05
 
 -   Fix bug where websocket connection would fail because the jwt_auth method arguments changed
