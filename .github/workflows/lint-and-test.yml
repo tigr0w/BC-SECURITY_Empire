@@ -8,7 +8,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pre-commit/action@v3.0.1
   matrix-prep-config:
     runs-on: ubuntu-latest
@@ -35,13 +35,13 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.matrix-prep-config.outputs.config) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: ${{ endsWith(github.repository, 'Empire') }}
         with:
           submodules: 'recursive'
       # token is only needed in sponsors repo because of private submodules
       # don't use token in public repo because prs from forks cannot access secrets
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: ${{ endsWith(github.repository, 'Empire-Sponsors') }}
         with:
           submodules: 'recursive'
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Test Docker Image
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
@@ -138,7 +138,7 @@ jobs:
           # Parrot disabled for now because the apt repo is having some slowness issues.
           # Install is running up way too many minutes.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'recursive'
           depth: 0
