@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Add support for overriding all config values with environment variables
 
+### Changed
+
+-   Upgrade all dependencies to latest
+
 ### Fixed
 
 -   Fix typo in variable name `suppress_self_cert_warning`
