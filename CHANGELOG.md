@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 -   Fix typo in variable name `suppress_self_cert_warning`
+-   Fixed all the new ruff linting issues after the upgrade
 -   URL encode database credentials in case they have special characters
 
 ### Changed

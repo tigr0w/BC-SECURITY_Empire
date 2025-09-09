@@ -370,8 +370,6 @@ class StagerGenerationService:
         """
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """
-        import macholib.MachO
-
         MH_DYLIB = 6
         if hijacker.lower() == "true":
             if arch == "x86":

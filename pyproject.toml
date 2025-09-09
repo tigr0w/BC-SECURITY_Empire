@@ -136,6 +136,18 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 "empire/server/modules/powershell/persistence/elevated/wmi.py" = ["PLR2004"]
 "empire/server/modules/powershell/persistence/elevated/wmi_updater.py" = ["PLR2004"]
 
+# A bunch of imports of the app and MainMenu object would break the behavior
+# if moved to the top of the file. This could be addressed by restructuring
+# the code base.
+"empire/server/api/app.py" = ["PLC0415"]
+"empire/server/api/v2/shared_dependencies.py" = ["PLC0415"]
+"empire/server/server.py" = ["PLC0415"]
+
+# A few imports should be local because they need to be reset between tests.
+"empire/test/conftest.py" = ["PLC0415"]
+"empire/test/test_logs.py" = ["PLC0415"]
+"empire/test/test_listener_generate_launcher.py" = ["PLC0415"]
+
 [tool.coverage.run]
 omit = [
     "empire/server/data/**",

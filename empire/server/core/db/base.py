@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from urllib.parse import quote_plus
 
-from sqlalchemy import UniqueConstraint, create_engine, event, text
+from sqlalchemy import Index, UniqueConstraint, create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import close_all_sessions, sessionmaker
@@ -133,8 +133,6 @@ def startup_db():
 
                     # index agent_id and checkin_time together
                     # won't work for sqlite.
-                    from sqlalchemy import Index
-
                     Index(
                         "agent_checkin_idx",
                         models.AgentCheckIn.agent_id,
