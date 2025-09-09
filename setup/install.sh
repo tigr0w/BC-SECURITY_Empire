@@ -304,6 +304,9 @@ echo -e "\x1b[1;34m[*] Installing Packages\x1b[0m"
 poetry config virtualenvs.in-project true
 poetry install
 
+echo -e "\x1b[1;34m[*] Downloading compiler and starkiller \x1b[0m"
+./ps-empire setup
+
 echo -e '\x1b[1;32m[+] Install Complete!\x1b[0m'
 echo -e ''
 echo -e '\x1b[1;32m[+] Run the following command to start Empire\x1b[0m'

@@ -8,6 +8,7 @@ import requests
 from empire.server.core.config import config_manager
 from empire.server.core.config.config_manager import (
     EmpireCompilerConfig,
+    PluginRegistryConfig,
     StarkillerConfig,
 )
 from empire.server.utils.git_util import clone_git_repo
@@ -65,3 +66,42 @@ def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
             tar.extractall(compiler_dir)
 
     return compiler_dir / name
+
+
+def sync_plugin_registry(registry_config: PluginRegistryConfig):
+    base_dir = config_manager.DATA_DIR / "plugin-registries" / registry_config.name
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    # If a local location is provided, prefer it as-is (no copy) for speed
+    if registry_config.location:
+        return registry_config.location
+
+    # Clone a git-based registry into a persistent offline directory
+    if registry_config.git_url:
+        ref = registry_config.ref or "main"
+        target_dir = base_dir / ref
+
+        if not target_dir.exists():
+            log.info(
+                f"Plugin Registry: directory not found for {registry_config.name}. Cloning {registry_config.git_url} ({ref})"
+            )
+            clone_git_repo(registry_config.git_url, ref, target_dir)
+
+        return target_dir / (registry_config.file or "registry.yaml")
+
+    # Fallback: download from URL and cache to disk for offline use
+    if registry_config.url:
+        registry_file = base_dir / "registry.yaml"
+        log.info(
+            f"Plugin Registry: downloading {registry_config.name} from {registry_config.url}"
+        )
+        resp = requests.get(registry_config.url, timeout=30)
+        if resp.ok:
+            registry_file.write_text(resp.text)
+            return registry_file
+        log.error(
+            f"Failed to download plugin registry {registry_config.name} from {registry_config.url}"
+        )
+        return None
+
+    return None

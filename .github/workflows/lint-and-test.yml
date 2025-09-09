@@ -101,16 +101,21 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
-      # For the sponsors repo, this is a sort of hack to get around the fact that
-      # the docker image fails on ./ps-empire setup because the repo is private.
-      - name: Rewrite Starkiller
+      - name: Set up SSH (sponsors only)
+        if: ${{ endswith(github.repository, 'Empire-Sponsors') }}
         run: |
-          if [ ${{ endswith(github.repository, 'Empire-Sponsors') }} ]; then
-              sed -i 's|git@github.com:BC-SECURITY/Starkiller-Sponsors.git|https://github.com/BC-SECURITY/Starkiller.git|g' empire/server/config.yaml
-              sed -i 's|ref: sponsors-main|ref: main|g' empire/server/config.yaml
-          fi
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AUTH_PID=$SSH_AUTH_PID" >> $GITHUB_ENV
+          if [ -n "$CI_SSH_KEY_BOT" ]; then echo "$CI_SSH_KEY_BOT" | tr -d '\r' | ssh-add -; fi
+          mkdir -p ~/.ssh
+          ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          chmod 600 ~/.ssh/known_hosts
+        env:
+          CI_SSH_KEY_BOT: ${{ secrets.CI_SSH_KEY_BOT }}
       - name: Build docker image
-        run: docker compose -f .github/docker-compose.yml build
+        run: DOCKER_BUILDKIT=1 docker compose -f .github/docker-compose.yml build
       - name: Run tests on docker image
         run: docker compose -f .github/docker-compose.yml run test
       - name: run structure tests docker
@@ -128,7 +133,7 @@ jobs:
         # Because the box runs out of disk space, we can't run all tests on a single docker compose build.
         images:
           - ['debian11', 'debian12']
-          - ['ubuntu2004', 'ubuntu2204', 'ubuntu2404']
+          - ['ubuntu2204', 'ubuntu2404']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
           # Install is running up way too many minutes.
@@ -137,6 +142,19 @@ jobs:
         with:
           submodules: 'recursive'
           depth: 0
+      - name: Set up SSH (sponsors only)
+        if: ${{ endswith(github.repository, 'Empire-Sponsors') }}
+        run: |
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AUTH_PID=$SSH_AUTH_PID" >> $GITHUB_ENV
+          if [ -n "$CI_SSH_KEY_BOT" ]; then echo "$CI_SSH_KEY_BOT" | tr -d '\r' | ssh-add -; fi
+          mkdir -p ~/.ssh
+          ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          chmod 600 ~/.ssh/known_hosts
+        env:
+          CI_SSH_KEY_BOT: ${{ secrets.CI_SSH_KEY_BOT }}
       # To save CI time, only run these tests when the install script or deps changed
       - name: Get changed files using defaults
         id: changed-files
@@ -146,8 +164,10 @@ jobs:
           || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
           || contains(steps.changed-files.outputs.modified_files, '.github/install_tests')
           || startsWith(github.head_ref, 'release/') }}
-        run: docker compose -f .github/install_tests/docker-compose-install-tests.yml
-          build --parallel ${{ join(matrix.images, ' ') }}
+        run: |
+          DOCKER_BUILDKIT=1 docker compose \
+            -f .github/install_tests/docker-compose-install-tests.yml \
+            build --ssh default --parallel ${{ join(matrix.images, ' ') }}
       - name: run install tests
         if: ${{ contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
           || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')

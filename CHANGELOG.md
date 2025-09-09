@@ -14,8 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
 -   Add support for overriding all config values with environment variables
+
+### Fixed
+
 -   Fix typo in variable name `suppress_self_cert_warning`
+
+### Changed
+
+-   Install script invokes `setup` command to download starkiller, empire-compiler, and plugin registries
+
+### Removed
+
+-   Removed Ubuntu 20.04 from install tests
 
 ## [6.2.1] - 2025-09-05
 
