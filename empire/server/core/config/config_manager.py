@@ -53,6 +53,7 @@ class StarkillerConfig(EmpireBaseModel):
 
 class EmpireCompilerConfig(EmpireBaseModel):
     archive: str = ""
+    confuser_proj: str = ""
     # This is only used if you are using a self-compiled
     # version that is not already tarred and published.
     directory: str | None = None

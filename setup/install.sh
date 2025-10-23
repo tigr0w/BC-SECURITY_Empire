@@ -30,6 +30,21 @@ function command_exists() {
   command -v "$1" >/dev/null 2>&1;
 }
 
+function install_mono(){
+  if [ "$ASSUME_YES" == "1" ] ;then
+    answer="Y"
+  else
+    echo -n -e "\x1b[1;33m[>] Do you want to install Mono? It is required for C# obfuscation (y/N)? \x1b[0m"
+    read -r answer
+  fi
+  if [ "$answer" != "${answer#[Yy]}" ] ;then
+    echo -e "\x1b[1;34m[*] Installing mono\x1b[0m"
+    sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y mono-runtime
+  else
+    echo -e "\x1b[1;34m[*] Skipping Mono\x1b[0m"
+  fi
+}
+
 function install_goenv() {
     echo -e "\x1b[1;34m[*] Installing goenv\x1b[0m"
 
@@ -261,6 +276,7 @@ else
 fi
 
 install_go
+install_mono
 
 if ! command_exists mysql; then
   install_mysql

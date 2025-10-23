@@ -82,4 +82,3 @@ class ExtendedPacketHandler(PacketHandler):
             # if the server cannot be reached
             self.missedCheckins += 1
             return (URLerror.reason, '')
-        return ('', '')

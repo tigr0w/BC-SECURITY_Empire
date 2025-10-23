@@ -58,12 +58,31 @@ def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
 
         url = compiler_config.archive.replace("{{platform}}", f"{os_}-{arch}")
         log.info(f"Empire Compiler: fetching and unarchiving {url}")
-
         with (
             requests.get(url, stream=True) as resp,
             tarfile.open(fileobj=resp.raw, mode="r|gz") as tar,
         ):
             tar.extractall(compiler_dir)
+    # The release version changes but folder structure should stay the same
+    extracted_folder = next(d for d in compiler_dir.iterdir() if d.is_dir())
+    confuser_proj_dir = str(extracted_folder) + "/EmpireCompiler"
+    confuser_project_name = "empire.crproj"
+    confuser_base_dir = f"{confuser_proj_dir}/Data/Temp"
+    confuser_output_dir = f"{confuser_proj_dir}/Data/Temp/confused_out"
+    confuser_module_path = "confused.exe"
+
+    confuser_template = Path(compiler_config.confuser_proj).read_text()
+    confuser_template = confuser_template.format(
+        confuser_base_dir=confuser_base_dir,
+        confuser_output_dir=confuser_output_dir,
+        confuser_module_path=confuser_module_path,
+        confuser_proj_dir=confuser_proj_dir,
+    )
+    if not Path(confuser_base_dir + "/" + confuser_project_name).exists():
+        with Path(confuser_base_dir + "/" + confuser_project_name).open(
+            "w", encoding="utf-8"
+        ) as f:
+            f.write(confuser_template)
 
     return compiler_dir / name
 

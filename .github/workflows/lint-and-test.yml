@@ -70,6 +70,7 @@ jobs:
         run: |
           poetry env use ${{ matrix.python-version }}
           poetry install
+          sudo apt install -y mono-runtime
       - name: Run test suite - mysql
         run: |
           set -o pipefail

