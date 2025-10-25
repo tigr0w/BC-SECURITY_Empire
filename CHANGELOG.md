@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 -   Upgrade all dependencies to latest
+-   https `host` can be used on http and malleable listeners without a cert path
 -   Upgraded routing packets from RC4 to use ChaCha20-Poly1305 for encryption and authentication
 -   Changed key exchange for Powershell agent from RSA to Diffie-Hellman
 -   Updated server to use AESCipher class for encryption/decryption

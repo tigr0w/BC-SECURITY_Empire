@@ -20,7 +20,6 @@ from empire.server.common.encryption import AESCipher
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
-from empire.server.utils.module_util import handle_validate_message
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
@@ -211,15 +210,6 @@ class Listener:
             a.strip("/")
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
-
-        # If we've selected an HTTPS listener without specifying CertPath, let us know.
-        if (
-            self.options["Host"]["Value"].startswith("https")
-            and self.options["CertPath"]["Value"] == ""
-        ):
-            return handle_validate_message(
-                "[!] HTTPS selected but no CertPath specified."
-            )
 
         return True, None
 
@@ -1257,10 +1247,9 @@ class Listener:
 
         try:
             certPath = listenerOptions["CertPath"]["Value"]
-            host = listenerOptions["Host"]["Value"]
             ja3_evasion = listenerOptions["JA3_Evasion"]["Value"]
 
-            if certPath.strip() != "" and host.startswith("https"):
+            if certPath.strip() != "":
                 certPath = os.path.abspath(certPath)
 
                 # support any version of tls

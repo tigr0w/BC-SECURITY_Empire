@@ -189,6 +189,12 @@ class Listener:
             .filter(models.Profile.name == profile_name)
             .first()
         )
+
+        if not profile_data:
+            return handle_validate_message(
+                f"[!] Malleable profile not found: {profile_name}"
+            )
+
         try:
             profile = malleable.Profile()
             profile.ingest(content=profile_data.data)
@@ -252,13 +258,6 @@ class Listener:
             else:
                 return handle_validate_message(
                     f"[!] Unable to parse malleable profile: {profile_name}"
-                )
-
-            if self.options["CertPath"]["Value"] == "" and self.options["Host"][
-                "Value"
-            ].startswith("https"):
-                return handle_validate_message(
-                    "[!] HTTPS selected but no CertPath specified."
                 )
 
         except malleable.MalleableError as e:
