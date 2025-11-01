@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed EmpireCompiler not obfuscating C# code properly
 -   Fixed issue where some C# modules would not run in Go agent
 -   Fixed SharpSploit/ShellCmd not running due to additional yaml argument
+-   Fixed install script failing on a subsequent run
 
 ### Changed
 
