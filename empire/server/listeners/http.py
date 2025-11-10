@@ -123,8 +123,8 @@ class Listener:
             },
             "Cookie": {
                 "Description": "Custom Cookie Name",
-                "Required": False,
-                "Value": "",
+                "Required": True,
+                "Value": "session",
             },
             "StagerURI": {
                 "Description": "URI for the stager. Must use /download/. Example: /download/stager.php",
@@ -170,13 +170,8 @@ class Listener:
             data_util.get_config("staging_key")[0]
         )
 
-        self.session_cookie = ""
+        self.session_cookie = self.options["Cookie"]["Value"]
         self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
-
-        # check if the current session cookie not empty and then generate random cookie
-        if self.session_cookie == "":
-            self.options["Cookie"]["Value"] = listener_util.generate_cookie()
-
         self.instance_log = log
 
         self.agent_private_cert_key_object = ed25519.Ed25519PrivateKey.generate()
@@ -247,11 +242,7 @@ class Listener:
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
         customHeaders = profile.split("|")[2:]
-
         cookie = listenerOptions["Cookie"]["Value"]
-        if cookie == "":
-            cookie = "session"
-            listenerOptions["Cookie"]["Value"] = cookie
 
         if language == "powershell":
             stager = '$ErrorActionPreference = "SilentlyContinue";'

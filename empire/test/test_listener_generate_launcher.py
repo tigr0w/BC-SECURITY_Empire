@@ -111,6 +111,10 @@ def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
     main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": http_hop_listener.options}
     }
+    http_hop_listener.session_cookie = "session"
+    main_menu_mock.listenersv2.get_active_listener_by_name.return_value = (
+        http_hop_listener
+    )
 
     http_hop_listener.threads = {"fake_listener": {"fake_thread": {}}}
 

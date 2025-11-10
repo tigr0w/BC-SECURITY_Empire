@@ -1,5 +1,4 @@
 import random
-import string
 from textwrap import dedent
 
 from empire.server.common import helpers
@@ -87,15 +86,6 @@ def python_extract_stager(staging_key):
     """
     )
     return helpers.strip_python_comments(stager)
-
-
-def generate_cookie():
-    """
-    Generate Cookie
-    """
-
-    chars = string.ascii_letters
-    return helpers.random_string(random.randint(6, 16), charset=chars)
 
 
 def generate_random_cipher():

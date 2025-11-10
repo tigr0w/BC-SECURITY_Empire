@@ -20,7 +20,7 @@ def get_base_listener():
             "KillDate": "",
             "WorkingHours": "",
             "Headers": "Server:Microsoft-IIS/7.5",
-            "Cookie": "",
+            "Cookie": "session",
             "StagerURI": "",
             "UserAgent": "default",
             "Proxy": "default",
