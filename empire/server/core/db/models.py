@@ -217,6 +217,7 @@ class Listener(Base):
     listener_type = Column(String(255), nullable=True)
     listener_category = Column(String(255), nullable=False)
     enabled = Column(Boolean, nullable=False)
+    host_address = Column(String(255), nullable=True)
     options = Column(JSON)
     created_at = Column(UtcDateTime, nullable=False, default=utcnow())
     tags = relationship("Tag", secondary=listener_tag_assc)

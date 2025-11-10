@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed SharpSploit/ShellCmd not running due to additional yaml argument
 -   Fixed install script failing on a subsequent run
 -   Fixed cookie naming for HTTP, foreign, and hop listeners
+-   Fixed port appending issues with listeners when not needed
 
 ### Changed
 

