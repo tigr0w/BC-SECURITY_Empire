@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Exposed all agent language options in PSexec so that C#, Ironpython, and Go can be selected for the Empire payload in addition to PowerShell
 -   Add support for overriding all config values with environment variables
 -   Updated Empire Compiler to v0.4.1
 -   Add customizable C# obfuscation to EmpireCompiler through confuser xml
