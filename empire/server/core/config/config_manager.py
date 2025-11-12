@@ -90,6 +90,7 @@ class DatabaseDefaultsConfig(EmpireBaseModel):
     password: str = "password123"
     obfuscation: list[DatabaseDefaultObfuscationConfig] = []
     keyword_obfuscation: list[str] = []
+    bypasses: list[str] = []
     ip_allow_list: list[Annotated[str, AfterValidator(valid_ip)]] = []
     ip_deny_list: list[Annotated[str, AfterValidator(valid_ip)]] = []
 

@@ -179,6 +179,6 @@ def startup_db():
         log.error(e, exc_info=True)
         log.error("Failed to setup database.")
         log.error(
-            "If you have recently updated Empire, please run 'server --reset' to reset the database."
+            "If you have recently updated Empire, please run 'server --clean' to reset the database."
         )
         sys.exit(1)

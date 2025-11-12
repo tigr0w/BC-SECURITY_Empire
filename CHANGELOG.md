@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Changed key exchange for Powershell agent from RSA to Diffie-Hellman
 -   Updated server to use AESCipher class for encryption/decryption
 -   Updated multi-launcher launcher to use EntryPoint.Invoke for Powershell
+-   Moved default bypasses from stager and modules to config
 
 ### Fixed
 
