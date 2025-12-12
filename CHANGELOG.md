@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Added Debian 13 support
+-   Added error message if running `ps-empire server` under root without `-f`
+
 ## [6.3.0] - 2025-12-11
 
 ### Added
