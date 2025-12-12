@@ -31,6 +31,7 @@ RUN apt-get update && \
     git \
     openssh-client \
     default-jdk \
+    mono-runtime \
     && rm -rf /var/lib/apt/lists/*
 
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
