@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.3.0] - 2025-12-11
+
 ### Added
 
 -   Exposed all agent language options in PSexec so that C#, Ironpython, and Go can be selected for the Empire payload in addition to PowerShell
@@ -1181,7 +1183,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.2.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.3.0...HEAD
+
+[6.3.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.2.1...v6.3.0
 
 [6.2.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.2.0...v6.2.1
 
