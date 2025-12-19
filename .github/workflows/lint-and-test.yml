@@ -133,7 +133,7 @@ jobs:
       matrix:
         # Because the box runs out of disk space, we can't run all tests on a single docker compose build.
         images:
-          - ['debian11', 'debian12']
+          - ['debian11', 'debian12', 'debian13']
           - ['ubuntu2204', 'ubuntu2404']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
