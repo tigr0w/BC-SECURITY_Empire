@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   Updated the module categeories to be more clear
 -   Updated FastAPI deps to use Annotated types
 
 ## [6.3.0] - 2025-12-11

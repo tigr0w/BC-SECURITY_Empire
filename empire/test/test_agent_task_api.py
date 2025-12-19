@@ -323,7 +323,7 @@ def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
         f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "bof_nanodump",
+            "module_id": "bof_credentials_nanodump",
             "options": {},
         },
     )
@@ -462,7 +462,7 @@ def test_create_task_module_validates_options_strict(client, admin_auth_header, 
         f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "powershell_collection_foxdump",
+            "module_id": "powershell_situational_awareness_host_foxdump",
             "options": {
                 "OutputFunction": "not-valid-choice",
             },
