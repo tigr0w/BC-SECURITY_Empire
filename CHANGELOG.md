@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Added `hide_disabled` parameter to `GET /api/v2/modules/` endpoint
+
 ### Changed
 
 -   Updated the module categeories to be more clear

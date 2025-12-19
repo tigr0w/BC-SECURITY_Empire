@@ -71,7 +71,9 @@ class ModuleService:
         with SessionLocal.begin() as db:
             self.load_modules(db)
 
-    def get_all(self):
+    def get_all(self, hide_disabled: bool = False):
+        if hide_disabled:
+            return {k: v for k, v in self.modules.items() if v.enabled}
         return self.modules
 
     def get_by_id(self, uid: str):
