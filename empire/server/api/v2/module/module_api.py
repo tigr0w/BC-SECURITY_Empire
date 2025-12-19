@@ -56,9 +56,13 @@ ModuleDep = Annotated[EmpireModule, Depends(get_module)]
     #  Still want to display the response type in the docs
     # response_model=Modules,
 )
-async def read_modules(module_service: ModuleServiceDep):
+async def read_modules(
+    module_service: ModuleServiceDep,
+    hide_disabled: bool = False,
+):
     modules = [
-        domain_to_dto_module(x[1], x[0]) for x in module_service.get_all().items()
+        domain_to_dto_module(x[1], x[0])
+        for x in module_service.get_all(hide_disabled).items()
     ]
 
     return {"records": modules}
