@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added Debian 13 support
+-   Added error message if running `ps-empire server` under root without `-f`
 -   Added `hide_disabled` parameter to `GET /api/v2/modules/` endpoint
 
 ### Changed
