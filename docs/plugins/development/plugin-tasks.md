@@ -13,6 +13,7 @@ from empire.server.core.db import models
 def execute(self, command, **kwargs):
     user = kwargs.get('user', None)
     db = kwargs.get('db', None)
+    plugin_options = kwargs.get('plugin_options', None)
 
     input = 'Example plugin execution.'
 
@@ -22,6 +23,7 @@ def execute(self, command, **kwargs):
       input_full=input,
       user_id=user.id,
       status=models.PluginTaskStatus.completed,
+      plugin_options=plugin_options,
     )
 
     db.add(plugin_task)

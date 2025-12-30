@@ -316,6 +316,18 @@ def test_create_task_module(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith("function Invoke-InternalMonologue")
     assert response.json()["agent_id"] == agent
+    assert (
+        response.json()["module_name"]
+        == "powershell_credentials_invoke_internal_monologue"
+    )
+    assert response.json()["module_options"] == {
+        "Agent": agent,
+        "Challenge": "1122334455667788",
+        "Downgrade": "False",
+        "Impersonate": "False",
+        "Restore": "False",
+        "Verbose": "False",
+    }
 
 
 def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):

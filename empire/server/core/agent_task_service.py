@@ -353,6 +353,7 @@ class AgentTaskService:
             task_name=resp.command,
             task_input=resp.data,
             module_name=module_req.module_id,
+            module_options=module_req.options,
             user=user,
             files=resp.files,
         )
@@ -377,9 +378,15 @@ class AgentTaskService:
         task_name: str
         input_full: str
         module_name: str | None = None
+        module_options: dict | None = None
 
     def add_temporary_task(
-        self, agent_id: str, task_name, task_input="", module_name: str | None = None
+        self,
+        agent_id: str,
+        task_name,
+        task_input="",
+        module_name: str | None = None,
+        module_options: dict | None = None,
     ) -> tuple[TemporaryTask | None, str | None]:
         """
         Add a temporary task for the agent to execute. These tasks are not saved in the database,
@@ -390,6 +397,7 @@ class AgentTaskService:
             task_name=task_name,
             input_full=task_input,
             module_name=module_name,
+            module_options=module_options,
         )
         self.temporary_tasks[agent_id].append(task)
 
@@ -402,6 +410,7 @@ class AgentTaskService:
         task_name,
         task_input="",
         module_name: str | None = None,
+        module_options: dict | None = None,
         user: models.User | None = None,
         files: list[Path] | None = None,
     ) -> tuple[models.AgentTask | None, str | None]:
@@ -455,6 +464,7 @@ class AgentTaskService:
                 input_full=task_input,
                 user_id=user.id if user else None,
                 module_name=module_name,
+                module_options=module_options,
                 task_name=task_name,
                 status=AgentTaskStatus.queued,
             )
@@ -466,6 +476,7 @@ class AgentTaskService:
                 input_full=task_input,
                 user_id=user.id if user else None,
                 module_name=module_name,
+                module_options=module_options,
                 task_name=task_name,
                 status=AgentTaskStatus.queued,
             )
