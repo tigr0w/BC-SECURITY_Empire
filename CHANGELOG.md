@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added a health check endpoint at `/healthz`
 -   Added `module_options` to `AgentTask` and `plugin_options` to `PluginTask` for better execution tracking
 -   Added `-c` (compile from source) and `-o` (override) options to `ps-empire`
+-   Added local ticket support to Invoke-PSRemoting module
 
 ### Changed
 
