@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Updated the module categeories to be more clear
 -   Updated FastAPI deps to use Annotated types
+-   Changed StratumMiner, Moriarty, and Sharpup to background tasks
+-   Added foreground C# tasking support to IronPython agent
+
+### Fixed
+-   Fixed results not coming back properly for powershell agents on C# background tasks
 
 ## [6.3.0] - 2025-12-11
 
