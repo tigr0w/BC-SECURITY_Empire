@@ -132,3 +132,7 @@ class SocksPostRequest(BaseModel):
 
 class KillJobPostRequest(BaseModel):
     id: int
+
+
+class StopJobPostRequest(BaseModel):
+    id: int

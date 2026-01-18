@@ -200,6 +200,15 @@ class AgentTaskService:
     ):
         return self.add_task(db, agent, "TASK_STOPJOB", job_id, user=user)
 
+    def create_task_stop_job(
+        self,
+        db: Session,
+        agent: models.Agent,
+        job_id: str,
+        user: models.User | None = None,
+    ):
+        return self.create_task_kill_job(db, agent, job_id, user=user)
+
     def create_task_exit(
         self, db: Session, agent: models.Agent, user: models.User | None = None
     ):

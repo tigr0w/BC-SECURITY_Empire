@@ -26,6 +26,7 @@ from empire.server.api.v2.agent.agent_task_dto import (
     ShellPostRequest,
     SleepPostRequest,
     SocksPostRequest,
+    StopJobPostRequest,
     SysinfoPostRequest,
     UploadPostRequest,
     WorkingHoursPostRequest,
@@ -260,6 +261,22 @@ async def create_task_kill_job(
     kill_job = str(jobs.id)
     resp, err = agent_task_service.create_task_kill_job(
         db, db_agent, kill_job, current_user
+    )
+
+    return domain_to_dto_task(resp)
+
+
+@router.post("/{agent_id}/tasks/stop_job", response_model=AgentTask)
+async def create_task_stop_job(
+    jobs: StopJobPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
+    db_agent: AgentDep,
+    agent_task_service: AgentTaskServiceDep,
+):
+    stop_job = str(jobs.id)
+    resp, err = agent_task_service.create_task_stop_job(
+        db, db_agent, stop_job, current_user
     )
 
     return domain_to_dto_task(resp)

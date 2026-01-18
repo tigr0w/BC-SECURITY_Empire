@@ -734,6 +734,16 @@ def test_kill_task_jobs(client, admin_auth_header, agent):
     assert response.status_code == status.HTTP_200_OK
 
 
+def test_stop_task_jobs(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/stop_job",
+        headers=admin_auth_header,
+        json={"id": 0},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+
 def test_kill_task_jobs_agent_not_found(client, admin_auth_header, agent):
     response = client.post(
         "/api/v2/agents/abc/tasks/kill_job",
