@@ -23,15 +23,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `module_options` to `AgentTask` and `plugin_options` to `PluginTask` for better execution tracking
 -   Added `-c` (compile from source) and `-o` (override) options to `ps-empire`
 -   Added local ticket support to Invoke-PSRemoting module
+-   Added an endpoint to stop background jobs on agents
+-   Added foreground C# tasking support to IronPython agent
 
 ### Changed
 
 -   Updated the module categeories to be more clear
 -   Updated FastAPI deps to use Annotated types
 -   Changed StratumMiner, Moriarty, and Sharpup to background tasks
--   Added foreground C# tasking support to IronPython agent
+-   Updated empire-compiler to v0.4.3
 
 ### Fixed
+
 -   Fixed results not coming back properly for powershell agents on C# background tasks
 
 ## [6.3.0] - 2025-12-11
