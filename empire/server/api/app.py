@@ -143,19 +143,23 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
 
     app.add_middleware(GZipMiddleware, minimum_size=500)
 
-    sio = socketio.AsyncServer(
-        async_mode="asgi",
-        cors_allowed_origins="*",
-        json=MyJsonWrapper,
-    )
-    sio_app = socketio.ASGIApp(
-        socketio_server=sio, other_asgi_app=app, socketio_path="/socket.io/"
-    )
+    sio = None
+    if empire_config.server.socketio:
+        sio = socketio.AsyncServer(
+            async_mode="asgi",
+            cors_allowed_origins="*",
+            json=MyJsonWrapper,
+        )
+        sio_app = socketio.ASGIApp(
+            socketio_server=sio, other_asgi_app=app, socketio_path="/socket.io/"
+        )
 
-    app.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
-    app.add_websocket_route("/socket.io/", sio_app)
+        app.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
+        app.add_websocket_route("/socket.io/", sio_app)
 
-    setup_socket_events(sio, main)
+        setup_socket_events(sio, main)
+    else:
+        log.info("Socket.IO disabled via server.socketio config.")
 
     if empire_config.starkiller.enabled:
         log.info("Starkiller enabled. Loading.")

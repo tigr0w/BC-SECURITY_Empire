@@ -35,6 +35,10 @@ class EmpireBaseModel(BaseModel):
         return v
 
 
+class ServerConfig(EmpireBaseModel):
+    socketio: bool = True
+
+
 class ApiConfig(EmpireBaseModel):
     ip: str = "0.0.0.0"
     port: int = 1337
@@ -168,6 +172,7 @@ class PluginMarketplaceConfig(EmpireBaseModel):
 class EmpireConfig(BaseSettings):
     suppress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig = ApiConfig()
+    server: ServerConfig = ServerConfig()
     empire_compiler: EmpireCompilerConfig = EmpireCompilerConfig()
     starkiller: StarkillerConfig = StarkillerConfig()
     submodules: SubmodulesConfig = SubmodulesConfig()
