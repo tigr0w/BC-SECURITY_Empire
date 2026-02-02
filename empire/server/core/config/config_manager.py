@@ -149,6 +149,12 @@ class PluginConfig(EmpireBaseModel):
     auto_execute: PluginAutoExecuteConfig | None = None
 
 
+class PluginAutoInstallConfig(EmpireBaseModel):
+    name: str
+    version: str
+    registry: str
+
+
 class PluginRegistryConfig(EmpireBaseModel):
     name: str
     location: Path | None = None
@@ -167,6 +173,7 @@ class PluginRegistryConfig(EmpireBaseModel):
 
 class PluginMarketplaceConfig(EmpireBaseModel):
     registries: list[PluginRegistryConfig] = []
+    auto_install: list[PluginAutoInstallConfig] = []
 
 
 class EmpireConfig(BaseSettings):
