@@ -328,6 +328,12 @@ if not CONFIG_PATH.exists():
     shutil.copy(DEFAULT_CONFIG, CONFIG_PATH)
     log.info(f"Copied {DEFAULT_CONFIG} to {CONFIG_PATH}")
 
+DEFAULT_USER_CONFIG = DEFAULT_CONFIG.parent / "config.user.yaml"
+USER_CONFIG_PATH = CONFIG_DIR / "config.user.yaml"
+if DEFAULT_USER_CONFIG.exists() and not USER_CONFIG_PATH.exists():
+    shutil.copy(DEFAULT_USER_CONFIG, USER_CONFIG_PATH)
+    log.info(f"Copied {DEFAULT_USER_CONFIG} to {USER_CONFIG_PATH}")
+
 
 _module_base_config_path: Path | None = _resolve_base_config_path()
 empire_config = EmpireConfig()
