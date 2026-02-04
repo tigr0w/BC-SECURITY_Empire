@@ -434,7 +434,6 @@ class ModuleService:
             if key.lower()
             not in [
                 "agent",
-                "computername",
                 "dotnetversion",
                 "architecture",
                 "entrypoint",
@@ -487,7 +486,6 @@ class ModuleService:
             if key.lower()
             not in [
                 "agent",
-                "computername",
                 "dotnetversion",
                 "architecture",
                 "entrypoint",
@@ -547,7 +545,6 @@ class ModuleService:
             if key.lower()
             not in [
                 "agent",
-                "computername",
                 "dotnetversion",
                 "architecture",
                 "entrypoint",
@@ -584,7 +581,7 @@ class ModuleService:
             script = module.script
 
         for key, value in params.items():
-            if key.lower() != "agent" and key.lower() != "computername":
+            if key.lower() != "agent":
                 script = script.replace("{{ " + key + " }}", value).replace(
                     "{{" + key + "}}", value
                 )
@@ -628,11 +625,7 @@ class ModuleService:
 
         # This is where the code goes for all the modules that do not have a custom generate function.
         for key, value in params.items():
-            if (
-                key.lower() not in ["agent", "computername", "outputfunction"]
-                and value
-                and value != ""
-            ):
+            if key.lower() not in ["agent", "outputfunction"] and value and value != "":
                 if value.lower() == "true":
                     # if we're just adding a switch
                     # wannabe mustache templating.
@@ -691,7 +684,7 @@ class ModuleService:
             filtered_params = {}
             for key, value in params.items():
                 if (
-                    key.lower() not in ["agent", "computername", "dotnetversion"]
+                    key.lower() not in ["agent", "dotnetversion"]
                     and value
                     and value != ""
                 ):
