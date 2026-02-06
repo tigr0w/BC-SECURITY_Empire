@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed HTTP hop listener not getting proper host address
 -   Fixed arguments for bof module netloggedon
 -   Fixed option ComputerName being removed from modules without custom_generate
+-   Fixed missing CompatibleDotNetVersions for ShellcmdRunas and ShellRunAs
 
 ## [6.4.0] - 2026-01-18
 
