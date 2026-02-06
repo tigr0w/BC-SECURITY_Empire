@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 -   Fixed Go agent failing to run powershell modules that are too long
+-   Removed StagerURI from http listeners
+-   Fixed HTTP hop listener not getting proper host address
 -   Fixed arguments for bof module netloggedon
 -   Fixed option ComputerName being removed from modules without custom_generate
 
