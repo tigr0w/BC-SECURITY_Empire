@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed arguments for bof module netloggedon
 -   Fixed option ComputerName being removed from modules without custom_generate
 -   Fixed missing CompatibleDotNetVersions for ShellcmdRunas and ShellRunAs
+-   Fixed missing CompatibleDotNetVersions for Assembly and AssemblyReflect
+-   Fixed parameter error when running Sharpsploit.Assembly
 
 ## [6.4.0] - 2026-01-18
 
