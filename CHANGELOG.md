@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `config.user.yaml` layering support — create a `config.user.yaml` next to `config.yaml` to override specific settings without modifying the base config
 -   Added `auto_install` option to `plugin_marketplace` config for automatic plugin installation during setup
 -   Added `server.socketio` config option to disable Socket.IO (default: `true`)
+-   Added C# spawn module with Powershell and C# executables
 
 ### Fixed
 
