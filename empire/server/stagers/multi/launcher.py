@@ -134,7 +134,7 @@ class Stager:
                 encode=encode,
                 listener_name=listener_name,
             )
-        if language in ["ironpython"]:
+        elif language in ["ironpython"]:
             launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=invoke_obfuscation,
