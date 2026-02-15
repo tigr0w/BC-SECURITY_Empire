@@ -102,8 +102,7 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
-      - name: Set up SSH (sponsors only)
-        if: ${{ endswith(github.repository, 'Empire-Sponsors') }}
+      - name: Set up SSH
         run: |
           eval "$(ssh-agent -s)"
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
@@ -143,8 +142,7 @@ jobs:
         with:
           submodules: 'recursive'
           depth: 0
-      - name: Set up SSH (sponsors only)
-        if: ${{ endswith(github.repository, 'Empire-Sponsors') }}
+      - name: Set up SSH
         run: |
           eval "$(ssh-agent -s)"
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
