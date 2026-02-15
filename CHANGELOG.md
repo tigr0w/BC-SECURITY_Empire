@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.4.1] - 2026-02-15
+
 ### Added
 
 -   Added `config.user.yaml` layering support — create a `config.user.yaml` next to `config.yaml` to override specific settings without modifying the base config
@@ -1226,7 +1228,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.1...HEAD
+
+[6.4.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.0...v6.4.1
 
 [6.4.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.3.0...v6.4.0
 
