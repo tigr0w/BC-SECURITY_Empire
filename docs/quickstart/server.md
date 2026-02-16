@@ -4,6 +4,32 @@ The Server configuration is managed via [empire/server/config.yaml](https://gith
 
 Once launched, Empire checks for user write permissions on paths specified in `config.yaml`. If the current user does not have write permissions on these paths, `~/.empire` will be set as fallback parent directory and the configuration file will be updated as well. If `empire-priv.key` and `empire-chain.pem` are not found in \~/.local/share/empire directory, self-signed certs will be generated.
 
+
+## User Config Overrides
+
+To customize settings without modifying `config.yaml`, create a `config.user.yaml` file in the same directory as the base config (e.g. `~/.config/empire/config.user.yaml`). This file only needs to contain the settings you want to override — everything else falls through to the base config.
+
+For example, to override the API port and database type:
+
+```yaml
+api:
+  port: 8443
+database:
+  use: mysql
+  mysql:
+    password: my_secret_password
+```
+
+The config priority order (first wins):
+1. Environment variables (`EMPIRE_*`, e.g. `EMPIRE_API__PORT=8443`)
+2. `.env` file
+3. `config.user.yaml` (user overrides)
+4. `config.yaml` (base defaults)
+
+Nested settings are deep-merged: overriding `database.mysql.password` in `config.user.yaml` does not affect sibling fields like `database.mysql.username`. Lists are replaced entirely rather than appended.
+
+If using `--config /path/to/config.yaml`, Empire looks for `config.user.yaml` in the same directory as the specified config file.
+
 * **suppress-self-cert-warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
 * **api** - Configure the RESTful API.
 

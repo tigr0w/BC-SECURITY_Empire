@@ -54,14 +54,13 @@ Empire provides JA3 evasion to help prevent detection by TLS fingerprinting tool
 
 Empire provides additional settings to customize listener behavior:
 
-* CertPath – Path to an SSL certificate for HTTPS listeners.
-* KillDate – The expiration date when the agent will automatically exit (MM/DD/YYYY).
-* WorkingHours – Defines when the agent will operate (09:00-17:00).
-* Cookie – Custom cookie name used for agent communication.
-* StagerURI – The URI for the stager (must use /download/, e.g., /download/stager.php).
-* UserAgent – Defines the user-agent string used for staging requests (default, none, or other).
-* Proxy – Proxy settings for agent communication.
-* ProxyCreds – Proxy credentials (domain\username:password).
+- CertPath – Path to an SSL certificate for HTTPS listeners.
+- KillDate – The expiration date when the agent will automatically exit (MM/DD/YYYY).
+- WorkingHours – Defines when the agent will operate (09:00-17:00).
+- Cookie – Custom cookie name used for agent communication.
+- UserAgent – Defines the user-agent string used for staging requests (default, none, or other).
+- Proxy – Proxy settings for agent communication.
+- ProxyCreds – Proxy credentials (domain\username:password).
 
 ## Default Response Page
 

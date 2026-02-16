@@ -5,7 +5,7 @@ We recommend using the installation script or the Docker images to run Empire. A
 The following operating systems have been tested for Empire compatibility.
 
 * 22.04 / 24.04
-* Debian 11 / 12
+* Debian 11 / 12 / 13
 * Kali Linux
 * ParrotOS
 
@@ -28,6 +28,8 @@ When running the ps-empire installation script, you can use the following option
 
 * `-y`: Automatically answer 'Yes' to all prompts during installation. This is useful if you want to install all optional dependencies without being prompted for confirmation.
 * `-f`: Force the installation as root. Normally, Empire does not recommend installing as the root user for security reasons. However, if you need to bypass this restriction, you can use this flag. **Note: Using this option is not recommended unless absolutely necessary.**
+* `-c`: Compile Empire-Compiler from source.
+* `-o`: Override OS check. This flag allows the installation script to proceed even if the detected operating system is not officially supported.
 * `-h`: Displays the help text.
 
 ```
@@ -100,4 +102,33 @@ All image versions can be found at: [https://hub.docker.com/r/bcsecurity/empire/
 
 ## Community-Supported Operating Systems
 
-At this time, we are choosing to only support Kali, ParrotOS, Debian 11/12, and Ubuntu 22.04/24.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
+At this time, we are choosing to only support Kali, ParrotOS, Debian 11/12/13, and Ubuntu 22.04/24.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
+
+## Common Issues
+
+
+### Issue
+
+```
+Current Python version (3.12.2) is not allowed by the project (>=3.13,<3.14).
+Please change python executable via the "env use" command.
+```
+
+#### Solution
+
+```
+sudo rm -rf .venv
+poetry install
+```
+
+
+### Issue
+
+```
+[*] Updating goenv
+fatal: not a git repository (or any of the parent directories): git
+```
+
+#### Solution
+
+Open a new terminal, the install script should have set `$GOENV_ROOT` in your bashrc or zshrc file.
