@@ -726,6 +726,9 @@ class ModuleService:
         root_path = Path(self.main_menu.installPath) / "modules"
         log.info(f"v2: Loading modules from: {root_path}")
 
+        # Pre-load all existing module records to avoid per-module DB queries
+        existing_modules = {mod.id: mod for mod in db.query(models.Module).all()}
+
         for file_path in root_path.rglob("*.y*ml"):
             filename = file_path.name
             if fnmatch.fnmatch(filename, "*template.yaml"):
@@ -735,12 +738,19 @@ class ModuleService:
             try:
                 yaml2 = yaml.load(file_path.read_text(), Loader=Loader)
                 yaml_module = {k: v for k, v in yaml2.items() if v is not None}
-                self._load_module(db, yaml_module, root_path, file_path)
+                self._load_module(
+                    db, yaml_module, root_path, file_path, existing_modules
+                )
             except Exception as e:
                 log.error(f"Error loading module {filename}: {e}")
 
     def _load_module(  # noqa: PLR0912
-        self, db: Session, yaml_module, root_path: Path, file_path: Path
+        self,
+        db: Session,
+        yaml_module,
+        root_path: Path,
+        file_path: Path,
+        existing_modules: dict | None = None,
     ):
         module_name = file_path.relative_to(root_path).with_suffix("").as_posix()
         yaml_module["techniques"].extend(
@@ -829,7 +839,12 @@ class ModuleService:
                 "Must provide a valid script, script_path, or custom generate function"
             )
 
-        mod = db.query(models.Module).filter(models.Module.id == my_model.id).first()
+        if existing_modules is not None:
+            mod = existing_modules.get(my_model.id)
+        else:
+            mod = (
+                db.query(models.Module).filter(models.Module.id == my_model.id).first()
+            )
 
         if not mod:
             mod = models.Module(
