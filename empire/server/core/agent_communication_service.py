@@ -871,7 +871,7 @@ class AgentCommunicationService:
             routing_packet = routing_packet.encode("UTF-8")
         routing_packet = packets.parse_routing_packet(staging_key, routing_packet)
         if not routing_packet:
-            return [("", "ERROR: invalid routing packet")]
+            return [("", "ERROR: invalid routing packet", "NONE")]
 
         dataToReturn = []
 
@@ -883,7 +883,9 @@ class AgentCommunicationService:
             if not is_valid_session_id(session_id):
                 message = f"handle_agent_data(): invalid sessionID {session_id}"
                 log.error(message)
-                dataToReturn.append(("", f"ERROR: invalid sessionID {session_id}"))
+                dataToReturn.append(
+                    ("", f"ERROR: invalid sessionID {session_id}", "NONE")
+                )
             elif meta in ("STAGE0", "STAGE1", "STAGE2"):
                 message = f"handle_agent_data(): session_id {session_id} issued a {meta} request"
                 log.debug(message)
@@ -906,6 +908,7 @@ class AgentCommunicationService:
                                 listener_options,
                                 client_ip,
                             ),
+                            additional,
                         )
                     )
 
@@ -914,7 +917,7 @@ class AgentCommunicationService:
                 log.warning(message)
 
                 dataToReturn.append(
-                    ("", f"ERROR: session_id {session_id} not in cache!")
+                    ("", f"ERROR: session_id {session_id} not in cache!", "NONE")
                 )
 
             elif meta == "TASKING_REQUEST":
@@ -924,6 +927,7 @@ class AgentCommunicationService:
                     (
                         language,
                         self.handle_agent_request(session_id, language, staging_key),
+                        "NONE",
                     )
                 )
 
@@ -938,6 +942,7 @@ class AgentCommunicationService:
                         self._handle_agent_response(
                             session_id, encData, update_lastseen
                         ),
+                        "NONE",
                     )
                 )
 

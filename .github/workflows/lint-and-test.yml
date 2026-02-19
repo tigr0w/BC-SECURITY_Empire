@@ -70,7 +70,8 @@ jobs:
         run: |
           poetry env use ${{ matrix.python-version }}
           poetry install
-          sudo apt install -y mono-runtime
+          sudo apt-get update
+          sudo apt-get install -y mono-runtime mingw-w64 perl
       - name: Run test suite - mysql
         run: |
           set -o pipefail
@@ -125,15 +126,20 @@ jobs:
           config: .github/cst-config-docker.yaml
   test_install_script:
     needs: test
-    timeout-minutes: 30
+    timeout-minutes: 45
     runs-on: ubuntu-latest
     name: Test Install Script
     strategy:
       matrix:
-        # Because the box runs out of disk space, we can't run all tests on a single docker compose build.
+        # Each image builds individually to avoid running out of disk space.
+        # The OpenSSL cross-compilation for MinGW makes each image too large
+        # to build multiple in parallel on a single runner.
         images:
-          - ['debian11', 'debian12', 'debian13']
-          - ['ubuntu2204', 'ubuntu2404']
+          - ['debian11']
+          - ['debian12']
+          - ['debian13']
+          - ['ubuntu2204']
+          - ['ubuntu2404']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
           # Install is running up way too many minutes.

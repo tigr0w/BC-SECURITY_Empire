@@ -1460,7 +1460,7 @@ class ExtendedPacketHandler(PacketHandler):
                         self.instance_log.error(message)
                         log.error(message)
 
-                    for language, results in dataResults:
+                    for language, results, additional in dataResults:
                         if results:
                             if isinstance(results, str):
                                 results = results.encode("latin-1")
@@ -1477,6 +1477,38 @@ class ExtendedPacketHandler(PacketHandler):
                                     obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
                                         db, language
                                     )
+
+                                    if additional.lower() == "shellcode":
+                                        stage, err = (
+                                            self.mainMenu.stagergenv2.generate_shellcode(
+                                                language=language.lower(),
+                                                listener_name=listenerName,
+                                                obfuscate=obf_config.enabled
+                                                if obf_config
+                                                else False,
+                                                obfuscation_command=obf_config.command
+                                                if obf_config
+                                                else "",
+                                                arch="both",
+                                                dot_net_version="net40",
+                                            )
+                                        )
+                                        if err:
+                                            log.error(
+                                                f"Error generating shellcode: {err}"
+                                            )
+                                            return Response(
+                                                self.default_response(), 404
+                                            )
+                                        malleableResponse = (
+                                            implementation.construct_server(stage)
+                                        )
+                                        return Response(
+                                            malleableResponse.body,
+                                            malleableResponse.code,
+                                            malleableResponse.headers,
+                                        )
+
                                     stager = self.generate_stager(
                                         language=language,
                                         listenerOptions=listenerOptions,

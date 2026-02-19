@@ -25,6 +25,14 @@ if typing.TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+_ARCH_MAP = {"x86": 1, "x64": 2, "both": 3}
+
+
+def _resolve_arch(arch: str) -> int:
+    if arch not in _ARCH_MAP:
+        raise ValueError(f"Unsupported arch: {arch}")
+    return _ARCH_MAP[arch]
+
 
 class StagerGenerationService:
     def __init__(self, main_menu: "MainMenu"):
@@ -168,12 +176,7 @@ class StagerGenerationService:
         """
         Generate powershell shellcode using donut python module
         """
-        if arch == "x86":
-            arch_type = 1
-        elif arch == "x64":
-            arch_type = 2
-        elif arch == "both":
-            arch_type = 3
+        arch_type = _resolve_arch(arch)
 
         directory = self.generate_powershell_exe(posh_code, dot_net_version)
 
@@ -343,12 +346,7 @@ class StagerGenerationService:
         """
         Generate ironpython shellcode using donut python module
         """
-        if arch == "x86":
-            arch_type = 1
-        elif arch == "x64":
-            arch_type = 2
-        elif arch == "both":
-            arch_type = 3
+        arch_type = _resolve_arch(arch)
 
         if not donut:
             err = "module donut-shellcode not installed. It is only supported on x86."
@@ -358,6 +356,97 @@ class StagerGenerationService:
         directory = self.generate_python_exe(posh_code, dot_net_version)
         shellcode = donut.create(file=str(directory), arch=arch_type)
         return shellcode, None
+
+    def generate_csharp_shellcode(
+        self,
+        listener_name,
+        arch="both",
+        dot_net_version="net40",
+        obfuscate=False,
+        obfuscation_command="",
+    ) -> tuple[str | None, str | None]:
+        """
+        Generate C# shellcode using donut python module
+        """
+        arch_type = _resolve_arch(arch)
+
+        if not donut:
+            err = "module donut-shellcode not installed."
+            log.warning(err, exc_info=True)
+            return None, err
+
+        with SessionLocal.begin() as db:
+            db_listener = self.listener_service.get_by_name(db, listener_name)
+            active_listener = self.listener_service.get_active_listener(db_listener.id)
+
+        if not active_listener:
+            return None, f"Listener {listener_name} not found"
+
+        # Generate the C# EXE path
+        exe_path = active_listener.generate_launcher(
+            language="csharp",
+            encode=False,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+            listener_name=listener_name,
+        )
+
+        if not exe_path:
+            return None, "Failed to generate C# EXE for shellcode"
+
+        # Create shellcode from the EXE
+        shellcode = donut.create(file=str(exe_path), arch=arch_type)
+        return shellcode, None
+
+    def generate_shellcode(  # noqa: PLR0913
+        self,
+        language,
+        listener_name,
+        obfuscate=False,
+        obfuscation_command="",
+        arch="both",
+        dot_net_version="net40",
+    ):
+        """
+        Generate shellcode for the given language by delegating to the
+        appropriate language-specific method.
+        """
+        lang = language.lower()
+
+        if lang == "csharp":
+            return self.generate_csharp_shellcode(
+                listener_name, arch, dot_net_version, obfuscate, obfuscation_command
+            )
+
+        with SessionLocal.begin() as db:
+            db_listener = self.listener_service.get_by_name(db, listener_name)
+            active_listener = self.listener_service.get_active_listener(db_listener.id)
+
+        if not active_listener:
+            return None, f"Listener {listener_name} not found"
+
+        launcher_code = active_listener.generate_launcher(
+            language=language,
+            encode=False,
+            obfuscate=obfuscate,
+            obfuscation_command=obfuscation_command,
+            listener_name=listener_name,
+        )
+
+        if not launcher_code:
+            return None, "Failed to generate launcher code"
+
+        if lang == "powershell":
+            return self.generate_powershell_shellcode(
+                launcher_code, arch=arch, dot_net_version=dot_net_version
+            )
+
+        if lang in ("python", "ironpython"):
+            return self.generate_python_shellcode(
+                launcher_code, arch=arch, dot_net_version=dot_net_version
+            )
+
+        return None, f"Shellcode generation not supported for language: {language}"
 
     def generate_macho(self, launcher_code):
         """

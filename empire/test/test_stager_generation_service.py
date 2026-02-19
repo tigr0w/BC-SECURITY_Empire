@@ -443,3 +443,50 @@ def test_multi_generate_agent_stageless_python(main):
     assert isinstance(result, str), "Expected generated code to be a string"
     assert "def run(" in result
     assert "class Stage" in result
+
+
+@pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
+@pytest.mark.parametrize(
+    ("arch", "dot_net_version"),
+    [
+        ("x86", "net40"),
+        ("x64", "net40"),
+        ("both", "net40"),
+        ("x86", "net35"),
+        ("x64", "net35"),
+        ("both", "net35"),
+    ],
+)
+def test_generate_csharp_shellcode(stager_generation_service, arch, dot_net_version):
+    shellcode, err = stager_generation_service.generate_csharp_shellcode(
+        listener_name="new-listener-1",
+        arch=arch,
+        dot_net_version=dot_net_version,
+    )
+
+    assert err is None, f"Error occurred: {err}"
+    assert isinstance(shellcode, bytes), (
+        f"Shellcode should be bytes, but got {type(shellcode)}"
+    )
+    assert len(shellcode) > 100, f"Shellcode is too short: {len(shellcode)} bytes"  # noqa: PLR2004
+
+
+@pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
+@pytest.mark.parametrize(
+    "language",
+    [
+        "powershell",
+        "csharp",
+    ],
+)
+def test_generate_shellcode(stager_generation_service, language):
+    shellcode, err = stager_generation_service.generate_shellcode(
+        language=language,
+        listener_name="new-listener-1",
+    )
+
+    assert err is None, f"Error occurred: {err}"
+    assert isinstance(shellcode, bytes), (
+        f"Shellcode should be bytes, but got {type(shellcode)}"
+    )
+    assert len(shellcode) > 100, f"Shellcode is too short: {len(shellcode)} bytes"  # noqa: PLR2004

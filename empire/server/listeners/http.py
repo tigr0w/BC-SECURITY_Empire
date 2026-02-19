@@ -1029,7 +1029,7 @@ class Listener:
             if not dataResults or len(dataResults) <= 0:
                 return make_response(self.default_response(), 200)
 
-            for language, results in dataResults:
+            for language, results, additional in dataResults:
                 if not results:
                     message = f"{listenerName}: Results are None for {request_uri} from {clientIP}"
                     self.instance_log.debug(message)
@@ -1051,13 +1051,29 @@ class Listener:
                         hopListenerName
                     )
 
-                    if language.lower() in ["csharp", "ironpython", "go"]:
-                        return generate_stager_response(language, hopListenerName)
-
                     with SessionLocal() as db:
                         obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
                             db, language
                         )
+
+                        if additional.lower() == "shellcode":
+                            stage, err = self.mainMenu.stagergenv2.generate_shellcode(
+                                language=language.lower(),
+                                listener_name=hopListenerName or listenerName,
+                                obfuscate=obf_config.enabled if obf_config else False,
+                                obfuscation_command=obf_config.command
+                                if obf_config
+                                else "",
+                                arch="both",
+                                dot_net_version="net40",
+                            )
+                            if err:
+                                log.error(f"Error generating shellcode: {err}")
+                                return make_response(self.default_response(), 404)
+                            return make_response(stage, 200)
+
+                        if language.lower() in ["csharp", "ironpython", "go"]:
+                            return generate_stager_response(language, hopListenerName)
 
                         if hopListener:
                             stage = hopListener.generate_stager(
@@ -1133,7 +1149,7 @@ class Listener:
             if not dataResults or len(dataResults) <= 0:
                 return make_response(self.default_response(), 404)
 
-            for language, results in dataResults:
+            for language, results, _ in dataResults:
                 if isinstance(results, str):
                     results = results.encode("UTF-8")
 

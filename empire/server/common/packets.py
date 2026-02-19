@@ -155,7 +155,7 @@ META_IDS = {}
 for name, ID in list(META.items()):
     META_IDS[ID] = name
 
-ADDITIONAL = {}
+ADDITIONAL = {"SHELLCODE": 1}
 ADDITIONAL_IDS = {}
 for name, ID in list(ADDITIONAL.items()):
     ADDITIONAL_IDS[ID] = name
@@ -356,7 +356,7 @@ def parse_routing_packet(stagingKey, data):
         key = stagingKey.encode("UTF-8")
         enc_handler = encryption.ChaCha20Poly1305(key)
         routingPacket = enc_handler.open(
-            chacha_nonce, chacha_data, ""
+            chacha_nonce, chacha_data, b""
         )  # Data set to null as we don't need it
 
         sessionID = routingPacket[0:8].decode("UTF-8")
