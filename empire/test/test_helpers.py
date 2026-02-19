@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 from empire.server.common import helpers
 
 
+@pytest.mark.slow
 def test_dynamic_powershell(install_path):
     expected_len = 96863
 

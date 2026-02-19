@@ -330,6 +330,7 @@ def test_create_task_module(client, admin_auth_header, agent):
     }
 
 
+@pytest.mark.slow
 def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/module",
@@ -355,6 +356,7 @@ def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
     assert tags[0]["label"] == "task:input"
 
 
+@pytest.mark.slow
 def test_create_task_module_csharp(client, admin_auth_header, agent):
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/module",

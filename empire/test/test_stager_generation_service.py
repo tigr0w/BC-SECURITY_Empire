@@ -112,6 +112,7 @@ def test_generate_exe_oneliner(stager_generation_service, obfuscate, encode):
         (True, True),
     ],
 )
+@pytest.mark.slow
 def test_obfuscate_generate_exe_oneliner(stager_generation_service, obfuscate, encode):
     launcher = stager_generation_service.generate_exe_oneliner(
         language="powershell",
@@ -137,6 +138,7 @@ def test_generate_dll(stager_generation_service):
         ("net35", True),
     ],
 )
+@pytest.mark.slow
 def test_generate_powershell_exe(stager_generation_service, dot_net_version, obfuscate):
     result = stager_generation_service.generate_powershell_exe(
         "posh_code", dot_net_version, obfuscate
@@ -187,6 +189,7 @@ def test_generate_powershell_shellcode(
         ("net40", True),
     ],
 )
+@pytest.mark.slow
 def test_generate_python_exe(stager_generation_service, dot_net_version, obfuscate):
     result = stager_generation_service.generate_python_exe(
         "python_code", dot_net_version, obfuscate
@@ -216,6 +219,7 @@ def test_generate_python_shellcode(stager_generation_service, arch, dot_net_vers
     assert len(shellcode) > 0, "Generated shellcode is empty"
 
 
+@pytest.mark.slow
 def test_generate_go_stageless(stager_generation_service):
     """
     Test the generate_go_stageless function using a real listener (new-listener-1).
@@ -356,6 +360,7 @@ def test_generate_appbundle(stager_generation_service):
     assert len(result) > 9000  # noqa: PLR2004
 
 
+@pytest.mark.slow
 def test_generate_jar(stager_generation_service):
     launcher_code = "import os; print('Hello, World!')"
     result = stager_generation_service.generate_jar(launcher_code)

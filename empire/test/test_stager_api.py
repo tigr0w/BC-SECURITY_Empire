@@ -571,6 +571,7 @@ def test_delete_stager(client, admin_auth_header):
     assert stager_id not in [stager["id"] for stager in response.json()["records"]]
 
 
+@pytest.mark.slow
 def test_pyinstaller_stager_creation(client, admin_auth_header):
     pyinstaller_stager = get_pyinstaller_stager()
     response = client.post(
@@ -729,6 +730,7 @@ def test_macro_stager_generation(
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
+@pytest.mark.slow
 def test_csharp_stager_creation(client, admin_auth_header):
     base_stager = get_base_csharp_exe_stager()
 
