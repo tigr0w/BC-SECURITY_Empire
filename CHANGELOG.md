@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Added C stager for lightweight stage0 shellcode injection via Fibers
+
 ### Changed
 
 -   Replace `os.path` with `pathlib` in core code and enforce `PTH` lint rule for all core files
@@ -26,10 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Migrate remaining `installPath` usages to `install_path` (Path) in core services
 -   Use `Path.read_text(encoding="utf-8")` instead of `read_bytes().decode()` in stager generation
 -   Replace `os.system()` calls with `subprocess.run()` in stager JAR generation
+-   Upgraded all Python dependencies to latest versions (Feb 2026)
 
 ### Fixed
 
 -   Fix null-safety bug in `_process_agent_packet` when `save_module_file` returns None on skywalker exploit detection
+-   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
 
 ## [6.4.1] - 2026-02-15
 
