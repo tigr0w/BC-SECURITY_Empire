@@ -2,8 +2,8 @@ from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -76,7 +76,7 @@ Invoke-DeadUserBackdoor"""
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         # set the listener value for the launcher
         stager = main_menu.stagertemplatesv2.new_instance("multi_launcher")
@@ -87,7 +87,7 @@ Invoke-DeadUserBackdoor"""
         stager_code = stager.generate()
 
         if stager_code == "":
-            return handle_error_message("[!] Error creating stager")
+            raise ModuleValidationException("Error creating stager")
 
         script = script.replace("REPLACE_LAUNCHER", stager_code)
 
@@ -114,7 +114,7 @@ Invoke-DeadUserBackdoor"""
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_text(script)
 
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[+] PowerBreach deaduser backdoor written to " + out_file
             )
 

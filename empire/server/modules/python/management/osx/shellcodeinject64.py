@@ -2,8 +2,8 @@ import base64
 from pathlib import Path
 
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -20,7 +20,7 @@ class Module:
 
         shellcode_path = Path(shellcodeBinPath)
         if not shellcode_path.exists():
-            return handle_error_message("[!] Shellcode bin file not found.")
+            raise ModuleValidationException("Shellcode bin file not found.")
 
         shellcode = base64.b64encode(shellcode_path.read_bytes())
 

@@ -1,7 +1,7 @@
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -29,11 +29,11 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message(f"[!] Invalid listener: {listener_name}")
+            raise ModuleValidationException(f"[!] Invalid listener: {listener_name}")
 
         # generate the PowerShell one-liner with all of the proper options set
         launcher = main_menu.stagergenv2.generate_launcher(
@@ -46,14 +46,14 @@ class Module:
         )
 
         if launcher == "":
-            return handle_error_message("[!] Error in launcher generation.")
+            raise ModuleValidationException("Error in launcher generation.")
 
         launcher_code = launcher.split(" ")[-1]
         sc, err = main_menu.stagergenv2.generate_powershell_shellcode(
             launcher_code, arch
         )
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         encoded_sc = helpers.encode_base64(sc)
 

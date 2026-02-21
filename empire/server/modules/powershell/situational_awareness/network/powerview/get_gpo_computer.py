@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -29,9 +29,9 @@ class Module:
         try:
             module_code = module_source.read_text()
         except Exception:
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Could not read module source path at: " + str(module_source)
-            )
+            ) from None
 
         if obfuscate and not obfuscated_module_source.is_file():
             script = main_menu.obfuscationv2.obfuscate(module_code, obfuscation_command)

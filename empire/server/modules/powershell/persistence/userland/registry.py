@@ -2,8 +2,8 @@ from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -43,7 +43,7 @@ class Module:
         if cleanup.lower() == "true":
             if ads_path != "":
                 if ".txt" not in ads_path:
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "[!] For ADS, use the form C:\\users\\john\\AppData:blah.txt"
                     )
 
@@ -88,11 +88,11 @@ class Module:
                 status_msg += "using external file " + ext_file
 
             else:
-                return handle_error_message("[!] File does not exist: " + ext_file)
+                raise ModuleValidationException("File does not exist: " + ext_file)
 
         elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
@@ -116,7 +116,7 @@ class Module:
 
             if ads_path != "":
                 if ".txt" not in ads_path:
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "[!] For ADS, use the form C:\\users\\john\\AppData:blah.txt"
                     )
 
@@ -138,7 +138,7 @@ class Module:
             # sanity check to make sure we haven't exceeded the 31389 byte max
             MAX_BYTES = 31389
             if len(enc_script) > MAX_BYTES:
-                return handle_error_message(
+                raise ModuleValidationException(
                     "[!] Warning: encoded script exceeds 31389 byte max."
                 )
 

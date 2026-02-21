@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -20,7 +20,7 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         service_name = params["ServiceName"]
 
@@ -50,7 +50,7 @@ class Module:
         script_end += '"Launcher bat written to $tempLoc `n";\n'
 
         if launcher_code == "":
-            return handle_error_message("[!] Error in launcher .bat generation.")
+            raise ModuleValidationException("Error in launcher .bat generation.")
 
         script_end += (
             '\nInstall-ServiceBinary -ServiceName "'

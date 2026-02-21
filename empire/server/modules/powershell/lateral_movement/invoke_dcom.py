@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -25,9 +25,9 @@ class Module:
 
         # Only "Command" or "Listener" but not both
         if listener_name == "" and command == "":
-            return handle_error_message("[!] Listener or Command required")
+            raise ModuleValidationException("Listener or Command required")
         if listener_name and command:
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Cannot use Listener and Command at the same time"
             )
 
@@ -39,7 +39,7 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         script_end = ""
 
@@ -48,7 +48,7 @@ class Module:
             and not command
         ):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         if listener_name:
             # generate the PowerShell one-liner with all of the proper options set
@@ -65,7 +65,7 @@ class Module:
             )
 
             if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
+                raise ModuleValidationException("Error in launcher generation.")
 
             Cmd = (
                 "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"

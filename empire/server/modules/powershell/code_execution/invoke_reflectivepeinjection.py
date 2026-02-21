@@ -3,8 +3,8 @@ from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -27,7 +27,7 @@ class Module:
 
         # check if file or PEUrl is set. Both are required params in their respective parameter sets.
         if params["File"] == "" and params["PEUrl"] == "":
-            return handle_error_message("[!] Please provide a PEUrl or File")
+            raise ModuleValidationException("Please provide a PEUrl or File")
         for option, values in params.items():
             if option.lower() != "agent":
                 if option.lower() == "file":

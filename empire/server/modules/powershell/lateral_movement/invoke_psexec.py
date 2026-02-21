@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -33,7 +33,7 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         script_end = ""
         if command != "":
@@ -47,7 +47,7 @@ class Module:
 
         elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
@@ -56,7 +56,7 @@ class Module:
                 if main_menu.listenersv2.get_active_listener_by_name(
                     listener_name
                 ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
                     )
 
@@ -71,7 +71,7 @@ class Module:
                 if main_menu.listenersv2.get_active_listener_by_name(
                     listener_name
                 ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
                     )
 
@@ -96,12 +96,12 @@ class Module:
                 )
             else:
                 # with strict options this shouldn't be reached but ensures no silent failures
-                return handle_error_message(
+                raise ModuleValidationException(
                     "Invalid language for Empire Agent Selected"
                 )
 
             if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
+                raise ModuleValidationException("Error in launcher generation.")
 
             stager_cmd = (
                 "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"

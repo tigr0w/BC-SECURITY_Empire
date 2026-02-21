@@ -2,8 +2,8 @@ from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -35,7 +35,7 @@ class Module:
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         # generate the PowerShell one-liner with all of the proper options set
         launcher = main_menu.stagergenv2.generate_launcher(
@@ -59,7 +59,7 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         script_end = "Invoke-BackdoorLNK "
 
@@ -82,11 +82,15 @@ class Module:
                     status_msg += "using external file " + ext_file
 
                 else:
-                    return handle_error_message("[!] File does not exist: " + ext_file)
+                    raise ModuleValidationException(
+                        "[!] File does not exist: " + ext_file
+                    )
 
             elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
                 # not a valid listener, return nothing for the script
-                return handle_error_message("[!] Invalid listener: " + listener_name)
+                raise ModuleValidationException(
+                    "[!] Invalid listener: " + listener_name
+                )
 
             else:
                 # generate the PowerShell one-liner with all of the proper options set

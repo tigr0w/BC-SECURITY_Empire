@@ -1,7 +1,7 @@
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -24,7 +24,7 @@ class Module:
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         # generate the PowerShell one-liner with all of the proper options set
         launcher = main_menu.stagergenv2.generate_launcher(
@@ -42,7 +42,7 @@ class Module:
         command = '/c "' + launcher + '"'
 
         if command == "":
-            return handle_error_message("[!] Error processing command")
+            raise ModuleValidationException("Error processing command")
 
         # read in the common module source code
         script, err = main_menu.modulesv2.get_module_source(
@@ -52,7 +52,7 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         # get just the code needed for the specified function
         script = helpers.generate_dynamic_powershell_script(script, module_name)

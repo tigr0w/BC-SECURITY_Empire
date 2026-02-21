@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -23,7 +23,7 @@ class Module:
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         if proc_id == "" and proc_name == "":
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Either ProcID or ProcName must be specified."
             )
 
@@ -35,12 +35,12 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         script_end = ""
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message(f"[!] Invalid listener: {listener_name}")
+            raise ModuleValidationException(f"[!] Invalid listener: {listener_name}")
 
         # generate the PowerShell one-liner with all of the proper options set
         launcher = main_menu.stagergenv2.generate_launcher(
@@ -56,9 +56,9 @@ class Module:
         )
         MAX_LAUNCHER_LEN = 5952
         if launcher == "":
-            return handle_error_message("[!] Error in launcher generation.")
+            raise ModuleValidationException("Error in launcher generation.")
         if len(launcher) > MAX_LAUNCHER_LEN:
-            return handle_error_message("[!] Launcher string is too long!")
+            raise ModuleValidationException("Launcher string is too long!")
 
         launcher_code = launcher.split(" ")[-1]
 

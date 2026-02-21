@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -46,12 +46,12 @@ class Module:
         )
 
         if err:
-            return handle_error_message(err)
+            raise ModuleValidationException(err)
 
         script_end = ""
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message(f"[!] Invalid listener: {listener_name}")
+            raise ModuleValidationException(f"[!] Invalid listener: {listener_name}")
 
         multi_launcher = main_menu.stagertemplatesv2.new_instance("multi_launcher")
         multi_launcher.options["Listener"] = params["Listener"]
@@ -64,7 +64,7 @@ class Module:
         launcher = multi_launcher.generate()
 
         if launcher == "":
-            return handle_error_message("[!] Error in launcher generation.")
+            raise ModuleValidationException("Error in launcher generation.")
 
         launcher = launcher.split(" ")[-1]
 
