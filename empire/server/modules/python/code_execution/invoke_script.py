@@ -11,7 +11,7 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        script, err = main_menu.modulesv2.get_module_source(
+        script, _err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path
         )
 

@@ -167,7 +167,7 @@ def test_execute_module_task_command_csharp_agent_with_missing_csharp_module(
         "Text": "Hello World",
     }
     module_id = "csharp_execution_some_module"
-    res, err = module_service.execute_module(
+    _res, err = module_service.execute_module(
         None, agent_mock, module_id, params, True, True, None
     )
 

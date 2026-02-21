@@ -368,7 +368,7 @@ class AgentCommunicationService:
             return []
 
         try:
-            tasks, total = self.agent_task_service.get_tasks(
+            tasks, _total = self.agent_task_service.get_tasks(
                 db=db,
                 agents=[session_id],
                 include_full_input=True,
@@ -1244,7 +1244,7 @@ class AgentCommunicationService:
             # Close socks client
             self.agent_socks_service.close_socks_client(agent)
 
-        elif response_name in ["TASK_SHELL"]:
+        elif response_name == "TASK_SHELL":
             # shell command response
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)

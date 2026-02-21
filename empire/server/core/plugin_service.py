@@ -104,7 +104,7 @@ class PluginService:
                 continue
 
             req = PluginExecutePostRequest(options=auto_execute.options)
-            results, err = self.execute_plugin(db, plugin, req, None)
+            results, _err = self.execute_plugin(db, plugin, req, None)
             if results is False:
                 log.error(f"Plugin failed to run: {plugin_name}")
             else:
@@ -205,7 +205,9 @@ class PluginService:
         version_name: str | None = None,
         registry_data: dict | None = None,
     ):
-        temp_dir = Path(tempfile.gettempdir()) / Path(tar_url.split("/")[-1]).stem
+        temp_dir = (
+            Path(tempfile.gettempdir()) / Path(tar_url.rsplit("/", maxsplit=1)[-1]).stem
+        )
 
         response = s.get(tar_url, stream=True)
 

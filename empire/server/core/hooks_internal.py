@@ -228,7 +228,7 @@ def route_filter(db: Session, task: models.AgentTask):
 
     if the results are from the Python or C# agents, it does nothing.
     """
-    if task.input.strip() not in ["route"] or task.agent.language != "powershell":
+    if task.input.strip() != "route" or task.agent.language != "powershell":
         return db, task
 
     output = json.loads(task.output)

@@ -82,7 +82,7 @@ def test_plugin_execute_with_kwargs(session_local, install_path):
         plugin = plugin_holder.loaded_plugin
         with patch_plugin_execute(plugin, execute):
             req = PluginExecutePostRequest(options={"report": "session"})
-            res, err = plugin_service.execute_plugin("db_session", plugin, req, 1)
+            res, _err = plugin_service.execute_plugin("db_session", plugin, req, 1)
 
     assert res == execute(req.options, db="db_session", user=1)
 

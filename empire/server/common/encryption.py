@@ -7,7 +7,6 @@ import ssl
 import string
 import struct
 
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey as _Ed25519PrivateKey,
 )
@@ -62,9 +61,8 @@ class AESCipher:
     @staticmethod
     def encrypt(key, data):
         """Encrypt with random IV (CBC) and return IV+ciphertext."""
-        backend = default_backend()
         IV = os.urandom(16)
-        cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
+        cipher = Cipher(algorithms.AES(key), modes.CBC(IV))
         encryptor = cipher.encryptor()
         ct = encryptor.update(AESCipher.pad(data)) + encryptor.finalize()
         return IV + ct
@@ -81,9 +79,8 @@ class AESCipher:
     def decrypt(key, data):
         """Decrypt IV+ciphertext (CBC) and depad."""
         if len(data) > 16:  # noqa: PLR2004
-            backend = default_backend()
             IV = data[0:16]
-            cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
+            cipher = Cipher(algorithms.AES(key), modes.CBC(IV))
             decryptor = cipher.decryptor()
             return AESCipher.depad(decryptor.update(data[16:]) + decryptor.finalize())
         raise ValueError("Data length must be larger then 16")
@@ -244,7 +241,7 @@ class DiffieHellman:
         # Convert the shared secret (int) to an array of bytes in network order
         # Otherwise hashlib can't hash it.
         try:
-            bin_str = bin(self.sharedSecret)[2:].zfill(6147)
+            bin_str = f"{self.sharedSecret:b}".zfill(6147)
             _sharedSecretBytes = int(bin_str, 2).to_bytes(len(bin_str), "big")
         except AttributeError:
             _sharedSecretBytes = str(self.sharedSecret)
@@ -344,7 +341,7 @@ class ChaCha:
 
     def _cipher(self, nonce16):
         algorithm = algorithms.ChaCha20(self.key, nonce16)
-        return Cipher(algorithm, mode=None, backend=default_backend())
+        return Cipher(algorithm, mode=None)
 
     def encrypt(self, plaintext):
         nonce16 = self._construct_nonce16(0)

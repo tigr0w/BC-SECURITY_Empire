@@ -718,9 +718,7 @@ def test_macro_stager_generation(
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] in [
-        "text/plain",
-    ]
+    assert response.headers.get("content-type").split(";")[0] == "text/plain"
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty

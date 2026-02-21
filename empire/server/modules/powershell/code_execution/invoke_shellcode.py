@@ -14,7 +14,7 @@ class Module:
         obfuscation_command: str = "",
     ):
         # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
+        script, _err = main_menu.modulesv2.get_module_source(
             module_name=module.script_path,
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,

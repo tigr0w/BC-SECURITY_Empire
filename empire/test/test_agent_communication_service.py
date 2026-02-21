@@ -384,7 +384,7 @@ def test_handle_agent_data():
 def test_handle_agent_request(
     agent_task_service, agent_communication_service, agent, agent_task, monkeypatch
 ):
-    task, _ = agent_task_service.add_temporary_task(
+    _task, _ = agent_task_service.add_temporary_task(
         agent, "TASK_SHELL", "echo 'hello world'"
     )
 
@@ -438,7 +438,7 @@ def _test_autorun_task(
 
     agent_communication_service.autorun_tasks(db, agent)
 
-    tasks, total = agent_task_service.get_tasks(db, agents=[agent])
+    tasks, _total = agent_task_service.get_tasks(db, agents=[agent])
 
     assert len(tasks) == 2  # noqa: PLR2004
     assert tasks[0].task_name == "TASK_POWERSHELL_CMD_JOB"

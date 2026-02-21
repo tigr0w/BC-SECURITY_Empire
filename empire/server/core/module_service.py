@@ -446,9 +446,7 @@ class ModuleService:
         )
 
         params_dict = {}
-        params_dict["Entrypoint"] = (
-            module.bof.entry_point if module.bof.entry_point else "go"
-        )
+        params_dict["Entrypoint"] = module.bof.entry_point or "go"
         params_dict["File"] = b64_bof_data
         params_dict["HexData"] = process_arguments(
             module.bof.format_string, formatted_args

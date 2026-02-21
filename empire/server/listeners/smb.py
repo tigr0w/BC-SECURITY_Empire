@@ -107,7 +107,7 @@ class Listener:
             )
             return None
 
-        if language in ["ironpython"]:
+        if language == "ironpython":
             launcherBase = "import sys;"
             if "https" in self.host_address:
                 # monkey patch ssl woohooo
