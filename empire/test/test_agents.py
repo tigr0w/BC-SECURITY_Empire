@@ -59,7 +59,7 @@ class compress:
         return header + data
 
 
-def test_stale_expression(empire_config, session_local, models):
+def test_stale_expression(empire_config, session_local, models, agents):
     with session_local.begin() as db:
         agents = db.query(models.Agent).all()
 

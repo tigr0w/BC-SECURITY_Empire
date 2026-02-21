@@ -20,9 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Switch `stager_generation_service` from deprecated `installPath` (str) to `install_path` (Path)
 -   Optimized test suite for faster CI and local runs
 -   Modernize Python patterns in core code: use `setdefault()`, truthiness checks, `click.style()` for terminal colors, and remove redundant operations
+-   Reduced test fixture boilerplate with a shared `make_agent()` factory and deduplicated `plugin_task` fixture across test files
+-   Removed `autouse` from test fixtures that don't need it, making test dependencies explicit
 -   Migrate remaining `installPath` usages to `install_path` (Path) in core services
 -   Use `Path.read_text(encoding="utf-8")` instead of `read_bytes().decode()` in stager generation
-
 -   Replace `os.system()` calls with `subprocess.run()` in stager JAR generation
 
 ### Fixed

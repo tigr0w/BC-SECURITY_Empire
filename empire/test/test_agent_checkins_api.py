@@ -6,36 +6,9 @@ import pytest
 from starlette import status
 
 from empire.server.utils.string_util import get_random_string
+from empire.test.conftest import make_agent
 
 log = logging.getLogger(__name__)
-
-
-def default_agent(session_id, models, db, host):
-    db.add(
-        models.Agent(
-            name=session_id,
-            session_id=session_id,
-            delay=60,
-            jitter=0.1,
-            internal_ip="1.2.3.4",
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host_id=host,
-            archived=False,
-        )
-    )
 
 
 async def _create_checkins(session_local, models, agent_ids):
@@ -79,7 +52,17 @@ def agents_with_checkins(session_local, models):
         for n in range(agent_count):
             agent_id = f"agent_{get_random_string(5)}_{n}"
             agent_ids.append(agent_id)
-            default_agent(agent_id, models, db, host_id)
+            db.add(
+                make_agent(
+                    models,
+                    name=agent_id,
+                    delay=60,
+                    high_integrity=False,
+                    hostname="vinnybod",
+                    internal_ip="1.2.3.4",
+                    host_id=host_id,
+                )
+            )
 
     asyncio.run(_create_checkins(session_local, models, agent_ids))
 
