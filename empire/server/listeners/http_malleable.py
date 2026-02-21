@@ -7,6 +7,7 @@ import ssl
 import sys
 import time
 import urllib.parse
+from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
@@ -151,7 +152,7 @@ class Listener:
             data_util.get_config("staging_key")[0]
         )
 
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+        self.template_dir = self.mainMenu.install_path / "data/listeners/templates"
 
         self.instance_log = log
 
@@ -174,8 +175,7 @@ class Listener:
         """
         Returns an IIS 7.5 404 not found page.
         """
-        with open(f"{self.template_dir}/default.html") as f:
-            return f.read()
+        return (self.template_dir / "default.html").read_text(encoding="utf-8")
 
     def validate_options(self) -> tuple[bool, str | None]:
         """
@@ -621,8 +621,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -701,8 +700,7 @@ class Listener:
             )
 
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http_malleable/http_malleable.py")
@@ -772,8 +770,9 @@ class Listener:
 
         if language == "powershell":
             # read in agent code
-            with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
-                code = f.read()
+            code = (self.mainMenu.install_path / "data/agent/agent.ps1").read_text(
+                encoding="utf-8"
+            )
 
             # strip out the comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -801,12 +800,12 @@ class Listener:
 
         if language == "python":
             # read in the agent base
-            if version == "ironpython":
-                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
-            else:
-                f = self.mainMenu.installPath + "/data/agent/agent.py"
-            with open(f) as f:
-                code = f.read()
+            agent_path = (
+                self.mainMenu.install_path / "data/agent/ironpython_agent.py"
+                if version == "ironpython"
+                else self.mainMenu.install_path / "data/agent/agent.py"
+            )
+            code = agent_path.read_text(encoding="utf-8")
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -1751,8 +1750,7 @@ class ExtendedPacketHandler(PacketHandler):
                     directory = self.mainMenu.stagergenv2.generate_python_exe(
                         launcher, dot_net_version="net40", obfuscate=obfuscation
                     )
-                    with open(directory, "rb") as f:
-                        return f.read()
+                    return Path(directory).read_bytes()
 
                 # log invalid request
                 message = (
@@ -1772,10 +1770,10 @@ class ExtendedPacketHandler(PacketHandler):
             ja3_evasion = listenerOptions["JA3_Evasion"]["Value"]
 
             if host.startswith("https"):
-                if certPath.strip() == "" or not os.path.isdir(certPath):
+                if certPath.strip() == "" or not Path(certPath).is_dir():
                     log.info(f"Unable to find certpath {certPath}, using default.")
                     certPath = "setup"
-                certPath = os.path.abspath(certPath)
+                cert_path = Path(certPath).resolve()
                 pyversion = sys.version_info
 
                 # support any version of tls
@@ -1788,8 +1786,8 @@ class ExtendedPacketHandler(PacketHandler):
 
                 context = ssl.SSLContext(proto)
                 context.load_cert_chain(
-                    f"{certPath}/empire-chain.pem",
-                    f"{certPath}/empire-priv.key",
+                    cert_path / "empire-chain.pem",
+                    cert_path / "empire-priv.key",
                 )
 
                 if ja3_evasion:
