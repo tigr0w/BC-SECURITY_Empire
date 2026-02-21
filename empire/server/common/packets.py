@@ -385,7 +385,7 @@ def parse_routing_packet(stagingKey, data):
 
         # check if we're at the end of the packet processing
         remainingData = data[chacha_header_length + offset + length :]
-        if not remainingData or remainingData == "":
+        if not remainingData:
             break
 
         offset += chacha_header_length + length

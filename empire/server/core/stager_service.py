@@ -98,7 +98,7 @@ class StagerService:
             name=stager_req.name,
             module=stager_req.template,
             options=stager_options,
-            one_liner=stager_options.get("OutFile", "") == "",
+            one_liner=not stager_options.get("OutFile", ""),
             user_id=user_id,
         )
 
@@ -158,11 +158,11 @@ class StagerService:
 
         # todo generate should return error response much like listener validate
         #  options should.
-        if resp == "" or resp is None:
+        if not resp:
             return None, "Error generating"
 
         out_file = template_instance.options.get("OutFile", {}).get("Value")
-        if out_file and len(out_file) > 0:
+        if out_file:
             file_name = template_instance.options["OutFile"]["Value"].split("/")[-1]
         else:
             file_name = f"{uuid.uuid4()}.txt"

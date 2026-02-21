@@ -157,7 +157,7 @@ class ModuleService:
             err = None
 
         # Should standardize on the return type.
-        if not module_data or module_data == "":
+        if not module_data:
             # This should probably be a ModuleExecutionException, but
             # for backwards compatability with 5.x, it needs to raise a 400
             raise ModuleValidationException(err or "module produced an empty script")

@@ -973,7 +973,7 @@ class AgentCommunicationService:
             temp_tasks = self._get_queued_agent_temporary_tasks(session_id)
             tasks.extend(temp_tasks)
 
-            if len(tasks) > 0:
+            if tasks:
                 all_task_packets = b""
 
                 # build tasking packets for everything we have
@@ -1207,21 +1207,24 @@ class AgentCommunicationService:
                     architecture=architecture,
                 )
 
-                sysinfo = "{: <18}".format("Listener:") + listener + "\n"
-                sysinfo += "{: <18}".format("Internal IP:") + internal_ip + "\n"
-                sysinfo += "{: <18}".format("Username:") + username + "\n"
-                sysinfo += "{: <18}".format("Hostname:") + hostname + "\n"
-                sysinfo += "{: <18}".format("OS:") + os_details + "\n"
-                sysinfo += (
-                    "{: <18}".format("High Integrity:") + str(high_integrity) + "\n"
+                sysinfo = (
+                    "\n".join(
+                        [
+                            f"{'Listener:':<18}{listener}",
+                            f"{'Internal IP:':<18}{internal_ip}",
+                            f"{'Username:':<18}{username}",
+                            f"{'Hostname:':<18}{hostname}",
+                            f"{'OS:':<18}{os_details}",
+                            f"{'High Integrity:':<18}{high_integrity}",
+                            f"{'Process Name:':<18}{process_name}",
+                            f"{'Process ID:':<18}{process_id}",
+                            f"{'Language:':<18}{language}",
+                            f"{'Language Version:':<18}{language_version}",
+                            f"{'Architecture:':<18}{architecture}",
+                        ]
+                    )
+                    + "\n"
                 )
-                sysinfo += "{: <18}".format("Process Name:") + process_name + "\n"
-                sysinfo += "{: <18}".format("Process ID:") + process_id + "\n"
-                sysinfo += "{: <18}".format("Language:") + language + "\n"
-                sysinfo += (
-                    "{: <18}".format("Language Version:") + language_version + "\n"
-                )
-                sysinfo += "{: <18}".format("Architecture:") + architecture + "\n"
 
                 # update the agent log
                 self.agent_service.save_agent_log(session_id, sysinfo)
@@ -1294,7 +1297,7 @@ class AgentCommunicationService:
             self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_GETDOWNLOADS":
-            if not data or data.strip().strip() == "":
+            if not data or not data.strip():
                 data = "[*] No active downloads"
 
             # update the agent log
@@ -1309,7 +1312,7 @@ class AgentCommunicationService:
             pass
 
         elif response_name == "TASK_GETJOBS":
-            if not data or data.strip().strip() == "":
+            if not data or not data.strip():
                 data = "[*] No active jobs"
 
             # running jobs
@@ -1337,7 +1340,7 @@ class AgentCommunicationService:
                 for cred in creds:
                     hostname = cred[4]
 
-                    if hostname == "":
+                    if not hostname:
                         hostname = agent.hostname
 
                     os_details = agent.os_details
@@ -1431,7 +1434,7 @@ class AgentCommunicationService:
                     for cred in creds:
                         hostname = cred[4]
 
-                        if hostname == "":
+                        if not hostname:
                             hostname = agent.hostname
 
                         os_details = agent.os_details
@@ -1471,7 +1474,7 @@ class AgentCommunicationService:
                     for cred in creds:
                         hostname = cred[4]
 
-                        if hostname == "":
+                        if not hostname:
                             hostname = agent.hostname
 
                         os_details = agent.os_details

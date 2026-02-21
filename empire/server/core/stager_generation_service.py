@@ -620,7 +620,7 @@ class StagerGenerationService:
             patched_binary = (
                 template[:offset] + launcher + template[(offset + len(launcher)) :]
             )
-            if app_name == "":
+            if not app_name:
                 app_name = "launcher"
 
             tmpdir = f"/tmp/application/{app_name}.app/"

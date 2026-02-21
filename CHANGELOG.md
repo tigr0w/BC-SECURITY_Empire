@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 -   Optimized test suite for faster CI and local runs
+-   Modernize Python patterns in core code: use `setdefault()`, truthiness checks, `click.style()` for terminal colors, and remove redundant operations
 
 ## [6.4.1] - 2026-02-15
 
