@@ -1,6 +1,11 @@
+import os
+import struct
+import zlib
+
 import pytest
 
 from empire.server.common.empire import MainMenu
+from empire.server.core.agent_communication_service import AgentCommunicationService
 from empire.server.core.db.models import AgentTaskStatus
 
 
@@ -58,14 +63,172 @@ def test_save_file_python(
     models,
     agent,
     agent_task,
+    empire_config,
 ):
-    # Python agent compresses the data
-    # Also test backslash vs forward slash?
-    pass
+    raw = b"Hello from python agent"
+    crc = zlib.crc32(raw) & 0xFFFFFFFF
+    header = struct.pack("!I", crc)
+    compressed = header + zlib.compress(raw, 9)
+
+    file_path = r"C:\Users\Public\python_test.txt"
+
+    # Mark the agent as a python agent in the comms cache
+    agent_communication_service.agents[agent]["language"] = "python"
+
+    try:
+        with session_local.begin() as db:
+            agent_communication_service.save_file(
+                db,
+                agent,
+                file_path,
+                compressed,
+                len(raw),
+                agent_task_service.get_task_for_agent(db, agent, agent_task["id"]),
+                "python",
+            )
+
+        with session_local.begin() as db:
+            task = agent_task_service.get_task_for_agent(db, agent, agent_task["id"])
+            download = task.downloads[-1]
+            assert download.filename == "python_test.txt"
+            assert download.get_bytes_file() == raw
+    finally:
+        agent_communication_service.agents[agent]["language"] = "powershell"
 
 
-def test_save_module_file(agent_communication_service, session_local):
-    pass
+def test_save_module_file(agent_communication_service, agent, empire_config):
+    data = b"module output data here"
+    path = "screenshots/test_capture.png"
+
+    result = agent_communication_service.save_module_file(
+        agent, path, data, "powershell"
+    )
+
+    assert result is not None
+    assert result.name == "test_capture.png"
+    assert result.read_bytes() == data
+
+
+class TestIsPathSafe:
+    """Direct unit tests for _is_path_safe against adversarial inputs.
+
+    The integration-level skywalker test lives in test_agents.py.
+    These tests exercise the static method directly with various
+    traversal and bypass techniques.
+    """
+
+    @pytest.fixture
+    def download_dir(self, tmp_path):
+        d = tmp_path / "downloads"
+        d.mkdir()
+        return d
+
+    @pytest.mark.parametrize(
+        "relative_path",
+        [
+            "AGENT123/file.txt",
+            "AGENT123/subdir/file.txt",
+            "AGENT123/a/b/c/deep.bin",
+        ],
+    )
+    def test_safe_paths(self, download_dir, relative_path):
+        save_path = download_dir / relative_path
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is True
+        )
+
+    @pytest.mark.parametrize(
+        ("traversal", "description"),
+        [
+            ("../etc/passwd", "basic unix traversal"),
+            ("../../etc/shadow", "multi-level unix traversal"),
+            ("AGENT123/../../etc/cron.d/evil", "traversal after valid prefix"),
+            ("../../../../../../../etc/passwd", "deep traversal"),
+            ("AGENT123/../../../etc/passwd", "agent dir then deep traversal"),
+        ],
+    )
+    def test_traversal_blocked(self, download_dir, traversal, description):
+        save_path = download_dir / traversal
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is False
+        ), f"Should block: {description}"
+
+    @pytest.mark.parametrize(
+        "traversal",
+        [
+            r"..\Windows\System32\evil.dll",
+            r"AGENT123\..\..\evil.txt",
+        ],
+    )
+    @pytest.mark.skipif(
+        os.name != "nt", reason="Backslash is only a path separator on Windows"
+    )
+    def test_backslash_traversal_blocked_on_windows(self, download_dir, traversal):
+        save_path = download_dir / traversal
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is False
+        )
+
+    def test_traversal_to_sibling_directory(self, download_dir):
+        """Ensure traversal to a sibling of the download dir is blocked."""
+        sibling = download_dir.parent / "secrets" / "key.pem"
+        assert (
+            AgentCommunicationService._is_path_safe(sibling, download_dir, "TEST")
+            is False
+        )
+
+    def test_prefix_attack(self, tmp_path):
+        """A dir whose name starts with the download dir name must be rejected.
+
+        e.g. /tmp/downloads-evil should NOT pass a check for /tmp/downloads.
+        The old startswith() implementation was vulnerable to this.
+        """
+        download_dir = tmp_path / "downloads"
+        download_dir.mkdir()
+        evil_dir = tmp_path / "downloads-evil"
+        evil_dir.mkdir()
+        save_path = evil_dir / "payload.txt"
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is False
+        )
+
+    def test_dot_segments_in_middle(self, download_dir):
+        """Path with /./ segments that resolve to the download dir should be safe."""
+        save_path = download_dir / "AGENT123" / "." / "file.txt"
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is True
+        )
+
+    def test_null_byte_in_path(self, download_dir):
+        """Null bytes in paths should not bypass the check."""
+        # Path() on most OSes will raise ValueError or the resolve will fail
+        # Either way, it should not return True
+        try:
+            save_path = download_dir / "AGENT123/\x00/../../etc/passwd"
+            result = AgentCommunicationService._is_path_safe(
+                save_path, download_dir, "TEST"
+            )
+            # If it didn't raise, it must have blocked it
+            assert result is False
+        except (ValueError, OSError):
+            pass  # Expected on most platforms
+
+    def test_logs_warning_on_traversal(self, download_dir, caplog):
+        save_path = download_dir / "../evil.txt"
+        AgentCommunicationService._is_path_safe(save_path, download_dir, "EVIL_AGENT")
+        assert any(
+            "EVIL_AGENT" in msg and "skywalker" in msg for msg in caplog.messages
+        )
+
+    def test_no_warning_on_safe_path(self, download_dir, caplog):
+        save_path = download_dir / "AGENT123/safe.txt"
+        AgentCommunicationService._is_path_safe(save_path, download_dir, "GOOD_AGENT")
+        assert not any("skywalker" in msg for msg in caplog.messages)
 
 
 def test__remove_agent(

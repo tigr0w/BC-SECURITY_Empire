@@ -70,7 +70,8 @@ extend-exclude = [
     # This file is a pain to untangle for some of the linting rules
     # it is from a 3rd party library, and its mostly untested.
     'empire/server/common/malleable',
-    "empire/server/Empire-Compiler"
+    "empire/server/Empire-Compiler",
+    ".claude/worktrees",
 ]
 target-version = "py313"
 
@@ -118,12 +119,8 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 # PTH: Excluded some files with lower test coverage for PTH so we can enable it for
 # the rest of the files and incrementally increase the coverage.
 "empire/server/listeners/*" = ["PTH", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901"]
-"empire/server/stagers/*" = ["PTH", "PLR0911", "PLR0912", "PLR0915"]
-"empire/server/modules/*" = ["PTH", "PLR0911", "PLR0912", "PLR0913", "PLR0915"]
-"empire/server/utils/bof_packer.py" = ["PTH"]
-"empire/server/core/stager_generation_service.py" = ["PTH"]
-"empire/server/core/agent_communication_service.py" = ["PTH"]
-"empire/server/core/go.py" = ["PTH"]
+"empire/server/stagers/*" = ["PLR0911", "PLR0912", "PLR0915"]
+"empire/server/modules/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915"]
 
 # It's hard to limit arguments on the endpoint functions.
 "empire/server/api/*" = ["PLR0913"]

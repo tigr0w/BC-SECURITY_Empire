@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   Replace `os.path` with `pathlib` in core code and enforce `PTH` lint rule for all core files
+-   Switch `stager_generation_service` from deprecated `installPath` (str) to `install_path` (Path)
 -   Optimized test suite for faster CI and local runs
 -   Modernize Python patterns in core code: use `setdefault()`, truthiness checks, `click.style()` for terminal colors, and remove redundant operations
 

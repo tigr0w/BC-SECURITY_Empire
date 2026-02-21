@@ -786,6 +786,28 @@ def test_windows_c_stager_creation(client, admin_auth_header):
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
+def test_create_stager_download_metadata(client, admin_auth_header):
+    """Verify that stager download metadata has basename-only filename."""
+    base_stager = get_base_stager()
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    stager_id = response.json()["id"]
+
+    downloads = response.json().get("downloads", [])
+    assert len(downloads) > 0
+
+    download = downloads[0]
+    filename = download["filename"]
+    # filename should be a basename, not a full path
+    assert "/" not in filename
+    assert "\\" not in filename
+    assert len(filename) > 0
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
 def test_windows_c_stager_download(client, admin_auth_header):
     stager_data = get_windows_c_stager()
 

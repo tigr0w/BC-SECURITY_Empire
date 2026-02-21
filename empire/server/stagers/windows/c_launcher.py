@@ -97,8 +97,7 @@ class Stager:
             log.error(f"[!] Template not found at {template_path}")
             return ""
 
-        with open(template_path) as f:
-            code = f.read()
+        code = template_path.read_text()
 
         code = code.replace("{{ host }}", clean_host)
         code = code.replace("{{ port }}", str(port))
@@ -110,8 +109,7 @@ class Stager:
             c_file = Path(temp_dir) / "windows.c"
             exe_file = Path(temp_dir) / "stager.exe"
 
-            with open(c_file, "w") as f:
-                f.write(code)
+            c_file.write_text(code)
 
             compiler = "x86_64-w64-mingw32-gcc"
             args = [

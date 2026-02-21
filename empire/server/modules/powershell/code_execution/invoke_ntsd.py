@@ -21,21 +21,21 @@ class Module:
 
         if arch == "x64":
             ntsd_exe = (
-                main_menu.installPath
-                + "/data/module_source/code_execution/ntsd_x64.exe"
+                main_menu.install_path
+                / "data/module_source/code_execution/ntsd_x64.exe"
             )
             ntsd_dll = (
-                main_menu.installPath
-                + "/data/module_source/code_execution/ntsdexts_x64.dll"
+                main_menu.install_path
+                / "data/module_source/code_execution/ntsdexts_x64.dll"
             )
         elif arch == "x86":
             ntsd_exe = (
-                main_menu.installPath
-                + "/data/module_source/code_execution/ntsd_x86.exe"
+                main_menu.install_path
+                / "data/module_source/code_execution/ntsd_x86.exe"
             )
             ntsd_dll = (
-                main_menu.installPath
-                + "/data/module_source/code_execution/ntsdexts_x86.dll"
+                main_menu.install_path
+                / "data/module_source/code_execution/ntsdexts_x86.dll"
             )
 
         # read in the common module source code
@@ -68,11 +68,8 @@ class Module:
 
         launcher = launcher.split(" ")[-1]
 
-        with open(ntsd_exe, "rb") as bin_data:
-            ntsd_exe_data = bin_data.read()
-
-        with open(ntsd_dll, "rb") as bin_data:
-            ntsd_dll_data = bin_data.read()
+        ntsd_exe_data = ntsd_exe.read_bytes()
+        ntsd_dll_data = ntsd_dll.read_bytes()
 
         exec_write = f'Write-Ini {upload_path} "{launcher}"'
         code_exec = f"{upload_path}\\ntsd.exe -cf {upload_path}\\ntsd.ini {bin}"

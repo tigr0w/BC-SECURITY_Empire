@@ -2,11 +2,11 @@ import base64
 import contextlib
 import json
 import logging
-import os
 import random
 import string
 import threading
 import typing
+from pathlib import Path
 
 from pydantic import ValidationError
 from sqlalchemy import and_
@@ -66,6 +66,16 @@ class AgentCommunicationService:
     def is_ip_allowed(self, ip_address):
         return self.ip_service.is_ip_allowed(ip_address)
 
+    @staticmethod
+    def _is_path_safe(save_path: Path, download_dir: Path, session_id: str) -> bool:
+        """Check if a file path is safe (not a directory traversal attack)."""
+        if not save_path.resolve().is_relative_to(download_dir.resolve()):
+            log.warning(
+                "Agent %s attempted skywalker exploit! Path: %s", session_id, save_path
+            )
+            return False
+        return True
+
     def _decompress_python_data(self, data, filename, session_id):
         log.info(
             f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
@@ -101,15 +111,11 @@ class AgentCommunicationService:
         # construct the appropriate save path
         download_dir = empire_config.directories.downloads
         save_path = download_dir / session_id / "/".join(parts[0:-1])
-        filename = os.path.basename(parts[-1])
+        filename = Path(parts[-1]).name
         save_file = save_path / filename
 
         with self._lock:
-            # fix for 'skywalker' exploit by @zeroSteiner
-            safe_path = download_dir.absolute()
-            if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
-                message = f"Agent {session_id} attempted skywalker exploit! Attempted overwrite of {path} with data {data}"
-                log.warning(message)
+            if not self._is_path_safe(save_file, download_dir, session_id):
                 return
 
             if not save_path.exists():
@@ -130,7 +136,7 @@ class AgentCommunicationService:
                 download = models.Download(
                     location=str(location),
                     filename=filename,
-                    size=os.path.getsize(location),
+                    size=location.stat().st_size,
                 )
                 db.add(download)
                 db.flush()
@@ -155,7 +161,7 @@ class AgentCommunicationService:
                     db.flush()
 
         percent = round(
-            int(os.path.getsize(str(save_file))) / int(total_filesize) * 100,
+            save_file.stat().st_size / int(total_filesize) * 100,
             2,
         )
 
@@ -179,16 +185,10 @@ class AgentCommunicationService:
             data = self._decompress_python_data(data, filename, session_id)
 
         with self._lock:
-            # fix for 'skywalker' exploit by @zeroSteiner
-            safe_path = download_dir.absolute()
-            if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
-                message = f"agent {session_id} attempted skywalker exploit!\n[!] attempted overwrite of {path} with data {data}"
-                log.warning(message)
+            if not self._is_path_safe(save_file, download_dir, session_id):
                 return None
 
-            # make the recursive directory structure if it doesn't already exist
-            if not save_path.exists():
-                os.makedirs(save_path)
+            save_path.mkdir(parents=True, exist_ok=True)
 
             # save the file out
 
@@ -199,7 +199,7 @@ class AgentCommunicationService:
         message = f"File {path} from {session_id} saved"
         log.info(message)
 
-        return str(save_file)
+        return save_file
 
     def _remove_agent(self, db: Session, session_id: str):
         """
@@ -986,7 +986,7 @@ class AgentCommunicationService:
                         # This is where we read the input file.
                         # We could change it to use the linked/tagged download.
                         # But this still works.
-                        with open(tasking.input_full.split("|")[0], "rb") as f:
+                        with Path(tasking.input_full.split("|")[0]).open("rb") as f:
                             input_full = f.read()
                         input_full = base64.b64encode(input_full).decode("UTF-8")
                         input_full += tasking.input_full.split("|", maxsplit=1)[1]
@@ -1388,9 +1388,9 @@ class AgentCommunicationService:
 
             # attach file to tasking
             download = models.Download(
-                location=final_save_path,
-                filename=final_save_path.split("/")[-1],
-                size=os.path.getsize(final_save_path),
+                location=str(final_save_path),
+                filename=final_save_path.name,
+                size=final_save_path.stat().st_size,
             )
             db.add(download)
             db.flush()
@@ -1404,16 +1404,12 @@ class AgentCommunicationService:
             # check if this is the powershell keylogging task, if so, write output to file instead of screen
             if key_log_task_id and key_log_task_id == task_id:
                 download_dir = empire_config.directories.downloads
-                safe_path = download_dir.absolute()
                 save_path = download_dir / session_id / "keystrokes.txt"
 
-                # fix for 'skywalker' exploit by @zeroSteiner
-                if not str(os.path.normpath(save_path)).startswith(str(safe_path)):
-                    message = f"agent {session_id} attempted skywalker exploit!"
-                    log.warning(message)
+                if not self._is_path_safe(save_path, download_dir, session_id):
                     return
 
-                with open(save_path, "a+") as f:
+                with save_path.open("a+") as f:
                     if isinstance(data, bytes):
                         data = data.decode("UTF-8")
                     new_results = (

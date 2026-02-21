@@ -379,6 +379,27 @@ def test_execute_module_with_empty_params(module_service, agent_mock):
     assert "required option missing: Agent" in str(excinfo.value)
 
 
+def test_handle_save_file_command_with_extension(module_service):
+    """Test _handle_save_file_command extracts basename from path-like module name."""
+    command, data = module_service._handle_save_file_command(
+        "TASK_PYTHON", "python/trollsploit/osx/say", ".txt ", "data_here"
+    )
+    assert command == "TASK_PYTHON_CMD_WAIT_SAVE"
+    # The prefix should be the basename "say" right-justified to 15 chars
+    assert data.startswith("say".rjust(15))
+    assert ".txt " in data
+    assert data.endswith("data_here")
+
+
+def test_handle_save_file_command_without_extension(module_service):
+    """Test _handle_save_file_command with empty extension returns CMD_WAIT."""
+    command, data = module_service._handle_save_file_command(
+        "TASK_POWERSHELL", "powershell/collection/screenshot", "", "script_data"
+    )
+    assert command == "TASK_POWERSHELL_CMD_WAIT"
+    assert data == "script_data"
+
+
 @pytest.mark.parametrize(
     ("agent_language", "module_language", "should_raise"),
     [

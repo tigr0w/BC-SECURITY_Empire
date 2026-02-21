@@ -1,5 +1,4 @@
 import base64
-import errno
 import logging
 import os
 import random
@@ -120,34 +119,28 @@ class StagerGenerationService:
         """
 
         # read in original DLL and patch the bytes based on arch
-        if arch.lower() == "x86":
-            origPath = (
-                f"{self.main_menu.installPath}/data/misc/ReflectivePick_x86_orig.dll"
+        arch_suffix = "x86" if arch.lower() == "x86" else "x64"
+        orig_path = (
+            self.main_menu.install_path
+            / f"data/misc/ReflectivePick_{arch_suffix}_orig.dll"
+        )
+
+        if orig_path.is_file():
+            dllRaw = orig_path.read_bytes()
+
+            replacementCode = helpers.decode_base64(posh_code)
+
+            # patch the dll with the new PowerShell code
+            searchString = (("Invoke-Replace").encode("UTF-16"))[2:]
+            index = dllRaw.find(searchString)
+            return (
+                dllRaw[:index]
+                + replacementCode
+                + dllRaw[(index + len(replacementCode)) :]
             )
-        else:
-            origPath = (
-                f"{self.main_menu.installPath}/data/misc/ReflectivePick_x64_orig.dll"
-            )
 
-        if os.path.isfile(origPath):
-            dllRaw = ""
-            with open(origPath, "rb") as f:
-                dllRaw = f.read()
-
-                replacementCode = helpers.decode_base64(posh_code)
-
-                # patch the dll with the new PowerShell code
-                searchString = (("Invoke-Replace").encode("UTF-16"))[2:]
-                index = dllRaw.find(searchString)
-                return (
-                    dllRaw[:index]
-                    + replacementCode
-                    + dllRaw[(index + len(replacementCode)) :]
-                )
-
-        else:
-            log.error(f"Original .dll for arch {arch} does not exist!")
-            return None
+        log.error(f"Original .dll for arch {arch} does not exist!")
+        return None
 
     def generate_powershell_exe(
         self, posh_code, dot_net_version="net40", obfuscate=False
@@ -155,15 +148,16 @@ class StagerGenerationService:
         """
         Generate powershell launcher embedded in csharp
         """
-        with open(self.main_menu.installPath + "/stagers/CSharpPS.yaml", "rb") as f:
-            stager_yaml = f.read()
-        stager_yaml = stager_yaml.decode("UTF-8")
+        stager_yaml = (
+            (self.main_menu.install_path / "stagers/CSharpPS.yaml")
+            .read_bytes()
+            .decode("UTF-8")
+        )
 
         # Write text file to resources to be embedded
-        with open(
-            self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/launcher.txt",
-            "w",
-        ) as f:
+        with (
+            self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/launcher.txt"
+        ).open("w") as f:
             f.write(posh_code)
 
         return self.dotnet_compiler.compile_stager(
@@ -323,17 +317,18 @@ class StagerGenerationService:
         """
         Generate ironpython launcher embedded in csharp
         """
-        with open(self.main_menu.installPath + "/stagers/CSharpPy.yaml", "rb") as f:
-            stager_yaml = f.read()
-        stager_yaml = stager_yaml.decode("UTF-8")
+        stager_yaml = (
+            (self.main_menu.install_path / "stagers/CSharpPy.yaml")
+            .read_bytes()
+            .decode("UTF-8")
+        )
 
         # Write text file to resources to be embedded
         # This file is problematic because multiple runs
         # can overwrite the file and cause issues.
-        with open(
-            self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/launcher.txt",
-            "w",
-        ) as f:
+        with (
+            self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/launcher.txt"
+        ).open("w") as f:
             f.write(python_code)
 
         return self.dotnet_compiler.compile_stager(
@@ -454,8 +449,7 @@ class StagerGenerationService:
         """
 
         MH_EXECUTE = 2
-        # with open(self.installPath + "/data/misc/machotemplate", 'rb') as f:
-        with open(f"{self.main_menu.installPath}/data/misc/machotemplate", "rb") as f:
+        with (self.main_menu.install_path / "data/misc/machotemplate").open("rb") as f:
             macho = macholib.MachO.MachO(f.name)
 
             if int(macho.headers[0].header.filetype) != MH_EXECUTE:
@@ -501,17 +495,18 @@ class StagerGenerationService:
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """
         MH_DYLIB = 6
+        misc_dir = self.main_menu.install_path / "data/misc"
         if hijacker.lower() == "true":
             if arch == "x86":
-                f = f"{self.main_menu.installPath}/data/misc/hijackers/template.dylib"
+                dylib_path = misc_dir / "hijackers/template.dylib"
             else:
-                f = f"{self.main_menu.installPath}/data/misc/hijackers/template64.dylib"
+                dylib_path = misc_dir / "hijackers/template64.dylib"
         elif arch == "x86":
-            f = f"{self.main_menu.installPath}/data/misc/templateLauncher.dylib"
+            dylib_path = misc_dir / "templateLauncher.dylib"
         else:
-            f = f"{self.main_menu.installPath}/data/misc/templateLauncher64.dylib"
+            dylib_path = misc_dir / "templateLauncher64.dylib"
 
-        with open(f, "rb") as f:
+        with dylib_path.open("rb") as f:
             macho = macholib.MachO.MachO(f.name)
 
             if int(macho.headers[0].header.filetype) != MH_DYLIB:
@@ -566,26 +561,14 @@ class StagerGenerationService:
         """
         MH_EXECUTE = 2
 
+        app_res = self.main_menu.install_path / "data/misc/apptemplateResources"
         if arch == "x64":
-            f = (
-                self.main_menu.installPath
-                + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher"
-            )
-            directory = (
-                self.main_menu.installPath
-                + "/data/misc/apptemplateResources/x64/launcher.app/"
-            )
+            app_dir = app_res / "x64/launcher.app"
         else:
-            f = (
-                self.main_menu.installPath
-                + "/data/misc/apptemplateResources/x86/launcher.app/Contents/MacOS/launcher"
-            )
-            directory = (
-                self.main_menu.installPath
-                + "/data/misc/apptemplateResources/x86/launcher.app/"
-            )
+            app_dir = app_res / "x86/launcher.app"
+        launcher_binary = app_dir / "Contents/MacOS/launcher"
 
-        with open(f, "rb") as f:
+        with launcher_binary.open("rb") as f:
             macho = macholib.MachO.MachO(f.name)
 
             if int(macho.headers[0].header.filetype) != MH_EXECUTE:
@@ -623,29 +606,22 @@ class StagerGenerationService:
             if not app_name:
                 app_name = "launcher"
 
-            tmpdir = f"/tmp/application/{app_name}.app/"
-            shutil.copytree(directory, tmpdir)
-            with open(tmpdir + "Contents/MacOS/launcher", "wb") as f:
+            tmpdir = Path(f"/tmp/application/{app_name}.app")
+            shutil.copytree(app_dir, tmpdir)
+            macos_dir = tmpdir / "Contents/MacOS"
+            with (macos_dir / "launcher").open("wb") as f:
                 if disarm is not True:
                     f.write(patched_binary)
                 else:
-                    t = (
-                        self.main_menu.installPath
-                        + "/data/misc/apptemplateResources/empty/macho"
-                    )
-                    with open(t, "rb") as t:
-                        w = t.read()
-                        f.write(w)
+                    empty_macho = app_res / "empty/macho"
+                    f.write(empty_macho.read_bytes())
 
-            os.rename(
-                tmpdir + "Contents/MacOS/launcher",
-                tmpdir + f"Contents/MacOS/{app_name}",
-            )
-            os.chmod(tmpdir + f"Contents/MacOS/{app_name}", 0o755)
+            (macos_dir / "launcher").rename(macos_dir / app_name)
+            (macos_dir / app_name).chmod(0o755)
 
-            if icon != "":
-                iconfile = os.path.splitext(icon)[0].split("/")[-1]
-                shutil.copy2(icon, tmpdir + "Contents/Resources/" + iconfile + ".icns")
+            if icon:
+                iconfile = Path(icon).stem
+                shutil.copy2(icon, tmpdir / "Contents/Resources" / f"{iconfile}.icns")
             else:
                 iconfile = icon
             appPlist = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -707,56 +683,37 @@ class StagerGenerationService:
 </dict>
 </plist>
 """
-            with open(tmpdir + "Contents/Info.plist", "w") as f:
-                f.write(appPlist)
+            (tmpdir / "Contents/Info.plist").write_text(appPlist)
 
             shutil.make_archive("/tmp/launcher", "zip", "/tmp/application")
             shutil.rmtree("/tmp/application")
 
-            with open("/tmp/launcher.zip", "rb") as f:
-                zipbundle = f.read()
-            os.remove("/tmp/launcher.zip")
+            launcher_zip = Path("/tmp/launcher.zip")
+            zipbundle = launcher_zip.read_bytes()
+            launcher_zip.unlink()
             return zipbundle
 
         log.error("Unable to patch application")
         return None
 
     def generate_jar(self, launcher_code):
-        with open(self.main_menu.installPath + "/data/misc/Run.java") as f:
-            javacode = f.read()
+        misc_dir = self.main_menu.install_path / "data/misc"
+        javacode = (misc_dir / "Run.java").read_text()
         javacode = javacode.replace("LAUNCHER", launcher_code)
-        jarpath = self.main_menu.installPath + "/data/misc/classes/com/installer/apple/"
-        try:
-            os.makedirs(jarpath)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
 
-        with open(jarpath + "Run.java", "w") as f:
-            f.write(javacode)
+        jarpath = misc_dir / "classes/com/installer/apple"
+        jarpath.mkdir(parents=True, exist_ok=True)
+
+        (jarpath / "Run.java").write_text(javacode)
+        os.system(f"javac {jarpath / 'Run.java'}")
+        jar_file = misc_dir / "Run.jar"
         os.system(
-            "javac "
-            + self.main_menu.installPath
-            + "/data/misc/classes/com/installer/apple/Run.java"
+            f"jar -cfe {jar_file} com.installer.apple.Run {jarpath / 'Run.class'}"
         )
-        os.system(
-            "jar -cfe "
-            + self.main_menu.installPath
-            + "/data/misc/Run.jar com.installer.apple.Run "
-            + self.main_menu.installPath
-            + "/data/misc/classes/com/installer/apple/Run.class"
-        )
-        os.remove(
-            self.main_menu.installPath
-            + "/data/misc/classes/com/installer/apple/Run.class"
-        )
-        os.remove(
-            self.main_menu.installPath
-            + "/data/misc/classes/com/installer/apple/Run.java"
-        )
-        with open(self.main_menu.installPath + "/data/misc/Run.jar", "rb") as jarfile:
-            jar = jarfile.read()
-        os.remove(self.main_menu.installPath + "/data/misc/Run.jar")
+        (jarpath / "Run.class").unlink()
+        (jarpath / "Run.java").unlink()
+        jar = jar_file.read_bytes()
+        jar_file.unlink()
 
         return jar
 

@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
@@ -77,9 +77,9 @@ class Module:
         if ext_file != "":
             # read in an external file as the payload and build a
             #   base64 encoded version as encScript
-            if os.path.exists(ext_file):
-                with open(ext_file) as f:
-                    file_data = f.read()
+            ext_path = Path(ext_file)
+            if ext_path.exists():
+                file_data = ext_path.read_text()
 
                 # unicode-base64 encode the script for -enc launching
                 enc_script = helpers.enc_powershell(file_data)

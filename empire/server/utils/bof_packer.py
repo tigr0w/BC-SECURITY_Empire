@@ -1,6 +1,7 @@
 import base64
 import shlex
 from binascii import hexlify
+from pathlib import Path
 from struct import calcsize, pack
 
 
@@ -59,8 +60,7 @@ def bof_pack(fstring: str, args: list):
 
     for i, c in enumerate(fstring):
         if c == "b":
-            with open(args[i], "rb") as fd:
-                addbinary(fd.read())
+            addbinary(Path(args[i]).read_bytes())
         elif c == "c":
             addbinary(args[i])
         elif c == "i":

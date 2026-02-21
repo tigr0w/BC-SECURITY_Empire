@@ -205,7 +205,7 @@ class PluginService:
         version_name: str | None = None,
         registry_data: dict | None = None,
     ):
-        temp_dir = Path(tempfile.gettempdir()) / tar_url.split("/")[-1].split(".")[0]
+        temp_dir = Path(tempfile.gettempdir()) / Path(tar_url.split("/")[-1]).stem
 
         response = s.get(tar_url, stream=True)
 

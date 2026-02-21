@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
@@ -87,14 +87,9 @@ Invoke-EventLogBackdoor"""
         out_file = params["OutFile"]
         if out_file != "":
             # make the base directory if it doesn't exist
-            if (
-                not os.path.exists(os.path.dirname(out_file))
-                and os.path.dirname(out_file) != ""
-            ):
-                os.makedirs(os.path.dirname(out_file))
-
-            with open(out_file, "w") as f:
-                f.write(script)
+            out_path = Path(out_file)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(script)
 
             return handle_error_message(
                 "[+] PowerBreach deaduser backdoor written to " + out_file

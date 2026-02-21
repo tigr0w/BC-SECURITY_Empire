@@ -1,5 +1,5 @@
 import base64
-import os
+from pathlib import Path
 
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
@@ -18,11 +18,11 @@ class Module:
         processID = params["PID"]
         shellcodeBinPath = params["Shellcode"]
 
-        if not os.path.exists(shellcodeBinPath):
+        shellcode_path = Path(shellcodeBinPath)
+        if not shellcode_path.exists():
             return handle_error_message("[!] Shellcode bin file not found.")
 
-        with open(shellcodeBinPath, "rb") as f:
-            shellcode = base64.b64encode(f.read())
+        shellcode = base64.b64encode(shellcode_path.read_bytes())
 
         script = """
 from ctypes import *

@@ -1,4 +1,5 @@
 import base64
+from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
@@ -32,8 +33,7 @@ class Module:
                 if option.lower() == "file":
                     if values != "":
                         try:
-                            with open(values, "rb") as f:
-                                dllbytes = f.read()
+                            dllbytes = Path(values).read_bytes()
 
                             base64bytes = base64.b64encode(dllbytes).decode("UTF-8")
 

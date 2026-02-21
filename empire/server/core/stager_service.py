@@ -103,9 +103,9 @@ class StagerService:
         )
 
         download = models.Download(
-            location=generated,
-            filename=generated.split("/")[-1],
-            size=Path(generated).stat().st_size,
+            location=str(generated),
+            filename=generated.name,
+            size=generated.stat().st_size,
         )
         db.add(download)
         db.flush()
@@ -143,9 +143,9 @@ class StagerService:
         db_stager.options = stager_options
 
         download = models.Download(
-            location=generated,
-            filename=generated.split("/")[-1],
-            size=Path(generated).stat().st_size,
+            location=str(generated),
+            filename=generated.name,
+            size=generated.stat().st_size,
         )
         db.add(download)
         db.flush()
@@ -162,10 +162,7 @@ class StagerService:
             return None, "Error generating"
 
         out_file = template_instance.options.get("OutFile", {}).get("Value")
-        if out_file:
-            file_name = template_instance.options["OutFile"]["Value"].split("/")[-1]
-        else:
-            file_name = f"{uuid.uuid4()}.txt"
+        file_name = Path(out_file).name if out_file else f"{uuid.uuid4()}.txt"
 
         file_name = (
             empire_config.directories.downloads / "generated-stagers" / file_name
@@ -175,7 +172,7 @@ class StagerService:
         with file_name.open(mode) as f:
             f.write(resp)
 
-        return str(file_name), None
+        return file_name, None
 
     @staticmethod
     def delete_stager(db: Session, stager: models.Stager):

@@ -271,7 +271,7 @@ class ModuleService:
     @staticmethod
     def _handle_save_file_command(cmd_type, module_name, extension, module_data):
         if extension:
-            save_file_prefix = module_name.split("/")[-1][:15]
+            save_file_prefix = Path(module_name).name[:15]
             module_data = save_file_prefix.rjust(15) + extension + module_data
             return f"{cmd_type}_CMD_WAIT_SAVE", module_data
         return f"{cmd_type}_CMD_WAIT", module_data
