@@ -55,7 +55,7 @@ class PluginService:
         self.main_menu = main_menu
         self.download_service = main_menu.downloadsv2
         self.loaded_plugins = {}
-        self.plugin_path = Path(self.main_menu.installPath) / "plugins/"
+        self.plugin_path = self.main_menu.install_path / "plugins"
         self.marketplace_path = config_manager.DATA_DIR / "plugins" / "marketplace"
         self.marketplace_path.mkdir(parents=True, exist_ok=True)
 

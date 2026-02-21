@@ -1,8 +1,8 @@
 import base64
 import logging
-import os
 import random
 import shutil
+import subprocess
 import typing
 from itertools import cycle
 from pathlib import Path
@@ -148,10 +148,8 @@ class StagerGenerationService:
         """
         Generate powershell launcher embedded in csharp
         """
-        stager_yaml = (
-            (self.main_menu.install_path / "stagers/CSharpPS.yaml")
-            .read_bytes()
-            .decode("UTF-8")
+        stager_yaml = (self.main_menu.install_path / "stagers/CSharpPS.yaml").read_text(
+            encoding="utf-8"
         )
 
         # Write text file to resources to be embedded
@@ -317,10 +315,8 @@ class StagerGenerationService:
         """
         Generate ironpython launcher embedded in csharp
         """
-        stager_yaml = (
-            (self.main_menu.install_path / "stagers/CSharpPy.yaml")
-            .read_bytes()
-            .decode("UTF-8")
+        stager_yaml = (self.main_menu.install_path / "stagers/CSharpPy.yaml").read_text(
+            encoding="utf-8"
         )
 
         # Write text file to resources to be embedded
@@ -697,21 +693,29 @@ class StagerGenerationService:
         return None
 
     def generate_jar(self, launcher_code):
-        misc_dir = self.main_menu.install_path / "data/misc"
-        javacode = (misc_dir / "Run.java").read_text()
-        javacode = javacode.replace("LAUNCHER", launcher_code)
+        install_path = self.main_menu.install_path
+        java_template = install_path / "data/misc/Run.java"
+        javacode = java_template.read_text(encoding="utf-8").replace(
+            "LAUNCHER", launcher_code
+        )
 
-        jarpath = misc_dir / "classes/com/installer/apple"
+        jarpath = install_path / "data/misc/classes/com/installer/apple"
         jarpath.mkdir(parents=True, exist_ok=True)
 
-        (jarpath / "Run.java").write_text(javacode)
-        os.system(f"javac {jarpath / 'Run.java'}")
-        jar_file = misc_dir / "Run.jar"
-        os.system(
-            f"jar -cfe {jar_file} com.installer.apple.Run {jarpath / 'Run.class'}"
+        java_file = jarpath / "Run.java"
+        class_file = jarpath / "Run.class"
+        jar_file = install_path / "data/misc/Run.jar"
+
+        java_file.write_text(javacode, encoding="utf-8")
+        subprocess.run(["javac", str(java_file)], check=True)
+        subprocess.run(
+            ["jar", "-cfe", str(jar_file), "com.installer.apple.Run", str(class_file)],
+            check=True,
         )
-        (jarpath / "Run.class").unlink()
-        (jarpath / "Run.java").unlink()
+
+        class_file.unlink()
+        java_file.unlink()
+
         jar = jar_file.read_bytes()
         jar_file.unlink()
 

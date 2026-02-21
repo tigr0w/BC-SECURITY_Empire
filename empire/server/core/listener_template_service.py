@@ -2,7 +2,6 @@ import fnmatch
 import importlib.util
 import logging
 import typing
-from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -45,7 +44,7 @@ class ListenerTemplateService:
         Load listeners from the install + "/listeners/*" path
         """
 
-        root_path = Path(self.main_menu.installPath) / "listeners"
+        root_path = self.main_menu.install_path / "listeners"
         log.info(f"v2: Loading listener templates from: {root_path}")
 
         for file_path in root_path.rglob("*.py"):

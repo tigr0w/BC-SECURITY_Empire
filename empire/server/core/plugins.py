@@ -26,6 +26,8 @@ class BasePlugin:
 
         self.enabled: bool = False
         self.execution_enabled: bool = True
+        # TODO(empire-7): Change type to Path (self.main_menu.install_path).
+        # Kept as str for backwards compatibility with third-party plugins.
         self.install_path: str = self.main_menu.installPath
         self.execution_options: dict = {}
         self.settings_options: dict = {}

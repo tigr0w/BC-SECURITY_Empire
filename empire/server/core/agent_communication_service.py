@@ -1382,6 +1382,9 @@ class AgentCommunicationService:
                 session_id, save_path, file_data, agent.language
             )
 
+            if final_save_path is None:
+                return
+
             # update the agent log
             msg = f"Output saved to .{final_save_path}"
             self.agent_service.save_agent_log(session_id, msg)

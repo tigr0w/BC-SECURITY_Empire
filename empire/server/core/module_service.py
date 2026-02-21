@@ -723,7 +723,7 @@ class ModuleService:
         return modified_module
 
     def load_modules(self, db: Session):
-        root_path = Path(self.main_menu.installPath) / "modules"
+        root_path = self.main_menu.install_path / "modules"
         log.info(f"v2: Loading modules from: {root_path}")
 
         # Pre-load all existing module records to avoid per-module DB queries
