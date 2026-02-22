@@ -39,6 +39,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fix null-safety bug in `_process_agent_packet` when `save_module_file` returns None on skywalker exploit detection
 -   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
+-   Fixed 9 malformed MITRE ATT&CK technique IDs across PowerShell, Python, and C# modules
+-   Fixed 2 malformed tactic fields that used space-separated strings instead of YAML lists
+-   Replaced 7 deprecated or revoked ATT&CK techniques with current equivalents
+-   Added missing `software` field for known ATT&CK tools (Rubeus, BloodHound, Mimikatz)
+-   Added missing `tactics` field to 82 Python modules that had none
+-   Fixed 74 technique-to-tactic inconsistencies across all module languages
+-   Replaced 27 additional deprecated technique IDs predating ATT&CK v10 with current equivalents across Python and template modules
+-   Removed incorrect T1482 (Domain Trust Discovery) from 32 modules that perform user, group, or computer enumeration
+-   Removed incorrect T1615 (Group Policy Discovery) from 24 modules unrelated to GPO enumeration
+-   Replaced T1106 (Native API) with T1059.006 (Python) on 5 DCOS REST API modules
+-   Added missing `techniques` field to 3 session enumeration modules
+-   Corrected 3 macOS LaunchAgent persistence modules from T1055 (Process Injection) to T1543.001 (Launch Agent)
+-   Corrected macOS screensaver credential prompt module from T1113 (Screen Capture) to T1056.002 (GUI Input Capture)
+-   Corrected Invoke-DownloadFile from T1041 (Exfiltration Over C2) to T1105 (Ingress Tool Transfer)
+-   Upgraded 3 keylogger modules from parent T1056 to specific T1056.001 (Keylogging) sub-technique
+-   Upgraded macOS email search module from T1114 to T1114.001 (Local Email Collection) sub-technique
+-   Upgraded macOS LoginHook persistence from T1037 to T1037.002 (Login Hook) sub-technique
+-   Added T1105 (Ingress Tool Transfer) to 12 lateral movement modules that deploy stagers to remote hosts
+-   Added 10 new ATT&CK technique IDs across 51 modules to improve coverage from 181 to 190 unique techniques
+-   Added T1005 (Data from Local System) to 8 macOS and Linux credential and collection modules
+-   Added T1550.002 (Pass the Hash) to PsExec, SMBExec, and WMI lateral movement modules
+-   Added T1562.001 (Impair Defenses) to AMSI bypass, ETW patching, and Outlook security modules
+-   Fixed duplicate technique entries in RevertToSelf and NetRipper modules
 
 ## [6.4.1] - 2026-02-15
 
