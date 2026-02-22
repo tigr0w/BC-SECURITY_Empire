@@ -1,16 +1,20 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
         # staging options
         listener_name = params["Listener"]
@@ -30,16 +34,6 @@ class Module:
             raise ModuleValidationException(
                 "[!] Cannot use Listener and Command at the same time"
             )
-
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            raise ModuleValidationException(err)
 
         script_end = ""
 
@@ -77,9 +71,4 @@ class Module:
 
         script_end = f"Invoke-DCOM -ComputerName {computer_name} -Method {method} -Command '{Cmd}'"
 
-        return main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
+        return script, script_end

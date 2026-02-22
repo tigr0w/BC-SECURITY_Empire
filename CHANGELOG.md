@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Replace `os.system()` calls with `subprocess.run()` in stager JAR generation
 -   Upgraded all Python dependencies to latest versions (Feb 2026)
 -   Replace deprecated `handle_error_message` with raised `ModuleValidationException` in all modules (#716)
+-   Convert 51 modules to use `@auto_get_source` and `@auto_finalize` decorators, eliminating boilerplate (#716)
 
 ### Fixed
 
