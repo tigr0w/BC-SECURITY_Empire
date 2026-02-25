@@ -27,6 +27,16 @@ options:
     description: The command-line parameters to pass to the assembly's EntryPoint.
     required: false
     value: ''
+  - name: Background
+    description: Run as a background job (non-blocking). Can be killed via the jobs/kill_job
+      endpoint.
+    required: false
+    value: 'false'
+    type: bool
+    suggested_values:
+      - 'true'
+      - 'false'
+    strict: true
 csharp:
   UnsafeCompile: false
   CompatibleDotNetVersions:
