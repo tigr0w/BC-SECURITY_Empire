@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Added C stager for lightweight stage0 shellcode injection via Fibers
 -   Added a runtime `Background` option to C# modules, allowing operators to override background/foreground execution at task time
+-   Added C# PatchETW module for in-process ETW patching via ntdll!EtwEventWrite
+-   Added C# PatchlessAMSI module for patchless AMSI bypass using hardware breakpoints and vectored exception handling
+-   Added PowerShell Invoke-VSSExtract module for NTDS.dit and SYSTEM hive extraction via Volume Shadow Copy
+-   Added PowerShell Invoke-RDPHijack module for RDP session hijacking via tscon.exe
+-   Added Python linux_keyring module for credential extraction from the Linux kernel keyring subsystem
+-   Added Python aws_imds module for AWS IAM role credential theft via EC2 Instance Metadata Service
 
 ### Changed
 
