@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed malleable HTTP listener stagers failing after server restart due to random URI regeneration in `Stager._defaults()`
 -   Fix null-safety bug in `_process_agent_packet` when `save_module_file` returns None on skywalker exploit detection
 -   Fixed stop-job handlers in PowerShell and Python agents crashing when the target job doesn't exist
 -   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
