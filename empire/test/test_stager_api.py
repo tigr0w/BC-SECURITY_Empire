@@ -146,7 +146,7 @@ def get_windows_c_stager():
 
 
 def test_get_stager_templates(client, admin_auth_header):
-    min_stagers = 31
+    min_stagers = 32
     response = client.get(
         "/api/v2/stager-templates/",
         headers=admin_auth_header,

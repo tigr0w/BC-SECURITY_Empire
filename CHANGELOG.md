@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added PowerShell Invoke-RDPHijack module for RDP session hijacking via tscon.exe
 -   Added Python linux_keyring module for credential extraction from the Linux kernel keyring subsystem
 -   Added Python aws_imds module for AWS IAM role credential theft via EC2 Instance Metadata Service
+-   Added BOF `spawn` module for EarlyBird process hollowing with suspended process creation, shellcode injection, and APC thread hijacking
 
 ### Changed
 
