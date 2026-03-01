@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   Added Python 3.14 support (supports 3.13 and 3.14); Dockerfile now uses `python:3.14.3-trixie`
 -   Replace `os.path` with `pathlib` in core code and enforce `PTH` lint rule for all core files
 -   Switch `stager_generation_service` from deprecated `installPath` (str) to `install_path` (Path)
 -   Optimized test suite for faster CI and local runs
