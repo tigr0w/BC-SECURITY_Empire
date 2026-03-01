@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 -   Added C stager for lightweight stage0 shellcode injection via Fibers
+-   Added `shellcode_compiler` utility for compiling position-independent C stagers into raw x64 shellcode for BOF process injection
+-   Added `clipboard_window_inject_list` BOF module for enumerating processes with clipboard window class
+-   Added PIC shellcode C template and linker script for MinGW-based shellcode compilation
+-   Added unit tests for `shellcode_compiler` and rewrote `test_bof_packer` to cover the new `Packer` class API
 -   Added a runtime `Background` option to C# modules, allowing operators to override background/foreground execution at task time
 -   Added C# PatchETW module for in-process ETW patching via ntdll!EtwEventWrite
 -   Added C# PatchlessAMSI module for patchless AMSI bypass using hardware breakpoints and vectored exception handling
@@ -42,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Replace deprecated `handle_error_message` with raised `ModuleValidationException` in all modules (#716)
 -   Convert 51 modules to use `@auto_get_source` and `@auto_finalize` decorators, eliminating boilerplate (#716)
 -   Replace unmaintained `terminaltables` dependency with `prettytable` (#809)
+-   Refactored `bof_packer` from standalone functions to a `Packer` class with granular packing methods (`addbytes`, `addstr`, `addWstr`, `addbool`, `adduint32`, `addint`, `addshort`)
+-   Rewrote `clipboard_window_inject` BOF module to use PIC shellcode instead of PowerShell launcher-based shellcode generation
+-   Simplified `clipboard_window_inject` module options by removing unnecessary launcher parameters and corrected BOF format string
+-   Bumped Empire Compiler from v0.4.3 to v0.4.4
+
+### Removed
+
+-   Removed `secinject` BOF module and its pre-compiled binary
 
 ### Fixed
 

