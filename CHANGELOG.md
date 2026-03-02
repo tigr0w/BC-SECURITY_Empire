@@ -58,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed custom-generate BOF modules (`clipboard_window_inject`, `spawn`, `clipboard_window_inject_list`) returning .NET-only `file|,json` format for Go agents, causing BOF execution to fail on the Go agent's COFF loader
+-   Added `format_bof_output()` to `ModuleService` to centralize BOF output formatting for Go and .NET agents
+-   Pass `agent_language` to custom-generate modules so they can produce agent-appropriate output
 -   Fixed malleable HTTP listener stagers failing after server restart due to random URI regeneration in `Stager._defaults()`
 -   Fix null-safety bug in `_process_agent_packet` when `save_module_file` returns None on skywalker exploit detection
 -   Fixed stop-job handlers in PowerShell and Python agents crashing when the target job doesn't exist

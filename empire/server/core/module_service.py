@@ -341,7 +341,7 @@ class ModuleService:
 
         return options, None
 
-    def _generate_script(  # noqa: PLR0911
+    def _generate_script(  # noqa: PLR0911, PLR0912
         self,
         db: Session,
         module: EmpireModule,
@@ -371,12 +371,16 @@ class ModuleService:
             # In a future release we could refactor the modules to accept an obuscation_config,
             #  but there's little benefit to doing so at this point. So I'm saving myself the pain.
             try:
+                kwargs = {}
+                if module.language == LanguageEnum.bof:
+                    kwargs["agent_language"] = agent_language
                 return module.advanced.generate_class.generate(
                     self.main_menu,
                     module,
                     params,
                     obfuscation_enabled,
                     obfuscation_command,
+                    **kwargs,
                 )
             except (ModuleValidationException, ModuleExecutionException) as e:
                 raise e
@@ -463,6 +467,50 @@ class ModuleService:
             data=f"{script_file}|,{final_base64_json}",
             files=[script_file],
         )
+
+    def format_bof_output(
+        self,
+        bof_data_b64: str,
+        hex_data: str,
+        agent_language: str,
+        obfuscate: bool = False,
+        entry_point: str = "go",
+    ) -> str:
+        """
+        Build the final output string for a BOF module.
+
+        For Go agents, returns base64-encoded JSON with File and HexData.
+        For .NET agents, compiles the RunCOFF wrapper and returns
+        the compiled file path with base64-encoded JSON.
+        """
+        if agent_language == "go":
+            params_dict = {
+                "File": bof_data_b64,
+                "HexData": hex_data,
+            }
+            return base64.b64encode(json.dumps(params_dict).encode("utf-8")).decode(
+                "utf-8"
+            )
+
+        bof_module = self.modules["csharp_code_execution_runcoff"]
+        script_file = self.dotnet_compiler.compile_task(
+            bof_module.compiler_yaml,
+            bof_module.name,
+            dot_net_version="net40",
+            confuse=obfuscate,
+        )
+
+        params_dict = {
+            "Entrypoint": entry_point,
+            "File": bof_data_b64,
+            "HexData": hex_data,
+        }
+
+        final_base64_json = base64.b64encode(
+            json.dumps(params_dict).encode("utf-8")
+        ).decode("utf-8")
+
+        return f"{script_file}|,{final_base64_json}"
 
     def generate_go_bof(
         self,
