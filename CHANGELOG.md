@@ -89,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added T1550.002 (Pass the Hash) to PsExec, SMBExec, and WMI lateral movement modules
 -   Added T1562.001 (Impair Defenses) to AMSI bypass, ETW patching, and Outlook security modules
 -   Fixed duplicate technique entries in RevertToSelf and NetRipper modules
+-   Fixed PSRansom module `name` field incorrectly set to `Invoke-Script` instead of `PSRansom`
 
 ## [6.4.1] - 2026-02-15
 
