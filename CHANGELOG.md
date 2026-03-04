@@ -58,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed SQLAlchemy connection pool exhaustion during agent check-ins by releasing the DB session before expensive file I/O, encryption, and packet building in `handle_agent_request()`
 -   Fixed custom-generate BOF modules (`clipboard_window_inject`, `spawn`, `clipboard_window_inject_list`) returning .NET-only `file|,json` format for Go agents, causing BOF execution to fail on the Go agent's COFF loader
 -   Added `format_bof_output()` to `ModuleService` to centralize BOF output formatting for Go and .NET agents
 -   Pass `agent_language` to custom-generate modules so they can produce agent-appropriate output

@@ -960,6 +960,7 @@ class AgentCommunicationService:
             log.error(message)
             return None
 
+        # Phase 1: DB work only — release the connection ASAP
         with SessionLocal.begin() as db:
             self.agent_service.update_agent_lastseen(db, session_id)
 
@@ -973,45 +974,50 @@ class AgentCommunicationService:
             temp_tasks = self._get_queued_agent_temporary_tasks(session_id)
             tasks.extend(temp_tasks)
 
-            if tasks:
-                all_task_packets = b""
+            # Flush pending changes (e.g. task status → pulled) before
+            # detaching, then expunge so loaded attributes remain
+            # accessible after the session closes.
+            db.flush()
+            db.expunge_all()
 
-                # build tasking packets for everything we have
-                for tasking in tasks:
-                    input_full = tasking.input_full
-                    if tasking.task_name in [
-                        "TASK_CSHARP_CMD_JOB",
-                        "TASK_CSHARP_CMD_WAIT",
-                    ]:
-                        # This is where we read the input file.
-                        # We could change it to use the linked/tagged download.
-                        # But this still works.
-                        with Path(tasking.input_full.split("|")[0]).open("rb") as f:
-                            input_full = f.read()
-                        input_full = base64.b64encode(input_full).decode("UTF-8")
-                        input_full += tasking.input_full.split("|", maxsplit=1)[1]
-                    all_task_packets += packets.build_task_packet(
-                        tasking.task_name, input_full, tasking.id
-                    )
-                # get the session key for the agent
-                session_key = self.agents[session_id]["sessionKey"]
-                with contextlib.suppress(Exception):
-                    session_key = bytes.fromhex(session_key)
+        # Phase 2: file I/O, encryption, packet building (no DB needed)
+        if not tasks:
+            return None
 
-                # encrypt the tasking packets with the agent's session key
-                encrypted_data = AESCipher.encrypt_then_hmac(
-                    session_key, all_task_packets
-                )
+        all_task_packets = b""
 
-                return packets.build_routing_packet(
-                    staging_key,
-                    session_id,
-                    language,
-                    meta="SERVER_RESPONSE",
-                    encData=encrypted_data,
-                )
+        # build tasking packets for everything we have
+        for tasking in tasks:
+            input_full = tasking.input_full
+            if tasking.task_name in [
+                "TASK_CSHARP_CMD_JOB",
+                "TASK_CSHARP_CMD_WAIT",
+            ]:
+                # This is where we read the input file.
+                # We could change it to use the linked/tagged download.
+                # But this still works.
+                with Path(tasking.input_full.split("|")[0]).open("rb") as f:
+                    input_full = f.read()
+                input_full = base64.b64encode(input_full).decode("UTF-8")
+                input_full += tasking.input_full.split("|", maxsplit=1)[1]
+            all_task_packets += packets.build_task_packet(
+                tasking.task_name, input_full, tasking.id
+            )
+        # get the session key for the agent
+        session_key = self.agents[session_id]["sessionKey"]
+        with contextlib.suppress(Exception):
+            session_key = bytes.fromhex(session_key)
 
-        return None
+        # encrypt the tasking packets with the agent's session key
+        encrypted_data = AESCipher.encrypt_then_hmac(session_key, all_task_packets)
+
+        return packets.build_routing_packet(
+            staging_key,
+            session_id,
+            language,
+            meta="SERVER_RESPONSE",
+            encData=encrypted_data,
+        )
 
     def _handle_agent_response(self, session_id, enc_data, update_lastseen=False):
         """

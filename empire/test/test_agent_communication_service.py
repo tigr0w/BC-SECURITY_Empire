@@ -3,9 +3,13 @@ import struct
 import zlib
 
 import pytest
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 
+from empire.server.common import packets
 from empire.server.common.empire import MainMenu
 from empire.server.core.agent_communication_service import AgentCommunicationService
+from empire.server.core.db.base import engine as original_engine
 from empire.server.core.db.models import AgentTaskStatus
 
 
@@ -382,7 +386,11 @@ def test_handle_agent_data():
 
 
 def test_handle_agent_request(
-    agent_task_service, agent_communication_service, agent, agent_task, monkeypatch
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    agent_task,
+    session_local,
 ):
     _task, _ = agent_task_service.add_temporary_task(
         agent, "TASK_SHELL", "echo 'hello world'"
@@ -393,6 +401,108 @@ def test_handle_agent_request(
     )
 
     assert packet is not None
+
+    # Verify DB task status was persisted as "pulled" (not still "queued")
+    with session_local.begin() as db:
+        task = agent_task_service.get_task_for_agent(db, agent, agent_task["id"])
+        assert task.status == AgentTaskStatus.pulled
+
+
+def test_handle_agent_request_db_task_attributes_accessible_after_expunge(
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    agent_task,
+    session_local,
+):
+    """DB-backed ORM task attributes (including deferred input_full) must
+    remain accessible after expunge_all() detaches them from the session.
+
+    _get_queued_agent_tasks loads tasks with include_full_input=True to
+    eagerly load the deferred input_full column. If that option is ever
+    removed, accessing input_full on an expunged object raises
+    DetachedInstanceError — this test catches that regression.
+    """
+    # Reproduce the exact sequence handle_agent_request uses:
+    # load tasks inside a session, flush, expunge, then access attributes
+    # outside the session.
+    with session_local.begin() as db:
+        tasks = agent_communication_service._get_queued_agent_tasks(db, agent)
+        assert len(tasks) > 0
+        db.flush()
+        db.expunge_all()
+
+    # These attribute accesses happen in Phase 2 (outside the session).
+    # If input_full were not eagerly loaded, this would raise
+    # DetachedInstanceError.
+    for task in tasks:
+        assert task.input_full is not None
+        assert task.task_name is not None
+        assert task.id is not None
+
+
+def test_handle_agent_request_no_tasks(agent_communication_service, agent):
+    """When no tasks are queued, handle_agent_request returns None."""
+    packet = agent_communication_service.handle_agent_request(
+        agent, "python", "2c103f2c4ed1e59c0b4e2e01821770fa"
+    )
+    assert packet is None
+
+
+def test_handle_agent_request_releases_session_before_packet_building(
+    agent_task_service, agent_communication_service, agent, agent_task, monkeypatch
+):
+    """The DB session must be closed before expensive packet building begins.
+
+    Creates a connection pool with only 1 slot and monkeypatches
+    build_task_packet to try acquiring a second connection. If the session
+    from handle_agent_request is still held during build_task_packet, the
+    second acquisition fails with a pool timeout — reproducing the root
+    cause of the production pool exhaustion bug.
+    """
+    connect_args = {}
+    if "sqlite" in str(original_engine.url):
+        connect_args["check_same_thread"] = False
+
+    constrained_engine = create_engine(
+        original_engine.url,
+        pool_size=1,
+        max_overflow=0,
+        pool_timeout=2,
+        connect_args=connect_args,
+    )
+    try:
+        ConstrainedSessionLocal = sessionmaker(bind=constrained_engine)
+        monkeypatch.setattr(
+            "empire.server.core.agent_communication_service.SessionLocal",
+            ConstrainedSessionLocal,
+        )
+
+        original_build = packets.build_task_packet
+        pool_was_available = False
+
+        def build_task_packet_checking_pool(*args, **kwargs):
+            nonlocal pool_was_available
+            # If the session is still held, this will time out (pool exhausted)
+            with ConstrainedSessionLocal.begin() as probe:
+                probe.execute(text("SELECT 1"))
+            pool_was_available = True
+            return original_build(*args, **kwargs)
+
+        monkeypatch.setattr(
+            packets, "build_task_packet", build_task_packet_checking_pool
+        )
+
+        agent_task_service.add_temporary_task(agent, "TASK_SHELL", "echo 'hello'")
+
+        packet = agent_communication_service.handle_agent_request(
+            agent, "python", "2c103f2c4ed1e59c0b4e2e01821770fa"
+        )
+
+        assert packet is not None
+        assert pool_was_available, "Session was not released before packet building"
+    finally:
+        constrained_engine.dispose()
 
 
 def test__handle_agent_response():
