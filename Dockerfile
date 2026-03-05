@@ -17,6 +17,8 @@ LABEL description="Dockerfile for Empire. https://bc-security.gitbook.io/empire-
 ENV DEBIAN_FRONTEND=noninteractive DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 ARG TARGETARCH
+ARG COMMIT_SHA=""
+ENV EMPIRE_COMMIT_SHA=$COMMIT_SHA
 
 SHELL ["/bin/bash", "-c"]
 

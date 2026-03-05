@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Log Empire version and git commit SHA at startup for easier production diagnostics; commit SHA is baked into the Docker image at build time via `--build-arg`
 -   Added C stager for lightweight stage0 shellcode injection via Fibers
 -   Added `shellcode_compiler` utility for compiling position-independent C stagers into raw x64 shellcode for BOF process injection
 -   Added `clipboard_window_inject_list` BOF module for enumerating processes with clipboard window class
