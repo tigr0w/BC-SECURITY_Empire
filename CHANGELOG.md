@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+-   Fixed SQLAlchemy connection pool exhaustion caused by async hooks receiving the caller's committed session. `run_hooks` now wraps async hooks in `_run_async_hook`, which opens a fresh `SessionLocal` session for each hook and closes it cleanly after the hook returns. ORM objects are re-attached via `session.merge()` so lazy-loaded relationships resolve correctly.
+
 ### Added
 
 -   Log Empire version and git commit SHA at startup for easier production diagnostics; commit SHA is baked into the Docker image at build time via `--build-arg`
