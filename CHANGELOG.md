@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.5.0] - 2026-03-08
+
 ### Fixed
 
 -   Fixed SQLAlchemy connection pool exhaustion caused by async hooks receiving the caller's committed session. `run_hooks` now wraps async hooks in `_run_async_hook`, which opens a fresh `SessionLocal` session for each hook and closes it cleanly after the hook returns. ORM objects are re-attached via `session.merge()` so lazy-loaded relationships resolve correctly.
@@ -1310,7 +1312,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.5.0...HEAD
+
+[6.5.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.1...v6.5.0
 
 [6.4.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.0...v6.4.1
 
