@@ -16,10 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [6.5.0] - 2026-03-08
 
-### Fixed
-
--   Fixed SQLAlchemy connection pool exhaustion caused by async hooks receiving the caller's committed session. `run_hooks` now wraps async hooks in `_run_async_hook`, which opens a fresh `SessionLocal` session for each hook and closes it cleanly after the hook returns. ORM objects are re-attached via `session.merge()` so lazy-loaded relationships resolve correctly.
-
 ### Added
 
 -   Log Empire version and git commit SHA at startup for easier production diagnostics; commit SHA is baked into the Docker image at build time via `--build-arg`
@@ -65,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed SQLAlchemy connection pool exhaustion caused by async hooks receiving the caller's committed session. `run_hooks` now wraps async hooks in `_run_async_hook`, which opens a fresh `SessionLocal` session for each hook and closes it cleanly after the hook returns. ORM objects are re-attached via `session.merge()` so lazy-loaded relationships resolve correctly.
 -   Fixed SQLAlchemy connection pool exhaustion during agent check-ins by releasing the DB session before expensive file I/O, encryption, and packet building in `handle_agent_request()`
 -   Fixed custom-generate BOF modules (`clipboard_window_inject`, `spawn`, `clipboard_window_inject_list`) returning .NET-only `file|,json` format for Go agents, causing BOF execution to fail on the Go agent's COFF loader
 -   Added `format_bof_output()` to `ModuleService` to centralize BOF output formatting for Go and .NET agents
