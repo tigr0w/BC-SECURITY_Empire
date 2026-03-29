@@ -2,9 +2,7 @@ import hashlib
 import hmac
 import logging
 import os
-import random
 import ssl
-import string
 import struct
 
 from cryptography.exceptions import InvalidTag
@@ -114,16 +112,8 @@ class AESCipher:
 
     @staticmethod
     def generate_key():
-        """Generate a random new 128-bit AES key using OS RNG."""
-        rng = random.SystemRandom()
-        return "".join(
-            rng.sample(
-                string.ascii_letters
-                + string.digits
-                + r"!#$%&()*+,-./:;<=>?@[\]^_`{|}~",
-                32,
-            )
-        )
+        """Generate a random 256-bit AES key as a hex string using CSPRNG."""
+        return os.urandom(32).hex()
 
 
 class DiffieHellman:

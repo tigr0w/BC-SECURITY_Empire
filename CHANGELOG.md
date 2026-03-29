@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added dynamic `depends_on` options to stagers so dependent fields (e.g. `Bypasses`, `Obfuscate`, `ObfuscateCommand`) are shown/hidden based on the selected listener type
 -   Added `nanodump` BOF module for creating minidumps of the LSASS process using various evasion techniques (handle duplication, process forking, snapshot, seclogon handle leaking)
 -   Added multi-language stager support (powershell, csharp, ironpython, go) to UAC bypass privesc modules: `bypassuac`, `bypassuac_env`, `bypassuac_eventvwr`, `bypassuac_sdctlbypass`, `bypassuac_wscript`
+-   Added `TagInvalidException` handling in server-side `parse_routing_packet` to gracefully reject non-agent traffic instead of raising unhandled exceptions
 
 ### Changed
 
@@ -41,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Marked `Listener` and `Command` options as conditionally required in 7 lateral movement modules (`invoke_psexec`, `invoke_wmi`, `invoke_smbexec`, `invoke_dcom`, `invoke_psremoting`, `inveigh_relay`, `invoke_executemsbuild`) so they are validated when their `depends_on` condition is met
 -   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing packet encryption across all agent languages (PowerShell, Python, IronPython, Go) as part of FIPS algorithm compliance work. The C# agent (Sharpire) must be updated separately.
 -   Increased HMAC-SHA256 truncation from 10 bytes to 16 bytes (128 bits) for AES-CBC payload encryption to meet FIPS SP 800-107 minimum requirements. Updated across all agent languages (Python server, PowerShell, Go, Python stager). The C# agent (Sharpire) must be updated separately.
+-   Changed `AES256GCM.decrypt()`/`.open()` to catch `cryptography.exceptions.InvalidTag` specifically instead of bare `Exception`
+-   Replaced `AESCipher.generate_key()` which sampled printable characters without replacement (~207-bit effective entropy) with `os.urandom(32).hex()` for full 256-bit CSPRNG entropy. The key is now returned as a hex string matching the DH-derived session key format, fixing compatibility with `bytes.fromhex()` in the agent communication service.
 
 ### Removed
 
@@ -65,8 +68,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed typo in SOCKS client error message ("failed to started" -> "failed to start")
 -   Fixed bounds validation in routing packet parsing: replaced unreachable `length < 0` check with proper `length > available data` check in both Python server and Go agent
 -   Fixed Go agent `ParseRoutingPacket` to correctly use offset when reading nonce from multi-packet payloads
--   Added `TagInvalidException` handling in server-side `parse_routing_packet` to gracefully reject non-agent traffic instead of raising unhandled exceptions
--   Changed `AES256GCM.decrypt()`/`.open()` to catch `cryptography.exceptions.InvalidTag` specifically instead of bare `Exception`
 
 ## [6.5.0] - 2026-03-08
 

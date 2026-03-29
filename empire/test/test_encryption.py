@@ -326,7 +326,30 @@ class TestAESCipher:
     def test_generate_key(self):
         key = encryption.AESCipher.generate_key()
         assert isinstance(key, str)
-        assert len(key) == 32  # noqa: PLR2004
+        assert len(key) == 64  # noqa: PLR2004  hex-encoded 32 bytes
+        raw = bytes.fromhex(key)
+        assert len(raw) == 32  # noqa: PLR2004
+
+    def test_generate_key_unique(self):
+        """Each call should produce a different key."""
+        keys = {encryption.AESCipher.generate_key() for _ in range(10)}
+        assert len(keys) == 10  # noqa: PLR2004
+
+    def test_generate_key_is_valid_hex(self):
+        """Key must be valid hex (compatible with bytes.fromhex used in agent_communication_service)."""
+        key = encryption.AESCipher.generate_key()
+        try:
+            bytes.fromhex(key)
+        except ValueError:
+            pytest.fail(f"generate_key() returned non-hex string: {key!r}")
+
+    def test_generate_key_encrypt_decrypt_roundtrip(self):
+        """Generated key works through the full bytes.fromhex -> encrypt -> decrypt path."""
+        key_hex = encryption.AESCipher.generate_key()
+        key_bytes = bytes.fromhex(key_hex)
+        plaintext = b"agent checkin data"
+        ct = encryption.AESCipher.encrypt_then_hmac(key_bytes, plaintext)
+        assert encryption.AESCipher.decrypt_and_verify(key_bytes, ct) == plaintext
 
 
 class TestHMACInterop:
