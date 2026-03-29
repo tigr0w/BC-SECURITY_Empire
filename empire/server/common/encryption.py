@@ -7,6 +7,7 @@ import ssl
 import string
 import struct
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey as _Ed25519PrivateKey,
 )
@@ -14,6 +15,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey as _Ed25519PublicKey,
 )
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers.aead import (
+    AESGCM as LibAESGCM,
+)
 from cryptography.hazmat.primitives.ciphers.aead import (
     ChaCha20Poly1305 as LibChaCha20Poly1305,
 )
@@ -414,6 +418,58 @@ class ChaCha20Poly1305:
         try:
             return self._aead.decrypt(nonce, ciphertext, ad)
         except Exception as err:
+            raise TagInvalidException from err
+
+
+class AES256GCM:
+    """AES-256-GCM AEAD cipher for routing packet encryption.
+
+    FIPS-approved replacement for ChaCha20Poly1305.
+    Same API as ChaCha20Poly1305: encrypt/decrypt and seal/open.
+    Wire format is identical: 12-byte nonce, 16-byte ciphertext, 16-byte tag.
+    """
+
+    def __init__(self, key, implementation="python"):
+        key_byte_length = 32
+        if len(key) != key_byte_length:
+            raise ValueError("Key must be 256 bit long")
+
+        self.isBlockCipher = True
+        self.isAEAD = True
+        self.nonceLength = 12
+        self.tagLength = 16
+        self.implementation = implementation
+        self.name = "aes-256-gcm"
+        self.key = key
+        self._aead = LibAESGCM(key)
+
+    def _to_bytes(self, associated_data):
+        if associated_data is None:
+            return None
+        if isinstance(associated_data, str):
+            return associated_data.encode("utf-8")
+        return associated_data
+
+    def encrypt(self, nonce, plaintext, associated_data=None):
+        ad = self._to_bytes(associated_data)
+        return self._aead.encrypt(nonce, plaintext, ad)
+
+    def decrypt(self, nonce, ciphertext, associated_data=None):
+        ad = self._to_bytes(associated_data)
+        try:
+            return self._aead.decrypt(nonce, ciphertext, ad)
+        except InvalidTag as err:
+            raise TagInvalidException from err
+
+    def seal(self, nonce, plaintext, data):
+        ad = self._to_bytes(data)
+        return self._aead.encrypt(nonce, plaintext, ad)
+
+    def open(self, nonce, ciphertext, data):
+        ad = self._to_bytes(data)
+        try:
+            return self._aead.decrypt(nonce, ciphertext, ad)
+        except InvalidTag as err:
             raise TagInvalidException from err
 
 

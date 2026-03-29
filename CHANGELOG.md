@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added `AES256GCM` AEAD cipher class to `empire/server/common/encryption.py` using the `cryptography` library
+-   Added pure-Python AES-256-GCM implementation (`empire/server/data/agent/stagers/common/aesgcm.py`) for Python and IronPython agent stagers, compatible with .NET Framework 4.x IronPython environments
+-   Added .NET Framework 4.x compatible C# `AesGcmHelper` class (manual GCM via `AesCryptoServiceProvider` ECB + GHASH/GCTR) for PowerShell agent stagers
+-   Added cross-implementation interoperability tests verifying server (cryptography lib) and agent (pure Python) AES-GCM produce identical output
+-   Added routing packet tests for wrong-key rejection, tampered packets, AAD mismatch, empty/non-block-aligned plaintexts, and multiple concatenated packets
 -   Added `./ps-empire test` command as a convenience wrapper for pytest with passthrough arguments
 -   Added Alembic database migration framework for versioned schema management. Untracked databases are stamped at the baseline revision on first startup; already-tracked databases are left as-is so pending migrations can be applied. Includes `migrate_db()` and `backup_db()` functions for future update workflows.
 -   Added configurable MySQL connection pool settings (`pool_size`, `max_overflow`, `pool_pre_ping`, `pool_recycle`) via server config YAML
@@ -34,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   High-frequency hooks (`AFTER_AGENT_CALLBACK_HOOK`, `AFTER_TASKING_RESULT_HOOK`, `AFTER_AGENT_CHECKIN_HOOK`, `AFTER_TASKING_HOOK`) now fire with `None` as the session argument. `_run_async_hook` and `run_hooks` provide a fresh managed session to hook callbacks, eliminating the 2x connection amplification that occurred when hooks opened a second connection while the caller still held the first.
 -   Cleaned up redundant "Switch." prefixes and duplicate description text from module option descriptions
 -   Marked `Listener` and `Command` options as conditionally required in 7 lateral movement modules (`invoke_psexec`, `invoke_wmi`, `invoke_smbexec`, `invoke_dcom`, `invoke_psremoting`, `inveigh_relay`, `invoke_executemsbuild`) so they are validated when their `depends_on` condition is met
+-   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing packet encryption across all agent languages (PowerShell, Python, IronPython, Go) as part of FIPS algorithm compliance work. The C# agent (Sharpire) must be updated separately.
 
 ### Removed
 
@@ -56,6 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed agent staging log messages displaying wrong language (e.g. "Python PUB key" for PowerShell agents, "PS" in C# block) by replacing hardcoded language names with the actual agent language
 -   Fixed incorrect log levels in agent communication: `log.error` for normal conditions (agent not active, agent exiting) downgraded to `log.debug`/`log.info`, `log.info` for invalid data (bad language spec, malformed sysinfo) upgraded to `log.warning`
 -   Fixed typo in SOCKS client error message ("failed to started" -> "failed to start")
+-   Fixed bounds validation in routing packet parsing: replaced unreachable `length < 0` check with proper `length > available data` check in both Python server and Go agent
+-   Fixed Go agent `ParseRoutingPacket` to correctly use offset when reading nonce from multi-packet payloads
+-   Added `TagInvalidException` handling in server-side `parse_routing_packet` to gracefully reject non-agent traffic instead of raising unhandled exceptions
+-   Changed `AES256GCM.decrypt()`/`.open()` to catch `cryptography.exceptions.InvalidTag` specifically instead of bare `Exception`
 
 ## [6.5.0] - 2026-03-08
 

@@ -1,8 +1,10 @@
+import pathlib
 from os import urandom
 
 import pytest
 
 from empire.server.common import encryption
+from empire.server.common import packets as pkt
 
 
 class TestPoly1305:
@@ -77,6 +79,162 @@ class TestChaCha20Poly1305:
         tampered[0] ^= 0xFF
         with pytest.raises(encryption.TagInvalidException):
             cipher.decrypt(nonce, bytes(tampered))
+
+
+class TestAES256GCM:
+    def test_encrypt(self):
+        cipher = encryption.AES256GCM(urandom(32))
+        data = urandom(10)
+        assert cipher.encrypt(urandom(12), data) != data
+
+    def test_decrypt(self):
+        cipher = encryption.AES256GCM(urandom(32))
+        data = urandom(10)
+        nonce = urandom(12)
+        assert cipher.decrypt(nonce, cipher.encrypt(nonce, data)) == data
+
+    def test_seal_open(self):
+        cipher = encryption.AES256GCM(urandom(32))
+        data = urandom(10)
+        nonce = urandom(12)
+        sealed = cipher.seal(nonce, data, "123")
+        assert sealed != data
+        assert cipher.open(nonce, sealed, "123") == data
+
+    def test_invalid_key_length(self):
+        with pytest.raises(ValueError, match="256 bit"):
+            encryption.AES256GCM(urandom(16))
+
+    def test_tampered_ciphertext_raises(self):
+        cipher = encryption.AES256GCM(urandom(32))
+        nonce = urandom(12)
+        ct = cipher.encrypt(nonce, b"secret data")
+        tampered = bytearray(ct)
+        tampered[0] ^= 0xFF
+        with pytest.raises(encryption.TagInvalidException):
+            cipher.decrypt(nonce, bytes(tampered))
+
+    def test_output_format(self):
+        """AES-GCM output should be ciphertext (same length as plaintext) + 16-byte tag."""
+        cipher = encryption.AES256GCM(urandom(32))
+        pt = urandom(16)
+        ct = cipher.encrypt(urandom(12), pt)
+        assert len(ct) == len(pt) + 16
+
+    def test_empty_plaintext(self):
+        """Empty plaintext produces only the 16-byte tag."""
+        cipher = encryption.AES256GCM(urandom(32))
+        ct = cipher.encrypt(urandom(12), b"", None)
+        assert len(ct) == 16  # noqa: PLR2004  tag only
+
+    def test_non_block_aligned_plaintext(self):
+        """Non-16-byte-aligned plaintext works correctly."""
+        cipher = encryption.AES256GCM(urandom(32))
+        pt = urandom(7)
+        nonce = urandom(12)
+        ct = cipher.encrypt(nonce, pt)
+        assert cipher.decrypt(nonce, ct) == pt
+        assert len(ct) == 7 + 16
+
+    def test_aad_mismatch_raises(self):
+        """Decryption with different AAD raises TagInvalidException."""
+        cipher = encryption.AES256GCM(urandom(32))
+        nonce = urandom(12)
+        sealed = cipher.seal(nonce, b"data", "correct_aad")
+        with pytest.raises(encryption.TagInvalidException):
+            cipher.open(nonce, sealed, "wrong_aad")
+
+    def test_multiple_routing_packets(self):
+        """Build and parse multiple concatenated routing packets."""
+        staging_key = "C" * 32
+        pkt1 = pkt.build_routing_packet(
+            staging_key, "SESS0001", "python", meta="STAGE0", encData=b"data1"
+        )
+        pkt2 = pkt.build_routing_packet(
+            staging_key,
+            "SESS0002",
+            "powershell",
+            meta="TASKING_REQUEST",
+            encData=b"data2",
+        )
+        combined = pkt1 + pkt2
+        result = pkt.parse_routing_packet(staging_key, combined)
+        assert result is not None
+        assert "SESS0001" in result
+        assert "SESS0002" in result
+        assert result["SESS0001"][3] == b"data1"
+        assert result["SESS0002"][3] == b"data2"
+
+
+class TestAESGCMInterop:
+    """Cross-implementation tests: server (cryptography lib) vs agent (pure Python)."""
+
+    @staticmethod
+    def _load_agent_aesgcm():
+        """Load the pure-Python AES256GCM from the agent stager code."""
+        ns = {}
+        stager_common = pathlib.Path("empire/server/data/agent/stagers/common")
+        exec(compile((stager_common / "aes.py").read_text(), "aes.py", "exec"), ns)
+        exec(
+            compile((stager_common / "aesgcm.py").read_text(), "aesgcm.py", "exec"), ns
+        )
+        return ns["AES256GCM"]
+
+    def test_server_encrypt_agent_decrypt(self):
+        """Server encrypts with cryptography lib, agent decrypts with pure Python."""
+        AgentAES256GCM = self._load_agent_aesgcm()
+        key = urandom(32)
+        nonce = urandom(12)
+        plaintext = urandom(16)
+
+        server_cipher = encryption.AES256GCM(key)
+        ct = server_cipher.seal(nonce, plaintext, b"")
+
+        agent_cipher = AgentAES256GCM(key)
+        pt = agent_cipher.open(nonce, ct, b"")
+        assert pt == plaintext
+
+    def test_agent_encrypt_server_decrypt(self):
+        """Agent encrypts with pure Python, server decrypts with cryptography lib."""
+        AgentAES256GCM = self._load_agent_aesgcm()
+        key = urandom(32)
+        nonce = urandom(12)
+        plaintext = urandom(16)
+
+        agent_cipher = AgentAES256GCM(key)
+        ct = agent_cipher.seal(nonce, plaintext, b"")
+
+        server_cipher = encryption.AES256GCM(key)
+        pt = server_cipher.open(nonce, ct, b"")
+        assert pt == plaintext
+
+    def test_identical_ciphertext(self):
+        """Both implementations produce byte-identical output."""
+        AgentAES256GCM = self._load_agent_aesgcm()
+        key = urandom(32)
+        nonce = urandom(12)
+        plaintext = urandom(16)
+
+        server_ct = encryption.AES256GCM(key).seal(nonce, plaintext, b"")
+        agent_ct = AgentAES256GCM(key).seal(nonce, plaintext, b"")
+        assert server_ct == agent_ct
+
+    def test_interop_with_various_sizes(self):
+        """Test interop with empty, small, and non-block-aligned plaintexts."""
+        AgentAES256GCM = self._load_agent_aesgcm()
+        key = urandom(32)
+
+        for size in [0, 1, 7, 15, 16, 17, 31, 32, 33, 100]:
+            nonce = urandom(12)
+            plaintext = urandom(size)
+
+            server_ct = encryption.AES256GCM(key).seal(nonce, plaintext, b"")
+            agent_ct = AgentAES256GCM(key).seal(nonce, plaintext, b"")
+            assert server_ct == agent_ct, f"Mismatch at size {size}"
+
+            # Cross-decrypt
+            assert AgentAES256GCM(key).open(nonce, server_ct, b"") == plaintext
+            assert encryption.AES256GCM(key).open(nonce, agent_ct, b"") == plaintext
 
 
 class TestAESCipher:

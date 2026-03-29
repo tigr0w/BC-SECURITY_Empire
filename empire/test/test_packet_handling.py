@@ -119,6 +119,24 @@ class TestBuildAndParseRoutingPacket:
         assert result[session_id][0] == "PYTHON"
         assert result[session_id][1] == "TASKING_REQUEST"
 
+    def test_wrong_key_returns_none(self):
+        """Parsing with wrong staging key returns None (doesn't raise)."""
+        packet = packets.build_routing_packet(
+            "A" * 32, "ABCD1234", "powershell", meta="STAGE0", encData=b"payload"
+        )
+        result = packets.parse_routing_packet("B" * 32, packet)
+        assert result is None
+
+    def test_tampered_packet_returns_none(self):
+        """Tampered routing packet returns None."""
+        packet = packets.build_routing_packet(
+            "A" * 32, "ABCD1234", "powershell", meta="STAGE0", encData=b"payload"
+        )
+        tampered = bytearray(packet)
+        tampered[20] ^= 0xFF  # Flip a byte in the AEAD blob
+        result = packets.parse_routing_packet("A" * 32, bytes(tampered))
+        assert result is None
+
 
 class TestResolveId:
     def test_valid_id(self):

@@ -16,9 +16,9 @@ The `PacketHandler` class is responsible for creating, parsing, and processing p
 ## Methods
 
 
-### `ChaCha20Poly1305`
+### `AES256GCM`
 
-ChaCha20Poly1305 class that seals/unseals the input `data` with the given `key` and `nonce`.
+AES-256-GCM AEAD cipher class that seals/unseals the input `data` with the given `key` and `nonce`. This is a FIPS-compliant replacement for the previous ChaCha20Poly1305 implementation.
 
 ### `parse_routing_packet(staging_key, data)`
 

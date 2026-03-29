@@ -6,26 +6,25 @@ Defines packet types, builds tasking packets and parses result packets.
 
 Packet format:
 
-ChaCha20+Poly1305 = ChaCha20Poly1305 encrypted with the shared staging key
-HMACs = SHA1 HMAC using the shared staging key
+AES-256-GCM = AES-256-GCM AEAD encrypted with the shared staging key
 AESc = AES encrypted using the client's session key
 HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
 
     Routing Packet:
-    +---------+--------------------------------+--------------------------+
-    |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
-    +---------+--------------------------------+--------------------------+
-    |    12   |                32              |          length          |
-    +---------+--------------------------------+--------------------------+
+    +------+----------------------------+--------------------------+
+    |  IV  | AES-256-GCM(RoutingData)   | AESc(client packet data) | ...
+    +------+----------------------------+--------------------------+
+    |  12  |             32             |          length          |
+    +------+----------------------------+--------------------------+
 
-        ChaCha20+Poly1305(RoutingData):
+        AES-256-GCM(RoutingData):
         +---------------------------+---------------------------+
-        |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+        |   AES-GCM(Encrypted)      |        GCM Tag            |
         +---------------------------+---------------------------+
         |           16              |            16             |
         +---------------------------+---------------------------+
 
-            ChaCha20(RoutingData):
+            AES-GCM(RoutingData):
             +-----------+------+------+-------+--------+
             | SessionID | Lang | Meta | Extra | Length |
             +-----------+------+------+-------+--------+
@@ -297,7 +296,7 @@ def parse_result_packets(packets):
 
 def parse_routing_packet(stagingKey, data):
     """
-    Decodes the chacha20+poly1305 "routing packet" and parses raw agent data into:
+    Decodes the AES-256-GCM "routing packet" and parses raw agent data into:
 
         {sessionID : (language, meta, additional, [encData]), ...}
 
@@ -305,20 +304,20 @@ def parse_routing_packet(stagingKey, data):
     Routing packet format:
 
         Routing Packet:
-        +---------+--------------------------------+--------------------------+
-        |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
-        +---------+--------------------------------+--------------------------+
-        |    12   |                32              |          length          |
-        +---------+--------------------------------+--------------------------+
+        +------+----------------------------+--------------------------+
+        |  IV  | AES-256-GCM(RoutingData)   | AESc(client packet data) | ...
+        +------+----------------------------+--------------------------+
+        |  12  |             32             |          length          |
+        +------+----------------------------+--------------------------+
 
-            ChaCha20+Poly1305(RoutingData):
+            AES-256-GCM(RoutingData):
             +---------------------------+---------------------------+
-            |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+            |   AES-GCM(Encrypted)      |        GCM Tag            |
             +---------------------------+---------------------------+
             |           16              |            16             |
             +---------------------------+---------------------------+
 
-                ChaCha20(RoutingData):
+                AES-GCM(RoutingData):
                 +-----------+------+------+-------+--------+
                 | SessionID | Lang | Meta | Extra | Length |
                 +-----------+------+------+-------+--------+
@@ -326,10 +325,8 @@ def parse_routing_packet(stagingKey, data):
                 +-----------+------+------+-------+--------+
     """
 
-    nonce_length = 12
-    chacha_header_length = (
-        nonce_length + 32
-    )  # Header covers ChaCha20+Poly1305 (RoutingData)
+    iv_length = 12
+    aead_header_length = iv_length + 32  # Header covers AES-256-GCM (RoutingData)
 
     if not data:
         message = "parse_agent_data() data is None"
@@ -339,26 +336,24 @@ def parse_routing_packet(stagingKey, data):
     results = {}
     offset = 0
 
-    # ensure we have at least the 40 bytes for a routing packet
-    if len(data) < chacha_header_length:
+    # ensure we have at least the 44 bytes for a routing packet
+    if len(data) < aead_header_length:
         message = f"parse_agent_data() data length incorrect: {len(data)}"
         log.warning(message)
         return None
 
     while True:
-        if len(data) - offset < chacha_header_length:
+        if len(data) - offset < aead_header_length:
             break
 
         # 0-12
-        chacha_nonce = data[0 + offset : nonce_length + offset]
+        iv = data[0 + offset : iv_length + offset]
         # routing data 13-35
-        chacha_data = data[nonce_length + offset : chacha_header_length + offset]
+        aead_data = data[iv_length + offset : aead_header_length + offset]
         key = stagingKey.encode("UTF-8")
-        enc_handler = encryption.ChaCha20Poly1305(key)
+        enc_handler = encryption.AES256GCM(key)
         try:
-            routingPacket = enc_handler.open(
-                chacha_nonce, chacha_data, b""
-            )  # Data set to null as we don't need it
+            routingPacket = enc_handler.open(iv, aead_data, b"")
         except encryption.TagInvalidException:
             log.warning(
                 "parse_agent_data(): invalid AEAD tag, likely wrong staging key or non-agent traffic"
@@ -369,18 +364,15 @@ def parse_routing_packet(stagingKey, data):
 
         # B == 1 byte unsigned char, H == 2 byte unsigned short, L == 4 byte unsigned long
         (language, meta, additional, length) = struct.unpack("=BBHL", routingPacket[8:])
-        if length < 0:
+        end = aead_header_length + offset + length
+        if end > len(data):
             message = (
-                "parse_agent_data(): length in decoded chacha20poly1305 packet is < 0"
+                f"parse_agent_data(): decoded length {length} exceeds available data"
             )
             log.warning(message)
             encData = None
         else:
-            encData = data[
-                (chacha_header_length + offset) : (
-                    chacha_header_length + offset + length
-                )
-            ]
+            encData = data[(aead_header_length + offset) : end]
 
         results[sessionID] = (
             LANGUAGE_IDS.get(language, "NONE"),
@@ -390,11 +382,11 @@ def parse_routing_packet(stagingKey, data):
         )
 
         # check if we're at the end of the packet processing
-        remainingData = data[chacha_header_length + offset + length :]
+        remainingData = data[aead_header_length + offset + length :]
         if not remainingData:
             break
 
-        offset += chacha_header_length + length
+        offset += aead_header_length + length
 
     log.debug("successfully deconstructed a packet")
     return results
@@ -405,25 +397,25 @@ def build_routing_packet(  # noqa: PLR0913
 ):
     """
     Takes the specified parameters for an "routing packet" and builds/returns
-    an HMAC'ed chacha20+poly1305'ed "routing packet".
+    an AES-256-GCM AEAD "routing packet".
 
     packet format:
 
         Routing Packet:
-        +---------+--------------------------------+--------------------------+
-        |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
-        +---------+--------------------------------+--------------------------+
-        |    12   |                32              |          length          |
-        +---------+--------------------------------+--------------------------+
+        +------+----------------------------+--------------------------+
+        |  IV  | AES-256-GCM(RoutingData)   | AESc(client packet data) | ...
+        +------+----------------------------+--------------------------+
+        |  12  |             32             |          length          |
+        +------+----------------------------+--------------------------+
 
-            ChaCha20+Poly1305(RoutingData):
+            AES-256-GCM(RoutingData):
             +---------------------------+---------------------------+
-            |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+            |   AES-GCM(Encrypted)      |        GCM Tag            |
             +---------------------------+---------------------------+
             |           16              |            16             |
             +---------------------------+---------------------------+
 
-                ChaCha20(RoutingData):
+                AES-GCM(RoutingData):
                 +-----------+------+------+-------+--------+
                 | SessionID | Lang | Meta | Extra | Length |
                 +-----------+------+------+-------+--------+
@@ -431,7 +423,7 @@ def build_routing_packet(  # noqa: PLR0913
                 +-----------+------+------+-------+--------+
 
     """
-    # binary pack all of the pcassed config values as unsigned numbers
+    # binary pack all of the passed config values as unsigned numbers
     #   B == 1 byte unsigned char, H == 2 byte unsigned short, L == 4 byte unsigned long
     sessionID = sessionID.encode("UTF-8")
     data = sessionID + struct.pack(
@@ -441,21 +433,21 @@ def build_routing_packet(  # noqa: PLR0913
         ADDITIONAL.get(additional.upper(), 0),
         len(encData),
     )
-    ChaChaNonce = os.urandom(12)
+    iv = os.urandom(12)
 
     # Staging key is in string, needs to be in bytes
     stagingKey = stagingKey.encode("UTF-8")
-    enc_handler = encryption.ChaCha20Poly1305(stagingKey)
+    enc_handler = encryption.AES256GCM(stagingKey)
 
     # todo: remove in the future
     if isinstance(encData, str):
         encData = encData.encode("Latin-1")
 
     # Data is null as we don't need it
-    ChaChaEncData = enc_handler.seal(ChaChaNonce, data, b"")
+    encRoutingData = enc_handler.seal(iv, data, b"")
 
     log.debug("successfully built a routing packet")
-    return ChaChaNonce + ChaChaEncData + encData
+    return iv + encRoutingData + encData
 
 
 def resolve_id(PacketID):

@@ -91,7 +91,7 @@ def test_generate_exe_oneliner(stager_generation_service, obfuscate, encode):
 
     # Base64 must decode, and routing packet must be the expected invariant size here (encData is "")
     routing_packet = base64.b64decode(b64_routing_packet, validate=True)
-    assert len(routing_packet) == 44  # noqa: PLR2004 12-byte nonce + 32-byte chacha20poly1305 blob
+    assert len(routing_packet) == 44  # noqa: PLR2004 12-byte IV + 32-byte AES-256-GCM blob
 
     # Decrypt + parse routing packet and validate invariant fields
     parsed = packets.parse_routing_packet(staging_key, routing_packet)

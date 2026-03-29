@@ -14,7 +14,7 @@ import string
 import urllib.request
 
 {% include 'common/aes.py' %}
-{% include 'common/chacha.py' %}
+{% include 'common/aesgcm.py' %}
 {% include 'common/diffiehellman.py' %}
 {% include 'common/get_sysinfo.py' %}
 {% include 'http/comms.py' %}

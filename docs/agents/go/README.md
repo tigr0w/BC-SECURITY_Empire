@@ -20,6 +20,6 @@ GOOS=windows GOARCH=amd64 go build -o gopire_stager.exe main.go
 - Windows-only support: The Go agent currently only targets Windows environments.
 - Evasion Techniques: Reflectively loaded and does not leave a significant trace on disk.
 - Task Execution: Executes commands and taskings sent from the Empire server.
-- Encryption: Secure communications using AES encryption.
+- Encryption: Secure communications using AES-256-GCM and AES-CBC encryption.
 - Profiles: Supports different communication profiles to evade network detection.
 - HTTP Listener Support: Only supports the HTTP listener for communication with the Empire server.
