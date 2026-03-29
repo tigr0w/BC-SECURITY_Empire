@@ -34,23 +34,23 @@ func AesEncryptThenHMAC(key, data []byte) []byte {
 
 	h := hmac.New(sha256.New, key)
 	h.Write(ciphertext)
-	hmacValue := h.Sum(nil)[:10]
+	hmacValue := h.Sum(nil)[:16]
 
 	finalData := append(ciphertext, hmacValue...)
 	return finalData
 }
 
 func verifyHMAC(key, data []byte) bool {
-	if len(data) <= 10 {
+	if len(data) <= 16 {
 		return false
 	}
 
-	mac := data[len(data)-10:]
-	data = data[:len(data)-10]
+	mac := data[len(data)-16:]
+	data = data[:len(data)-16]
 
 	expectedMAC := hmac.New(sha256.New, key)
 	expectedMAC.Write(data)
-	expectedMACDigest := expectedMAC.Sum(nil)[:10]
+	expectedMACDigest := expectedMAC.Sum(nil)[:16]
 
 	// fmt.Printf("Data: %x\n", data)
 	// fmt.Printf("MAC: %x\n", mac)
@@ -65,7 +65,7 @@ func AesDecryptAndVerify(key, data []byte) ([]byte, error) {
 	}
 
 	iv := data[:aes.BlockSize]
-	ciphertext := data[aes.BlockSize : len(data)-10]
+	ciphertext := data[aes.BlockSize : len(data)-16]
 
 	block, err := aes.NewCipher(key)
 	if err != nil {

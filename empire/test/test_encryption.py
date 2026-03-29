@@ -1,3 +1,5 @@
+import hashlib
+import hmac as hmac_mod
 import pathlib
 from os import urandom
 
@@ -283,10 +285,97 @@ class TestAESCipher:
         with pytest.raises(Exception, match="Invalid ciphertext"):
             encryption.AESCipher.decrypt_and_verify(urandom(16), b"bad data")
 
+    def test_hmac_is_16_bytes(self):
+        """HMAC truncation must be 16 bytes (128 bits) per FIPS SP 800-107."""
+        key = urandom(32)
+        data = b"test data for hmac"
+        ct_hmac = encryption.AESCipher.encrypt_then_hmac(key, data)
+        ct_only = encryption.AESCipher.encrypt(key, data)
+        hmac_len = len(ct_hmac) - len(ct_only)
+        assert hmac_len == 16  # noqa: PLR2004
+
+    def test_old_10_byte_hmac_rejected(self):
+        """Data with a 10-byte HMAC (old format) must fail verification."""
+        key = urandom(32)
+        ct = encryption.AESCipher.encrypt(key, b"payload")
+        old_mac = hmac_mod.new(key, ct, digestmod=hashlib.sha256).digest()[0:10]
+        old_format = ct + old_mac
+        assert encryption.AESCipher.verify_hmac(key, old_format) is False
+
+    def test_tampered_hmac_rejected(self):
+        """Flipping a byte in the HMAC must fail verification."""
+        key = urandom(32)
+        ct_hmac = encryption.AESCipher.encrypt_then_hmac(key, b"data")
+        tampered = bytearray(ct_hmac)
+        tampered[-1] ^= 0xFF
+        assert encryption.AESCipher.verify_hmac(key, bytes(tampered)) is False
+
+    def test_decrypt_and_verify_rejects_old_10_byte_hmac(self):
+        """decrypt_and_verify must reject data with old 10-byte HMAC."""
+        key = urandom(32)
+        plaintext = b"A" * 64
+        ct = encryption.AESCipher.encrypt(key, plaintext)
+        old_mac = hmac_mod.new(key, ct, digestmod=hashlib.sha256).digest()[0:10]
+        with pytest.raises(Exception, match="Invalid ciphertext"):
+            encryption.AESCipher.decrypt_and_verify(key, ct + old_mac)
+
+    def test_verify_hmac_boundary_at_32_bytes(self):
+        """Data of exactly 32 bytes must return False (too short for IV + ct + 16B HMAC)."""
+        assert encryption.AESCipher.verify_hmac(urandom(16), urandom(32)) is False
+
     def test_generate_key(self):
         key = encryption.AESCipher.generate_key()
         assert isinstance(key, str)
         assert len(key) == 32  # noqa: PLR2004
+
+
+class TestHMACInterop:
+    """Cross-implementation tests: server (cryptography lib) vs agent (pure Python aes.py)."""
+
+    @staticmethod
+    def _load_agent_aes():
+        """Load the pure-Python AES functions from the agent stager code."""
+        ns = {}
+        stager_common = pathlib.Path("empire/server/data/agent/stagers/common")
+        exec(compile((stager_common / "aes.py").read_text(), "aes.py", "exec"), ns)
+        return ns
+
+    def test_server_encrypt_agent_decrypt(self):
+        """Server encrypts with cryptography lib, agent decrypts with pure Python."""
+        ns = self._load_agent_aes()
+        key = urandom(32)
+        data = b"cross implementation test"
+
+        server_ct = encryption.AESCipher.encrypt_then_hmac(key, data)
+        assert ns["verify_hmac"](key, server_ct) is True
+        agent_pt = ns["aes_decrypt_and_verify"](key, server_ct)
+        assert agent_pt.encode("latin-1") == data
+
+    def test_agent_encrypt_server_decrypt(self):
+        """Agent encrypts with pure Python, server decrypts with cryptography lib."""
+        ns = self._load_agent_aes()
+        key = urandom(32)
+        data = b"cross implementation test"
+
+        agent_ct = ns["aes_encrypt_then_hmac"](key, data)
+        assert encryption.AESCipher.verify_hmac(key, agent_ct) is True
+        server_pt = encryption.AESCipher.decrypt_and_verify(key, agent_ct)
+        assert server_pt == data
+
+    def test_both_produce_16_byte_hmac(self):
+        """Both implementations use 16-byte HMAC truncation."""
+        ns = self._load_agent_aes()
+        key = urandom(32)
+        data = b"hmac length check"
+
+        server_ct = encryption.AESCipher.encrypt_then_hmac(key, data)
+        agent_ct = ns["aes_encrypt_then_hmac"](key, data)
+
+        server_ct_only = encryption.AESCipher.encrypt(key, data)
+        agent_ct_only = ns["aes_encrypt"](key, data)
+
+        assert len(server_ct) - len(server_ct_only) == 16  # noqa: PLR2004
+        assert len(agent_ct) - len(agent_ct_only) == 16  # noqa: PLR2004
 
 
 class TestDiffieHellman:

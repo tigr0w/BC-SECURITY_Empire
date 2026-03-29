@@ -791,21 +791,21 @@ function Aes-EncryptThenHmac {
     $body = $iv + $ct
     $h = New-Object Security.Cryptography.HMACSHA256
     $h.Key = $kb
-    $mac = ($h.ComputeHash($body))[0..9]
+    $mac = ($h.ComputeHash($body))[0..15]
     return $body + $mac
 }
 
 function Decrypt-Bytes {
     param([Parameter(Mandatory)]$Key, [Parameter(Mandatory)][byte[]]$In)
-    if(-not $In -or $In.Length -le 32){ return $null }
+    if(-not $In -or $In.Length -le 48){ return $null }
 
     $kb = Get-AesKeyBytes $Key            # <-- same normalization on decrypt
-    $mac  = $In[-10..-1]
-    $body = $In[0..($In.Length-11)]
+    $mac  = $In[-16..-1]
+    $body = $In[0..($In.Length-17)]
 
     $h = New-Object Security.Cryptography.HMACSHA256
     $h.Key = $kb
-    $exp = ($h.ComputeHash($body))[0..9]
+    $exp = ($h.ComputeHash($body))[0..15]
     if(@(Compare-Object $mac $exp -Sync 0).Length -ne 0){ return $null }
 
     $iv = $body[0..15]

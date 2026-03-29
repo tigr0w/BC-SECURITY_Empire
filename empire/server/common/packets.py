@@ -8,7 +8,7 @@ Packet format:
 
 AES-256-GCM = AES-256-GCM AEAD encrypted with the shared staging key
 AESc = AES encrypted using the client's session key
-HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
+HMACc = first 16 bytes of a SHA256 HMAC using the client's session key
 
     Routing Packet:
     +------+----------------------------+--------------------------+
@@ -41,7 +41,7 @@ HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
     +--------+-----------------+-------+
     | AES IV | Enc Packet Data | HMACc |
     +--------+-----------------+-------+
-    |   16   |   % 16 bytes    |  10   |
+    |   16   |   % 16 bytes    |  16   |
     +--------+-----------------+-------+
 
     Client data decrypted:

@@ -77,7 +77,7 @@ class AESCipher:
 
         data = AESCipher.encrypt(key, data)
         mac = hmac.new(key, data, digestmod=hashlib.sha256).digest()
-        return data + mac[0:10]
+        return data + mac[0:16]
 
     @staticmethod
     def decrypt(key, data):
@@ -91,14 +91,14 @@ class AESCipher:
 
     @staticmethod
     def verify_hmac(key, data):
-        """Verify the truncated (10-byte) SHA-256 HMAC.
+        """Verify the truncated (16-byte) SHA-256 HMAC.
         Returns True/False.
         """
 
-        if len(data) > 20:  # noqa: PLR2004
-            mac = data[-10:]
-            data_ = data[:-10]
-            expected = hmac.new(key, data_, digestmod=hashlib.sha256).digest()[0:10]
+        if len(data) > 32:  # noqa: PLR2004
+            mac = data[-16:]
+            data_ = data[:-16]
+            expected = hmac.new(key, data_, digestmod=hashlib.sha256).digest()[0:16]
             return (
                 hmac.new(key, expected, digestmod=hashlib.sha256).digest()
                 == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
@@ -108,8 +108,8 @@ class AESCipher:
     @staticmethod
     def decrypt_and_verify(key, data):
         """Decrypt the data, but only if it has a valid MAC."""
-        if len(data) > 32 and AESCipher.verify_hmac(key, data):  # noqa: PLR2004
-            return AESCipher.decrypt(key, data[:-10])
+        if len(data) > 48 and AESCipher.verify_hmac(key, data):  # noqa: PLR2004
+            return AESCipher.decrypt(key, data[:-16])
         raise Exception("Invalid ciphertext received.")
 
     @staticmethod

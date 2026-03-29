@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Cleaned up redundant "Switch." prefixes and duplicate description text from module option descriptions
 -   Marked `Listener` and `Command` options as conditionally required in 7 lateral movement modules (`invoke_psexec`, `invoke_wmi`, `invoke_smbexec`, `invoke_dcom`, `invoke_psremoting`, `inveigh_relay`, `invoke_executemsbuild`) so they are validated when their `depends_on` condition is met
 -   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing packet encryption across all agent languages (PowerShell, Python, IronPython, Go) as part of FIPS algorithm compliance work. The C# agent (Sharpire) must be updated separately.
+-   Increased HMAC-SHA256 truncation from 10 bytes to 16 bytes (128 bits) for AES-CBC payload encryption to meet FIPS SP 800-107 minimum requirements. Updated across all agent languages (Python server, PowerShell, Go, Python stager). The C# agent (Sharpire) must be updated separately.
 
 ### Removed
 

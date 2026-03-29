@@ -309,7 +309,7 @@ def aes_encrypt_then_hmac(key, data):
     """
     data = aes_encrypt(key, data)
     mac = hmac.new(key, data, digestmod=hashlib.sha256).digest()
-    return data + mac[0:10]
+    return data + mac[0:16]
 
 
 def aes_decrypt(key, data):
@@ -326,10 +326,10 @@ def verify_hmac(key, data):
     """
     Verify the HMAC supplied in the data with the given key.
     """
-    if len(data) > 20:
-        mac = data[-10:]
-        data = data[:-10]
-        expected = hmac.new(key, data, digestmod=hashlib.sha256).digest()[0:10]
+    if len(data) > 32:
+        mac = data[-16:]
+        data = data[:-16]
+        expected = hmac.new(key, data, digestmod=hashlib.sha256).digest()[0:16]
         # Double HMAC to prevent timing attacks. hmac.compare_digest() is
         # preferable, but only available since Python 2.7.7.
         return hmac.new(key, expected, digestmod=hashlib.sha256).digest() == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
@@ -341,6 +341,6 @@ def aes_decrypt_and_verify(key, data):
     """
     Decrypt the data, but only if it has a valid MAC.
     """
-    if len(data) > 32 and verify_hmac(key, data):
-        return aes_decrypt(key, data[:-10])
+    if len(data) > 48 and verify_hmac(key, data):
+        return aes_decrypt(key, data[:-16])
     raise Exception("Invalid ciphertext received.")

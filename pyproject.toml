@@ -126,6 +126,9 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 
 "empire/server/listeners/http_malleable.py" = ["SLF"]
 
+# Plugins use deferred imports, internal APIs, and complex validation logic.
+"empire/server/plugins/*" = ["PLC0415", "PLR0911", "PLR0913", "SLF001"]
+
 # Can't control how many fixtures are needed for the tests.
 "empire/test/*" = ["PLR0913", "S", "SLF"]
 "empire/server/modules/powershell/persistence/elevated/schtasks.py" = ["PLR2004"]
