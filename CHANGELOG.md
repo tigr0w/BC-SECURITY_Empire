@@ -14,6 +14,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Added `./ps-empire test` command as a convenience wrapper for pytest with passthrough arguments
+-   Added Alembic database migration framework for versioned schema management. Untracked databases are stamped at the baseline revision on first startup; already-tracked databases are left as-is so pending migrations can be applied. Includes `migrate_db()` and `backup_db()` functions for future update workflows.
+-   Added configurable MySQL connection pool settings (`pool_size`, `max_overflow`, `pool_pre_ping`, `pool_recycle`) via server config YAML
+-   Added pool health monitoring that warns at 80% capacity
+-   Added `mysql` pytest marker for tests requiring MySQL and Docker
+-   Added performance test suite (`empire/test/test_performance/`) for pool exhaustion and event loop blocking regression testing
+-   Added `strict` and `suggested_values` to boolean switch options in modules for better validation and UI hints
+-   Added dynamic `depends_on` options to stagers so dependent fields (e.g. `Bypasses`, `Obfuscate`, `ObfuscateCommand`) are shown/hidden based on the selected listener type
+-   Added `nanodump` BOF module for creating minidumps of the LSASS process using various evasion techniques (handle duplication, process forking, snapshot, seclogon handle leaking)
+-   Added multi-language stager support (powershell, csharp, ironpython, go) to UAC bypass privesc modules: `bypassuac`, `bypassuac_env`, `bypassuac_eventvwr`, `bypassuac_sdctlbypass`, `bypassuac_wscript`
+
+### Changed
+
+-   Agent check-in uses single INSERT with ON DUPLICATE KEY UPDATE / ON CONFLICT DO NOTHING instead of SELECT-then-INSERT (2 queries → 1)
+-   All FastAPI route handlers converted from `async def` to `def`. FastAPI now dispatches every handler to a thread pool, preventing synchronous SQLAlchemy calls from blocking the uvicorn event loop. Handlers that previously offloaded work via `asyncio.to_thread()` no longer need to — the thread pool provides the same isolation automatically.
+-   High-frequency hooks (`AFTER_AGENT_CALLBACK_HOOK`, `AFTER_TASKING_RESULT_HOOK`, `AFTER_AGENT_CHECKIN_HOOK`, `AFTER_TASKING_HOOK`) now fire with `None` as the session argument. `_run_async_hook` and `run_hooks` provide a fresh managed session to hook callbacks, eliminating the 2x connection amplification that occurred when hooks opened a second connection while the caller still held the first.
+-   Cleaned up redundant "Switch." prefixes and duplicate description text from module option descriptions
+-   Marked `Listener` and `Command` options as conditionally required in 7 lateral movement modules (`invoke_psexec`, `invoke_wmi`, `invoke_smbexec`, `invoke_dcom`, `invoke_psremoting`, `inveigh_relay`, `invoke_executemsbuild`) so they are validated when their `depends_on` condition is met
+
+### Removed
+
+-   Removed legacy `archive` field from `empire_compiler` config; use `repo` and `ref` instead
+
+### Fixed
+
+-   Fixed DB pool exhaustion under concurrent load causing 503/504 cascading failures. The root cause was hook connection amplification: async hooks called inside DB session blocks opened a second pool connection via `_run_async_hook` while the caller still held the first, doubling connection usage per check-in.
+-   Fixed event loop blocking across all API endpoints. Previously only stager, listener, and plugin endpoints were addressed; now all 216 handlers use `def` to prevent any synchronous DB call from blocking the event loop.
+-   Fixed unnecessary GitHub API call on every server startup when the compiler is already cached locally
+-   Fixed unhandled `TagInvalidException` in `parse_routing_packet` that caused request crashes from stale agents or non-agent traffic
+-   Fixed `TypeError` in BOF module parameter packing when integer values were passed to options that require space-checking
+-   Fixed module option descriptions for `Obfuscate` and `ObfuscateCommand` that contained redundant text
+-   Fixed `evaluate_dependencies` crashing when `DependsOn` key exists but is `None`
+-   Fixed strict option validation crashing when `SuggestedValues` is `None`
+-   Fixed options with unmet `depends_on` conditions being excluded from params, causing `KeyError` in module `generate()` functions — they now pass through with their default value
+-   Fixed broken `revert_options` logic in `stager_service` that assigned entire option dicts as values, causing circular reference errors during JSON serialization
+-   Fixed `invoke_ntsd` module setting stager options without the `["Value"]` key, causing `TypeError` during launcher generation
+-   Fixed `invoke_executemsbuild` `Command` option `depends_on` pointing to `Payload=Empire` instead of `Payload=Manual`, and added missing `depends_on` for `Listener`
+-   Fixed agent staging log messages displaying wrong language (e.g. "Python PUB key" for PowerShell agents, "PS" in C# block) by replacing hardcoded language names with the actual agent language
+-   Fixed incorrect log levels in agent communication: `log.error` for normal conditions (agent not active, agent exiting) downgraded to `log.debug`/`log.info`, `log.info` for invalid data (bad language spec, malformed sysinfo) upgraded to `log.warning`
+-   Fixed typo in SOCKS client error message ("failed to started" -> "failed to start")
+
 ## [6.5.0] - 2026-03-08
 
 ### Added
@@ -24,6 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `clipboard_window_inject_list` BOF module for enumerating processes with clipboard window class
 -   Added PIC shellcode C template and linker script for MinGW-based shellcode compilation
 -   Added unit tests for `shellcode_compiler` and rewrote `test_bof_packer` to cover the new `Packer` class API
+-   Added `repo` and `ref` fields to `empire_compiler` config, replacing the hardcoded archive URL with GitHub Releases API asset discovery
+-   Added unit tests for compiler platform resolution and download URL logic
 -   Added a runtime `Background` option to C# modules, allowing operators to override background/foreground execution at task time
 -   Added C# PatchETW module for in-process ETW patching via ntdll!EtwEventWrite
 -   Added C# PatchlessAMSI module for patchless AMSI bypass using hardware breakpoints and vectored exception handling
