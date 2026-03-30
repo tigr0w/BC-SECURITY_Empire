@@ -126,11 +126,13 @@ def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
     platform_str = f"{os_}-{arch}"
     compiler_dir = config_manager.DATA_DIR / "empire-compiler"
 
-    # Check for any existing directory matching this platform before hitting
-    # the GitHub API, so cached compilers don't require network access.
+    # Check for an existing directory matching this platform *and* version
+    # before hitting the GitHub API, so cached compilers don't require
+    # network access.
+    expected_suffix = f"{platform_str}-{compiler_config.ref}"
     if compiler_dir.exists():
         for d in compiler_dir.iterdir():
-            if d.is_dir() and platform_str in d.name:
+            if d.is_dir() and expected_suffix in d.name:
                 log.info(f"Empire Compiler: using cached {d.name}")
                 return _configure_compiler(compiler_config, d)
 
@@ -145,7 +147,7 @@ def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
         log.info(f"Empire Compiler: fetching and unarchiving {url}")
         compiler_dir.mkdir(parents=True, exist_ok=True)
         with (
-            requests.get(url, stream=True) as resp,
+            requests.get(url, stream=True, timeout=(30, 300)) as resp,
             tarfile.open(fileobj=resp.raw, mode="r|gz") as tar,
         ):
             tar.extractall(compiler_dir)
