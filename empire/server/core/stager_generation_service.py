@@ -188,6 +188,11 @@ class StagerGenerationService:
             return None, err
 
         shellcode = donut_create(file=str(directory), arch=arch_type)
+        if shellcode is None:
+            return (
+                None,
+                "donut shellcode generation failed (check file path and architecture)",
+            )
         return shellcode, None
 
     def generate_exe_oneliner(
@@ -350,6 +355,11 @@ class StagerGenerationService:
 
         directory = self.generate_python_exe(posh_code, dot_net_version)
         shellcode = donut_create(file=str(directory), arch=arch_type)
+        if shellcode is None:
+            return (
+                None,
+                "donut shellcode generation failed (check file path and architecture)",
+            )
         return shellcode, None
 
     def generate_csharp_shellcode(
@@ -391,6 +401,11 @@ class StagerGenerationService:
 
         # Create shellcode from the EXE
         shellcode = donut_create(file=str(exe_path), arch=arch_type)
+        if shellcode is None:
+            return (
+                None,
+                "donut shellcode generation failed (check file path and architecture)",
+            )
         return shellcode, None
 
     def generate_shellcode(  # noqa: PLR0913

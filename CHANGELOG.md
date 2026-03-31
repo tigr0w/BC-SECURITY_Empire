@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added SharpHound C# module for BloodHound Active Directory enumeration with ILRepack assembly merging
+-   Added `MergeReferences` option to C# module YAML schema, enabling ILRepack dependency merging via Empire Compiler `--merge-references` flag
 -   Added `AES256GCM` AEAD cipher class to `empire/server/common/encryption.py` using the `cryptography` library
 -   Added pure-Python AES-256-GCM implementation (`empire/server/data/agent/stagers/common/aesgcm.py`) for Python and IronPython agent stagers, compatible with .NET Framework 4.x IronPython environments
 -   Added .NET Framework 4.x compatible C# `AesGcmHelper` class (manual GCM via `AesCryptoServiceProvider` ECB + GHASH/GCTR) for PowerShell agent stagers
@@ -42,12 +44,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Marked `Listener` and `Command` options as conditionally required in 7 lateral movement modules (`invoke_psexec`, `invoke_wmi`, `invoke_smbexec`, `invoke_dcom`, `invoke_psremoting`, `inveigh_relay`, `invoke_executemsbuild`) so they are validated when their `depends_on` condition is met
 -   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing packet encryption across all agent languages (PowerShell, Python, IronPython, Go) as part of FIPS algorithm compliance work. The C# agent (Sharpire) must be updated separately.
 -   Increased HMAC-SHA256 truncation from 10 bytes to 16 bytes (128 bits) for AES-CBC payload encryption to meet FIPS SP 800-107 minimum requirements. Updated across all agent languages (Python server, PowerShell, Go, Python stager). The C# agent (Sharpire) must be updated separately.
+-   Updated Empire Compiler to v1.1.0-a.3
+-   Updated C# module YAMLs to new Empire Compiler format
 -   Changed `AES256GCM.decrypt()`/`.open()` to catch `cryptography.exceptions.InvalidTag` specifically instead of bare `Exception`
+-   Changed `ChaCha20Poly1305.decrypt()`/`.open()` to catch `InvalidTag` specifically instead of bare `Exception`
+-   Changed `AESCipher.verify_hmac()` to use `hmac.compare_digest` for constant-time comparison instead of double-HMAC workaround
 -   Replaced `AESCipher.generate_key()` which sampled printable characters without replacement (~207-bit effective entropy) with `os.urandom(32).hex()` for full 256-bit CSPRNG entropy. The key is now returned as a hex string matching the DH-derived session key format, fixing compatibility with `bytes.fromhex()` in the agent communication service.
 
 ### Removed
 
 -   Removed legacy `archive` field from `empire_compiler` config; use `repo` and `ref` instead
+-   Removed Seatbelt module (superseded by updated Empire Compiler modules)
+-   Removed legacy PowerShell BloodHound/SharpHound modules (`situational_awareness/network/bloodhound.yaml`, `sharphound.yaml`), replaced by native C# SharpHound module
 
 ### Fixed
 
@@ -69,6 +77,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed typo in SOCKS client error message ("failed to started" -> "failed to start")
 -   Fixed bounds validation in routing packet parsing: replaced unreachable `length < 0` check with proper `length > available data` check in both Python server and Go agent
 -   Fixed Go agent `ParseRoutingPacket` to correctly use offset when reading nonce from multi-packet payloads
+-   Fixed silent error swallowing in agent `aesgcm.py` `process_tasking`/`process_job_tasking` — bare `except Exception: pass` replaced with specific exception handling and error reporting back to C2
+-   Fixed bare `except:` clauses in agent `parse_task_packet` narrowed to `UnicodeDecodeError`
+-   Fixed dead `length < 0` bounds check in agent `parse_routing_packet` (unsigned int can never be negative) replaced with proper `end > len(data)` validation
+
+### Security
+
+-   Added `filter='data'` to `tar.extractall()` in compiler download to prevent path traversal from untrusted archives
 
 ## [6.5.0] - 2026-03-08
 

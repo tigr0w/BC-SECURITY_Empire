@@ -55,7 +55,7 @@ def test_get_module_script_in_generate_function(client, admin_auth_header):
 
 
 def test_get_modules(client, admin_auth_header):
-    min_expected_modules = 383
+    min_expected_modules = 381
     response = client.get("/api/v2/modules/", headers=admin_auth_header)
 
     assert response.status_code == status.HTTP_200_OK

@@ -97,10 +97,7 @@ class AESCipher:
             mac = data[-16:]
             data_ = data[:-16]
             expected = hmac.new(key, data_, digestmod=hashlib.sha256).digest()[0:16]
-            return (
-                hmac.new(key, expected, digestmod=hashlib.sha256).digest()
-                == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
-            )
+            return ct_compare_digest(expected, mac)
         return False
 
     @staticmethod
@@ -396,7 +393,7 @@ class ChaCha20Poly1305:
         ad = self._to_bytes(associated_data)
         try:
             return self._aead.decrypt(nonce, ciphertext, ad)
-        except Exception as err:
+        except InvalidTag as err:
             raise TagInvalidException from err
 
     def seal(self, nonce, plaintext, data):
@@ -407,7 +404,7 @@ class ChaCha20Poly1305:
         ad = self._to_bytes(data)
         try:
             return self._aead.decrypt(nonce, ciphertext, ad)
-        except Exception as err:
+        except InvalidTag as err:
             raise TagInvalidException from err
 
 

@@ -272,6 +272,7 @@ class PacketHandler:
                     try:
                         decrypted = enc_handler.open(iv, aead_data, b"")
                     except TagInvalidException:
+                        print("parse_routing_packet: AEAD tag verification failed")
                         break
                     session_id = decrypted[0:8]
                     if isinstance(session_id, bytes):
@@ -279,10 +280,11 @@ class PacketHandler:
 
                     (language, meta, additional, length) = struct.unpack("=BBHL", decrypted[8:])
 
-                    if length < 0:
+                    end = aead_header_length + offset + length
+                    if end > len(data):
                         encData = None
                     else:
-                        encData = data[(aead_header_length + offset):(aead_header_length + offset + length)]
+                        encData = data[(aead_header_length + offset):end]
 
                     results[session_id] = (self.language_ids.get(language, 'NONE'), self.meta_ids.get(meta, 'NONE'),
                                             self.additional_ids.get(additional, 'NONE'), encData)
@@ -390,14 +392,14 @@ class PacketHandler:
             length = struct.unpack("=L", packet[8 + offset:12 + offset])[0]
             try:
                 packetData = packet.decode("UTF-8")[12 + offset:12 + offset + length]
-            except:
+            except UnicodeDecodeError:
                 packetData = packet[12 + offset:12 + offset + length].decode("latin-1")
             try:
                 remainingData = packet.decode("UTF-8")[12 + offset + length:]
-            except:
+            except UnicodeDecodeError:
                 remainingData = packet[12 + offset + length:].decode("latin-1")
             return (packetType, totalPacket, packetNum, resultID, length, packetData, remainingData)
-        except Exception as e:
+        except (struct.error, IndexError) as e:
             print("parse_task_packet exception:", e)
             return (None, None, None, None, None, None, None)
 
@@ -445,9 +447,16 @@ class PacketHandler:
             # send_message() is patched in from the listener module
             self.send_message(resultPackets)
 
+        except TagInvalidException as e:
+            print("process_tasking: authentication failed:", e)
+        except (struct.error, UnicodeDecodeError, ValueError) as e:
+            print("process_tasking: packet parsing error:", e)
         except Exception as e:
-            print(e)
-            pass
+            print("process_tasking: unexpected error:", e)
+            try:
+                self.send_message(self.build_response_packet(0, str(e), 0))
+            except Exception:
+                pass
 
     def process_job_tasking(self, result):
         # process job data packets
@@ -461,4 +470,3 @@ class PacketHandler:
             self.send_message(resultPackets)
         except Exception as e:
             print("processJobTasking exception:", e)
-            pass

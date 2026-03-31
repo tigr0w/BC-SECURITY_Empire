@@ -21,7 +21,12 @@ class DotnetCompiler:
         )
 
     def compile_task(
-        self, compiler_yaml, task_name, dot_net_version="net40", confuse=False
+        self,
+        compiler_yaml,
+        task_name,
+        dot_net_version="net40",
+        confuse=False,
+        merge_references=False,
     ) -> Path:
         random_task_name = f"{task_name}_{random_string(6)}.exe"
 
@@ -40,6 +45,11 @@ class DotnetCompiler:
             if confuse:
                 args.extend(["--confuse"])
 
+            if merge_references:
+                args.extend(["--merge-references"])
+
+            log.info(f"Compiler args: merge_references={merge_references}, args={args}")
+
             result = subprocess.run(
                 args,
                 capture_output=True,
@@ -47,6 +57,9 @@ class DotnetCompiler:
                 check=False,
                 cwd=self.compiler_dir,
             )
+
+            if result.stderr:
+                log.warning(f"Compiler stderr: {result.stderr.strip()}")
 
             if result.returncode != 0:
                 raise ModuleExecutionException(

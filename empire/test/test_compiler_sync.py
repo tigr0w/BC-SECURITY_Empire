@@ -59,23 +59,23 @@ def test_download_url_repo_ref_finds_asset(mock_requests):
     mock_resp.json.return_value = {
         "assets": [
             {
-                "name": "EmpireCompiler-linux-x64-v1.1.0-a.1.tgz",
-                "browser_download_url": "https://github.com/downloads/EmpireCompiler-linux-x64-v1.1.0-a.1.tgz",
+                "name": "EmpireCompiler-linux-x64-v1.1.0-a.3.tgz",
+                "browser_download_url": "https://github.com/downloads/EmpireCompiler-linux-x64-v1.1.0-a.3.tgz",
             },
             {
-                "name": "EmpireCompiler-osx-arm64-v1.1.0-a.1.tgz",
-                "browser_download_url": "https://github.com/downloads/EmpireCompiler-osx-arm64-v1.1.0-a.1.tgz",
+                "name": "EmpireCompiler-osx-arm64-v1.1.0-a.3.tgz",
+                "browser_download_url": "https://github.com/downloads/EmpireCompiler-osx-arm64-v1.1.0-a.3.tgz",
             },
         ]
     }
     mock_requests.get.return_value = mock_resp
 
-    config = EmpireCompilerConfig(repo="BC-SECURITY/Empire-Compiler", ref="v1.1.0-a.1")
+    config = EmpireCompilerConfig(repo="BC-SECURITY/Empire-Compiler", ref="v1.1.0-a.3")
     url = _resolve_compiler_download_url(config, "linux-x64")
-    assert url == "https://github.com/downloads/EmpireCompiler-linux-x64-v1.1.0-a.1.tgz"
+    assert url == "https://github.com/downloads/EmpireCompiler-linux-x64-v1.1.0-a.3.tgz"
 
     mock_requests.get.assert_called_once_with(
-        "https://api.github.com/repos/BC-SECURITY/Empire-Compiler/releases/tags/v1.1.0-a.1",
+        "https://api.github.com/repos/BC-SECURITY/Empire-Compiler/releases/tags/v1.1.0-a.3",
         timeout=30,
     )
 
@@ -87,14 +87,14 @@ def test_download_url_repo_ref_no_matching_asset(mock_requests):
     mock_resp.json.return_value = {
         "assets": [
             {
-                "name": "EmpireCompiler-osx-arm64-v1.1.0-a.1.tgz",
+                "name": "EmpireCompiler-osx-arm64-v1.1.0-a.3.tgz",
                 "browser_download_url": "https://example.com/osx.tgz",
             },
         ]
     }
     mock_requests.get.return_value = mock_resp
 
-    config = EmpireCompilerConfig(repo="BC-SECURITY/Empire-Compiler", ref="v1.1.0-a.1")
+    config = EmpireCompilerConfig(repo="BC-SECURITY/Empire-Compiler", ref="v1.1.0-a.3")
     assert _resolve_compiler_download_url(config, "linux-x64") is None
 
 

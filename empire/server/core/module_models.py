@@ -60,6 +60,7 @@ class BofModuleOption(BaseModel):
 
 class CSharpOption(BaseModel):
     UnsafeCompile: bool = False
+    MergeReferences: bool = False
     CompatibleDotNetVersions: list[str] = []
     Code: str = ""
     ReferenceSourceLibraries: list[dict] | None = []

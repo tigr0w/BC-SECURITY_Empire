@@ -732,11 +732,13 @@ class ModuleService:
             obfuscate = (
                 obfuscation_config.enabled if obfuscation_config is not None else False
             )
+            merge_refs = module.csharp.MergeReferences if module.csharp else False
             script_file = self.dotnet_compiler.compile_task(
                 module.compiler_yaml,
                 module.name,
                 dot_net_version=params["DotNetVersion"].lower(),
                 confuse=obfuscate,
+                merge_references=merge_refs,
             )
             filtered_params = {}
             for key, value in params.items():

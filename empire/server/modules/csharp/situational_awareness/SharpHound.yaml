@@ -1,0 +1,93 @@
+name: SharpHound
+authors:
+  - name: SpecterOps
+    handle: SpecterOps
+    link: https://github.com/SpecterOps/SharpHound
+description: C# module that uses SharpHound to collect Active Directory data for
+  BloodHound. SharpHound is the official data collector for BloodHound, performing
+  domain enumeration to map out Active Directory relationships including user sessions,
+  group memberships, ACLs, GPO links, trusts, and more.
+software: ''
+tactics: [TA0007]
+techniques: [T1087, T1069, T1018, T1482]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: false
+language: csharp
+min_language_version: ''
+options:
+  - name: Command
+    description: SharpHound arguments (e.g. --CollectionMethods All --Domain corp.local)
+    required: false
+    value: '--CollectionMethods Default'
+    strict: false
+    suggested_values:
+      - '--CollectionMethods Default'
+      - '--CollectionMethods All'
+      - '--CollectionMethods Session'
+      - '--CollectionMethods LoggedOn'
+      - '--CollectionMethods Trusts'
+      - '--CollectionMethods ACL'
+      - '--CollectionMethods ObjectProps'
+      - '--CollectionMethods Group'
+      - '--CollectionMethods LocalAdmin'
+      - '--CollectionMethods RDP'
+      - '--CollectionMethods DCOM'
+      - '--CollectionMethods PSRemote'
+      - '--CollectionMethods SPNTargets'
+      - '--CollectionMethods Container'
+      - '--CollectionMethods DCOnly'
+csharp:
+  UnsafeCompile: false
+  MergeReferences: true
+  CompatibleDotNetVersions:
+    - Net47
+  Code: |
+    using System;
+    using System.IO;
+
+    public static class Program
+    {
+        public static void Main(string[] args)
+        {
+            using (StringWriter stringWriter = new StringWriter())
+            {
+                TextWriter originalOutput = Console.Out;
+                TextWriter originalError = Console.Error;
+
+                try
+                {
+                    Console.SetOut(stringWriter);
+                    Console.SetError(stringWriter);
+
+                    string allArgs = string.Join(" ", args);
+                    string[] splitArgs = allArgs.Split(' ');
+
+                    Sharphound.Program.InvokeSharpHound(splitArgs);
+                }
+                catch (Exception ex)
+                {
+                    stringWriter.WriteLine(
+                        ex.GetType().FullName + ": " + ex.Message
+                        + Environment.NewLine + ex.StackTrace);
+                }
+                finally
+                {
+                    Console.SetOut(originalOutput);
+                    Console.SetError(originalError);
+                    Console.WriteLine(stringWriter.ToString());
+                }
+            }
+        }
+    }
+  ReferenceSourceLibraries:
+    - Name: SharpHound
+      Location: SharpHound\src\
+      Language: CSharp
+      CompatibleDotNetVersions:
+        - Net47
+      ReferenceAssemblies: []
+      EmbeddedResources: []
+  ReferenceAssemblies: []
+  EmbeddedResources: []
