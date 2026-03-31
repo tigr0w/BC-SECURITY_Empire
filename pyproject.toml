@@ -45,7 +45,6 @@ python-obfuscator = "^0.0.2"
 pyinstaller = "^6.19.0"
 packaging = "^26.0"
 netaddr = "^1.3.0"
-bcrypt = "^5.0.0"
 requests-file = "^3.0.1"
 pydantic-settings = "^2.13.1"
 prettytable = "^3.17.0"
@@ -151,6 +150,8 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 "empire/test/test_logs.py" = ["PLC0415"]
 "empire/test/test_listener_generate_launcher.py" = ["PLC0415"]
 "empire/test/test_alembic.py" = ["PLC0415"]
+# jwt_auth imports require DB setup, must be deferred in tests
+"empire/test/test_password_hashing.py" = ["PLC0415"]
 
 [tool.coverage.run]
 omit = [

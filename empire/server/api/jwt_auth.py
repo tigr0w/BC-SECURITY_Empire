@@ -1,7 +1,10 @@
+import hashlib
+import hmac
+import logging
+import os
 from datetime import datetime, timedelta
 from typing import Annotated
 
-import bcrypt
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -13,12 +16,18 @@ from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
+log = logging.getLogger(__name__)
+
 # This all comes from the amazing fastapi docs: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 SECRET_KEY = SessionLocal().query(models.Config).first().jwt_secret_key
 ALGORITHM = "HS256"
 
 # Long token expiration until refresh token is implemented
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+
+# PBKDF2 parameters (FIPS SP 800-132 compliant)
+PBKDF2_ITERATIONS = 600_000
+PBKDF2_HASH_ALGO = "sha256"
 
 
 class Token(BaseModel):
@@ -36,14 +45,54 @@ api_key_header = APIKeyHeader(name="X-Empire-Token", auto_error=False)
 
 
 def verify_password(plain_password, hashed_password):
-    password_byte_enc = plain_password.encode("utf-8")
-    return bcrypt.checkpw(password_byte_enc, hashed_password.encode("utf-8"))
+    """Verify a password against a PBKDF2-HMAC-SHA256 hash.
+
+    Returns False for malformed hashes (no information leakage).
+    """
+    try:
+        header, salt_hex, stored_hash_hex = hashed_password.split("$")
+        _, algo, iterations_str = header.split(":")
+        if algo != PBKDF2_HASH_ALGO:
+            log.error("Unexpected hash algorithm: %s", algo)
+            return False
+        iterations = int(iterations_str)
+        if iterations < 100_000 or iterations > 2_000_000:  # noqa: PLR2004
+            log.error("Hash iteration count out of range: %d", iterations)
+            return False
+        computed = hashlib.pbkdf2_hmac(
+            algo,
+            plain_password.encode("utf-8"),
+            bytes.fromhex(salt_hex),
+            iterations,
+        )
+        return hmac.compare_digest(computed.hex(), stored_hash_hex)
+    except ValueError:
+        log.error(
+            "Failed to parse stored password hash (prefix: '%.20s')",
+            hashed_password,
+            exc_info=True,
+        )
+        return False
 
 
 def get_password_hash(plain_password: str) -> str:
-    pwd_bytes = plain_password.encode("utf-8")
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
+    """Hash a password using PBKDF2-HMAC-SHA256 (FIPS SP 800-132)."""
+    try:
+        salt = os.urandom(16)
+        derived = hashlib.pbkdf2_hmac(
+            PBKDF2_HASH_ALGO,
+            plain_password.encode("utf-8"),
+            salt,
+            PBKDF2_ITERATIONS,
+        )
+    except Exception:
+        log.exception(
+            "Failed to generate password hash. Verify that OpenSSL supports %s "
+            "and that os.urandom is available.",
+            PBKDF2_HASH_ALGO,
+        )
+        raise
+    return f"pbkdf2:{PBKDF2_HASH_ALGO}:{PBKDF2_ITERATIONS}${salt.hex()}${derived.hex()}"
 
 
 def get_user(db, username: str) -> models.User:

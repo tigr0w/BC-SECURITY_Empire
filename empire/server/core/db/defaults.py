@@ -1,10 +1,9 @@
+import hashlib
 import logging
 import os
 import random
 import secrets
 import string
-
-import bcrypt
 
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
@@ -15,9 +14,20 @@ log = logging.getLogger(__name__)
 
 
 def get_default_hashed_password():
-    pwd_bytes = database_config.password.encode("utf-8")
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
+    """Hash the default password using PBKDF2-HMAC-SHA256 (FIPS SP 800-132).
+
+    Parameters must match jwt_auth.PBKDF2_HASH_ALGO and jwt_auth.PBKDF2_ITERATIONS.
+    Cannot import from jwt_auth because its module-level DB query fails before
+    the Config table exists during initial DB setup.
+    """
+    salt = os.urandom(16)
+    derived = hashlib.pbkdf2_hmac(
+        "sha256",
+        database_config.password.encode("utf-8"),
+        salt,
+        600_000,
+    )
+    return f"pbkdf2:sha256:600000${salt.hex()}${derived.hex()}"
 
 
 def get_default_user():

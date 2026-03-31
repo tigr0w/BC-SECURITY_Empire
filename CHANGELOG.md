@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+-   **BREAKING:** Replaced bcrypt password hashing with PBKDF2-HMAC-SHA256 (600K iterations) for FIPS SP 800-132 compliance. Existing bcrypt hashes are incompatible; users must reset passwords or recreate the database after upgrading.
+
 ### Added
 
 -   Added standalone C# module compilation test (`tests/test_compile_csharp.py`) that compiles every C# module against the real EmpireCompiler binary, parametrized per-module for visible progress. Marked `@pytest.mark.slow` for local-only use.
