@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added standalone C# module compilation test (`tests/test_compile_csharp.py`) that compiles every C# module against the real EmpireCompiler binary, parametrized per-module for visible progress. Marked `@pytest.mark.slow` for local-only use.
 -   Added SharpHound C# module for BloodHound Active Directory enumeration with ILRepack assembly merging
 -   Added `MergeReferences` option to C# module YAML schema, enabling ILRepack dependency merging via Empire Compiler `--merge-references` flag
 -   Added `AES256GCM` AEAD cipher class to `empire/server/common/encryption.py` using the `cryptography` library
@@ -37,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   Set all C# modules to `background: true` so compiled tasks run without blocking the agent
+-   Renamed VNC module `Username` option to `ServerName` to accurately reflect its purpose (VNC session display name, not authentication credential)
+-   Downgraded compiler args log message from INFO to DEBUG to reduce server log noise
+-   Removed redundant `Agent` option from PatchETW and PatchlessAMSI modules (auto-injected by the framework)
 -   Agent check-in uses single INSERT with ON DUPLICATE KEY UPDATE / ON CONFLICT DO NOTHING instead of SELECT-then-INSERT (2 queries → 1)
 -   All FastAPI route handlers converted from `async def` to `def`. FastAPI now dispatches every handler to a thread pool, preventing synchronous SQLAlchemy calls from blocking the uvicorn event loop. Handlers that previously offloaded work via `asyncio.to_thread()` no longer need to — the thread pool provides the same isolation automatically.
 -   High-frequency hooks (`AFTER_AGENT_CALLBACK_HOOK`, `AFTER_TASKING_RESULT_HOOK`, `AFTER_AGENT_CHECKIN_HOOK`, `AFTER_TASKING_HOOK`) now fire with `None` as the session argument. `_run_async_hook` and `run_hooks` provide a fresh managed session to hook callbacks, eliminating the 2x connection amplification that occurred when hooks opened a second connection while the caller still held the first.
@@ -78,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed bounds validation in routing packet parsing: replaced unreachable `length < 0` check with proper `length > available data` check in both Python server and Go agent
 -   Fixed Go agent `ParseRoutingPacket` to correctly use offset when reading nonce from multi-packet payloads
 -   Fixed silent error swallowing in agent `aesgcm.py` `process_tasking`/`process_job_tasking` — bare `except Exception: pass` replaced with specific exception handling and error reporting back to C2
+-   Fixed VNC module using copy-pasted ThreadlessInject code instead of the NVNC library — module was non-functional since introduction. Replaced with correct `NVNC.VncServer` integration matching the module's Password, Port, and ServerName options.
 -   Fixed bare `except:` clauses in agent `parse_task_packet` narrowed to `UnicodeDecodeError`
 -   Fixed dead `length < 0` bounds check in agent `parse_routing_packet` (unsigned int can never be negative) replaced with proper `end > len(data)` validation
 

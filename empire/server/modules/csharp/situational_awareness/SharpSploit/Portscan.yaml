@@ -12,7 +12,7 @@ description: |
 software: ''
 tactics: [TA0007]
 techniques: [T1046]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

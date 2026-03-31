@@ -247,14 +247,14 @@ def test_execute_module_background_override_default_false(
 ):
     """Test background_override on a module whose YAML background defaults to false."""
     agent_mock.language = "csharp"
-    module_id = "csharp_credentials_certify"
+    module_id = "csharp_management_patchetw"
 
     module = module_service.get_by_id(module_id)
-    assert module.background is False, "Certify should have background=false in YAML"
+    assert module.background is False, "PatchETW should have background=false in YAML"
 
     params = {
         "Agent": agent_mock.session_id,
-        "Command": "find",
+        "Method": "patch",
     }
     res, err = module_service.execute_module(
         None,
@@ -338,7 +338,7 @@ def test_execute_csharp_module(module_service, agent_mock):
 
     assert err is None
     task_command = res.command
-    assert task_command == "TASK_CSHARP_CMD_WAIT"
+    assert task_command == "TASK_CSHARP_CMD_JOB"
 
 
 def test_execute_bof_module_missing_option(module_service, agent_mock):

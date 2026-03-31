@@ -8,7 +8,7 @@ description: |
 software: ''
 tactics: [TA0008]
 techniques: [T1021.005]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true
@@ -27,8 +27,8 @@ options:
     value: 5900
     strict: false
     suggested_values: []
-  - name: Username
-    description: Username for the VNC server.
+  - name: ServerName
+    description: Display name for the VNC server session.
     required: true
     value: Empire
     strict: false
@@ -41,19 +41,20 @@ csharp:
   Code: |
     using System;
     using System.IO;
-    using ThreadlessInject;
+    using NVNC;
 
     public static class Program
     {
         public static void Main(string[] args)
         {
-            string command = args.Length > 0 ? args[0] : "";
-            string result = ExecuteThreadlessInject(command);
-            Console.WriteLine(result);
-        }
+            string password = "password";
+            int port = 5900;
+            string name = "Empire";
 
-        public static string ExecuteThreadlessInject(string command)
-        {
+            if (args.Length > 0) password = args[0];
+            if (args.Length > 1) int.TryParse(args[1], out port);
+            if (args.Length > 2) name = args[2];
+
             using (StringWriter stringWriter = new StringWriter())
             {
                 TextWriter originalStdOut = Console.Out;
@@ -63,20 +64,21 @@ csharp:
 
                 try
                 {
-                    string[] args = command.Split(' ');
-                    ThreadlessInject.Program.Main(args);
+                    VncServer server = new VncServer(password, port, name);
+                    server.Start();
                 }
                 catch (Exception e)
                 {
-                    stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
+                    stringWriter.WriteLine(
+                        e.GetType().FullName + ": " + e.Message
+                        + Environment.NewLine + e.StackTrace);
                 }
                 finally
                 {
                     Console.SetOut(originalStdOut);
                     Console.SetError(originalStdErr);
+                    Console.WriteLine(stringWriter.ToString());
                 }
-
-                return stringWriter.ToString();
             }
         }
     }

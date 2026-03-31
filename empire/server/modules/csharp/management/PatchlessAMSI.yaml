@@ -18,10 +18,6 @@ comments:
   - https://gist.github.com/CCob/fe3b63d80890fafeca982f76c8a3efdf
   - https://github.com/EvilBytecode/Ebyte-amsi-patchless-vehhwbp
 options:
-  - name: Agent
-    description: Agent to run module on.
-    required: true
-    value: ''
   - name: Action
     description: Enable or disable the AMSI bypass.
     required: true

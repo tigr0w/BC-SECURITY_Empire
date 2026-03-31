@@ -10,7 +10,7 @@ description: C# module that uses SharpHound to collect Active Directory data for
 software: ''
 tactics: [TA0007]
 techniques: [T1087, T1069, T1018, T1482]
-background: false
+background: true
 output_extension:
 needs_admin: false
 opsec_safe: false

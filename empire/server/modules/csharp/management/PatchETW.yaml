@@ -22,10 +22,6 @@ comments:
   - https://blog.xpnsec.com/hiding-your-dotnet-etw/
   - https://www.mdsec.co.uk/2020/03/hiding-your-net-etw/
 options:
-  - name: Agent
-    description: Agent to run module on.
-    required: true
-    value: ''
   - name: Method
     description: Patch or unpatch ETW.
     required: true

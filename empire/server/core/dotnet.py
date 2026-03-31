@@ -48,7 +48,9 @@ class DotnetCompiler:
             if merge_references:
                 args.extend(["--merge-references"])
 
-            log.info(f"Compiler args: merge_references={merge_references}, args={args}")
+            log.debug(
+                f"Compiler args: merge_references={merge_references}, args={args}"
+            )
 
             result = subprocess.run(
                 args,

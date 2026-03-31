@@ -13,7 +13,7 @@ description: |
 software: ''
 tactics: [TA0003]
 techniques: [T1546.003]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true
