@@ -287,10 +287,6 @@ def CBCdec(aesObj, ciphertext, base64=False):
     return plaintext
 
 
-def getIV(len=16):
-    return os.urandom(len)
-
-
 def aes_encrypt(key, data):
     """
     Generate a random IV and new AES cipher object with the given

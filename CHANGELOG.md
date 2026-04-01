@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **BREAKING:** Replaced bcrypt password hashing with PBKDF2-HMAC-SHA256 (600K iterations) for FIPS SP 800-132 compliance. Existing bcrypt hashes are incompatible; users must reset passwords or recreate the database after upgrading.
 -   Replaced `random.choice`/`random.choices` with `secrets.choice` (CSPRNG) for staging key generation, keyword obfuscation, session ID generation, and nonce generation per FIPS SP 800-90A
 -   Hardened TLS configuration for FIPS SP 800-52r2: enforce TLS 1.2 minimum, removed non-GCM and non-ECDHE cipher suites from JA3 evasion pool, explicit RSA 4096-bit key for self-signed certificates
+-   Replaced all remaining `random` module usage with `secrets` (server-side) and `random.SystemRandom()` (agent-side) for FIPS SP 800-90A CSPRNG compliance across listeners, stagers, agents, and utilities. **Breaking:** Deployed agents must be re-staged.
+-   Replaced MySQL `MD5()` with `SHA2(..., 256)` for `hosts.unique_check` generated column
 
 ### Added
 
@@ -58,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Marked `Listener` and `Command` options as conditionally required in 7 lateral movement modules (`invoke_psexec`, `invoke_wmi`, `invoke_smbexec`, `invoke_dcom`, `invoke_psremoting`, `inveigh_relay`, `invoke_executemsbuild`) so they are validated when their `depends_on` condition is met
 -   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing packet encryption across all agent languages (PowerShell, Python, IronPython, Go) as part of FIPS algorithm compliance work. The C# agent (Sharpire) must be updated separately.
 -   Increased HMAC-SHA256 truncation from 10 bytes to 16 bytes (128 bits) for AES-CBC payload encryption to meet FIPS SP 800-107 minimum requirements. Updated across all agent languages (Python server, PowerShell, Go, Python stager). The C# agent (Sharpire) must be updated separately.
--   Updated Empire Compiler to v1.1.0-a.3
+-   Updated Empire Compiler to v1.1.0-a.4 (bundles FIPS-compliant Sharpire with 16-byte HMAC, HKDF-SHA256, AES-GCM)
 -   Updated C# module YAMLs to new Empire Compiler format
 -   Changed `AES256GCM.decrypt()`/`.open()` to catch `cryptography.exceptions.InvalidTag` specifically instead of bare `Exception`
 -   Changed `ChaCha20Poly1305.decrypt()`/`.open()` to catch `InvalidTag` specifically instead of bare `Exception`
@@ -67,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+-   Removed dead `getIV()` function from agent stager AES code (unused, bypassed by inline `os.urandom()`)
 -   Removed ChaCha20-Poly1305 classes (`Poly1305`, `ChaCha`, `ChaCha20Poly1305`) from `encryption.py` and agent-side `chacha.py` stager — not FIPS-approved. Routing packets already use AES-256-GCM.
 -   Removed legacy `archive` field from `empire_compiler` config; use `repo` and `ref` instead
 -   Removed Seatbelt module (superseded by updated Empire Compiler modules)
@@ -78,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed event loop blocking across all API endpoints. Previously only stager, listener, and plugin endpoints were addressed; now all 216 handlers use `def` to prevent any synchronous DB call from blocking the event loop.
 -   Fixed `donut-shellcode` failing with "Cannot open file" when a root-owned `loader.bin` exists in the working directory, breaking all shellcode generation tests and stager paths. Donut calls now run in an isolated temp directory via a shared `donut_create()` utility with a threading lock for concurrency safety.
 -   Fixed unnecessary GitHub API call on every server startup when the compiler is already cached locally
+-   Fixed `taskUri` vs `taskURI` variable name mismatch in HTTP malleable listener generated agent code that would cause a `NameError` on target
 -   Fixed unhandled `TagInvalidException` in `parse_routing_packet` that caused request crashes from stale agents or non-agent traffic
 -   Fixed `TypeError` in BOF module parameter packing when integer values were passed to options that require space-checking
 -   Fixed module option descriptions for `Obfuscate` and `ObfuscateCommand` that contained redundant text

