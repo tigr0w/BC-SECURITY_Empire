@@ -21,7 +21,7 @@ The agent incorporates multiple external Python functionalities, sourced via Jin
 
 These functionalities provide:
 - AES-CBC & AES-256-GCM Encryption: For encrypted communications (FIPS-compliant).
-- Diffie-Hellman Key Exchange: Secure establishment of a shared secret key.
+- Diffie-Hellman Key Exchange + HKDF-SHA256: Secure establishment of a shared session key via DH with HKDF key derivation (FIPS SP 800-56C).
 - System Information: Gather details about the host system.
 - HTTP Communication Methods: Communication methods tailored for HTTP. (Can be customized with other listener options)
 
@@ -42,7 +42,7 @@ Staging is the agent's initial phase, where it communicates with the server and 
        |------------------------->|                          |                            |
        |                          |                          |                            |
        |                          | Generate Staging Key     |                            |
-       |                          |   & Profile (AES/HMAC)   |                            |
+       |                          |  & Profile (AES-GCM)     |                            |
        |                          |------------------------->|                            |
        |                          |                          |                            |
        |   Send Staging Key &    |                          |                             |
@@ -52,7 +52,7 @@ Staging is the agent's initial phase, where it communicates with the server and 
        |                          |                          |   Decrypt Staging Profile  |
        |                          |                          |<---------------------------|
        |                          |                          |                            |
-       |                          |                          | Generate Diffie-Hellman    |
+       |                          |                          | DH Key Exchange + HKDF     |
        |                          |                          |    (AES Session Key)       |
        |                          |                          |<---------------------------|
        |                          |                          |                            |
@@ -69,14 +69,15 @@ Staging is the agent's initial phase, where it communicates with the server and 
 ```
 
 1. Client → C2: The client requests the staging code.
-2. C2: The Command and Control (C2) server generates a staging key and a profile for the client. This staging key is usually encrypted using symmetric encryption like AES and is HMAC protected.
+2. C2: The Command and Control (C2) server generates a staging key and a profile for the client. Routing packets are encrypted with AES-256-GCM using the staging key.
 3. C2 → Client: The server sends the encrypted staging key and profile to the client.
-4. Stager: The stager decrypts the staging profile and initiates a Diffie-Hellman key exchange process. This results in the creation of an AES session key that will be used for future communications.
+4. Stager: The stager decrypts the staging profile and initiates a Diffie-Hellman key exchange. The shared secret is derived into a 256-bit AES session key via HKDF-SHA256 (FIPS SP 800-56C).
 5. Agent: When the stager receives tasking, it decrypts the tasking using the AES session key. Then the agent executes the decrypted tasks.
 
 In this process, multiple encryption schemes are at play:
-- AES/HMAC: Used to encrypt the staging key and ensure its integrity.
-- Diffie-Hellman: Used to securely negotiate an AES session key for encrypted communications between the stager/agent and the C2 server.
+- AES-256-GCM: AEAD encryption for routing packets (staging key).
+- AES-CBC + HMAC-SHA256: Encrypt-then-MAC for payload data (session key, 16-byte truncated HMAC per FIPS SP 800-107).
+- Diffie-Hellman + HKDF-SHA256: Securely negotiates an AES-256 session key via DH key exchange with HKDF key derivation (FIPS SP 800-56C).
 
 ## Components
 

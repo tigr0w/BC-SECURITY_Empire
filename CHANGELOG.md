@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   **BREAKING:** Replaced raw SHA-256 with HKDF-SHA256 (RFC 5869) for DH session key derivation per FIPS SP 800-56C. Updated across all agent languages (Python server, Python/IronPython stager, Go, PowerShell). All deployed agents must be re-staged. Also normalizes shared secret byte encoding to 768 bytes per NIST SP 800-56A.
+-   Fixed Go `CheckPublicKey` to use Legendre symbol `(prime-1)/2` exponent instead of Fermat's little theorem `(prime-1)` which always returned true
 -   Set all C# modules to `background: true` so compiled tasks run without blocking the agent
 -   Renamed VNC module `Username` option to `ServerName` to accurately reflect its purpose (VNC session display name, not authentication credential)
 -   Downgraded compiler args log message from INFO to DEBUG to reduce server log noise

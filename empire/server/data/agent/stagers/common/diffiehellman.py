@@ -1,6 +1,7 @@
 """ Implements Diffie-Hellman as a Jinja2 partial for use in stagers
 DH code from: https://github.com/lowazo/pyDHE """
 import hashlib
+import hmac
 import os
 
 # If a secure random number generator is unavailable, exit with an error.
@@ -119,22 +120,24 @@ class DiffieHellman(object):
 
     def genKey(self, otherKey):
         """
-        Derive the shared secret, then hash it to obtain the shared key.
+        Derive the shared secret, then use HKDF-SHA256 to obtain the shared key.
+        FIPS SP 800-56C compliant key derivation.
+        Pure-Python HKDF for IronPython compatibility (no external deps).
         """
         self.sharedSecret = self.genSecret(self.privateKey, otherKey)
 
-        # Convert the shared secret (int) to an array of bytes in network order
-        # Otherwise hashlib can't hash it.
-        try:
-            bin_str = bin(self.sharedSecret)[2:].zfill(6147)
-            _sharedSecretBytes = int(bin_str, 2).to_bytes(len(bin_str), "big")
-        except AttributeError:
-            _sharedSecretBytes = str(self.sharedSecret)
+        # Normalize shared secret to fixed 768 bytes (6144-bit prime / 8)
+        _sharedSecretBytes = self.sharedSecret.to_bytes(768, "big")
 
-        s = hashlib.sha256()
-        s.update(bytes(_sharedSecretBytes))
+        # HKDF-SHA256 Extract: PRK = HMAC-SHA256(salt, IKM)
+        # When salt is None, HKDF uses a zero-filled hash-length block
+        salt = b'\x00' * 32
+        prk = hmac.new(salt, _sharedSecretBytes, hashlib.sha256).digest()
 
-        self.key = s.digest()
+        # HKDF-SHA256 Expand: OKM = HMAC-SHA256(PRK, info || 0x01)
+        # We need exactly 32 bytes (one hash block), so only T(1) is needed
+        info = b"empire-session-key"
+        self.key = hmac.new(prk, info + b'\x01', hashlib.sha256).digest()
 
     def getKey(self):
         """

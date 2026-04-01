@@ -4,6 +4,8 @@ import pathlib
 from os import urandom
 
 import pytest
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from empire.server.common import encryption
 from empire.server.common import packets as pkt
@@ -351,6 +353,67 @@ class TestDiffieHellman:
         dh = encryption.DiffieHellman()
         with pytest.raises(Exception, match="Invalid public key"):
             dh.gen_secret(dh.privateKey, 1)
+
+    def test_hkdf_key_is_32_bytes(self):
+        """HKDF-derived key should be exactly 32 bytes (256 bits)."""
+        dh = encryption.DiffieHellman()
+        other = encryption.DiffieHellman()
+        dh.gen_key(other.publicKey)
+        assert len(dh.getKey()) == 32  # noqa: PLR2004
+
+
+class TestDiffieHellmanInterop:
+    """Cross-implementation tests: server vs agent stager DH + HKDF."""
+
+    @staticmethod
+    def _load_agent_dh():
+        ns = {}
+        stager_common = pathlib.Path("empire/server/data/agent/stagers/common")
+        exec(
+            compile(
+                (stager_common / "diffiehellman.py").read_text(),
+                "diffiehellman.py",
+                "exec",
+            ),
+            ns,
+        )
+        return ns["DiffieHellman"]
+
+    def test_server_agent_hkdf_interop(self):
+        """Server and agent stager must derive identical keys via HKDF."""
+        AgentDH = self._load_agent_dh()
+        server_dh = encryption.DiffieHellman()
+        agent_dh = AgentDH()
+
+        server_dh.gen_key(agent_dh.publicKey)
+        agent_dh.genKey(server_dh.publicKey)
+
+        assert server_dh.getKey() == agent_dh.getKey()
+
+    def test_hkdf_known_answer_vector(self):
+        """Pin HKDF output for a known shared secret — use this vector in Go/C# tests.
+
+        shared_secret=42, normalized to 768 bytes big-endian, salt=zeros(32),
+        info=b"empire-session-key", length=32.
+        """
+        ikm = (42).to_bytes(768, "big")
+        server_key = HKDF(
+            algorithm=hashes.SHA256(), length=32, salt=None, info=b"empire-session-key"
+        ).derive(ikm)
+
+        # Agent stager hand-rolled HKDF (hmac-based, IronPython compatible)
+        salt = b"\x00" * 32
+        prk = hmac_mod.new(salt, ikm, hashlib.sha256).digest()
+        agent_key = hmac_mod.new(
+            prk, b"empire-session-key" + b"\x01", hashlib.sha256
+        ).digest()
+
+        assert server_key == agent_key
+        assert len(server_key) == 32  # noqa: PLR2004
+        assert (
+            server_key.hex()
+            == "3013cbac5ff612b04092859f41f025db39b4ef21b9a742826d0baf7fa3eb5016"
+        )
 
 
 class TestEd25519:

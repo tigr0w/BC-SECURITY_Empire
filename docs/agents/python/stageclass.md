@@ -10,7 +10,7 @@ The `Stage` class is responsible for managing the agent's initial communication 
 - **kill_date**: The date on which the agent will automatically cease operations.
 - **working_hours**: A time window during which the agent is allowed to operate.
 - **session_id**: A randomly generated session identifier for the agent.
-- **key**: The encryption key that will be derived from the Diffie-Hellman key exchange.
+- **key**: The encryption key derived from the Diffie-Hellman key exchange via HKDF-SHA256.
 - **headers**: The HTTP headers that the agent will use, derived from the communication profile.
 - **packet_handler**: An instance of the packet handler (likely `ExtendedPacketHandler`) which will handle the packet-level operations like encryption, routing, etc.
 - **taskURIs**: A list of potential URIs the agent can use to fetch tasking or communicate results.
@@ -29,7 +29,7 @@ The agent incorporates multiple external Python functionalities, sourced via Jin
 
 These functionalities provide:
 - AES-CBC & AES-256-GCM Encryption: For encrypted communications (FIPS-compliant).
-- Diffie-Hellman Key Exchange: Secure establishment of a shared secret key.
+- Diffie-Hellman Key Exchange + HKDF-SHA256: Secure establishment of a shared session key (FIPS SP 800-56C).
 - System Information: Gather details about the host system.
 - HTTP Communication Methods: Communication methods tailored for HTTP. (Can be customized with other listener options)
 
@@ -58,7 +58,7 @@ Parses the communication profile string to extract and set up the HTTP headers f
 
 The main method responsible for:
 
-1. Initiating the Diffie-Hellman key exchange with the server.
+1. Initiating the Diffie-Hellman key exchange with the server (session key derived via HKDF-SHA256).
 2. Sending system information to the server.
 3. Decrypting the agent code received from the server.
 4. Executing the agent code and initializing the main agent operations.

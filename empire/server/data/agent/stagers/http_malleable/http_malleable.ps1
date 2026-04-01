@@ -629,8 +629,8 @@ public class DiffieHellman
         byte[] rawSharedSecretBytes = sharedSecret.ToByteArray();
         Array.Reverse(rawSharedSecretBytes);
 
-        // Always normalize to 6147 bytes
-        int expectedLength = 6147;
+        // Normalize shared secret to fixed 768 bytes (6144-bit prime / 8)
+        int expectedLength = 768;
         if (rawSharedSecretBytes.Length < expectedLength)
         {
             byte[] padded = new byte[expectedLength];
@@ -641,16 +641,27 @@ public class DiffieHellman
         }
         else if (rawSharedSecretBytes.Length > expectedLength)
         {
-            // Truncate if too long (should rarely happen)
             rawSharedSecretBytes = rawSharedSecretBytes
                 .Skip(rawSharedSecretBytes.Length - expectedLength).ToArray();
         }
 
+        // HKDF-SHA256 key derivation (FIPS SP 800-56C compliant)
+        AesKey = HkdfSha256(rawSharedSecretBytes, null, System.Text.Encoding.ASCII.GetBytes("empire-session-key"));
+    }
 
-        using (SHA256 sha256 = SHA256.Create())
-        {
-            AesKey = sha256.ComputeHash(rawSharedSecretBytes);
-        }
+    private static byte[] HkdfSha256(byte[] ikm, byte[] salt, byte[] info)
+    {
+        // HKDF-SHA256 per RFC 5869. Only supports 32-byte output (one HMAC-SHA256 block).
+        // Extract: PRK = HMAC-SHA256(salt, IKM)
+        if (salt == null) salt = new byte[32];
+        byte[] prk;
+        using (var hmac = new HMACSHA256(salt)) { prk = hmac.ComputeHash(ikm); }
+
+        // Expand: T(1) = HMAC-SHA256(PRK, info || 0x01)
+        byte[] input = new byte[info.Length + 1];
+        Array.Copy(info, 0, input, 0, info.Length);
+        input[input.Length - 1] = 0x01;
+        using (var hmac = new HMACSHA256(prk)) { return hmac.ComputeHash(input); }
     }
 
     private static BigInteger GenerateRandomBigInteger()

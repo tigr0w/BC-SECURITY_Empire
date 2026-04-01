@@ -5,6 +5,7 @@ import os
 import ssl
 
 from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey as _Ed25519PrivateKey,
 )
@@ -15,6 +16,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import (
     AESGCM as LibAESGCM,
 )
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 log = logging.getLogger(__name__)
@@ -221,22 +223,21 @@ class DiffieHellman:
 
     def gen_key(self, otherKey):
         """
-        Derive the shared secret, then hash it to obtain the shared key.
+        Derive the shared secret, then use HKDF-SHA256 to obtain the shared key.
+        FIPS SP 800-56C compliant key derivation.
         """
         self.sharedSecret = self.gen_secret(self.privateKey, otherKey)
 
-        # Convert the shared secret (int) to an array of bytes in network order
-        # Otherwise hashlib can't hash it.
-        try:
-            bin_str = f"{self.sharedSecret:b}".zfill(6147)
-            _sharedSecretBytes = int(bin_str, 2).to_bytes(len(bin_str), "big")
-        except AttributeError:
-            _sharedSecretBytes = str(self.sharedSecret)
+        # Normalize shared secret to fixed 768 bytes (6144-bit prime / 8)
+        _sharedSecretBytes = self.sharedSecret.to_bytes(768, "big")
 
-        s = hashlib.sha256()
-        s.update(bytes(_sharedSecretBytes))
-
-        self.key = s.digest()
+        hkdf = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=None,
+            info=b"empire-session-key",
+        )
+        self.key = hkdf.derive(_sharedSecretBytes)
 
     def getKey(self):
         """

@@ -11,6 +11,8 @@ import (
 	"log"
 	"math/big"
 	"net/http"
+
+	"golang.org/x/crypto/hkdf"
 )
 
 // Use standard DH parameters (6144-bit MODP Group 17)
@@ -33,8 +35,9 @@ func GenerateDHKeyPair() (*big.Int, *big.Int, error) {
 func CheckPublicKey(otherKey *big.Int) bool {
 	// Ensure it's within range
 	if otherKey.Cmp(big.NewInt(2)) > 0 && otherKey.Cmp(new(big.Int).Sub(dhPrime, big.NewInt(1))) < 0 {
-		// Verify that (otherKey^(prime-1)/2) mod prime == 1
-		return new(big.Int).Exp(otherKey, new(big.Int).Sub(dhPrime, big.NewInt(1)), dhPrime).Cmp(big.NewInt(1)) == 0
+		// Verify Legendre symbol: (otherKey^((prime-1)/2)) mod prime == 1
+		exp := new(big.Int).Div(new(big.Int).Sub(dhPrime, big.NewInt(1)), big.NewInt(2))
+		return new(big.Int).Exp(otherKey, exp, dhPrime).Cmp(big.NewInt(1)) == 0
 	}
 	return false
 }
@@ -42,26 +45,22 @@ func CheckPublicKey(otherKey *big.Int) bool {
 func ComputeDHSharedSecret(privateKey, serverPubKey *big.Int) ([]byte, error) {
 	// Compute shared secret: (serverPub^privateKey) mod p
 	sharedSecret := new(big.Int).Exp(serverPubKey, privateKey, dhPrime)
-    // Print the bit length
 
-	// Define the fixed byte length (same as the prime size)
-	fixedLength := (dhPrime.BitLen()) + 3 // Convert bits to bytes
+	// Normalize shared secret to fixed 768 bytes (6144-bit prime / 8)
+	sharedSecretBytes := make([]byte, 768)
+	sharedSecret.FillBytes(sharedSecretBytes)
 
-	// Properly zero-pad the shared secret
-	sharedSecretBytes := make([]byte, fixedLength)
-	// Print the actual value for debugging
-	sharedSecret.FillBytes(sharedSecretBytes) // Ensures leading zeros are included
+	// HKDF-SHA256 key derivation (FIPS SP 800-56C compliant)
+	reader := hkdf.New(sha256.New, sharedSecretBytes, nil, []byte("empire-session-key"))
+	key := make([]byte, 32)
+	if _, err := io.ReadFull(reader, key); err != nil {
+		return nil, fmt.Errorf("HKDF key derivation failed: %w", err)
+	}
 
-	// Hash using SHA-256
-	hash := sha256.Sum256(sharedSecretBytes)
-
-	return hash[:], nil
+	return key, nil
 }
 
 func sign_with_hash(message []byte, privKeyBytes []byte) []byte {
-	// hash := sha512.New()
-	// hash.Write(message)
-	// hashedMessage := hash.Sum(nil)
 	privKey := ed25519.NewKeyFromSeed(privKeyBytes)
 	signature := ed25519.Sign(privKey, message)
 	return signature
