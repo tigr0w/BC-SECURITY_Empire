@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Replaced MD5 with SHA-256 for staging key normalization when a non-32-character key is provided. MD5 is not FIPS-approved. **Breaking:** Listeners with non-32-char staging keys will derive a different normalized key — agents staged under the old algorithm must be re-staged.
 -   **BREAKING:** Replaced bcrypt password hashing with PBKDF2-HMAC-SHA256 (600K iterations) for FIPS SP 800-132 compliance. Existing bcrypt hashes are incompatible; users must reset passwords or recreate the database after upgrading.
+-   Replaced `random.choice`/`random.choices` with `secrets.choice` (CSPRNG) for staging key generation, keyword obfuscation, session ID generation, and nonce generation per FIPS SP 800-90A
 
 ### Added
 

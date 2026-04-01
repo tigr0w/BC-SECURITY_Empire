@@ -41,6 +41,7 @@ import ipaddress
 import logging
 import random
 import re
+import secrets
 import socket
 import string
 import sys
@@ -103,7 +104,7 @@ def random_string(length=-1, charset=string.ascii_letters):
     """
     if length == -1:
         length = random.randrange(6, 16)
-    return "".join(random.choice(charset) for x in range(length))
+    return "".join(secrets.choice(charset) for x in range(length))
 
 
 def obfuscate_call_home_address(data):

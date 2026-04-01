@@ -2,7 +2,7 @@ import base64
 import contextlib
 import json
 import logging
-import random
+import secrets
 import string
 import threading
 import typing
@@ -1586,5 +1586,5 @@ class AgentCommunicationService:
 
     def generate_sessionid(self):
         return "".join(
-            random.choice(string.ascii_uppercase + string.digits) for _ in range(8)
+            secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
         )
