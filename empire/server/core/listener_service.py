@@ -300,12 +300,18 @@ class ListenerService:
         for option_name, option_meta in instance.options.items():
             value = option_meta["Value"]
             if option_name == "StagingKey":
-                # if the staging key isn't 32 characters, assume we're md5 hashing it
+                # if the staging key isn't 32 characters, use first 32 hex chars of its SHA-256 hash
                 value = str(value).strip()
+                if not value:
+                    msg = "StagingKey cannot be empty"
+                    raise ValueError(msg)
                 if len(value) != 32:  # noqa: PLR2004
-                    staging_key_hash = hashlib.md5(value.encode("UTF-8")).hexdigest()
+                    staging_key_hash = hashlib.sha256(
+                        value.encode("UTF-8")
+                    ).hexdigest()[:32]
                     log.warning(
-                        f"Warning: staging key not 32 characters, using hash of staging key instead: {staging_key_hash}"
+                        "Staging key is %d characters (expected 32), deriving key.",
+                        len(value),
                     )
                     instance.options[option_name]["Value"] = staging_key_hash
                 else:
