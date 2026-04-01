@@ -3,7 +3,6 @@ import hmac
 import logging
 import os
 import ssl
-import struct
 
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -15,9 +14,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import (
     AESGCM as LibAESGCM,
-)
-from cryptography.hazmat.primitives.ciphers.aead import (
-    ChaCha20Poly1305 as LibChaCha20Poly1305,
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
@@ -249,171 +245,16 @@ class DiffieHellman:
         return self.key
 
 
-def divceil(divident, divisor):
-    """Integer division with rounding up"""
-    quot, r = divmod(divident, divisor)
-    return quot + int(bool(r))
-
-
-class Poly1305:
-    """Poly1305 authenticator
-
-    Authored by Dušan Klinec's implementation at https://github.com/ph4r05/py-chacha20poly1305
-    """
-
-    P = 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB  # 2^130-5
-
-    @staticmethod
-    def le_bytes_to_num(data):
-        """Convert a number from little endian byte format"""
-        ret = 0
-        for i in range(len(data) - 1, -1, -1):
-            ret <<= 8
-            ret += data[i]
-        return ret
-
-    @staticmethod
-    def num_to_16_le_bytes(num):
-        """Convert number to 16 bytes in little endian format"""
-        ret = [0] * 16
-        for i, _ in enumerate(ret):
-            ret[i] = num & 0xFF
-            num >>= 8
-        return bytearray(ret)
-
-    def __init__(self, key):
-        """Set the authenticator key"""
-        key_byte_length = 32  # 32 bytes
-        if len(key) != key_byte_length:
-            raise ValueError("Key must be 256 bit long")
-        self.acc = 0
-        self.r = self.le_bytes_to_num(key[0:16])
-        self.r &= 0x0FFFFFFC0FFFFFFC0FFFFFFC0FFFFFFF
-        self.s = self.le_bytes_to_num(key[16:32])
-
-    def create_tag(self, data):
-        """Calculate authentication tag for data deterministically for the given key and data.
-        This method must not mutate internal accumulator state so repeated calls with the same
-        inputs return the same tag.
-        """
-        acc = 0
-        for i in range(0, divceil(len(data), 16)):
-            n = self.le_bytes_to_num(data[i * 16 : (i + 1) * 16] + b"\x01")
-            acc += n
-            acc = (self.r * acc) % self.P
-        acc += self.s
-        return self.num_to_16_le_bytes(acc)
-
-
-class ChaCha:
-    """Wrapper around cryptography's ChaCha20 stream cipher.
-    Preserves existing API (key, nonce, counter=0, rounds=20) but ignores rounds.
-    Nonce must be 12 bytes; we combine with 4-byte little-endian counter to form
-    the 16-byte nonce required by cryptography's ChaCha20 implementation.
-    """
-
-    def __init__(self, key, nonce, counter=0, rounds=20):
-        key_byte_length = 32
-        if len(key) != key_byte_length:
-            raise ValueError("Key must be 256 bit long")
-
-        nonce_byte_length = 12
-        if len(nonce) != nonce_byte_length:
-            raise ValueError("Nonce must be 96 bit long")
-
-        self.key = key
-        self.nonce = nonce
-        self.counter = counter & 0xFFFFFFFF
-        self.rounds = rounds
-
-    def _construct_nonce16(self, block_counter=0):
-        ctr = (self.counter + block_counter) & 0xFFFFFFFF
-        return struct.pack("<I", ctr) + self.nonce
-
-    def _cipher(self, nonce16):
-        algorithm = algorithms.ChaCha20(self.key, nonce16)
-        return Cipher(algorithm, mode=None)
-
-    def encrypt(self, plaintext):
-        nonce16 = self._construct_nonce16(0)
-        encryptor = self._cipher(nonce16).encryptor()
-        return encryptor.update(plaintext) + encryptor.finalize()
-
-    def key_stream(self, counter):
-        # Generate 64 bytes of keystream for the given block index for compatibility
-        nonce16 = self._construct_nonce16(counter)
-        encryptor = self._cipher(nonce16).encryptor()
-        return bytearray(encryptor.update(b"\x00" * 64) + encryptor.finalize())
-
-    def decrypt(self, ciphertext):
-        nonce16 = self._construct_nonce16(0)
-        decryptor = self._cipher(nonce16).decryptor()
-        return decryptor.update(ciphertext) + decryptor.finalize()
-
-
 class TagInvalidException(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
 
-class ChaCha20Poly1305:
-    """Wrapper around cryptography's ChaCha20Poly1305 AEAD cipher.
-
-    Replaces the previous pure-Python implementation with the standard library
-    from cryptography.hazmat.primitives.ciphers.aead.
-    Preserves the existing API: encrypt/decrypt and seal/open.
-    """
-
-    def __init__(self, key, implementation="python"):
-        key_byte_length = 32
-        if len(key) != key_byte_length:
-            raise ValueError("Key must be 256 bit long")
-
-        self.isBlockCipher = False
-        self.isAEAD = True
-        self.nonceLength = 12
-        self.tagLength = 16
-        self.implementation = implementation
-        self.name = "chacha20-poly1305"
-        self.key = key
-        self._aead = LibChaCha20Poly1305(key)
-
-    def _to_bytes(self, associated_data):
-        if associated_data is None:
-            return None
-        if isinstance(associated_data, str):
-            return associated_data.encode("utf-8")
-        return associated_data
-
-    def encrypt(self, nonce, plaintext, associated_data=None):
-        ad = self._to_bytes(associated_data)
-        return self._aead.encrypt(nonce, plaintext, ad)
-
-    def decrypt(self, nonce, ciphertext, associated_data=None):
-        ad = self._to_bytes(associated_data)
-        try:
-            return self._aead.decrypt(nonce, ciphertext, ad)
-        except InvalidTag as err:
-            raise TagInvalidException from err
-
-    def seal(self, nonce, plaintext, data):
-        ad = self._to_bytes(data)
-        return self._aead.encrypt(nonce, plaintext, ad)
-
-    def open(self, nonce, ciphertext, data):
-        ad = self._to_bytes(data)
-        try:
-            return self._aead.decrypt(nonce, ciphertext, ad)
-        except InvalidTag as err:
-            raise TagInvalidException from err
-
-
 class AES256GCM:
     """AES-256-GCM AEAD cipher for routing packet encryption.
 
-    FIPS-approved replacement for ChaCha20Poly1305.
-    Same API as ChaCha20Poly1305: encrypt/decrypt and seal/open.
-    Wire format is identical: 12-byte nonce, 16-byte ciphertext, 16-byte tag.
+    FIPS-approved AEAD cipher. API: encrypt/decrypt and seal/open.
+    Wire format: 12-byte nonce, ciphertext, 16-byte tag.
     """
 
     def __init__(self, key, implementation="python"):

@@ -119,7 +119,7 @@ class AES256GCM(object):
     """Pure-Python AES-256-GCM AEAD cipher.
 
     Uses the AES class from aes.py for the underlying block cipher.
-    API matches the previous ChaCha20Poly1305 class: encrypt/decrypt and seal/open.
+    API: encrypt/decrypt and seal/open.
     """
 
     def __init__(self, key, implementation='python'):

@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+-   Removed ChaCha20-Poly1305 classes (`Poly1305`, `ChaCha`, `ChaCha20Poly1305`) from `encryption.py` and agent-side `chacha.py` stager — not FIPS-approved. Routing packets already use AES-256-GCM.
 -   Removed legacy `archive` field from `empire_compiler` config; use `repo` and `ref` instead
 -   Removed Seatbelt module (superseded by updated Empire Compiler modules)
 -   Removed legacy PowerShell BloodHound/SharpHound modules (`situational_awareness/network/bloodhound.yaml`, `sharphound.yaml`), replaced by native C# SharpHound module
