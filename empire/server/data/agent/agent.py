@@ -9,8 +9,8 @@ import os
 import platform
 import pwd
 import queue as Queue
-import random
 import re
+import secrets
 import shutil
 import socket
 import stat
@@ -454,7 +454,7 @@ class MainAgent:
 
                 minSleep = int((1.0 - self.jitter) * self.delay)
                 maxSleep = int((1.0 + self.jitter) * self.delay)
-                sleepTime = random.randint(minSleep, maxSleep)
+                sleepTime = secrets.randbelow(maxSleep - minSleep + 1) + minSleep
                 time.sleep(sleepTime)
                 partIndex += 1
                 offset += 512000
@@ -1179,7 +1179,7 @@ class MainAgent:
                 minSleep = int((1.0 - self.jitter) * self.delay)
                 maxSleep = int((1.0 + self.jitter) * self.delay)
 
-                sleepTime = random.randint(minSleep, maxSleep)
+                sleepTime = secrets.randbelow(maxSleep - minSleep + 1) + minSleep
                 time.sleep(sleepTime)
 
                 code, data = self.packet_handler.send_message()

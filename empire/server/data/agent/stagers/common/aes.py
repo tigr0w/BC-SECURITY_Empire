@@ -6,7 +6,6 @@ import copy
 import hashlib
 import hmac
 import os
-import random
 import struct
 
 
@@ -289,8 +288,7 @@ def CBCdec(aesObj, ciphertext, base64=False):
 
 
 def getIV(len=16):
-    rng = random.SystemRandom()
-    return ''.join(chr(rng.randint(0, 255)) for _ in range(len))
+    return os.urandom(len)
 
 
 def aes_encrypt(key, data):

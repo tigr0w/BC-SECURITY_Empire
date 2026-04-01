@@ -1,5 +1,5 @@
 import logging
-import random
+import secrets
 import string
 
 from empire.server.common import helpers
@@ -206,12 +206,12 @@ class Stager:
             return ""
 
         set_string = "".join(
-            random.choice(string.ascii_letters)
-            for i in range(random.randint(1, len(listener_name)))
+            secrets.choice(string.ascii_letters)
+            for i in range(secrets.randbelow(len(listener_name)) + 1)
         )
         set_method = "".join(
-            random.choice(string.ascii_letters)
-            for i in range(random.randint(1, len(listener_name)))
+            secrets.choice(string.ascii_letters)
+            for i in range(secrets.randbelow(len(listener_name)) + 1)
         )
 
         chunks = list(helpers.chunks(launcher, 50))

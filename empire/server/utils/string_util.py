@@ -1,5 +1,5 @@
-import random
 import re
+import secrets
 import string
 
 SESSION_ID_PATTERN = re.compile(r"^[A-Z0-9]{8}$")
@@ -23,5 +23,5 @@ def get_random_string(length=-1, charset=string.ascii_letters):
     A character set can be specified, defaulting to just alpha letters.
     """
     if length == -1:
-        length = random.randrange(6, 16)
-    return "".join(random.choice(charset) for x in range(length))
+        length = secrets.randbelow(10) + 6
+    return "".join(secrets.choice(charset) for x in range(length))

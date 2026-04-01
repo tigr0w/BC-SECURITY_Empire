@@ -39,7 +39,6 @@ import base64
 import binascii
 import ipaddress
 import logging
-import random
 import re
 import secrets
 import socket
@@ -61,7 +60,7 @@ log = logging.getLogger(__name__)
 #
 ################################################################
 
-globentropy = random.randint(1, datetime.today().day)
+globentropy = secrets.randbelow(datetime.today().day) + 1
 globDebug = False
 
 
@@ -103,7 +102,7 @@ def random_string(length=-1, charset=string.ascii_letters):
     A character set can be specified, defaulting to just alpha letters.
     """
     if length == -1:
-        length = random.randrange(6, 16)
+        length = secrets.randbelow(10) + 6
     return "".join(secrets.choice(charset) for x in range(length))
 
 

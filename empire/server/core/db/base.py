@@ -310,22 +310,32 @@ def startup_db():
             if use == "mysql":
                 database_name = database_config.database_name
 
-                result = db.execute(
+                add_unique_check_sql = """
+                    ALTER TABLE hosts
+                    ADD COLUMN unique_check VARCHAR(255) GENERATED ALWAYS AS (SHA2(CONCAT(name, internal_ip), 256)) UNIQUE;
+                """
+                gen_expr = db.execute(
                     text(
                         f"""
-                    SELECT * FROM information_schema.COLUMNS
+                    SELECT GENERATION_EXPRESSION FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = '{database_name}'
                     AND table_name = 'hosts'
                     AND column_name = 'unique_check'
                     """
                     )
-                ).fetchone()
-                if not result:
+                ).scalar()
+                if gen_expr is None:
+                    db.execute(text(add_unique_check_sql))
+                elif "MD5" in gen_expr.upper():
+                    log.info(
+                        "Migrating hosts.unique_check from MD5 to SHA2 for FIPS compliance."
+                    )
                     db.execute(
                         text(
                             """
                         ALTER TABLE hosts
-                        ADD COLUMN unique_check VARCHAR(255) GENERATED ALWAYS AS (MD5(CONCAT(name, internal_ip))) UNIQUE;
+                        DROP COLUMN unique_check,
+                        ADD COLUMN unique_check VARCHAR(255) GENERATED ALWAYS AS (SHA2(CONCAT(name, internal_ip), 256)) UNIQUE;
                         """
                         )
                     )

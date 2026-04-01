@@ -1,6 +1,6 @@
 import base64
 import logging
-import random
+import secrets
 from pathlib import Path
 from textwrap import dedent
 
@@ -130,7 +130,7 @@ class Listener:
         staging_key = self.options["RedirectStagingKey"]["Value"]
         profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
-        stage0 = random.choice(uris)
+        stage0 = secrets.choice(uris)
         cookie = listener.session_cookie
 
         if language == "powershell":
@@ -345,8 +345,8 @@ class Listener:
         session_cookie = listener.options["Cookie"]["Value"]
 
         # select some random URIs for staging from the main profile
-        stage1 = random.choice(uris)
-        stage2 = random.choice(uris)
+        stage1 = secrets.choice(uris)
+        stage2 = secrets.choice(uris)
 
         if language.lower() == "powershell":
             template_path = [

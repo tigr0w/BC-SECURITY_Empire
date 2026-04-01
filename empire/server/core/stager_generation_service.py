@@ -1,6 +1,6 @@
 import base64
 import logging
-import random
+import secrets
 import shutil
 import subprocess
 import typing
@@ -313,7 +313,7 @@ class StagerGenerationService:
     def _get_request_uri(self, listener) -> str:
         profile = listener.options["DefaultProfile"]["Value"]
         uris = [uri.strip() for uri in profile.split("|")[0].split(",") if uri.strip()]
-        request_uri = random.choice(uris) if uris else "/"
+        request_uri = secrets.choice(uris) if uris else "/"
         if not request_uri.startswith("/"):
             request_uri = f"/{request_uri}"
         return request_uri

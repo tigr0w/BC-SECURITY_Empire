@@ -33,9 +33,9 @@ def test_http_generate_launcher(monkeypatch, main_menu_mock):
     monkeypatch.setattr("empire.server.listeners.http.packets", packets)
 
     # guarantee the chosen stage0 url.
-    random = MagicMock()
-    random.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http.random", random)
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr("empire.server.listeners.http.secrets", secrets_mock)
 
     http_listener = Listener(main_menu_mock)
 
@@ -66,9 +66,9 @@ def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
     from empire.server.listeners.http_foreign import Listener
 
     # guarantee the chosen stage0 url.
-    random = MagicMock()
-    random.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http_foreign.random", random)
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr("empire.server.listeners.http_foreign.secrets", secrets_mock)
 
     http_foreign_listener = Listener(main_menu_mock)
 
@@ -111,9 +111,9 @@ def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
     monkeypatch.setattr("empire.server.listeners.http_hop.packets", packets)
 
     # guarantee the chosen stage0 url.
-    random = MagicMock()
-    random.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http_hop.random", random)
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr("empire.server.listeners.http_hop.secrets", secrets_mock)
 
     http_hop_listener = Listener(main_menu_mock)
 
@@ -160,9 +160,9 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     monkeypatch.setattr("empire.server.listeners.http_malleable.packets", packets)
 
     # guarantee the chosen stage0 url.
-    random_mock = MagicMock()
-    random_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http_malleable.random", random_mock)
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr("empire.server.listeners.http_malleable.secrets", secrets_mock)
 
     helpers_mock = MagicMock()
     helpers_mock.random_string.return_value = "r"
@@ -222,9 +222,11 @@ def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
     monkeypatch.setattr("empire.server.listeners.port_forward_pivot.packets", packets)
 
     # guarantee the chosen stage0 url.
-    random = MagicMock()
-    random.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.port_forward_pivot.random", random)
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr(
+        "empire.server.listeners.port_forward_pivot.secrets", secrets_mock
+    )
 
     port_forward_pivot = Listener(main_menu_mock)
 

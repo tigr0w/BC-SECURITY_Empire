@@ -1,5 +1,5 @@
 import os
-import random
+import secrets
 import time
 
 # Empire imports
@@ -190,7 +190,7 @@ class Listener:
         _stagingKey = listenerOptions["StagingKey"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
         uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
-        stage0 = random.choice(uris)
+        stage0 = secrets.choice(uris)
         _launchURI = f"{host}/{stage0}"
 
         if language.startswith("po"):

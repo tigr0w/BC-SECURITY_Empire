@@ -2,7 +2,7 @@ import base64
 import copy
 import logging
 import os
-import random
+import secrets
 import ssl
 import time
 from pathlib import Path
@@ -235,7 +235,7 @@ class Listener:
         staging_key = self.options["StagingKey"]["Value"]
         profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
-        stage0 = random.choice(uris)
+        stage0 = secrets.choice(uris)
         customHeaders = profile.split("|")[2:]
         cookie = self.options["Cookie"]["Value"]
 
@@ -530,8 +530,8 @@ class Listener:
         customHeaders = profile.split("|")[2:]
 
         # select some random URIs for staging from the main profile
-        stage1 = random.choice(uris)
-        stage2 = random.choice(uris)
+        stage1 = secrets.choice(uris)
+        stage2 = secrets.choice(uris)
 
         if language.lower() == "powershell":
             template_path = [

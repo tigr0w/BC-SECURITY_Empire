@@ -1,6 +1,6 @@
 import base64
 import logging
-import random
+import secrets
 from textwrap import dedent
 
 from empire.server.common import helpers, templating
@@ -175,7 +175,7 @@ class Listener:
         stagingKey = self.options["StagingKey"]["Value"]
         profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
-        stage0 = random.choice(uris)
+        stage0 = secrets.choice(uris)
         customHeaders = profile.split("|")[2:]
         cookie = self.options["Cookie"]["Value"]
 
