@@ -4,7 +4,6 @@ import logging
 import os
 import random
 import ssl
-import sys
 import time
 from pathlib import Path
 from textwrap import dedent
@@ -1244,16 +1243,8 @@ class Listener:
             if certPath.strip() != "":
                 cert_path = Path(certPath).resolve()
 
-                # support any version of tls
-                pyversion = sys.version_info
-                if (pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13) or (
-                    pyversion[0] >= 3
-                ):
-                    proto = ssl.PROTOCOL_TLS
-                else:
-                    proto = ssl.PROTOCOL_SSLv23
-
-                context = ssl.SSLContext(proto)
+                context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                context.minimum_version = ssl.TLSVersion.TLSv1_2
                 context.load_cert_chain(
                     cert_path / "empire-chain.pem",
                     cert_path / "empire-priv.key",

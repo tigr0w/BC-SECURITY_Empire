@@ -1,4 +1,4 @@
-import random
+import secrets
 from textwrap import dedent
 
 from empire.server.common import helpers
@@ -90,17 +90,13 @@ def python_extract_stager(staging_key):
 
 def generate_random_cipher():
     """
-    Generate random cipher
+    Return FIPS-approved TLS 1.2 cipher suites (AEAD + forward secrecy)
+    in randomized order for JA3 evasion. Both suites are included so
+    OpenSSL can negotiate even if one is unavailable on the platform.
     """
-    random_tls12 = [
+    ciphers = [
         "ECDHE-RSA-AES256-GCM-SHA384",
         "ECDHE-RSA-AES128-GCM-SHA256",
-        "ECDHE-RSA-AES256-SHA384",
-        "ECDHE-RSA-AES256-SHA",
-        "AES256-SHA256",
-        "AES128-SHA256",
     ]
-    tls12 = random.choice(random_tls12)
-
-    tls10 = "ECDHE-RSA-AES256-SHA"
-    return f"{tls12}:{tls10}"
+    shuffled = secrets.SystemRandom().sample(ciphers, len(ciphers))
+    return ":".join(shuffled)
