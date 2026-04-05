@@ -3,7 +3,7 @@
 Reads module YAMLs directly and calls the real EmpireCompiler binary,
 bypassing the full server/DB startup. Run locally with:
 
-    ./ps-empire test --runslow tests/test_compile_csharp.py -v
+    ./ps-empire test --runslow empire/test/test_compile_csharp.py -v
 """
 
 from pathlib import Path
@@ -18,10 +18,8 @@ except ImportError:
 
 from empire.server.core.dotnet import DotnetCompiler
 
-MODULES_DIR = (
-    Path(__file__).resolve().parent.parent / "empire" / "server" / "modules" / "csharp"
-)
-INSTALL_PATH = Path(__file__).resolve().parent.parent / "empire" / "server"
+MODULES_DIR = Path(__file__).resolve().parent.parent / "server" / "modules" / "csharp"
+INSTALL_PATH = Path(__file__).resolve().parent.parent / "server"
 
 
 def _build_compiler_yaml(yaml_module: dict) -> str:
