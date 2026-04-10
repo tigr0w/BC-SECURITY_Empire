@@ -39,7 +39,6 @@ def donut_create(**kwargs):
         orig_cwd = Path.cwd()
     except FileNotFoundError:
         orig_cwd = Path(tempfile.gettempdir())
-
     with _donut_lock, tempfile.TemporaryDirectory() as tmp_dir:
         os.chdir(tmp_dir)
         try:

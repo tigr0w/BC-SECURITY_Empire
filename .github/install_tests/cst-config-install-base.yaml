@@ -71,7 +71,7 @@ commandTests:
   - name: "ps-empire version"
     command: "./ps-empire"
     args: ["server", "--version"]
-    expectedOutput: ["6.* BC Security Fork"]
+    expectedOutput: ["7.* BC Security Fork"]
 fileExistenceTests:
   - name: 'profiles'
     path: '/empire/empire/server/data/profiles/'
