@@ -33,17 +33,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added .NET Framework 4.x compatible C# `AesGcmHelper` class (manual GCM via `AesCryptoServiceProvider` ECB + GHASH/GCTR) for PowerShell agent stagers
 -   Added cross-implementation interoperability tests verifying server (cryptography lib) and agent (pure Python) AES-GCM produce identical output
 -   Added routing packet tests for wrong-key rejection, tampered packets, AAD mismatch, empty/non-block-aligned plaintexts, and multiple concatenated packets
+-   Added 25 new modules (19 PowerShell, 6 Python) based on Atomic Red Team for ATT&CK gap coverage: clear command history (T1070.003), impair history logging (T1562.003), disable firewall (T1562.004), hide artifacts (T1564.001), FSUtil indicator removal (T1070), network share removal (T1070.005), rename system utilities (T1036.003), masquerading (T1036, T1036.005), rundll32 proxy execution (T1218.011), regsvr32 proxy execution (T1218.010), signed script proxy (T1216), jsc.exe compilation (T1127), BITS jobs (T1197), logon script persistence (T1037.001), VM detection (T1497.001), system language discovery (T1614.001), web beaconing (T1071.001), and local data staging (T1074.001)
 -   Added `./ps-empire test` command as a convenience wrapper for pytest with passthrough arguments
 -   Added Alembic database migration framework for versioned schema management. Untracked databases are stamped at the baseline revision on first startup; already-tracked databases are left as-is so pending migrations can be applied. Includes `migrate_db()` and `backup_db()` functions for future update workflows.
 -   Added configurable MySQL connection pool settings (`pool_size`, `max_overflow`, `pool_pre_ping`, `pool_recycle`) via server config YAML
 -   Added pool health monitoring that warns at 80% capacity
 -   Added `mysql` pytest marker for tests requiring MySQL and Docker
 -   Added performance test suite (`empire/test/test_performance/`) for pool exhaustion and event loop blocking regression testing
+-   Added performance tests for module obfuscation (event loop blocking detection, latency measurement, pre-obfuscation latency)
+-   Added `POST /api/v2/obfuscation/modules/preobfuscate` endpoint for targeted pre-obfuscation of specific modules by ID (runs in background, returns 202)
 -   Added `strict` and `suggested_values` to boolean switch options in modules for better validation and UI hints
 -   Added dynamic `depends_on` options to stagers so dependent fields (e.g. `Bypasses`, `Obfuscate`, `ObfuscateCommand`) are shown/hidden based on the selected listener type
 -   Added `nanodump` BOF module for creating minidumps of the LSASS process using various evasion techniques (handle duplication, process forking, snapshot, seclogon handle leaking)
 -   Added multi-language stager support (powershell, csharp, ironpython, go) to UAC bypass privesc modules: `bypassuac`, `bypassuac_env`, `bypassuac_eventvwr`, `bypassuac_sdctlbypass`, `bypassuac_wscript`
 -   Added `TagInvalidException` handling in server-side `parse_routing_packet` to gracefully reject non-agent traffic instead of raising unhandled exceptions
+-   Added configurable `obfuscation.timeout` setting (default: 300s, set to 0 to disable) for the PowerShell obfuscation subprocess, settable via `config.yaml` or `EMPIRE_OBFUSCATION__TIMEOUT` env var
 
 ### Changed
 
@@ -77,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed flaky `test_pool_exhaustion_at_concurrency_levels[250]` CI failures by marking the 250-concurrency case with `pytest.mark.flaky(reruns=2)` via the new `pytest-rerunfailures` dev dependency. The assertion is preserved exactly (250 stays 250), so a real throughput regression still fails all retries while transient CI resource contention clears on rerun.
 -   Fixed DB pool exhaustion under concurrent load causing 503/504 cascading failures. The root cause was hook connection amplification: async hooks called inside DB session blocks opened a second pool connection via `_run_async_hook` while the caller still held the first, doubling connection usage per check-in.
 -   Fixed event loop blocking across all API endpoints. Previously only stager, listener, and plugin endpoints were addressed; now all 216 handlers use `def` to prevent any synchronous DB call from blocking the event loop.
 -   Fixed `donut-shellcode` failing with "Cannot open file" when a root-owned `loader.bin` exists in the working directory, breaking all shellcode generation tests and stager paths. Donut calls now run in an isolated temp directory via a shared `donut_create()` utility with a threading lock for concurrency safety.
@@ -104,6 +109,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 -   Added `filter='data'` to `tar.extractall()` in compiler download to prevent path traversal from untrusted archives
+-   Fixed double-obfuscation in PowerShell module script generation — when a module source was already obfuscated (via `get_module_source` or `auto_get_source`), `finalize_module` was re-obfuscating the entire combined script, spawning a redundant PowerShell subprocess per task. `finalize_module` now accepts `script_already_obfuscated` to skip the expensive re-obfuscation while still obfuscating the invoke command (`script_end`).
+-   Fixed obfuscation subprocess (`Invoke-Obfuscation`) running indefinitely with no timeout. Added 300s timeout, process group isolation (`start_new_session`), return code checking, and empty output validation. On failure, gracefully falls back to keyword-obfuscated script with error logging.
 
 ## [6.5.0] - 2026-03-08
 
@@ -125,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added Python linux_keyring module for credential extraction from the Linux kernel keyring subsystem
 -   Added Python aws_imds module for AWS IAM role credential theft via EC2 Instance Metadata Service
 -   Added BOF `spawn` module for EarlyBird process hollowing with suspended process creation, shellcode injection, and APC thread hijacking
+-   Agent "got results" log message now includes the task ID for easier post-mortem correlation
 
 ### Changed
 
