@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Fixed** for any bug fixes.
 -   **Security** in case of vulnerabilities.
 
-## [Unreleased]
+## [7.0.0] - Unreleased
 
 ### Security
 
@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Hardened TLS configuration for FIPS SP 800-52r2: enforce TLS 1.2 minimum, removed non-GCM and non-ECDHE cipher suites from JA3 evasion pool, explicit RSA 4096-bit key for self-signed certificates
 -   Replaced all remaining `random` module usage with `secrets` (server-side) and `random.SystemRandom()` (agent-side) for FIPS SP 800-90A CSPRNG compliance across listeners, stagers, agents, and utilities. **Breaking:** Deployed agents must be re-staged.
 -   Replaced MySQL `MD5()` with `SHA2(..., 256)` for `hosts.unique_check` generated column
+-   Added `filter='data'` to `tar.extractall()` in compiler download to prevent path traversal from untrusted archives
 
 ### Added
 
@@ -33,6 +34,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added .NET Framework 4.x compatible C# `AesGcmHelper` class (manual GCM via `AesCryptoServiceProvider` ECB + GHASH/GCTR) for PowerShell agent stagers
 -   Added cross-implementation interoperability tests verifying server (cryptography lib) and agent (pure Python) AES-GCM produce identical output
 -   Added routing packet tests for wrong-key rejection, tampered packets, AAD mismatch, empty/non-block-aligned plaintexts, and multiple concatenated packets
+
+### Changed
+
+-   **BREAKING:** Replaced raw SHA-256 with HKDF-SHA256 (RFC 5869) for DH session key derivation per FIPS SP 800-56C. Updated across all agent languages (Python server, Python/IronPython stager, Go, PowerShell). All deployed agents must be re-staged. Also normalizes shared secret byte encoding to 768 bytes per NIST SP 800-56A.
+-   Fixed Go `CheckPublicKey` to use Legendre symbol `(prime-1)/2` exponent instead of Fermat's little theorem `(prime-1)` which always returned true
+-   Set all C# modules to `background: true` so compiled tasks run without blocking the agent
+-   Renamed VNC module `Username` option to `ServerName` to accurately reflect its purpose (VNC session display name, not authentication credential)
+-   Downgraded compiler args log message from INFO to DEBUG to reduce server log noise
+-   Removed redundant `Agent` option from PatchETW and PatchlessAMSI modules (auto-injected by the framework)
+-   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing packet encryption across all agent languages (PowerShell, Python, IronPython, Go) as part of FIPS algorithm compliance work. The C# agent (Sharpire) must be updated separately.
+-   Increased HMAC-SHA256 truncation from 10 bytes to 16 bytes (128 bits) for AES-CBC payload encryption to meet FIPS SP 800-107 minimum requirements. Updated across all agent languages (Python server, PowerShell, Go, Python stager). The C# agent (Sharpire) must be updated separately.
+-   Updated Empire Compiler to v1.1.0-a.4 (bundles FIPS-compliant Sharpire with 16-byte HMAC, HKDF-SHA256, AES-GCM)
+-   Updated C# module YAMLs to new Empire Compiler format
+-   Changed `AES256GCM.decrypt()`/`.open()` to catch `cryptography.exceptions.InvalidTag` specifically instead of bare `Exception`
+-   Changed `ChaCha20Poly1305.decrypt()`/`.open()` to catch `InvalidTag` specifically instead of bare `Exception`
+-   Changed `AESCipher.verify_hmac()` to use `hmac.compare_digest` for constant-time comparison instead of double-HMAC workaround
+-   Replaced `AESCipher.generate_key()` which sampled printable characters without replacement (~207-bit effective entropy) with `os.urandom(32).hex()` for full 256-bit CSPRNG entropy. The key is now returned as a hex string matching the DH-derived session key format, fixing compatibility with `bytes.fromhex()` in the agent communication service.
+
+### Removed
+
+-   Removed dead `getIV()` function from agent stager AES code (unused, bypassed by inline `os.urandom()`)
+-   Removed ChaCha20-Poly1305 classes (`Poly1305`, `ChaCha`, `ChaCha20Poly1305`) from `encryption.py` and agent-side `chacha.py` stager — not FIPS-approved. Routing packets already use AES-256-GCM.
+-   Removed Seatbelt module (superseded by updated Empire Compiler modules)
+-   Removed legacy PowerShell BloodHound/SharpHound modules (`situational_awareness/network/bloodhound.yaml`, `sharphound.yaml`), replaced by native C# SharpHound module
+
+### Fixed
+
+-   Fixed bounds validation in routing packet parsing: replaced unreachable `length < 0` check with proper `length > available data` check in both Python server and Go agent
+-   Fixed Go agent `ParseRoutingPacket` to correctly use offset when reading nonce from multi-packet payloads
+-   Fixed silent error swallowing in agent `aesgcm.py` `process_tasking`/`process_job_tasking` — bare `except Exception: pass` replaced with specific exception handling and error reporting back to C2
+-   Fixed VNC module using copy-pasted ThreadlessInject code instead of the NVNC library — module was non-functional since introduction. Replaced with correct `NVNC.VncServer` integration matching the module's Password, Port, and ServerName options.
+-   Fixed bare `except:` clauses in agent `parse_task_packet` narrowed to `UnicodeDecodeError`
+-   Fixed dead `length < 0` bounds check in agent `parse_routing_packet` (unsigned int can never be negative) replaced with proper `end > len(data)` validation
+
+## [6.6.0] - Unreleased
+
+### Added
+
 -   Added 25 new modules (19 PowerShell, 6 Python) based on Atomic Red Team for ATT&CK gap coverage: clear command history (T1070.003), impair history logging (T1562.003), disable firewall (T1562.004), hide artifacts (T1564.001), FSUtil indicator removal (T1070), network share removal (T1070.005), rename system utilities (T1036.003), masquerading (T1036, T1036.005), rundll32 proxy execution (T1218.011), regsvr32 proxy execution (T1218.010), signed script proxy (T1216), jsc.exe compilation (T1127), BITS jobs (T1197), logon script persistence (T1037.001), VM detection (T1497.001), system language discovery (T1614.001), web beaconing (T1071.001), and local data staging (T1074.001)
 -   Added `./ps-empire test` command as a convenience wrapper for pytest with passthrough arguments
 -   Added Alembic database migration framework for versioned schema management. Untracked databases are stamped at the baseline revision on first startup; already-tracked databases are left as-is so pending migrations can be applied. Includes `migrate_db()` and `backup_db()` functions for future update workflows.
@@ -51,33 +90,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
--   **BREAKING:** Replaced raw SHA-256 with HKDF-SHA256 (RFC 5869) for DH session key derivation per FIPS SP 800-56C. Updated across all agent languages (Python server, Python/IronPython stager, Go, PowerShell). All deployed agents must be re-staged. Also normalizes shared secret byte encoding to 768 bytes per NIST SP 800-56A.
--   Fixed Go `CheckPublicKey` to use Legendre symbol `(prime-1)/2` exponent instead of Fermat's little theorem `(prime-1)` which always returned true
--   Set all C# modules to `background: true` so compiled tasks run without blocking the agent
--   Renamed VNC module `Username` option to `ServerName` to accurately reflect its purpose (VNC session display name, not authentication credential)
--   Downgraded compiler args log message from INFO to DEBUG to reduce server log noise
--   Removed redundant `Agent` option from PatchETW and PatchlessAMSI modules (auto-injected by the framework)
 -   Agent check-in uses single INSERT with ON DUPLICATE KEY UPDATE / ON CONFLICT DO NOTHING instead of SELECT-then-INSERT (2 queries → 1)
 -   All FastAPI route handlers converted from `async def` to `def`. FastAPI now dispatches every handler to a thread pool, preventing synchronous SQLAlchemy calls from blocking the uvicorn event loop. Handlers that previously offloaded work via `asyncio.to_thread()` no longer need to — the thread pool provides the same isolation automatically.
 -   High-frequency hooks (`AFTER_AGENT_CALLBACK_HOOK`, `AFTER_TASKING_RESULT_HOOK`, `AFTER_AGENT_CHECKIN_HOOK`, `AFTER_TASKING_HOOK`) now fire with `None` as the session argument. `_run_async_hook` and `run_hooks` provide a fresh managed session to hook callbacks, eliminating the 2x connection amplification that occurred when hooks opened a second connection while the caller still held the first.
 -   Cleaned up redundant "Switch." prefixes and duplicate description text from module option descriptions
 -   Marked `Listener` and `Command` options as conditionally required in 7 lateral movement modules (`invoke_psexec`, `invoke_wmi`, `invoke_smbexec`, `invoke_dcom`, `invoke_psremoting`, `inveigh_relay`, `invoke_executemsbuild`) so they are validated when their `depends_on` condition is met
--   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing packet encryption across all agent languages (PowerShell, Python, IronPython, Go) as part of FIPS algorithm compliance work. The C# agent (Sharpire) must be updated separately.
--   Increased HMAC-SHA256 truncation from 10 bytes to 16 bytes (128 bits) for AES-CBC payload encryption to meet FIPS SP 800-107 minimum requirements. Updated across all agent languages (Python server, PowerShell, Go, Python stager). The C# agent (Sharpire) must be updated separately.
--   Updated Empire Compiler to v1.1.0-a.4 (bundles FIPS-compliant Sharpire with 16-byte HMAC, HKDF-SHA256, AES-GCM)
--   Updated C# module YAMLs to new Empire Compiler format
--   Changed `AES256GCM.decrypt()`/`.open()` to catch `cryptography.exceptions.InvalidTag` specifically instead of bare `Exception`
--   Changed `ChaCha20Poly1305.decrypt()`/`.open()` to catch `InvalidTag` specifically instead of bare `Exception`
--   Changed `AESCipher.verify_hmac()` to use `hmac.compare_digest` for constant-time comparison instead of double-HMAC workaround
--   Replaced `AESCipher.generate_key()` which sampled printable characters without replacement (~207-bit effective entropy) with `os.urandom(32).hex()` for full 256-bit CSPRNG entropy. The key is now returned as a hex string matching the DH-derived session key format, fixing compatibility with `bytes.fromhex()` in the agent communication service.
 
 ### Removed
 
--   Removed dead `getIV()` function from agent stager AES code (unused, bypassed by inline `os.urandom()`)
--   Removed ChaCha20-Poly1305 classes (`Poly1305`, `ChaCha`, `ChaCha20Poly1305`) from `encryption.py` and agent-side `chacha.py` stager — not FIPS-approved. Routing packets already use AES-256-GCM.
 -   Removed legacy `archive` field from `empire_compiler` config; use `repo` and `ref` instead
--   Removed Seatbelt module (superseded by updated Empire Compiler modules)
--   Removed legacy PowerShell BloodHound/SharpHound modules (`situational_awareness/network/bloodhound.yaml`, `sharphound.yaml`), replaced by native C# SharpHound module
 
 ### Fixed
 
@@ -99,16 +120,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed agent staging log messages displaying wrong language (e.g. "Python PUB key" for PowerShell agents, "PS" in C# block) by replacing hardcoded language names with the actual agent language
 -   Fixed incorrect log levels in agent communication: `log.error` for normal conditions (agent not active, agent exiting) downgraded to `log.debug`/`log.info`, `log.info` for invalid data (bad language spec, malformed sysinfo) upgraded to `log.warning`
 -   Fixed typo in SOCKS client error message ("failed to started" -> "failed to start")
--   Fixed bounds validation in routing packet parsing: replaced unreachable `length < 0` check with proper `length > available data` check in both Python server and Go agent
--   Fixed Go agent `ParseRoutingPacket` to correctly use offset when reading nonce from multi-packet payloads
--   Fixed silent error swallowing in agent `aesgcm.py` `process_tasking`/`process_job_tasking` — bare `except Exception: pass` replaced with specific exception handling and error reporting back to C2
--   Fixed VNC module using copy-pasted ThreadlessInject code instead of the NVNC library — module was non-functional since introduction. Replaced with correct `NVNC.VncServer` integration matching the module's Password, Port, and ServerName options.
--   Fixed bare `except:` clauses in agent `parse_task_packet` narrowed to `UnicodeDecodeError`
--   Fixed dead `length < 0` bounds check in agent `parse_routing_packet` (unsigned int can never be negative) replaced with proper `end > len(data)` validation
 
 ### Security
 
--   Added `filter='data'` to `tar.extractall()` in compiler download to prevent path traversal from untrusted archives
 -   Fixed double-obfuscation in PowerShell module script generation — when a module source was already obfuscated (via `get_module_source` or `auto_get_source`), `finalize_module` was re-obfuscating the entire combined script, spawning a redundant PowerShell subprocess per task. `finalize_module` now accepts `script_already_obfuscated` to skip the expensive re-obfuscation while still obfuscating the invoke command (`script_end`).
 -   Fixed obfuscation subprocess (`Invoke-Obfuscation`) running indefinitely with no timeout. Added 300s timeout, process group isolation (`start_new_session`), return code checking, and empty output validation. On failure, gracefully falls back to keyword-obfuscated script with error logging.
 
@@ -1410,7 +1424,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.5.0...HEAD
+[7.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.6.0...HEAD
+
+[6.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.5.0...v6.6.0
 
 [6.5.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.1...v6.5.0
 
