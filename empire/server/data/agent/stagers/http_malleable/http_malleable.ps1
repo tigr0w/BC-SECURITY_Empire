@@ -808,7 +808,7 @@ function Aes-EncryptThenHmac {
 
 function Decrypt-Bytes {
     param([Parameter(Mandatory)]$Key, [Parameter(Mandatory)][byte[]]$In)
-    if(-not $In -or $In.Length -le 48){ return $null }
+    if(-not $In -or $In.Length -lt 48){ return $null }
 
     $kb = Get-AesKeyBytes $Key            # <-- same normalization on decrypt
     $mac  = $In[-16..-1]

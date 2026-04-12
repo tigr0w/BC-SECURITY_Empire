@@ -1336,8 +1336,11 @@ class AgentCommunicationService:
             try:
                 result = json.loads(data.decode("utf-8"))
                 self._update_dir_list(db, session_id, result)
-            except ValueError:
-                pass
+            except (UnicodeDecodeError, json.JSONDecodeError, KeyError):
+                log.exception(
+                    "TASK_DIR_LIST: failed to process directory listing for %s",
+                    session_id,
+                )
 
             self.agent_service.save_agent_log(session_id, data)
 

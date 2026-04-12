@@ -335,6 +335,6 @@ def aes_decrypt_and_verify(key, data):
     """
     Decrypt the data, but only if it has a valid MAC.
     """
-    if len(data) > 48 and verify_hmac(key, data):
+    if len(data) >= 48 and verify_hmac(key, data):
         return aes_decrypt(key, data[:-16])
     raise Exception("Invalid ciphertext received.")

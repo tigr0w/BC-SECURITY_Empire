@@ -101,7 +101,7 @@ class AESCipher:
     @staticmethod
     def decrypt_and_verify(key, data):
         """Decrypt the data, but only if it has a valid MAC."""
-        if len(data) > 48 and AESCipher.verify_hmac(key, data):  # noqa: PLR2004
+        if len(data) >= 48 and AESCipher.verify_hmac(key, data):  # noqa: PLR2004
             return AESCipher.decrypt(key, data[:-16])
         raise Exception("Invalid ciphertext received.")
 
