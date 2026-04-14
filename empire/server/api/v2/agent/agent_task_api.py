@@ -1,6 +1,6 @@
-import base64
 import math
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Query
@@ -352,22 +352,36 @@ def create_task_upload(
             detail=f"Download not found for id {upload_request.file_id}",
         )
 
-    file_data = download.get_base64_file()
-    raw_data = base64.b64decode(file_data)
-
-    # We can probably remove this file size limit with updates to the agent code.
-    #  At the moment the data is expected as a string of "filename|filedata"
-    #  We could instead take a larger file, store it as a file on the server and store a reference to it in the db.
-    #  And then change the way the agents pull down the file.
-    MAX_BYTES = 1048576
-    if len(raw_data) > MAX_BYTES:
+    try:
+        file_size = Path(download.location).stat().st_size
+    except FileNotFoundError as e:
         raise HTTPException(
-            status_code=400, detail="file size too large. Maximum file size of 1MB"
-        )
+            status_code=404,
+            detail=f"File for download id {upload_request.file_id} not found on disk",
+        ) from e
+    except OSError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to read file for download id {upload_request.file_id}: {e}",
+        ) from e
 
-    resp, err = agent_task_service.create_task_upload(
-        db, db_agent, file_data, upload_request.path_to_file, current_user
-    )
+    chunk_size = 524288  # 512KB
+
+    if file_size <= chunk_size:
+        file_data = download.get_base64_file()
+        resp, err = agent_task_service.create_task_upload(
+            db, db_agent, file_data, upload_request.path_to_file, current_user
+        )
+    else:
+        resp, err = agent_task_service.create_task_upload_chunked(
+            db,
+            db_agent,
+            download.location,
+            file_size,
+            upload_request.path_to_file,
+            current_user,
+            chunk_size=chunk_size,
+        )
 
     if err:
         raise HTTPException(status_code=400, detail=err)

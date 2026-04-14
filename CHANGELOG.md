@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added chunked file uploads to agents, removing the 1MB file size limit. Large files are split into 512KB chunks and drip-fed one-at-a-time across agent checkins, preventing agent memory lockup. Supports all agent languages (PowerShell, Python, IronPython, Go) with backwards-compatible protocol detection.
 -   Added standalone C# module compilation test (`tests/test_compile_csharp.py`) that compiles every C# module against the real EmpireCompiler binary, parametrized per-module for visible progress. Marked `@pytest.mark.slow` for local-only use.
 -   Added SharpHound C# module for BloodHound Active Directory enumeration with ILRepack assembly merging
 -   Added `MergeReferences` option to C# module YAML schema, enabling ILRepack dependency merging via Empire Compiler `--merge-references` flag

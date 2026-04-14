@@ -1209,6 +1209,9 @@ class AgentCommunicationService:
                 data = data.decode("UTF-8")
             # update the agent log
             self.agent_service.save_agent_log(session_id, "Error response: " + data)
+            # Cancel any pending chunked uploads if the errored task was an upload
+            if tasking and tasking.task_name == "TASK_UPLOAD":
+                self.agent_task_service.cancel_pending_uploads(session_id)
 
         elif response_name == "TASK_SYSINFO":
             # sys info response -> update the host info
@@ -1357,7 +1360,13 @@ class AgentCommunicationService:
             self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_UPLOAD":
-            pass
+            if isinstance(data, bytes):
+                data = data.decode("UTF-8", errors="replace")
+            self.agent_service.save_agent_log(session_id, data)
+            if data and data.startswith("[*] Upload of"):
+                self.agent_task_service.queue_next_upload_chunk(db, session_id)
+            else:
+                self.agent_task_service.cancel_pending_uploads(session_id)
 
         elif response_name == "TASK_GETJOBS":
             if not data or not data.strip():

