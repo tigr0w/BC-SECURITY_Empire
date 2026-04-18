@@ -21,6 +21,7 @@ def domain_to_dto_agent(agent: models.Agent):
         hostname=agent.hostname,
         language=agent.language,
         language_version=agent.language_version,
+        dotnet_version=agent.dotnet_version,
         delay=agent.delay,
         jitter=agent.jitter,
         external_ip=agent.external_ip,
@@ -70,6 +71,7 @@ class Agent(BaseModel):
     hostname: str | None = None
     language: str | None = None
     language_version: str | None = None
+    dotnet_version: str | None = None
     delay: int
     jitter: float
     external_ip: str | None = None

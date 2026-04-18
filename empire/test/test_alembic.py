@@ -18,11 +18,11 @@ def _cleanup_stale_test_migrations():
     from empire.server.core.db.base import _alembic_cfg
 
     versions_dir = Path(_alembic_cfg().get_main_option("script_location")) / "versions"
-    for stale in versions_dir.glob("0002_test_*"):
+    for stale in versions_dir.glob("0003_test_*"):
         stale.unlink(missing_ok=True)
     pycache = versions_dir / "__pycache__"
     if pycache.exists():
-        for cached in pycache.glob("0002_test_*"):
+        for cached in pycache.glob("0003_test_*"):
             cached.unlink(missing_ok=True)
 
 
@@ -111,7 +111,7 @@ def test_migrate_db_noop(client):
     migrate_db()
 
     with SessionLocal() as session:
-        assert _get_alembic_version(session) == "0001"
+        assert _get_alembic_version(session) == "0002"
 
 
 def test_stamp_idempotent(client):
@@ -185,7 +185,7 @@ def test_backup_then_migrate_sqlite(client):
     with SessionLocal() as session:
         user_count_after = session.execute(text("SELECT count(*) FROM users")).scalar()
         assert user_count_after == user_count_before
-        assert _get_alembic_version(session) == "0001"
+        assert _get_alembic_version(session) == "0002"
 
     backup_path.unlink(missing_ok=True)
 
@@ -254,7 +254,7 @@ def test_migrate_on_pre_alembic_db(client):
     migrate_db()
 
     with SessionLocal() as session:
-        assert _get_alembic_version(session) == "0001"
+        assert _get_alembic_version(session) == "0002"
 
 
 # ---------------------------------------------------------------------------
@@ -272,13 +272,13 @@ def test_real_migration_add_and_remove_column(client):
     versions_dir = Path(cfg.get_main_option("script_location")) / "versions"
 
     # Write a migration file that adds a test column to the 'users' table
-    migration_file = versions_dir / "0002_test_add_column.py"
+    migration_file = versions_dir / "0003_test_add_column.py"
     migration_file.write_text(
         textwrap.dedent("""\
         \"\"\"test add column
 
-        Revision ID: 0002
-        Revises: 0001
+        Revision ID: 0003
+        Revises: 0002
         Create Date: 2026-03-25
         \"\"\"
         from collections.abc import Sequence
@@ -286,8 +286,8 @@ def test_real_migration_add_and_remove_column(client):
         import sqlalchemy as sa
         from alembic import op
 
-        revision: str = "0002"
-        down_revision: str | None = "0001"
+        revision: str = "0003"
+        down_revision: str | None = "0002"
         branch_labels: str | Sequence[str] | None = None
         depends_on: str | Sequence[str] | None = None
 
@@ -310,17 +310,17 @@ def test_real_migration_add_and_remove_column(client):
             insp = inspect(session.bind)
             columns = [c["name"] for c in insp.get_columns("users")]
             assert "_alembic_test" in columns
-            assert _get_alembic_version(session) == "0002"
+            assert _get_alembic_version(session) == "0003"
 
-        # Downgrade back to baseline
-        command.downgrade(cfg, "0001")
+        # Downgrade back to 0002
+        command.downgrade(cfg, "0002")
 
         # Verify the column was removed
         with SessionLocal() as session:
             insp = inspect(session.bind)
             columns = [c["name"] for c in insp.get_columns("users")]
             assert "_alembic_test" not in columns
-            assert _get_alembic_version(session) == "0001"
+            assert _get_alembic_version(session) == "0002"
 
     finally:
         # Clean up the test migration file
@@ -334,13 +334,13 @@ def test_migrate_db_applies_pending_migration(client):
     cfg = _alembic_cfg()
     versions_dir = Path(cfg.get_main_option("script_location")) / "versions"
 
-    migration_file = versions_dir / "0002_test_pending.py"
+    migration_file = versions_dir / "0003_test_pending.py"
     migration_file.write_text(
         textwrap.dedent("""\
         \"\"\"test pending migration
 
-        Revision ID: 0002
-        Revises: 0001
+        Revision ID: 0003
+        Revises: 0002
         Create Date: 2026-03-25
         \"\"\"
         from collections.abc import Sequence
@@ -348,8 +348,8 @@ def test_migrate_db_applies_pending_migration(client):
         import sqlalchemy as sa
         from alembic import op
 
-        revision: str = "0002"
-        down_revision: str | None = "0001"
+        revision: str = "0003"
+        down_revision: str | None = "0002"
         branch_labels: str | Sequence[str] | None = None
         depends_on: str | Sequence[str] | None = None
 
@@ -371,12 +371,12 @@ def test_migrate_db_applies_pending_migration(client):
             insp = inspect(session.bind)
             columns = [c["name"] for c in insp.get_columns("users")]
             assert "_alembic_pending_test" in columns
-            assert _get_alembic_version(session) == "0002"
+            assert _get_alembic_version(session) == "0003"
 
         # Clean up: downgrade
         from alembic import command
 
-        command.downgrade(cfg, "0001")
+        command.downgrade(cfg, "0002")
 
         with SessionLocal() as session:
             insp = inspect(session.bind)
@@ -394,21 +394,21 @@ def test_failed_migration_does_not_corrupt_version(client):
     cfg = _alembic_cfg()
     versions_dir = Path(cfg.get_main_option("script_location")) / "versions"
 
-    migration_file = versions_dir / "0002_test_broken.py"
+    migration_file = versions_dir / "0003_test_broken.py"
     migration_file.write_text(
         textwrap.dedent("""\
         \"\"\"broken migration
 
-        Revision ID: 0002
-        Revises: 0001
+        Revision ID: 0003
+        Revises: 0002
         Create Date: 2026-03-25
         \"\"\"
         from collections.abc import Sequence
 
         from alembic import op
 
-        revision: str = "0002"
-        down_revision: str | None = "0001"
+        revision: str = "0003"
+        down_revision: str | None = "0002"
         branch_labels: str | Sequence[str] | None = None
         depends_on: str | Sequence[str] | None = None
 
@@ -427,9 +427,9 @@ def test_failed_migration_does_not_corrupt_version(client):
         with pytest.raises(Exception, match="this_table_does_not_exist_at_all"):
             migrate_db()
 
-        # Version should still be at 0001
+        # Version should still be at 0002 (broken migration did not advance past it)
         with SessionLocal() as session:
-            assert _get_alembic_version(session) == "0001"
+            assert _get_alembic_version(session) == "0002"
 
     finally:
         _cleanup_test_migration(migration_file)
@@ -474,7 +474,7 @@ def test_stamp_then_migrate_consistent(client):
     migrate_db()
 
     with SessionLocal() as session:
-        assert _get_alembic_version(session) == "0001"
+        assert _get_alembic_version(session) == "0002"
 
         # Verify core tables still exist
         insp = inspect(session.bind)
@@ -489,12 +489,12 @@ def test_startup_does_not_restamp_tracked_db(client):
     from empire.server.core.db.base import SessionLocal, _get_alembic_revision
 
     # DB should already be tracked from the test session's startup_db()
-    assert _get_alembic_revision() == "0001"
+    current = _get_alembic_revision()
+    assert current is not None, "DB should be tracked by Alembic after startup"
 
-    # Verify the revision doesn't change if we query again
-    # (confirms no unconditional stamp-to-head behavior)
+    # Verify the revision is consistent across calls (startup doesn't reset it)
     with SessionLocal() as session:
-        assert _get_alembic_version(session) == "0001"
+        assert _get_alembic_version(session) == current
 
 
 # ---------------------------------------------------------------------------

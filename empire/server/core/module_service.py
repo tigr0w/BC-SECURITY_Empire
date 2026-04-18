@@ -33,12 +33,20 @@ from empire.server.core.exceptions import (
     ModuleValidationException,
 )
 from empire.server.core.module_models import (
+    CSharpOption,
     EmpireModule,
     EmpireModuleOption,
     LanguageEnum,
 )
 from empire.server.utils import data_util
 from empire.server.utils.bof_packer import process_arguments
+from empire.server.utils.dotnet_version_util import (
+    CLR_2_VERSIONS,
+    CLR_4_VERSIONS,
+    VERSION_ORDER,
+    normalize_dotnet_version,
+    parse_agent_dotnet_versions,
+)
 from empire.server.utils.option_util import convert_module_options, validate_options
 from empire.server.utils.string_util import slugify
 
@@ -283,6 +291,65 @@ class ModuleService:
             return f"{cmd_type}_CMD_WAIT_SAVE", module_data
         return f"{cmd_type}_CMD_WAIT", module_data
 
+    @staticmethod
+    def _resolve_dotnet_version(
+        compatible_versions: list[str],
+        user_supplied: str,
+        agent_dotnet_version: str | None,
+    ) -> str | None:
+        compatible = [normalize_dotnet_version(v) for v in compatible_versions]
+        compatible = [v for v in compatible if v]
+
+        if not compatible:
+            return None
+
+        ranked = sorted(
+            (v for v in compatible if v in VERSION_ORDER),
+            key=VERSION_ORDER.index,
+            reverse=True,
+        )
+
+        user_val = normalize_dotnet_version(user_supplied)
+        if user_val:
+            if user_val in compatible:
+                return user_val
+            raise ModuleValidationException(
+                f"Requested DotNetVersion '{user_val}' is not in the module's compatible versions: {compatible}"
+            )
+
+        available = parse_agent_dotnet_versions(
+            agent_dotnet_version if isinstance(agent_dotnet_version, str) else None
+        )
+
+        if available:
+            agent_clr4 = max(
+                (v for v in available if v in CLR_4_VERSIONS),
+                key=VERSION_ORDER.index,
+                default=None,
+            )
+            has_clr2 = bool(available & CLR_2_VERSIONS)
+
+            candidates = [
+                v
+                for v in ranked
+                if (
+                    v in CLR_4_VERSIONS
+                    and agent_clr4
+                    and VERSION_ORDER.index(v) <= VERSION_ORDER.index(agent_clr4)
+                )
+                or (v in CLR_2_VERSIONS and has_clr2)
+            ]
+
+            if candidates:
+                return candidates[0]
+
+            raise ModuleValidationException(
+                f"Module requires one of {compatible} but no compatible "
+                f".NET runtime is available on agent (agent has: {sorted(available)})"
+            )
+
+        return ranked[0] if ranked else compatible[0]
+
     def _validate_module_params(  # noqa: PLR0913
         self,
         db: Session,
@@ -322,6 +389,9 @@ class ModuleService:
 
         converted_options = convert_module_options(module.options)
 
+        # Capture before validate_options injects module defaults into params
+        user_supplied_dotnet = params.get("DotNetVersion", "")
+
         options, err = validate_options(
             converted_options, params, db, self.download_service
         )
@@ -338,6 +408,17 @@ class ModuleService:
                 raise ModuleValidationException(
                     f"module requires language version {module.min_language_version} but agent running language version {agent.language_version}",
                 )
+
+        if module.language == LanguageEnum.csharp and isinstance(
+            module.csharp, CSharpOption
+        ):
+            selected = self._resolve_dotnet_version(
+                module.csharp.CompatibleDotNetVersions,
+                user_supplied_dotnet,
+                agent.dotnet_version,
+            )
+            if selected is not None:
+                options["DotNetVersion"] = selected
 
         if module.needs_admin and not ignore_admin_check and not agent.high_integrity:
             raise ModuleValidationException(
@@ -858,13 +939,26 @@ class ModuleService:
             my_model = EmpireModule(**yaml_module)
             my_model.compiler_yaml = compiler_yaml
 
+            _dotnet_versions = my_model.csharp.CompatibleDotNetVersions
+            _ranked_versions = sorted(
+                (
+                    v
+                    for v in _dotnet_versions
+                    if normalize_dotnet_version(v) in VERSION_ORDER
+                ),
+                key=lambda v: VERSION_ORDER.index(normalize_dotnet_version(v)),
+                reverse=True,
+            )
+            _default_dotnet = (
+                _ranked_versions[0] if _ranked_versions else _dotnet_versions[0]
+            )
             my_model.options.append(
                 EmpireModuleOption(
                     name="DotNetVersion",
-                    value=my_model.csharp.CompatibleDotNetVersions[0],
+                    value=_default_dotnet,
                     description=".NET version to compile against",
                     required=True,
-                    suggested_values=my_model.csharp.CompatibleDotNetVersions,
+                    suggested_values=_dotnet_versions,
                     strict=True,
                 )
             )

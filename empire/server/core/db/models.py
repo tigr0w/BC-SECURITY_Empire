@@ -294,6 +294,7 @@ class Agent(Base):
     lost_limit = Column(Integer)
     notes = Column(Text)
     architecture = Column(String(255))
+    dotnet_version = Column(String(255))
     archived = Column(Boolean, nullable=False)
     socks = Column(Boolean)
     socks_port = Column(Integer)

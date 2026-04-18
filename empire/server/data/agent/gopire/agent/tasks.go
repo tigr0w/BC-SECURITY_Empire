@@ -166,7 +166,7 @@ func getSysinfo(server string, nonce string) string {
 	architecture := runtime.GOARCH
 	version := "1.23"
 
-	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s",
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|",
 		nonce, server, "", username, hostname, internalIP, osDetails, highIntegrity, processName, processID,
 		language, version, architecture)
 }

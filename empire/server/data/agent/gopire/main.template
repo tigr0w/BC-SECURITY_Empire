@@ -38,7 +38,7 @@ func getSysinfo(server string, nonce string) string {
 	}
 	highIntegrity := fmt.Sprintf("%t", hi)
 
-	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s",
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|",
 		nonce, server, "", username, hostname, internalIP, osDetails, highIntegrity, processName, processID,
 		language, version, architecture)
 }

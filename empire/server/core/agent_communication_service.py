@@ -22,6 +22,7 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
+from empire.server.utils.dotnet_version_util import normalize_dotnet_version
 from empire.server.utils.string_util import is_valid_session_id
 
 if typing.TYPE_CHECKING:
@@ -300,6 +301,7 @@ class AgentCommunicationService:
         language_version="",
         language="",
         architecture="",
+        dotnet_version: str = "",
     ):
         """
         Update an agent's system information.
@@ -354,6 +356,10 @@ class AgentCommunicationService:
         agent.language_version = language_version
         agent.language = language
         agent.architecture = architecture
+        parts = [normalize_dotnet_version(p.strip()) for p in dotnet_version.split(",")]
+        normalized = ",".join(p for p in parts if p)
+        if normalized:
+            agent.dotnet_version = normalized
         db.flush()
 
     def _get_queued_agent_tasks(
@@ -771,7 +777,7 @@ class AgentCommunicationService:
                 message = AESCipher.decrypt_and_verify(session_key, enc_data)
                 parts = message.split(b"|")
 
-                if len(parts) < 12:  # noqa: PLR2004
+                if len(parts) < 13:  # noqa: PLR2004
                     message = f"Agent {session_id} posted invalid sysinfo checkin format: {message}"
                     log.warning(message)
                     # remove the agent from the cache/database
@@ -799,6 +805,7 @@ class AgentCommunicationService:
                 language = str(parts[10], "utf-8")
                 language_version = str(parts[11], "utf-8")
                 architecture = str(parts[12], "utf-8")
+                dotnet_version = str(parts[13], "utf-8") if len(parts) > 13 else ""  # noqa: PLR2004
 
                 if domainname:
                     username = f"{domainname}\\{username}"
@@ -826,6 +833,7 @@ class AgentCommunicationService:
                 language_version=language_version,
                 language=language,
                 architecture=architecture,
+                dotnet_version=dotnet_version,
             )
 
             self.autorun_tasks(db, session_id)
@@ -1217,7 +1225,7 @@ class AgentCommunicationService:
             # sys info response -> update the host info
             data = data.decode("utf-8")
             parts = data.split("|")
-            if len(parts) < 12:  # noqa: PLR2004
+            if len(parts) < 13:  # noqa: PLR2004
                 message = f"Invalid sysinfo response from {session_id}"
                 log.error(message)
             else:
@@ -1234,6 +1242,7 @@ class AgentCommunicationService:
                 language = parts[10]
                 language_version = parts[11]
                 architecture = parts[12]
+                dotnet_version = parts[13] if len(parts) > 13 else ""  # noqa: PLR2004
 
                 if domainname:
                     username = f"{domainname}\\{username}"
@@ -1253,6 +1262,7 @@ class AgentCommunicationService:
                     language_version=language_version,
                     language=language,
                     architecture=architecture,
+                    dotnet_version=dotnet_version,
                 )
 
                 sysinfo = (
@@ -1269,6 +1279,7 @@ class AgentCommunicationService:
                             f"{'Language:':<18}{language}",
                             f"{'Language Version:':<18}{language_version}",
                             f"{'Architecture:':<18}{architecture}",
+                            f"{'DotNet Version:':<18}{normalize_dotnet_version(dotnet_version) or 'unknown'}",
                         ]
                     )
                     + "\n"

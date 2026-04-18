@@ -10,6 +10,7 @@ import pytest
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_service import ModuleService
 from empire.server.core.obfuscation_service import ObfuscationService
+from empire.server.utils.dotnet_version_util import parse_agent_dotnet_versions
 
 
 @pytest.fixture(scope="module")
@@ -1318,3 +1319,147 @@ def test_finalize_module_obfuscates_script_end_not_source(install_path):
     assert "SensitiveValue" not in result, (
         f"script_end string 'SensitiveValue' was not obfuscated:\n{result[:500]}"
     )
+
+
+# ---------------------------------------------------------------------------
+# .NET version auto-selection tests
+# ---------------------------------------------------------------------------
+
+
+def _make_csharp_module(module_service, compatible_versions: list[str]):
+    """Return a real C# module patched with specific CompatibleDotNetVersions."""
+    module = module_service.get_by_id("csharp_persistence_sharpsploit_persistwmi")
+    assert module is not None, "PersistWMI module must be loaded"
+    # Patch CompatibleDotNetVersions for this test
+    module.csharp.CompatibleDotNetVersions = compatible_versions
+    # Ensure DotNetVersion option reflects new values
+    if "DotNetVersion" in module.options:
+        module.options["DotNetVersion"].value = compatible_versions[0]
+        module.options["DotNetVersion"].suggested_values = compatible_versions
+    return module
+
+
+@pytest.mark.parametrize(
+    ("agent_dotnet", "user_dotnet", "expected"),
+    [
+        # no agent info → fallback to highest compatible version
+        (None, None, "net40"),
+        # agent exact match → picks highest compatible ≤ agent (CLR4)
+        ("net40", None, "net40"),
+        # agent CLR4 only (net48) → picks highest CLR4 compatible (net40), not net35
+        ("net48", None, "net40"),
+        # case-variant stored value normalised correctly
+        ("Net40", None, "net40"),
+        # agent CLR2 only → picks net35 (CLR4 not available)
+        ("net35", None, "net35"),
+        # explicit user choice honoured
+        (None, "Net35", "net35"),
+        # user choice takes precedence over agent version
+        ("net40", "Net35", "net35"),
+        # agent has both CLRs → picks highest compatible (net40 over net35)
+        ("net48,net35", None, "net40"),
+    ],
+)
+def test_dotnet_version_autoselect(
+    module_service, agent_mock, agent_dotnet, user_dotnet, expected
+):
+    """_validate_module_params selects the correct DotNetVersion for C# modules."""
+    module = _make_csharp_module(module_service, ["Net35", "Net40"])
+
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = agent_dotnet
+
+    params = {"Agent": agent_mock.session_id}
+    if user_dotnet:
+        params["DotNetVersion"] = user_dotnet
+
+    options, err = module_service._validate_module_params(
+        None, module, agent_mock, params, ignore_admin_check=True
+    )
+
+    assert err is None
+    assert options["DotNetVersion"] == expected
+
+
+def test_dotnet_version_clr2_only_agent_with_clr2_only_module(
+    module_service, agent_mock
+):
+    """Agent with both CLRs but module only supports net35 → selects net35."""
+    module = _make_csharp_module(module_service, ["Net35"])
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = "net48,net35"
+
+    params = {"Agent": agent_mock.session_id}
+    options, err = module_service._validate_module_params(
+        None, module, agent_mock, params, ignore_admin_check=True
+    )
+
+    assert err is None
+    assert options["DotNetVersion"] == "net35"
+
+
+def test_dotnet_version_clr4_only_agent_clr2_only_module_raises(
+    module_service, agent_mock
+):
+    """Agent with CLR4 only but module requires only net35 → raises ModuleValidationException."""
+    module = _make_csharp_module(module_service, ["Net35"])
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = "net48"
+
+    params = {"Agent": agent_mock.session_id}
+
+    with pytest.raises(ModuleValidationException):
+        module_service._validate_module_params(
+            None, module, agent_mock, params, ignore_admin_check=True
+        )
+
+
+def test_dotnet_version_user_invalid_returns_error(module_service, agent_mock):
+    """DotNetVersion not in CompatibleDotNetVersions is rejected by option validation."""
+    module = _make_csharp_module(module_service, ["Net35", "Net40"])
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = None
+
+    # "net48" fails strict validation because it's not in SuggestedValues ["Net35", "Net40"]
+    params = {"Agent": agent_mock.session_id, "DotNetVersion": "net48"}
+    options, err = module_service._validate_module_params(
+        None, module, agent_mock, params, ignore_admin_check=True
+    )
+
+    assert options is None
+    assert err is not None
+    assert "DotNetVersion" in err
+
+
+def test_dotnet_version_impossible_downgrade_raises(module_service, agent_mock):
+    """Agent CLR4-only (net35) cannot run CLR4 modules (Net45, Net48)."""
+    module = _make_csharp_module(module_service, ["Net45", "Net48"])
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = "net35"
+
+    params = {"Agent": agent_mock.session_id}
+
+    with pytest.raises(ModuleValidationException):
+        module_service._validate_module_params(
+            None, module, agent_mock, params, ignore_admin_check=True
+        )
+
+
+def test_parse_agent_dotnet_versions_helper():
+    """parse_agent_dotnet_versions correctly parses stored dotnet_version strings."""
+    assert parse_agent_dotnet_versions(None) == frozenset()
+    assert parse_agent_dotnet_versions("") == frozenset()
+    assert parse_agent_dotnet_versions("net48") == frozenset({"net48"})
+    assert parse_agent_dotnet_versions("net35") == frozenset({"net35"})
+    assert parse_agent_dotnet_versions("net48,net35") == frozenset({"net48", "net35"})
+    assert parse_agent_dotnet_versions("Net48,Net35") == frozenset({"net48", "net35"})
