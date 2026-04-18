@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed redundant `Agent` option from PatchETW and PatchlessAMSI modules (auto-injected by the framework)
 -   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing packet encryption across all agent languages (PowerShell, Python, IronPython, Go) as part of FIPS algorithm compliance work. The C# agent (Sharpire) must be updated separately.
 -   Increased HMAC-SHA256 truncation from 10 bytes to 16 bytes (128 bits) for AES-CBC payload encryption to meet FIPS SP 800-107 minimum requirements. Updated across all agent languages (Python server, PowerShell, Go, Python stager). The C# agent (Sharpire) must be updated separately.
--   Updated Empire Compiler to v1.1.0-a.4 (bundles FIPS-compliant Sharpire with 16-byte HMAC, HKDF-SHA256, AES-GCM)
+-   Updated Empire Compiler to v1.1.0-a.5 (bundles FIPS-compliant Sharpire with 16-byte HMAC, HKDF-SHA256, AES-GCM)
 -   Updated C# module YAMLs to new Empire Compiler format
 -   Changed `AES256GCM.decrypt()`/`.open()` to catch `cryptography.exceptions.InvalidTag` specifically instead of bare `Exception`
 -   Changed `ChaCha20Poly1305.decrypt()`/`.open()` to catch `InvalidTag` specifically instead of bare `Exception`
