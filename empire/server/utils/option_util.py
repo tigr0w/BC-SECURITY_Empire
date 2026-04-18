@@ -1,8 +1,36 @@
+import logging
 import typing
 
 from sqlalchemy.orm import Session
 
+from empire.server.core.db import models
 from empire.server.core.module_models import EmpireModuleOption
+
+log = logging.getLogger(__name__)
+
+LISTENER_OPTION_NAMES = {"listener", "listenername", "listener_name"}
+
+
+def get_listener_defaults(db: Session) -> tuple[str | None, list[str] | None]:
+    """Return (first_active_listener_name, all_active_listener_names) ordered by id.
+
+    Returns (None, None) on DB error so callers can fall back to template defaults.
+    Returns (None, []) when the DB is healthy but no listeners are active.
+    """
+    try:
+        active = (
+            db.query(models.Listener)
+            .filter(models.Listener.enabled.is_(True))
+            .order_by(models.Listener.id)
+            .all()
+        )
+        names = [listener.name for listener in active]
+        return (names[0] if names else None), names
+    except Exception:
+        log.error(
+            "Failed to query active listeners for default pre-fill", exc_info=True
+        )
+        return None, None
 
 
 def safe_cast(option: typing.Any, expected_option_type: type) -> typing.Any | None:

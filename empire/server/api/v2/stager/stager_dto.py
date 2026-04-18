@@ -11,22 +11,37 @@ from empire.server.api.v2.shared_dto import (
     to_value_type,
 )
 from empire.server.core.db import models
+from empire.server.utils.option_util import LISTENER_OPTION_NAMES
 
 
-def domain_to_dto_template(stager, uid: str):
-    options = {
-        x[0]: {
-            "description": x[1]["Description"],
-            "required": x[1]["Required"],
-            "value": x[1]["Value"],
-            "strict": x[1]["Strict"],
-            "suggested_values": x[1]["SuggestedValues"],
-            "value_type": to_value_type(x[1]["Value"], x[1].get("Type")),
-            "depends_on": x[1]["DependsOn"] if x[1]["DependsOn"] is not None else [],
-            "internal": x[1]["Internal"] if x[1]["Internal"] is not None else False,
+def domain_to_dto_template(
+    stager,
+    uid: str,
+    default_listener: str | None = None,
+    listener_names: list[str] | None = None,
+):
+    def _option_entry(name, opt):
+        is_listener = name.lower() in LISTENER_OPTION_NAMES
+        value = opt["Value"]
+        if is_listener and value == "" and default_listener:
+            value = default_listener
+        suggested = (
+            listener_names
+            if is_listener and listener_names is not None
+            else opt["SuggestedValues"]
+        )
+        return {
+            "description": opt["Description"],
+            "required": opt["Required"],
+            "value": value,
+            "strict": opt["Strict"],
+            "suggested_values": suggested,
+            "value_type": to_value_type(value, opt.get("Type")),
+            "depends_on": opt["DependsOn"] if opt["DependsOn"] is not None else [],
+            "internal": opt["Internal"] if opt["Internal"] is not None else False,
         }
-        for x in stager.options.items()
-    }
+
+    options = {name: _option_entry(name, opt) for name, opt in stager.options.items()}
 
     authors = [
         {

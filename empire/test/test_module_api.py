@@ -2,6 +2,36 @@ import pytest
 from starlette import status
 
 
+def test_get_module_listener_default(
+    client, admin_auth_header, listener, listener_malleable
+):
+    """Listener option is pre-filled and suggested_values contains all active listeners."""
+    uid = "powershell_persistence_elevated_schtasks"
+    response = client.get(f"/api/v2/modules/{uid}", headers=admin_auth_header)
+
+    assert response.status_code == status.HTTP_200_OK
+    listener_opt = response.json()["options"]["Listener"]
+    assert listener_opt["value"] == listener["name"]
+    assert listener["name"] in listener_opt["suggested_values"]
+    assert listener_malleable["name"] in listener_opt["suggested_values"]
+
+
+def test_get_modules_listener_default(
+    client, admin_auth_header, listener, listener_malleable
+):
+    """Listener option is pre-filled on the list endpoint too."""
+    response = client.get("/api/v2/modules/", headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+
+    uid = "powershell_persistence_elevated_schtasks"
+    module = next((m for m in response.json()["records"] if m["id"] == uid), None)
+    assert module is not None
+    listener_opt = module["options"]["Listener"]
+    assert listener_opt["value"] == listener["name"]
+    assert listener["name"] in listener_opt["suggested_values"]
+    assert listener_malleable["name"] in listener_opt["suggested_values"]
+
+
 def test_get_module_not_found(client, admin_auth_header):
     response = client.get("/api/v2/modules/some_module", headers=admin_auth_header)
 

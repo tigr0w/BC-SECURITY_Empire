@@ -145,6 +145,38 @@ def get_windows_c_stager():
     }
 
 
+def test_get_stager_template_listener_default(
+    client, admin_auth_header, listener, listener_malleable
+):
+    """Listener option is pre-filled and suggested_values contains all active listeners."""
+    response = client.get(
+        "/api/v2/stager-templates/multi_launcher",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    listener_opt = response.json()["options"]["Listener"]
+    assert listener_opt["value"] == listener["name"]
+    assert listener["name"] in listener_opt["suggested_values"]
+    assert listener_malleable["name"] in listener_opt["suggested_values"]
+
+
+def test_get_stager_templates_listener_default(
+    client, admin_auth_header, listener, listener_malleable
+):
+    """Listener option is pre-filled on the list endpoint too."""
+    response = client.get("/api/v2/stager-templates/", headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+
+    template = next(
+        (t for t in response.json()["records"] if t["id"] == "multi_launcher"), None
+    )
+    assert template is not None
+    listener_opt = template["options"]["Listener"]
+    assert listener_opt["value"] == listener["name"]
+    assert listener["name"] in listener_opt["suggested_values"]
+    assert listener_malleable["name"] in listener_opt["suggested_values"]
+
+
 def test_get_stager_templates(client, admin_auth_header):
     min_stagers = 32
     response = client.get(
