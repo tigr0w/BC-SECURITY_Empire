@@ -73,6 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added 8 new modules (7 PowerShell, 1 Python) based on Atomic Red Team to fill partial ATT&CK coverage gaps: thread execution hijacking (T1055.003), cached domain credentials (T1003.005), Safe Mode boot defense evasion (T1562.009), default file association hijack (T1546.001), screensaver persistence (T1546.002), Office template macro injection (T1137.001), Wi-Fi credential extraction (T1555, T1016.002), and Linux proc filesystem credential dumping (T1003.007)
+-   Added 16 new modules (13 PowerShell, 3 Python) based on Atomic Red Team for ATT&CK gap coverage: mshta execution (T1218.005), CHM execution (T1218.001), CMSTP UAC bypass (T1218.003), InstallUtil execution (T1218.004), regasm execution (T1218.009), msiexec execution (T1218.007), indirect command execution (T1202), browser cookie theft (T1539), base64 file encoding (T1027), compile-after-delivery (T1027.004), root certificate installation (T1553.004), hidden user creation (T1564.002), Python startup hooks (T1546.018), Windows Terminal profile persistence (T1547), exfiltration over alternative protocols (T1048.003), and Linux at job scheduling (T1053.002)
 -   Added 25 new modules (19 PowerShell, 6 Python) based on Atomic Red Team for ATT&CK gap coverage: clear command history (T1070.003), impair history logging (T1562.003), disable firewall (T1562.004), hide artifacts (T1564.001), FSUtil indicator removal (T1070), network share removal (T1070.005), rename system utilities (T1036.003), masquerading (T1036, T1036.005), rundll32 proxy execution (T1218.011), regsvr32 proxy execution (T1218.010), signed script proxy (T1216), jsc.exe compilation (T1127), BITS jobs (T1197), logon script persistence (T1037.001), VM detection (T1497.001), system language discovery (T1614.001), web beaconing (T1071.001), and local data staging (T1074.001)
 -   Added `./ps-empire test` command as a convenience wrapper for pytest with passthrough arguments
 -   Added Alembic database migration framework for versioned schema management. Untracked databases are stamped at the baseline revision on first startup; already-tracked databases are left as-is so pending migrations can be applied. Includes `migrate_db()` and `backup_db()` functions for future update workflows.
@@ -85,6 +87,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `strict` and `suggested_values` to boolean switch options in modules for better validation and UI hints
 -   Added dynamic `depends_on` options to stagers so dependent fields (e.g. `Bypasses`, `Obfuscate`, `ObfuscateCommand`) are shown/hidden based on the selected listener type
 -   Added `nanodump` BOF module for creating minidumps of the LSASS process using various evasion techniques (handle duplication, process forking, snapshot, seclogon handle leaking)
+-   Added 7 new BOF modules sourced from Sliver Armory for defense evasion and credential access:
+    -   `unhook` — refresh DLLs to remove EDR/AV API hooks (T1562.001)
+    -   `patchit` — all-in-one AMSI + ETW patch/check/revert (T1562.001)
+    -   `inject_amsi_bypass` — AMSI bypass in a remote process via syscalls (T1562.001)
+    -   `inject_etw_bypass` — ETW bypass in a remote process via syscalls (T1562.001)
+    -   `credman` — dump Windows Credential Manager via SeTrustedCredManAccess (T1555.004)
+    -   `handlekatz` — LSASS dump via handle duplication to evade handle-based detection (T1003.001)
+    -   `bofroast` — Kerberoasting as a BOF without .NET CLR dependency (T1558.003)
 -   Added multi-language stager support (powershell, csharp, ironpython, go) to UAC bypass privesc modules: `bypassuac`, `bypassuac_env`, `bypassuac_eventvwr`, `bypassuac_sdctlbypass`, `bypassuac_wscript`
 -   Added `TagInvalidException` handling in server-side `parse_routing_packet` to gracefully reject non-agent traffic instead of raising unhandled exceptions
 -   Added configurable `obfuscation.timeout` setting (default: 300s, set to 0 to disable) for the PowerShell obfuscation subprocess, settable via `config.yaml` or `EMPIRE_OBFUSCATION__TIMEOUT` env var
@@ -126,8 +136,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed double-obfuscation in PowerShell module script generation — when a module source was already obfuscated (via `get_module_source` or `auto_get_source`), `finalize_module` was re-obfuscating the entire combined script, spawning a redundant PowerShell subprocess per task. `finalize_module` now accepts `script_already_obfuscated` to skip the expensive re-obfuscation while still obfuscating the invoke command (`script_end`).
 -   Fixed obfuscation subprocess (`Invoke-Obfuscation`) running indefinitely with no timeout. Added 300s timeout, process group isolation (`start_new_session`), return code checking, and empty output validation. On failure, gracefully falls back to keyword-obfuscated script with error logging.
+-   Fixed background jobs for the python agent.
 
 ## [6.5.0] - 2026-03-08
+-   Updated Starkiller to v3.4.0
 
 ### Added
 
@@ -185,6 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed malleable HTTP listener stagers failing after server restart due to random URI regeneration in `Stager._defaults()`
 -   Fix null-safety bug in `_process_agent_packet` when `save_module_file` returns None on skywalker exploit detection
 -   Fixed stop-job handlers in PowerShell and Python agents crashing when the target job doesn't exist
+-   Fixed powerview add-netuser
 -   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
 -   Fixed 9 malformed MITRE ATT&CK technique IDs across PowerShell, Python, and C# modules
 -   Fixed 2 malformed tactic fields that used space-separated strings instead of YAML lists
@@ -210,6 +223,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added T1562.001 (Impair Defenses) to AMSI bypass, ETW patching, and Outlook security modules
 -   Fixed duplicate technique entries in RevertToSelf and NetRipper modules
 -   Fixed PSRansom module `name` field incorrectly set to `Invoke-Script` instead of `PSRansom`
+-   Fixed misc_skeleton_key Invoke-Mimikatz call
 
 ## [6.4.1] - 2026-02-15
 
