@@ -134,6 +134,16 @@ def test_env_overrides_database_use_legacy(monkeypatch):
     assert config.database.use.lower() == "sqlite"
 
 
+def test_env_database_use_nested_wins_over_legacy(monkeypatch):
+    server_config_dict = load_test_config()
+    # When both are set, the nested EMPIRE_DATABASE__USE must take precedence
+    # over the legacy DATABASE_USE — see map_legacy_database_use_env.
+    monkeypatch.setenv("DATABASE_USE", "mysql")
+    monkeypatch.setenv("EMPIRE_DATABASE__USE", "sqlite")
+    config = EmpireConfig(server_config_dict)
+    assert config.database.use.lower() == "sqlite"
+
+
 def test_env_overrides_mysql_credentials(monkeypatch):
     server_config_dict = load_test_config()
     monkeypatch.setenv("EMPIRE_DATABASE__MYSQL__USERNAME", "env_user")

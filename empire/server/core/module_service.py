@@ -427,20 +427,24 @@ class ModuleService:
 
         return options, None
 
-    def _generate_script(  # noqa: PLR0911, PLR0912
+    def _generate_script(  # noqa: PLR0912
         self,
         db: Session,
         module: EmpireModule,
         params: dict,
         agent_language: str,
         obfuscation_config: models.ObfuscationConfig = None,
-    ) -> tuple[ModuleExecutionRequest | None, str | None]:
+    ) -> ModuleExecutionRequest | str | tuple[str | None, str | None]:
         """
-        Generate the script to execute
-        :param module: the execution parameters (already validated)
-        :param params: the execution parameters
-        :param obfuscation_config: the obfuscation config. If not provided, will look up from the db.
-        :return: tuple containing the generated script and an error if it exists
+        Generate the script to execute.
+
+        Non-custom paths always return a ``ModuleExecutionRequest``.
+        Custom-generate modules (``module.advanced.custom_generate``) may also
+        return a bare ``str`` or a legacy ``(script, err)`` tuple; the tuple
+        form is unpacked and warned about by ``execute_module``.
+
+        Raises ``ModuleValidationException`` or ``ModuleExecutionException``
+        on failure.
         """
         if not obfuscation_config:
             obfuscation_config = self.obfuscation_service.get_obfuscation_config(
@@ -468,32 +472,32 @@ class ModuleService:
                     obfuscation_command,
                     **kwargs,
                 )
-            except (ModuleValidationException, ModuleExecutionException) as e:
-                raise e
+            except (ModuleValidationException, ModuleExecutionException):
+                raise
             except Exception as e:
                 log.error(f"Error generating script: {e}", exc_info=True)
-                return None, "Error generating script."
-        elif module.language == LanguageEnum.powershell:
+                raise ModuleExecutionException("Error generating script.") from e
+        if module.language == LanguageEnum.powershell:
             resp = self._generate_script_powershell(module, params, obfuscation_config)
-            return ModuleExecutionRequest(command="", data=resp), None
+            return ModuleExecutionRequest(command="", data=resp)
         # We don't have obfuscation for other languages yet, but when we do,
         # we can pass it in here.
-        elif module.language == LanguageEnum.python:
+        if module.language == LanguageEnum.python:
             resp = self._generate_script_python(module, params, obfuscation_config)
-            return ModuleExecutionRequest(command="", data=resp), None
-        elif module.language == LanguageEnum.csharp:
-            return self.generate_script_csharp(module, params, obfuscation_config), None
-        elif module.language == LanguageEnum.bof:
+            return ModuleExecutionRequest(command="", data=resp)
+        if module.language == LanguageEnum.csharp:
+            return self.generate_script_csharp(module, params, obfuscation_config)
+        if module.language == LanguageEnum.bof:
             if agent_language == "go":
                 resp = self.generate_go_bof(module, params)
-                return ModuleExecutionRequest(command="", data=resp), None
+                return ModuleExecutionRequest(command="", data=resp)
             if not obfuscation_config:
                 obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                     db, LanguageEnum.csharp
                 )
-            return self.generate_script_bof(module, params, obfuscation_enabled), None
+            return self.generate_script_bof(module, params, obfuscation_enabled)
 
-        return None, "Unsupported language"
+        raise ModuleValidationException("Unsupported language")
 
     def generate_script_bof(
         self,

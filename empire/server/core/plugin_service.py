@@ -10,7 +10,7 @@ from pathlib import Path
 
 import requests
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from requests_file import FileAdapter
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_200_OK
@@ -43,11 +43,10 @@ s.mount("file://", FileAdapter())
 
 
 class PluginHolder(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     loaded_plugin: BasePlugin | None
     db_plugin: models.Plugin | None
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class PluginService:

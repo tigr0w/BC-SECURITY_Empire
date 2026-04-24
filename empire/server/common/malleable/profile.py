@@ -320,4 +320,4 @@ class Profile(MalleableObject):
                     self.__class__, "ingest", "Empty file: %s" % str(file)
                 )
 
-        self._parse(self._pattern().searchString(content))
+        self._parse(self._pattern().search_string(content))

@@ -71,7 +71,7 @@ class MalleableObject(object):
 
     SEMICOLON = Suppress(";")
     FIELD = Word(alphanums + "_-")
-    VALUE = QuotedString('"', escChar="\\") | QuotedString("'", escChar="\\")
+    VALUE = QuotedString('"', esc_char="\\") | QuotedString("'", esc_char="\\")
     COMMENT = Suppress("#") + Suppress(restOfLine)
 
     def __init__(self):

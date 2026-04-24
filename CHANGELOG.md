@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Changed `ChaCha20Poly1305.decrypt()`/`.open()` to catch `InvalidTag` specifically instead of bare `Exception`
 -   Changed `AESCipher.verify_hmac()` to use `hmac.compare_digest` for constant-time comparison instead of double-HMAC workaround
 -   Replaced `AESCipher.generate_key()` which sampled printable characters without replacement (~207-bit effective entropy) with `os.urandom(32).hex()` for full 256-bit CSPRNG entropy. The key is now returned as a hex string matching the DH-derived session key format, fixing compatibility with `bytes.fromhex()` in the agent communication service.
+-   Unexpected exceptions (non-`Module*Exception`) raised inside a custom-generate module's `generate()` now surface as HTTP 500 with detail `"Error generating script."` instead of HTTP 400. `ModuleValidationException` and `ModuleExecutionException` continue to map to 400/500 as before, and the legacy tuple-return path still produces 400.
 
 ### Removed
 
@@ -68,6 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed VNC module using copy-pasted ThreadlessInject code instead of the NVNC library — module was non-functional since introduction. Replaced with correct `NVNC.VncServer` integration matching the module's Password, Port, and ServerName options.
 -   Fixed bare `except:` clauses in agent `parse_task_packet` narrowed to `UnicodeDecodeError`
 -   Fixed dead `length < 0` bounds check in agent `parse_routing_packet` (unsigned int can never be negative) replaced with proper `end > len(data)` validation
+-   Fixed Python 3.13/3.14 and library deprecation warnings across the server: `datetime.utcnow()` → `datetime.now(UTC)` in JWT issuance, `asyncio.iscoroutinefunction` → `inspect.iscoroutinefunction` in hook dispatch, pyparsing `escChar`/`searchString` → `esc_char`/`search_string` in malleable profile parsing, Pydantic v1 `class Config` → v2 `ConfigDict` in `PluginHolder`, and the defunct Pydantic v1 `Field(env=[...])` kwarg on `DatabaseConfig.use` (legacy `DATABASE_USE` env var is still honored via the existing `map_legacy_database_use_env` validator). Starlette `HTTP_422_UNPROCESSABLE_ENTITY` → `HTTP_422_UNPROCESSABLE_CONTENT` in tests.
+-   Fixed `_generate_script` firing a spurious `DeprecationWarning` on every successful module execution. The method now returns data directly (or raises `ModuleValidationException`/`ModuleExecutionException`) instead of wrapping every success path in a `(data, None)` tuple. The tuple-return deprecation warning in `execute_module` is preserved and now correctly fires only for legacy custom-generate modules that still return `(None, msg)`.
 
 ## [6.6.0] - Unreleased
 

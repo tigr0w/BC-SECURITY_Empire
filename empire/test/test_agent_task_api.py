@@ -163,6 +163,26 @@ def _module_with_execution_exception(main):
 
 
 @pytest.fixture(scope="module")
+def _module_with_unexpected_exception(main):
+    module_name = "this_module_raises_unexpected"
+    main.modulesv2.modules[module_name] = EmpireModule(
+        id=module_name,
+        name=module_name,
+        language=LanguageEnum.powershell,
+        advanced=EmpireModuleAdvanced(
+            custom_generate=True,
+            generate_class=SimpleNamespace(
+                generate=raise_exception_wrapper(RuntimeError("boom"))
+            ),
+        ),
+    )
+
+    yield
+
+    del main.modulesv2.modules[module_name]
+
+
+@pytest.fixture(scope="module")
 def _module_with_legacy_handle_error_message(main):
     module_name = "this_module_uses_legacy_handle_error_message"
     main.modulesv2.modules[module_name] = EmpireModule(
@@ -496,6 +516,10 @@ def test_create_task_module_ignore_admin_check(
     assert response.json()["id"] > 0
 
 
+@pytest.mark.filterwarnings(
+    "ignore:handle_error_message is deprecated:DeprecationWarning",
+    "ignore:Returning a tuple on errors from module generation is deprecated:DeprecationWarning",
+)
 @pytest.mark.usefixtures("_module_with_legacy_handle_error_message")
 def test_create_task_module_validation_exception(
     client, admin_auth_header, agent_low_integrity
@@ -533,6 +557,24 @@ def test_create_task_module_execution_exception(
 
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json()["detail"] == "this_module_has_an_execution_exception"
+
+
+@pytest.mark.usefixtures("_module_with_unexpected_exception")
+def test_create_task_module_unexpected_exception(
+    client, admin_auth_header, agent_low_integrity
+):
+    response = client.post(
+        f"/api/v2/agents/{agent_low_integrity}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "this_module_raises_unexpected",
+            "ignore_admin_check": True,
+            "options": {},
+        },
+    )
+
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert response.json()["detail"] == "Error generating script."
 
 
 @pytest.mark.usefixtures("_module_with_execution_exception")
@@ -751,7 +793,7 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
         json={"delay": -1, "jitter": 5},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     delay_err = next(filter(lambda x: "delay" in x["loc"], response.json()["detail"]))
     jitter_err = next(filter(lambda x: "jitter" in x["loc"], response.json()["detail"]))

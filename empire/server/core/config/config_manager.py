@@ -120,8 +120,9 @@ class MySQLDatabaseConfig(EmpireBaseModel):
 
 
 class DatabaseConfig(EmpireBaseModel):
-    # Support legacy DATABASE_USE env in addition to nested EMPIRE_DATABASE__USE
-    use: str = Field(default="sqlite", env=["DATABASE_USE"])
+    # Legacy DATABASE_USE env is mapped in EmpireConfig.map_legacy_database_use_env;
+    # the field itself only declares its default.
+    use: str = Field(default="sqlite")
     sqlite: SQLiteDatabaseConfig
     mysql: MySQLDatabaseConfig
     defaults: DatabaseDefaultsConfig

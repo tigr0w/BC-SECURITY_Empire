@@ -12,7 +12,7 @@ def _test_add_tag(client, admin_auth_header, path, taggable_id):
         headers=admin_auth_header,
         json={"name": "test:tag", "value": "test:value"},
     )
-    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     actual = resp.json()
     assert actual == {
@@ -124,7 +124,7 @@ def _test_update_tag(client, admin_auth_header, path, taggable_id):
         headers=admin_auth_header,
         json={"name": "test:tag", "value": "test:value"},
     )
-    assert resp_bad.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp_bad.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     actual = resp_bad.json()
     assert actual == {
@@ -414,7 +414,7 @@ def test_get_agent_tasks_tag_filter(
         f"/api/v2/agents/{agent}/tasks?tags=test_tag_0", headers=admin_auth_header
     )
 
-    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert (
         resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )
@@ -494,7 +494,7 @@ def test_get_plugin_tasks_tag_filter(
         headers=admin_auth_header,
     )
 
-    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert (
         resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )
@@ -575,7 +575,7 @@ def test_get_downloads_tag_filter(
     # Test tag value bad
     resp = client.get("/api/v2/downloads?tags=test_tag_0", headers=admin_auth_header)
 
-    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert (
         resp.json()["detail"][0]["msg"] == "String should match pattern '^[^:]+:[^:]+$'"
     )

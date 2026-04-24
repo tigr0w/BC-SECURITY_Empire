@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import logging
 from collections.abc import Callable
 
@@ -170,7 +171,7 @@ class Hooks:
             return
         for hook in self.hooks.get(event, {}).values():
             try:
-                if asyncio.iscoroutinefunction(hook):
+                if inspect.iscoroutinefunction(hook):
                     try:  # https://stackoverflow.com/a/61331974/
                         loop = asyncio.get_running_loop()
                     except RuntimeError:

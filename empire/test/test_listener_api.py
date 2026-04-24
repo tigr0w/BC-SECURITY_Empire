@@ -590,5 +590,5 @@ def test_update_listener_autorun_invalid(client, admin_auth_header, listener):
         json={"records": autorun_tasks},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "detail" in response.json()
