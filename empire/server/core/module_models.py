@@ -93,3 +93,23 @@ class EmpireModule(BaseModel):
     advanced: EmpireModuleAdvanced = EmpireModuleAdvanced()
     compiler_yaml: str | None = None
     csharp: CSharpOption | None = None
+    credential_parser: str | None = None
+
+    @field_validator("credential_parser")
+    @classmethod
+    def check_credential_parser(cls, v: str | None) -> str | None:
+        """Reject YAML typos at module-load time instead of when the first
+        credential-producing task completes.
+        """
+        if v is None:
+            return v
+        # Deferred import: the parser package pulls in pydantic DTOs from
+        # the api layer, which we don't want at model-class-definition time.
+        from empire.server.common import credential_parsers  # noqa: PLC0415
+
+        if credential_parsers.get_parser(v) is None:
+            known = ", ".join(credential_parsers.registered_parser_names())
+            raise ValueError(
+                f"unknown credential_parser {v!r}; registered parsers: {known}"
+            )
+        return v

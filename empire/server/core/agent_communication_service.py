@@ -14,8 +14,7 @@ from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
 from empire.server.api.v2.agent.agent_task_dto import ModulePostRequest
-from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
-from empire.server.common import encryption, helpers, packets
+from empire.server.common import credential_parsers, encryption, helpers, packets
 from empire.server.common.encryption import AESCipher
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
@@ -43,6 +42,7 @@ class AgentCommunicationService:
         self.credential_service = main_menu.credentialsv2
         self.listener_service = main_menu.listenersv2
         self.ip_service = main_menu.ipsv2
+        self.module_service = main_menu.modulesv2
 
         # internal agent dictionary for the client's session key, funcions, and URI sets
         #   this is done to prevent database reads for extremely common tasks (like checking tasking URI existence)
@@ -76,6 +76,80 @@ class AgentCommunicationService:
             )
             return False
         return True
+
+    def _ingest_credentials(self, db: Session, agent, tasking, data):
+        """Dispatch task output to the credential parser declared on the
+        module, or to a prefix-based fallback for ad-hoc invocations.
+
+        Parser exceptions are caught and logged: this runs on every agent
+        task response, so a bug in any one parser must not break the comms
+        loop. `CredentialService.create_credential` returns a `(cred, err)`
+        tuple — dedup collisions (err containing "Duplicate") are ignored,
+        any other error is logged at warning level but does not abort
+        ingestion or propagate.
+        """
+        parser = None
+        declared_parser_name = None
+        module_name = getattr(tasking, "module_name", None) if tasking else None
+        if module_name:
+            mod = self.module_service.modules.get(module_name)
+            if mod and mod.credential_parser:
+                declared_parser_name = mod.credential_parser
+                parser = credential_parsers.get_parser(declared_parser_name)
+                if parser is None:
+                    log.error(
+                        "Module %s declares unknown credential_parser %r — "
+                        "credentials from this module will not be ingested",
+                        module_name,
+                        declared_parser_name,
+                    )
+                    return
+        if parser is None:
+            parser = credential_parsers.detect_by_prefix(data)
+        if parser is None:
+            return
+
+        try:
+            parsed = parser.parse(data, agent)
+        except Exception:
+            log.exception(
+                "credential parser %s raised on task output",
+                parser.__class__.__name__,
+            )
+            return
+
+        if not isinstance(parsed, list):
+            log.error(
+                "credential parser %s returned %s; expected list — skipping",
+                parser.__class__.__name__,
+                type(parsed).__name__,
+            )
+            return
+
+        date_time = helpers.get_datetime()
+        for req in parsed:
+            req.notes = f"{req.notes} {date_time}" if req.notes else date_time
+            try:
+                _, err = self.credential_service.create_credential(db, req)
+            except Exception:
+                # Persist failure (DB integrity error, too-long value, etc.)
+                # must not kill the comms loop. Abort the batch so we don't
+                # fire more writes on a session that may be in an invalid
+                # state; the caller's outer transaction handling takes it
+                # from here.
+                log.exception(
+                    "credential_service raised persisting %s row for %s — "
+                    "aborting remainder of this batch",
+                    req.credtype,
+                    req.username,
+                )
+                return
+            if err and "Duplicate" not in err:
+                log.warning(
+                    "credential_service.create_credential rejected %s row: %s",
+                    req.credtype,
+                    err,
+                )
 
     def _decompress_python_data(self, data, filename, session_id):
         log.info(
@@ -1400,36 +1474,7 @@ class AgentCommunicationService:
             "TASK_BOF_CMD_WAIT",
         ]:
             # dynamic script output -> blocking
-
-            # see if there are any credentials to parse
-            date_time = helpers.get_datetime()
-            creds = helpers.parse_credentials(data)
-
-            if creds:
-                for cred in creds:
-                    hostname = cred[4]
-
-                    if not hostname:
-                        hostname = agent.hostname
-
-                    os_details = agent.os_details
-
-                    self.credential_service.create_credential(
-                        #  idk if i want to import api dtos here, but it's not a big deal for now.
-                        db,
-                        CredentialPostRequest(
-                            credtype=cred[0],
-                            domain=cred[1],
-                            username=cred[2],
-                            password=cred[3],
-                            host=hostname,
-                            os=os_details,
-                            sid=cred[5],
-                            notes=date_time,
-                        ),
-                    )
-
-            # update the agent log
+            self._ingest_credentials(db, agent, tasking, data)
             self.agent_service.save_agent_log(session_id, data)
 
         elif response_name in [
@@ -1498,72 +1543,8 @@ class AgentCommunicationService:
 
             else:
                 # dynamic script output -> non-blocking
-                # see if there are any credentials to parse
-                date_time = helpers.get_datetime()
-                creds = helpers.parse_credentials(data)
-                if creds:
-                    for cred in creds:
-                        hostname = cred[4]
-
-                        if not hostname:
-                            hostname = agent.hostname
-
-                        os_details = agent.os_details
-
-                        self.credential_service.create_credential(
-                            #  idk if i want to import api dtos here, but it's not a big deal for now.
-                            db,
-                            CredentialPostRequest(
-                                credtype=cred[0],
-                                domain=cred[1],
-                                username=cred[2],
-                                password=cred[3],
-                                host=hostname,
-                                os=os_details,
-                                sid=cred[5],
-                                notes=date_time,
-                            ),
-                        )
-
-                # update the agent log
+                self._ingest_credentials(db, agent, tasking, data)
                 self.agent_service.save_agent_log(session_id, data)
-
-            # TODO: redo this regex for really large AD dumps
-            #   so a ton of data isn't kept in memory...?
-            if isinstance(data, str):
-                data = data.encode("UTF-8")
-            parts = data.split(b"\n")
-            if len(parts) > 10:  # noqa: PLR2004
-                date_time = helpers.get_datetime()
-                if parts[0].startswith(b"Hostname:"):
-                    # if we get Invoke-Mimikatz output, try to parse it and add
-                    #   it to the internal credential store
-
-                    # cred format: (credType, domain, username, password, hostname, sid, notes)
-                    creds = helpers.parse_mimikatz(data)
-
-                    for cred in creds:
-                        hostname = cred[4]
-
-                        if not hostname:
-                            hostname = agent.hostname
-
-                        os_details = agent.os_details
-
-                        self.credential_service.create_credential(
-                            #  idk if i want to import api dtos here, but it's not a big deal for now.
-                            db,
-                            CredentialPostRequest(
-                                credtype=cred[0],
-                                domain=cred[1],
-                                username=cred[2],
-                                password=cred[3],
-                                host=hostname,
-                                os=os_details,
-                                sid=cred[5],
-                                notes=date_time,
-                            ),
-                        )
 
         elif response_name == "TASK_SWITCH_LISTENER":
             # update the agent listener

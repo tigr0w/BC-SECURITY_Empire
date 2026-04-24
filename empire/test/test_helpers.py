@@ -217,17 +217,6 @@ class TestEncodeBase64:
         assert base64.decodebytes(encoded) == data
 
 
-class TestParseCredentials:
-    def test_mac_text_returned(self):
-        data = b"button returned:OK, text returned:mypassword"
-        result = helpers.parse_credentials(data)
-        assert result is not None
-        assert result[0][3] == b"mypassword"
-
-    def test_unrecognized_format(self):
-        assert helpers.parse_credentials(b"some random output") is None
-
-
 class TestObfuscateCallHomeAddress:
     def test_contains_encoded_content(self):
         result = helpers.obfuscate_call_home_address("test")
