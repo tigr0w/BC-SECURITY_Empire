@@ -147,3 +147,20 @@ class TestResolveId:
 
     def test_string_id(self):
         assert packets.resolve_id("1") == "TASK_SYSINFO"
+
+    def test_chdir_opcode(self):
+        # Pin opcode 44 — three agent dispatchers (PS/Python/IronPython) hard-code this value.
+        assert packets.PACKET_NAMES["TASK_CHDIR"] == 44  # noqa: PLR2004
+        assert packets.resolve_id(44) == "TASK_CHDIR"
+
+
+class TestChdirRoundtrip:
+    def test_chdir_packet_roundtrip(self):
+        data = base64.b64encode(b"/tmp").decode("UTF-8")
+        packet = packets.build_task_packet("TASK_CHDIR", data, 7)
+        response_name, _total, _num, task_id, _length, decoded, _rem = (
+            packets.parse_result_packet(packet)
+        )
+        assert response_name == "TASK_CHDIR"
+        assert task_id == 7  # noqa: PLR2004
+        assert decoded == b"/tmp"

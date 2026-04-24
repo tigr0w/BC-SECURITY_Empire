@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added `TASK_CHDIR` (opcode 44) and `POST /api/v2/agents/{id}/tasks/chdir` endpoint to persistently change the agent's working directory. Subsequent `shell` tasks run in the new directory until another `chdir` is issued. Implemented in the PowerShell, Python, and IronPython agents.
+-   Added new situational-awareness modules to replace the in-agent command aliases removed below: `powershell/situational_awareness/host/{processes,ipconfig,route,dir_list}` and `python/situational_awareness/host/processes`. The PowerShell variants emit JSON consumed by the existing `ps_filter`/`ls_filter`/`ipconfig_filter`/`route_filter` server-side filters.
 -   Added chunked file uploads to agents, removing the 1MB file size limit. Large files are split into 512KB chunks and drip-fed one-at-a-time across agent checkins, preventing agent memory lockup. Supports all agent languages (PowerShell, Python, IronPython, Go) with backwards-compatible protocol detection.
 -   Added standalone C# module compilation test (`tests/test_compile_csharp.py`) that compiles every C# module against the real EmpireCompiler binary, parametrized per-module for visible progress. Marked `@pytest.mark.slow` for local-only use.
 -   Added SharpHound C# module for BloodHound Active Directory enumeration with ILRepack assembly merging
@@ -56,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+-   **BREAKING:** Removed in-agent `shell` command aliases (`ls`, `dir`, `cd`, `pwd`, `rm`, `mkdir`, `mv`, `move`, `cp`, `copy`, `del`, `rmdir`, `whoami`, `getuid`, `hostname`, `ps`, `tasklist`, `ipconfig`, `ifconfig`, `route`, `getpid`, `reboot`, `restart`, `shutdown`) from the PowerShell, Python, and IronPython agents. `shell <cmd>` now passes the command straight to the system shell on every agent — matching the behavior the C# (Sharpire) and Go agents already had. For the cases that previously returned structured output, use the new `situational_awareness/host/{processes,ipconfig,route,dir_list}` modules; for persistent directory changes, use the new `TASK_CHDIR` task. Server-side filters (`ps_filter`, `ls_filter`, `ipconfig_filter`, `route_filter`) and `ps_hook` now trigger on `task.module_name` instead of `task.input` string matching.
 -   Removed dead `getIV()` function from agent stager AES code (unused, bypassed by inline `os.urandom()`)
 -   Removed ChaCha20-Poly1305 classes (`Poly1305`, `ChaCha`, `ChaCha20Poly1305`) from `encryption.py` and agent-side `chacha.py` stager — not FIPS-approved. Routing packets already use AES-256-GCM.
 -   Removed Seatbelt module (superseded by updated Empire Compiler modules)

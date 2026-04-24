@@ -73,7 +73,10 @@ class AgentTasks(BaseModel):
 
 class ShellPostRequest(BaseModel):
     command: str
-    literal: bool = False
+    literal: bool = Field(
+        default=False,
+        deprecated="No-op since 7.0; agent-side command aliases were removed.",
+    )
 
 
 class ModulePostRequest(BaseModel):
@@ -120,6 +123,10 @@ class WorkingHoursPostRequest(BaseModel):
 
 
 class DirectoryListPostRequest(BaseModel):
+    path: str
+
+
+class ChdirPostRequest(BaseModel):
     path: str
 
 

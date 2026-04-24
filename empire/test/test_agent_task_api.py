@@ -225,6 +225,39 @@ def test_create_task_shell(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
 
 
+def test_create_task_shell_literal_is_noop(client, admin_auth_header, agent):
+    """`literal=True` is accepted but must not alter the dispatched command (deprecated since 7.0)."""
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/shell",
+        headers=admin_auth_header,
+        json={"command": "whoami", "literal": True},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["input"] == "whoami"
+
+
+def test_create_task_chdir_agent_not_found(client, admin_auth_header):
+    response = client.post(
+        "/api/v2/agents/abc/tasks/chdir",
+        headers=admin_auth_header,
+        json={"path": "/tmp"},
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Agent not found for id abc"
+
+
+def test_create_task_chdir(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/chdir",
+        headers=admin_auth_header,
+        json={"path": "/tmp"},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["input"] == "/tmp"
+    assert response.json()["task_name"] == "TASK_CHDIR"
+    assert response.json()["id"] > 0
+
+
 def test_create_task_module_agent_not_found(client, admin_auth_header):
     response = client.post(
         "/api/v2/agents/abc/tasks/module",

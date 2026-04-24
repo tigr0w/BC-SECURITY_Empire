@@ -1,0 +1,42 @@
+name: processes
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Enumerates running processes via the POSIX `ps` command (Linux/macOS only;
+  use the PowerShell processes module on Windows hosts). Returns raw `ps -eo`
+  text; the server-side ps_hook parses it through jq to populate Starkiller's
+  HostProcess inventory. Replaces the legacy in-agent `shell ps` alias.
+software: ''
+tactics: [TA0007]
+techniques: [T1057]
+background: false
+output_extension: ''
+needs_admin: false
+opsec_safe: true
+language: python
+min_language_version: '2.6'
+comments:
+  - Replaces the in-agent ps alias removed in Empire 7.0.
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+script: |
+  import subprocess
+
+  # ps -eo PID,USER,CMD gives the columns ps_hook maps onto HostProcess.
+  try:
+      proc = subprocess.Popen(
+          ["ps", "-eo", "pid,user,cmd"],
+          stdout=subprocess.PIPE,
+          stderr=subprocess.STDOUT,
+      )
+      out, _ = proc.communicate()
+      print(out.decode("utf-8", errors="replace"))
+  except FileNotFoundError:
+      print("[!] processes module failed: `ps` not found on this host")
+  except OSError as e:
+      print("[!] processes module failed: {0}".format(e))

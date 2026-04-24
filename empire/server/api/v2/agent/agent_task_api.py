@@ -16,6 +16,7 @@ from empire.server.api.v2.agent.agent_task_dto import (
     AgentTask,
     AgentTaskOrderOptions,
     AgentTasks,
+    ChdirPostRequest,
     CommsPostRequest,
     DirectoryListPostRequest,
     DownloadPostRequest,
@@ -291,11 +292,34 @@ def create_task_shell(
     agent_task_service: AgentTaskServiceDep,
 ):
     """
-    Executes a command on the agent. If literal is true, it will ignore the built-in aliases
-    such a whoami or ps and execute the command directly.
+    Executes a command on the agent via the system shell. The `literal` flag is
+    accepted for API backwards compatibility but is now a no-op: agent-side
+    command aliases were removed, so every command is run by the system shell.
     """
     resp, err = agent_task_service.create_task_shell(
         db, db_agent, shell_request.command, shell_request.literal, current_user
+    )
+
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    return domain_to_dto_task(resp)
+
+
+@router.post("/{agent_id}/tasks/chdir", status_code=201, response_model=AgentTask)
+def create_task_chdir(
+    chdir_request: ChdirPostRequest,
+    db: CurrentSession,
+    current_user: CurrentUser,
+    db_agent: AgentDep,
+    agent_task_service: AgentTaskServiceDep,
+):
+    """
+    Changes the agent's working directory. Subsequent shell tasks run in the new
+    directory until another chdir is issued.
+    """
+    resp, err = agent_task_service.create_task_chdir(
+        db, db_agent, chdir_request.path, current_user
     )
 
     if err:

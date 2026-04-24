@@ -1383,6 +1383,9 @@ class AgentCommunicationService:
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)
 
+        elif response_name == "TASK_CHDIR":
+            self.agent_service.save_agent_log(session_id, data)
+
         elif response_name == "TASK_SOCKS":
             self.agent_socks_service.start_socks_client(agent)
 

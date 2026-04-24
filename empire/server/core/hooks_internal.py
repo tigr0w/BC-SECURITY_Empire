@@ -1,6 +1,7 @@
 import json
 import logging
 from json.decoder import JSONDecodeError
+from typing import Final
 
 import jq
 from prettytable import PrettyTable
@@ -24,19 +25,43 @@ def _format_table(headers: list[str], rows: list[list]) -> str:
     return "\n".join(lines)
 
 
+# Module IDs are slugified file paths (see module_service._load_module). The
+# `processes` set spans both PowerShell and Python agents because they share the
+# same downstream HostProcess hook.
+HOST_PROCESSES_MODULES: Final[frozenset[str]] = frozenset(
+    {
+        "powershell_situational_awareness_host_processes",
+        "python_situational_awareness_host_processes",
+    }
+)
+PS_PROCESSES_MODULE: Final[str] = "powershell_situational_awareness_host_processes"
+PS_IPCONFIG_MODULE: Final[str] = "powershell_situational_awareness_host_ipconfig"
+PS_ROUTE_MODULE: Final[str] = "powershell_situational_awareness_host_route"
+PS_DIR_LIST_MODULE: Final[str] = "powershell_situational_awareness_host_dir_list"
+
+
+def _empty_output_skip(task: models.AgentTask, filter_name: str) -> bool:
+    """Log + skip when expected output is missing so silent regressions surface."""
+    if not task.output:
+        log.warning(
+            "%s: skipped, task %s for agent %s has empty output",
+            filter_name,
+            task.id,
+            task.agent_id,
+        )
+        return True
+    return False
+
+
 def ps_hook(db: Session, task: models.AgentTask):
     """
-    This hook watches for the 'ps' command and writes the processes into the processes table.
-
-    For Powershell Agents, the data comes back (as of 4.1) as JSON.
-    For Python Agents, the data comes back in the typical 'ls' format.
-    For C# Agents, no support yet.
-
-    AFAIK, it is not easy to convert the shell tables into JSON, but I found this jq wizardry
-    on StackOverflow, so that's what we'll stick with for now for the python results, even though it is imperfect.
-    https://unix.stackexchange.com/a/243485
+    Watches for the processes module and writes processes into the HostProcess
+    table. PowerShell/IronPython agents return JSON; Python agents return raw
+    `ps` output that we parse via jq. Branch is selected by agent language.
     """
-    if task.input.strip() not in ["ps", "tasklist"] or task.agent.language == "csharp":
+    if task.module_name not in HOST_PROCESSES_MODULES:
+        return
+    if _empty_output_skip(task, "ps_hook"):
         return
 
     if task.agent.language == "python":
@@ -51,9 +76,7 @@ def ps_hook(db: Session, task: models.AgentTask):
         try:
             output = json.loads(task.output)
         except JSONDecodeError:
-            log.warning(
-                "Failed to decode JSON output from ps command. Most likely, the command returned an error."
-            )
+            log.warning("ps_hook: failed to decode JSON from processes module output")
             return
 
     existing_processes = (
@@ -67,7 +90,7 @@ def ps_hook(db: Session, task: models.AgentTask):
         process_name = process.get("CMD") or process.get("ProcessName") or ""
         process_id = process.get("PID")
         arch = process.get("Arch")
-        user = process.get("UserName")
+        user = process.get("UserName") or process.get("USER")
         if process_id:
             # new process
             if int(process_id) not in existing_processes:
@@ -115,22 +138,22 @@ def ps_hook(db: Session, task: models.AgentTask):
 
 def ps_filter(db: Session, task: models.AgentTask):
     """
-    This filter converts the JSON results of the ps command and converts it to a PowerShell-ish table.
-
-    if the results are from the Python or C# agents, it does nothing.
+    Converts the JSON results of the processes module to a PowerShell-ish
+    table. Fires for PowerShell/IronPython agents (both run the PowerShell
+    processes module).
     """
-    if task.input.strip() not in [
-        "ps",
-        "tasklist",
-    ] or task.agent.language not in ["powershell", "ironpython"]:
+    if task.module_name != PS_PROCESSES_MODULE or task.agent.language not in [
+        "powershell",
+        "ironpython",
+    ]:
+        return db, task
+    if _empty_output_skip(task, "ps_filter"):
         return db, task
 
     try:
         output = json.loads(task.output)
     except JSONDecodeError:
-        log.warning(
-            "Failed to decode JSON output from ps command. Most likely, the command returned an error."
-        )
+        log.warning("ps_filter: failed to decode JSON from processes module output")
         return db, task
 
     output_list = []
@@ -153,25 +176,16 @@ def ps_filter(db: Session, task: models.AgentTask):
 
 
 def ls_filter(db: Session, task: models.AgentTask):
-    """
-    This filter converts the JSON results of the ls command and converts it to a PowerShell-ish table.
-
-    if the results are from the Python or C# agents, it does nothing.
-    """
-    task_input = task.input.strip().split()
-    if (
-        len(task_input) == 0
-        or task_input[0] not in ["ls", "dir"]
-        or task.agent.language != "powershell"
-    ):
+    """Converts dir_list module JSON to a PowerShell-ish table. PS agents only."""
+    if task.module_name != PS_DIR_LIST_MODULE or task.agent.language != "powershell":
+        return db, task
+    if _empty_output_skip(task, "ls_filter"):
         return db, task
 
     try:
         output = json.loads(task.output)
     except JSONDecodeError:
-        log.warning(
-            "Failed to decode JSON output from ls command. Most likely, the command returned an error."
-        )
+        log.warning("ls_filter: failed to decode JSON from dir_list module output")
         return db, task
 
     output_list = []
@@ -194,19 +208,23 @@ def ls_filter(db: Session, task: models.AgentTask):
 
 
 def ipconfig_filter(db: Session, task: models.AgentTask):
-    """
-    This filter converts the JSON results of the ifconfig/ipconfig command and converts it to a PowerShell-ish table.
-
-    if the results are from the Python or C# agents, it does nothing.
-    """
-    if (
-        task.input.strip() not in ["ipconfig", "ifconfig"]
-        or task.agent.language != "powershell"
-    ):
+    """Converts ipconfig module JSON to a PowerShell-ish table. PS agents only."""
+    if task.module_name != PS_IPCONFIG_MODULE or task.agent.language != "powershell":
+        return db, task
+    if _empty_output_skip(task, "ipconfig_filter"):
         return db, task
 
-    output = json.loads(task.output)
-    if isinstance(output, dict):  # if there's only one adapter, it won't be a list.
+    try:
+        output = json.loads(task.output)
+    except JSONDecodeError:
+        log.warning(
+            "ipconfig_filter: failed to decode JSON from ipconfig module output"
+        )
+        return db, task
+
+    if isinstance(
+        output, dict
+    ):  # single-adapter case: PowerShell emits an object, not a list
         output = [output]
 
     table = PrettyTable(header=False)
@@ -222,15 +240,17 @@ def ipconfig_filter(db: Session, task: models.AgentTask):
 
 
 def route_filter(db: Session, task: models.AgentTask):
-    """
-    This filter converts the JSON results of the route command and converts it to a PowerShell-ish table.
-
-    if the results are from the Python or C# agents, it does nothing.
-    """
-    if task.input.strip() != "route" or task.agent.language != "powershell":
+    """Converts route module JSON to a PowerShell-ish table. PS agents only."""
+    if task.module_name != PS_ROUTE_MODULE or task.agent.language != "powershell":
+        return db, task
+    if _empty_output_skip(task, "route_filter"):
         return db, task
 
-    output = json.loads(task.output)
+    try:
+        output = json.loads(task.output)
+    except JSONDecodeError:
+        log.warning("route_filter: failed to decode JSON from route module output")
+        return db, task
 
     output_list = []
     for rec in output:
