@@ -1,3 +1,5 @@
+import base64
+import json
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock, Mock
@@ -210,6 +212,179 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     )
 
     assert powershell_launcher == _expected_http_malleable_powershell_launcher()
+
+
+def _build_malleable_listener(monkeypatch, main_menu_mock):
+    """Construct a validated malleable listener with the amazon sample
+    profile. Mirrors the setup in test_http_malleable_generate_launcher
+    but returns the listener for reuse."""
+    from empire.server.listeners.http_malleable import Listener
+
+    packets = Mock()
+    packets.build_routing_packet.return_value = b"routing packet"
+    monkeypatch.setattr("empire.server.listeners.http_malleable.packets", packets)
+
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr("empire.server.listeners.http_malleable.secrets", secrets_mock)
+
+    helpers_mock = MagicMock()
+    helpers_mock.random_string.return_value = "r"
+    monkeypatch.setattr("empire.server.listeners.http_malleable.helpers", helpers_mock)
+    helpers_mock.obfuscate_call_home_address.side_effect = (
+        helpers.obfuscate_call_home_address
+    )
+
+    session_mock = MagicMock()
+    profile_mock = MagicMock()
+    session_mock.return_value.query.return_value.filter.return_value.first.return_value = profile_mock
+    profile_mock.data = _fake_malleable_profile()
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.SessionLocal", session_mock
+    )
+
+    validate_listener_address_mock = MagicMock()
+    validate_listener_address_mock.return_value = ("http://localhost/", None)
+    main_menu_mock.listenersv2 = MagicMock()
+    main_menu_mock.listenersv2.validate_listener_address = (
+        validate_listener_address_mock
+    )
+
+    listener = Listener(main_menu_mock)
+    listener.options["Profile"]["Value"] = "amazon.profile"
+    listener.validate_options()
+    listener.options["Host"]["Value"] = "http://localhost"
+    listener.options["Port"]["Value"] = "80"
+
+    main_menu_mock.listeners.activeListeners = {
+        "fake_listener": {"options": listener.options}
+    }
+    listener.threads = {"fake_listener": {"fake_thread": {}}}
+    return listener
+
+
+def _assert_valid_malleable_profile_b64(b64: str):
+    """Decode + JSON-parse the base64 blob; assert v1 schema with all
+    three sections. Shared by csharp and go tests."""
+    assert b64, "MALLEABLE_PROFILE must not be empty for malleable listener"
+    decoded = base64.b64decode(b64).decode("utf-8")
+    payload = json.loads(decoded)
+    assert payload["v"] == 1
+    assert set(payload["sections"].keys()) == {"stager", "get", "post"}
+    for section_name in ("stager", "get", "post"):
+        assert "client" in payload["sections"][section_name]
+        assert "server" in payload["sections"][section_name]
+
+
+def test_http_malleable_generate_launcher_csharp(monkeypatch, main_menu_mock):
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+
+    compile_mock = MagicMock(return_value="/tmp/sharpire-build.exe")
+    main_menu_mock.dotnet_compiler.compile_stager = compile_mock
+
+    result = listener.generate_launcher(
+        listener_name="fake_listener", language="csharp", encode=False
+    )
+
+    assert result == "/tmp/sharpire-build.exe"
+    compile_mock.assert_called_once()
+    stager_yaml = compile_mock.call_args[0][0]
+
+    # Malleable path must read SharpireMalleable.yaml and pass the
+    # "SharpireMalleable" stager name so EmpireCompiler globs BOTH source
+    # libraries (base Sharpire + SharpireMalleable extension) into the build.
+    assert compile_mock.call_args[0][1] == "SharpireMalleable"
+    assert "Name: SharpireMalleable" in stager_yaml
+
+    assert "{{ REPLACE_MALLEABLE_PROFILE }}" not in stager_yaml
+    assert "SetMalleableProfile" in stager_yaml
+    # Syntactic anchor for EmpireCompiler's tree-pruning optimizer — without
+    # explicit typeof() references the optimizer drops MalleableProfile.cs /
+    # MalleableTransform.cs from the second compile pass (partial classes
+    # split across source libraries confuse DeclaringSyntaxReferences).
+    assert "typeof(MalleableProfile)" in stager_yaml
+    assert "typeof(MalleableTransform)" in stager_yaml
+
+    match = None
+    for line in stager_yaml.splitlines():
+        if "malleableProfileB64" in line and "=" in line:
+            match = line.split('"')[1]
+            break
+    assert match is not None, "could not find substituted malleableProfileB64"
+    _assert_valid_malleable_profile_b64(match)
+
+
+def test_http_malleable_generate_launcher_go(monkeypatch, main_menu_mock):
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+
+    go_compile_mock = MagicMock(return_value="/tmp/gopire-build.exe")
+    main_menu_mock.stagergenv2.generate_go_stageless = go_compile_mock
+
+    result = listener.generate_launcher(
+        listener_name="fake_listener", language="go", encode=False
+    )
+
+    assert result == "/tmp/gopire-build.exe"
+    go_compile_mock.assert_called_once()
+
+
+def test_http_malleable_serialize_profile_for_agent(monkeypatch, main_menu_mock):
+    """The Listener.serialize_profile_for_agent helper should emit a
+    base64-encoded JSON blob that matches the v1 schema the agents
+    parse. This is the contract both Sharpire and Gopire rely on."""
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+    b64 = listener.serialize_profile_for_agent()
+    _assert_valid_malleable_profile_b64(b64)
+
+
+def test_http_generate_launcher_csharp_plain_ships_without_malleable(
+    monkeypatch, main_menu_mock
+):
+    """Plain http listener builds base Sharpire — no malleable types, no
+    SetMalleableProfile call, no System.Web.Extensions reference. The
+    malleable pipeline is exclusive to http_malleable's SharpireMalleable
+    yaml, which pulls the extension library in as a second
+    ReferenceSourceLibrary."""
+    from empire.server.listeners.http import Listener
+
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+
+    packets = Mock()
+    packets.build_routing_packet.return_value = b"routing packet"
+    monkeypatch.setattr("empire.server.listeners.http.packets", packets)
+
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr("empire.server.listeners.http.secrets", secrets_mock)
+
+    http_listener = Listener(main_menu_mock)
+    http_listener.options["Host"]["Value"] = "http://localhost"
+    http_listener.options["Port"]["Value"] = "80"
+    http_listener.host_address = "http://localhost/"
+
+    compile_mock = MagicMock(return_value="/tmp/plain-sharpire.exe")
+    main_menu_mock.dotnet_compiler.compile_stager = compile_mock
+
+    main_menu_mock.listeners.activeListeners = {
+        "fake_listener": {"options": http_listener.options}
+    }
+    http_listener.threads = {"fake_listener": {"fake_thread": {}}}
+
+    result = http_listener.generate_launcher(
+        listener_name="fake_listener", language="csharp", encode=False
+    )
+
+    assert result == "/tmp/plain-sharpire.exe"
+    assert compile_mock.call_args[0][1] == "Sharpire"
+    stager_yaml = compile_mock.call_args[0][0]
+    assert "malleableProfileB64" not in stager_yaml
+    assert "SetMalleableProfile" not in stager_yaml
+    assert "REPLACE_MALLEABLE_PROFILE" not in stager_yaml
+    assert "SharpireMalleable" not in stager_yaml
+    # System.Web.Extensions lives only on SharpireMalleable so plain builds
+    # shouldn't pull it in as a reference assembly.
+    assert "System.Web.Extensions" not in stager_yaml
 
 
 def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):

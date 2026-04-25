@@ -842,8 +842,22 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         working_hours = active_listener.options["WorkingHours"]["Value"]
         lost_limit = active_listener.options["DefaultLostLimit"]["Value"]
 
+        # Malleable listeners serialize their parsed profile into the compact
+        # JSON blob that Gopire consumes at runtime. Duck-type on the helper
+        # method rather than the listener's display name so a rename of
+        # HTTP[S] MALLEABLE can't silently degrade every Go agent to legacy
+        # mode. When present, we also pass -tags malleable to the Go compiler
+        # so comms/malleable.go + comms/http_malleable.go get included; plain
+        # builds skip those files entirely (no malleable types in the binary).
+        is_malleable = hasattr(active_listener, "serialize_profile_for_agent")
+        malleable_profile = (
+            active_listener.serialize_profile_for_agent() if is_malleable else ""
+        )
+
         template_vars = {
             "PROFILE": profile,
+            "MALLEABLE": is_malleable,
+            "MALLEABLE_PROFILE": malleable_profile,
             "HOST": active_listener.host_address,
             "SESSION_ID": session_id,
             "KILL_DATE": kill_date,
@@ -869,5 +883,9 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         }
 
         return self.main_menu.go_compiler.compile_stager(
-            template_vars, "stager", goos="windows", goarch="amd64"
+            template_vars,
+            "stager",
+            goos="windows",
+            goarch="amd64",
+            build_tags=["malleable"] if is_malleable else None,
         )

