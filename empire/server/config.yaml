@@ -59,7 +59,7 @@ starkiller:
   enabled: true
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
   # Can be a branch, tag, or commit hash
-  ref: sponsors-main
+  ref: 4.0-dev
 submodules:
   auto_update: true
 plugin_marketplace:
