@@ -293,11 +293,12 @@ def create_task_shell(
 ):
     """
     Executes a command on the agent via the system shell. The `literal` flag is
-    accepted for API backwards compatibility but is now a no-op: agent-side
-    command aliases were removed, so every command is run by the system shell.
+    accepted in the request body for API backwards compatibility but is ignored:
+    agent-side command aliases were removed in 7.0, so every command is run by
+    the system shell.
     """
     resp, err = agent_task_service.create_task_shell(
-        db, db_agent, shell_request.command, shell_request.literal, current_user
+        db, db_agent, shell_request.command, current_user
     )
 
     if err:

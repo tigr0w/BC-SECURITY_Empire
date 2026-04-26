@@ -165,7 +165,6 @@ class AgentTaskService:
         db: Session,
         agent: models.Agent,
         command: str,
-        literal: bool = False,
         user: models.User | None = None,
     ):
         return self.add_task(db, agent, "TASK_SHELL", command, user=user)
