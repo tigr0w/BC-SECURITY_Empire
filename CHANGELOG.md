@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+-   Fixed `update-starkiller` release action updating the wrong `ref` in `config.yaml` after `empire_compiler` was added to the file. The action now uses `yq` to scope updates to `starkiller.repo`/`starkiller.ref` explicitly.
+
 ## [6.6.0] - 2026-04-25
 
 
