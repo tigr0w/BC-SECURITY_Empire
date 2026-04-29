@@ -1,9 +1,13 @@
 import logging
 import re
+from typing import TYPE_CHECKING
 
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
 from empire.server.common.credential_parsers.base import coerce_str
 from empire.server.common.credential_parsers.credtypes import NETNTLMV1
+
+if TYPE_CHECKING:
+    from empire.server.core.db import models
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +32,9 @@ class InternalMonologueParser:
     `notes` so operators can filter/skip them in the UI.
     """
 
-    def parse(self, data, agent) -> list[CredentialPostRequest]:
+    def parse(
+        self, data: bytes | str, agent: "models.Agent | None"
+    ) -> list[CredentialPostRequest]:
         text = coerce_str(data)
 
         agent_host = getattr(agent, "hostname", "") or ""

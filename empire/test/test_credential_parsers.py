@@ -23,6 +23,7 @@ from empire.server.common.credential_parsers.credtypes import (
     KRBASREP,
     KRBTGS,
     NETNTLMV1,
+    NETNTLMV2,
     PLAINTEXT,
 )
 from empire.server.common.credential_parsers.internal_monologue import (
@@ -77,6 +78,25 @@ def test_registry_contains_all_parsers():
 def test_get_parser_unknown_returns_none():
     assert credential_parsers.get_parser("does_not_exist") is None
     assert credential_parsers.get_parser(None) is None
+
+
+def test_credtype_constants_have_stable_values():
+    """Out-of-tree plugins, hashcat-mode-detection logic, Starkiller
+    filters, and migration scripts all key on the literal credtype
+    string. Pin every wire value so a rename here triggers a test
+    failure rather than silently breaking downstream consumers.
+    """
+    assert HASH == "hash"
+    assert PLAINTEXT == "plaintext"
+    assert NETNTLMV1 == "netntlmv1"
+    assert NETNTLMV2 == "netntlmv2"
+    assert DCC2 == "dcc2"
+    assert KRBTGS == "krbtgs"
+    assert KRBASREP == "krbasrep"
+    assert KRB_TICKET == "krb_ticket"
+    assert DPAPI_MASTERKEY == "dpapi_masterkey"
+    assert DPAPI_SYSTEM_KEY == "dpapi_system_key"
+    assert DPAPI_VAULT_CRED == "dpapi_vault_cred"
 
 
 def test_empire_module_rejects_unknown_credential_parser():
@@ -498,6 +518,19 @@ def test_internal_monologue_ignores_non_matching_lines(agent):
     assert len(creds) == 2  # noqa: PLR2004
 
 
+def test_internal_monologue_tolerates_none_agent():
+    """The CredentialParser Protocol allows `agent=None` for non-agent
+    ingestion paths (plugins, file uploads). Parsers must not blow up
+    on attribute access; host/os should fall back to empty/None.
+    Locks the contract so a future "simplify the getattr defaults"
+    refactor doesn't silently break plugin callers.
+    """
+    creds = InternalMonologueParser().parse(INTERNAL_MONOLOGUE_SAMPLE, None)
+    assert len(creds) == 2  # noqa: PLR2004
+    assert all(c.host == "" for c in creds)
+    assert all(c.os is None for c in creds)
+
+
 # ---------- tgtdelegation BOF -------------------------------------------------
 
 
@@ -714,3 +747,46 @@ def test_rubeus_asreproast_extracts_hash(agent):
     assert asrep[0].domain == "EXAMPLE.LOCAL"
     assert asrep[0].password.endswith("AABB112233445566778899AABBCCDDEEFF")
     assert "asreproast" in (asrep[0].notes or "")
+
+
+# ---------- Protocol contract: all parsers tolerate agent=None ----------------
+
+
+# (parser_class, sample) pairs for the contract sweep. Each sample is the
+# same fixture the parser's own happy-path test uses, so we know it
+# produces ≥1 credential and exercises the agent-dereference path inside
+# the result builder (not just the parse() entry point). When adding a
+# new parser, add it here too — the Protocol contract applies to every
+# parser, and internal_monologue alone is not a sufficient pin.
+_PARSER_AGENT_NONE_SAMPLES = [
+    (MimikatzParser, MIMIKATZ_SAMPLE),
+    (PromptParser, b"[+] Prompted credentials: foo-> CORP\\jdoe : SecretPw!"),
+    (KerberoastParser, KERBEROAST_RUBEUS_SAMPLE),
+    (RubeusParser, RUBEUS_ASKTGT_SAMPLE),
+    (PwdumpHashesParser, PWDUMP_SAMPLE),
+    (SharpDpapiParser, SHARP_DPAPI_MASTERKEYS),
+    (SessionGopherParser, SESSION_GOPHER_CSV),
+    (InternalMonologueParser, INTERNAL_MONOLOGUE_SAMPLE),
+    (SharpSecDumpParser, SHARPSECDUMP_SAMPLE),
+    (NtlmExtractParser, NTLMEXTRACT_SAMPLE),
+    (TgtDelegationParser, TGTDELEG_SAMPLE),
+]
+
+
+@pytest.mark.parametrize(
+    ("parser_cls", "sample"),
+    _PARSER_AGENT_NONE_SAMPLES,
+    ids=[cls.__name__ for cls, _ in _PARSER_AGENT_NONE_SAMPLES],
+)
+def test_parser_tolerates_none_agent(parser_cls, sample):
+    """Protocol contract sweep: every registered parser must accept
+    `agent=None` without raising. internal_monologue gets its own
+    dedicated test (above) with stricter host/os assertions; this one
+    pins the no-AttributeError contract for the rest, since they all
+    use the same `getattr(agent, ...)` defensive pattern that a future
+    "simplify the defaults away" refactor could silently break.
+    """
+    creds = parser_cls().parse(sample, None)
+    # We only assert the call returned without raising. Counts and
+    # field values are pinned in each parser's own happy-path test.
+    assert isinstance(creds, list)

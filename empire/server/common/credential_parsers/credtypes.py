@@ -10,6 +10,8 @@ The `password` column holds different secret material per credtype:
     PLAINTEXT          — recovered plaintext password
     NETNTLMV1          — NetNTLMv1 response (hashcat mode 5500)
                          Format: user::domain:lmresp:ntresp:challenge
+    NETNTLMV2          — NetNTLMv2 response (hashcat mode 5600)
+                         Format: user::domain:srvchallenge:ntresp:blob
     DCC2               — Domain Cached Credentials v2 (hashcat mode 2100)
                          Format: $DCC2$10240#user#hash
     KRBTGS             — full Hashcat/John $krb5tgs$... blob (single line)
@@ -28,6 +30,7 @@ origin without a schema migration.
 HASH = "hash"
 PLAINTEXT = "plaintext"
 NETNTLMV1 = "netntlmv1"
+NETNTLMV2 = "netntlmv2"
 DCC2 = "dcc2"
 KRBTGS = "krbtgs"
 KRBASREP = "krbasrep"
