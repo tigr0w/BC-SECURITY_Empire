@@ -10,8 +10,8 @@ description: |
   operations. This technique enables access to protected system resources and processes
   that require SYSTEM-level permissions.
 software: ''
-tactics: [TA0004]
-techniques: [T1134.001]
+tactics: [TA0004, TA0005]
+techniques: [T1134, T1134.001]
 background: false
 output_extension: ''
 needs_admin: false

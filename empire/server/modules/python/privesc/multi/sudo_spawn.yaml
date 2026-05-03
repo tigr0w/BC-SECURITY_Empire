@@ -24,7 +24,7 @@ description: |
   files, configuration changes, and administrative operations that would otherwise
   be restricted to the original user context.
 software: ''
-tactics: [TA0004, TA0005]
+tactics: [TA0004]
 techniques:
   - T1548.003
 background: true

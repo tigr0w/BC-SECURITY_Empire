@@ -19,7 +19,7 @@ description: |
   settings.json as settings.json.empire.bak for manual recovery.
 software: ''
 tactics: [TA0003, TA0004]
-techniques: [T1547.015]
+techniques: [T1546]
 background: false
 output_extension:
 needs_admin: false

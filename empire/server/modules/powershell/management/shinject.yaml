@@ -26,8 +26,8 @@ description: |
   persistence mechanisms, or running specialized payloads that require direct memory
   execution.
 software: S0194
-tactics: [TA0005]
-techniques: [T1620]
+tactics: [TA0004, TA0005]
+techniques: [T1055, T1620]
 background: true
 output_extension:
 needs_admin: false

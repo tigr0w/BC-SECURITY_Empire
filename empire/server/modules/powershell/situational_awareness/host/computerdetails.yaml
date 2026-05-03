@@ -12,7 +12,7 @@ description: |
   OS version, domain membership, network interfaces, running services, and user accounts.
 software: ''
 tactics: [TA0007]
-techniques: [T1082]
+techniques: [T1082, T1654]
 background: true
 output_extension:
 needs_admin: true

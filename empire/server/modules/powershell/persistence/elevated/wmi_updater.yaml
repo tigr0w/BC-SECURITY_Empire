@@ -29,7 +29,7 @@ description: |
   privileges and creates WMI artifacts that can be detected by advanced security
   monitoring tools.
 software: ''
-tactics: [TA0003]
+tactics: [TA0002, TA0003, TA0004]
 techniques:
   - T1047
   - T1546.003

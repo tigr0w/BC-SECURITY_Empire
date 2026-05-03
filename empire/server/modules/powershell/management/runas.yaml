@@ -21,8 +21,8 @@ description: |
   The spawned process also operates with standard Windows authentication tokens
   rather than trying to hide its identity.
 software: ''
-tactics: [TA0004, TA0005]
-techniques: [T1134.002]
+tactics: [TA0001, TA0003, TA0004, TA0005]
+techniques: [T1078.002, T1078.003, T1134.002]
 background: false
 output_extension:
 needs_admin: false

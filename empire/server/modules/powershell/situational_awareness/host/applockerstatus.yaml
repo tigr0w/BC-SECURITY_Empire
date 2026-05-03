@@ -14,7 +14,7 @@ description: |
   application whitelisting controls and potential bypass opportunities.
 software: ''
 tactics: [TA0007]
-techniques: [T1012, T1082]
+techniques: [T1518.001]
 background: false
 output_extension:
 needs_admin: false

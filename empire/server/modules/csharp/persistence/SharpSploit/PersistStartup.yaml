@@ -9,8 +9,8 @@ description: |
   file for with a powershell command to execute. THe file is most often placed
   as a .bat. The filetype must be directly executable.
 software: ''
-tactics: [TA0003]
-techniques: [T1547.001]
+tactics: [TA0003, TA0004]
+techniques: [T1547, T1547.001]
 background: true
 output_extension: ''
 needs_admin: false

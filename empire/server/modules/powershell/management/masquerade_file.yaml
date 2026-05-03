@@ -11,7 +11,7 @@ description: |
   Copies and optionally executes the binary from the destination.
 software: ''
 tactics: [TA0005]
-techniques: [T1036]
+techniques: [T1036, T1036.005]
 background: true
 output_extension:
 needs_admin: false

@@ -20,7 +20,7 @@ description: |
   cleaned up or removed by security teams, providing a reliable fallback
   mechanism for persistence.
 software: ''
-tactics: [TA0004]
+tactics: [TA0003, TA0004]
 techniques: [T1546]
 background: false
 output_extension:

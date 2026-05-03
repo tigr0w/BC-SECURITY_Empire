@@ -23,7 +23,7 @@ description: |
   landscape within the Active Directory environment.
 software: ''
 tactics: [TA0007]
-techniques: [T1018]
+techniques: [T1018, T1087.002, T1654]
 background: false
 output_extension:
 needs_admin: true

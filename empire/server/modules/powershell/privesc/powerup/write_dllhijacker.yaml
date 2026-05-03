@@ -26,8 +26,8 @@ description: |
   elevated privileges. This approach is based on the PowerUp toolkit
   and represents a sophisticated method of DLL-based privilege escalation.
 software: S0194
-tactics: [TA0004]
-techniques: [T1574.001, T1574.007, T1574.008, T1574.009, T1068]
+tactics: [TA0002, TA0005]
+techniques: [T1574.001]
 background: true
 output_extension:
 needs_admin: false

@@ -20,7 +20,7 @@ description: |
   privileges to implement and creates persistent privilege escalation that survives
   reboots and password changes.
 software: ''
-tactics: [TA0004]
+tactics: [TA0003, TA0004]
 techniques: [T1098]
 background: false
 output_extension:

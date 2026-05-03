@@ -9,7 +9,7 @@ description: |
   the script and run the specified function with the provided parameters.
 software: S0194
 tactics: [TA0002]
-techniques: [T1059]
+techniques: [T1059, T1059.001]
 background: true
 output_extension:
 needs_admin: false

@@ -20,7 +20,7 @@ description: |
   can be triggered remotely by the operator through DNS manipulation,
   providing a reliable and stealthy persistence mechanism.
 software: S0194
-tactics: [TA0004]
+tactics: [TA0003, TA0004]
 techniques: [T1546]
 background: false
 output_extension:

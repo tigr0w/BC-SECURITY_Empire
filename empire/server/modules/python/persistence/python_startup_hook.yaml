@@ -22,7 +22,7 @@ description: |
   elevated privileges for the per-user paths.
 software: ''
 tactics: [TA0003, TA0004]
-techniques: [T1546.018]
+techniques: [T1546, T1546.018]
 background: true
 output_extension:
 needs_admin: false

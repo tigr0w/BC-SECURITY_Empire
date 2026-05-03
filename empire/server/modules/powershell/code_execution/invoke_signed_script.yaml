@@ -12,7 +12,7 @@ description: |
   abused to bypass application whitelisting.
 software: ''
 tactics: [TA0005]
-techniques: [T1216]
+techniques: [T1216, T1216.002]
 background: true
 output_extension:
 needs_admin: false

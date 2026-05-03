@@ -15,7 +15,7 @@ description: |
   extension's original handler lived in HKLM, Cleanup restores the
   HKCU state, not the HKLM entry.
 software: ''
-tactics: [TA0003]
+tactics: [TA0003, TA0004]
 techniques: [T1546.001]
 background: false
 output_extension:

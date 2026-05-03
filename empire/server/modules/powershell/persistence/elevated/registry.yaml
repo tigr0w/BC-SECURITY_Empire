@@ -22,7 +22,7 @@ description: |
   privileges and creates visible registry artifacts that can be \ndetected by security
   monitoring tools.
 software: ''
-tactics: [TA0003]
+tactics: [TA0003, TA0004]
 techniques: [T1547.001]
 background: false
 output_extension:

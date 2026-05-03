@@ -24,8 +24,8 @@ description: |
   creates visible registry artifacts that can be detected by security monitoring
   tools.
 software: ''
-tactics: [TA0003]
-techniques: [T1547.001]
+tactics: [TA0003, TA0004, TA0005]
+techniques: [T1547.001, T1564.004]
 background: false
 output_extension:
 needs_admin: false

@@ -8,10 +8,9 @@ description: |
   ETW is widely used by EDR and security tooling to collect runtime visibility on process behavior, including script execution and API activity.
   Using a single-byte RET patch can reduce local ETW signal for this process, while unpatch mode restores the original first byte when available.
 software: ''
-tactics: [TA0005]
+tactics: [TA0112]
 techniques:
-  - T1562.001
-  - T1562.006
+  - T1685
 background: false
 output_extension: ''
 needs_admin: false

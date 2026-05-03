@@ -13,9 +13,10 @@ description: |
   and managing the lifecycle of deployed applications in cloud-native
   environments.
 software: ''
-tactics: [TA0002]
+tactics: [TA0002, TA0040]
 techniques:
   - T1059.006
+  - T1489
 background: true
 output_extension: ''
 needs_admin: false

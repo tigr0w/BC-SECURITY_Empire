@@ -25,8 +25,8 @@ description: |
   processes with elevated tokens and duplicating their security context
   to execute arbitrary code with administrative privileges.
 software: ''
-tactics: [TA0004]
-techniques: [T1548.002]
+tactics: [TA0004, TA0005]
+techniques: [T1134.001, T1548.002]
 background: false
 output_extension:
 needs_admin: false

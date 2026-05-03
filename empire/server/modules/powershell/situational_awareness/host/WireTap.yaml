@@ -17,7 +17,7 @@ description: |
   capture sensitive information including passwords, conversations, and visual data.
 software: ''
 tactics: [TA0006, TA0009]
-techniques: [T1123, T1125, T1056.001]
+techniques: [T1056.001, T1113, T1123, T1125]
 background: false
 output_extension:
 needs_admin: false

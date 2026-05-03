@@ -20,8 +20,8 @@ description: |
   users log in. It's particularly useful as a persistence technique when combined
   with other modules that can later extract these credentials from memory.
 software: ''
-tactics: [TA0005]
-techniques: [T1112, T1562.010]
+tactics: [TA0003, TA0112]
+techniques: [T1112, T1689]
 background: false
 output_extension:
 needs_admin: true

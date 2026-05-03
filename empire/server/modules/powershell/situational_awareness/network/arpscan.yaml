@@ -12,7 +12,7 @@ description: |
   and network interface details.
 software: S0099
 tactics: [TA0007]
-techniques: [T1016, T1018]
+techniques: [T1018]
 background: true
 output_extension:
 needs_admin: false

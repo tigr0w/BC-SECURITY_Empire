@@ -14,8 +14,8 @@ description: |
   as a listener, client, relay, or data transfer utility, providing operators with
   flexible network communication options.
 software: ''
-tactics: [TA0003]
-techniques: [T1546.013]
+tactics: [TA0002, TA0011]
+techniques: [T1059.001, T1071.004, T1572]
 background: true
 output_extension:
 needs_admin: false

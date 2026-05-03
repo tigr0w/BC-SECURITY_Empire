@@ -24,7 +24,7 @@ description: |
   and forcing users to provide their passwords through persistent
   authentication prompts.
 software: ''
-tactics: [TA0009]
+tactics: [TA0006, TA0009]
 techniques:
   - T1056.002
 background: false

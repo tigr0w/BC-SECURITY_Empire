@@ -13,8 +13,8 @@ description: |
   SafeBoot\Minimal and SafeBoot\Network registry keys, and uses
   bcdedit to configure Safe Mode boot.
 software: ''
-tactics: [TA0003, TA0005]
-techniques: [T1562.009]
+tactics: [TA0003, TA0004, TA0112]
+techniques: [T1112, T1543.003, T1688]
 background: false
 output_extension:
 needs_admin: true

@@ -16,7 +16,7 @@ description: |
   including database, schema, table, column names, sample data, and row counts.
 software: ''
 tactics: [TA0009]
-techniques: [T1213]
+techniques: [T1213, T1213.006]
 background: true
 output_extension:
 needs_admin: false

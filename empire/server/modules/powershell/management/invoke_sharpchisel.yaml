@@ -30,7 +30,7 @@ description: |
   sessions.
 software: ''
 tactics: [TA0011]
-techniques: [T1090]
+techniques: [T1090, T1090.002]
 background: true
 output_extension:
 needs_admin: false

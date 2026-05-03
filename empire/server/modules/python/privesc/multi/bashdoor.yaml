@@ -22,8 +22,7 @@ description: |
   execution.
 software: ''
 tactics: [TA0003, TA0004]
-techniques:
-  - T1546.004
+techniques: [T1546, T1546.004]
 background: true
 output_extension: ''
 needs_admin: false

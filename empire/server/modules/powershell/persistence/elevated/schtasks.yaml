@@ -21,7 +21,7 @@ description: |
   technique requires administrative privileges and creates visible scheduled task
   artifacts that can be detected by security monitoring tools.
 software: S0111
-tactics: [TA0003, TA0004]
+tactics: [TA0002, TA0003, TA0004]
 techniques: [T1053.005]
 background: false
 output_extension:

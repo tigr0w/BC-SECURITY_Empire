@@ -20,8 +20,8 @@ description: |
   opportunities for credential harvesting. The module includes repair
   functionality to restore account security settings when needed.
 software: ''
-tactics: [TA0003]
-techniques: [T1098]
+tactics: [TA0003, TA0004, TA0006, TA0112]
+techniques: [T1098, T1556.005]
 background: true
 output_extension:
 needs_admin: false

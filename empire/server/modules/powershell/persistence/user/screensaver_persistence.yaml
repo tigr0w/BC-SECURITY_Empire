@@ -18,7 +18,7 @@ description: |
   so Cleanup can restore them. On verify failure the install path
   rolls back all mutated registry values and deletes the .vbs.
 software: ''
-tactics: [TA0003]
+tactics: [TA0003, TA0004]
 techniques: [T1546.002]
 background: false
 output_extension:

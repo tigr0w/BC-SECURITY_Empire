@@ -8,8 +8,8 @@ description: |
   using syscalls (HellsGate/HalosGate). Patches EtwEventWrite in the target
   process to blind ETW-based security logging and monitoring. x64 only.
 software: ''
-tactics: [TA0005]
-techniques: [T1562.001]
+tactics: [TA0004, TA0005, TA0112]
+techniques: [T1055, T1685]
 background: false
 output_extension:
 needs_admin: false

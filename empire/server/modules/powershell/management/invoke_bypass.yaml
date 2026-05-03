@@ -22,10 +22,10 @@ description: |
   stealth during post-exploitation activities and avoiding
   detection by advanced security solutions.
 software: ''
-tactics: [TA0005]
+tactics: [TA0005, TA0112]
 techniques:
   - T1027.010
-  - T1562.006
+  - T1685
 background: true
 output_extension:
 needs_admin: false

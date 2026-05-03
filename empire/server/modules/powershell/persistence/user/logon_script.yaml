@@ -11,7 +11,7 @@ description: |
   as a batch script, then registers it via the registry key. This
   is a well-known persistence mechanism that survives reboots.
 software: ''
-tactics: [TA0003]
+tactics: [TA0003, TA0004]
 techniques: [T1037.001]
 background: true
 output_extension:

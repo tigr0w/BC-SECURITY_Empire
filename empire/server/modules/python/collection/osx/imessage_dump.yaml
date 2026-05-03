@@ -19,10 +19,8 @@ description: |
   sensitive conversations, contact information, and understanding
   user communication patterns.
 software: ''
-tactics: [TA0006]
-techniques:
-  - T1005
-  - T1552.001
+tactics: [TA0009]
+techniques: [T1005]
 background: false
 output_extension: ''
 needs_admin: false

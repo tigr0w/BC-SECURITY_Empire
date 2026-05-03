@@ -9,8 +9,8 @@ description: |
   and ETW bypass prior to execution of the provided command. Commands are always returned
   using PowerShell's Out-String.
 software: ''
-tactics: [TA0002]
-techniques: [T1059.001]
+tactics: [TA0002, TA0112]
+techniques: [T1059.001, T1685]
 background: true
 output_extension: ''
 needs_admin: false
