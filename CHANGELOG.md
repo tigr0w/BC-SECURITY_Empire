@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+-   Bounded the dynamic-PowerShell helpers' caches with `functools.lru_cache` (maxsize 128 / 512), precompiled the dependency-walk regex, and made `get_dependent_functions` insertion-order-stable so the generated script bytes are deterministic across processes. `test_load_modules` drops from ~54 s to ~1 s on CI; `test_dynamic_powershell` now also asserts a SHA-256 of the produced script to catch any future drift.
+-   Replaced the three large credential fixtures (`Invoke-Mimikatz.ps1`, `Invoke-Kerberoast.ps1`, `Invoke-InternalMonologue.ps1`) under `empire/test/data/module_source/credentials/` with a tiny synthetic `tiny_test_module.ps1`. The `test_preobfuscate_post` test only globs that directory and asserts each `.ps1` was preobfuscated; the real modules made `Invoke-Obfuscation` chew through ~5,000 lines and dominated CI wall time. Production module sources under `empire/server/data/module_source/credentials/` are unchanged.
+
 ### Fixed
 
 -   Fixed `update-starkiller` release action updating the wrong `ref` in `config.yaml` after `empire_compiler` was added to the file. The action now uses `yq` to scope updates to `starkiller.repo`/`starkiller.ref` explicitly.
