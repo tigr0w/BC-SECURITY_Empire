@@ -18,10 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Bounded the dynamic-PowerShell helpers' caches with `functools.lru_cache` (maxsize 128 / 512), precompiled the dependency-walk regex, and made `get_dependent_functions` insertion-order-stable so the generated script bytes are deterministic across processes. `test_load_modules` drops from ~54 s to ~1 s on CI; `test_dynamic_powershell` now also asserts a SHA-256 of the produced script to catch any future drift.
 -   Replaced the three large credential fixtures (`Invoke-Mimikatz.ps1`, `Invoke-Kerberoast.ps1`, `Invoke-InternalMonologue.ps1`) under `empire/test/data/module_source/credentials/` with a tiny synthetic `tiny_test_module.ps1`. The `test_preobfuscate_post` test only globs that directory and asserts each `.ps1` was preobfuscated; the real modules made `Invoke-Obfuscation` chew through ~5,000 lines and dominated CI wall time. Production module sources under `empire/server/data/module_source/credentials/` are unchanged.
+-   Trimmed three small SQL hot-path costs in agent comms: dropped `lazy="joined"` on `Agent.host` so PK lookups stop emitting a wasted `LEFT OUTER JOIN hosts` (callers that need `host` still load it via explicit `joinedload`); replaced `db.query(Agent).filter(...).first()` with `db.get(Agent, session_id)` in `_process_agent_packet`; replaced `agent_service.get_by_id(...).hostname` with a scalar `select(Agent.hostname)` in `handle_agent_request`.
+-   Promoted `main_menu_mock` and `module_service` fixtures in `empire/test/test_modules.py` from function- to module-scope. The five tests in that module each used to rebuild `ModuleService` (~1.3 s with the helpers cache); they now share one. Local: subsequent test setup ~4 s → ~0.23 s.
 
 ### Fixed
 
 -   Fixed `update-starkiller` release action updating the wrong `ref` in `config.yaml` after `empire_compiler` was added to the file. The action now uses `yq` to scope updates to `starkiller.repo`/`starkiller.ref` explicitly.
+-   Fixed `undefer(AgentTask.output_original)` referencing a nonexistent attribute (column is `original_output`). Latent `AttributeError` if any caller passed `include_original_output=True`.
 
 ## [6.6.0] - 2026-04-25
 

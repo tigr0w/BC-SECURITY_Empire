@@ -9,7 +9,7 @@ import typing
 from pathlib import Path
 
 from pydantic import ValidationError
-from sqlalchemy import and_
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
@@ -976,8 +976,15 @@ class AgentCommunicationService:
             self.agent_service.update_agent_lastseen(db, session_id)
 
             # Check if the agent has returned sysinfo yet, so that we don't
-            # send out a checkin before stage2 of registration is complete
-            if self.agent_service.get_by_id(db, session_id).hostname:
+            # send out a checkin before stage2 of registration is complete.
+            # Scalar select avoids loading the full Agent row just for a
+            # truthiness check on a single column.
+            hostname = db.scalar(
+                select(models.Agent.hostname).where(
+                    models.Agent.session_id == session_id
+                )
+            )
+            if hostname:
                 fire_callback_hook = True
 
             tasks = self._get_queued_agent_tasks(db, session_id)
@@ -1103,9 +1110,10 @@ class AgentCommunicationService:
         """
         key_log_task_id = None
 
-        agent = (
-            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
-        )
+        # PK lookup; cheaper than .filter(...).first() (no WHERE planning)
+        # and benefits from SQLAlchemy's identity map if the row is
+        # already loaded in the session.
+        agent = db.get(models.Agent, session_id)
 
         # report the agent result in the reporting database
         message = f"Agent {session_id} got results for task {task_id}"

@@ -261,7 +261,13 @@ class Agent(Base):
     session_id = Column(String(255), primary_key=True, nullable=False)
     name = Column(String(255), nullable=False)
     host_id = Column(Integer, ForeignKey("hosts.id"), nullable=True)
-    host = relationship(Host, lazy="joined")
+    # `host` defaults to lazy="select"; the hot path
+    # (agent_communication_service) only reads `agent.host_id` and never
+    # the `.host` object, so the previous `lazy="joined"` was wasting a
+    # LEFT JOIN on every Agent PK lookup. Where the host object IS
+    # needed (e.g. agent task DTO), the caller adds an explicit
+    # `joinedload(Agent.host)`.
+    host = relationship(Host)
     listener = Column(String(255), nullable=False)
     language = Column(String(255))
     language_version = Column(String(255))
