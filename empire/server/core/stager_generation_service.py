@@ -810,14 +810,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
 
         return None
 
-    def generate_go_stageless(self, options, listener_name=None):
-        if not listener_name:
-            listener_name = options["Listener"]["Value"]
-
-        active_listener = self.listener_service.get_active_listener_by_name(
-            listener_name
-        )
-
+    def _build_template_vars(self, active_listener):
         session_id = "00000000"
         staging_key = active_listener.options["StagingKey"]["Value"]
         delay = active_listener.options["DefaultDelay"]["Value"]
@@ -827,7 +820,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         working_hours = active_listener.options["WorkingHours"]["Value"]
         lost_limit = active_listener.options["DefaultLostLimit"]["Value"]
 
-        template_vars = {
+        return {
             "PROFILE": profile,
             "HOST": active_listener.host_address,
             "SESSION_ID": session_id,
@@ -852,6 +845,16 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 active_listener.server_public_cert_key
             ).decode("UTF-8"),
         }
+
+    def generate_go_stageless(self, options, listener_name=None):
+        if not listener_name:
+            listener_name = options["Listener"]["Value"]
+
+        active_listener = self.listener_service.get_active_listener_by_name(
+            listener_name
+        )
+
+        template_vars = self._build_template_vars(active_listener)
 
         return self.main_menu.go_compiler.compile_stager(
             template_vars, "stager", goos="windows", goarch="amd64"

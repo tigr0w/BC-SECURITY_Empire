@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -63,6 +64,7 @@ class GoCompiler:
         :param template_path: Path to the template file (e.g., main.template.go).
         :param output_path: Path to the output main.go file.
         :param template_vars: Dictionary of variables to replace in the template.
+        :return: The rendered string (also written to ``output_path``).
         """
         template = self.jinja_env.get_template(template_path)
         rendered_content = template.render(template_vars)
@@ -70,37 +72,57 @@ class GoCompiler:
         with Path(output_path).open("w") as output_file:
             output_file.write(rendered_content)
 
+        return rendered_content
+
     def compile_stager(self, template_vars, task_name, goos="windows", goarch="amd64"):
         env = {"GOOS": goos, "GOARCH": goarch}
         random_task_name = f"{task_name}_{random_string(6)}.exe"
         template_path = "main.template"
+        gopire_src = self.install_path / "data/agent/gopire"
+        final_path = Path(tempfile.gettempdir()) / random_task_name
 
-        # This should move to a temp location. Using this static path will
-        # cause issues when multiple stagers are compiled at the same time.
-        source_file = self.install_path / "data/agent/gopire/main.go"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            build_dir = Path(tmpdir) / "gopire"
+            shutil.copytree(gopire_src, build_dir)
 
-        with (
-            tempfile.NamedTemporaryFile(delete=False) as temp_executable_file,
-        ):
-            temp_executable_file_path = Path(temp_executable_file.name)
-            self.generate_main_go(template_path, str(source_file), template_vars)
+            self.generate_main_go(
+                template_path, str(build_dir / "main.go"), template_vars
+            )
 
+            build_output = build_dir / random_task_name
             result = subprocess.run(
-                ["go", "build", "-o", str(temp_executable_file_path)],
+                ["go", "build", "-o", str(build_output), "."],
                 env={**env, **os.environ},
                 capture_output=True,
                 text=True,
-                cwd=source_file.parent,
+                cwd=build_dir,
                 check=False,
             )
 
             if result.returncode != 0:
+                preservation_note = ""
+                try:
+                    preserved_fd, preserved_name = tempfile.mkstemp(
+                        prefix="gopire-failed-main-", suffix=".go"
+                    )
+                    os.close(preserved_fd)
+                    shutil.copy2(build_dir / "main.go", preserved_name)
+                    preservation_note = (
+                        f" (rendered main.go preserved at {preserved_name})"
+                    )
+                except OSError as preserve_err:
+                    log.warning(
+                        "Could not preserve failed main.go for debugging: %s",
+                        preserve_err,
+                        exc_info=True,
+                    )
+                    preservation_note = (
+                        " (failed to preserve rendered main.go; see logs)"
+                    )
                 raise ModuleExecutionException(
-                    f"Go build failed: {result.stderr.strip()}"
+                    f"Go build failed: {result.stderr.strip()}{preservation_note}"
                 )
 
-        return str(
-            temp_executable_file_path.rename(
-                temp_executable_file_path.with_name(random_task_name)
-            )
-        )
+            shutil.move(str(build_output), str(final_path))
+
+        return str(final_path)
