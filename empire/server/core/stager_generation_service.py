@@ -825,14 +825,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
 
         return None
 
-    def generate_go_stageless(self, options, listener_name=None):
-        if not listener_name:
-            listener_name = options["Listener"]["Value"]
-
-        active_listener = self.listener_service.get_active_listener_by_name(
-            listener_name
-        )
-
+    def _build_template_vars(self, active_listener):
         session_id = "00000000"
         staging_key = active_listener.options["StagingKey"]["Value"]
         delay = active_listener.options["DefaultDelay"]["Value"]
@@ -854,7 +847,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             active_listener.serialize_profile_for_agent() if is_malleable else ""
         )
 
-        template_vars = {
+        return {
             "PROFILE": profile,
             "MALLEABLE": is_malleable,
             "MALLEABLE_PROFILE": malleable_profile,
@@ -881,6 +874,16 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 active_listener.server_public_cert_key
             ).decode("UTF-8"),
         }
+
+    def generate_go_stageless(self, options, listener_name=None):
+        if not listener_name:
+            listener_name = options["Listener"]["Value"]
+
+        active_listener = self.listener_service.get_active_listener_by_name(
+            listener_name
+        )
+
+        template_vars = self._build_template_vars(active_listener)
 
         return self.main_menu.go_compiler.compile_stager(
             template_vars,

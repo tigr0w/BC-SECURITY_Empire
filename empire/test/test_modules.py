@@ -45,7 +45,7 @@ def catch_logs(level: int, logger: logging.Logger) -> LogCaptureHandler:
         logger.removeHandler(handler)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def main_menu_mock(models, install_path):
     main_menu = Mock()
     main_menu.install_path = Path(install_path)
@@ -70,8 +70,14 @@ def main_menu_mock(models, install_path):
     return main_menu
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def module_service(main_menu_mock):
+    # Module-scoped: each ModuleService() call iterates ~498 module
+    # YAMLs (~1-2s after the helpers lru_cache lands; ~10s without).
+    # Reusing a single instance across tests in this file is safe —
+    # the consuming tests only mutate `module_service.modules` via
+    # `_load_module(...)` with isolated keys, and one mutates
+    # `module_source_path` via a context manager that restores it.
     module_service = ModuleService(main_menu_mock)
     main_menu_mock.modulesv2 = module_service
 

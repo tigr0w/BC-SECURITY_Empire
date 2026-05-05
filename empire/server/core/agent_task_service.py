@@ -99,7 +99,7 @@ class AgentTaskService:
         if include_full_input:
             query_options.append(undefer(models.AgentTask.input_full))
         if include_original_output:
-            query_options.append(undefer(models.AgentTask.output_original))
+            query_options.append(undefer(models.AgentTask.original_output))
         if include_output:
             query_options.append(undefer(models.AgentTask.output))
         query = query.options(*query_options)
