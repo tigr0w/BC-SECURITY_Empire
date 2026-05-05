@@ -88,6 +88,10 @@ class GoCompiler:
         gopire_src = self.install_path / "data/agent/gopire"
         final_path = Path(tempfile.gettempdir()) / random_task_name
 
+        build_args = ["go", "build"]
+        if build_tags:
+            build_args.extend(["-tags", ",".join(build_tags)])
+
         with tempfile.TemporaryDirectory() as tmpdir:
             build_dir = Path(tmpdir) / "gopire"
             shutil.copytree(gopire_src, build_dir)
