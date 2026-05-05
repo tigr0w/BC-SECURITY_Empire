@@ -890,5 +890,5 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             "stager",
             goos="windows",
             goarch="amd64",
-            build_tags=["malleable"] if is_malleable else None,
+            build_tags=["malleable"] if template_vars["MALLEABLE"] else None,
         )

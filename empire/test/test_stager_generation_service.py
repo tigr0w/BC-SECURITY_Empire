@@ -429,6 +429,8 @@ def test_build_template_vars(stager_generation_service):
 
     expected_keys = {
         "PROFILE",
+        "MALLEABLE",
+        "MALLEABLE_PROFILE",
         "HOST",
         "SESSION_ID",
         "KILL_DATE",
