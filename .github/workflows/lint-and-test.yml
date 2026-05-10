@@ -71,7 +71,12 @@ jobs:
           poetry env use ${{ matrix.python-version }}
           poetry install
           sudo apt-get update
-          sudo apt-get install -y mono-runtime mingw-w64 perl
+          # Only x86_64-w64-mingw32-gcc is invoked by the C stager tests
+          # (empire/server/stagers/windows/c_launcher.py:114). Installing
+          # gcc-mingw-w64-x86-64 instead of the mingw-w64 meta-package
+          # avoids pulling in the i686 toolchain (~150MB → ~80MB
+          # download).
+          sudo apt-get install -y mono-runtime gcc-mingw-w64-x86-64 perl
       - name: Run test suite - mysql
         run: |
           set -o pipefail

@@ -59,8 +59,14 @@ class Stager:
             log.error(f"[!] Listener '{listener_name}' not found or not active.")
             return ""
 
-        if listener.info.get("Name") != "HTTP[S]":
-            log.error("[!] c_launcher only supports the HTTP[S] listener.")
+        if listener.info.get("Name") not in [
+            "HTTP[S]",
+            "smb_pivot",
+            "port_forward_pivot",
+        ]:
+            log.error(
+                "[!] c_launcher only supports HTTP[S], smb_pivot, and port_forward_pivot listeners."
+            )
             return ""
 
         host = listener.options["Host"]["Value"]

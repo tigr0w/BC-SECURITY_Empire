@@ -49,9 +49,9 @@ class Module:
             if agent_language in ["csharp", "ironpython"]:
                 if main_menu.listenersv2.get_active_listener_by_name(
                     listener_name
-                ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
+                ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
                     raise ModuleValidationException(
-                        "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
+                        "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# and IronPython stagers."
                     )
 
                 launcher = main_menu.stagergenv2.generate_exe_oneliner(
@@ -64,9 +64,9 @@ class Module:
             elif agent_language == "go":
                 if main_menu.listenersv2.get_active_listener_by_name(
                     listener_name
-                ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
+                ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
                     raise ModuleValidationException(
-                        "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
+                        "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for Go stagers."
                     )
 
                 launcher = main_menu.stagergenv2.generate_go_exe_oneliner(

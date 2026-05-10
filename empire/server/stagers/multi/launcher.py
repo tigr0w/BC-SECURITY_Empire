@@ -126,9 +126,9 @@ class Stager:
         if language == "csharp":
             if self.mainMenu.listenersv2.get_active_listener_by_name(
                 listener_name
-            ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
+            ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
                 log.error(
-                    "Only HTTP[S] and smb_pivot listeners are supported for C# stagers."
+                    "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# stagers."
                 )
                 return ""
 
@@ -151,9 +151,9 @@ class Stager:
         elif language == "go":
             if self.mainMenu.listenersv2.get_active_listener_by_name(
                 listener_name
-            ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
+            ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
                 log.error(
-                    "Only HTTP[S] and smb_pivot listeners are supported for Go stagers."
+                    "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for Go stagers."
                 )
                 return ""
 

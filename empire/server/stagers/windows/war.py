@@ -105,14 +105,11 @@ class Stager:
             app_name = listener_name
 
         if language in ["csharp", "ironpython"]:
-            if (
-                self.mainMenu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"]
-                != "HTTP[S]"
-            ):
+            if self.mainMenu.listenersv2.get_active_listener_by_name(
+                listener_name
+            ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
                 log.error(
-                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
+                    "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# and IronPython stagers."
                 )
                 return ""
 

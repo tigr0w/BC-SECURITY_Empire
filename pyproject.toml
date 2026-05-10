@@ -148,6 +148,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 "empire/test/conftest.py" = ["PLC0415"]
 "empire/test/test_logs.py" = ["PLC0415"]
 "empire/test/test_listener_generate_launcher.py" = ["PLC0415"]
+"empire/test/test_listener_port_forward_pivot.py" = ["PLC0415"]
 "empire/test/test_alembic.py" = ["PLC0415"]
 # jwt_auth has a module-level SECRET_KEY query that must run after the
 # session-scoped DB setup the `client` fixture triggers.
