@@ -303,8 +303,6 @@ def test__update_dir_list(agent_communication_service, agent, session_local, mod
 def test_update_agent_sysinfo(
     agent_communication_service, session_local, agent, models
 ):
-    listener = "ABC"
-    external_ip = "1.2.3.4"
     internal_ip = "4.3.2.1"
     username = "testuser"
     hostname = "testhost"
@@ -319,8 +317,6 @@ def test_update_agent_sysinfo(
         agent_communication_service.update_agent_sysinfo(
             db,
             agent,
-            listener,
-            external_ip,
             internal_ip,
             username,
             hostname,
@@ -336,9 +332,6 @@ def test_update_agent_sysinfo(
     with session_local.begin() as db:
         agent = db.query(models.Agent).filter(models.Agent.session_id == agent).first()
 
-        # TODO: Should these fields be updated?
-        # assert agent.listener == listener
-        # assert agent.external_ip == external_ip
         assert agent.internal_ip == internal_ip
         assert agent.username == username
         assert agent.hostname == hostname

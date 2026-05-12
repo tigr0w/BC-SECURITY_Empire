@@ -358,13 +358,10 @@ class AgentCommunicationService:
                     )
                 )
 
-    # TODO listener and external_ip not used?
     def update_agent_sysinfo(  # noqa: PLR0913
         self,
         db: Session,
         session_id,
-        listener="",
-        external_ip="",
         internal_ip="",
         username="",
         hostname="",
@@ -896,7 +893,6 @@ class AgentCommunicationService:
             self.update_agent_sysinfo(
                 db,
                 session_id,
-                listener=listener_name,
                 internal_ip=internal_ip,
                 username=username,
                 hostname=hostname,
@@ -1334,7 +1330,6 @@ class AgentCommunicationService:
                 self.update_agent_sysinfo(
                     db,
                     session_id,
-                    listener=listener,
                     internal_ip=internal_ip,
                     username=username,
                     hostname=hostname,
