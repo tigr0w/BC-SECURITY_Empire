@@ -23,13 +23,11 @@ class Module:
         #   original reference script included in the comments.
         listenername = params["Listener"]
         user_agent = params["UserAgent"]
-        safe_checks = params["SafeChecks"]
 
         launcher = main_menu.stagergenv2.generate_launcher(
             listenername,
             language="python",
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
         if launcher == "":
             log.error("Error in launcher generation")

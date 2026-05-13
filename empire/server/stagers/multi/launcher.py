@@ -71,13 +71,6 @@ class Stager:
                     {"name": "Obfuscate", "values": ["True"]},
                 ],
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -113,7 +106,6 @@ class Stager:
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
         stager_retries = self.options["StagerRetries"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
 
         encode = False
         if base64.lower() == "true":
@@ -175,7 +167,6 @@ class Stager:
                 proxy=proxy,
                 proxy_creds=proxy_creds,
                 stager_retries=stager_retries,
-                safe_checks=safe_checks,
                 bypasses=self.options["Bypasses"]["Value"],
             )
 

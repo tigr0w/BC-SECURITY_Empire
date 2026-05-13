@@ -1,5 +1,6 @@
 import base64
 import concurrent.futures
+import logging
 import platform
 import re
 import subprocess
@@ -9,6 +10,7 @@ import pytest
 
 from empire.server.common import packets
 from empire.server.common.empire import MainMenu
+from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import ModuleExecutionException
 from empire.server.stagers.multi.generate_agent import Stager
 from empire.server.utils.file_util import run_as_user
@@ -45,6 +47,83 @@ def test_generate_launcher_fetcher(stager_generation_service):
 
 def test_generate_launcher(stager_generation_service):
     pass
+
+
+def test_generate_launcher_embeds_safechecks_ps_bypass(stager_generation_service):
+    marker_a = "Expect100Continue=0"
+    marker_b = "PSVersionTable.PSVersion.Major -lt 3"
+
+    baseline = stager_generation_service.generate_launcher(
+        listener_name="new-listener-1",
+        language="powershell",
+        encode=False,
+        bypasses="",
+    )
+    assert baseline is not None
+    assert marker_a not in baseline
+    assert marker_b not in baseline
+
+    launcher = stager_generation_service.generate_launcher(
+        listener_name="new-listener-1",
+        language="powershell",
+        encode=False,
+        bypasses="SafeChecksPS",
+    )
+    assert launcher is not None
+    assert marker_a in launcher
+    assert marker_b in launcher
+
+
+def test_generate_launcher_embeds_safechecks_python_bypass(stager_generation_service):
+    marker = "Little Snitch"
+
+    baseline = stager_generation_service.generate_launcher(
+        listener_name="new-listener-1",
+        language="python",
+        encode=False,
+        bypasses="",
+    )
+    assert baseline is not None
+    assert marker not in baseline
+
+    launcher = stager_generation_service.generate_launcher(
+        listener_name="new-listener-1",
+        language="python",
+        encode=False,
+        bypasses="SafeChecksPython",
+    )
+    assert launcher is not None
+    assert marker in launcher
+    assert "subprocess.Popen" in launcher
+
+
+def test_generate_launcher_filters_bypass_by_language(
+    stager_generation_service, main, caplog
+):
+    """A powershell bypass must be skipped when generating a python launcher,
+    and the language mismatch must be logged at WARNING level."""
+    with SessionLocal.begin() as db:
+        ps_bypass = main.bypassesv2.get_by_name(db, "mattifestation")
+        assert ps_bypass is not None
+        assert ps_bypass.language == "powershell"
+        ps_bypass_code = ps_bypass.code
+
+    with caplog.at_level(logging.WARNING):
+        launcher = stager_generation_service.generate_launcher(
+            listener_name="new-listener-1",
+            language="python",
+            encode=False,
+            bypasses="mattifestation",
+        )
+
+    assert launcher is not None
+    assert ps_bypass_code not in launcher
+    matching = [
+        r
+        for r in caplog.records
+        if "Invalid bypass language" in r.message and r.levelname == "WARNING"
+    ]
+    assert matching, "Expected WARNING-level language-mismatch log was not emitted"
 
 
 @pytest.mark.parametrize(

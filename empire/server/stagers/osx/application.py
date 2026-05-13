@@ -46,13 +46,6 @@ class Stager:
                 "Required": True,
                 "Value": "out.zip",
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -73,7 +66,6 @@ class Stager:
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
         arch = self.options["Architecture"]["Value"]
         icns_path = self.options["AppIcon"]["Value"]
         app_name = self.options["AppName"]["Value"]
@@ -82,7 +74,6 @@ class Stager:
             listener_name,
             language=language,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
         if launcher == "":

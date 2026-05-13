@@ -17,7 +17,6 @@ def get_base_stager():
             "Base64": "True",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
@@ -39,7 +38,6 @@ def get_base_stager_dll():
             "Base64": "True",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
@@ -60,7 +58,6 @@ def get_base_stager_malleable():
             "Base64": "True",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
@@ -97,7 +94,6 @@ def get_windows_macro_stager():
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
             "Bypasses": "mattifestation etw",
-            "SafeChecks": "True",
         },
     }
 
@@ -110,7 +106,6 @@ def get_pyinstaller_stager():
             "Listener": "new-listener-1",
             "Language": "python",
             "OutFile": "empire",
-            "SafeChecks": "True",
             "UserAgent": "default",
         },
     }

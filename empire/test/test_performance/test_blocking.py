@@ -39,7 +39,6 @@ _STAGER_OPTIONS = {
     "Base64": "True",
     "Obfuscate": "False",
     "ObfuscateCommand": "Token\\All\\1",
-    "SafeChecks": "True",
     "UserAgent": "default",
     "Proxy": "default",
     "ProxyCreds": "default",

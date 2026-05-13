@@ -44,14 +44,6 @@ class Stager:
                 "Required": True,
                 "Value": "launcher.bin",
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. "
-                "Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -69,7 +61,6 @@ class Stager:
         listener_name = self.options["Listener"]["Value"]
         arch = self.options["Architecture"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
 
         if not self.mainMenu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
@@ -82,7 +73,6 @@ class Stager:
             language=language,
             encode=True,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
         if launcher == "":
             print(helpers.color("[!] Error in launcher command generation."))

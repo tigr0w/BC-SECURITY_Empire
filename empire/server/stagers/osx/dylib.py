@@ -41,13 +41,6 @@ class Stager:
                 "Required": True,
                 "Value": "x86",
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "Hijacker": {
                 "Description": "Generate dylib to be used in a Dylib Hijack. This provides a dylib with the LC_REEXPORT_DYLIB load command. The path will serve as a placeholder.",
                 "Required": True,
@@ -75,7 +68,6 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         arch = self.options["Architecture"]["Value"]
         hijacker = self.options["Hijacker"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
 
         if arch == "":
             print(helpers.color("[!] Please select a valid architecture"))
@@ -85,7 +77,6 @@ class Stager:
             listener_name,
             language=language,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
         if launcher == "":

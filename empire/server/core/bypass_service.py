@@ -50,9 +50,10 @@ class BypassService:
                     .first()
                     is None
                 ):
-                    yaml_bypass["script"] = ps_convert_to_oneliner(
-                        yaml_bypass["script"]
-                    )
+                    if yaml_bypass.get("language") == "powershell":
+                        yaml_bypass["script"] = ps_convert_to_oneliner(
+                            yaml_bypass["script"]
+                        )
                     my_model = models.Bypass(
                         name=yaml_bypass["name"],
                         authors=yaml_bypass["authors"],

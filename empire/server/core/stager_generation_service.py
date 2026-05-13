@@ -85,7 +85,6 @@ class StagerGenerationService:
         proxy="default",
         proxy_creds="default",
         stager_retries="0",
-        safe_checks="true",
         bypasses: str = "",
     ):
         """
@@ -120,7 +119,6 @@ class StagerGenerationService:
                 stager_retries=stager_retries,
                 language=language,
                 listener_name=listener_name,
-                safe_checks=safe_checks,
                 bypasses=bypasses_parsed,
             )
             if launcher_code:

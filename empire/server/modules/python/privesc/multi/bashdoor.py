@@ -14,14 +14,12 @@ class Module:
         # extract all of our options
         listenerName = params["Listener"]
         userAgent = params["UserAgent"]
-        safeChecks = params["SafeChecks"]
         # generate the launcher code
         launcher = main_menu.stagergenv2.generate_launcher(
             listenerName,
             language="python",
             encode=True,
             user_agent=userAgent,
-            safe_checks=safeChecks,
         )
         launcher = launcher.replace('"', '\\"')
         return f"""

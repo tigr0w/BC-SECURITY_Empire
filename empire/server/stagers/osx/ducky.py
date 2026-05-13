@@ -32,13 +32,6 @@ class Stager:
                 "SuggestedValues": ["python"],
                 "Strict": True,
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "OutFile": {
                 "Description": "File to output duckyscript to, otherwise displayed on the screen.",
                 "Required": False,
@@ -60,7 +53,6 @@ class Stager:
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
 
         # generate the launcher code
         launcher = self.mainMenu.stagergenv2.generate_launcher(
@@ -68,7 +60,6 @@ class Stager:
             language=language,
             encode=True,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
         if launcher == "":

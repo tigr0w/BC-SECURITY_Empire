@@ -19,22 +19,6 @@ def remove_lines_comments(lines):
     return code
 
 
-def python_safe_checks():
-    """
-    Check for Little Snitch and exits if found.
-    """
-    return dedent(
-        r"""
-    import re, subprocess;
-    cmd = "ps -ef | grep Little\ Snitch | grep -v grep"
-    ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = ps.communicate();
-    if re.search("Little Snitch", out.decode('UTF-8')):
-       sys.exit();
-    """
-    )
-
-
 def looks_like_decimal_blob(b: bytes) -> bool:
     """
     Heuristic: returns True if b decodes as ASCII and contains only digits and

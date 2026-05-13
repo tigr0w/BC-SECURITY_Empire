@@ -44,7 +44,6 @@ class Module:
                 obfuscate=launcher_obfuscation,
                 obfuscation_command=launcher_obfuscation_command,
                 user_agent=user_agent,
-                safe_checks="false",
                 proxy=proxy,
                 proxy_creds=proxy_creds,
             )
@@ -64,7 +63,6 @@ class Module:
                 listener_name,
                 language="csharp",
                 user_agent=user_agent,
-                safe_checks="false",
                 proxy=proxy,
                 proxy_creds=proxy_creds,
             )

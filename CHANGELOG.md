@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added .NET Framework 4.x compatible C# `AesGcmHelper` class (manual GCM via `AesCryptoServiceProvider` ECB + GHASH/GCTR) for PowerShell agent stagers
 -   Added cross-implementation interoperability tests verifying server (cryptography lib) and agent (pure Python) AES-GCM produce identical output
 -   Added routing packet tests for wrong-key rejection, tampered packets, AAD mismatch, empty/non-block-aligned plaintexts, and multiple concatenated packets
+-   Added `SafeChecksPS` (powershell) and `SafeChecksPython` (python) bypass YAMLs that consolidate the snippets the removed `SafeChecks` option used to inject (PowerShell version guard + `Expect: 100-Continue` disable, and Little Snitch sandbox detector). Opt in by listing them in a stager's `Bypasses` parameter.
 
 ### Changed
 
@@ -55,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Changed `AESCipher.verify_hmac()` to use `hmac.compare_digest` for constant-time comparison instead of double-HMAC workaround
 -   Replaced `AESCipher.generate_key()` which sampled printable characters without replacement (~207-bit effective entropy) with `os.urandom(32).hex()` for full 256-bit CSPRNG entropy. The key is now returned as a hex string matching the DH-derived session key format, fixing compatibility with `bytes.fromhex()` in the agent communication service.
 -   Unexpected exceptions (non-`Module*Exception`) raised inside a custom-generate module's `generate()` now surface as HTTP 500 with detail `"Error generating script."` instead of HTTP 400. `ModuleValidationException` and `ModuleExecutionException` continue to map to 400/500 as before, and the legacy tuple-return path still produces 400.
+-   `BypassService.load_bypasses` now only runs `ps_convert_to_oneliner` on `language: powershell` scripts. Non-PowerShell bypass scripts are persisted verbatim so multi-line Python (or future Bash) bodies are not corrupted by the PowerShell-specific oneliner conversion.
+-   Python launcher branches in the `http`, `http_malleable`, `http_foreign`, `http_hop`, `port_forward_pivot`, and `smb` listeners now iterate the `bypasses` parameter and concatenate matching-language bypass scripts into the launcher (previously they ignored bypasses entirely, so Python-targeted bypasses had no path to reach the agent).
 
 ### Removed
 
@@ -63,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed ChaCha20-Poly1305 classes (`Poly1305`, `ChaCha`, `ChaCha20Poly1305`) from `encryption.py` and agent-side `chacha.py` stager — not FIPS-approved. Routing packets already use AES-256-GCM.
 -   Removed Seatbelt module (superseded by updated Empire Compiler modules)
 -   Removed legacy PowerShell BloodHound/SharpHound modules (`situational_awareness/network/bloodhound.yaml`, `sharphound.yaml`), replaced by native C# SharpHound module
+-   **BREAKING:** Removed the `SafeChecks` option from all stagers, modules, listeners, and the stager API DTO. The PowerShell version-guard wrapper and `Expect: 100-Continue` setting in the listener `generate_launcher` methods, the `python_safe_checks()` Little-Snitch helper in `listener_util`, and the `safe_checks` parameter on `StagerGenerationService.generate_launcher` are all gone. The behavior is now opt-in via the `SafeChecksPS` / `SafeChecksPython` bypasses (see Added). Callers that hardcoded `SafeChecks=True` lose the previous default protection until they add the matching bypass name to `Bypasses`.
 
 ### Fixed
 
@@ -75,6 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed Python 3.13/3.14 and library deprecation warnings across the server: `datetime.utcnow()` → `datetime.now(UTC)` in JWT issuance, `asyncio.iscoroutinefunction` → `inspect.iscoroutinefunction` in hook dispatch, pyparsing `escChar`/`searchString` → `esc_char`/`search_string` in malleable profile parsing, Pydantic v1 `class Config` → v2 `ConfigDict` in `PluginHolder`, and the defunct Pydantic v1 `Field(env=[...])` kwarg on `DatabaseConfig.use` (legacy `DATABASE_USE` env var is still honored via the existing `map_legacy_database_use_env` validator). Starlette `HTTP_422_UNPROCESSABLE_ENTITY` → `HTTP_422_UNPROCESSABLE_CONTENT` in tests.
 -   Fixed `_generate_script` firing a spurious `DeprecationWarning` on every successful module execution. The method now returns data directly (or raises `ModuleValidationException`/`ModuleExecutionException`) instead of wrapping every success path in a `(data, None)` tuple. The tuple-return deprecation warning in `execute_module` is preserved and now correctly fires only for legacy custom-generate modules that still return `(None, msg)`.
 -   Fixed `ShellPostRequest.literal` firing a spurious `DeprecationWarning` on every shell task POST. The API handler no longer reads the deprecated field, and the unused `literal` parameter has been dropped from `agent_task_service.create_task_shell`. The field remains on the request DTO with its `deprecated=` marker so existing clients can still send `literal` and OpenAPI continues to flag it.
+-   Fixed bypass concatenation being silently skipped in the `http_foreign`, `http_hop`, `port_forward_pivot`, and `template` listeners whenever a stager was generated with `SafeChecks=False` — the bypass loop was nested inside the `if safe_checks == "true":` block. Lifting the loop out (as part of the `SafeChecks` removal) restores the documented behavior that bypasses always apply.
+-   Fixed pre-existing typo `safe_checks = params["UserAgent"]` in `python/privesc/multi/sudo_spawn.py` by removing the line entirely along with the rest of the `SafeChecks` plumbing.
 
 ## [6.6.0] - Unreleased
 ## [Unreleased]

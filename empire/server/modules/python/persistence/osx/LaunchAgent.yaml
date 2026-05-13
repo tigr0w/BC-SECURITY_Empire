@@ -9,10 +9,8 @@ description: |
   automatically start the Empire agent when the user logs in, providing
   continuous access to the compromised system. The module creates a properly
   formatted plist file with the specified daemon name and installs it in the
-  user's LaunchAgents directory. Includes safety checks for security software
-  like LittleSnitch and sandbox detection to avoid detection. Provides
-  reliable persistence mechanism that survives user logouts and system
-  restarts.
+  user's LaunchAgents directory. Provides a reliable persistence mechanism
+  that survives user logouts and system restarts.
 software: ''
 tactics: [TA0003, TA0004]
 techniques: [T1543, T1543.001]
@@ -32,15 +30,6 @@ options:
     description: Listener to use.
     required: true
     value: ''
-  - name: SafeChecks
-    description: Checks for LittleSnitch or a SandBox, exit the staging process if
-      true. Defaults to True.
-    required: true
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).

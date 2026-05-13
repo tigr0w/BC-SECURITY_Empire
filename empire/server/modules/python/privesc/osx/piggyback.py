@@ -15,14 +15,12 @@ class Module:
         # extract all of our options
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]
-        safe_checks = params["SafeChecks"]
 
         # generate the launcher code
         launcher = main_menu.stagergenv2.generate_launcher(
             listener_name,
             language="python",
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
         if launcher == "":

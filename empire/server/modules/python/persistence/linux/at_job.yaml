@@ -34,15 +34,6 @@ options:
       1 minute, noon, 13:00).
     required: false
     value: 'now + 1 minute'
-  - name: SafeChecks
-    description: >-
-      Checks for sandbox indicators in the stager and exits if detected.
-    required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).

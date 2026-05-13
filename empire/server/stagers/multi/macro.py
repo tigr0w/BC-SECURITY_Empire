@@ -66,13 +66,6 @@ class Stager:
                 "Required": False,
                 "Value": "",
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "PixelTrackURL": {
                 "Description": "URL to add in pixel tracking which OS attempted macro opening, useful for shell debugging and confirmation.",
                 "Required": False,
@@ -144,7 +137,6 @@ class Stager:
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
         stager_retries = self.options["StagerRetries"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
         pixel_track_url = self.options["PixelTrackURL"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
 
@@ -158,7 +150,6 @@ class Stager:
             language="python",
             encode=True,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
         if pylauncher == "":
@@ -181,7 +172,6 @@ class Stager:
             proxy=proxy,
             proxy_creds=proxy_creds,
             stager_retries=stager_retries,
-            safe_checks=safe_checks,
             bypasses=bypasses,
         )
 

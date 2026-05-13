@@ -165,7 +165,6 @@ class Listener:
         proxy_creds="default",
         stager_retries="0",
         language=None,
-        safe_checks="",
         listener_name=None,
         bypasses: list[str] | None = None,
     ):

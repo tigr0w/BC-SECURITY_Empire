@@ -155,15 +155,6 @@ class StagerTemplate(BaseModel):
                         "depends_on": [],
                         "internal": False,
                     },
-                    "SafeChecks": {
-                        "description": "Checks for LittleSnitch or a SandBox, exit the staging process if True. Defaults to True.",
-                        "required": True,
-                        "value": "True",
-                        "suggested_values": ["True", "False"],
-                        "strict": True,
-                        "depends_on": [],
-                        "internal": False,
-                    },
                     "UserAgent": {
                         "description": "User-agent string to use for the staging request (default, none, or other).",
                         "required": False,
@@ -244,7 +235,6 @@ class StagerPostRequest(BaseModel):
                     "Base64": "True",
                     "Obfuscate": "False",
                     "ObfuscateCommand": "Token\\All\\1",
-                    "SafeChecks": "True",
                     "UserAgent": "default",
                     "Proxy": "default",
                     "ProxyCreds": "default",
