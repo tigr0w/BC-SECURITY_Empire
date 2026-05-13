@@ -15,7 +15,7 @@ class Plugin(BasePlugin):
                 "Description": "Reports to generate.",
                 "Required": True,
                 "Value": "all",
-                "SuggestedValues": ["session", "credential", "log", "all"],
+                "SuggestedValues": ["session", "credential", "log", "chat", "all"],
                 "Strict": True,
             }
         }
@@ -53,6 +53,10 @@ class Plugin(BasePlugin):
             db_download = self.generate_report(db, user)
             db_downloads.append(db_download)
             output += f"[*] Log report generated to {db_download.location}\n"
+        if report in ["chat", "all"]:
+            db_download = self.chat_report(db, user)
+            db_downloads.append(db_download)
+            output += f"[*] Chat report generated to {db_download.location}\n"
 
         output += "[*] Execution complete.\n"
         plugin_task.output = output
@@ -86,6 +90,24 @@ class Plugin(BasePlugin):
         output_str = out.getvalue()
         return self.main_menu.downloadsv2.create_download_from_text(
             db, user, output_str, "credentials.csv", "basic_reporting"
+        )
+
+    def chat_report(self, db, user):
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(["Timestamp", "Username", "Message"])
+        for row in (
+            db.query(models.ChatMessage)
+            .order_by(models.ChatMessage.created_at.asc())
+            .all()
+        ):
+            writer.writerow(
+                [xstr(row.created_at), xstr(row.username), xstr(row.message)]
+            )
+
+        output_str = out.getvalue()
+        return self.main_menu.downloadsv2.create_download_from_text(
+            db, user, output_str, "chatlog.csv", "basic_reporting"
         )
 
     def generate_report(self, db, user):

@@ -2,6 +2,7 @@ import json
 import logging
 
 from fastapi import HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from empire.server.api import jwt_auth
@@ -23,10 +24,6 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
     room = "general"
 
     chat_participants = {}
-
-    # This is really just meant to provide some context to a user that joins the convo.
-    # In the future we can expand to store chat messages in the db if people want to retain a whole chat log.
-    chat_log = []
 
     sid_to_user = {}
 
@@ -118,16 +115,35 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
         """
         The calling user sends a message.
         :param data: contains the user's message.
-        :return: Emits a message event containing the message and the user's username
+        :return: Emits a chat/message event with username, message, and the
+            persisted ISO-8601 timestamp (clients render this for time display).
+            On DB persistence failure, the error is logged and no event is
+            emitted — operators rely on the report capturing every message,
+            so we'd rather drop than lie about persistence.
         """
         with SessionLocal() as db:
             user = get_user_from_sid(sid, db)
             if isinstance(data, str):
                 data = json.loads(data)
-            chat_log.append({"username": user.username, "message": data["message"]})
+            msg = models.ChatMessage(
+                user_id=user.id,
+                username=user.username,
+                message=data["message"],
+            )
+            try:
+                db.add(msg)
+                db.commit()
+            except SQLAlchemyError:
+                db.rollback()
+                log.exception("Failed to persist chat message")
+                return
             await sio.emit(
                 "chat/message",
-                {"username": user.username, "message": data["message"]},
+                {
+                    "username": user.username,
+                    "message": data["message"],
+                    "timestamp": msg.created_at.isoformat(),
+                },
                 room=room,
             )
 
@@ -137,12 +153,26 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
         The calling user gets sent the last 20 messages.
         :return: Emit chat messages to the calling user.
         """
-        for x in range(len(chat_log[-20:])):
-            username = chat_log[x]["username"]
-            message = chat_log[x]["message"]
+        try:
+            with SessionLocal() as db:
+                rows = (
+                    db.query(models.ChatMessage)
+                    .order_by(models.ChatMessage.created_at.desc())
+                    .limit(20)
+                    .all()
+                )
+        except SQLAlchemyError:
+            log.exception("Failed to load chat history")
+            return
+        for row in reversed(rows):
             await sio.emit(
                 "chat/message",
-                {"username": username, "message": message, "history": True},
+                {
+                    "username": row.username,
+                    "message": row.message,
+                    "timestamp": row.created_at.isoformat(),
+                    "history": True,
+                },
                 room=sid,
             )
 

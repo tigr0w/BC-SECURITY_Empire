@@ -9,6 +9,7 @@
 * [Starkiller](starkiller/README.md)
   * [Introduction](starkiller/introduction.md)
   * [Agent Tasks](starkiller/agent-tasks.md)
+  * [Operator Chat](starkiller/chat.md)
 * [Listeners](listeners/README.md)
   * [Dropbox](listeners/dropbox.md)
   * [OneDrive](listeners/onedrive.md)

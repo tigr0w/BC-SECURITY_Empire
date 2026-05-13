@@ -209,6 +209,17 @@ class User(Base):
         return f"<User(username='{self.username}')>"
 
 
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, Sequence("chat_message_seq"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user = relationship(User)
+    # Snapshot the username so deleted/renamed users still render in chat history.
+    username = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    created_at = Column(UtcDateTime, default=utcnow(), nullable=False, index=True)
+
+
 class Listener(Base):
     __tablename__ = "listeners"
     id = Column(Integer, Sequence("listener_id_seq"), primary_key=True)
