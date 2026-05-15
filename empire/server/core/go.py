@@ -101,6 +101,11 @@ class GoCompiler:
             )
 
             build_output = build_dir / random_task_name
+
+            build_args = ["go", "build"]
+            if build_tags:
+                build_args.extend(["-tags", ",".join(build_tags)])
+
             result = subprocess.run(
                 [*build_args, "-o", str(build_output), "."],
                 env={**env, **os.environ},

@@ -139,3 +139,15 @@ class BasePlugin:
     def send_socketio_message(self, message):
         """Send a message to the socketio server"""
         self.plugin_service.plugin_socketio_message(self.info.name, message)
+
+    def register_listener(self, instance, name: str | None = None) -> str:
+        """
+        Register a listener template contributed by this plugin.
+
+        Should be called from ``on_load`` so the template is available
+        before ``ListenerService.start_existing_listeners`` runs on
+        Empire startup. Returns the slugified template key.
+        """
+        return self.main_menu.listenertemplatesv2.register_listener_template(
+            instance, name=name
+        )
