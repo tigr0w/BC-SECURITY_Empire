@@ -58,11 +58,6 @@ class Stager:
                 "SuggestedValues": ["x64", "x86", "both"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -117,7 +112,6 @@ class Stager:
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
         listener_name = self.options["Listener"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         dot_net_version = self.options["DotNetVersion"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
@@ -142,7 +136,6 @@ class Stager:
             user_agent=user_agent,
             proxy=proxy,
             proxy_creds=proxy_creds,
-            stager_retries=stager_retries,
             bypasses=bypasses,
         )
         if launcher == "":

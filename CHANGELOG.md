@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 -   **BREAKING:** Removed in-agent `shell` command aliases (`ls`, `dir`, `cd`, `pwd`, `rm`, `mkdir`, `mv`, `move`, `cp`, `copy`, `del`, `rmdir`, `whoami`, `getuid`, `hostname`, `ps`, `tasklist`, `ipconfig`, `ifconfig`, `route`, `getpid`, `reboot`, `restart`, `shutdown`) from the PowerShell, Python, and IronPython agents. `shell <cmd>` now passes the command straight to the system shell on every agent — matching the behavior the C# (Sharpire) and Go agents already had. For the cases that previously returned structured output, use the new `situational_awareness/host/{processes,ipconfig,route,dir_list}` modules; for persistent directory changes, use the new `TASK_CHDIR` task. Server-side filters (`ps_filter`, `ls_filter`, `ipconfig_filter`, `route_filter`) and `ps_hook` now trigger on `task.module_name` instead of `task.input` string matching.
+-   **BREAKING:** Removed unused `stager_retries` parameter from `generate_launcher()` across all listeners and stagers, and the corresponding `StagerRetries` option from stagers.
 -   Removed dead `getIV()` function from agent stager AES code (unused, bypassed by inline `os.urandom()`)
 -   Removed ChaCha20-Poly1305 classes (`Poly1305`, `ChaCha`, `ChaCha20Poly1305`) from `encryption.py` and agent-side `chacha.py` stager — not FIPS-approved. Routing packets already use AES-256-GCM.
 -   Removed Seatbelt module (superseded by updated Empire Compiler modules)

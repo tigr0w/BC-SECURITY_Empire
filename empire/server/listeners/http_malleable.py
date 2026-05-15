@@ -292,7 +292,6 @@ class Listener:
         user_agent="default",
         proxy="default",
         proxy_creds="default",
-        stager_retries="0",
         language=None,
         listener_name=None,
         stager=None,

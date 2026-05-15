@@ -84,7 +84,6 @@ class StagerGenerationService:
         user_agent="default",
         proxy="default",
         proxy_creds="default",
-        stager_retries="0",
         bypasses: str = "",
     ):
         """
@@ -116,7 +115,6 @@ class StagerGenerationService:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
                 language=language,
                 listener_name=listener_name,
                 bypasses=bypasses_parsed,

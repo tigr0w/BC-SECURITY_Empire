@@ -56,11 +56,6 @@ class Stager:
                 "SuggestedValues": ["powershell", "python"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": False,
@@ -136,7 +131,6 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         pixel_track_url = self.options["PixelTrackURL"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
 
@@ -171,7 +165,6 @@ class Stager:
             user_agent=user_agent,
             proxy=proxy,
             proxy_creds=proxy_creds,
-            stager_retries=stager_retries,
             bypasses=bypasses,
         )
 

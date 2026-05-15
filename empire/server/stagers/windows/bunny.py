@@ -77,11 +77,6 @@ class Stager:
                 "SuggestedValues": ["powershell", "cmd"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output, otherwise returned as a string.",
                 "Required": False,
@@ -118,9 +113,8 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
-        if self.options["Obfuscate"]["Value"].lower == "true":
+        if self.options["Obfuscate"]["Value"].lower() == "true":
             obfuscate_script = True
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
@@ -135,7 +129,6 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
         elif language in ["csharp", "ironpython"]:

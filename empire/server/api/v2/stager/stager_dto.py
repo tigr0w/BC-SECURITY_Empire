@@ -110,15 +110,6 @@ class StagerTemplate(BaseModel):
                         "depends_on": [],
                         "internal": False,
                     },
-                    "StagerRetries": {
-                        "description": "Times for the stager to retry connecting.",
-                        "required": False,
-                        "value": "0",
-                        "suggested_values": [],
-                        "strict": False,
-                        "depends_on": [],
-                        "internal": False,
-                    },
                     "OutFile": {
                         "description": "Filename that should be used for the generated output.",
                         "required": False,
@@ -230,7 +221,6 @@ class StagerPostRequest(BaseModel):
                 "options": {
                     "Listener": "",
                     "Language": "powershell",
-                    "StagerRetries": "0",
                     "OutFile": "",
                     "Base64": "True",
                     "Obfuscate": "False",

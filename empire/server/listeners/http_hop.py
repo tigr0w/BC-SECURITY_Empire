@@ -109,7 +109,6 @@ class Listener:
         user_agent="default",
         proxy="default",
         proxy_creds="default",
-        stager_retries="0",
         language=None,
         listener_name=None,
         bypasses: list[str] | None = None,
@@ -173,8 +172,6 @@ class Listener:
                         usr = username.split("\\")[1]
                         stager += f"$netcred = New-Object System.Net.NetworkCredential('{usr}', '{password}', '{domain}');"
                         stager += "$wc.Proxy.Credentials = $netcred;"
-
-            # TODO: reimplement stager retries?
 
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{staging_key}');"

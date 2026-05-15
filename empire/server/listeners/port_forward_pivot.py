@@ -163,7 +163,6 @@ class Listener:
         user_agent="default",
         proxy="default",
         proxy_creds="default",
-        stager_retries="0",
         language=None,
         listener_name=None,
         bypasses: list[str] | None = None,
@@ -235,7 +234,6 @@ class Listener:
                     # save the proxy settings to use during the entire staging process and the agent
                     stager += "$Script:Proxy = $wc.Proxy;"
 
-            # TODO: reimplement stager retries?
             # check if we're using IPv6
 
             # code to turn the key string into a byte array

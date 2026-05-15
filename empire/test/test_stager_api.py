@@ -12,7 +12,6 @@ def get_base_stager():
         "options": {
             "Listener": "new-listener-1",
             "Language": "powershell",
-            "StagerRetries": "0",
             "OutFile": "",
             "Base64": "True",
             "Obfuscate": "False",
@@ -32,7 +31,6 @@ def get_base_stager_dll():
         "options": {
             "Listener": "new-listener-1",
             "Language": "powershell",
-            "StagerRetries": "0",
             "Arch": "x86",
             "OutFile": "my-windows-dll.dll",
             "Base64": "True",
@@ -53,7 +51,6 @@ def get_base_stager_malleable():
         "options": {
             "Listener": "malleable_listener_1",
             "Language": "powershell",
-            "StagerRetries": "0",
             "OutFile": "",
             "Base64": "True",
             "Obfuscate": "False",
@@ -119,7 +116,6 @@ def get_base_csharp_exe_stager():
             "Listener": "new-listener-1",
             "Language": "csharp",
             "DotNetVersion": "net40",
-            "StagerRetries": "0",
             "OutFile": "Sharpire.exe",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",

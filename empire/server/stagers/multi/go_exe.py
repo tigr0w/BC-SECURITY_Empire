@@ -22,11 +22,6 @@ class Stager:
                 "Required": True,
                 "Value": "",
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": True,
