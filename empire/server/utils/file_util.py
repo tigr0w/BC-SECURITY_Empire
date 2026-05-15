@@ -1,8 +1,67 @@
 import logging
 import os
+import pwd
 import subprocess
+from pathlib import Path
 
 log = logging.getLogger(__name__)
+
+
+def ensure_user_ownership(path: Path, user: str | None = None) -> None:
+    """Recursively chown `path` to `user` (default $SUDO_USER) when running as root.
+
+    No-op unless we're root and a non-root target user is resolvable — this
+    exists because ps-empire runs Python via `sudo -E`, so files created
+    directly by the Python process (e.g. `shutil.copytree`) end up root-owned,
+    which then trips git's "dubious ownership" safeguard when the update path
+    drops back to the invoking user via `run_as_user`.
+    """
+    if os.geteuid() != 0:
+        return
+    if user is None:
+        user = os.environ.get("SUDO_USER")
+    if not user or user == "root":
+        return
+    try:
+        pw = pwd.getpwnam(user)
+    except KeyError:
+        log.warning(f"ensure_user_ownership: user '{user}' not found; skipping chown")
+        return
+
+    uid, gid = pw.pw_uid, pw.pw_gid
+    try:
+        st = path.stat()
+    except FileNotFoundError:
+        return
+    if st.st_uid == uid and st.st_gid == gid:
+        return
+
+    log.info(f"Fixing ownership of {path} -> {user}:{user}")
+    try:
+        os.chown(path, uid, gid)
+    except (PermissionError, OSError) as e:
+        # Surfacing this matters: if chown fails, the downstream git commands
+        # will hit "dubious ownership" again, and callers should know why.
+        log.error(
+            f"ensure_user_ownership: chown on {path} failed ({e}); "
+            "downstream git operations may fail with 'dubious ownership'. "
+            f"Fix ownership manually (e.g. `sudo chown -R $USER {path}`)."
+        )
+        raise
+    for root, dirs, files in os.walk(path):
+        root_path = Path(root)
+        for name in dirs + files:
+            entry = root_path / name
+            try:
+                os.chown(entry, uid, gid, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            except (PermissionError, OSError) as e:
+                # Don't abort the rest of the walk over a single un-chownable
+                # entry — the user can re-run after fixing it manually.
+                log.warning(
+                    f"ensure_user_ownership: chown {entry} failed ({e}); continuing"
+                )
 
 
 def run_as_user(  # noqa: PLR0913

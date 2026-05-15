@@ -29,6 +29,37 @@ Run the test suite via pytest. All arguments after `test` are passed directly to
 ./ps-empire test empire/test/test_agent_api.py -v
 ```
 
+### Update
+
+Refresh the Empire source, Starkiller, Empire-Compiler, and plugin registries in one step:
+
+```bash
+# Interactive: prompts before downloading a new Starkiller / Compiler ref when one is cached
+./ps-empire update
+
+# Non-interactive (auto-confirms cache-migration prompts)
+./ps-empire update -y
+```
+
+What it does, in order:
+
+1. **Source.** If the install is a git checkout at a release tag (the documented install path uses `setup/checkout-latest-tag.sh`), runs `git fetch --tags` and re-runs `checkout-latest-tag.sh` to move HEAD to the latest tag for the appropriate channel (`sponsors`, `kali`, or mainline, detected from `origin`). If HEAD is on a development branch, the source step is skipped — manage upstream pulls yourself with git. Skipped entirely if the install is not a git checkout.
+2. **Config.** Overwrites `~/.config/empire/config.yaml` with the shipped template from the repo. **Local customizations belong in `~/.config/empire/config.user.yaml`**, which the server merges on top of the base config at startup (see [User Config Overrides](server.md#user-config-overrides)).
+3. **Starkiller / plugin registries.** Fast-forwards the existing clone of the configured ref. If the configured ref changed (e.g. the new template moved `starkiller.ref`), prompts before downloading the new ref into the cache.
+4. **Empire-Compiler.** Re-downloads the binary if the configured release tag changed.
+
+{% hint style="warning" %}
+Step 2 overwrites the base config every run. Any edits made directly to `~/.config/empire/config.yaml` will be lost — move overrides to `config.user.yaml` first.
+{% endhint %}
+
+{% hint style="info" %}
+**Upgrading from a pre-`update` install?** Earlier versions of `./ps-empire install` ran under `sudo`, which left `~/.config/empire/` and `~/.local/share/empire/` root-owned. `update` runs as your user and aborts up front if it detects this; one-shot fix:
+
+```bash
+sudo chown -R "$USER" ~/.config/empire ~/.local/share/empire
+```
+{% endhint %}
+
 ### Reset
 
 The server can be reset by passing a `--reset` flag. This will delete the database and any files that were created at runtime. It is recommended to run a `--reset` after any upgrades.
