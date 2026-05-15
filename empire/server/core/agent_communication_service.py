@@ -1552,27 +1552,6 @@ class AgentCommunicationService:
                 self._ingest_credentials(db, agent, tasking, data)
                 self.agent_service.save_agent_log(session_id, data)
 
-        elif response_name == "TASK_SWITCH_LISTENER":
-            # update the agent listener
-            if isinstance(data, bytes):
-                data = data.decode("UTF-8")
-
-            listener_name = data[38:]
-
-            agent.listener = listener_name
-
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-            message = f"Updated comms for {session_id} to {listener_name}"
-            log.info(message)
-
-        elif response_name == "TASK_UPDATE_LISTENERNAME":
-            # The agent listener name variable has been updated agent side
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-            message = f"Listener for '{session_id}' updated to '{data}'"
-            log.info(message)
-
         else:
             log.warning(f"Unknown response {response_name} from {session_id}")
 

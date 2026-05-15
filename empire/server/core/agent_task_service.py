@@ -475,30 +475,6 @@ class AgentTaskService:
         resp, err = self.add_task(db, agent, "TASK_SMB_SERVER", pipe_name, user=user)
         return resp, err
 
-    def create_task_update_comms(
-        self,
-        db: Session,
-        agent: models.Agent,
-        new_listener_id: int,
-        user: models.User | None = None,
-    ):
-        listener = self.listener_service.get_by_id(db, new_listener_id)
-
-        if not listener:
-            return None, f"Listener not found for id {new_listener_id}"
-        if listener.module in ["meterpreter", "http_mapi"]:
-            return (
-                None,
-                f"Listener template {listener.module} not eligible for updating comms",
-            )
-
-        new_comms = self.listener_service.get_active_listeners()[
-            listener.id
-        ].generate_comms(listener.options, agent.language)
-
-        self.add_task(db, agent, "TASK_UPDATE_LISTENERNAME", listener.name, user=user)
-        return self.add_task(db, agent, "TASK_SWITCH_LISTENER", new_comms, user=user)
-
     def create_task_update_sleep(
         self,
         db: Session,

@@ -72,7 +72,8 @@ class ListenerService:
         return None
 
     def update_listener(self, db: Session, db_listener: models.Listener, listener_req):
-        if listener_req.name != db_listener.name:
+        old_name = db_listener.name
+        if listener_req.name != old_name:
             if not self.get_by_name(db, listener_req.name):
                 db_listener.name = listener_req.name
             else:
@@ -89,6 +90,11 @@ class ListenerService:
             return None, err
 
         db_listener.options = copy.deepcopy(template_instance.options)
+
+        if listener_req.name != old_name:
+            db.query(models.Agent).filter(
+                models.Agent.listener == old_name,
+            ).update({models.Agent.listener: listener_req.name})
 
         return db_listener, None
 

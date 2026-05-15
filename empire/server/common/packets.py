@@ -120,9 +120,6 @@ PACKET_NAMES = {
     "TASK_CSHARP_CMD_JOB_SAVE": 123,
     "TASK_BOF_CMD_WAIT": 130,
     "TASK_PE_CMD_WAIT": 140,
-    # Listener Options
-    "TASK_SWITCH_LISTENER": 220,
-    "TASK_UPDATE_LISTENERNAME": 221,
 }
 
 # build a lookup table for IDS

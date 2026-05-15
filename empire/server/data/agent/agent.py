@@ -982,24 +982,6 @@ class MainAgent:
                 self.tasks[result_id]["status"] = "unimplemented"
                 pass
 
-            elif packet_type == 220:
-                # Dynamically update agent comms
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        60, "[!] Switch agent comms not implemented", result_id
-                    )
-                )
-                self.tasks[result_id]["status"] = "unimplemented"
-
-            elif packet_type == 221:
-                # Update the listener name variable
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        60, "[!] Switch agent comms not implemented", result_id
-                    )
-                )
-                self.tasks[result_id]["status"] = "unimplemented"
-
             else:
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(0, "invalid tasking ID: %s" % (packet_type), result_id)

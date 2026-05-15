@@ -786,28 +786,6 @@ def test_create_task_sysinfo(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
 
 
-def test_create_task_update_comms_agent_not_found(client, admin_auth_header, listener):
-    response = client.post(
-        "/api/v2/agents/abc/tasks/update_comms",
-        headers=admin_auth_header,
-        json={"new_listener_id": listener["id"]},
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json()["detail"] == "Agent not found for id abc"
-
-
-def test_create_task_update_comms(client, admin_auth_header, agent, listener):
-    response = client.post(
-        f"/api/v2/agents/{agent}/tasks/update_comms",
-        headers=admin_auth_header,
-        json={"new_listener_id": listener["id"]},
-    )
-
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] > 0
-
-
 def test_create_task_update_sleep_agent_not_found(client, admin_auth_header, listener):
     response = client.post(
         "/api/v2/agents/abc/tasks/sleep",

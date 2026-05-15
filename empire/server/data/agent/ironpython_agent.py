@@ -1471,24 +1471,6 @@ class MainAgent:
             elif packet_type == 122:
                 self.csharp_background_job(data, result_id)
 
-            elif packet_type == 220:
-                # Dynamically update agent comms
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        60, "[!] Switch agent comms not implemented", result_id
-                    )
-                )
-                self.tasks[result_id]["status"] = "unimplemented"
-
-            elif packet_type == 221:
-                # Update the listener name variable
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(
-                        60, "[!] Switch agent comms not implemented", result_id
-                    )
-                )
-                self.tasks[result_id]["status"] = "unimplemented"
-
             else:
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(0, "invalid tasking ID: %s" % (packet_type), result_id)

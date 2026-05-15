@@ -70,9 +70,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed Seatbelt module (superseded by updated Empire Compiler modules)
 -   Removed legacy PowerShell BloodHound/SharpHound modules (`situational_awareness/network/bloodhound.yaml`, `sharphound.yaml`), replaced by native C# SharpHound module
 -   **BREAKING:** Removed the `SafeChecks` option from all stagers, modules, listeners, and the stager API DTO. The PowerShell version-guard wrapper and `Expect: 100-Continue` setting in the listener `generate_launcher` methods, the `python_safe_checks()` Little-Snitch helper in `listener_util`, and the `safe_checks` parameter on `StagerGenerationService.generate_launcher` are all gone. The behavior is now opt-in via the `SafeChecksPS` / `SafeChecksPython` bypasses (see Added). Callers that hardcoded `SafeChecks=True` lose the previous default protection until they add the matching bypass name to `Bypasses`.
+-   Removed `powershell/management/switch_listener` module and all associated switch listener infrastructure (API endpoint, packet types, task service, response handlers)
 
 ### Fixed
 
+-   Fixed agent listener name not updating in the database when a listener is renamed, causing Starkiller to display the old listener name
 -   Fixed bounds validation in routing packet parsing: replaced unreachable `length < 0` check with proper `length > available data` check in both Python server and Go agent
 -   Fixed Go agent `ParseRoutingPacket` to correctly use offset when reading nonce from multi-packet payloads
 -   Fixed silent error swallowing in agent `aesgcm.py` `process_tasking`/`process_job_tasking` — bare `except Exception: pass` replaced with specific exception handling and error reporting back to C2

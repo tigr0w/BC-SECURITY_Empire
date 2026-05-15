@@ -110,10 +110,6 @@ class SleepPostRequest(BaseModel):
     jitter: float = Field(ge=0, le=1)
 
 
-class CommsPostRequest(BaseModel):
-    new_listener_id: int
-
-
 class KillDatePostRequest(BaseModel):
     kill_date: str  # todo validator. Or can we just set it to a datetime. same with killdate on the agent dto
 

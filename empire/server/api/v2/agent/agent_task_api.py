@@ -17,7 +17,6 @@ from empire.server.api.v2.agent.agent_task_dto import (
     AgentTaskOrderOptions,
     AgentTasks,
     ChdirPostRequest,
-    CommsPostRequest,
     DirectoryListPostRequest,
     DownloadPostRequest,
     ExitPostRequest,
@@ -441,26 +440,6 @@ def create_task_sysinfo(
     agent_task_service: AgentTaskServiceDep,
 ):
     resp, err = agent_task_service.create_task_sysinfo(db, db_agent, current_user)
-
-    if err:
-        raise HTTPException(status_code=400, detail=err)
-
-    return domain_to_dto_task(resp)
-
-
-@router.post(
-    "/{agent_id}/tasks/update_comms", status_code=201, response_model=AgentTask
-)
-def create_task_update_comms(
-    comms_request: CommsPostRequest,
-    db: CurrentSession,
-    current_user: CurrentUser,
-    db_agent: AgentDep,
-    agent_task_service: AgentTaskServiceDep,
-):
-    resp, err = agent_task_service.create_task_update_comms(
-        db, db_agent, comms_request.new_listener_id, current_user
-    )
 
     if err:
         raise HTTPException(status_code=400, detail=err)
