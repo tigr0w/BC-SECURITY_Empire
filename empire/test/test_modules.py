@@ -49,7 +49,6 @@ def catch_logs(level: int, logger: logging.Logger) -> LogCaptureHandler:
 def main_menu_mock(models, install_path):
     main_menu = Mock()
     main_menu.install_path = Path(install_path)
-    main_menu.installPath = install_path
 
     main_menu.obfuscationv2 = Mock()
     obf_conf_mock = MagicMock()

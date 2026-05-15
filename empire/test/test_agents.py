@@ -239,7 +239,7 @@ def test_skywalker_exploit_protection(caplog, agent, session_local, main: MainMe
     with session_local.begin() as db:
         # Malicious file path attempting directory traversal
         malicious_directory = (
-            main.installPath + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
+            str(main.install_path) + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
         )
         encodedPart = b"test"
         c = compress()

@@ -23,7 +23,6 @@ def test_bypass_loader(monkeypatch):
     session_mock.begin.return_value.__enter__.return_value.query.return_value.filter.return_value.first.return_value = None
 
     main_menu = Mock()
-    main_menu.installPath = "empire/server"
     main_menu.install_path = Path("empire/server")
 
     BypassService(main_menu)
@@ -94,7 +93,6 @@ def test_listener_template_loader(monkeypatch):
     session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
 
     main_menu = Mock()
-    main_menu.installPath = "empire/server"
     main_menu.install_path = Path("empire/server")
 
     listener_template_service = ListenerTemplateService(main_menu)
@@ -113,7 +111,6 @@ def test_stager_template_loader(monkeypatch):
     session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
 
     main_menu = Mock()
-    main_menu.installPath = "empire/server"
     main_menu.install_path = Path("empire/server")
 
     stager_template_service = StagerTemplateService(main_menu)
@@ -132,7 +129,6 @@ def test_profile_loader(monkeypatch):
     session_mock.begin.return_value.__enter__.return_value.query.return_value.filter.return_value.first.return_value = None
 
     main_menu = Mock()
-    main_menu.installPath = "empire/server"
     main_menu.install_path = Path("empire/server")
 
     ProfileService(main_menu)

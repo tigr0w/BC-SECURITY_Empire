@@ -98,7 +98,7 @@ class Stager:
             .split("/")[0]
         )
 
-        template_path = Path(self.mainMenu.installPath) / "data" / "misc" / "windows.c"
+        template_path = self.mainMenu.install_path / "data" / "misc" / "windows.c"
         if not template_path.exists():
             log.error(f"[!] Template not found at {template_path}")
             return ""

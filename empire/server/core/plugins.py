@@ -10,6 +10,8 @@ from empire.server.utils.option_util import validate_options
 log = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
+    from pathlib import Path
+
     from empire.server.core.db.base import SessionLocal
     from empire.server.core.download_service import DownloadService
     from empire.server.core.plugin_service import PluginService
@@ -26,9 +28,7 @@ class BasePlugin:
 
         self.enabled: bool = False
         self.execution_enabled: bool = True
-        # TODO(empire-7): Change type to Path (self.main_menu.install_path).
-        # Kept as str for backwards compatibility with third-party plugins.
-        self.install_path: str = self.main_menu.installPath
+        self.install_path: Path = self.main_menu.install_path
         self.execution_options: dict = {}
         self.settings_options: dict = {}
 

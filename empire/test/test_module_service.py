@@ -16,7 +16,6 @@ from empire.server.utils.dotnet_version_util import parse_agent_dotnet_versions
 @pytest.fixture(scope="module")
 def main_menu_mock(models, install_path):
     main_menu = Mock()
-    main_menu.installPath = install_path
     main_menu.install_path = Path(install_path)
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}

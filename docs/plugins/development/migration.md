@@ -55,3 +55,7 @@ This is no different than the way things were pre 5.0.
   * `auto_execute` - Automatically execute the plugin when Empire starts
 * Execution can be disabled by setting `self.execution_enabled = False`
 * `PluginTask` should now use the id of the plugin instead of the name
+
+## 6->7 Migration
+* `self.install_path` on `BasePlugin` is now a `Path` object instead of a `str`. If your plugin passes `self.install_path` to APIs that expect a string, wrap it with `str()`.
+* `self.main_menu.installPath` has been removed. Use `self.main_menu.install_path` (a `Path` object) instead.

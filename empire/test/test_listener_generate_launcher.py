@@ -19,7 +19,6 @@ def _setup_staging_key(session_local, models):
 @pytest.fixture
 def main_menu_mock(models):
     main_menu = Mock()
-    main_menu.installPath = ""
     main_menu.install_path = Path()
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}

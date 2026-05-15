@@ -99,6 +99,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Trimmed three small SQL hot-path costs in agent comms: dropped `lazy="joined"` on `Agent.host` so PK lookups stop emitting a wasted `LEFT OUTER JOIN hosts` (callers that need `host` still load it via explicit `joinedload`); replaced `db.query(Agent).filter(...).first()` with `db.get(Agent, session_id)` in `_process_agent_packet`; replaced `agent_service.get_by_id(...).hostname` with a scalar `select(Agent.hostname)` in `handle_agent_request`.
 -   Promoted `main_menu_mock` and `module_service` fixtures in `empire/test/test_modules.py` from function- to module-scope. The five tests in that module each used to rebuild `ModuleService` (~1.3 s with the helpers cache); they now share one. Local: subsequent test setup ~4 s → ~0.23 s.
 
+### Removed
+
+-   **BREAKING:** Removed deprecated `installPath` string attribute from `MainMenu`. Use `install_path` (a `Path` object) instead. Third-party plugins and stagers referencing `self.main_menu.installPath` or `self.mainMenu.installPath` must switch to `install_path`.
+
 ### Fixed
 
 -   Fixed `update-starkiller` release action updating the wrong `ref` in `config.yaml` after `empire_compiler` was added to the file. The action now uses `yq` to scope updates to `starkiller.repo`/`starkiller.ref` explicitly.

@@ -44,10 +44,6 @@ class MainMenu:
         log.info("Empire starting up...")
 
         self.install_path = Path(os.path.realpath(__file__)).parent.parent
-        # TODO(empire-7): Remove installPath. Kept for backwards compatibility
-        # with listeners, stagers, modules, and third-party plugins that still
-        # reference self.mainMenu.installPath as a str.
-        self.installPath = str(self.install_path)
 
         self.args = args
 
