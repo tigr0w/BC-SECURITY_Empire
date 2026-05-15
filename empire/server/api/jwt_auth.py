@@ -29,6 +29,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 PBKDF2_ITERATIONS = 600_000
 PBKDF2_HASH_ALGO = "sha256"
 
+# Modular Crypt Format prefixes for bcrypt. We don't *support* bcrypt
+# (removed in PR #1236), but the shape is distinctive enough to detect
+# legacy hashes and give the operator a targeted recovery message
+# instead of an opaque "too many values to unpack" parse error.
+_BCRYPT_HASH_PREFIXES = ("$2a$", "$2b$", "$2x$", "$2y$")
+
 
 class Token(BaseModel):
     access_token: str
@@ -49,6 +55,19 @@ def verify_password(plain_password, hashed_password):
 
     Returns False for malformed hashes (no information leakage).
     """
+    if hashed_password.startswith(_BCRYPT_HASH_PREFIXES):
+        # Pre-PR-#1236 deployments stored bcrypt hashes. The PBKDF2 parser
+        # below would reject them with a "too many values to unpack" trace
+        # that hides the real cause. Surface the specific problem and the
+        # documented recovery path instead.
+        log.error(
+            "Stored password hash for this user is legacy bcrypt (prefix: "
+            "'%.4s'); bcrypt was removed in PR #1236 for FIPS compliance. "
+            "Reset the user's password to a PBKDF2 hash — see CHANGELOG.md "
+            "for the recovery procedure.",
+            hashed_password,
+        )
+        return False
     try:
         header, salt_hex, stored_hash_hex = hashed_password.split("$")
         _, algo, iterations_str = header.split(":")

@@ -56,12 +56,32 @@ class TestPBKDF2Hashing:
         assert verify_password("test", "pbkdf2:sha256:600000$ZZZZ$aabb") is False
         assert verify_password("test", "pbkdf2:sha256:notanumber$aabb$ccdd") is False
 
-    def test_bcrypt_hash_rejected(self, client):
-        """Legacy bcrypt hashes must be rejected (no backward compatibility)."""
+    def test_bcrypt_hash_rejected(self, client, caplog):
+        """Legacy bcrypt hashes must be rejected with a targeted log message.
+
+        Without the prefix check, the PBKDF2 parser raises "too many values
+        to unpack" — an opaque trace that obscures the real cause for any
+        operator upgrading across PR #1236. The error log should name
+        bcrypt and point at the CHANGELOG recovery procedure.
+        """
+        import logging
+
         from empire.server.api.jwt_auth import verify_password
 
-        bcrypt_hash = "$2b$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q"
-        assert verify_password("password", bcrypt_hash) is False
+        with caplog.at_level(logging.ERROR, logger="empire.server.api.jwt_auth"):
+            for bcrypt_hash in (
+                "$2a$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q",
+                "$2b$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q",
+                "$2x$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q",
+                "$2y$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q",
+            ):
+                assert verify_password("password", bcrypt_hash) is False
+
+        combined = " ".join(rec.getMessage() for rec in caplog.records)
+        assert "legacy bcrypt" in combined
+        assert "PR #1236" in combined
+        # Must not bleed the opaque PBKDF2 parser trace for this case.
+        assert "too many values to unpack" not in combined
 
     def test_empty_password_roundtrip(self, client):
         """Empty string password should hash and verify."""

@@ -638,6 +638,141 @@ def test_check_no_foreign_ownership_detects_root_owned_starkiller_clone(
     assert str(starkiller_clone) in out
 
 
+# ---------- update_database ----------
+
+
+@pytest.fixture
+def fake_db_base(monkeypatch):
+    """Stub out empire.server.core.db.base so update_database can be tested
+    without standing up a real database. Tests override individual attrs
+    (`pending_migrations`, `backup_db`, `stamp_and_migrate`) as needed.
+    """
+    from empire.server.core.db import base as base_mod
+
+    # Defaults: already-at-head, never called.
+    monkeypatch.setattr(base_mod, "pending_migrations", lambda: ("0003", "0003"))
+    monkeypatch.setattr(
+        base_mod,
+        "backup_db",
+        lambda: pytest.fail("backup_db should not be called in this test"),
+    )
+    monkeypatch.setattr(
+        base_mod,
+        "stamp_and_migrate",
+        lambda: pytest.fail("stamp_and_migrate should not be called in this test"),
+    )
+    return base_mod
+
+
+def test_update_database_noop_when_at_head(fake_db_base, capsys):
+    """No migration needed — no prompt, no backup, no migrate, success."""
+    assert data_manager.update_database(assume_yes=False) is True
+    out = capsys.readouterr().out
+    assert "schema up to date" in out
+
+
+def test_update_database_applies_pending_migrations(
+    fake_db_base, monkeypatch, capsys, tmp_path
+):
+    """Pending migrations — backup runs, stamp_and_migrate runs, success."""
+    monkeypatch.setattr(fake_db_base, "pending_migrations", lambda: ("0002", "0003"))
+
+    backup_called = []
+    migrate_called = []
+    backup_path = tmp_path / "empire.db.20260515_120000"
+
+    monkeypatch.setattr(
+        fake_db_base, "backup_db", lambda: backup_called.append(True) or backup_path
+    )
+    monkeypatch.setattr(
+        fake_db_base, "stamp_and_migrate", lambda: migrate_called.append(True)
+    )
+
+    assert data_manager.update_database(assume_yes=True) is True
+    assert backup_called == [True]
+    assert migrate_called == [True]
+    out = capsys.readouterr().out
+    assert "pending migrations" in out
+    assert str(backup_path) in out
+    assert "migrations complete" in out
+
+
+def test_update_database_user_declines(fake_db_base, monkeypatch, capsys):
+    """User answers 'n' to the prompt — no backup, no migrate, returns False."""
+    monkeypatch.setattr(fake_db_base, "pending_migrations", lambda: ("0002", "0003"))
+    monkeypatch.setattr("builtins.input", lambda _prompt: "n")
+
+    assert data_manager.update_database(assume_yes=False) is False
+    out = capsys.readouterr().out
+    assert "skipping migrations" in out
+
+
+def test_update_database_backup_failure_does_not_block_migration(
+    fake_db_base, monkeypatch, capsys
+):
+    """backup_db returning None should warn but proceed with migration."""
+    monkeypatch.setattr(fake_db_base, "pending_migrations", lambda: ("0002", "0003"))
+    monkeypatch.setattr(fake_db_base, "backup_db", lambda: None)
+
+    migrate_called = []
+    monkeypatch.setattr(
+        fake_db_base, "stamp_and_migrate", lambda: migrate_called.append(True)
+    )
+
+    assert data_manager.update_database(assume_yes=True) is True
+    assert migrate_called == [True]
+    out = capsys.readouterr().out
+    assert "backup did not produce a file" in out
+    assert "migrations complete" in out
+
+
+def test_update_database_migration_failure_returns_false(
+    fake_db_base, monkeypatch, capsys, tmp_path
+):
+    """stamp_and_migrate raising surfaces an error referencing the backup path."""
+    monkeypatch.setattr(fake_db_base, "pending_migrations", lambda: ("0002", "0003"))
+    backup_path = tmp_path / "empire.db.20260515_120000"
+    monkeypatch.setattr(fake_db_base, "backup_db", lambda: backup_path)
+
+    def boom():
+        raise RuntimeError("migration boom")
+
+    monkeypatch.setattr(fake_db_base, "stamp_and_migrate", boom)
+
+    assert data_manager.update_database(assume_yes=True) is False
+    out = capsys.readouterr().out
+    assert "migration failed" in out
+    assert str(backup_path) in out
+
+
+def test_update_database_revision_check_failure_returns_false(
+    fake_db_base, monkeypatch, capsys
+):
+    """pending_migrations raising should be reported and abort the step."""
+
+    def boom():
+        raise RuntimeError("alembic boom")
+
+    monkeypatch.setattr(fake_db_base, "pending_migrations", boom)
+
+    assert data_manager.update_database(assume_yes=True) is False
+    out = capsys.readouterr().out
+    assert "failed to read Alembic revision state" in out
+
+
+def test_update_database_untracked_db_labels_correctly(
+    fake_db_base, monkeypatch, capsys
+):
+    """Pre-Alembic DB (current=None) gets an 'untracked → head' label."""
+    monkeypatch.setattr(fake_db_base, "pending_migrations", lambda: (None, "0003"))
+    monkeypatch.setattr(fake_db_base, "backup_db", lambda: None)
+    monkeypatch.setattr(fake_db_base, "stamp_and_migrate", lambda: None)
+
+    assert data_manager.update_database(assume_yes=True) is True
+    out = capsys.readouterr().out
+    assert "untracked → '0003'" in out
+
+
 # ---------- run_update orchestration ----------
 
 
@@ -652,6 +787,7 @@ def test_run_update_aggregates_failures_and_continues_after_source_fail(
     # Force update_empire_source to return False without doing real git work.
     monkeypatch.setattr(data_manager, "update_empire_source", lambda _root: False)
     # Stub out the downstream helpers so we exercise just the aggregation path.
+    monkeypatch.setattr(data_manager, "update_database", lambda *, assume_yes: True)
     monkeypatch.setattr(
         data_manager, "update_starkiller", lambda _cfg, *, assume_yes: True
     )
@@ -678,6 +814,7 @@ def test_run_update_reloads_empire_config_after_overwrite(
     dst = tmp_path / "active.yaml"
     monkeypatch.setattr(data_manager.config_manager, "CONFIG_PATH", dst)
     monkeypatch.setattr(data_manager, "update_empire_source", lambda _root: True)
+    monkeypatch.setattr(data_manager, "update_database", lambda *, assume_yes: True)
     monkeypatch.setattr(
         data_manager, "update_starkiller", lambda _cfg, *, assume_yes: True
     )

@@ -206,6 +206,82 @@ def migrate_db():
         raise
 
 
+def pending_migrations() -> tuple[str | None, str | None]:
+    """Return (current_revision, head_revision).
+
+    `current_revision` is None when the database has never been tracked by
+    Alembic (i.e. pre-Alembic deployments). `head_revision` is None only if
+    the migrations directory contains no revisions, which would indicate a
+    broken install.
+    """
+    from alembic.script import ScriptDirectory
+
+    current = _get_alembic_revision()
+    head = ScriptDirectory.from_config(_alembic_cfg()).get_current_head()
+    return current, head
+
+
+def stamp_and_migrate() -> None:
+    """Stamp the baseline (if untracked) then run pending migrations.
+
+    Bundles the two-step sequence used by both startup_db() and the
+    `update` subcommand so callers don't need to know about the private
+    `_stamp_alembic_baseline` helper.
+    """
+    if _get_alembic_revision() is None:
+        _stamp_alembic_baseline()
+    migrate_db()
+
+
+# Modular Crypt Format prefixes for bcrypt. Mirrors the constant in
+# `empire.server.api.jwt_auth`, but kept local so this module doesn't
+# import jwt_auth (which runs a DB query at module load and would
+# break startup_db ordering).
+_BCRYPT_HASH_PREFIXES = ("$2a$", "$2b$", "$2x$", "$2y$")
+
+
+def migrate_legacy_bcrypt_default_user(db) -> bool:
+    """If the configured default user still has a bcrypt-shaped password
+    hash, reset it to PBKDF2 of the configured default password.
+
+    Bridges operators across PR #1236 (bcrypt → PBKDF2). After the
+    auth-code switch, existing bcrypt hashes don't parse and the
+    operator can't log in. Auto-recovering only the *configured* default
+    user (typically `empireadmin`) keeps the blast radius small: other
+    users' rows are untouched and must be reset manually per CHANGELOG.
+
+    Returns True iff a row was rewritten (so callers can surface a
+    user-visible confirmation alongside the warning log).
+    """
+    from empire.server.core.db.defaults import (
+        database_config as defaults_config,
+    )
+    from empire.server.core.db.defaults import (
+        get_default_hashed_password,
+    )
+
+    default_user = (
+        db.query(models.User)
+        .filter(models.User.username == defaults_config.username)
+        .first()
+    )
+    if default_user is None:
+        return False
+    if not (default_user.hashed_password or "").startswith(_BCRYPT_HASH_PREFIXES):
+        return False
+
+    default_user.hashed_password = get_default_hashed_password()
+    log.warning(
+        "Auto-reset: default user '%s' had a legacy bcrypt password hash "
+        "(pre-PR-#1236). Rewritten to a PBKDF2 hash of the password in "
+        "config (database.defaults.password). Other users with bcrypt "
+        "hashes are NOT auto-reset — see CHANGELOG.md for the manual "
+        "recovery procedure.",
+        defaults_config.username,
+    )
+    return True
+
+
 def backup_db() -> Path | None:
     """Back up the database before an update. Returns the backup path or None."""
     from empire.server.core.config.config_manager import DATA_DIR
@@ -368,6 +444,12 @@ def startup_db():
 
                 for ip in ips:
                     db.add(ip)
+
+            # Recover the configured default user across the bcrypt → PBKDF2
+            # cutover in PR #1236. No-op for fresh installs (where the row
+            # was just inserted above with a PBKDF2 hash) and for upgrades
+            # whose default user already has a PBKDF2 hash.
+            migrate_legacy_bcrypt_default_user(db)
 
             # Checking that schema matches the db.
             # Some errors don't manifest until query time.

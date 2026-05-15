@@ -484,6 +484,146 @@ def test_stamp_then_migrate_consistent(client):
         assert "listeners" in tables
 
 
+def test_migrate_legacy_bcrypt_default_user_resets(client):
+    """A bcrypt-shaped hash on the configured default user gets auto-reset
+    to PBKDF2(default_password). Verifies the auth flow that recovers an
+    operator who upgraded across PR #1236.
+    """
+    import logging
+
+    from empire.server.api.jwt_auth import verify_password
+    from empire.server.core.db import models
+    from empire.server.core.db.base import (
+        SessionLocal,
+        migrate_legacy_bcrypt_default_user,
+    )
+    from empire.server.core.db.defaults import database_config as defaults_config
+
+    bcrypt_hash = "$2b$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q"
+
+    # Plant a fake bcrypt hash on the default user.
+    with SessionLocal.begin() as db:
+        u = (
+            db.query(models.User)
+            .filter(models.User.username == defaults_config.username)
+            .first()
+        )
+        original_hash = u.hashed_password
+        u.hashed_password = bcrypt_hash
+
+    try:
+        # Run the migrator and capture the WARNING log.
+        with SessionLocal.begin() as db:
+            logger = logging.getLogger("empire.server.core.db.base")
+            records: list[logging.LogRecord] = []
+            handler = logging.Handler()
+            handler.emit = records.append  # type: ignore[assignment]
+            handler.setLevel(logging.WARNING)
+            logger.addHandler(handler)
+            try:
+                assert migrate_legacy_bcrypt_default_user(db) is True
+            finally:
+                logger.removeHandler(handler)
+
+        assert any(
+            "Auto-reset" in rec.getMessage() and "PR-#1236" in rec.getMessage()
+            for rec in records
+        ), "Expected a WARNING log naming the auto-reset and PR-#1236"
+
+        # Hash on disk must now verify against the configured default
+        # password and look like a PBKDF2 hash, not bcrypt.
+        with SessionLocal() as db:
+            u = (
+                db.query(models.User)
+                .filter(models.User.username == defaults_config.username)
+                .first()
+            )
+            assert u.hashed_password.startswith("pbkdf2:sha256:")
+            assert verify_password(defaults_config.password, u.hashed_password)
+    finally:
+        # Restore for any later tests in the session.
+        with SessionLocal.begin() as db:
+            u = (
+                db.query(models.User)
+                .filter(models.User.username == defaults_config.username)
+                .first()
+            )
+            u.hashed_password = original_hash
+
+
+def test_migrate_legacy_bcrypt_default_user_noop_when_already_pbkdf2(client):
+    """If the default user's hash is already PBKDF2, the migrator is a no-op."""
+    from empire.server.core.db import models
+    from empire.server.core.db.base import (
+        SessionLocal,
+        migrate_legacy_bcrypt_default_user,
+    )
+    from empire.server.core.db.defaults import database_config as defaults_config
+
+    with SessionLocal.begin() as db:
+        u_before = (
+            db.query(models.User)
+            .filter(models.User.username == defaults_config.username)
+            .first()
+        )
+        assert u_before.hashed_password.startswith("pbkdf2:")
+        before = u_before.hashed_password
+
+        assert migrate_legacy_bcrypt_default_user(db) is False
+
+        u_after = (
+            db.query(models.User)
+            .filter(models.User.username == defaults_config.username)
+            .first()
+        )
+        assert u_after.hashed_password == before
+
+
+def test_migrate_legacy_bcrypt_does_not_touch_non_default_user(client):
+    """Non-default users with bcrypt hashes are left alone — operator must
+    reset those manually so the auto-recovery can't be used as a privilege
+    escalation vector via DB tampering.
+    """
+    from empire.server.core.db import models
+    from empire.server.core.db.base import (
+        SessionLocal,
+        migrate_legacy_bcrypt_default_user,
+    )
+
+    bcrypt_hash = "$2b$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q"
+    extra_username = "not_the_default_user_for_bcrypt_test"
+
+    with SessionLocal.begin() as db:
+        db.add(
+            models.User(
+                username=extra_username,
+                hashed_password=bcrypt_hash,
+                enabled=True,
+                admin=False,
+            )
+        )
+
+    try:
+        with SessionLocal.begin() as db:
+            # Migrator targets only the configured default user.
+            migrate_legacy_bcrypt_default_user(db)
+
+        with SessionLocal() as db:
+            u = (
+                db.query(models.User)
+                .filter(models.User.username == extra_username)
+                .first()
+            )
+            assert u.hashed_password == bcrypt_hash, (
+                "Non-default user's bcrypt hash must not be auto-rewritten"
+            )
+    finally:
+        with SessionLocal.begin() as db:
+            db.query(models.User).filter(
+                models.User.username == extra_username
+            ).delete()
+
+
 def test_startup_does_not_restamp_tracked_db(client):
     """startup_db only stamps untracked databases; already-tracked DBs keep their revision."""
     from empire.server.core.db.base import SessionLocal, _get_alembic_revision

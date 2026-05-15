@@ -613,6 +613,85 @@ def check_no_foreign_ownership() -> bool:
     return False
 
 
+def update_database(*, assume_yes: bool) -> bool:
+    """Back up the database (if possible) then apply any pending Alembic
+    migrations.
+
+    Run as part of `./ps-empire update` so users don't have to start the
+    server, watch it crash on a schema mismatch, and chase the recovery
+    advice manually. Idempotent: a no-op when the schema is already at
+    head.
+
+    Returns True on success (including the no-op case), False if the user
+    declines to migrate or the migration itself fails. Backup failures do
+    not block the migration — the operator is warned and the upgrade
+    proceeds, since the alternative (refusing to migrate) would leave the
+    server unbootable on environments where mysqldump isn't installed.
+    """
+    _banner("Database: checking for pending migrations")
+    # Lazy import: empire.server.core.db.base has heavy module-level side
+    # effects (creates the SQLAlchemy engine, runs Base.metadata.create_all).
+    # Defer until the update flow actually needs the DB so a `--help` or a
+    # pre-flight failure doesn't pay that cost.
+    try:
+        from empire.server.core.db import base as db_base
+    except Exception:
+        _error(
+            "Database: failed to import the DB module; cannot check "
+            "migrations. See traceback above."
+        )
+        log.exception("Database: import failed")
+        return False
+
+    try:
+        current, head = db_base.pending_migrations()
+    except Exception:
+        _error(
+            "Database: failed to read Alembic revision state. Check that "
+            "the database is reachable and the alembic package is installed."
+        )
+        log.exception("Database: revision check failed")
+        return False
+
+    if current == head:
+        _banner(f"Database: schema up to date at revision {current}")
+        return True
+
+    label = f"untracked → '{head}'" if current is None else f"'{current}' → '{head}'"
+    _banner(f"Database: pending migrations ({label})")
+
+    if not _confirm(
+        "Back up the database and apply migrations?",
+        assume_yes=assume_yes,
+    ):
+        _warn("Database: skipping migrations at user request.")
+        return False
+
+    backup_path = db_base.backup_db()
+    if backup_path is None:
+        _warn(
+            "Database: backup did not produce a file (see log for cause). "
+            "Proceeding with migration anyway — restore manually from an "
+            "earlier backup in ~/.local/share/empire/backups/ if needed."
+        )
+    else:
+        _banner(f"Database: backed up to {backup_path}")
+
+    try:
+        db_base.stamp_and_migrate()
+    except Exception:
+        restore_hint = backup_path or "~/.local/share/empire/backups/"
+        _error(
+            f"Database: migration failed. The database may be in a partial "
+            f"state — restore from {restore_hint} before retrying."
+        )
+        log.exception("Database: migration failed")
+        return False
+
+    _banner("Database: migrations complete.")
+    return True
+
+
 def run_update(args, *, repo_root: Path) -> bool:
     """Entry point for `./ps-empire update`. Moves the Empire checkout to the
     latest release tag, overwrites the base `config.yaml` from the shipped
@@ -645,6 +724,12 @@ def run_update(args, *, repo_root: Path) -> bool:
     results = [
         ("Empire source", source_ok),
         ("Config", config_ok),
+        # Run migrations after source/config but before the downstream
+        # refreshes so that (a) any new migration scripts pulled in by the
+        # source step are on disk, and (b) the user sees the DB step's
+        # prompt up-front rather than after sitting through Starkiller /
+        # Compiler downloads.
+        ("Database", update_database(assume_yes=assume_yes)),
         (
             "Starkiller",
             update_starkiller(
