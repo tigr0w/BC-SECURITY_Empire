@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed `clone_git_repo` leaking its `/tmp/<random_string(5)>` staging directory after copying the clone to the caller-supplied destination. Each test session wipes `DATA_DIR`, which triggers a fresh Starkiller clone (~30 MB) per run; on dev machines using a tmpfs-backed `/tmp` this accumulated until the filesystem filled up, producing a cascade of unrelated-looking test failures ("Cannot execute disabled module", "Plugin not found in marketplace", `400 != 201`) because pytest, MySQL temp tables, and Empire's own stager builds all silently fail when `/tmp` is full. The staging dir is now removed in a `finally`; on the `directory=None` branch, ownership is still transferred to the caller (used by `install_plugin_from_git`).
 -   Fixed `update-starkiller` release action updating the wrong `ref` in `config.yaml` after `empire_compiler` was added to the file. The action now uses `yq` to scope updates to `starkiller.repo`/`starkiller.ref` explicitly.
 -   Fixed `undefer(AgentTask.output_original)` referencing a nonexistent attribute (column is `original_output`). Latent `AttributeError` if any caller passed `include_original_output=True`.
 
