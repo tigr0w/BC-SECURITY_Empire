@@ -4,7 +4,6 @@ import json
 import logging
 import random
 import string
-import threading
 import typing
 from pathlib import Path
 
@@ -50,7 +49,6 @@ class AgentCommunicationService:
         #                               'functions' : [tab-completable function names for a script-import]
         #                            }
         self.agents = {}
-        self._lock = threading.Lock()
 
         with SessionLocal() as db:
             db_agents = self.agent_service.get_all(db)
@@ -114,56 +112,63 @@ class AgentCommunicationService:
         filename = Path(parts[-1]).name
         save_file = save_path / filename
 
-        with self._lock:
-            if not self._is_path_safe(save_file, download_dir, session_id):
-                return
+        if not self._is_path_safe(save_file, download_dir, session_id):
+            return
 
-            if not save_path.exists():
-                save_path.mkdir(parents=True, exist_ok=True)
+        if not save_path.exists():
+            save_path.mkdir(parents=True, exist_ok=True)
 
-            # overwrite an existing file
-            mode = "ab" if append else "wb"
-            f = save_file.open(mode)
+        # overwrite an existing file
+        mode = "ab" if append else "wb"
 
-            if language in ["python", "go"]:
-                data = self._decompress_python_data(data, filename, session_id)
+        if language in ["python", "go"]:
+            data = self._decompress_python_data(data, filename, session_id)
 
+        with save_file.open(mode) as f:
             f.write(data)
-            f.close()
 
-            if not append:
-                location = save_file
-                download = models.Download(
-                    location=str(location),
-                    filename=filename,
-                    size=location.stat().st_size,
-                )
-                db.add(download)
-                db.flush()
-                tasking.downloads.append(download)
+        if not append:
+            location = save_file
+            download = models.Download(
+                location=str(location),
+                filename=filename,
+                size=location.stat().st_size,
+            )
+            db.add(download)
+            db.flush()
+            tasking.downloads.append(download)
 
-                # We join a Download to a Tasking
-                # But we also join a Download to a AgentFile
-                # This could be useful later on for showing files as downloaded directly in the file browser.
-                agent_file = (
-                    db.query(models.AgentFile)
-                    .filter(
-                        and_(
-                            models.AgentFile.path == path,
-                            models.AgentFile.session_id == session_id,
-                        )
+            # We join a Download to a Tasking
+            # But we also join a Download to a AgentFile
+            # This could be useful later on for showing files as downloaded directly in the file browser.
+            agent_file = (
+                db.query(models.AgentFile)
+                .filter(
+                    and_(
+                        models.AgentFile.path == path,
+                        models.AgentFile.session_id == session_id,
                     )
-                    .first()
                 )
+                .first()
+            )
 
-                if agent_file:
-                    agent_file.downloads.append(download)
-                    db.flush()
+            if agent_file:
+                agent_file.downloads.append(download)
+                db.flush()
 
-        percent = round(
-            save_file.stat().st_size / int(total_filesize) * 100,
-            2,
-        )
+        try:
+            bytes_written = save_file.stat().st_size
+            percent = round(bytes_written / int(total_filesize) * 100, 2)
+        except (ZeroDivisionError, ValueError, OSError):
+            percent = 0.0
+            log.warning(
+                "Agent %s task %s: cannot compute download progress for %s "
+                "(total_filesize=%r); reporting 0.0%%",
+                session_id,
+                tasking.id,
+                filename,
+                total_filesize,
+            )
 
         message = f"Part of file {filename} from {session_id} saved [{percent}%] to {save_path}"
         log.info(message)
@@ -184,16 +189,15 @@ class AgentCommunicationService:
         if "python" in language:
             data = self._decompress_python_data(data, filename, session_id)
 
-        with self._lock:
-            if not self._is_path_safe(save_file, download_dir, session_id):
-                return None
+        if not self._is_path_safe(save_file, download_dir, session_id):
+            return None
 
-            save_path.mkdir(parents=True, exist_ok=True)
+        save_path.mkdir(parents=True, exist_ok=True)
 
-            # save the file out
+        # save the file out
 
-            with save_file.open("wb") as f:
-                f.write(data)
+        with save_file.open("wb") as f:
+            f.write(data)
 
         # notify everyone that the file was downloaded
         message = f"File {path} from {session_id} saved"
